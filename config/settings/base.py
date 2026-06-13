@@ -104,3 +104,6 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 24,
 }
+
+# Ключ для интеграции с 1С (заголовок X-Api-Key). Пустой = API для 1С закрыт.
+ONEC_API_KEY = env("ONEC_API_KEY", default="")

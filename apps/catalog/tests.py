@@ -1,11 +1,14 @@
 import pytest
 
+from apps.catalog.categorization import ProductHint, categorize
 from apps.catalog.models import (
     Attribute,
     AttributeOption,
     AttributeType,
     Category,
     CategoryAttribute,
+    CategoryMappingRule,
+    MappingRuleType,
     Product,
     ProductAttributeValue,
 )
@@ -38,9 +41,11 @@ def test_category_tree(root_category, child_category):
 
 @pytest.mark.django_db
 def test_product_created_without_1c_link(product):
-    assert product.code_1c == ""
+    assert product.code_1c is None
     assert product.article == ""
-    assert product.is_active is True
+    # по умолчанию товар не виден на витрине (статус imported, is_active=False)
+    assert product.is_active is False
+    assert product.is_visible is False
 
 
 @pytest.mark.django_db
@@ -79,3 +84,67 @@ def test_product_link_to_1c(product):
     product.refresh_from_db()
     assert product.code_1c == "000001234"
     assert product.article == "GSB13-RE"
+
+
+# --- Авторазбор категорий (categorization) ---
+
+
+@pytest.mark.django_db
+def test_categorize_by_name_contains(child_category):
+    CategoryMappingRule.objects.create(
+        rule_type=MappingRuleType.NAME_CONTAINS,
+        pattern="перфоратор",
+        target_category=child_category,
+    )
+    cat, rule = categorize(ProductHint(name="Перфоратор Bosch GBH 2-26"))
+    assert cat == child_category
+    assert rule is not None
+
+
+@pytest.mark.django_db
+def test_categorize_by_article(child_category):
+    CategoryMappingRule.objects.create(
+        rule_type=MappingRuleType.ARTICLE, pattern="BOSCH-123", target_category=child_category
+    )
+    cat, _ = categorize(ProductHint(article="bosch-123"))  # регистр игнорируется
+    assert cat == child_category
+
+
+@pytest.mark.django_db
+def test_categorize_by_brand_prefix(child_category):
+    CategoryMappingRule.objects.create(
+        rule_type=MappingRuleType.BRAND_PREFIX,
+        pattern="GWS",
+        brand="Bosch",
+        target_category=child_category,
+    )
+    cat, _ = categorize(ProductHint(name="Bosch GWS 850", brand="Bosch"))
+    assert cat == child_category
+    # другой бренд — не срабатывает
+    cat2, _ = categorize(ProductHint(name="Makita GWS-копия", brand="Makita"))
+    assert cat2 is None
+
+
+@pytest.mark.django_db
+def test_categorize_priority(root_category, child_category):
+    CategoryMappingRule.objects.create(
+        rule_type=MappingRuleType.NAME_CONTAINS,
+        pattern="дрель",
+        target_category=root_category,
+        priority=200,
+    )
+    CategoryMappingRule.objects.create(
+        rule_type=MappingRuleType.NAME_CONTAINS,
+        pattern="дрель",
+        target_category=child_category,
+        priority=10,
+    )
+    cat, _ = categorize(ProductHint(name="Ударная дрель"))
+    assert cat == child_category  # меньший priority выигрывает
+
+
+@pytest.mark.django_db
+def test_categorize_no_match():
+    cat, rule = categorize(ProductHint(name="Нечто непонятное"))
+    assert cat is None
+    assert rule is None

@@ -13,6 +13,7 @@
 (management command / Celery task), не трогая модели каталога.
 """
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -40,6 +41,7 @@ class NomenclatureStaging(models.Model):
     raw_payload = models.JSONField(
         _("Исходные данные"),
         default=dict,
+        encoder=DjangoJSONEncoder,
         help_text=_("Все поля строки/узла из выгрузки 1С в исходном виде."),
     )
 

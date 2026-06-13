@@ -1,10 +1,21 @@
 """Модели каталога товаров.
 
-Сайт — мастер по контенту: категории, атрибуты (EAV), товары, фото.
-1С — мастер по цене, остатку и коду номенклатуры. Связь через code_1c / article.
+Ключевой принцип: структура каталога сайта НЕЗАВИСИМА от иерархии 1С.
 
-Дерево категорий строится на django-treebeard (MP_Node):
-быстрые запросы потомков/предков без рекурсивных JOIN-ов.
+  1С (учётная система)        Сайт (продающая система)
+  ─────────────────────      ──────────────────────────────
+  товар / артикул        →   своя категория / подкатегория
+  цена / остаток         →   характеристики / SEO / фото / витрина
+  исходная группа (хаос)  ✗   (не управляет структурой сайта)
+
+Связь — по коду 1С (code_1c) и артикулу. Распределение товаров по
+категориям сайта выполняется через правила сопоставления
+(CategoryMappingRule), а не по группе из 1С. Повторный импорт из 1С
+обновляет только цену/остаток/исходные поля и НЕ трогает ручную работу
+(категорию сайта, витринное название, описание, SEO, фото).
+
+Дерево категорий — django-treebeard (MP_Node): быстрые запросы
+потомков/предков без рекурсивных JOIN-ов.
 """
 
 from django.db import models
@@ -14,7 +25,7 @@ from treebeard.mp_tree import MP_Node
 
 
 class Category(MP_Node):
-    """Категория каталога. Поддерживает произвольную глубину вложенности."""
+    """Категория каталога сайта. Произвольная глубина вложенности."""
 
     name = models.CharField(_("Название"), max_length=255)
     slug = models.SlugField(_("Slug"), max_length=255, unique=True)
@@ -109,54 +120,174 @@ class CategoryAttribute(models.Model):
         return f"{self.category} → {self.attribute}"
 
 
-class Product(models.Model):
-    """Товар. Контентная сторона данных.
+class MappingRuleType(models.TextChoices):
+    ARTICLE = "article", _("По артикулу (точное совпадение)")
+    NAME_CONTAINS = "name_contains", _("По слову в названии")
+    BRAND_PREFIX = "brand_prefix", _("По бренду + серии модели")
+    SOURCE_GROUP = "source_group", _("По исходной группе 1С")
 
-    Поля code_1c и article — «интерфейс» к 1С: оба nullable,
-    заполняются в процессе линковки импортированных данных.
+
+class CategoryMappingRule(models.Model):
+    """Правило автораспределения товаров 1С по категориям сайта.
+
+    Применяются по возрастанию priority; первое сработавшее правило
+    назначает категорию. Если ни одно не сработало — товар уходит
+    в «Неразобранные» (category=None, status=needs_review).
     """
 
-    # --- Ссылки на 1С (заполняются при линковке) ---
-    code_1c = models.CharField(
-        _("Код 1С"),
-        max_length=50,
-        blank=True,
-        db_index=True,
-        help_text=_("Внутренний код номенклатуры 1С. Заполняется автоматически при синхронизации."),
+    rule_type = models.CharField(_("Тип правила"), max_length=20, choices=MappingRuleType.choices)
+    pattern = models.CharField(
+        _("Образец"),
+        max_length=255,
+        help_text=_(
+            "Артикул / слово в названии / серия модели / название группы 1С — "
+            "в зависимости от типа правила."
+        ),
     )
-    article = models.CharField(
-        _("Артикул"),
+    brand = models.CharField(
+        _("Бренд"),
         max_length=100,
         blank=True,
-        db_index=True,
-        help_text=_("Товарный артикул (SKU). Может совпадать с артикулом поставщика."),
+        help_text=_("Только для типа «бренд + серия»: например, Bosch."),
     )
+    target_category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        related_name="mapping_rules",
+        verbose_name=_("Категория сайта"),
+    )
+    priority = models.PositiveSmallIntegerField(
+        _("Приоритет"), default=100, help_text=_("Меньше = раньше применяется.")
+    )
+    is_active = models.BooleanField(_("Активно"), default=True)
+    note = models.CharField(_("Комментарий"), max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    # --- Контент ---
+    class Meta:
+        verbose_name = _("Правило сопоставления")
+        verbose_name_plural = _("Правила сопоставления")
+        ordering = ["priority", "id"]
+
+    def __str__(self) -> str:
+        return f"[{self.get_rule_type_display()}] {self.pattern} → {self.target_category}"
+
+
+class ProductStatus(models.TextChoices):
+    IMPORTED = "imported", _("Импортирован (не разобран)")
+    NEEDS_REVIEW = "needs_review", _("Требует проверки")
+    DRAFT = "draft", _("Черновик")
+    PUBLISHED = "published", _("Опубликован")
+
+
+class StockStatus(models.TextChoices):
+    IN_STOCK = "in_stock", _("В наличии")
+    OUT_OF_STOCK = "out_of_stock", _("Нет в наличии")
+    ON_ORDER = "on_order", _("Под заказ")
+
+
+class Product(models.Model):
+    """Товар.
+
+    Идентичность из 1С: code_1c (внутренний код / external_id) и article (SKU).
+    Контент сайта (категория, витринное название, SEO, фото) ведётся отдельно
+    и защищён от перезаписи при повторном импорте — см. apps.sync_1c.importer.
+    """
+
+    # --- Идентификаторы из 1С ---
+    code_1c = models.CharField(
+        _("Код 1С (external_id)"),
+        max_length=50,
+        null=True,
+        blank=True,
+        unique=True,
+        help_text=_("Внутренний код/идентификатор номенклатуры 1С. Главный ключ связи."),
+    )
+    article = models.CharField(_("Артикул (SKU)"), max_length=100, blank=True, db_index=True)
+    barcode = models.CharField(_("Штрихкод"), max_length=64, blank=True)
+
+    # --- Данные из 1С (обновляются импортом, не редактируются вручную) ---
+    original_name = models.CharField(
+        _("Название в 1С"),
+        max_length=512,
+        blank=True,
+        help_text=_("Исходное название из 1С. Обновляется импортом, на витрине не используется."),
+    )
+    source_group = models.CharField(
+        _("Исходная группа 1С"),
+        max_length=255,
+        blank=True,
+        help_text=_("Группа товара в 1С (справочно). Структуру сайта не определяет."),
+    )
+    unit = models.CharField(_("Единица измерения"), max_length=32, blank=True)
+    is_active_1c = models.BooleanField(_("Активен в 1С"), null=True, blank=True)
+
+    # --- Контент сайта (ведётся вручную, импорт НЕ трогает) ---
     category = models.ForeignKey(
         Category,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="products",
-        verbose_name=_("Категория"),
+        verbose_name=_("Категория сайта"),
+        help_text=_("Пусто = «Неразобранные». Назначается правилом или вручную."),
     )
-    name = models.CharField(_("Название"), max_length=512)
-    slug = models.SlugField(_("Slug"), max_length=512, unique=True)
+    category_is_manual = models.BooleanField(
+        _("Категория назначена вручную"),
+        default=False,
+        help_text=_("Если да — авторазбор её больше не меняет."),
+    )
+    matched_rule = models.ForeignKey(
+        CategoryMappingRule,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="matched_products",
+        verbose_name=_("Сработавшее правило"),
+    )
+    brand = models.CharField(_("Бренд"), max_length=100, blank=True, db_index=True)
+    name = models.CharField(_("Название (витрина)"), max_length=512)
+    slug = models.SlugField(_("Slug"), max_length=512, unique=True, blank=True)
     description = models.TextField(_("Описание"), blank=True)
     short_description = models.CharField(_("Краткое описание"), max_length=512, blank=True)
-
-    # --- SEO ---
     meta_title = models.CharField(_("Meta title"), max_length=255, blank=True)
     meta_description = models.CharField(_("Meta description"), max_length=512, blank=True)
 
-    # --- Статус ---
-    is_active = models.BooleanField(_("Активен"), default=True)
+    # --- Цена и остаток (источник истины — 1С, денормализовано для витрины) ---
+    price = models.DecimalField(_("Цена"), max_digits=14, decimal_places=2, null=True, blank=True)
+    old_price = models.DecimalField(
+        _("Старая цена"), max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    currency = models.CharField(_("Валюта"), max_length=3, default="RUB")
+    stock_quantity = models.DecimalField(_("Остаток"), max_digits=14, decimal_places=3, default=0)
+    reserved_quantity = models.DecimalField(_("Резерв"), max_digits=14, decimal_places=3, default=0)
+    available_quantity = models.DecimalField(
+        _("Доступно"), max_digits=14, decimal_places=3, default=0
+    )
+    stock_status = models.CharField(
+        _("Наличие"), max_length=12, choices=StockStatus.choices, default=StockStatus.OUT_OF_STOCK
+    )
+    price_updated_at = models.DateTimeField(_("Цена обновлена"), null=True, blank=True)
+    stock_updated_at = models.DateTimeField(_("Остаток обновлён"), null=True, blank=True)
 
-    # --- Кэш атрибутов для быстрой фасетной фильтрации ---
+    # --- Жизненный цикл ---
+    status = models.CharField(
+        _("Статус"),
+        max_length=14,
+        choices=ProductStatus.choices,
+        default=ProductStatus.IMPORTED,
+        db_index=True,
+    )
+    is_active = models.BooleanField(
+        _("Показывать на сайте"),
+        default=False,
+        help_text=_("Виден на витрине только если статус «Опубликован» и этот флаг включён."),
+    )
+
     attrs_cache = models.JSONField(
         _("Кэш характеристик"),
         default=dict,
         blank=True,
-        help_text=_("Денормализованный JSON значений характеристик. Обновляется автоматически."),
+        help_text=_("Денормализованный JSON значений характеристик для фасетных фильтров."),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -166,14 +297,30 @@ class Product(models.Model):
         verbose_name = _("Товар")
         verbose_name_plural = _("Товары")
         ordering = ["name"]
+        indexes = [
+            models.Index(fields=["status", "category"]),
+        ]
 
     def __str__(self) -> str:
-        return self.name
+        return self.name or self.original_name or (self.article or "товар")
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name, allow_unicode=True)
+            base = self.name or self.original_name or self.article or "tovar"
+            self.slug = slugify(base, allow_unicode=True) or (self.code_1c or "tovar")
         super().save(*args, **kwargs)
+
+    @property
+    def is_visible(self) -> bool:
+        """Виден ли товар на витрине."""
+        return self.is_active and self.status == ProductStatus.PUBLISHED
+
+    def recalc_stock_status(self) -> None:
+        """Пересчитать статус наличия по доступному остатку."""
+        if self.available_quantity and self.available_quantity > 0:
+            self.stock_status = StockStatus.IN_STOCK
+        else:
+            self.stock_status = StockStatus.OUT_OF_STOCK
 
 
 class ProductImage(models.Model):

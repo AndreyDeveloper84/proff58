@@ -15,6 +15,7 @@ def healthcheck(_request):
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("healthz/", healthcheck, name="healthcheck"),
+    path("api/1c/", include("apps.sync_1c.api.urls")),
 ]
 
 if settings.DEBUG:
