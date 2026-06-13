@@ -30,8 +30,11 @@ INSTALLED_APPS = [
     # сторонние
     "rest_framework",
     "django_filters",
+    "treebeard",
     # приложения проекта
     "apps.accounts",
+    "apps.catalog",
+    "apps.sync_1c",
 ]
 
 MIDDLEWARE = [
