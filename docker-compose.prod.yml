@@ -68,7 +68,8 @@ services:
     image: nginx:1.27-alpine
     restart: always
     ports:
-      - "80:80"
+      # Внешний порт задаётся в .env (prod: 80, staging: 8080) — два стека на одной машине.
+      - "${WEB_HTTP_PORT:-80}:80"
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - static_volume:/app/staticfiles:ro

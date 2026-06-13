@@ -56,51 +56,84 @@ git pull
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-## Автодеплой (CD) через GitHub Actions
+## CI/CD: две среды (staging + production) на одном VPS
 
-Workflow `.github/workflows/deploy.yml` запускается **после успешного CI на ветке
-`main`** и по SSH разворачивает прод на сервере:
+Пайплайн проверок вынесен в переиспользуемый `tests.yml` и используется и на PR,
+и перед деплоем — без дублирования:
 
 ```
-push/merge в main → CI (lint+tests) → если зелёный → deploy.yml → SSH на VPS →
-git reset --hard origin/main → docker compose -f docker-compose.prod.yml up -d --build
+PR в dev/main        → ci.yml      → tests.yml (lint + pytest)
+push/merge в dev     → deploy.yml  → tests.yml → деплой в environment "staging"
+push/merge в main    → deploy.yml  → tests.yml → деплой в environment "production"
 ```
 
-### Что нужно один раз сделать на сервере
+Деплой идёт **только при зелёных тестах**. Ветка выбирает среду, а среда
+(`GitHub Environment`) подставляет свой набор секретов — staging и production
+не пересекаются.
+
+### Один VPS — два изолированных стека
+
+Оба стека поднимаются из одного `docker-compose.prod.yml`, но в разных каталогах
+со своим `.env`. Изоляция — через `COMPOSE_PROJECT_NAME` (свои контейнеры, сеть и
+тома: отдельные БД/Redis/media) и разный внешний порт:
+
+| | production (main) | staging (dev) |
+|---|---|---|
+| Каталог | `/opt/proff58-prod` | `/opt/proff58-staging` |
+| `COMPOSE_PROJECT_NAME` | `proff58_prod` | `proff58_staging` |
+| `WEB_HTTP_PORT` | `80` | `8080` |
+| Домен | `proff58.ru` | `dev.proff58.ru:8080` |
+
+### Первичная подготовка сервера (по разу на каждый стек)
 
 ```bash
-# Docker уже стоит (см. выше). Клонируем репозиторий в постоянный каталог:
-git clone https://ВАШ_ТОКЕН@github.com/AndreyDeveloper84/proff58.git /opt/proff58
-cd /opt/proff58
-git checkout main
-cp .env.prod.example .env && nano .env     # заполнить как при ручном деплое
+# production
+git clone https://ТОКЕН@github.com/AndreyDeveloper84/proff58.git /opt/proff58-prod
+cd /opt/proff58-prod && git checkout main
+cp .env.prod.example .env && nano .env   # COMPOSE_PROJECT_NAME=proff58_prod, WEB_HTTP_PORT=80, домен, пароли
+
+# staging
+git clone https://ТОКЕН@github.com/AndreyDeveloper84/proff58.git /opt/proff58-staging
+cd /opt/proff58-staging && git checkout dev
+cp .env.prod.example .env && nano .env   # COMPOSE_PROJECT_NAME=proff58_staging, WEB_HTTP_PORT=8080, тестовые ключи
 ```
 
-### GitHub Secrets (Settings → Secrets and variables → Actions)
+> Базы у стеков **разные** — staging никогда не трогает боевые данные.
+> На staging интеграции в тестовом режиме (ЮKassa-песочница, заглушка SMS, свой `ONEC_API_KEY`).
 
-| Secret | Значение |
-|---|---|
-| `SSH_HOST` | IP или домен сервера |
-| `SSH_USER` | пользователь для SSH (например, `deploy` или `root`) |
-| `SSH_KEY` | приватный SSH-ключ этого пользователя (весь файл) |
-| `DEPLOY_PATH` | путь к репозиторию на сервере, например `/opt/proff58` |
-| `SSH_PORT` | порт SSH, если не 22 (опционально) |
+### GitHub Environments и секреты
 
-Сгенерировать пару ключей и положить публичный на сервер:
+Создайте два Environment (`Settings → Environments`): **production** и **staging**.
+В каждом — свой набор секретов (одинаковые имена, разные значения):
+
+| Secret | production | staging |
+|---|---|---|
+| `SSH_HOST` | IP сервера | тот же IP |
+| `SSH_USER` | напр. `deploy` | тот же |
+| `SSH_KEY` | приватный SSH-ключ | тот же ключ |
+| `DEPLOY_PATH` | `/opt/proff58-prod` | `/opt/proff58-staging` |
+| `SSH_PORT` | если не 22 | если не 22 |
+
+На production можно включить **Required reviewers** — тогда деплой в прод ждёт
+ручного подтверждения (одна кнопка в Actions), а staging катится сам.
+
+Сгенерировать ключ деплоя и положить публичную часть на сервер:
 
 ```bash
 ssh-keygen -t ed25519 -f deploy_key -N ""
 ssh-copy-id -i deploy_key.pub SSH_USER@SSH_HOST   # публичный — на сервер
-# приватный deploy_key → в GitHub Secret SSH_KEY
+# приватный deploy_key → в Secret SSH_KEY (в обоих Environment)
 ```
 
 ### Важно
 
-- Деплой срабатывает **только на `main`**. Рабочий поток: `feature → PR в dev →`
-  релизный PR `dev → main`. Мерж в `main` запускает CI, а за ним — автодеплой.
-- `git reset --hard origin/main` на сервере: локальные правки в каталоге деплоя
-  будут затёрты — там не редактируем код руками (кроме `.env`, он в `.gitignore`).
-- Миграции и `collectstatic` выполняются автоматически в entrypoint контейнера `web`.
+- Рабочий поток: `feature → PR в dev` (CI) → мерж в `dev` (деплой на staging) →
+  релизный PR `dev → main` → мерж (деплой на production).
+- `git reset --hard origin/<ветка>` на сервере затирает локальные правки кода —
+  руками там не редактируем (кроме `.env`, он в `.gitignore`).
+- Миграции и `collectstatic` — автоматически в entrypoint контейнера `web`.
+- Два домена с чистым HTTPS на одном хосте лучше развести через единый
+  reverse-proxy (Caddy/Traefik с авто-TLS) — добавим, когда появится сервер.
 
 ## HTTPS (после привязки домена)
 
