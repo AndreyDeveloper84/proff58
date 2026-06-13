@@ -1,58 +1,11 @@
 name: CI
 
+# Проверки на каждый PR в dev/main. Деплой-ветки (push в dev/main)
+# проверяются и катятся в deploy.yml.
 on:
-  push:
-    branches: [main, dev]
   pull_request:
     branches: [main, dev]
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: pip install ruff==0.4.8 black==24.4.2
-      - name: Ruff
-        run: ruff check .
-      - name: Black
-        run: black --check .
-
-  test:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: proff58
-          POSTGRES_USER: proff
-          POSTGRES_PASSWORD: proff
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U proff -d proff58"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-    env:
-      DJANGO_SETTINGS_MODULE: config.settings.dev
-      DJANGO_SECRET_KEY: ci-secret
-      DATABASE_URL: postgres://proff:proff@localhost:5432/proff58
-      CELERY_BROKER_URL: redis://localhost:6379/0
-      CELERY_RESULT_BACKEND: redis://localhost:6379/1
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: pip install -r requirements/dev.txt
-      - name: Миграции
-        run: python manage.py migrate --noinput
-      - name: Тесты
-        run: pytest
+  tests:
+    uses: ./.github/workflows/tests.yml
