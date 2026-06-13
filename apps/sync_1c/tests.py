@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 from django.core.management import call_command
@@ -254,6 +255,18 @@ def test_management_command_imports_json(tmp_path):
     p = Product.objects.get(code_1c="cmd-1")
     assert p.price == 999
     assert NomenclatureStaging.objects.filter(code_1c="cmd-1").exists()
+
+
+@pytest.mark.django_db
+def test_management_command_imports_bundled_sample():
+    """Пример выгрузки apps/sync_1c/sample_data/ остаётся валидным и импортируется."""
+    sample = Path(__file__).resolve().parent / "sample_data" / "nomenclature_sample.json"
+    assert sample.exists()
+    call_command("import_1c", str(sample))
+    # три товара из примера: один без бренда уходит в «Неразобранные»
+    assert Product.objects.filter(code_1c="1c-000123").exists()
+    assert Product.objects.get(code_1c="1c-000777").stock_status == StockStatus.OUT_OF_STOCK
+    assert Product.objects.get(code_1c="1c-000999").category is None
 
 
 @pytest.mark.django_db
