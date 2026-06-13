@@ -13,6 +13,8 @@
 (management command / Celery task), не трогая модели каталога.
 """
 
+import uuid
+
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -78,6 +80,24 @@ class NomenclatureStaging(models.Model):
         verbose_name=_("Товар каталога"),
     )
 
+    # Трассировка происхождения строки (для расследования и дедупликации).
+    sync_log = models.ForeignKey(
+        "SyncLog",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="rows",
+        verbose_name=_("Прогон импорта"),
+    )
+    source_file = models.CharField(_("Файл-источник"), max_length=255, blank=True)
+    row_hash = models.CharField(
+        _("Хэш строки"),
+        max_length=64,
+        blank=True,
+        db_index=True,
+        help_text=_("SHA-256 от raw_payload — для выявления повторных строк."),
+    )
+
     imported_at = models.DateTimeField(_("Время импорта"), auto_now_add=True)
     processed_at = models.DateTimeField(_("Время обработки"), null=True, blank=True)
 
@@ -129,6 +149,14 @@ class PriceRecord(models.Model):
         indexes = [
             models.Index(fields=["code_1c", "price_type", "is_current"]),
         ]
+        constraints = [
+            # Не более одной актуальной цены на (код 1С, тип цены, валюта).
+            models.UniqueConstraint(
+                fields=["code_1c", "price_type", "currency"],
+                condition=models.Q(is_current=True),
+                name="uniq_current_price_per_code_type_currency",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.code_1c} | {self.price_type}: {self.value} {self.currency}"
@@ -178,7 +206,11 @@ class SyncLog(models.Model):
         PARTIAL = "partial", _("Частично")
         ERROR = "error", _("Ошибка")
 
+    batch_uid = models.UUIDField(_("UID прогона"), default=uuid.uuid4, editable=False, unique=True)
     sync_type = models.CharField(_("Тип"), max_length=10, choices=SyncType.choices)
+    source_file = models.CharField(
+        _("Файл-источник"), max_length=255, blank=True, help_text=_("Имя файла/период выгрузки.")
+    )
     result = models.CharField(_("Результат"), max_length=10, choices=SyncResult.choices)
     rows_total = models.PositiveIntegerField(_("Всего строк"), default=0)
     rows_ok = models.PositiveIntegerField(_("Обработано"), default=0)

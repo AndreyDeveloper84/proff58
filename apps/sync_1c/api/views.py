@@ -41,15 +41,12 @@ def products_import(request):
     items, error = _validate_items(request, ProductImportItemSerializer)
     if error:
         return error
-    result = importer.import_items(items, allow_basic_fields=True)
-    SyncLog.objects.create(
-        sync_type=SyncLog.SyncType.FULL,
-        result=SyncLog.SyncResult.OK if result.errors == 0 else SyncLog.SyncResult.PARTIAL,
-        rows_total=len(items),
-        rows_ok=result.created + result.updated,
-        rows_error=result.errors,
+    sync_log, result = importer.run_import(
+        items, sync_type=SyncLog.SyncType.FULL, source_file="api:products/import"
     )
-    return Response(result.as_dict(), status=status.HTTP_200_OK)
+    return Response(
+        {**result.as_dict(), "batch_uid": str(sync_log.batch_uid)}, status=status.HTTP_200_OK
+    )
 
 
 @api_view(["POST"])
@@ -59,8 +56,12 @@ def products_update(request):
     items, error = _validate_items(request, ProductImportItemSerializer)
     if error:
         return error
-    result = importer.import_items(items, allow_basic_fields=True)
-    return Response(result.as_dict(), status=status.HTTP_200_OK)
+    sync_log, result = importer.run_import(
+        items, sync_type=SyncLog.SyncType.FULL, source_file="api:products/update"
+    )
+    return Response(
+        {**result.as_dict(), "batch_uid": str(sync_log.batch_uid)}, status=status.HTTP_200_OK
+    )
 
 
 @api_view(["POST"])

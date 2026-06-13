@@ -11,12 +11,19 @@
 Так первичный «хаос» из 1С попадает на сайт один раз (как черновик), а
 дальше каталог живёт самостоятельно и не ломается при каждой выгрузке.
 
-Любой входящий элемент сперва пишется в NomenclatureStaging (сырой аудит),
-затем создаётся/обновляется Product.
+Идемпотентность:
+  * товар ищется по коду 1С (unique), затем по артикулу — повторный импорт
+    обновляет существующий товар, а не плодит дубли;
+  * цена/остаток ведутся как «текущая запись + история» (PriceRecord /
+    StockRecord) с инвариантом «одна актуальная цена на код+тип+валюту»;
+  * каждая строка пишется в NomenclatureStaging с row_hash и ссылкой на
+    прогон (SyncLog) — для трассировки и выявления повторов.
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 
@@ -26,7 +33,7 @@ from django.utils import timezone
 from apps.catalog.categorization import ProductHint, categorize
 from apps.catalog.models import Product, ProductStatus
 
-from .models import NomenclatureStaging, StagingStatus
+from .models import NomenclatureStaging, PriceRecord, StagingStatus, StockRecord, SyncLog
 
 
 @dataclass
@@ -35,6 +42,10 @@ class ImportResult:
     updated: int = 0
     uncategorized: int = 0
     errors: int = 0
+
+    @property
+    def total(self) -> int:
+        return self.created + self.updated + self.errors
 
     def as_dict(self) -> dict:
         return {
@@ -54,6 +65,19 @@ def _to_decimal(value) -> Decimal | None:
         return None
 
 
+def _row_hash(item: dict) -> str:
+    payload = json.dumps(item, sort_keys=True, ensure_ascii=False, default=str)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _code_of(item: dict) -> str:
+    return item.get("external_id") or item.get("code_1c") or ""
+
+
+def _article_of(item: dict) -> str:
+    return item.get("sku") or item.get("article") or ""
+
+
 def _find_product(code_1c: str, article: str) -> Product | None:
     """Найти товар по коду 1С (приоритет), затем по артикулу."""
     if code_1c:
@@ -65,11 +89,78 @@ def _find_product(code_1c: str, article: str) -> Product | None:
     return None
 
 
+# --- Запись цены и остатка (Product-денормализация + история в записях 1С) ---
+
+
+def set_current_price(product: Product, item: dict) -> bool:
+    """Обновить цену товара и завести актуальную запись PriceRecord."""
+    price = _to_decimal(item.get("price"))
+    if price is None:
+        return False
+    old_price = _to_decimal(item.get("old_price"))
+    currency = item.get("currency") or product.currency or "RUB"
+    price_type = item.get("price_type") or "retail"
+
+    product.price = price
+    if old_price is not None:
+        product.old_price = old_price
+    product.currency = currency
+    product.price_updated_at = timezone.now()
+
+    if product.code_1c:
+        # Снимаем флаг актуальности со старой цены, затем пишем новую.
+        PriceRecord.objects.filter(
+            code_1c=product.code_1c, price_type=price_type, currency=currency, is_current=True
+        ).update(is_current=False)
+        PriceRecord.objects.create(
+            code_1c=product.code_1c,
+            product=product,
+            price_type=price_type,
+            value=price,
+            currency=currency,
+            is_current=True,
+        )
+    return True
+
+
+def set_current_stock(product: Product, item: dict) -> bool:
+    """Обновить остаток товара и запись StockRecord по складу."""
+    stock = _to_decimal(item.get("stock"))
+    reserved = _to_decimal(item.get("reserved"))
+    available = _to_decimal(item.get("available_stock"))
+    warehouse = item.get("warehouse") or "main"
+
+    if stock is None and reserved is None and available is None:
+        return False
+
+    if stock is not None:
+        product.stock_quantity = stock
+    if reserved is not None:
+        product.reserved_quantity = reserved
+    if available is not None:
+        product.available_quantity = available
+    elif stock is not None:
+        product.available_quantity = stock - (reserved or product.reserved_quantity or 0)
+
+    product.recalc_stock_status()
+    product.stock_updated_at = timezone.now()
+
+    if product.code_1c and stock is not None:
+        StockRecord.objects.update_or_create(
+            code_1c=product.code_1c,
+            warehouse=warehouse,
+            defaults={"product": product, "quantity": stock},
+        )
+    return True
+
+
+# --- Создание и обновление товара ---
+
+
 def _create_product(item: dict) -> tuple[Product, bool]:
-    """Создать товар из данных 1С. Вернуть (product, categorized?)."""
     name = item.get("name", "") or ""
     brand = item.get("brand", "") or ""
-    article = item.get("sku") or item.get("article") or ""
+    article = _article_of(item)
     source_group = item.get("source_group", "") or ""
 
     category, rule = categorize(
@@ -77,7 +168,7 @@ def _create_product(item: dict) -> tuple[Product, bool]:
     )
 
     product = Product(
-        code_1c=item.get("external_id") or item.get("code_1c") or None,
+        code_1c=_code_of(item) or None,
         article=article,
         barcode=item.get("barcode", "") or "",
         original_name=name,
@@ -88,59 +179,22 @@ def _create_product(item: dict) -> tuple[Product, bool]:
         is_active_1c=item.get("is_active"),
         category=category,
         matched_rule=rule,
-        # авторазбор сработал → черновик; не сработал → требует проверки
         status=ProductStatus.DRAFT if category else ProductStatus.NEEDS_REVIEW,
     )
-    _apply_price(product, item)
-    _apply_stock(product, item)
+    product.save()  # нужен pk для записей цены/остатка
+    set_current_price(product, item)
+    set_current_stock(product, item)
     product.save()
     return product, category is not None
 
 
-def _apply_price(product: Product, item: dict) -> None:
-    price = _to_decimal(item.get("price"))
-    if price is not None:
-        product.price = price
-        product.price_updated_at = timezone.now()
-    old_price = _to_decimal(item.get("old_price"))
-    if old_price is not None:
-        product.old_price = old_price
-    if item.get("currency"):
-        product.currency = item["currency"]
-
-
-def _apply_stock(product: Product, item: dict) -> None:
-    stock = _to_decimal(item.get("stock"))
-    reserved = _to_decimal(item.get("reserved"))
-    available = _to_decimal(item.get("available_stock"))
-    touched = False
-    if stock is not None:
-        product.stock_quantity = stock
-        touched = True
-    if reserved is not None:
-        product.reserved_quantity = reserved
-        touched = True
-    if available is not None:
-        product.available_quantity = available
-        touched = True
-    elif stock is not None:
-        # доступно не прислали — считаем как остаток минус резерв
-        product.available_quantity = stock - (reserved or product.reserved_quantity or 0)
-        touched = True
-    if touched:
-        product.recalc_stock_status()
-        product.stock_updated_at = timezone.now()
-
-
 def _update_existing(product: Product, item: dict, *, allow_basic_fields: bool) -> None:
     """Обновить существующий товар, не затрагивая ручной контент сайта."""
-    # Цена и остаток — всегда из 1С.
-    _apply_price(product, item)
-    _apply_stock(product, item)
+    set_current_price(product, item)
+    set_current_stock(product, item)
 
-    # Базовые поля-источники — только исходные, не витринные.
     if allow_basic_fields:
-        if "name" in item and item["name"]:
+        if item.get("name"):
             product.original_name = item["name"]  # витринное name НЕ трогаем
         if item.get("brand") and not product.brand:
             product.brand = item["brand"]
@@ -158,15 +212,24 @@ def _update_existing(product: Product, item: dict, *, allow_basic_fields: bool) 
 
 
 @transaction.atomic
-def import_item(item: dict, *, allow_basic_fields: bool = True) -> tuple[Product, str]:
+def import_item(
+    item: dict,
+    *,
+    allow_basic_fields: bool = True,
+    sync_log: SyncLog | None = None,
+    source_file: str = "",
+) -> tuple[Product, str]:
     """Импортировать один элемент. Вернуть (product, действие)."""
-    code_1c = item.get("external_id") or item.get("code_1c") or ""
-    article = item.get("sku") or item.get("article") or ""
+    code_1c = _code_of(item)
+    article = _article_of(item)
 
     staging = NomenclatureStaging.objects.create(
         code_1c=code_1c,
         article=article,
         raw_payload=item,
+        row_hash=_row_hash(item),
+        sync_log=sync_log,
+        source_file=source_file or (sync_log.source_file if sync_log else ""),
         name_1c=item.get("name", "") or "",
         unit=item.get("unit", "") or "",
         price=_to_decimal(item.get("price")),
@@ -190,12 +253,12 @@ def import_item(item: dict, *, allow_basic_fields: bool = True) -> tuple[Product
     return product, action
 
 
-def import_items(items: list[dict], *, allow_basic_fields: bool = True) -> ImportResult:
+def import_items(items: list[dict], *, allow_basic_fields: bool = True, **kwargs) -> ImportResult:
     """Импортировать пакет элементов из 1С."""
     result = ImportResult()
     for item in items:
         try:
-            product, action = import_item(item, allow_basic_fields=allow_basic_fields)
+            product, action = import_item(item, allow_basic_fields=allow_basic_fields, **kwargs)
         except Exception:  # noqa: BLE001 — ошибка одного товара не валит весь пакет
             result.errors += 1
             continue
@@ -208,28 +271,50 @@ def import_items(items: list[dict], *, allow_basic_fields: bool = True) -> Impor
     return result
 
 
-def update_price(item: dict) -> bool:
-    """Обновить только цену товара (POST /prices/update). Вернуть успех."""
-    product = _find_product(
-        item.get("external_id") or item.get("code_1c") or "",
-        item.get("sku") or item.get("article") or "",
+def run_import(
+    items: list[dict],
+    *,
+    sync_type: str = SyncLog.SyncType.FULL,
+    source_file: str = "",
+    allow_basic_fields: bool = True,
+) -> tuple[SyncLog, ImportResult]:
+    """Выполнить прогон импорта: создать SyncLog, импортировать, связать строки."""
+    sync_log = SyncLog.objects.create(
+        sync_type=sync_type, source_file=source_file, result=SyncLog.SyncResult.OK
     )
+    result = import_items(
+        items, allow_basic_fields=allow_basic_fields, sync_log=sync_log, source_file=source_file
+    )
+    sync_log.rows_total = len(items)
+    sync_log.rows_ok = result.created + result.updated
+    sync_log.rows_error = result.errors
+    sync_log.result = SyncLog.SyncResult.OK if result.errors == 0 else SyncLog.SyncResult.PARTIAL
+    sync_log.finished_at = timezone.now()
+    sync_log.save()
+    return sync_log, result
+
+
+# --- Точечные обновления только цены / только остатка ---
+
+
+def update_price(item: dict) -> bool:
+    """Обновить только цену товара (POST /prices/update)."""
+    product = _find_product(_code_of(item), _article_of(item))
     if product is None:
         return False
-    _apply_price(product, item)
+    if not set_current_price(product, item):
+        return False
     product.save(update_fields=["price", "old_price", "currency", "price_updated_at"])
     return True
 
 
 def update_stock(item: dict) -> bool:
-    """Обновить только остаток товара (POST /stocks/update). Вернуть успех."""
-    product = _find_product(
-        item.get("external_id") or item.get("code_1c") or "",
-        item.get("sku") or item.get("article") or "",
-    )
+    """Обновить только остаток товара (POST /stocks/update)."""
+    product = _find_product(_code_of(item), _article_of(item))
     if product is None:
         return False
-    _apply_stock(product, item)
+    if not set_current_stock(product, item):
+        return False
     product.save(
         update_fields=[
             "stock_quantity",

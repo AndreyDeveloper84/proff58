@@ -1,4 +1,8 @@
+import json
+
 import pytest
+from django.core.management import call_command
+from django.db import IntegrityError
 
 from apps.catalog.models import (
     Category,
@@ -8,7 +12,7 @@ from apps.catalog.models import (
     ProductStatus,
     StockStatus,
 )
-from apps.sync_1c import importer
+from apps.sync_1c import importer, parsers
 from apps.sync_1c.models import (
     NomenclatureStaging,
     PriceRecord,
@@ -43,8 +47,6 @@ def test_price_record():
 @pytest.mark.django_db
 def test_stock_record_unique_per_warehouse():
     StockRecord.objects.create(code_1c="000001234", warehouse="main", quantity=10)
-    from django.db import IntegrityError
-
     with pytest.raises(IntegrityError):
         StockRecord.objects.create(code_1c="000001234", warehouse="main", quantity=5)
 
@@ -174,3 +176,89 @@ def test_import_items_batch_counts(drills_category):
     )
     assert result.created == 2
     assert result.uncategorized == 1
+
+
+# --- Инварианты БД и идемпотентность ---
+
+
+@pytest.mark.django_db
+def test_product_code_1c_unique():
+    """Дубли code_1c у товаров запрещены на уровне БД."""
+    Product.objects.create(name="A", code_1c="dup-1", slug="a-dup")
+    with pytest.raises(IntegrityError):
+        Product.objects.create(name="B", code_1c="dup-1", slug="b-dup")
+
+
+@pytest.mark.django_db
+def test_only_one_current_price_constraint():
+    """Нельзя иметь две актуальные цены на (код, тип, валюта)."""
+    PriceRecord.objects.create(code_1c="p-1", price_type="retail", value=100, is_current=True)
+    with pytest.raises(IntegrityError):
+        PriceRecord.objects.create(code_1c="p-1", price_type="retail", value=120, is_current=True)
+
+
+@pytest.mark.django_db
+def test_reimport_is_idempotent_no_duplicate_products():
+    item = {"external_id": "idem-1", "sku": "S-1", "name": "Товар", "price": "100"}
+    importer.import_item(item)
+    _, action = importer.import_item(item)
+    assert action == "updated"
+    assert Product.objects.filter(code_1c="idem-1").count() == 1
+
+
+@pytest.mark.django_db
+def test_price_history_keeps_single_current():
+    """Повторное обновление цены: история растёт, актуальная одна."""
+    Product.objects.create(name="Т", code_1c="ph-1", slug="ph-1")
+    importer.update_price({"external_id": "ph-1", "price": "100"})
+    importer.update_price({"external_id": "ph-1", "price": "150"})
+    records = PriceRecord.objects.filter(code_1c="ph-1", price_type="retail")
+    assert records.count() == 2
+    current = records.filter(is_current=True)
+    assert current.count() == 1
+    assert current.first().value == 150
+
+
+@pytest.mark.django_db
+def test_run_import_links_rows_to_sync_log():
+    sync_log, result = importer.run_import(
+        [
+            {"external_id": "r-1", "name": "Раз", "price": "10"},
+            {"external_id": "r-2", "name": "Два", "price": "20"},
+        ],
+        source_file="test.json",
+    )
+    assert sync_log.rows_total == 2
+    assert sync_log.rows_ok == 2
+    assert sync_log.source_file == "test.json"
+    # все staging-строки привязаны к прогону и имеют хэш
+    rows = sync_log.rows.all()
+    assert rows.count() == 2
+    assert all(r.row_hash for r in rows)
+
+
+@pytest.mark.django_db
+def test_management_command_imports_json(tmp_path):
+    f = tmp_path / "nomenclature.json"
+    f.write_text(
+        json.dumps(
+            {
+                "items": [
+                    {"external_id": "cmd-1", "sku": "C-1", "name": "Файл-товар", "price": "999"}
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    call_command("import_1c", str(f))
+    p = Product.objects.get(code_1c="cmd-1")
+    assert p.price == 999
+    assert NomenclatureStaging.objects.filter(code_1c="cmd-1").exists()
+
+
+@pytest.mark.django_db
+def test_parser_rejects_unknown_format(tmp_path):
+    f = tmp_path / "data.xml"
+    f.write_text("<x/>", encoding="utf-8")
+    with pytest.raises(ValueError):
+        parsers.load_items(str(f))
