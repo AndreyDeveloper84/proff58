@@ -79,7 +79,7 @@ def _article_of(item: dict) -> str:
 
 
 def _find_product(code_1c: str, article: str) -> Product | None:
-    """Найти товар по коду 1С (приоритет), затем по артикулу."""
+    """Найти товар по коду 1С (приоритет), затем по артикулу (первый)."""
     if code_1c:
         product = Product.objects.filter(code_1c=code_1c).first()
         if product:
@@ -87,6 +87,27 @@ def _find_product(code_1c: str, article: str) -> Product | None:
     if article:
         return Product.objects.filter(article=article).first()
     return None
+
+
+def _resolve_for_import(code_1c: str, article: str) -> tuple[Product | None, bool]:
+    """Найти товар для импорта. Вернуть (product, конфликт?).
+
+    Артикул не уникален, поэтому если по нему (как запасному ключу) находится
+    несколько товаров — это неоднозначная связь: не обновляем ничего, а
+    помечаем строку как конфликт для ручного разбора.
+    """
+    if code_1c:
+        product = Product.objects.filter(code_1c=code_1c).first()
+        if product:
+            return product, False
+    if article:
+        qs = Product.objects.filter(article=article)
+        count = qs.count()
+        if count > 1:
+            return None, True
+        if count == 1:
+            return qs.first(), False
+    return None, False
 
 
 # --- Запись цены и остатка (Product-денормализация + история в записях 1С) ---
@@ -218,8 +239,11 @@ def import_item(
     allow_basic_fields: bool = True,
     sync_log: SyncLog | None = None,
     source_file: str = "",
-) -> tuple[Product, str]:
-    """Импортировать один элемент. Вернуть (product, действие)."""
+) -> tuple[Product | None, str]:
+    """Импортировать один элемент. Вернуть (product|None, действие).
+
+    Действие: created / updated / conflict (неоднозначный артикул).
+    """
     code_1c = _code_of(item)
     article = _article_of(item)
 
@@ -237,7 +261,16 @@ def import_item(
         is_active_1c=item.get("is_active"),
     )
 
-    product = _find_product(code_1c, article)
+    product, conflict = _resolve_for_import(code_1c, article)
+    if conflict:
+        # Неоднозначная связь по артикулу — ничего не трогаем, в ручной разбор.
+        count = Product.objects.filter(article=article).count()
+        staging.status = StagingStatus.ERROR
+        staging.error_message = f"Неоднозначный артикул «{article}»: подходит товаров — {count}."
+        staging.processed_at = timezone.now()
+        staging.save(update_fields=["status", "error_message", "processed_at"])
+        return None, "conflict"
+
     if product is None:
         product, categorized = _create_product(item)
         action = "created"
@@ -266,8 +299,10 @@ def import_items(items: list[dict], *, allow_basic_fields: bool = True, **kwargs
             result.created += 1
             if product.category_id is None:
                 result.uncategorized += 1
-        else:
+        elif action == "updated":
             result.updated += 1
+        else:  # conflict
+            result.errors += 1
     return result
 
 

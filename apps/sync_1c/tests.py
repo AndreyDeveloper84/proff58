@@ -257,6 +257,22 @@ def test_management_command_imports_json(tmp_path):
 
 
 @pytest.mark.django_db
+def test_ambiguous_article_goes_to_conflict():
+    """Артикул не уникален: если по нему подходит >1 товара — конфликт, не порча данных."""
+    Product.objects.create(name="Товар 1", article="DUP-ART", slug="t1-dup", price=10)
+    Product.objects.create(name="Товар 2", article="DUP-ART", slug="t2-dup", price=20)
+    # импорт без code_1c, только по артикулу
+    product, action = importer.import_item({"sku": "DUP-ART", "price": "999"})
+    assert action == "conflict"
+    assert product is None
+    # ни один товар не изменён
+    assert {float(p.price) for p in Product.objects.filter(article="DUP-ART")} == {10.0, 20.0}
+    staging = NomenclatureStaging.objects.filter(article="DUP-ART").latest("imported_at")
+    assert staging.status == StagingStatus.ERROR
+    assert "Неоднозначный" in staging.error_message
+
+
+@pytest.mark.django_db
 def test_parser_rejects_unknown_format(tmp_path):
     f = tmp_path / "data.xml"
     f.write_text("<x/>", encoding="utf-8")
