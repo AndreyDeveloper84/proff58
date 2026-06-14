@@ -1,0 +1,51 @@
+# Фронт-proxy: единая точка входа на :80/:443, TLS сертификатом reg.ru,
+# маршрутизация по домену в нужный стек (по сети edge).
+# Файл — шаблон nginx (официальный образ подставит ${ПЕРЕМЕННЫЕ} из окружения).
+# Переменные nginx ($host, $remote_addr и т.п.) НЕ трогаются — их нет в env.
+
+# HTTP → HTTPS для обоих доменов.
+server {
+    listen 80;
+    server_name ${PROD_DOMAIN} ${STAGING_DOMAIN};
+    return 301 https://$host$request_uri;
+}
+
+# --- Production ---
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${PROD_DOMAIN};
+
+    ssl_certificate     /etc/nginx/certs/${SSL_CERT};
+    ssl_certificate_key /etc/nginx/certs/${SSL_KEY};
+
+    client_max_body_size 20M;
+
+    location / {
+        proxy_pass http://prod_web:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# --- Staging ---
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${STAGING_DOMAIN};
+
+    ssl_certificate     /etc/nginx/certs/${SSL_CERT};
+    ssl_certificate_key /etc/nginx/certs/${SSL_KEY};
+
+    client_max_body_size 20M;
+
+    location / {
+        proxy_pass http://staging_web:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
