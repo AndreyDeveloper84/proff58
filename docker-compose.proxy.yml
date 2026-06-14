@@ -1,0 +1,25 @@
+# Фронт-proxy перед стеками prod/staging на одном VPS.
+# Единственная точка входа на :80/:443. TLS — сертификатом reg.ru.
+# Запуск: docker compose -f docker-compose.proxy.yml up -d
+# Перед первым запуском один раз: docker network create edge
+services:
+  proxy:
+    image: nginx:1.27-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PROD_DOMAIN: ${PROD_DOMAIN}
+      STAGING_DOMAIN: ${STAGING_DOMAIN}
+      SSL_CERT: ${SSL_CERT}
+      SSL_KEY: ${SSL_KEY}
+    volumes:
+      - ./docker/proxy/templates:/etc/nginx/templates:ro
+      - ${CERT_DIR}:/etc/nginx/certs:ro
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true
