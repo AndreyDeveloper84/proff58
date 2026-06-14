@@ -79,7 +79,7 @@ push/merge в main    → deploy.yml  → tests.yml → деплой в environm
 
 | | production (main) | staging (dev) |
 |---|---|---|
-| Каталог | `/opt/proff58-prod` | `/opt/proff58-staging` |
+| Каталог | `/home/taximeter/proff58-prod` | `/home/taximeter/proff58-staging` |
 | `COMPOSE_PROJECT_NAME` | `proff58_prod` | `proff58_staging` |
 | `WEB_HTTP_PORT` | `80` | `8080` |
 | Домен | `proff58.ru` | `dev.proff58.ru:8080` |
@@ -87,18 +87,21 @@ push/merge в main    → deploy.yml  → tests.yml → деплой в environm
 ### Первичная подготовка сервера (по разу на каждый стек)
 
 ```bash
+# Заходим под своим пользователем (taximeter). Он должен уметь запускать docker:
+#   sudo usermod -aG docker taximeter   # один раз, затем перелогиниться
+
 # production
-git clone https://ТОКЕН@github.com/AndreyDeveloper84/proff58.git /opt/proff58-prod
-cd /opt/proff58-prod && git checkout main
+git clone https://ТОКЕН@github.com/AndreyDeveloper84/proff58.git ~/proff58-prod
+cd ~/proff58-prod && git checkout main
 cp .env.prod.example .env && nano .env   # COMPOSE_PROJECT_NAME=proff58_prod, WEB_HTTP_PORT=80, домен, пароли
 
 # staging
-git clone https://ТОКЕН@github.com/AndreyDeveloper84/proff58.git /opt/proff58-staging
-cd /opt/proff58-staging && git checkout dev
+git clone https://ТОКЕН@github.com/AndreyDeveloper84/proff58.git ~/proff58-staging
+cd ~/proff58-staging && git checkout dev
 cp .env.prod.example .env && nano .env   # COMPOSE_PROJECT_NAME=proff58_staging, WEB_HTTP_PORT=8080, тестовые ключи
 ```
 
-> Базы у стеков **разные** — staging никогда не трогает боевые данные.
+> `~` = `/home/taximeter`. Базы у стеков **разные** — staging никогда не трогает боевые данные.
 > На staging интеграции в тестовом режиме (ЮKassa-песочница, заглушка SMS, свой `ONEC_API_KEY`).
 
 ### GitHub Environments и секреты
@@ -109,9 +112,9 @@ cp .env.prod.example .env && nano .env   # COMPOSE_PROJECT_NAME=proff58_staging,
 | Secret | production | staging |
 |---|---|---|
 | `SSH_HOST` | IP сервера | тот же IP |
-| `SSH_USER` | напр. `deploy` | тот же |
+| `SSH_USER` | `taximeter` | `taximeter` |
 | `SSH_KEY` | приватный SSH-ключ | тот же ключ |
-| `DEPLOY_PATH` | `/opt/proff58-prod` | `/opt/proff58-staging` |
+| `DEPLOY_PATH` | `/home/taximeter/proff58-prod` | `/home/taximeter/proff58-staging` |
 | `SSH_PORT` | если не 22 | если не 22 |
 
 На production можно включить **Required reviewers** — тогда деплой в прод ждёт
