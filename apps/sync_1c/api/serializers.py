@@ -36,6 +36,7 @@ class ProductImportItemSerializer(_IdentifiedItem):
         max_digits=14, decimal_places=2, required=False, allow_null=True
     )
     currency = serializers.CharField(required=False, allow_blank=True)
+    price_type = serializers.CharField(required=False, allow_blank=True)
     stock = serializers.DecimalField(max_digits=14, decimal_places=3, required=False)
 
 
@@ -45,6 +46,7 @@ class PriceItemSerializer(_IdentifiedItem):
         max_digits=14, decimal_places=2, required=False, allow_null=True
     )
     currency = serializers.CharField(required=False, allow_blank=True)
+    price_type = serializers.CharField(required=False, allow_blank=True)
 
 
 class StockItemSerializer(_IdentifiedItem):

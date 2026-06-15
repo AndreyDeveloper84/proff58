@@ -5,6 +5,7 @@ from django.test import override_settings
 from rest_framework.test import APIClient
 
 from apps.catalog.models import Product, ProductStatus
+from apps.sync_1c.models import PriceRecord
 
 API_KEY = "test-key-123"
 
@@ -79,6 +80,35 @@ def test_prices_update(auth_client):
     assert resp.status_code == 200
     assert resp.json()["updated"] == 1
     assert Product.objects.get(code_1c="1c-200").price == 777
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_prices_update_accepts_price_type(auth_client):
+    """API принимает price_type; разные типы цен живут как отдельные current-записи."""
+    Product.objects.create(name="Т", code_1c="1c-201", slug="t-201")
+
+    auth_client.post(
+        "/api/1c/prices/update",
+        {"items": [{"external_id": "1c-201", "price": "777", "price_type": "retail"}]},
+        format="json",
+    )
+    resp = auth_client.post(
+        "/api/1c/prices/update",
+        {"items": [{"external_id": "1c-201", "price": "650", "price_type": "wholesale"}]},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.json()["updated"] == 1
+
+    # розничная актуальная цена не снята другим типом цены
+    assert PriceRecord.objects.filter(
+        code_1c="1c-201", price_type="retail", value=777, is_current=True
+    ).exists()
+    # появилась актуальная оптовая
+    assert PriceRecord.objects.filter(
+        code_1c="1c-201", price_type="wholesale", value=650, is_current=True
+    ).exists()
 
 
 @override_settings(ONEC_API_KEY=API_KEY)
