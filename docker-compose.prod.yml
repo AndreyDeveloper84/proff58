@@ -67,25 +67,16 @@ services:
   nginx:
     image: nginx:1.27-alpine
     restart: always
-    # Публичных портов нет — наружу стек выходит только через общий proxy
-    # (docker-compose.proxy.yml) по сети edge. Алиас различает стеки.
+    ports:
+      # Только на localhost: наружу (80/443, TLS) отдаёт ХОСТОВЫЙ nginx —
+      # он проксирует на этот порт. prod: 8081, staging: 8082 (в .env).
+      - "127.0.0.1:${WEB_HTTP_PORT:-8081}:80"
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - static_volume:/app/staticfiles:ro
       - media_volume:/app/media:ro
     depends_on:
       - web
-    networks:
-      default: {}
-      edge:
-        aliases:
-          - ${STACK_ALIAS:-proff58_web}
-
-networks:
-  # Общая сеть между стеками и фронт-proxy. Создаётся один раз на сервере:
-  #   docker network create edge
-  edge:
-    external: true
 
 volumes:
   pgdata:

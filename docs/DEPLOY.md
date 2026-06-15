@@ -71,25 +71,29 @@ push/merge в main    → deploy.yml  → tests.yml → деплой в environm
 (`GitHub Environment`) подставляет свой набор секретов — staging и production
 не пересекаются.
 
-### Один VPS — два стека за общим фронт-proxy
+### Один VPS — два стека за ХОСТОВЫМ nginx
+
+На сервере уже есть системный nginx на :80/:443 — он и работает reverse-proxy
+(отдельный докер-proxy не нужен). Стеки слушают только `127.0.0.1`, хостовый
+nginx терминирует TLS (cert reg.ru) и проксирует по домену:
 
 ```
-                 ┌─ proxy (nginx, :80→:443, TLS reg.ru) ─┐
- proff58.ru ─────┤  server_name proff58.ru     → prod_web │
- dev.proff58.ru ─┤  server_name dev.proff58.ru → staging_web
-                 └──────────────── сеть edge ─────────────┘
+                 ┌─ хостовый nginx (:80→:443, TLS reg.ru) ─┐
+ proff58.ru ─────┤  → 127.0.0.1:8081  (prod-стек)           │
+ dev.proff58.ru ─┤  → 127.0.0.1:8082  (staging-стек)        │
+                 └──────────────────────────────────────────┘
 ```
 
 Стеки `prod`/`staging` поднимаются из одного `docker-compose.prod.yml` в разных
 каталогах со своим `.env`. Изоляция — через `COMPOSE_PROJECT_NAME` (свои
-контейнеры/тома: отдельные БД/Redis/media). Наружу стеки портов **не открывают** —
-единственная точка входа фронт-proxy; он находит стек по `STACK_ALIAS` в сети `edge`.
+контейнеры/тома: отдельные БД/Redis/media). Наружу публичных портов нет — только
+`127.0.0.1:WEB_HTTP_PORT`, доступный лишь хостовому nginx.
 
 | | production (main) | staging (dev) |
 |---|---|---|
 | Каталог | `/home/taximeter/proff58-prod` | `/home/taximeter/proff58-staging` |
 | `COMPOSE_PROJECT_NAME` | `proff58_prod` | `proff58_staging` |
-| `STACK_ALIAS` | `prod_web` | `staging_web` |
+| `WEB_HTTP_PORT` (127.0.0.1) | `8081` | `8082` |
 | Домен | `proff58.ru` | `dev.proff58.ru` |
 
 ### Первичная подготовка сервера
@@ -98,41 +102,39 @@ push/merge в main    → deploy.yml  → tests.yml → деплой в environm
 # Пользователь taximeter должен уметь запускать docker:
 #   sudo usermod -aG docker taximeter   # один раз, затем перелогиниться
 
-# Общая сеть между стеками и proxy — создаётся ОДИН раз:
-docker network create edge
-
 # production
 git clone https://ТОКЕН@github.com/AndreyDeveloper84/proff58.git ~/proff58-prod
 cd ~/proff58-prod && git checkout main
-cp .env.prod.example .env && nano .env   # COMPOSE_PROJECT_NAME=proff58_prod, STACK_ALIAS=prod_web, домен, пароли
+cp .env.prod.example .env && nano .env   # COMPOSE_PROJECT_NAME=proff58_prod, WEB_HTTP_PORT=8081, домен, пароли
 
 # staging
 git clone https://ТОКЕН@github.com/AndreyDeveloper84/proff58.git ~/proff58-staging
 cd ~/proff58-staging && git checkout dev
-cp .env.prod.example .env && nano .env   # COMPOSE_PROJECT_NAME=proff58_staging, STACK_ALIAS=staging_web, тестовые ключи
+cp .env.prod.example .env && nano .env   # COMPOSE_PROJECT_NAME=proff58_staging, WEB_HTTP_PORT=8082, тестовые ключи
 ```
 
 > `~` = `/home/taximeter`. Базы у стеков **разные** — staging никогда не трогает боевые данные.
 > На staging интеграции в тестовом режиме (ЮKassa-песочница, заглушка SMS, свой `ONEC_API_KEY`).
 
-### Фронт-proxy и сертификат (HTTPS)
+### Хостовый nginx и сертификат (HTTPS)
 
 ```bash
-# Сертификат reg.ru кладём на сервер. SSL_CERT = fullchain (сертификат + промежуточные):
-mkdir -p ~/certs
-#   ~/certs/fullchain.pem  (cat proff58.ru.crt intermediate.crt > fullchain.pem)
-#   ~/certs/privkey.pem    (приватный ключ)
-# Идеально — SAN-сертификат, покрывающий proff58.ru И dev.proff58.ru.
+# 1. Сертификат reg.ru на сервер (нужен root):
+sudo mkdir -p /etc/ssl/proff58
+#   /etc/ssl/proff58/fullchain.pem  (cat proff58.ru.crt intermediate.crt > fullchain.pem)
+#   /etc/ssl/proff58/privkey.pem    (приватный ключ)
+# Идеально — SAN-сертификат на proff58.ru + dev.proff58.ru.
 
-# Поднимаем proxy (из любого из каталогов — он общий):
-cd ~/proff58-prod
-cp .env.proxy.example .env.proxy && nano .env.proxy   # домены, CERT_DIR=/home/taximeter/certs, имена файлов
-docker compose --env-file .env.proxy -f docker-compose.proxy.yml up -d
+# 2. Конфиги доменов в хостовый nginx (готовые лежат в docs/nginx/):
+sudo cp ~/proff58-prod/docs/nginx/proff58.ru.conf      /etc/nginx/conf.d/
+sudo cp ~/proff58-prod/docs/nginx/dev.proff58.ru.conf  /etc/nginx/conf.d/
+
+# 3. Проверить и применить:
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-После этого: `https://proff58.ru` → prod-стек, `https://dev.proff58.ru` → staging
-(когда поддомен будет направлен на сервер). Proxy перезапускать при смене
-сертификата: `docker compose -f docker-compose.proxy.yml restart`.
+После этого: `https://proff58.ru` → prod-стек, `https://dev.proff58.ru` → staging.
+При смене сертификата — заменить файлы и `sudo systemctl reload nginx`.
 
 ### GitHub Environments и секреты
 
