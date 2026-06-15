@@ -6,6 +6,7 @@
 """
 
 from django.conf import settings
+from django.utils.crypto import constant_time_compare
 from rest_framework.permissions import BasePermission
 
 
@@ -16,5 +17,6 @@ class HasOneCApiKey(BasePermission):
         expected = getattr(settings, "ONEC_API_KEY", "") or ""
         if not expected:
             return False
-        provided = request.headers.get("X-Api-Key", "")
-        return bool(provided) and provided == expected
+        provided = request.headers.get("X-Api-Key", "") or ""
+        # Сравнение за константное время — без timing side-channel для shared-secret.
+        return bool(provided) and constant_time_compare(provided, expected)

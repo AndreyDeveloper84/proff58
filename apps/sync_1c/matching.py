@@ -10,14 +10,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from apps.catalog.models import Product
 
 from .normalizers import Item
 
 
-class MatchStatus(str, Enum):
+class MatchStatus(StrEnum):
     MATCHED = "matched"  # найден ровно один товар
     NEW = "new"  # товара нет
     CONFLICT = "conflict"  # неоднозначный артикул
