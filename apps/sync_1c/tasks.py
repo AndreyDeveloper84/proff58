@@ -6,7 +6,7 @@
 
 from celery import shared_task
 
-from . import importer, parsers
+from . import parsers, use_cases
 from .models import SyncLog
 
 
@@ -14,5 +14,5 @@ from .models import SyncLog
 def import_1c_file(path: str, sync_type: str = SyncLog.SyncType.FULL) -> dict:
     """Импортировать выгрузку 1С из файла в фоне."""
     items = parsers.load_items(path)
-    sync_log, result = importer.run_import(items, sync_type=sync_type, source_file=path)
+    sync_log, result = use_cases.import_products(items, source_file=path, sync_type=sync_type)
     return {"batch_uid": str(sync_log.batch_uid), **result.as_dict()}

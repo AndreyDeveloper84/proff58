@@ -1,22 +1,24 @@
-"""Парсеры выгрузок 1С в единый список словарей-элементов.
+"""Парсеры выгрузок 1С в единый список словарей-строк.
 
 Точная структура выгрузки 1С 7.7 пока неизвестна, поэтому поддерживаем
-универсальные форматы (JSON, CSV). Когда появится реальный формат (DBF
-и т.п.), добавляем сюда ещё один загрузчик — остальной конвейер не меняется.
-
-Каждый элемент — dict с ключами, которые понимает importer
-(external_id/code_1c, sku/article, name, brand, price, stock, ...).
+универсальные форматы (JSON, CSV). Маппинг названий колонок — НЕ здесь, а в
+`normalizers.COLUMN_ALIASES`; парсер отвечает только за «файл → list[dict]»
+(формат + кодировка). Когда появится реальный формат (DBF и т.п.), добавляем
+сюда ещё один загрузчик — остальной конвейер не меняется.
 """
 
 from __future__ import annotations
 
 import csv
-import json
+import io
 from pathlib import Path
+
+# Кодировки для авто-определения по порядку: 1С 7.7 часто отдаёт windows-1251.
+_CSV_ENCODINGS = ("utf-8-sig", "cp1251")
 
 
 def load_items(path: str | Path) -> list[dict]:
-    """Загрузить элементы из файла по расширению."""
+    """Загрузить строки из файла по расширению."""
     path = Path(path)
     suffix = path.suffix.lower()
     if suffix == ".json":
@@ -27,6 +29,8 @@ def load_items(path: str | Path) -> list[dict]:
 
 
 def _load_json(path: Path) -> list[dict]:
+    import json
+
     with path.open(encoding="utf-8") as fh:
         data = json.load(fh)
     if isinstance(data, dict):
@@ -36,11 +40,22 @@ def _load_json(path: Path) -> list[dict]:
     return data
 
 
-def _load_csv(path: Path) -> list[dict]:
-    # 1С часто отдаёт CSV в windows-1251 с разделителем ';'.
-    with path.open(encoding="utf-8-sig", newline="") as fh:
-        sample = fh.read(4096)
-        fh.seek(0)
-        delimiter = ";" if sample.count(";") >= sample.count(",") else ","
-        reader = csv.DictReader(fh, delimiter=delimiter)
-        return [dict(row) for row in reader]
+def _decode(raw: bytes, encoding: str = "auto") -> str:
+    if encoding != "auto":
+        return raw.decode(encoding)
+    for enc in _CSV_ENCODINGS:
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    # Последний шанс — utf-8 с заменой битых байтов, чтобы не падать на одной строке.
+    return raw.decode("utf-8", errors="replace")
+
+
+def _load_csv(path: Path, encoding: str = "auto") -> list[dict]:
+    text = _decode(path.read_bytes(), encoding)
+    # 1С часто отдаёт CSV с разделителем ';'.
+    head = text[:4096]
+    delimiter = ";" if head.count(";") >= head.count(",") else ","
+    reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
+    return [dict(row) for row in reader]

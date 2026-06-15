@@ -3,11 +3,12 @@
 Примеры:
     python manage.py import_1c data/nomenclature.json
     python manage.py import_1c data/price.csv --type prices
+    python manage.py import_1c data/update.csv --update-only   # не создаёт новые товары
 """
 
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.sync_1c import importer, parsers
+from apps.sync_1c import parsers, use_cases
 from apps.sync_1c.models import SyncLog
 
 
@@ -25,7 +26,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--update-only",
             action="store_true",
-            help="Только обновлять существующие базовые поля (без жёсткой записи).",
+            help="Только обновлять существующие товары (новые не создаются).",
         )
 
     def handle(self, *args, **options):
@@ -39,16 +40,16 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Файл пуст — нечего импортировать."))
             return
 
-        sync_log, result = importer.run_import(
+        sync_log, result = use_cases.import_products(
             items,
-            sync_type=options["type"],
             source_file=path,
-            allow_basic_fields=True,
+            sync_type=options["type"],
+            create_missing=not options["update_only"],
         )
         self.stdout.write(
             self.style.SUCCESS(
                 "Импорт завершён [{uid}]: создано {created}, обновлено {updated}, "
-                "неразобранных {uncategorized}, ошибок {errors}.".format(
+                "пропущено {skipped}, неразобранных {uncategorized}, ошибок {errors}.".format(
                     uid=sync_log.batch_uid, **result.as_dict()
                 )
             )

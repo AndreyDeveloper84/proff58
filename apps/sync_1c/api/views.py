@@ -15,8 +15,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from .. import importer
-from ..models import SyncLog
+from .. import use_cases
 from .permissions import HasOneCApiKey
 from .serializers import (
     PriceItemSerializer,
@@ -34,6 +33,12 @@ def _validate_items(request, item_cls):
     return serializer.validated_data["items"], None
 
 
+def _import_response(sync_log, result):
+    return Response(
+        {**result.as_dict(), "batch_uid": str(sync_log.batch_uid)}, status=status.HTTP_200_OK
+    )
+
+
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
 def products_import(request):
@@ -41,27 +46,19 @@ def products_import(request):
     items, error = _validate_items(request, ProductImportItemSerializer)
     if error:
         return error
-    sync_log, result = importer.run_import(
-        items, sync_type=SyncLog.SyncType.FULL, source_file="api:products/import"
-    )
-    return Response(
-        {**result.as_dict(), "batch_uid": str(sync_log.batch_uid)}, status=status.HTTP_200_OK
-    )
+    sync_log, result = use_cases.import_products(items, source_file="api:products/import")
+    return _import_response(sync_log, result)
 
 
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
 def products_update(request):
-    """Обновить базовые поля существующих товаров (без создания нового контента)."""
+    """Обновить базовые поля СУЩЕСТВУЮЩИХ товаров (новые не создаются)."""
     items, error = _validate_items(request, ProductImportItemSerializer)
     if error:
         return error
-    sync_log, result = importer.run_import(
-        items, sync_type=SyncLog.SyncType.FULL, source_file="api:products/update"
-    )
-    return Response(
-        {**result.as_dict(), "batch_uid": str(sync_log.batch_uid)}, status=status.HTTP_200_OK
-    )
+    sync_log, result = use_cases.update_products(items, source_file="api:products/update")
+    return _import_response(sync_log, result)
 
 
 @api_view(["POST"])
@@ -70,15 +67,8 @@ def prices_update(request):
     items, error = _validate_items(request, PriceItemSerializer)
     if error:
         return error
-    updated = sum(1 for item in items if importer.update_price(item))
-    SyncLog.objects.create(
-        sync_type=SyncLog.SyncType.PRICES,
-        result=SyncLog.SyncResult.OK,
-        rows_total=len(items),
-        rows_ok=updated,
-        rows_error=len(items) - updated,
-    )
-    return Response({"updated": updated, "not_found": len(items) - updated})
+    sync_log, result = use_cases.update_prices(items, source_file="api:prices/update")
+    return _import_response(sync_log, result)
 
 
 @api_view(["POST"])
@@ -87,15 +77,8 @@ def stocks_update(request):
     items, error = _validate_items(request, StockItemSerializer)
     if error:
         return error
-    updated = sum(1 for item in items if importer.update_stock(item))
-    SyncLog.objects.create(
-        sync_type=SyncLog.SyncType.STOCK,
-        result=SyncLog.SyncResult.OK,
-        rows_total=len(items),
-        rows_ok=updated,
-        rows_error=len(items) - updated,
-    )
-    return Response({"updated": updated, "not_found": len(items) - updated})
+    sync_log, result = use_cases.update_stocks(items, source_file="api:stocks/update")
+    return _import_response(sync_log, result)
 
 
 # --- Заказы: контракт зафиксирован, реализация — в M4 (EPIC-CHECKOUT) ---

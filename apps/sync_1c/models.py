@@ -24,6 +24,7 @@ class StagingStatus(models.TextChoices):
     PENDING = "pending", _("Ожидает обработки")
     MATCHED = "matched", _("Привязан к товару")
     NEW = "new", _("Новый товар (не привязан)")
+    SKIPPED = "skipped", _("Пропущен (нет товара для обновления)")
     ERROR = "error", _("Ошибка парсинга")
 
 
