@@ -46,6 +46,19 @@ def test_products_import_creates(auth_client):
 
 @override_settings(ONEC_API_KEY=API_KEY)
 @pytest.mark.django_db
+def test_products_update_does_not_create(auth_client):
+    """products/update не создаёт новый товар — отсутствующий уходит в skipped."""
+    payload = {"items": [{"external_id": "1c-upd", "name": "Новый", "price": "500"}]}
+    resp = auth_client.post("/api/1c/products/update", payload, format="json")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["created"] == 0
+    assert body["skipped"] == 1
+    assert Product.objects.filter(code_1c="1c-upd").count() == 0
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
 def test_products_import_validation_error(auth_client):
     # элемент без единого идентификатора
     resp = auth_client.post(

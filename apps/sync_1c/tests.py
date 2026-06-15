@@ -13,7 +13,7 @@ from apps.catalog.models import (
     ProductStatus,
     StockStatus,
 )
-from apps.sync_1c import importer, parsers
+from apps.sync_1c import importer, normalizers, parsers, use_cases
 from apps.sync_1c.models import (
     NomenclatureStaging,
     PriceRecord,
@@ -291,3 +291,84 @@ def test_parser_rejects_unknown_format(tmp_path):
     f.write_text("<x/>", encoding="utf-8")
     with pytest.raises(ValueError):
         parsers.load_items(str(f))
+
+
+# --- Characterization-тесты новых контрактов (после рефакторинга) ---
+
+
+@pytest.mark.django_db
+def test_update_products_does_not_create():
+    """update_products (create_missing=False): отсутствующий товар → skipped, не создаётся."""
+    sync_log, result = use_cases.update_products(
+        [{"external_id": "u-1", "name": "Новый", "price": "100"}]
+    )
+    assert result.created == 0
+    assert result.skipped == 1
+    assert Product.objects.filter(code_1c="u-1").count() == 0
+    assert sync_log.rows_ok == 1  # skipped — не ошибка
+
+
+@pytest.mark.django_db
+def test_command_update_only_does_not_create(tmp_path):
+    f = tmp_path / "n.json"
+    f.write_text(json.dumps({"items": [{"external_id": "uo-1", "name": "Х", "price": "1"}]}))
+    call_command("import_1c", str(f), "--update-only")
+    assert Product.objects.filter(code_1c="uo-1").count() == 0
+    staging = NomenclatureStaging.objects.filter(code_1c="uo-1").latest("imported_at")
+    assert staging.status == StagingStatus.SKIPPED
+
+
+@pytest.mark.django_db
+def test_cp1251_csv_with_russian_headers(tmp_path):
+    f = tmp_path / "vygruzka.csv"
+    content = "Код;Артикул;Наименование;Цена;Остаток\r\n" "1c-cp;BOSCH-1;Дрель Бош;5900,50;7\r\n"
+    f.write_bytes(content.encode("cp1251"))
+    sync_log, result = use_cases.import_products(parsers.load_items(str(f)), source_file=str(f))
+    assert result.created == 1
+    p = Product.objects.get(code_1c="1c-cp")
+    assert p.original_name == "Дрель Бош"
+    assert p.article == "BOSCH-1"
+    assert str(p.price) == "5900.50"  # запятая 1С → точка
+
+
+@pytest.mark.django_db
+def test_bad_row_recorded_and_batch_continues():
+    """Сбой одной строки попадает в SyncLog.error_details и staging.ERROR, остальные ок."""
+    # коллизия slug: предсоздаём товар с тем же slug, что сгенерит новый из 1С
+    Product.objects.create(name="Дрель", slug="дрель", code_1c="exist-1")
+    sync_log, result = use_cases.import_products(
+        [
+            {"external_id": "ok-1", "name": "Молоток", "price": "100"},
+            {"external_id": "bad-1", "name": "Дрель", "price": "200"},  # slug collision
+            {"external_id": "ok-2", "name": "Пила", "price": "300"},
+        ]
+    )
+    assert result.created == 2
+    assert result.errors == 1
+    assert "bad-1" in sync_log.error_details
+    bad = NomenclatureStaging.objects.filter(code_1c="bad-1").latest("imported_at")
+    assert bad.status == StagingStatus.ERROR
+    assert bad.error_message  # причина сохранена
+
+
+@pytest.mark.django_db
+def test_prices_update_ambiguous_article_is_error_not_silent():
+    """update_prices при неоднозначном артикуле не обновляет случайный товар."""
+    Product.objects.create(name="Т1", article="AMB", slug="amb-1", price=10)
+    Product.objects.create(name="Т2", article="AMB", slug="amb-2", price=20)
+    sync_log, result = use_cases.update_prices([{"sku": "AMB", "price": "999"}])
+    assert result.updated == 0
+    assert result.errors == 1
+    assert {float(p.price) for p in Product.objects.filter(article="AMB")} == {10.0, 20.0}
+    assert "AMB" in sync_log.error_details
+
+
+@pytest.mark.django_db
+def test_normalize_item_aliases_and_decimal():
+    item = normalizers.normalize_item(
+        {"Код": "k1", "Артикул": "a1", "Цена": "1 234,50", "Активность": "да"}
+    )
+    assert item.code_1c == "k1"
+    assert item.article == "a1"
+    assert str(item.price) == "1234.50"
+    assert item.is_active is True
