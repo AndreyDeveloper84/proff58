@@ -49,7 +49,21 @@ def _enqueue_import(request, *, source_file, create_missing):
     """Поставить тяжёлый импорт товаров в фон. Вернуть 202 + batch_uid."""
     sync_log = use_cases.new_import_job(source_file=source_file)
     raw_items = _raw_items_from_request(request)
-    tasks.import_products_task.delay(sync_log.id, raw_items, create_missing)
+    try:
+        tasks.import_products_task.delay(sync_log.id, raw_items, create_missing)
+    except Exception as exc:  # noqa: BLE001 — любой сбой брокера/сериализации
+        # Техпричину — в лог, наружу 1С — без деталей брокера.
+        use_cases.fail_import_job(
+            sync_log, f"Не удалось поставить задачу в очередь: {exc}", rows_total=len(raw_items)
+        )
+        return Response(
+            {
+                "batch_uid": str(sync_log.batch_uid),
+                "status": "error",
+                "detail": "Не удалось поставить задачу импорта в очередь. Повторите запрос позже.",
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
     return Response(
         {"batch_uid": str(sync_log.batch_uid), "status": "accepted", "accepted": len(raw_items)},
         status=status.HTTP_202_ACCEPTED,

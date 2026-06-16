@@ -1,12 +1,14 @@
 """Тесты API для 1С (/api/1c/...)."""
 
+from unittest import mock
+
 import pytest
 from django.test import override_settings
 from rest_framework.test import APIClient
 
 from apps.catalog.models import Product, ProductStatus
 from apps.sync_1c import use_cases
-from apps.sync_1c.models import PriceRecord
+from apps.sync_1c.models import PriceRecord, SyncLog
 
 API_KEY = "test-key-123"
 EAGER = {"CELERY_TASK_ALWAYS_EAGER": True, "CELERY_TASK_EAGER_PROPAGATES": True}
@@ -169,3 +171,39 @@ def test_empty_server_key_denies(auth_client):
     # если ключ на сервере не задан — доступ закрыт
     resp = auth_client.post("/api/1c/products/import", {"items": []}, format="json")
     assert resp.status_code == 403
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_enqueue_failure_returns_503_and_marks_error(auth_client):
+    """Брокер недоступен → 503, безопасный detail, прогон ERROR (не RUNNING)."""
+    payload = {
+        "items": [
+            {"external_id": "e-1", "name": "X", "price": "1"},
+            {"external_id": "e-2", "name": "Y", "price": "2"},
+        ]
+    }
+    with mock.patch(
+        "apps.sync_1c.api.views.tasks.import_products_task.delay",
+        side_effect=Exception("broker down"),
+    ):
+        resp = auth_client.post("/api/1c/products/import", payload, format="json")
+
+    assert resp.status_code == 503
+    body = resp.json()
+    assert body["status"] == "error"
+    assert "broker" not in body["detail"]  # техдетали наружу не уходят
+
+    sl = SyncLog.objects.get(batch_uid=body["batch_uid"])
+    assert sl.result == SyncLog.SyncResult.ERROR
+    assert sl.finished_at is not None
+    assert sl.rows_total == 2 and sl.rows_error == 2
+    assert sl.counters["errors"] == 2
+
+
+@override_settings(ONEC_API_KEY=API_KEY, ONEC_MAX_ITEMS=2)
+@pytest.mark.django_db
+def test_items_over_limit_rejected_400(auth_client):
+    payload = {"items": [{"external_id": f"m-{i}", "price": "1"} for i in range(3)]}
+    resp = auth_client.post("/api/1c/prices/update", payload, format="json")
+    assert resp.status_code == 400

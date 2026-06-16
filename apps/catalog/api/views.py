@@ -16,9 +16,14 @@ def visible_products():
 
 
 def build_category_tree(nodes) -> list:
-    """Построить вложенное дерево из treebeard-узлов, отсортированных по path."""
+    """Построить вложенное дерево из treebeard-узлов, отсортированных по path.
+
+    Узел оставляем, только если он корень или на вершине стека лежит его настоящий
+    прямой родитель (по depth И по префиксу path). Иначе узел — «сирота» (родитель
+    неактивен/выпал из выборки) и отбрасывается вместе с поддеревом.
+    """
     roots: list = []
-    stack: list = []  # [(depth, item)]
+    stack: list = []  # [(node, item)]
     for node in nodes:
         item = {
             "id": node.id,
@@ -27,10 +32,21 @@ def build_category_tree(nodes) -> list:
             "sort_order": node.sort_order,
             "children": [],
         }
-        while stack and stack[-1][0] >= node.depth:
+        while stack and stack[-1][0].depth >= node.depth:
             stack.pop()
-        (stack[-1][1]["children"] if stack else roots).append(item)
-        stack.append((node.depth, item))
+
+        if node.depth == 1:
+            roots.append(item)
+            stack.append((node, item))
+            continue
+
+        if not stack:
+            continue  # нет родителя в выборке — сирота
+        parent_node, parent_item = stack[-1]
+        if parent_node.depth == node.depth - 1 and node.path.startswith(parent_node.path):
+            parent_item["children"].append(item)
+            stack.append((node, item))
+        # иначе — родитель неактивен/из другой ветки → пропускаем
     return roots
 
 
