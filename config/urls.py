@@ -16,6 +16,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("healthz/", healthcheck, name="healthcheck"),
     path("api/1c/", include("apps.sync_1c.api.urls")),
+    path("api/catalog/", include("apps.catalog.api.urls")),
 ]
 
 if settings.DEBUG:
