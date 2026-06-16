@@ -126,3 +126,27 @@ def test_products_no_nplus1(client, tree, django_assert_max_num_queries):
 @pytest.mark.django_db
 def test_public_access_no_key(client, tree):
     assert client.get("/api/catalog/products/").status_code == 200
+
+
+def _flatten_slugs(tree):
+    out = []
+    for node in tree:
+        out.append(node["slug"])
+        out += _flatten_slugs(node["children"])
+    return out
+
+
+@pytest.mark.django_db
+def test_tree_excludes_orphans_of_inactive_parent(client):
+    active_root = Category.add_root(name="Активный", slug="ar")
+    active_root.add_child(name="Видимый ребёнок", slug="ac-vis")
+    inactive_root = Category.add_root(name="Скрытый", slug="ir", is_active=False)
+    hidden_child = inactive_root.add_child(name="Активный под скрытым", slug="ac-hidden")
+    hidden_child.add_child(name="Активный внук", slug="ag-hidden")
+
+    data = client.get("/api/catalog/categories/").json()
+    all_slugs = _flatten_slugs(data)
+    assert "ar" in all_slugs and "ac-vis" in all_slugs
+    for orphan in ("ir", "ac-hidden", "ag-hidden"):
+        assert orphan not in all_slugs
+    assert [n["slug"] for n in data] == ["ar"]  # активный потомок не всплыл в корни

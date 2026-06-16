@@ -107,3 +107,5 @@ REST_FRAMEWORK = {
 
 # Ключ для интеграции с 1С (заголовок X-Api-Key). Пустой = API для 1С закрыт.
 ONEC_API_KEY = env("ONEC_API_KEY", default="")
+# Максимум строк в одном пакете 1С (items). Превышение → 400.
+ONEC_MAX_ITEMS = env.int("ONEC_MAX_ITEMS", default=1000)

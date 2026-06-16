@@ -5,6 +5,7 @@
 и валидируется по типам.
 """
 
+from django.conf import settings
 from rest_framework import serializers
 
 
@@ -64,7 +65,9 @@ class ItemsEnvelopeSerializer(serializers.Serializer):
     def get_fields(self):
         fields = super().get_fields()
         fields["items"] = serializers.ListField(
-            child=self.item_serializer_class(), allow_empty=False
+            child=self.item_serializer_class(),
+            allow_empty=False,
+            max_length=settings.ONEC_MAX_ITEMS,
         )
         return fields
 
