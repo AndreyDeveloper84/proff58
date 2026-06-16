@@ -15,7 +15,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from .. import use_cases
+from .. import tasks, use_cases
+from ..models import SyncLog
 from .permissions import HasOneCApiKey
 from .serializers import (
     PriceItemSerializer,
@@ -33,32 +34,69 @@ def _validate_items(request, item_cls):
     return serializer.validated_data["items"], None
 
 
+def _raw_items_from_request(request) -> list:
+    """Сырые items как прислала 1С (JSON-safe, без Decimal) — после валидации."""
+    return list(request.data.get("items", []))
+
+
 def _import_response(sync_log, result):
     return Response(
         {**result.as_dict(), "batch_uid": str(sync_log.batch_uid)}, status=status.HTTP_200_OK
     )
 
 
+def _enqueue_import(request, *, source_file, create_missing):
+    """Поставить тяжёлый импорт товаров в фон. Вернуть 202 + batch_uid."""
+    sync_log = use_cases.new_import_job(source_file=source_file)
+    raw_items = _raw_items_from_request(request)
+    tasks.import_products_task.delay(sync_log.id, raw_items, create_missing)
+    return Response(
+        {"batch_uid": str(sync_log.batch_uid), "status": "accepted", "accepted": len(raw_items)},
+        status=status.HTTP_202_ACCEPTED,
+    )
+
+
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
 def products_import(request):
-    """Создать/обновить товары (создание разрешено). Авторазбор категорий."""
-    items, error = _validate_items(request, ProductImportItemSerializer)
+    """Создать/обновить товары (создание разрешено). Тяжёлая операция → в фон."""
+    _items, error = _validate_items(request, ProductImportItemSerializer)
     if error:
         return error
-    sync_log, result = use_cases.import_products(items, source_file="api:products/import")
-    return _import_response(sync_log, result)
+    return _enqueue_import(request, source_file="api:products/import", create_missing=True)
 
 
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
 def products_update(request):
-    """Обновить базовые поля СУЩЕСТВУЮЩИХ товаров (новые не создаются)."""
-    items, error = _validate_items(request, ProductImportItemSerializer)
+    """Обновить базовые поля СУЩЕСТВУЮЩИХ товаров (новые не создаются). В фон."""
+    _items, error = _validate_items(request, ProductImportItemSerializer)
     if error:
         return error
-    sync_log, result = use_cases.update_products(items, source_file="api:products/update")
-    return _import_response(sync_log, result)
+    return _enqueue_import(request, source_file="api:products/update", create_missing=False)
+
+
+@api_view(["GET"])
+@permission_classes([HasOneCApiKey])
+def sync_status(request, batch_uid):
+    """Статус прогона импорта по batch_uid (1С опрашивает фоновую задачу)."""
+    try:
+        sync_log = SyncLog.objects.get(batch_uid=batch_uid)
+    except SyncLog.DoesNotExist:
+        return Response({"detail": "Прогон не найден."}, status=status.HTTP_404_NOT_FOUND)
+    return Response(
+        {
+            "batch_uid": str(sync_log.batch_uid),
+            "status": sync_log.result,
+            "finished": use_cases.is_finished(sync_log),
+            "rows_total": sync_log.rows_total,
+            "rows_ok": sync_log.rows_ok,
+            "rows_error": sync_log.rows_error,
+            **use_cases.result_counters(sync_log),
+            "finished_at": sync_log.finished_at,
+            "error_details": sync_log.error_details,
+        }
+    )
 
 
 @api_view(["POST"])
