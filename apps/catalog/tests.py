@@ -57,6 +57,18 @@ def test_product_slug_auto(child_category):
 
 
 @pytest.mark.django_db
+def test_product_duplicate_names_get_unique_slugs():
+    # одинаковые имена → slug дедуплицируется числовым суффиксом, без IntegrityError
+    p1 = Product.objects.create(name="Перфоратор")
+    p2 = Product.objects.create(name="Перфоратор")
+    p3 = Product.objects.create(name="Перфоратор")
+    assert p1.slug == "перфоратор"
+    assert p2.slug == "перфоратор-2"
+    assert p3.slug == "перфоратор-3"
+    assert Product.objects.filter(slug__startswith="перфоратор").count() == 3
+
+
+@pytest.mark.django_db
 def test_eav_text_attribute(product):
     attr = Attribute.objects.create(
         slug="power", name="Мощность", attribute_type=AttributeType.INTEGER, unit="Вт"

@@ -306,9 +306,33 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base = self.name or self.original_name or self.article or "tovar"
-            self.slug = slugify(base, allow_unicode=True) or (self.code_1c or "tovar")
+            self.slug = self._build_unique_slug()
         super().save(*args, **kwargs)
+
+    def _build_unique_slug(self) -> str:
+        """Slug из имени/идентификаторов с числовым суффиксом при коллизии.
+
+        Нужен при массовом импорте из 1С: товары часто приходят с одинаковым
+        витринным именем («Дрель», «Дрель»), а поле slug уникально. Без
+        дедупликации второй такой товар падает на unique-констрейнте.
+        """
+        max_length = self._meta.get_field("slug").max_length
+        suffix_reserved = 12  # запас под "-9999999999"
+
+        base = ""
+        for value in (self.name, self.original_name, self.article, self.code_1c, "tovar"):
+            base = slugify(value or "", allow_unicode=True)
+            if base:
+                break
+        base = base[: max_length - suffix_reserved] or "tovar"
+
+        slug = base
+        n = 2
+        while Product.objects.exclude(pk=self.pk).filter(slug=slug).exists():
+            suffix = f"-{n}"
+            slug = f"{base[: max_length - len(suffix)]}{suffix}"
+            n += 1
+        return slug
 
     @property
     def is_visible(self) -> bool:

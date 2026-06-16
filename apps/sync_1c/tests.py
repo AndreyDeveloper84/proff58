@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from unittest import mock
 
 import pytest
 from django.core.management import call_command
@@ -13,7 +14,7 @@ from apps.catalog.models import (
     ProductStatus,
     StockStatus,
 )
-from apps.sync_1c import importer, normalizers, parsers, use_cases
+from apps.sync_1c import importer, normalizers, parsers, product_writer, use_cases
 from apps.sync_1c.models import (
     NomenclatureStaging,
     PriceRecord,
@@ -332,17 +333,42 @@ def test_cp1251_csv_with_russian_headers(tmp_path):
 
 
 @pytest.mark.django_db
-def test_bad_row_recorded_and_batch_continues():
-    """Сбой одной строки попадает в SyncLog.error_details и staging.ERROR, остальные ок."""
-    # коллизия slug: предсоздаём товар с тем же slug, что сгенерит новый из 1С
+def test_duplicate_names_get_unique_slugs():
+    """Дубликаты имён в 1С → уникальные slug, ни одна строка не теряется."""
+    # уже есть товар со slug "дрель" — импорт не должен на него натыкаться
     Product.objects.create(name="Дрель", slug="дрель", code_1c="exist-1")
     sync_log, result = use_cases.import_products(
         [
-            {"external_id": "ok-1", "name": "Молоток", "price": "100"},
-            {"external_id": "bad-1", "name": "Дрель", "price": "200"},  # slug collision
-            {"external_id": "ok-2", "name": "Пила", "price": "300"},
+            {"external_id": "dup-1", "name": "Дрель", "price": "100"},
+            {"external_id": "dup-2", "name": "Дрель", "price": "200"},
+            {"external_id": "ok-1", "name": "Молоток", "price": "300"},
         ]
     )
+    assert result.created == 3 and result.errors == 0
+    assert Product.objects.get(code_1c="dup-1").slug == "дрель-2"
+    assert Product.objects.get(code_1c="dup-2").slug == "дрель-3"
+    assert Product.objects.get(code_1c="ok-1").slug == "молоток"
+    assert Product.objects.filter(slug="дрель").count() == 1
+
+
+@pytest.mark.django_db
+def test_bad_row_recorded_and_batch_continues():
+    """Сбой одной строки попадает в SyncLog.error_details и staging.ERROR, остальные ок."""
+    original = product_writer.create_product
+
+    def side_effect(item):
+        if item.code_1c == "bad-1":
+            raise RuntimeError("boom bad-1")
+        return original(item)
+
+    with mock.patch("apps.sync_1c.product_writer.create_product", side_effect=side_effect):
+        sync_log, result = use_cases.import_products(
+            [
+                {"external_id": "ok-1", "name": "Молоток", "price": "100"},
+                {"external_id": "bad-1", "name": "Дрель", "price": "200"},  # сбой записи
+                {"external_id": "ok-2", "name": "Пила", "price": "300"},
+            ]
+        )
     assert result.created == 2
     assert result.errors == 1
     assert "bad-1" in sync_log.error_details
