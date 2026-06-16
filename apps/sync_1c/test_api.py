@@ -5,9 +5,11 @@ from django.test import override_settings
 from rest_framework.test import APIClient
 
 from apps.catalog.models import Product, ProductStatus
+from apps.sync_1c import use_cases
 from apps.sync_1c.models import PriceRecord
 
 API_KEY = "test-key-123"
+EAGER = {"CELERY_TASK_ALWAYS_EAGER": True, "CELERY_TASK_EAGER_PROPAGATES": True}
 
 
 @pytest.fixture
@@ -29,33 +31,61 @@ def test_products_import_requires_key(client):
     assert resp.status_code == 403
 
 
-@override_settings(ONEC_API_KEY=API_KEY)
+@override_settings(ONEC_API_KEY=API_KEY, **EAGER)
 @pytest.mark.django_db
 def test_products_import_creates(auth_client):
+    """Импорт асинхронный: 202 + batch_uid; в EAGER задача отрабатывает сразу."""
     payload = {
         "items": [
             {"external_id": "1c-100", "sku": "A-1", "name": "Дрель", "price": "1000", "stock": "3"}
         ]
     }
     resp = auth_client.post("/api/1c/products/import", payload, format="json")
-    assert resp.status_code == 200
-    assert resp.json()["created"] == 1
+    assert resp.status_code == 202
+    batch_uid = resp.json()["batch_uid"]
+
     p = Product.objects.get(code_1c="1c-100")
     assert p.price == 1000
-    assert p.status == ProductStatus.NEEDS_REVIEW  # без правил — на проверку
+    assert p.status == ProductStatus.NEEDS_REVIEW
+
+    st = auth_client.get(f"/api/1c/sync/{batch_uid}").json()
+    assert st["status"] == "ok"
+    assert st["finished"] is True
+    assert st["created"] == 1
 
 
-@override_settings(ONEC_API_KEY=API_KEY)
+@override_settings(ONEC_API_KEY=API_KEY, **EAGER)
 @pytest.mark.django_db
 def test_products_update_does_not_create(auth_client):
     """products/update не создаёт новый товар — отсутствующий уходит в skipped."""
     payload = {"items": [{"external_id": "1c-upd", "name": "Новый", "price": "500"}]}
     resp = auth_client.post("/api/1c/products/update", payload, format="json")
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["created"] == 0
-    assert body["skipped"] == 1
+    assert resp.status_code == 202
+    batch_uid = resp.json()["batch_uid"]
     assert Product.objects.filter(code_1c="1c-upd").count() == 0
+
+    st = auth_client.get(f"/api/1c/sync/{batch_uid}").json()
+    assert st["created"] == 0
+    assert st["skipped"] == 1
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_sync_status_running_before_task_finishes(auth_client):
+    """Прогон создан, но задача ещё не отработала → running + нулевые counters."""
+    sync_log = use_cases.new_import_job(source_file="api:products/import")
+    st = auth_client.get(f"/api/1c/sync/{sync_log.batch_uid}").json()
+    assert st["status"] == "running"
+    assert st["finished"] is False
+    for key in ("created", "updated", "skipped", "uncategorized", "errors"):
+        assert st[key] == 0
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_sync_status_unknown_batch(auth_client):
+    resp = auth_client.get("/api/1c/sync/00000000-0000-0000-0000-000000000000")
+    assert resp.status_code == 404
 
 
 @override_settings(ONEC_API_KEY=API_KEY)

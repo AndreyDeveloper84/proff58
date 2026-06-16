@@ -203,6 +203,7 @@ class SyncLog(models.Model):
         ORDERS = "orders", _("Заказы")
 
     class SyncResult(models.TextChoices):
+        RUNNING = "running", _("Выполняется")
         OK = "ok", _("Успешно")
         PARTIAL = "partial", _("Частично")
         ERROR = "error", _("Ошибка")
@@ -216,6 +217,12 @@ class SyncLog(models.Model):
     rows_total = models.PositiveIntegerField(_("Всего строк"), default=0)
     rows_ok = models.PositiveIntegerField(_("Обработано"), default=0)
     rows_error = models.PositiveIntegerField(_("Ошибок"), default=0)
+    counters = models.JSONField(
+        _("Счётчики"),
+        default=dict,
+        blank=True,
+        help_text=_("Снимок ImportResult (created/updated/skipped/uncategorized/errors)."),
+    )
     error_details = models.TextField(_("Детали ошибок"), blank=True)
     started_at = models.DateTimeField(_("Начало"), auto_now_add=True)
     finished_at = models.DateTimeField(_("Конец"), null=True, blank=True)

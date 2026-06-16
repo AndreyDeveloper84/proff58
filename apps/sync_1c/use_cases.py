@@ -160,11 +160,68 @@ def _finalize(sync_log: SyncLog, result: ImportResult, error_lines: list[str]) -
     sync_log.rows_total = result.total
     sync_log.rows_ok = result.created + result.updated + result.skipped
     sync_log.rows_error = result.errors
+    sync_log.counters = result.as_dict()
     sync_log.result = SyncLog.SyncResult.OK if result.errors == 0 else SyncLog.SyncResult.PARTIAL
     if error_lines:
         sync_log.error_details = "\n".join(error_lines)
     sync_log.finished_at = timezone.now()
     sync_log.save()
+
+
+# --- Состояние прогона (для статус-эндпоинта и фоновых задач) ---
+
+_ZERO_COUNTERS = {"created": 0, "updated": 0, "skipped": 0, "uncategorized": 0, "errors": 0}
+
+
+def is_finished(sync_log: SyncLog) -> bool:
+    """Прогон завершён (любой статус, кроме RUNNING)."""
+    return sync_log.result != SyncLog.SyncResult.RUNNING
+
+
+def result_counters(sync_log: SyncLog) -> dict:
+    """Счётчики прогона с гарантированным набором ключей (даже пока RUNNING)."""
+    return {**_ZERO_COUNTERS, **(sync_log.counters or {})}
+
+
+def new_import_job(*, source_file: str, sync_type: str = SyncLog.SyncType.FULL) -> SyncLog:
+    """Создать прогон со статусом RUNNING (без обработки) — для async-постановки."""
+    return SyncLog.objects.create(
+        sync_type=sync_type, source_file=source_file, result=SyncLog.SyncResult.RUNNING
+    )
+
+
+def fail_import_job(sync_log: SyncLog, reason: str, *, rows_total: int = 0) -> None:
+    """Пометить прогон жёстко упавшим (сбой задачи целиком, не per-row)."""
+    n = sync_log.rows_total or rows_total
+    sync_log.rows_total = n
+    sync_log.rows_error = n
+    sync_log.counters = {**_ZERO_COUNTERS, "errors": n}
+    sync_log.result = SyncLog.SyncResult.ERROR
+    old = (sync_log.error_details or "").strip()
+    sync_log.error_details = f"{old}\n{reason}".strip()
+    sync_log.finished_at = timezone.now()
+    sync_log.save()
+
+
+def run_import_into(
+    sync_log: SyncLog,
+    raw_items: list[dict],
+    *,
+    create_missing: bool = True,
+    allow_basic_fields: bool = True,
+) -> ImportResult:
+    """Выполнить импорт в УЖЕ созданный прогон (sync_log) и финализировать его."""
+    error_lines: list[str] = []
+    result = run_rows(
+        raw_items,
+        sync_log=sync_log,
+        source_file=sync_log.source_file,
+        create_missing=create_missing,
+        allow_basic_fields=allow_basic_fields,
+        error_lines=error_lines,
+    )
+    _finalize(sync_log, result, error_lines)
+    return result
 
 
 def run_rows(
@@ -200,19 +257,13 @@ def import_products(
     sync_type: str = SyncLog.SyncType.FULL,
 ) -> tuple[SyncLog, ImportResult]:
     """Импорт/обновление товаров (создание разрешено по умолчанию)."""
-    sync_log = SyncLog.objects.create(
-        sync_type=sync_type, source_file=source_file, result=SyncLog.SyncResult.OK
-    )
-    error_lines: list[str] = []
-    result = run_rows(
+    sync_log = new_import_job(source_file=source_file, sync_type=sync_type)
+    result = run_import_into(
+        sync_log,
         raw_items,
-        sync_log=sync_log,
-        source_file=source_file,
         create_missing=create_missing,
         allow_basic_fields=allow_basic_fields,
-        error_lines=error_lines,
     )
-    _finalize(sync_log, result, error_lines)
     return sync_log, result
 
 
