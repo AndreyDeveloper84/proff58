@@ -1,18 +1,15 @@
-"""Публичный read-only API каталога: дерево категорий, список и карточка товара."""
+"""Публичный read-only API каталога: дерево категорий, список, карточка, фасеты."""
 
-import django_filters
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Category, Product, ProductStatus
+from ..filters import ProductFilter, visible_products
+from ..models import Category, StockStatus
+from ..services import FacetError, build_facets
 from .serializers import ProductDetailSerializer, ProductListSerializer
-
-
-def visible_products():
-    """Товары, видимые на витрине (is_visible нельзя использовать в queryset)."""
-    return Product.objects.filter(is_active=True, status=ProductStatus.PUBLISHED)
 
 
 def build_category_tree(nodes) -> list:
@@ -58,24 +55,6 @@ class CategoryTreeView(APIView):
         return Response(build_category_tree(nodes))
 
 
-class ProductFilter(django_filters.FilterSet):
-    # Категория + все потомки: зайдя в «Электроинструмент», видим товары из «Дрелей».
-    category = django_filters.CharFilter(method="filter_category")
-    brand = django_filters.CharFilter(field_name="brand", lookup_expr="iexact")
-
-    class Meta:
-        model = Product
-        fields = ["stock_status"]  # category/brand — объявлены выше явными фильтрами
-
-    def filter_category(self, queryset, name, value):
-        try:
-            cat = Category.objects.get(slug=value)
-        except Category.DoesNotExist:
-            return queryset.none()
-        ids = [cat.pk, *cat.get_descendants().values_list("pk", flat=True)]
-        return queryset.filter(category_id__in=ids)
-
-
 class ProductListView(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = ProductListSerializer
@@ -105,3 +84,33 @@ class ProductDetailView(generics.RetrieveAPIView):
                 "attribute_values__value_option",
             )
         )
+
+
+class CategoryFacetsView(APIView):
+    """Фасеты категории: фильтруемые характеристики со счётчиками (drill-down)."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug):
+        category = get_object_or_404(Category, slug=slug, is_active=True)
+        params = request.query_params
+
+        stock_status = params.get("stock_status")
+        if stock_status and stock_status not in StockStatus.values:
+            return Response({"detail": "Недопустимый stock_status"}, status=400)
+
+        attr_filters = {}
+        for key in params:
+            if key.startswith("attr_") and key[len("attr_") :]:
+                attr_filters[key[len("attr_") :]] = params.getlist(key)
+
+        try:
+            data = build_facets(
+                category,
+                brands=params.getlist("brand") or None,
+                stock_status=stock_status or None,
+                attr_filters=attr_filters,
+            )
+        except FacetError as exc:
+            return Response({"detail": str(exc)}, status=400)
+        return Response(data)
