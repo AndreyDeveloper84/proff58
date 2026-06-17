@@ -28,8 +28,10 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         user = self._create_user(phone, password, **extra_fields)
-        # Доменное событие — после коммита, чтобы подписчик видел сохранённого юзера.
-        transaction.on_commit(lambda u=user: user_registered.send(sender=type(u), user=u))
+        # Доменное событие — после коммита; в payload только id (подписчик перечитает).
+        transaction.on_commit(
+            lambda uid=user.pk: user_registered.send(sender=type(user), user_id=uid)
+        )
         return user
 
     def create_superuser(self, phone, password=None, **extra_fields):

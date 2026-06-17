@@ -34,11 +34,17 @@ from django.dispatch import receiver
 from apps.core.events import order_paid
 
 @receiver(order_paid)
-def on_order_paid(sender, order, payment, **kwargs):
+def on_order_paid(sender, order_id, payment_id, **kwargs):
+    order = Order.objects.get(pk=order_id)  # перечитываем актуальное состояние из БД
     ...
 ```
 
 Для опциональных модулей (CRM/AI) подписка — под feature-флагом (`core.features`,
 #59).
 
-Payload каждого события документирован в docstring `events.py`.
+### Payload — стабильные id, не инстансы
+События несут идентификаторы и снапшоты (`product_id`, `user_id`, `changed_fields`,
+`source`), а **не** живые ORM-инстансы: к моменту обработки (Celery/другой воркер)
+инстанс может устареть, поэтому подписчик перечитывает объект из БД сам. Допустимые
+значения `source` — в `core.events.EventSource`. Полный payload каждого события — в
+docstring `events.py`.

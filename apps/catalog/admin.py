@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from treebeard.admin import TreeAdmin
 from treebeard.forms import movenodeform_factory
 
-from apps.core.events import product_created, product_updated
+from apps.core.events import EventSource, product_created, product_updated
 
 from .models import (
     Attribute,
@@ -166,26 +166,52 @@ class ProductAdmin(admin.ModelAdmin):
             obj.category_is_manual = True
         super().save_model(request, obj, form, change)
 
-        # Доменное событие — из admin-flow, после коммита.
+        # Доменное событие — из admin-flow, после коммита; в payload только id.
         if change:
             changed_fields = list(form.changed_data)
             if changed_fields:
                 transaction.on_commit(
-                    lambda p=obj, c=changed_fields: product_updated.send(
-                        sender=Product, product=p, source="admin", changed_fields=c
+                    lambda pid=obj.pk, c=changed_fields: product_updated.send(
+                        sender=Product, product_id=pid, source=EventSource.ADMIN, changed_fields=c
                     )
                 )
         else:
             transaction.on_commit(
-                lambda p=obj: product_created.send(sender=Product, product=p, source="admin")
+                lambda pid=obj.pk: product_created.send(
+                    sender=Product, product_id=pid, source=EventSource.ADMIN
+                )
             )
+
+    @staticmethod
+    def _emit_bulk_updated(ids: list[int], changed_fields: list[str]) -> None:
+        """Эмит product_updated по каждому реально изменённому товару (после коммита)."""
+
+        def _send():
+            for pid in ids:
+                product_updated.send(
+                    sender=Product,
+                    product_id=pid,
+                    source=EventSource.ADMIN,
+                    changed_fields=changed_fields,
+                )
+
+        transaction.on_commit(_send)
 
     @admin.action(description=_("Опубликовать выбранные товары"))
     def action_publish(self, request, queryset):
-        updated = queryset.update(status=ProductStatus.PUBLISHED, is_active=True)
+        # Только реально меняющиеся: уже опубликованные и активные пропускаем.
+        qs = queryset.exclude(status=ProductStatus.PUBLISHED, is_active=True)
+        ids = list(qs.values_list("id", flat=True))
+        updated = qs.update(status=ProductStatus.PUBLISHED, is_active=True)
+        if ids:
+            self._emit_bulk_updated(ids, ["status", "is_active"])
         self.message_user(request, _("Опубликовано: %d") % updated)
 
     @admin.action(description=_("Вернуть на проверку"))
     def action_needs_review(self, request, queryset):
-        updated = queryset.update(status=ProductStatus.NEEDS_REVIEW)
+        qs = queryset.exclude(status=ProductStatus.NEEDS_REVIEW)
+        ids = list(qs.values_list("id", flat=True))
+        updated = qs.update(status=ProductStatus.NEEDS_REVIEW)
+        if ids:
+            self._emit_bulk_updated(ids, ["status"])
         self.message_user(request, _("Отправлено на проверку: %d") % updated)

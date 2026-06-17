@@ -13,23 +13,36 @@
 - Обработчики живут в `receivers.py` приложения-подписчика и подключаются в
   `AppConfig.ready()` (под feature-флагом для опциональных модулей — см. #59).
 
-Payload каждого сигнала (kwargs у `.send()`):
-  user_registered       — user
-  b2b_verified          — user, organization
-  product_created       — product, source                      # source: "1c" | "admin"
-  product_updated       — product, source, changed_fields: list[str]
-  order_created         — order
-  order_paid            — order, payment
-  order_status_changed  — order, old_status, new_status
-  payment_succeeded     — payment, order
-  payment_failed        — payment, order, reason
-  price_changed         — product, old_price, new_price
+Payload каждого сигнала (kwargs у `.send()`) — стабильные идентификаторы и
+снапшоты, НЕ живые ORM-инстансы. Подписчик при необходимости перечитывает объект
+из БД (надёжно под Celery/несколькими воркерами — инстанс может устареть):
+  user_registered       — user_id
+  b2b_verified          — user_id, organization_id
+  product_created       — product_id, source                   # source: EventSource
+  product_updated       — product_id, source, changed_fields: list[str]
+  order_created         — order_id
+  order_paid            — order_id, payment_id
+  order_status_changed  — order_id, old_status, new_status
+  payment_succeeded     — payment_id, order_id
+  payment_failed        — payment_id, order_id, reason
+  price_changed         — product_id, old_price, new_price
 
 `order_*`, `payment_*`, `price_changed` пока без издателей — это контракт под
 будущие модули orders/payments/pricing (#7/#8/#60).
 """
 
 from django.dispatch import Signal
+
+
+class EventSource:
+    """Допустимые значения `source` в событиях — в одном месте, чтобы не расползлось
+    (`"1c"`/`"1C"`/`"sync_1c"`/...)."""
+
+    ADMIN = "admin"  # ручное изменение через админку
+    ONE_C = "1c"  # импорт/обмен с 1С
+    SYSTEM = "system"  # фоновые задачи/системные процессы
+    API = "api"  # публичный/внешний API
+
 
 # --- accounts ---
 user_registered = Signal()

@@ -14,7 +14,7 @@ from django.db import transaction
 
 from apps.catalog.categorization import ProductHint, categorize
 from apps.catalog.models import Product, ProductStatus
-from apps.core.events import product_created, product_updated
+from apps.core.events import EventSource, product_created, product_updated
 
 from . import pricing, stock
 from .normalizers import Item
@@ -72,7 +72,9 @@ def create_product(item: Item) -> tuple[Product, bool]:
     stock.set_current_stock(product, item)
     product.save()
     transaction.on_commit(
-        lambda p=product: product_created.send(sender=Product, product=p, source="1c")
+        lambda pid=product.pk: product_created.send(
+            sender=Product, product_id=pid, source=EventSource.ONE_C
+        )
     )
     return product, category is not None
 
@@ -104,7 +106,7 @@ def update_existing(product: Product, item: Item, *, allow_basic_fields: bool = 
     changed_fields = [f for f in _TRACKED_FIELDS if before[f] != getattr(product, f)]
     if changed_fields:
         transaction.on_commit(
-            lambda p=product, c=changed_fields: product_updated.send(
-                sender=Product, product=p, source="1c", changed_fields=c
+            lambda pid=product.pk, c=changed_fields: product_updated.send(
+                sender=Product, product_id=pid, source=EventSource.ONE_C, changed_fields=c
             )
         )
