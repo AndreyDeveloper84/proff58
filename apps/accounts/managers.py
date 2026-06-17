@@ -5,6 +5,9 @@
 """
 
 from django.contrib.auth.models import BaseUserManager
+from django.db import transaction
+
+from apps.core.events import user_registered
 
 
 class UserManager(BaseUserManager):
@@ -24,7 +27,10 @@ class UserManager(BaseUserManager):
     def create_user(self, phone, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
-        return self._create_user(phone, password, **extra_fields)
+        user = self._create_user(phone, password, **extra_fields)
+        # Доменное событие — после коммита, чтобы подписчик видел сохранённого юзера.
+        transaction.on_commit(lambda u=user: user_registered.send(sender=type(u), user=u))
+        return user
 
     def create_superuser(self, phone, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)

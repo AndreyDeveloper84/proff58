@@ -1,7 +1,10 @@
 from django.contrib import admin
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from treebeard.admin import TreeAdmin
 from treebeard.forms import movenodeform_factory
+
+from apps.core.events import product_created, product_updated
 
 from .models import (
     Attribute,
@@ -162,6 +165,20 @@ class ProductAdmin(admin.ModelAdmin):
         if "category" in form.changed_data and obj.category_id is not None:
             obj.category_is_manual = True
         super().save_model(request, obj, form, change)
+
+        # Доменное событие — из admin-flow, после коммита.
+        if change:
+            changed_fields = list(form.changed_data)
+            if changed_fields:
+                transaction.on_commit(
+                    lambda p=obj, c=changed_fields: product_updated.send(
+                        sender=Product, product=p, source="admin", changed_fields=c
+                    )
+                )
+        else:
+            transaction.on_commit(
+                lambda p=obj: product_created.send(sender=Product, product=p, source="admin")
+            )
 
     @admin.action(description=_("Опубликовать выбранные товары"))
     def action_publish(self, request, queryset):

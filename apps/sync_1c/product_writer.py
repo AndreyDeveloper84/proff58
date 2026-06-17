@@ -10,11 +10,37 @@
 
 from __future__ import annotations
 
+from django.db import transaction
+
 from apps.catalog.categorization import ProductHint, categorize
 from apps.catalog.models import Product, ProductStatus
+from apps.core.events import product_created, product_updated
 
 from . import pricing, stock
 from .normalizers import Item
+
+# Бизнес-поля для определения «было ли реальное изменение» при обновлении.
+# Денормализованные служебные timestamp'ы (*_updated_at) намеренно исключены —
+# они меняются каждый раз и не несут смысла для подписчиков.
+_TRACKED_FIELDS = [
+    "price",
+    "old_price",
+    "currency",
+    "stock_quantity",
+    "reserved_quantity",
+    "available_quantity",
+    "stock_status",
+    "original_name",
+    "brand",
+    "barcode",
+    "unit",
+    "is_active_1c",
+    "source_group",
+]
+
+
+def _snapshot(product: Product) -> dict:
+    return {f: getattr(product, f) for f in _TRACKED_FIELDS}
 
 
 def create_product(item: Item) -> tuple[Product, bool]:
@@ -45,11 +71,16 @@ def create_product(item: Item) -> tuple[Product, bool]:
     pricing.set_current_price(product, item)
     stock.set_current_stock(product, item)
     product.save()
+    transaction.on_commit(
+        lambda p=product: product_created.send(sender=Product, product=p, source="1c")
+    )
     return product, category is not None
 
 
 def update_existing(product: Product, item: Item, *, allow_basic_fields: bool = True) -> None:
     """Обновить существующий товар, не затрагивая ручной контент сайта."""
+    before = _snapshot(product)
+
     pricing.set_current_price(product, item)
     stock.set_current_stock(product, item)
 
@@ -69,3 +100,11 @@ def update_existing(product: Product, item: Item, *, allow_basic_fields: bool = 
 
     # Категория, name(витрина), description, SEO, фото, slug — НЕ трогаем.
     product.save()
+
+    changed_fields = [f for f in _TRACKED_FIELDS if before[f] != getattr(product, f)]
+    if changed_fields:
+        transaction.on_commit(
+            lambda p=product, c=changed_fields: product_updated.send(
+                sender=Product, product=p, source="1c", changed_fields=c
+            )
+        )
