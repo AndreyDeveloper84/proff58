@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "django_filters",
     "treebeard",
     # приложения проекта
+    "apps.core",
     "apps.accounts",
     "apps.catalog",
     "apps.sync_1c",
