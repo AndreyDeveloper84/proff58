@@ -30,6 +30,7 @@ services:
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
+      - ./logs:/app/logs
     depends_on:
       db:
         condition: service_healthy
@@ -37,6 +38,18 @@ services:
         condition: service_started
     expose:
       - "8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz/').status == 200 else 1)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   celery:
     build:
@@ -47,6 +60,8 @@ services:
     command: celery -A config worker -l info
     env_file:
       - .env
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       - db
       - redis
@@ -60,6 +75,8 @@ services:
     command: celery -A config beat -l info
     env_file:
       - .env
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       - db
       - redis
@@ -75,8 +92,10 @@ services:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - static_volume:/app/staticfiles:ro
       - media_volume:/app/media:ro
+      - ./logs:/var/log/nginx
     depends_on:
-      - web
+      web:
+        condition: service_healthy
 
 volumes:
   pgdata:

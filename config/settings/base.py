@@ -9,6 +9,8 @@ from pathlib import Path
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
 
 env = environ.Env(
     DJANGO_DEBUG=(bool, False),
@@ -120,4 +122,59 @@ FEATURES = {
     "ai": env.bool("FEATURE_AI", default=False),
     "eventbus": env.bool("FEATURE_EVENTBUS", default=True),
     "external_integrations": env.bool("FEATURE_EXTERNAL_INTEGRATIONS", default=True),
+}
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+        "django_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "django.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "standard",
+        },
+        "onec_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "1c.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "standard",
+        },
+        "payments_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "payments.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "standard",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "django_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "apps.sync_1c": {
+            "handlers": ["console", "onec_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "payments": {
+            "handlers": ["console", "payments_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
 }

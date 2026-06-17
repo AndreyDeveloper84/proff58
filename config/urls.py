@@ -3,18 +3,13 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.http import JsonResponse
 from django.urls import include, path
 
-
-def healthcheck(_request):
-    """Простой health-эндпоинт для контейнера и мониторинга."""
-    return JsonResponse({"status": "ok"})
-
+from apps.core import health
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("healthz/", healthcheck, name="healthcheck"),
+    path("healthz/", health.healthz, name="healthcheck"),
     path("api/1c/", include("apps.sync_1c.api.urls")),
     path("api/catalog/", include("apps.catalog.api.urls")),
 ]
