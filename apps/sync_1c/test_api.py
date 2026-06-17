@@ -207,3 +207,134 @@ def test_items_over_limit_rejected_400(auth_client):
     payload = {"items": [{"external_id": f"m-{i}", "price": "1"} for i in range(3)]}
     resp = auth_client.post("/api/1c/prices/update", payload, format="json")
     assert resp.status_code == 400
+
+
+# --- Снимок позиций (GET /api/1c/snapshot/) ---
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_snapshot_returns_fields(auth_client):
+    Product.objects.create(
+        name="Дрель",
+        code_1c="1c-snap-1",
+        slug="snap-1",
+        price="5900.00",
+        currency="RUB",
+        stock_quantity="7.000",
+        reserved_quantity="2.000",
+        available_quantity="5.000",
+    )
+    resp = auth_client.get("/api/1c/snapshot/")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["count"] == 1
+    row = body["results"][0]
+    assert set(row) == {"code_1c", "price", "currency", "stock", "reserved", "available"}
+    assert row["code_1c"] == "1c-snap-1"
+    assert row["price"] == "5900.00"
+    assert row["currency"] == "RUB"
+    assert row["stock"] == "7.000"
+    assert row["reserved"] == "2.000"
+    assert row["available"] == "5.000"
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_snapshot_excludes_products_without_code_1c(auth_client):
+    Product.objects.create(name="С кодом", code_1c="1c-snap-2", slug="snap-2")
+    Product.objects.create(name="Без кода", code_1c=None, slug="snap-no-code")
+    Product.objects.create(name="Пустой код", code_1c="", slug="snap-empty-code")
+    resp = auth_client.get("/api/1c/snapshot/")
+    body = resp.json()
+    assert body["count"] == 1
+    assert [r["code_1c"] for r in body["results"]] == ["1c-snap-2"]
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_snapshot_includes_hidden_products(auth_client):
+    """Скрытые на витрине позиции с code_1c всё равно попадают в снимок."""
+    Product.objects.create(
+        name="Черновик", code_1c="1c-hidden", slug="snap-hidden", status=ProductStatus.DRAFT
+    )
+    resp = auth_client.get("/api/1c/snapshot/")
+    body = resp.json()
+    assert [r["code_1c"] for r in body["results"]] == ["1c-hidden"]
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_snapshot_pagination_and_next_offset(auth_client):
+    for i in range(5):
+        Product.objects.create(name=f"Т{i}", code_1c=f"1c-p-{i}", slug=f"snap-p-{i}")
+
+    page1 = auth_client.get("/api/1c/snapshot/?limit=2&offset=0").json()
+    assert page1["count"] == 5
+    assert page1["limit"] == 2
+    assert page1["offset"] == 0
+    assert page1["next_offset"] == 2
+    assert len(page1["results"]) == 2
+
+    last = auth_client.get("/api/1c/snapshot/?limit=2&offset=4").json()
+    assert last["next_offset"] is None
+    assert len(last["results"]) == 1
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_snapshot_stable_sort_by_code_then_id(auth_client):
+    # одинаковый code_1c недопустим (unique), но порядок должен идти по code_1c, затем id
+    Product.objects.create(name="B", code_1c="1c-b", slug="snap-sort-b")
+    Product.objects.create(name="A", code_1c="1c-a", slug="snap-sort-a")
+    Product.objects.create(name="C", code_1c="1c-c", slug="snap-sort-c")
+    body = auth_client.get("/api/1c/snapshot/").json()
+    assert [r["code_1c"] for r in body["results"]] == ["1c-a", "1c-b", "1c-c"]
+
+
+@override_settings(ONEC_API_KEY=API_KEY, ONEC_MAX_ITEMS=3)
+@pytest.mark.django_db
+def test_snapshot_limit_clamped_to_max(auth_client):
+    for i in range(5):
+        Product.objects.create(name=f"Т{i}", code_1c=f"1c-clamp-{i}", slug=f"snap-clamp-{i}")
+    body = auth_client.get("/api/1c/snapshot/?limit=100").json()
+    assert body["limit"] == 3
+    assert len(body["results"]) == 3
+    assert body["next_offset"] == 3
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+@pytest.mark.parametrize("query", ["limit=0", "limit=-1", "limit=abc", "offset=-1", "offset=abc"])
+def test_snapshot_invalid_params_400(auth_client, query):
+    resp = auth_client.get(f"/api/1c/snapshot/?{query}")
+    assert resp.status_code == 400
+    assert "detail" in resp.json()
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_snapshot_requires_key(client):
+    resp = client.get("/api/1c/snapshot/")
+    assert resp.status_code == 403
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_snapshot_price_null_with_currency(auth_client):
+    Product.objects.create(name="Без цены", code_1c="1c-noprice", slug="snap-noprice", price=None)
+    body = auth_client.get("/api/1c/snapshot/").json()
+    row = body["results"][0]
+    assert row["price"] is None
+    assert row["currency"] == "RUB"
+    # числа отдаются строками
+    assert isinstance(row["stock"], str)
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_snapshot_currency_fallback_to_rub(auth_client):
+    """Пустая валюта в БД → в снимке отдаётся дефолт RUB."""
+    Product.objects.create(name="Пустая валюта", code_1c="1c-cur", slug="snap-cur", currency="")
+    body = auth_client.get("/api/1c/snapshot/").json()
+    assert body["results"][0]["currency"] == "RUB"

@@ -1,6 +1,7 @@
 """API для 1С 7.7 (1С сама стучится к сайту).
 
 Эндпоинты:
+  GET  /api/1c/snapshot/         — снимок актуальных позиций (1С забирает и сравнивает у себя)
   POST /api/1c/products/import   — первичная/массовая загрузка номенклатуры
   POST /api/1c/products/update   — обновление базовых полей (без категорий/SEO)
   POST /api/1c/prices/update     — обновление цен
@@ -11,9 +12,12 @@
 Авторизация — заголовок X-Api-Key (см. permissions.HasOneCApiKey).
 """
 
+from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+
+from apps.catalog.models import Product
 
 from .. import tasks, use_cases
 from ..models import SyncLog
@@ -150,3 +154,87 @@ def orders_new(_request):
 @permission_classes([HasOneCApiKey])
 def orders_confirm(_request):
     return Response(_ORDERS_PENDING, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+# --- Снимок позиций: 1С забирает актуальные цены/остатки и сравнивает у себя ---
+
+
+def _parse_int_param(raw, *, default):
+    """Разобрать целочисленный query-параметр. Вернуть (value, error_detail)."""
+    if raw is None or raw == "":
+        return default, None
+    try:
+        return int(raw), None
+    except (TypeError, ValueError):
+        return None, "Параметр должен быть целым числом."
+
+
+def _decimal_to_str(value):
+    return None if value is None else str(value)
+
+
+@api_view(["GET"])
+@permission_classes([HasOneCApiKey])
+def snapshot(request):
+    """Снимок актуальных позиций для 1С: code_1c + цена + остатки, постранично.
+
+    1С забирает снимок, сравнивает у себя и шлёт обратно ТОЛЬКО изменения
+    (price → prices/update, физический stock → stocks/update). reserved/available
+    ведёт сайт, 1С их не присылает. В снимок попадают все позиции с code_1c
+    (включая скрытые на витрине) — видимость на обмен не влияет.
+    """
+    max_items = settings.ONEC_MAX_ITEMS
+
+    limit, error = _parse_int_param(request.query_params.get("limit"), default=max_items)
+    if error:
+        return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
+    if limit <= 0:
+        return Response(
+            {"detail": "limit должен быть положительным числом."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    limit = min(limit, max_items)
+
+    offset, error = _parse_int_param(request.query_params.get("offset"), default=0)
+    if error:
+        return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
+    if offset < 0:
+        return Response(
+            {"detail": "offset не может быть отрицательным."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    qs = Product.objects.exclude(code_1c__isnull=True).exclude(code_1c="").order_by("code_1c", "id")
+    count = qs.count()
+    rows = qs[offset : offset + limit].values(
+        "code_1c",
+        "price",
+        "currency",
+        "stock_quantity",
+        "reserved_quantity",
+        "available_quantity",
+    )
+
+    results = [
+        {
+            "code_1c": row["code_1c"],
+            "price": _decimal_to_str(row["price"]),
+            "currency": row["currency"] or "RUB",
+            "stock": _decimal_to_str(row["stock_quantity"]),
+            "reserved": _decimal_to_str(row["reserved_quantity"]),
+            "available": _decimal_to_str(row["available_quantity"]),
+        }
+        for row in rows
+    ]
+
+    next_offset = offset + limit if offset + limit < count else None
+
+    return Response(
+        {
+            "count": count,
+            "limit": limit,
+            "offset": offset,
+            "next_offset": next_offset,
+            "results": results,
+        }
+    )
