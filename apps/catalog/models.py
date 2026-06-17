@@ -23,6 +23,8 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node
 
+from apps.core.models import TimeStampedModel
+
 
 class Category(MP_Node):
     """Категория каталога сайта. Произвольная глубина вложенности."""
@@ -185,7 +187,7 @@ class StockStatus(models.TextChoices):
     ON_ORDER = "on_order", _("Под заказ")
 
 
-class Product(models.Model):
+class Product(TimeStampedModel):
     """Товар.
 
     Идентичность из 1С: code_1c (внутренний код / external_id) и article (SKU).
@@ -289,9 +291,6 @@ class Product(models.Model):
         blank=True,
         help_text=_("Денормализованный JSON значений характеристик для фасетных фильтров."),
     )
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = _("Товар")

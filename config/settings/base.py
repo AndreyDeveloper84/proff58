@@ -110,3 +110,14 @@ REST_FRAMEWORK = {
 ONEC_API_KEY = env("ONEC_API_KEY", default="")
 # Максимум строк в одном пакете 1С (items). Превышение → 400.
 ONEC_MAX_ITEMS = env.int("ONEC_MAX_ITEMS", default=1000)
+
+# Feature-флаги. Инфраструктурные — здесь (через env, меняют разработчики).
+# Бизнес-флаги (reviews/b2b/...) живут в SiteSettings. Проверка — через
+# apps.core.features.is_enabled(); механизм поддерживает override любого флага
+# через этот словарь.
+FEATURES = {
+    "crm": env.bool("FEATURE_CRM", default=False),
+    "ai": env.bool("FEATURE_AI", default=False),
+    "eventbus": env.bool("FEATURE_EVENTBUS", default=True),
+    "external_integrations": env.bool("FEATURE_EXTERNAL_INTEGRATIONS", default=True),
+}

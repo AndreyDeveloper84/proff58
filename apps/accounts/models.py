@@ -14,6 +14,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.models import TimeStampedModel
+
 from .managers import UserManager
 
 
@@ -56,7 +58,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.customer_type == CustomerType.B2B
 
 
-class Profile(models.Model):
+class Profile(TimeStampedModel):
     """Дополнительные данные покупателя.
 
     Реквизиты заполняются для B2B и используются при выставлении счёта.
@@ -67,8 +69,6 @@ class Profile(models.Model):
     inn = models.CharField(_("ИНН"), max_length=12, blank=True)
     kpp = models.CharField(_("КПП"), max_length=9, blank=True)
     legal_address = models.CharField(_("Юридический адрес"), max_length=512, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = _("Профиль")
