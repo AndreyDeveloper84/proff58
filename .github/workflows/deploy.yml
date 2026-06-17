@@ -1,0 +1,54 @@
+name: Deploy
+
+# Деплой по ветке в свою среду:
+#   push в dev  → environment "staging"    (staging-стек на VPS)
+#   push в main → environment "production" (prod-стек на том же VPS)
+# Сначала прогоняются те же тесты (tests.yml), деплой идёт только при зелёных.
+on:
+  push:
+    branches: [main, dev]
+
+# Не запускать два деплоя одной ветки одновременно.
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+
+  deploy:
+    needs: tests
+    runs-on: ubuntu-latest
+    # Среда выбирается по ветке. Секреты берутся из соответствующего
+    # GitHub Environment (production/staging) — они не пересекаются.
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    steps:
+      - name: Среда настроена?
+        id: gate
+        env:
+          KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::SSH_KEY не задан — деплой пропущен (среда ещё не готова). Добавьте ключ, чтобы включить деплой."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Деплой на VPS по SSH
+        if: steps.gate.outputs.enabled == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.DEPLOY_PATH }}"
+            git fetch origin ${{ github.ref_name }}
+            git checkout ${{ github.ref_name }}
+            git reset --hard origin/${{ github.ref_name }}
+            docker compose -f docker-compose.prod.yml up -d --build
+            docker image prune -f

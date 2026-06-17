@@ -1,0 +1,11 @@
+name: CI
+
+# Проверки на каждый PR в dev/main. Деплой-ветки (push в dev/main)
+# проверяются и катятся в deploy.yml.
+on:
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml

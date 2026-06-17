@@ -1,0 +1,41 @@
+{
+  "items": [
+    {
+      "external_id": "1c-000123",
+      "sku": "BOSCH-GSB13RE",
+      "barcode": "4600000000017",
+      "name": "Дрель ударная BOSCH GSB 13 RE",
+      "brand": "Bosch",
+      "unit": "шт",
+      "source_group": "Инструменты разные",
+      "is_active": true,
+      "price": "5900.00",
+      "old_price": "6500.00",
+      "currency": "RUB",
+      "stock": "7"
+    },
+    {
+      "external_id": "1c-000777",
+      "sku": "MAKITA-HR2470",
+      "barcode": "0088381000000",
+      "name": "Перфоратор MAKITA HR2470 SDS-plus",
+      "brand": "Makita",
+      "unit": "шт",
+      "source_group": "Склад 1 / Акция",
+      "is_active": true,
+      "price": "8990.00",
+      "stock": "0"
+    },
+    {
+      "external_id": "1c-000999",
+      "sku": "DENZEL-XYZ",
+      "name": "НЕПОНЯТНЫЙ ТОВАР БЕЗ КАТЕГОРИИ",
+      "brand": "",
+      "unit": "шт",
+      "source_group": "Разное",
+      "is_active": true,
+      "price": "1200.00",
+      "stock": "3"
+    }
+  ]
+}
