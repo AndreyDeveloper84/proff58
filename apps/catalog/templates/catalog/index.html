@@ -1,0 +1,18 @@
+{% extends "catalog/base.html" %}
+{% block title %}Каталог — категории{% endblock %}
+{% block content %}
+  <h1>Каталог</h1>
+  <p class="muted">Категорий верхнего уровня на сайте: {{ categories|length }}</p>
+  <div class="cards">
+    {% for cat in categories %}
+      <div class="card">
+        <a href="/catalog/{{ cat.slug }}/"><strong>{{ cat.name }}</strong></a>
+        <div class="muted">
+          товаров: {{ cat.total }} · в наличии: {{ cat.in_stock }}
+        </div>
+      </div>
+    {% empty %}
+      <p>Категорий нет. Выполните <code>bootstrap_catalog</code>.</p>
+    {% endfor %}
+  </div>
+{% endblock %}

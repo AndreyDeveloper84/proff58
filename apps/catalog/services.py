@@ -9,14 +9,19 @@ from __future__ import annotations
 
 from collections import Counter
 
+from django.db.models import Count, Q
+
 from .filters import filtered_products
 from .models import (
     AttributeOption,
     AttributeType,
+    Category,
     CategoryAttribute,
     Product,
     ProductAttributeValue,
 )
+
+TOOL_TYPE_SLUG = "tool_type"
 
 # --- Лимиты фасетного эндпоинта (публичный AllowAny) ---
 MAX_ATTR_FILTERS = 20
@@ -230,3 +235,94 @@ def build_facets(category, *, brands=None, stock_status=None, attr_filters=None)
         },
         "facets": facets,
     }
+
+
+# ---------------------------------------------------------------------------
+# Контракт каталога для витрины и других модулей (ADR-0004: только через services)
+# ---------------------------------------------------------------------------
+
+
+def _subtree_ids(category: Category) -> list[int]:
+    return [category.pk, *category.get_descendants().values_list("pk", flat=True)]
+
+
+def get_category_tree(*, on_site_only: bool = True):
+    """Категории верхнего уровня сайта со счётчиками товаров и «в наличии».
+
+    Возвращает список словарей для витрины ``/catalog/``: имя, slug и счётчики
+    по всему поддереву категории. Это контракт каталога — другие модули и шаблоны
+    не лезут в модели напрямую (ADR-0004).
+    """
+    qs = Category.objects.filter(depth=1, is_active=True)
+    if on_site_only:
+        qs = qs.filter(on_site=True)
+    tree = []
+    for cat in qs.order_by("sort_order", "name"):
+        counts = category_counts(cat)
+        tree.append(
+            {
+                "id": cat.id,
+                "name": cat.name,
+                "slug": cat.slug,
+                "total": counts["total"],
+                "in_stock": counts["in_stock"],
+            }
+        )
+    return tree
+
+
+def products_in(category: Category, *, tool_type=None, in_stock=False, published_only=False):
+    """Товары категории и всех её потомков с фильтрами витрины.
+
+    ``tool_type`` — slug варианта атрибута tool_type (вторая ось навигации).
+    ``in_stock`` — только с остатком > 0. ``published_only`` — для боевой витрины
+    (на тестовой показываем и импортированные, не только опубликованные).
+    """
+    qs = Product.objects.filter(category_id__in=_subtree_ids(category))
+    if published_only:
+        from .models import ProductStatus
+
+        qs = qs.filter(is_active=True, status=ProductStatus.PUBLISHED)
+    if in_stock:
+        qs = qs.filter(stock_quantity__gt=0)
+    if tool_type:
+        qs = qs.filter(
+            attribute_values__attribute__slug=TOOL_TYPE_SLUG,
+            attribute_values__value_option__slug=tool_type,
+        )
+    return qs
+
+
+def category_counts(category: Category) -> dict:
+    """Всего товаров и в наличии в поддереве категории."""
+    agg = Product.objects.filter(category_id__in=_subtree_ids(category)).aggregate(
+        total=Count("id"),
+        in_stock=Count("id", filter=Q(stock_quantity__gt=0)),
+    )
+    return {"total": agg["total"] or 0, "in_stock": agg["in_stock"] or 0}
+
+
+def tool_type_facets(category: Category) -> list[dict]:
+    """Плитки tool_type для страницы категории: значение, slug, счётчик.
+
+    Это «вторая ось»/фасет, как у конкурента: значения атрибута tool_type среди
+    товаров поддерева. Пустой список — плиток нет.
+    """
+    rows = (
+        ProductAttributeValue.objects.filter(
+            attribute__slug=TOOL_TYPE_SLUG,
+            value_option__isnull=False,
+            product__category_id__in=_subtree_ids(category),
+        )
+        .values("value_option__value", "value_option__slug")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+    return [
+        {
+            "value": r["value_option__value"],
+            "slug": r["value_option__slug"],
+            "count": r["count"],
+        }
+        for r in rows
+    ]

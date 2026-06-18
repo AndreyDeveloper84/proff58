@@ -12,6 +12,8 @@ from .models import (
     Category,
     CategoryAttribute,
     CategoryMappingRule,
+    EnrichmentLog,
+    ImportRun,
     Product,
     ProductAttributeValue,
     ProductImage,
@@ -22,6 +24,7 @@ from .models import (
 class AttributeOptionInline(admin.TabularInline):
     model = AttributeOption
     extra = 2
+    prepopulated_fields = {"slug": ("value",)}
 
 
 class CategoryAttributeInline(admin.TabularInline):
@@ -33,9 +36,10 @@ class CategoryAttributeInline(admin.TabularInline):
 @admin.register(Category)
 class CategoryAdmin(TreeAdmin):
     form = movenodeform_factory(Category)
-    list_display = ("name", "slug", "is_active", "sort_order")
+    list_display = ("name", "slug", "external_id_1c", "on_site", "is_active", "sort_order")
+    list_filter = ("on_site", "is_active")
     prepopulated_fields = {"slug": ("name",)}
-    search_fields = ("name", "slug")
+    search_fields = ("name", "slug", "external_id_1c")
     inlines = [CategoryAttributeInline]
 
 
@@ -215,3 +219,79 @@ class ProductAdmin(admin.ModelAdmin):
         if ids:
             self._emit_bulk_updated(ids, ["status"])
         self.message_user(request, _("Отправлено на проверку: %d") % updated)
+
+
+# ---------------------------------------------------------------------------
+# Журналы загрузки и обогащения каталога
+# ---------------------------------------------------------------------------
+
+
+def _stat(key, short):
+    """Колонка list_display, читающая счётчик из ImportRun.stats (JSONB)."""
+
+    @admin.display(description=short)
+    def getter(self, obj):
+        return (obj.stats or {}).get(key, "—")
+
+    getter.__name__ = f"stat_{key}"
+    return getter
+
+
+@admin.register(ImportRun)
+class ImportRunAdmin(admin.ModelAdmin):
+    list_display = (
+        "source",
+        "status",
+        "started_at",
+        "finished_at",
+        "stat_categories_created",
+        "stat_products_imported",
+        "stat_tool_type_assigned",
+        "stat_moderation",
+        "stat_recategorize_flagged",
+        "stat_excluded",
+    )
+    list_filter = ("status", "source")
+    ordering = ("-started_at",)
+    readonly_fields = ("started_at", "finished_at", "source", "status", "stats")
+
+    stat_categories_created = _stat("categories_created", _("Категорий"))
+    stat_products_imported = _stat("products_imported", _("Товаров"))
+    stat_tool_type_assigned = _stat("tool_type_assigned", _("tool_type"))
+    stat_moderation = _stat("moderation", _("Модерация"))
+    stat_recategorize_flagged = _stat("recategorize_flagged", _("Recategorize"))
+    stat_excluded = _stat("excluded", _("Исключено"))
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(EnrichmentLog)
+class EnrichmentLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "product_external_id",
+        "raw_name",
+        "category_path",
+        "result",
+        "tool_type",
+        "matched_keyword",
+    )
+    list_filter = ("result", "tool_type", "run")
+    search_fields = ("raw_name", "product_external_id")
+    list_select_related = ("run",)
+    readonly_fields = (
+        "run",
+        "product_external_id",
+        "raw_name",
+        "category_path",
+        "result",
+        "tool_type",
+        "matched_keyword",
+        "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

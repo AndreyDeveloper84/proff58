@@ -24,6 +24,9 @@ class ProductFilter(django_filters.FilterSet):
     # Категория + все потомки: зайдя в «Электроинструмент», видим товары из «Дрелей».
     category = django_filters.CharFilter(method="filter_category")
     brand = django_filters.CharFilter(field_name="brand", lookup_expr="iexact")
+    # tool_type — вторая ось навигации (slug варианта атрибута), in_stock — наличие.
+    tool_type = django_filters.CharFilter(method="filter_tool_type")
+    in_stock = django_filters.CharFilter(method="filter_in_stock")
 
     class Meta:
         model = Product
@@ -36,6 +39,19 @@ class ProductFilter(django_filters.FilterSet):
             return queryset.none()
         ids = [cat.pk, *cat.get_descendants().values_list("pk", flat=True)]
         return queryset.filter(category_id__in=ids)
+
+    def filter_tool_type(self, queryset, name, value):
+        if not value:
+            return queryset
+        return queryset.filter(
+            attribute_values__attribute__slug="tool_type",
+            attribute_values__value_option__slug=value,
+        )
+
+    def filter_in_stock(self, queryset, name, value):
+        if str(value) in ("1", "true", "True", "yes"):
+            return queryset.filter(stock_quantity__gt=0)
+        return queryset
 
 
 def filtered_products(category, *, brands=None, stock_status=None):
