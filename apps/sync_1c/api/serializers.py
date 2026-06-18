@@ -56,6 +56,15 @@ class StockItemSerializer(_IdentifiedItem):
     available_stock = serializers.DecimalField(max_digits=14, decimal_places=3, required=False)
     warehouse = serializers.CharField(required=False, allow_blank=True)
 
+    def validate(self, attrs):
+        attrs = super().validate(attrs)  # идентификатор обязателен
+        # is None, а не «truthy»: stock="0" (нулевой остаток) — валиден.
+        if all(attrs.get(k) is None for k in ("stock", "reserved", "available_stock")):
+            raise serializers.ValidationError(
+                "Нужно хотя бы одно поле остатка: stock / reserved / available_stock."
+            )
+        return attrs
+
 
 class ItemsEnvelopeSerializer(serializers.Serializer):
     """Конверт `{"items": [...]}`. item_serializer задаётся во вьюхе."""
