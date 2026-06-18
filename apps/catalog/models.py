@@ -34,6 +34,22 @@ class Category(MP_Node):
     description = models.TextField(_("Описание"), blank=True)
     image = models.ImageField(_("Изображение"), upload_to="categories/", blank=True)
     is_active = models.BooleanField(_("Активна"), default=True)
+    on_site = models.BooleanField(
+        _("Показывать на сайте"),
+        default=True,
+        help_text=_("False — группа 1С не размещается на витрине (под скрытым корнем)."),
+    )
+    external_id_1c = models.CharField(
+        _("Код группы 1С"),
+        max_length=50,
+        null=True,
+        blank=True,
+        unique=True,
+        help_text=_(
+            "external_id группы 1С для листа дерева. Единственная связь категории "
+            "с учётной системой (ADR-0002). Узлы-контейнеры остаются пустыми."
+        ),
+    )
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
     meta_title = models.CharField(_("Meta title"), max_length=255, blank=True)
     meta_description = models.CharField(_("Meta description"), max_length=512, blank=True)
@@ -88,6 +104,12 @@ class AttributeOption(models.Model):
 
     attribute = models.ForeignKey(Attribute, on_delete=models.CASCADE, related_name="options")
     value = models.CharField(_("Значение"), max_length=255)
+    slug = models.SlugField(
+        _("Slug"),
+        max_length=120,
+        blank=True,
+        help_text=_("ЧПУ-идентификатор варианта (для SEO-фасетов вида ?tool_type=perforatory)."),
+    )
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
 
     class Meta:
@@ -110,6 +132,16 @@ class CategoryAttribute(models.Model):
         Attribute, on_delete=models.CASCADE, related_name="category_attributes"
     )
     is_required = models.BooleanField(_("Обязательна"), default=False)
+    is_filter = models.BooleanField(
+        _("Использовать в фильтре"),
+        default=True,
+        help_text=_("Характеристика участвует в фасетных фильтрах этой категории."),
+    )
+    is_seo_facet = models.BooleanField(
+        _("SEO-фасет"),
+        default=False,
+        help_text=_("На основе значений строятся посадочные страницы (вторая ось навигации)."),
+    )
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
 
     class Meta:
@@ -237,6 +269,14 @@ class Product(TimeStampedModel):
         _("Категория назначена вручную"),
         default=False,
         help_text=_("Если да — авторазбор её больше не меняет."),
+    )
+    content_locked = models.BooleanField(
+        _("Контент защищён"),
+        default=False,
+        help_text=_(
+            "Если включено — импорт из 1С не перезаписывает контентные поля "
+            "(витринное название, описание, SEO). ADR: 1С не затирает ручную работу."
+        ),
     )
     matched_rule = models.ForeignKey(
         CategoryMappingRule,
@@ -403,3 +443,89 @@ class ProductAttributeValue(models.Model):
         if t in (AttributeType.SELECT, AttributeType.MULTISELECT):
             return self.value_option
         return None
+
+
+# ---------------------------------------------------------------------------
+# Журналы загрузки и обогащения каталога (видимы в админке)
+# ---------------------------------------------------------------------------
+
+
+class ImportRunStatus(models.TextChoices):
+    RUNNING = "running", _("Выполняется")
+    DONE = "done", _("Завершён")
+    FAILED = "failed", _("Ошибка")
+
+
+class ImportRun(models.Model):
+    """Запуск загрузки/обогащения каталога. Счётчики итогов — в stats (JSONB)."""
+
+    started_at = models.DateTimeField(_("Начат"), auto_now_add=True)
+    finished_at = models.DateTimeField(_("Завершён"), null=True, blank=True)
+    source = models.CharField(
+        _("Источник"), max_length=255, help_text=_("Имя файла / команды запуска.")
+    )
+    status = models.CharField(
+        _("Статус"),
+        max_length=10,
+        choices=ImportRunStatus.choices,
+        default=ImportRunStatus.RUNNING,
+    )
+    stats = models.JSONField(
+        _("Счётчики"),
+        default=dict,
+        blank=True,
+        help_text=_(
+            "categories_created, products_imported, tool_type_assigned, unmatched, "
+            "recategorize_flagged, excluded."
+        ),
+    )
+
+    class Meta:
+        verbose_name = _("Запуск импорта")
+        verbose_name_plural = _("Запуски импорта")
+        ordering = ["-started_at"]
+
+    def __str__(self) -> str:
+        return f"{self.source} @ {self.started_at:%Y-%m-%d %H:%M} [{self.get_status_display()}]"
+
+
+class EnrichmentResult(models.TextChoices):
+    ASSIGNED = "assigned", _("tool_type проставлен")
+    MODERATION = "moderation", _("В очередь модерации")
+    RECATEGORIZE = "recategorize", _("Сменить категорию")
+
+
+class EnrichmentLog(models.Model):
+    """Решение правил по каждому товару при извлечении tool_type.
+
+    Цель — открыть админку и увидеть, что именно сделали правила: какой
+    tool_type проставлен, по какому ключевому слову, либо почему товар ушёл
+    в модерацию / на смену категории.
+    """
+
+    run = models.ForeignKey(
+        ImportRun,
+        on_delete=models.CASCADE,
+        related_name="enrichment_logs",
+        verbose_name=_("Запуск"),
+    )
+    product_external_id = models.CharField(_("Код 1С товара"), max_length=50, db_index=True)
+    raw_name = models.CharField(_("Название из 1С"), max_length=512)
+    category_path = models.CharField(_("Путь категории"), max_length=512, blank=True)
+    result = models.CharField(
+        _("Результат"), max_length=12, choices=EnrichmentResult.choices, db_index=True
+    )
+    tool_type = models.CharField(_("tool_type"), max_length=255, blank=True)
+    matched_keyword = models.CharField(_("Сработавшее слово"), max_length=255, blank=True)
+    created_at = models.DateTimeField(_("Создан"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Лог обогащения")
+        verbose_name_plural = _("Логи обогащения")
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["result", "tool_type"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.product_external_id} → {self.get_result_display()}"
