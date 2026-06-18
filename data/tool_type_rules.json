@@ -1,0 +1,561 @@
+{
+  "version": 1,
+  "note": "Правила извлечения tool_type из названия товара 1С. Приоритетный матч: первое правило, чьё ключевое слово встретилось (lower, ё=е).",
+  "categories": [
+    {
+      "category": "Электроинструмент",
+      "extraction": "priority_keyword",
+      "rules": [
+        {
+          "tool_type": "Перфораторы",
+          "slug": "perforatory",
+          "match_keywords": [
+            "перфоратор"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Отбойные молотки",
+          "slug": "otboynye-molotki",
+          "match_keywords": [
+            "отбойн",
+            "бетонолом"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Дрели и шуруповёрты",
+          "slug": "dreli-shurupoverty",
+          "match_keywords": [
+            "дрель",
+            "шурупов",
+            "шуруповерт",
+            "гайковерт",
+            "винтоверт"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Болгарки (УШМ)",
+          "slug": "bolgarki-ushm",
+          "match_keywords": [
+            "ушм",
+            "болгарк",
+            "углошлиф",
+            "угловая шлифмаш"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Лобзики",
+          "slug": "lobziki",
+          "match_keywords": [
+            "лобзик"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Пилы",
+          "slug": "pily",
+          "match_keywords": [
+            "циркулярн",
+            "дисковая пил",
+            "сабельная пил",
+            "торцовочн",
+            "торцовая пил",
+            "электропила",
+            "пила циркул",
+            "пила дисков",
+            "пила сабельн",
+            "пила торц"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Фрезеры",
+          "slug": "frezery",
+          "match_keywords": [
+            "фрезер"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Электрорубанки",
+          "slug": "rubanki",
+          "match_keywords": [
+            "рубанок",
+            "электрорубанок"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Штроборезы и бороздоделы",
+          "slug": "shtoborezy",
+          "match_keywords": [
+            "штроборез",
+            "бороздодел"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Краскораспылители",
+          "slug": "kraskoraspyliteli",
+          "match_keywords": [
+            "краскораспылит",
+            "краскопульт",
+            "окрасочн"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Клеевые пистолеты",
+          "slug": "kleevye-pistolety",
+          "match_keywords": [
+            "клеевой пистолет",
+            "термоклеев",
+            "пистолет клеев"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Граверы",
+          "slug": "gravery",
+          "match_keywords": [
+            "гравер",
+            "бормашин"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Строительные миксеры",
+          "slug": "miksery",
+          "match_keywords": [
+            "миксер",
+            "мешалка строит",
+            "дрель-мешалка"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Фены строительные",
+          "slug": "feny",
+          "match_keywords": [
+            "фен строит",
+            "термофен",
+            "строительный фен",
+            "фен техническ"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Полировальные машины",
+          "slug": "polirovalnye",
+          "match_keywords": [
+            "полировальн",
+            "полировщик"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Степлеры и заклёпочники",
+          "slug": "steplery",
+          "match_keywords": [
+            "степлер",
+            "заклепочник",
+            "скобозабив"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Строительные пылесосы",
+          "slug": "pylesosy",
+          "match_keywords": [
+            "пылесос"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Многофункциональные инструменты",
+          "slug": "mfi",
+          "match_keywords": [
+            "многофункционал",
+            "реноватор"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Электроножницы по металлу",
+          "slug": "elektronozhnitsy",
+          "match_keywords": [
+            "ножницы по металл",
+            "электроножниц",
+            "высечные ножниц"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Шлифовальные машины",
+          "slug": "shlifmashiny",
+          "match_keywords": [
+            "шлифмаш",
+            "шлифовальн",
+            "эксцентрик",
+            "виброшлиф",
+            "ленточн шлиф"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Наборы электроинструмента",
+          "slug": "nabory-elektro",
+          "match_keywords": [
+            "набор инструмента",
+            "набор электроинстр"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Аккумуляторы",
+          "slug": "akkumulyatory",
+          "match_keywords": [
+            "аккумулятор",
+            "акб "
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Зарядные устройства",
+          "slug": "zaryadnye",
+          "match_keywords": [
+            "зарядное устр",
+            "зарядн. устр"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "⚠ В категорию «Сварка»",
+          "slug": "_recat_weld",
+          "match_keywords": [
+            "сварки пласт",
+            "сварки труб",
+            "сварки полипр",
+            "газосвароч",
+            "газосварк",
+            "плазменной резк",
+            "стыковой сварки",
+            "муфтовой сварки",
+            "сварки скрут",
+            "сварочн"
+          ],
+          "source": "name_keywords",
+          "action": "recategorize"
+        },
+        {
+          "tool_type": "⚠ В категорию «Связь/Радио»",
+          "slug": "_recat_radio",
+          "match_keywords": [
+            "радиостанц",
+            "антенна",
+            "антена",
+            "рация"
+          ],
+          "source": "name_keywords",
+          "action": "recategorize"
+        }
+      ]
+    },
+    {
+      "category": "Ручной инструмент",
+      "extraction": "priority_keyword",
+      "rules": [
+        {
+          "tool_type": "Болторезы",
+          "slug": "boltorezy",
+          "match_keywords": [
+            "болторез"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Гаечные ключи",
+          "slug": "klyuchi-gaechnye",
+          "match_keywords": [
+            "ключ гаечн",
+            "ключ рожков",
+            "ключ накидн",
+            "ключ комбинир",
+            "ключ трещоточ",
+            "ключ разводн",
+            "ключ динамометр",
+            "ключ трубн",
+            "ключ баллон",
+            "ключ шестигран",
+            "ключ имбус",
+            "набор ключей"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Головки и торцевые ключи",
+          "slug": "golovki",
+          "match_keywords": [
+            "головка торцев",
+            "головка ударн",
+            "головка 1/",
+            "набор головок",
+            "торцевая головка",
+            "головка-би052"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Воротки и трещотки",
+          "slug": "vorotki",
+          "match_keywords": [
+            "вороток",
+            "трещотка",
+            "удлинитель 1/",
+            "кардан"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Отвёртки",
+          "slug": "otvertki",
+          "match_keywords": [
+            "отвертка",
+            "набор отверток",
+            "отверточн"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Пассатижи и плоскогубцы",
+          "slug": "passatizhi",
+          "match_keywords": [
+            "пассатиж",
+            "плоскогубц",
+            "длинногубц",
+            "круглогубц",
+            "утконос"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Бокорезы и кусачки",
+          "slug": "bokorezy",
+          "match_keywords": [
+            "бокорез",
+            "кусачк",
+            "клещи"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Молотки и кувалды",
+          "slug": "molotki",
+          "match_keywords": [
+            "молоток",
+            "кувалда",
+            "киянка"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Ножовки и пилы ручные",
+          "slug": "nozhovki",
+          "match_keywords": [
+            "ножовка",
+            "пила по дерев",
+            "пила по металл",
+            "лучковая пил",
+            "стусло",
+            "полотно для ножов"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Ножи строительные",
+          "slug": "nozhi",
+          "match_keywords": [
+            "нож строит",
+            "нож монтаж",
+            "нож сегмент",
+            "нож трапец",
+            "нож технич",
+            "нож складн",
+            "нож обойн"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Напильники и надфили",
+          "slug": "napilniki",
+          "match_keywords": [
+            "напильник",
+            "надфил",
+            "рашпил"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Зубила, керны, пробойники",
+          "slug": "zubila",
+          "match_keywords": [
+            "зубило",
+            "керн",
+            "пробойник",
+            "бородок"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Струбцины",
+          "slug": "strubtsiny",
+          "match_keywords": [
+            "струбцин"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Тиски",
+          "slug": "tiski",
+          "match_keywords": [
+            "тиски"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Стамески и долота",
+          "slug": "stameski",
+          "match_keywords": [
+            "стамеск",
+            "долото"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Топоры и колуны",
+          "slug": "topory",
+          "match_keywords": [
+            "топор",
+            "колун"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Съёмники",
+          "slug": "syomniki",
+          "match_keywords": [
+            "съемник"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Стрипперы и обжимной инструмент",
+          "slug": "strippery",
+          "match_keywords": [
+            "автомат для зачистки",
+            "автомат д/зачистки",
+            "стриппер",
+            "обжимн",
+            "кримпер",
+            "для зачистки изоляц"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Заклёпочники ручные",
+          "slug": "zaklepochniki",
+          "match_keywords": [
+            "заклепочник",
+            "заклепочн",
+            "ручной заклеп"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Адаптеры и переходники",
+          "slug": "adaptery",
+          "match_keywords": [
+            "адаптер",
+            "переходник"
+          ],
+          "source": "name_keywords"
+        }
+      ]
+    },
+    {
+      "category": "Оснастка и расходники",
+      "extraction": "inherit_1c_subgroup",
+      "note": "tool_type берётся из подгруппы 1С (она уже типизирована), парсинг названия не нужен.",
+      "rules": [
+        {
+          "tool_type": "Сверла",
+          "slug": "sverla",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Буры",
+          "slug": "bury",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Коронки",
+          "slug": "koronki",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Биты",
+          "slug": "bity",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Наборы бит, насадок, сверел",
+          "slug": "nabory-bit",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Пики и долота",
+          "slug": "piki-dolota",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Пилки и полотна",
+          "slug": "pilki-polotna",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Круги, шлифовалка",
+          "slug": "krugi-shlif",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Круги алмазные",
+          "slug": "krugi-almaznye",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Метчики и плашки",
+          "slug": "metchiki-plashki",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Развертки, фрезы",
+          "slug": "razvertki-frezy",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Резцы",
+          "slug": "reztsy",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Мешки для пылесосов",
+          "slug": "meshki-pylesos",
+          "source": "1c_subgroup"
+        }
+      ]
+    }
+  ]
+}
