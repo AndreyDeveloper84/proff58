@@ -160,6 +160,32 @@ def test_stocks_update(auth_client):
 
 @override_settings(ONEC_API_KEY=API_KEY)
 @pytest.mark.django_db
+def test_stocks_update_requires_stock_field_400(auth_client):
+    """Только идентификатор без stock/reserved/available_stock → 400 (контракт)."""
+    resp = auth_client.post(
+        "/api/1c/stocks/update",
+        {"items": [{"external_id": "1c-300"}]},
+        format="json",
+    )
+    assert resp.status_code == 400
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_stocks_update_zero_stock_is_valid(auth_client):
+    """stock=0 (нулевой остаток) — валиден, не путать с отсутствием поля."""
+    Product.objects.create(name="Т", code_1c="1c-301", slug="t-301")
+    resp = auth_client.post(
+        "/api/1c/stocks/update",
+        {"items": [{"external_id": "1c-301", "stock": "0"}]},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.json()["updated"] == 1
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
 def test_orders_endpoints_are_stubbed(auth_client):
     assert auth_client.get("/api/1c/orders/new").status_code == 501
     assert auth_client.post("/api/1c/orders/confirm", {}, format="json").status_code == 501
