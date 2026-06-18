@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Каталог «Профессионал»{% endblock %}</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 1.5rem; color: #222; }
+    a { color: #1558b0; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .muted { color: #777; font-size: .9em; }
+    .crumbs { font-size: .9em; margin-bottom: 1rem; }
+    .tiles { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
+    .tile { border: 1px solid #ccc; border-radius: 6px; padding: .4rem .7rem; }
+    .tile.active { background: #1558b0; color: #fff; border-color: #1558b0; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #eee; }
+    .badge { font-size: .8em; padding: .1rem .4rem; border-radius: 4px; white-space: nowrap; }
+    .badge-mod { background: #fde8c4; color: #8a5300; }
+    .badge-recat { background: #e3d3f7; color: #5a2a8a; }
+    .badge-tt { background: #d8efe0; color: #1c6b3d; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .8rem; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: .8rem; }
+    .pager { margin: 1rem 0; }
+    .filters { margin: .5rem 0; }
+  </style>
+</head>
+<body>
+  <p class="muted"><a href="/catalog/">Каталог</a> · тестовая витрина (показаны импортированные данные)</p>
+  {% block content %}{% endblock %}
+</body>
+</html>
