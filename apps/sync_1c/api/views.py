@@ -14,7 +14,12 @@
 
 from django.conf import settings
 from rest_framework import status
-from rest_framework.decorators import api_view, parser_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    parser_classes,
+    permission_classes,
+    renderer_classes,
+)
 from rest_framework.response import Response
 
 from apps.catalog.models import Product
@@ -23,6 +28,7 @@ from .. import tasks, use_cases
 from ..models import SyncLog
 from .parsers import OneCJSONParser
 from .permissions import HasOneCApiKey
+from .renderers import OneCJSONRenderer
 from .serializers import (
     PriceItemSerializer,
     ProductImportItemSerializer,
@@ -77,6 +83,7 @@ def _enqueue_import(request, *, source_file, create_missing):
 
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
+@renderer_classes([OneCJSONRenderer])
 @parser_classes([OneCJSONParser])
 def products_import(request):
     """Создать/обновить товары (создание разрешено). Тяжёлая операция → в фон."""
@@ -88,6 +95,7 @@ def products_import(request):
 
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
+@renderer_classes([OneCJSONRenderer])
 @parser_classes([OneCJSONParser])
 def products_update(request):
     """Обновить базовые поля СУЩЕСТВУЮЩИХ товаров (новые не создаются). В фон."""
@@ -99,6 +107,7 @@ def products_update(request):
 
 @api_view(["GET"])
 @permission_classes([HasOneCApiKey])
+@renderer_classes([OneCJSONRenderer])
 def sync_status(request, batch_uid):
     """Статус прогона импорта по batch_uid (1С опрашивает фоновую задачу)."""
     try:
@@ -122,6 +131,7 @@ def sync_status(request, batch_uid):
 
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
+@renderer_classes([OneCJSONRenderer])
 @parser_classes([OneCJSONParser])
 def prices_update(request):
     items, error = _validate_items(request, PriceItemSerializer)
@@ -133,6 +143,7 @@ def prices_update(request):
 
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
+@renderer_classes([OneCJSONRenderer])
 @parser_classes([OneCJSONParser])
 def stocks_update(request):
     items, error = _validate_items(request, StockItemSerializer)
@@ -151,12 +162,14 @@ _ORDERS_PENDING = {
 
 @api_view(["GET"])
 @permission_classes([HasOneCApiKey])
+@renderer_classes([OneCJSONRenderer])
 def orders_new(_request):
     return Response(_ORDERS_PENDING, status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
+@renderer_classes([OneCJSONRenderer])
 def orders_confirm(_request):
     return Response(_ORDERS_PENDING, status=status.HTTP_501_NOT_IMPLEMENTED)
 
@@ -180,6 +193,7 @@ def _decimal_to_str(value):
 
 @api_view(["GET"])
 @permission_classes([HasOneCApiKey])
+@renderer_classes([OneCJSONRenderer])
 def snapshot(request):
     """Снимок актуальных позиций для 1С: code_1c + цена + остатки, постранично.
 

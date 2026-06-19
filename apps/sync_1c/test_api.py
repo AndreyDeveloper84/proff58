@@ -100,6 +100,19 @@ def test_products_import_cp1251_without_charset_header(auth_client):
     assert Product.objects.get(code_1c="1c-cp-noh").original_name == name
 
 
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_response_encoded_in_cp1251(auth_client):
+    """Ответы 1С-эндпоинтов отдаются в Windows-1251 (1С читает их как cp1251)."""
+    resp = auth_client.get("/api/1c/orders/new")  # detail с кириллицей
+    assert resp.status_code == 501
+    assert "charset=windows-1251" in resp["Content-Type"].lower()
+    # тело реально в cp1251, а не в utf-8
+    assert "Модуль заказов".encode("cp1251") in resp.content
+    assert "Модуль заказов".encode() not in resp.content
+    assert "Модуль заказов" in resp.content.decode("cp1251")
+
+
 @override_settings(ONEC_API_KEY=API_KEY, **EAGER)
 @pytest.mark.django_db
 def test_products_update_does_not_create(auth_client):
