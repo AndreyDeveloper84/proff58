@@ -58,8 +58,7 @@ class Command(BaseCommand):
         # Иначе update_or_create по одной строке вешает Postgres (≈16k round-trip'ов
         # + шторм сигналов rebuild_attrs_cache).
         existing_pav = {
-            pav.product_id: pav
-            for pav in ProductAttributeValue.objects.filter(attribute=attribute)
+            pav.product_id: pav for pav in ProductAttributeValue.objects.filter(attribute=attribute)
         }
 
         run = ImportRun.objects.create(source="enrich_tool_type")
