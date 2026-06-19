@@ -54,11 +54,12 @@ class Command(BaseCommand):
 
         top_name_by_id, path_str_by_id = self._category_meta()
         opt_by_slug, opt_by_value = self._option_indexes(attribute)
-        existing_pav = set(
-            ProductAttributeValue.objects.filter(attribute=attribute).values_list(
-                "product_id", flat=True
-            )
-        )
+        # Существующие PAV — объектами (для bulk_update при повторном прогоне).
+        # Иначе update_or_create по одной строке вешает Postgres (≈16k round-trip'ов
+        # + шторм сигналов rebuild_attrs_cache).
+        existing_pav = {
+            pav.product_id: pav for pav in ProductAttributeValue.objects.filter(attribute=attribute)
+        }
 
         run = ImportRun.objects.create(source="enrich_tool_type")
         stats = {
@@ -70,6 +71,7 @@ class Command(BaseCommand):
 
         logs: list[EnrichmentLog] = []
         pav_create: list[ProductAttributeValue] = []
+        pav_update: list[ProductAttributeValue] = []
         cache_updates: list[Product] = []
 
         qs = (
@@ -93,18 +95,16 @@ class Command(BaseCommand):
                         option = self._resolve_option(attribute, ex, opt_by_slug, opt_by_value)
                         tool_type_value = option.value
                         stats["tool_type_assigned"] += 1
-                        if product.id not in existing_pav:
+                        pav = existing_pav.get(product.id)
+                        if pav is None:
                             pav_create.append(
                                 ProductAttributeValue(
                                     product=product, attribute=attribute, value_option=option
                                 )
                             )
-                        else:
-                            ProductAttributeValue.objects.update_or_create(
-                                product=product,
-                                attribute=attribute,
-                                defaults={"value_option": option},
-                            )
+                        elif pav.value_option_id != option.id:
+                            pav.value_option = option
+                            pav_update.append(pav)
                         product.attrs_cache = {
                             **(product.attrs_cache or {}),
                             "tool_type": option.value,
@@ -133,6 +133,11 @@ class Command(BaseCommand):
                     if len(pav_create) >= BATCH:
                         ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
                         pav_create.clear()
+                    if len(pav_update) >= BATCH:
+                        ProductAttributeValue.objects.bulk_update(
+                            pav_update, ["value_option"], batch_size=BATCH
+                        )
+                        pav_update.clear()
                     if len(cache_updates) >= BATCH:
                         Product.objects.bulk_update(
                             cache_updates, ["attrs_cache"], batch_size=BATCH
@@ -143,6 +148,10 @@ class Command(BaseCommand):
                     EnrichmentLog.objects.bulk_create(logs, batch_size=BATCH)
                 if pav_create:
                     ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
+                if pav_update:
+                    ProductAttributeValue.objects.bulk_update(
+                        pav_update, ["value_option"], batch_size=BATCH
+                    )
                 if cache_updates:
                     Product.objects.bulk_update(cache_updates, ["attrs_cache"], batch_size=BATCH)
 
