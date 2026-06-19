@@ -31,9 +31,16 @@ else:
 fi
 
 echo "==> Запуск gunicorn"
+# worker-class=gthread + threads: один медленный запрос (тяжёлая админка) или
+# всплеск ботов-сканеров не блокирует весь сайт — внутри воркера есть потоки.
+# access-logformat с %(D)s — время каждого запроса в микросекундах (видно тормоза).
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
     --workers "${GUNICORN_WORKERS:-3}" \
+    --worker-class "${GUNICORN_WORKER_CLASS:-gthread}" \
+    --threads "${GUNICORN_THREADS:-4}" \
     --timeout 120 \
+    --graceful-timeout 30 \
     --access-logfile - \
-    --error-logfile -
+    --error-logfile - \
+    --access-logformat '%(h)s %(t)s "%(r)s" %(s)s %(b)s %(D)susec'
