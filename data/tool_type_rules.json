@@ -20,7 +20,8 @@
           "slug": "otboynye-molotki",
           "match_keywords": [
             "отбойн",
-            "бетонолом"
+            "бетонолом",
+            "молоток отб"
           ],
           "source": "name_keywords"
         },
@@ -33,7 +34,8 @@
             "шуруповерт",
             "гайковерт",
             "винтоверт",
-            "шуруп."
+            "шуруп.",
+            "отвертка"
           ],
           "source": "name_keywords"
         },
@@ -193,7 +195,8 @@
           "match_keywords": [
             "ножницы по металл",
             "электроножниц",
-            "высечные ножниц"
+            "высечные ножниц",
+            "ножниц"
           ],
           "source": "name_keywords"
         },
@@ -233,6 +236,30 @@
           "match_keywords": [
             "зарядное устр",
             "зарядн. устр"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Плиткорезы",
+          "slug": "plitkorezy",
+          "match_keywords": [
+            "плиткорез"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Установки алмазного бурения",
+          "slug": "ustanovki-almaznogo-bureniya",
+          "match_keywords": [
+            "алмазного бурения"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Паяльники",
+          "slug": "payalniki",
+          "match_keywords": [
+            "паяльник"
           ],
           "source": "name_keywords"
         },
@@ -283,7 +310,29 @@
             "культиватор",
             "мотокос",
             "воздуходув",
-            "бетономешалк"
+            "бетономешалк",
+            "станция водоснаб",
+            "вибратор",
+            "для заточки",
+            "заточк",
+            "таль",
+            "измельчитель",
+            "кусторез",
+            "скарификатор",
+            "опрыскиватель",
+            "бетоносмеситель"
+          ],
+          "source": "name_keywords",
+          "action": "recategorize"
+        },
+        {
+          "tool_type": "⚠ В категорию «Электрика и освещение»",
+          "slug": "_recat_light",
+          "match_keywords": [
+            "фонар",
+            "прожектор",
+            "светильник",
+            "трансформатор"
           ],
           "source": "name_keywords",
           "action": "recategorize"
