@@ -74,6 +74,21 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
     "default": env.db("DATABASE_URL", default="postgres://proff:proff@db:5432/proff58"),
 }
+# По умолчанию Django открывает новое соединение с БД на КАЖДЫЙ запрос — заметная
+# задержка, особенно «подвисание» первого клика после простоя. Держим соединение
+# открытым между запросами; CONN_HEALTH_CHECKS отбраковывает протухшее соединение
+# перед запросом (иначе первый запрос после простоя мог бы упасть на мёртвом сокете).
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("DJANGO_CONN_MAX_AGE", default=60)
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+
+# Кэш приложения. По умолчанию — локальный, чтобы dev и CI не зависели от Redis.
+# В проде переопределяется на общий Redis (см. config/settings/prod.py).
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "proff58-default",
+    }
+}
 
 AUTH_USER_MODEL = "accounts.User"
 

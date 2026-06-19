@@ -9,6 +9,18 @@ from .base import ALLOWED_HOSTS, env
 
 DEBUG = False
 
+# Кэш — общий Redis для всех воркеров gunicorn. LocMem был бы у каждого процесса
+# свой, и прогретое дерево каталога не переиспользовалось бы между воркерами.
+# Отдельная БД Redis (2), чтобы не пересекаться с брокером (0) и result-backend (1)
+# Celery.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": env("REDIS_CACHE_URL", default="redis://redis:6379/2"),
+        "TIMEOUT": env.int("DJANGO_CACHE_TTL", default=300),
+    }
+}
+
 # Для входа в админку за nginx/HTTPS Django требует доверенные origin-ы.
 _public_hosts = [h for h in ALLOWED_HOSTS if h not in ("*", "localhost", "127.0.0.1")]
 CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in _public_hosts] + [
