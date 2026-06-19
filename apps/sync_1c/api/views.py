@@ -14,13 +14,14 @@
 
 from django.conf import settings
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.response import Response
 
 from apps.catalog.models import Product
 
 from .. import tasks, use_cases
 from ..models import SyncLog
+from .parsers import OneCJSONParser
 from .permissions import HasOneCApiKey
 from .serializers import (
     PriceItemSerializer,
@@ -76,6 +77,7 @@ def _enqueue_import(request, *, source_file, create_missing):
 
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
+@parser_classes([OneCJSONParser])
 def products_import(request):
     """Создать/обновить товары (создание разрешено). Тяжёлая операция → в фон."""
     _items, error = _validate_items(request, ProductImportItemSerializer)
@@ -86,6 +88,7 @@ def products_import(request):
 
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
+@parser_classes([OneCJSONParser])
 def products_update(request):
     """Обновить базовые поля СУЩЕСТВУЮЩИХ товаров (новые не создаются). В фон."""
     _items, error = _validate_items(request, ProductImportItemSerializer)
@@ -119,6 +122,7 @@ def sync_status(request, batch_uid):
 
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
+@parser_classes([OneCJSONParser])
 def prices_update(request):
     items, error = _validate_items(request, PriceItemSerializer)
     if error:
@@ -129,6 +133,7 @@ def prices_update(request):
 
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
+@parser_classes([OneCJSONParser])
 def stocks_update(request):
     items, error = _validate_items(request, StockItemSerializer)
     if error:
