@@ -1,5 +1,6 @@
 """Тесты API для 1С (/api/1c/...)."""
 
+import json
 from unittest import mock
 
 import pytest
@@ -8,6 +9,7 @@ from rest_framework.test import APIClient
 
 from apps.catalog.models import Product, ProductStatus
 from apps.sync_1c import use_cases
+from apps.sync_1c.api.parsers import OneCJSONParser
 from apps.sync_1c.models import PriceRecord, SyncLog
 
 API_KEY = "test-key-123"
@@ -54,6 +56,48 @@ def test_products_import_creates(auth_client):
     assert st["status"] == "ok"
     assert st["finished"] is True
     assert st["created"] == 1
+
+
+def test_onec_parser_decodes_both_encodings():
+    """Декодер 1С понимает и UTF-8, и Windows-1251 (1С 7.7 шлёт cp1251)."""
+    assert OneCJSONParser.decode("Дрель".encode("cp1251")) == "Дрель"
+    assert OneCJSONParser.decode("Дрель".encode()) == "Дрель"
+
+
+@override_settings(ONEC_API_KEY=API_KEY, **EAGER)
+@pytest.mark.django_db
+def test_products_import_accepts_cp1251_body(auth_client):
+    """1С 7.7 выгружает тело в Windows-1251 — кириллица не должна биться в кракозябры."""
+    name = "Дрель ударная ЗУБР ЗДУ-810"
+    body = json.dumps(
+        {"items": [{"external_id": "1c-cp1251", "name": name, "price": "1000"}]},
+        ensure_ascii=False,
+    ).encode("cp1251")
+
+    resp = auth_client.post(
+        "/api/1c/products/import",
+        data=body,
+        content_type="application/json; charset=windows-1251",
+    )
+    assert resp.status_code == 202
+
+    p = Product.objects.get(code_1c="1c-cp1251")
+    assert p.original_name == name  # корректная кириллица, а не «Äðåëü»
+
+
+@override_settings(ONEC_API_KEY=API_KEY, **EAGER)
+@pytest.mark.django_db
+def test_products_import_cp1251_without_charset_header(auth_client):
+    """1С может не проставить charset — кодировку определяем по содержимому."""
+    name = "Шуруповёрт аккумуляторный"
+    body = json.dumps(
+        {"items": [{"external_id": "1c-cp-noh", "name": name, "price": "1"}]},
+        ensure_ascii=False,
+    ).encode("cp1251")
+
+    resp = auth_client.post("/api/1c/products/import", data=body, content_type="application/json")
+    assert resp.status_code == 202
+    assert Product.objects.get(code_1c="1c-cp-noh").original_name == name
 
 
 @override_settings(ONEC_API_KEY=API_KEY, **EAGER)
