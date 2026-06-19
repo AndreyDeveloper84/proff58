@@ -160,3 +160,31 @@ def test_categorize_no_match():
     cat, rule = categorize(ProductHint(name="Нечто непонятное"))
     assert cat is None
     assert rule is None
+
+
+@pytest.mark.django_db
+def test_get_category_tree_counts_whole_subtree(root_category, child_category):
+    """Счётчики корневой категории агрегируются по всему поддереву (один GROUP BY)."""
+    from apps.catalog.services import get_category_tree
+
+    Product.objects.create(category=child_category, name="A", slug="a", stock_quantity=5)
+    Product.objects.create(category=child_category, name="B", slug="b", stock_quantity=0)
+    Product.objects.create(category=root_category, name="C", slug="c", stock_quantity=3)
+
+    tree = get_category_tree(on_site_only=True)
+
+    assert len(tree) == 1
+    node = tree[0]
+    assert node["slug"] == root_category.slug
+    assert node["total"] == 3  # 2 в подкатегории + 1 в корне
+    assert node["in_stock"] == 2  # с остатком > 0
+
+
+@pytest.mark.django_db
+def test_get_category_tree_cache_invalidated_on_product_change(root_category):
+    """Кэш дерева сбрасывается сигналом при изменении товаров — счётчики не «залипают»."""
+    from apps.catalog.services import get_category_tree
+
+    assert get_category_tree()[0]["total"] == 0  # кэшируем пустой счётчик
+    Product.objects.create(category=root_category, name="X", slug="x", stock_quantity=1)
+    assert get_category_tree()[0]["total"] == 1  # сигнал инвалидировал кэш
