@@ -1040,6 +1040,29 @@
         { "tool_type": "Влагомеры, анализаторы, приборы", "slug": "izm-analizatory", "match_keywords": ["влагомер", "газоанализатор", "анемометр", "анеометр", "анализатор", "рн-метр", "рн метр", "ph-метр", "люксметр", "шумомер", "толщиномер", "барометр", "видеоскоп", "эндоскоп", "дефектоскоп", "алкотест", "алкометр", "виброметр", "тахометр", "стробоскоп"], "source": "name_keywords" },
         { "tool_type": "Измерительные колёса (курвиметры)", "slug": "izm-kolesa", "match_keywords": ["курвиметр", "измерительное колесо", "колесо измерит"], "source": "name_keywords" }
       ]
+    },
+    {
+      "category": "Сварочное оборудование",
+      "extraction": "priority_keyword",
+      "note": "Сварочные аппараты, расходники, газовое оборудование. Типизируем по названию. Порядок precision-first: электрододержатели ДО электродов («электрододержатель» содержит «электрод»). Убраны голые 'плита' (ловит бытовые газовые/электроплиты) и 'вилка кабельн' (ловит силовые вилки). Slug с префиксом svar-.",
+      "rules": [
+        { "tool_type": "Электрододержатели", "slug": "svar-derzhateli", "match_keywords": ["электрододержатель", "электродержатель", "электродерж", "держатель электрод"], "source": "name_keywords" },
+        { "tool_type": "Электроды", "slug": "svar-electrody", "match_keywords": ["электроды", "электрод"], "source": "name_keywords" },
+        { "tool_type": "Сварочная проволока и прутки", "slug": "svar-provoloka", "match_keywords": ["проволока", "пруток", "присадочн"], "source": "name_keywords" },
+        { "tool_type": "Горелки и резаки", "slug": "svar-gorelki", "match_keywords": ["горелка", "резак"], "source": "name_keywords" },
+        { "tool_type": "Сварочные аппараты, инверторы, плазморезы", "slug": "svar-apparaty", "match_keywords": ["свар. аппарат", "свар. инвертор", "свар. полуавтомат", "сварочный аппарат", "сварочный инвертор", "выпрямитель свароч", "газосварочный аппарат", "инвертор", "полуавтомат", "трансформатор свар", "плазмен", "плазморез", "аппарат плазм"], "source": "name_keywords" },
+        { "tool_type": "Газовые редукторы", "slug": "svar-reduktory", "match_keywords": ["редуктор"], "source": "name_keywords" },
+        { "tool_type": "Манометры", "slug": "svar-manometry", "match_keywords": ["манометр", "вакуумметр"], "source": "name_keywords" },
+        { "tool_type": "Сопла, мундштуки, наконечники", "slug": "svar-sopla", "match_keywords": ["сопло", "мундштук", "токосъемн", "наконечник токоподвод", "диффузор газов", "токоподвод"], "source": "name_keywords" },
+        { "tool_type": "Газовые баллоны и газ", "slug": "svar-ballony", "match_keywords": ["баллон", "балон", "газ мапп", "мапп газ", "газ пропан", "картридж газ", "газовый картридж", "газ для горелок", "газ для зажиг", "газ для портатив", "газ очищ", "газ в бал"], "source": "name_keywords" },
+        { "tool_type": "Затворы и обратные клапаны", "slug": "svar-zatvory", "match_keywords": ["затвор", "клапан обратн", "обратный клапан"], "source": "name_keywords" },
+        { "tool_type": "Клеммы, зажимы, кабели", "slug": "svar-klemmy", "match_keywords": ["клемма", "зажим массы", "кабель свароч", "байонет", "разъем байонет"], "source": "name_keywords" },
+        { "tool_type": "Маски и щитки сварочные", "slug": "svar-maski", "match_keywords": ["маска свар", "щиток", "светофильтр", "стекло", "хамелеон"], "source": "name_keywords" },
+        { "tool_type": "Газовые рукава", "slug": "svar-rukava", "match_keywords": ["рукав"], "source": "name_keywords" },
+        { "tool_type": "Спреи и химия сварочная", "slug": "svar-sprei", "match_keywords": ["спрей", "антипригарн", "паста свароч", "антиадгезив"], "source": "name_keywords" },
+        { "tool_type": "Цанги", "slug": "svar-cangi", "match_keywords": ["цанга", "держатель цанг"], "source": "name_keywords" },
+        { "tool_type": "Тележки", "slug": "svar-telezhki", "match_keywords": ["тележка"], "source": "name_keywords" }
+      ]
     }
   ]
 }
