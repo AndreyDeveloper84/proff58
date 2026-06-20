@@ -1,28 +1,29 @@
-"""Извлечение и простановка характеристик товаров (Фаза B, #96).
+"""Извлечение характеристик товара (EAV) из названия 1С — Фаза B (#96).
 
-Для каждого товара берём его ``tool_type`` из ``attrs_cache`` (проставлен
-``enrich_tool_type``), извлекаем характеристики движком ``attribute_extract`` и
-делаем upsert ``ProductAttributeValue`` — но только если источник вправе
-перезаписать прежний (``source_priority.can_overwrite``): ручные и 1С-значения
-неприкосновенны. ``attrs_cache`` — read-model, пересобираем здесь же (bulk).
+Зеркало ``enrich_tool_type`` поверх движка #99 (`attribute_extract.AttributeRules`):
 
-Bulk-паттерн как в ``enrich_tool_type`` (#93): без per-row update_or_create,
-иначе шторм запросов и сигналов на ~16k товарах.
+1. tool_type товара берём из его PAV (``value_option.slug``), НЕ из attrs_cache
+   (там русский ярлык). По slug движок знает правила (`rules_for`).
+2. ``rules.extract(slug, name)`` → список значений; каждое пишем в
+   ``ProductAttributeValue`` (number→value_decimal, select→value_option, boolean→value_boolean).
+3. Провенанс: ``source`` (regex/keyword/…) и ``confidence``. Перезапись разрешена
+   только если приоритет нового источника ≥ приоритета сохранённого
+   (``rules.source_priority``) — ручное (manual) и 1С не затираются regex/keyword.
+   ``confidence`` в решении о перезаписи НЕ участвует.
+4. Bulk-паттерн #93: префетч PAV → ``iterator`` → ``bulk_create``/``bulk_update``
+   батчами; ``attrs_cache`` обновляем в памяти; итоги — в ``ImportRun.stats``.
 """
 
 from __future__ import annotations
+
+import json
+from pathlib import Path
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from apps.catalog.attribute_extract import (
-    KIND_BOOLEAN,
-    KIND_NUMBER,
-    KIND_SELECT,
-    AttributeRules,
-    ExtractedValue,
-)
+from apps.catalog.attribute_extract import BOOLEAN, NUMBER, SELECT, AttributeRules
 from apps.catalog.ingest import data_dir
 from apps.catalog.models import (
     Attribute,
@@ -31,92 +32,158 @@ from apps.catalog.models import (
     ImportRunStatus,
     Product,
     ProductAttributeValue,
+    Source,
 )
-from apps.catalog.source_priority import can_overwrite
-from apps.catalog.tool_type import normalize
 
 BATCH = 1000
-PAV_UPDATE_FIELDS = ["value_decimal", "value_boolean", "value_option", "source", "confidence"]
 TOOL_TYPE_SLUG = "tool_type"
+
+# Уверенность по источнику (только аналитика/AI, НЕ участвует в overwrite).
+SOURCE_CONFIDENCE = {
+    Source.MANUAL: 100,
+    Source.IMPORT_1C: 100,
+    Source.REGEX: 100,
+    Source.KEYWORD: 90,
+    Source.LLM: 60,
+}
+
+# Поля значения PAV, пересобираемые при записи (фиксированный список для bulk_update).
+VALUE_FIELDS = ["value_text", "value_integer", "value_decimal", "value_boolean", "value_option"]
+UPDATE_FIELDS = VALUE_FIELDS + ["source", "confidence"]
 
 
 class Command(BaseCommand):
-    help = "Проставить характеристики по attribute_rules.json (идемпотентно, с провенансом)."
+    help = "Извлечь характеристики из названий и записать в EAV (идемпотентно, bulk)."
 
     def add_arguments(self, parser):
         parser.add_argument("--path", default=None, help="Каталог с attribute_rules.json")
 
     def handle(self, *args, **options):
         base = options["path"] or data_dir()
-        rules = AttributeRules.from_file(f"{base}/attribute_rules.json")
+        raw = json.loads(Path(f"{base}/attribute_rules.json").read_text(encoding="utf-8"))
+        rules = AttributeRules.from_dict(raw)
+        priority = rules.source_priority
 
-        attr_by_slug = {a.slug: a for a in Attribute.objects.all()}
-        missing = self._missing_attributes(rules, attr_by_slug)
+        tt_slugs = [tt["tool_type"] for tt in raw.get("tool_types", [])]
+        managed_slugs = {a["slug"] for tt in raw.get("tool_types", []) for a in tt["attributes"]}
+
+        attr_by_slug = {a.slug: a for a in Attribute.objects.filter(slug__in=managed_slugs)}
+        missing = managed_slugs - set(attr_by_slug)
         if missing:
             self.stderr.write(
-                f"Не найдены характеристики {sorted(missing)} — выполните load_attributes."
+                f"Не найдены атрибуты {sorted(missing)} — сначала выполните load_attributes."
             )
             return ""
 
-        option_index = self._option_index(rules, attr_by_slug)
-        attr_ids = {attr_by_slug[s].id for s in self._rule_slugs(rules)}
-        existing_pav = {
-            (pav.product_id, pav.attribute_id): pav
-            for pav in ProductAttributeValue.objects.filter(attribute_id__in=attr_ids)
+        # Опции select-характеристик: {attr_slug: {option_slug: AttributeOption}}.
+        option_index: dict[str, dict[str, AttributeOption]] = {}
+        for opt in AttributeOption.objects.filter(attribute__slug__in=managed_slugs).select_related(
+            "attribute"
+        ):
+            option_index.setdefault(opt.attribute.slug, {})[opt.slug] = opt
+
+        # product_id → slug его tool_type (только товары интересующих типов).
+        product_tt = {
+            row["product_id"]: row["value_option__slug"]
+            for row in ProductAttributeValue.objects.filter(
+                attribute__slug=TOOL_TYPE_SLUG,
+                value_option__isnull=False,
+                value_option__slug__in=tt_slugs,
+            ).values("product_id", "value_option__slug")
         }
+        product_ids = list(product_tt)
+
+        # Существующие PAV управляемых атрибутов — объектами (bulk_update + проверка приоритета).
+        existing: dict[tuple[int, str], ProductAttributeValue] = {}
+        for pav in ProductAttributeValue.objects.filter(
+            product_id__in=product_ids, attribute__slug__in=managed_slugs
+        ).select_related("attribute"):
+            existing[(pav.product_id, pav.attribute.slug)] = pav
 
         run = ImportRun.objects.create(source="enrich_attributes")
-        stats: dict[str, int] = {
-            "processed": 0,
-            "values_set": 0,
-            "skipped_protected": 0,
-            "no_attributes": 0,
-        }
+        stats = {"processed": 0, "no_attributes": 0, "by_attribute": {}, "skipped_priority": 0}
 
         pav_create: list[ProductAttributeValue] = []
         pav_update: list[ProductAttributeValue] = []
         cache_updates: list[Product] = []
 
-        qs = Product.objects.exclude(category__isnull=True).iterator(chunk_size=2000)
+        qs = Product.objects.filter(id__in=product_ids).iterator(chunk_size=2000)
         try:
             with transaction.atomic():
                 for product in qs:
-                    tool_type = (product.attrs_cache or {}).get(TOOL_TYPE_SLUG)
-                    if not tool_type or rules.get(tool_type) is None:
-                        continue
                     stats["processed"] += 1
-
+                    tt_slug = product_tt[product.id]
                     name = product.original_name or product.name
-                    extracted = rules.extract_all(tool_type, name)
-                    if not extracted:
+                    values = rules.extract(tt_slug, name)
+                    if not values:
                         stats["no_attributes"] += 1
                         continue
 
                     cache = dict(product.attrs_cache or {})
-                    changed = False
-                    for ev in extracted:
-                        attribute = attr_by_slug[ev.spec.slug]
-                        applied = self._apply_value(
-                            product,
-                            attribute,
-                            ev,
-                            existing_pav,
-                            option_index,
-                            pav_create,
-                            pav_update,
-                            stats,
-                        )
-                        if applied is not None:
-                            cache[ev.spec.slug] = applied
-                            changed = True
+                    cache_changed = False
+                    for av in values:
+                        attribute = attr_by_slug[av.slug]
+                        option = None
+                        if av.kind == SELECT:
+                            option = option_index.get(av.slug, {}).get(av.option_slug)
+                            if option is None:
+                                continue  # вариант не загружен — пропускаем
+                        new_source = av.source
+                        new_conf = SOURCE_CONFIDENCE.get(new_source, 100)
+                        key = (product.id, av.slug)
+                        pav = existing.get(key)
 
-                    if changed:
+                        if pav is None:
+                            pav = ProductAttributeValue(
+                                product=product,
+                                attribute=attribute,
+                                source=new_source,
+                                confidence=new_conf,
+                            )
+                            self._apply_value(pav, av, option)
+                            pav_create.append(pav)
+                            existing[key] = pav
+                        else:
+                            # Перезапись только если приоритет нового ≥ сохранённого.
+                            if priority.get(new_source, 0) < priority.get(pav.source, 0):
+                                stats["skipped_priority"] += 1
+                                continue
+                            pav.source = new_source
+                            pav.confidence = new_conf
+                            self._apply_value(pav, av, option)
+                            pav_update.append(pav)
+
+                        cache[av.slug] = self._cache_value(av, option)
+                        cache_changed = True
+                        stats["by_attribute"][av.slug] = stats["by_attribute"].get(av.slug, 0) + 1
+
+                    if cache_changed:
                         product.attrs_cache = cache
                         cache_updates.append(product)
 
-                    self._flush(pav_create, pav_update, cache_updates, force=False)
+                    if len(pav_create) >= BATCH:
+                        ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
+                        pav_create.clear()
+                    if len(pav_update) >= BATCH:
+                        ProductAttributeValue.objects.bulk_update(
+                            pav_update, UPDATE_FIELDS, batch_size=BATCH
+                        )
+                        pav_update.clear()
+                    if len(cache_updates) >= BATCH:
+                        Product.objects.bulk_update(
+                            cache_updates, ["attrs_cache"], batch_size=BATCH
+                        )
+                        cache_updates.clear()
 
-                self._flush(pav_create, pav_update, cache_updates, force=True)
+                if pav_create:
+                    ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
+                if pav_update:
+                    ProductAttributeValue.objects.bulk_update(
+                        pav_update, UPDATE_FIELDS, batch_size=BATCH
+                    )
+                if cache_updates:
+                    Product.objects.bulk_update(cache_updates, ["attrs_cache"], batch_size=BATCH)
+
                 run.status = ImportRunStatus.DONE
         except Exception as exc:  # noqa: BLE001
             run.status = ImportRunStatus.FAILED
@@ -129,97 +196,41 @@ class Command(BaseCommand):
         run.finished_at = timezone.now()
         run.stats = stats
         run.save()
+
+        by_attr = ", ".join(f"{k}: {v}" for k, v in sorted(stats["by_attribute"].items()))
         self.stdout.write(
             self.style.SUCCESS(
                 f"Характеристики: обработано {stats['processed']}, "
-                f"значений проставлено {stats['values_set']}, "
-                f"защищённых пропущено {stats['skipped_protected']}, "
-                f"без характеристик {stats['no_attributes']}."
+                f"без характеристик {stats['no_attributes']}, "
+                f"пропущено по приоритету {stats['skipped_priority']}. По атрибутам — {by_attr}."
             )
         )
         return str(run.pk)
 
-    # --- применение одного значения --------------------------------------
-
-    def _apply_value(
-        self, product, attribute, ev: ExtractedValue, existing_pav, option_index, pav_create,
-        pav_update, stats,
-    ):
-        """Upsert PAV с учётом приоритета источника. Возвращает JSON-значение для
-        attrs_cache, либо None если значение не записано (защищено/нет опции)."""
-        pav = existing_pav.get((product.id, attribute.id))
-        if pav is not None and not can_overwrite(pav.source, ev.source):
-            stats["skipped_protected"] += 1
-            return None
-
-        option = None
-        if ev.spec.kind == KIND_SELECT:
-            option = option_index.get(attribute.id, {}).get(normalize(ev.option_value))
-            if option is None:
-                return None  # вариант не загружен — пропускаем
-
-        if pav is None:
-            pav = ProductAttributeValue(product=product, attribute=attribute)
-            self._set_fields(pav, ev, option)
-            pav_create.append(pav)
-            existing_pav[(product.id, attribute.id)] = pav
-        else:
-            self._set_fields(pav, ev, option)
-            pav_update.append(pav)
-
-        stats["values_set"] += 1
-        return self._cache_value(ev, option)
+    # --- helpers ---------------------------------------------------------
 
     @staticmethod
-    def _set_fields(pav: ProductAttributeValue, ev: ExtractedValue, option) -> None:
-        pav.value_decimal = ev.decimal if ev.spec.kind == KIND_NUMBER else None
-        pav.value_boolean = ev.boolean if ev.spec.kind == KIND_BOOLEAN else None
-        pav.value_option = option
-        pav.source = ev.source
-        pav.confidence = ev.confidence
+    def _apply_value(pav: ProductAttributeValue, av, option) -> None:
+        """Записать значение в нужное поле PAV, очистив остальные."""
+        pav.value_text = ""
+        pav.value_integer = None
+        pav.value_decimal = None
+        pav.value_boolean = None
+        pav.value_option = None
+        if av.kind == NUMBER:
+            pav.value_decimal = av.number
+        elif av.kind == SELECT:
+            pav.value_option = option
+        elif av.kind == BOOLEAN:
+            pav.value_boolean = av.boolean
 
     @staticmethod
-    def _cache_value(ev: ExtractedValue, option):
-        if ev.spec.kind == KIND_NUMBER:
-            return ev.decimal
-        if ev.spec.kind == KIND_BOOLEAN:
-            return ev.boolean
-        return option.value if option is not None else None
-
-    # --- bulk-сброс ------------------------------------------------------
-
-    @staticmethod
-    def _flush(pav_create, pav_update, cache_updates, *, force: bool) -> None:
-        if force or len(pav_create) >= BATCH:
-            ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
-            pav_create.clear()
-        if force or len(pav_update) >= BATCH:
-            ProductAttributeValue.objects.bulk_update(
-                pav_update, PAV_UPDATE_FIELDS, batch_size=BATCH
-            )
-            pav_update.clear()
-        if force or len(cache_updates) >= BATCH:
-            Product.objects.bulk_update(cache_updates, ["attrs_cache"], batch_size=BATCH)
-            cache_updates.clear()
-
-    # --- индексы ---------------------------------------------------------
-
-    @staticmethod
-    def _rule_slugs(rules: AttributeRules) -> set[str]:
-        return {spec.slug for tt in rules.tool_types for spec in tt.attributes}
-
-    def _missing_attributes(self, rules, attr_by_slug) -> set[str]:
-        return {s for s in self._rule_slugs(rules) if s not in attr_by_slug}
-
-    @staticmethod
-    def _option_index(rules, attr_by_slug) -> dict[int, dict[str, AttributeOption]]:
-        select_ids = [
-            attr_by_slug[spec.slug].id
-            for tt in rules.tool_types
-            for spec in tt.attributes
-            if spec.kind == KIND_SELECT
-        ]
-        index: dict[int, dict[str, AttributeOption]] = {}
-        for opt in AttributeOption.objects.filter(attribute_id__in=select_ids):
-            index.setdefault(opt.attribute_id, {})[normalize(opt.value)] = opt
-        return index
+    def _cache_value(av, option):
+        """JSON-safe значение для attrs_cache (как attr_value_to_json)."""
+        if av.kind == NUMBER:
+            return float(av.number) if av.number is not None else None
+        if av.kind == SELECT:
+            return option.value if option else None
+        if av.kind == BOOLEAN:
+            return av.boolean
+        return None

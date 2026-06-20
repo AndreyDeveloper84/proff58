@@ -7,7 +7,8 @@
 - Порядок построения: **классификация (`tool_type`) → характеристики (EAV) → фасеты (#25)
   → SEO/AI**. Сначала данные, потом фильтры и AI поверх них.
 - KPI: **Precision ≥ 98%** (жёстко), Coverage — цель, набираем итерациями.
-- Приоритет источников значений: `manual > import_1c > name_regex > name_keyword > llm`.
+- Приоритет источников значений: `manual > import_1c > regex > keyword > llm`
+  (карта `source_priority` в `data/attribute_rules.json`).
 - `attrs_cache` — read-model; источник истины — `ProductAttributeValue` (см. ARCHITECTURE §4.7).
 
 ## Фаза A — классификация `tool_type` (завершена)

@@ -1,23 +1,42 @@
 """Загрузка словаря характеристик из ``attribute_rules.json`` (Фаза B, #96).
 
-Создаёт ``Attribute`` (тип/единица/is_ai_feature), ``AttributeOption`` для
-select-характеристик и привязывает ``CategoryAttribute`` (is_filter/is_seo_facet/
-filter_kind) к категории верхнего уровня. Идемпотентно (update_or_create).
+Создаёт схему EAV по канону движка #99 (`data/attribute_rules.json`):
+``Attribute`` (тип/единица/is_ai_feature), ``AttributeOption`` для select-характеристик
+и привязку ``CategoryAttribute`` (is_filter/is_seo_facet) к категории верхнего уровня
+из поля ``category`` блока tool_type.
+
+Идемпотентна: существующий ``Attribute`` НЕ пересоздаётся — обновляются только
+безопасные поля (``unit``/``is_filterable``/``is_ai_feature``); ручные правки имени/типа
+не затираются. Сам движок извлечения (`attribute_extract.py`) тут не используется —
+это загрузчик схемы, а не экстрактор.
 """
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from apps.catalog.attribute_extract import KIND_SELECT, AttributeRules, AttributeSpec
 from apps.catalog.ingest import data_dir
 from apps.catalog.models import (
     Attribute,
     AttributeOption,
+    AttributeType,
     Category,
     CategoryAttribute,
 )
+
+# kind словаря → тип атрибута модели. number храним как DECIMAL (value_decimal).
+KIND_TO_TYPE = {
+    "select": AttributeType.SELECT,
+    "number": AttributeType.DECIMAL,
+    "boolean": AttributeType.BOOLEAN,
+}
+
+# Безопасные для перезаписи поля Attribute (имя/тип/slug не трогаем у существующих).
+SAFE_FIELDS = ("unit", "is_filterable", "is_ai_feature")
 
 
 class Command(BaseCommand):
@@ -28,53 +47,63 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         base = options["path"] or data_dir()
-        rules = AttributeRules.from_file(f"{base}/attribute_rules.json")
+        data = json.loads(Path(f"{base}/attribute_rules.json").read_text(encoding="utf-8"))
 
-        attrs_created = 0
-        options_created = 0
+        attrs, opts, bound = 0, 0, 0
         with transaction.atomic():
-            for tt in rules.tool_types:
-                for spec in tt.attributes:
-                    created, opts = self._load_attribute(spec, tt.category)
-                    attrs_created += int(created)
-                    options_created += opts
+            for tt in data.get("tool_types", []):
+                category_name = tt.get("category")
+                for a in tt.get("attributes", []):
+                    attribute, opt_count = self._load_attribute(a)
+                    attrs += 1
+                    opts += opt_count
+                    if category_name and self._bind_category(attribute, a, category_name):
+                        bound += 1
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Характеристики готовы. Создано атрибутов: {attrs_created}, "
-                f"вариантов: {options_created}."
+                f"Характеристики готовы. Атрибутов: {attrs}, вариантов: {opts}, "
+                f"привязок к категориям: {bound}."
             )
         )
-        return str(attrs_created)
+        return str(attrs)
 
-    def _load_attribute(self, spec: AttributeSpec, category_name: str) -> tuple[bool, int]:
-        attribute, created = Attribute.objects.update_or_create(
-            slug=spec.slug,
+    def _load_attribute(self, a: dict) -> tuple[Attribute, int]:
+        attribute, created = Attribute.objects.get_or_create(
+            slug=a["slug"],
             defaults=dict(
-                name=spec.name,
-                attribute_type=spec.attribute_type,
-                unit=spec.unit,
-                is_filterable=spec.is_filter,
-                is_ai_feature=spec.is_ai_feature,
+                name=a["name"],
+                attribute_type=KIND_TO_TYPE.get(a["kind"], AttributeType.TEXT),
+                unit=a.get("unit", ""),
+                is_filterable=a.get("is_filter", True),
+                is_ai_feature=a.get("is_ai_feature", False),
             ),
         )
+        if not created:
+            # Существующий атрибут: обновляем только безопасные поля, не пересоздаём.
+            new_values = {
+                "unit": a.get("unit", ""),
+                "is_filterable": a.get("is_filter", True),
+                "is_ai_feature": a.get("is_ai_feature", False),
+            }
+            changed = [f for f in SAFE_FIELDS if getattr(attribute, f) != new_values[f]]
+            if changed:
+                for f in changed:
+                    setattr(attribute, f, new_values[f])
+                attribute.save(update_fields=changed)
 
-        options_created = 0
-        if spec.kind == KIND_SELECT:
-            for sort, opt in enumerate(spec.options):
-                _, opt_created = AttributeOption.objects.update_or_create(
+        opt_count = 0
+        if a["kind"] == "select":
+            for sort, opt in enumerate(a.get("options", [])):
+                AttributeOption.objects.update_or_create(
                     attribute=attribute,
-                    value=opt.value,
-                    defaults=dict(slug=opt.slug, sort_order=sort),
+                    value=opt["value"],
+                    defaults=dict(slug=opt.get("slug", ""), sort_order=sort),
                 )
-                options_created += int(opt_created)
+                opt_count += 1
+        return attribute, opt_count
 
-        self._bind_category(attribute, spec, category_name)
-        return created, options_created
-
-    def _bind_category(
-        self, attribute: Attribute, spec: AttributeSpec, category_name: str
-    ) -> None:
+    def _bind_category(self, attribute: Attribute, a: dict, category_name: str) -> bool:
         top = Category.objects.filter(depth=1, name=category_name).first()
         if top is None:
             self.stdout.write(
@@ -83,13 +112,13 @@ class Command(BaseCommand):
                     f"сначала выполните build_categories."
                 )
             )
-            return
+            return False
         CategoryAttribute.objects.update_or_create(
             category=top,
             attribute=attribute,
             defaults=dict(
-                is_filter=spec.is_filter,
-                is_seo_facet=spec.is_seo_facet,
-                filter_kind=spec.filter_kind,
+                is_filter=a.get("is_filter", True),
+                is_seo_facet=a.get("is_seo_facet", False),
             ),
         )
+        return True

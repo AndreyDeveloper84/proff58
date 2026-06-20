@@ -26,7 +26,18 @@ from treebeard.mp_tree import MP_Node
 
 from apps.core.models import TimeStampedModel
 
-from .source_priority import Source
+
+class Source(models.TextChoices):
+    """Источник значения характеристики. Значения совпадают с ключами карты
+    ``source_priority`` в ``data/attribute_rules.json``; приоритет перезаписи
+    берётся оттуда (см. apps.catalog.management.commands.enrich_attributes).
+    """
+
+    MANUAL = "manual", _("Вручную")
+    IMPORT_1C = "import_1c", _("Импорт 1С")
+    REGEX = "regex", _("Regex по названию")
+    KEYWORD = "keyword", _("Ключевое слово")
+    LLM = "llm", _("AI/LLM")
 
 
 class Category(MP_Node):
@@ -95,9 +106,7 @@ class Attribute(models.Model):
     is_ai_feature = models.BooleanField(
         _("AI-характеристика"),
         default=False,
-        help_text=_(
-            "Плохо извлекается regex/словарём из названия — кандидат на добор LLM (#62)."
-        ),
+        help_text=_("Плохо извлекается regex/словарём из названия — кандидат на добор LLM (#62)."),
     )
 
     class Meta:
@@ -132,11 +141,6 @@ class AttributeOption(models.Model):
         return f"{self.attribute.name}: {self.value}"
 
 
-class FilterKind(models.TextChoices):
-    SELECT = "select", _("Список значений")
-    RANGE = "range", _("Диапазон (min/max)")
-
-
 class CategoryAttribute(models.Model):
     """Привязка характеристики к категории с метаданными отображения."""
 
@@ -156,16 +160,6 @@ class CategoryAttribute(models.Model):
         _("SEO-фасет"),
         default=False,
         help_text=_("На основе значений строятся посадочные страницы (вторая ось навигации)."),
-    )
-    filter_kind = models.CharField(
-        _("Вид фильтра"),
-        max_length=8,
-        choices=FilterKind.choices,
-        default=FilterKind.SELECT,
-        help_text=_(
-            "range — числовой диапазон min/max (напряжение, момент); "
-            "select — выбор из значений (тип питания, tool_type)."
-        ),
     )
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
 
@@ -451,13 +445,19 @@ class ProductAttributeValue(models.Model):
         max_length=12,
         choices=Source.choices,
         default=Source.MANUAL,
-        help_text=_("Приоритет перезаписи задаёт apps.catalog.source_priority."),
+        help_text=_(
+            "Приоритет перезаписи берётся из source_priority в attribute_rules.json: "
+            "manual не затирается regex/keyword."
+        ),
     )
     confidence = models.SmallIntegerField(
         _("Уверенность"),
         default=100,
         validators=[MinValueValidator(0), MaxValueValidator(100)],
-        help_text=_("0–100. regex=100, ключевое слово=90, AI задаёт 75/50."),
+        help_text=_(
+            "0–100. Только аналитика/AI, в решении о перезаписи НЕ участвует "
+            "(перезапись решает source)."
+        ),
     )
 
     class Meta:

@@ -8,10 +8,12 @@
 from __future__ import annotations
 
 from django.core.paginator import Paginator
+from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, render
 
 from .models import Category, EnrichmentLog, EnrichmentResult
 from .services import (
+    FacetError,
     category_counts,
     get_category_tree,
     products_in,
@@ -22,24 +24,28 @@ from .services import (
 PAGE_SIZE = 24
 
 
-def _parse_float(raw):
-    try:
-        return float(raw.replace(",", ".")) if raw else None
-    except (ValueError, AttributeError):
+def _parse_float(raw, *, field: str):
+    """Пустое → None; непустое нечисло → FacetError (→ HTTP 400, не молчаливый игнор)."""
+    if raw is None or raw == "":
         return None
+    try:
+        return float(raw.replace(",", "."))
+    except (ValueError, AttributeError) as exc:
+        raise FacetError(f"Неверное значение «{field}»: {raw!r}") from exc
 
 
 def _parse_attr_ranges(request, category) -> dict:
     """GET ``<slug>_min`` / ``<slug>_max`` → ``{slug: (min, max)}`` (#96 range-фильтры).
 
-    Берём только диапазонные характеристики-фильтры категории; невалидные/пустые
-    границы игнорируем; атрибут попадает в фильтр, только если задана хоть одна.
+    Берём только диапазонные характеристики-фильтры категории; пустые границы
+    пропускаем, непустые нечисловые → FacetError (HTTP 400); атрибут попадает в
+    фильтр, только если задана хоть одна граница.
     """
     ranges: dict = {}
     for attr in range_filter_attributes(category):
         slug = attr["slug"]
-        lo = _parse_float(request.GET.get(f"{slug}_min"))
-        hi = _parse_float(request.GET.get(f"{slug}_max"))
+        lo = _parse_float(request.GET.get(f"{slug}_min"), field=f"{slug}_min")
+        hi = _parse_float(request.GET.get(f"{slug}_max"), field=f"{slug}_max")
         if lo is not None or hi is not None:
             ranges[slug] = (lo, hi)
     return ranges
@@ -61,7 +67,10 @@ def category_detail(request, slug_path):
 
     tool_type = request.GET.get("tool_type") or None
     in_stock = request.GET.get("in_stock") == "1"
-    attr_ranges = _parse_attr_ranges(request, category)
+    try:
+        attr_ranges = _parse_attr_ranges(request, category)
+    except FacetError as exc:
+        return HttpResponseBadRequest(str(exc))
 
     qs = (
         products_in(category, tool_type=tool_type, in_stock=in_stock, attr_ranges=attr_ranges)

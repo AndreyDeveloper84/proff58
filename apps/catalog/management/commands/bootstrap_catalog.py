@@ -2,7 +2,8 @@
 
 Вызывает идемпотентные команды по порядку. Повторный запуск не плодит дубли.
 Характеристики (Фаза B, #96) идут ПОСЛЕ enrich_tool_type: enrich_attributes берёт
-tool_type из attrs_cache. Числа итогов — в админке (ImportRun) и в выводе команд.
+tool_type товара из его PAV (value_option.slug). Числа итогов — в админке (ImportRun)
+и в выводе команд.
 """
 
 from __future__ import annotations

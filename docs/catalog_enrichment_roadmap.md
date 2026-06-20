@@ -14,17 +14,20 @@
 Извлечение характеристик из названий 1С в EAV (`ProductAttributeValue`), отладка каркаса
 на «Дрелях и шуруповёртах», затем тираж словарём на остальные типы.
 
-**Реализовано:**
-- `apps/catalog/source_priority.py` — `Source` + ранги + `can_overwrite` (без magic numbers).
-- `apps/catalog/attribute_extract.py` — движок (зеркало `tool_type.py`): number (regex),
-  boolean (негативные паттерны ДО позитивных), select (по ключевым словам).
-- `data/attribute_rules.json` — словарь для «Дрели и шуруповёрты»: `power_source`, `voltage`,
-  `torque`, `battery_included`, `motor_type` с богатыми вариантами написания.
-- Модель: `ProductAttributeValue.source/confidence` (SmallInteger 0–100 с валидаторами),
-  `Attribute.is_ai_feature`, `CategoryAttribute.filter_kind` (select/range). Миграция `0004`.
-- Команды: `load_attributes`, `enrich_attributes` (bulk + провенанс), `attribute_coverage`
-  (read-only отчёт покрытия ДО enrichment). Добавлены в `bootstrap_catalog`.
-- Backend range-фильтров: `?voltage_min=&voltage_max=` → по `value_decimal` (UI-ползунки позже).
+**Реализовано (фундамент Фазы A — PR #99, надстройка Фазы B — этот PR):**
+- `apps/catalog/attribute_extract.py` (#99) — движок (зеркало `tool_type.py`): number (regex),
+  boolean (негативные паттерны ДО позитивных), select (по ключевым словам). Канон, один движок.
+- `data/attribute_rules.json` (#99 + правки) — словарь «Дрели и шуруповёрты»: `power_source`,
+  `voltage`, `torque`, `motor_type`, `battery_included`; `battery_capacity` помечен `is_ai_feature`
+  (не фильтр). Приоритет источников — карта `source_priority` прямо в словаре.
+- Модель: `ProductAttributeValue.source` (choices `Source` в `models.py`) и `confidence`
+  (SmallInteger 0–100 с валидаторами, только аналитика), `Attribute.is_ai_feature`. Миграция
+  `0004` (+ data-миграция: существующим PAV проставлен `source=manual`). Без `filter_kind`.
+- Команды: `load_attributes` (идемпотентно, обновляет только безопасные поля), `enrich_attributes`
+  (bulk #93 + провенанс, перезапись по приоритету источника), `attribute_coverage` (#99,
+  read-only отчёт покрытия ДО enrichment). Добавлены в `bootstrap_catalog`.
+- Backend range-фильтров для `voltage`/`torque`: `?<slug>_min/_max` → по `value_decimal`,
+  невалидное значение → HTTP 400 (вид фильтра выводим из типа атрибута; UI-ползунки позже).
 - ARCHITECTURE §4.7: правило «EAV-истина + attrs_cache как read-model».
 
 **Процесс настройки нового tool_type:**

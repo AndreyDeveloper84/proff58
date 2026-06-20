@@ -1,105 +1,89 @@
-"""Движок извлечения характеристик товара из его названия (Фаза B, #96).
+"""Движок извлечения характеристик товара (EAV) из названия 1С.
 
-Зеркало ``tool_type.py``, но для произвольных атрибутов: напряжение, крутящий
-момент, наличие аккумулятора, тип питания/двигателя. Чистая логика правил из
-``attribute_rules.json`` без обращения к БД — её используют команды
-``load_attributes``/``enrich_attributes``/``attribute_coverage`` и юнит-тесты.
+Зеркало :mod:`apps.catalog.tool_type`: чистая логика правил из
+``data/attribute_rules.json`` без обращения к БД. Используется командами
+``load_attributes`` / ``enrich_attributes`` / ``attribute_coverage`` и тестами.
 
-Правила сгруппированы по ``tool_type`` (значение атрибута tool_type, например
-«Дрели и шуруповёрты»). У каждого атрибута один из видов извлечения:
+Три вида (``kind``) характеристик:
 
-* ``number`` — regex-словарь вариантов написания (``18В``, ``18 V``, ``20V``…);
-  первый сработавший паттерн даёт число (``,`` → ``.``). Источник ``name_regex``.
-* ``boolean`` — словарь подстрок. **Порядок важен:** сначала негативные
-  («без АКБ», «без ЗУ и АКБ» → False), потом позитивные («с АКБ» → True), иначе
-  «с акб» ложно срабатывает на «без АКБ и ЗУ». Источник ``name_keyword``.
-* ``select`` — варианты с ключевыми словами; первый вариант, чьё слово —
-  подстрока названия, выигрывает. Источник ``name_keyword``.
+* ``select``  — значение из списка вариантов; перебор вариантов ПО ПОРЯДКУ,
+  выигрывает первый, чьё любое ключевое слово — подстрока названия. Порядок
+  важен: ``brushless`` должен стоять раньше ``brushed`` («бесщеточный» содержит
+  «щеточный»).
+* ``number``  — число + единица; первый сработавший regex даёт значение
+  (``Decimal``, запятая → точка).
+* ``boolean`` — да/нет по whitelist: сначала ``false_keywords``, затем
+  ``true_keywords``; иначе значение не извлекается.
+
+Приоритет источника берётся из правила (поле ``priority`` / карта
+``source_priority``), а НЕ хардкодится в движке: ``enrich_attributes`` сравнивает
+приоритет нового значения с уже сохранённым (``ProductAttributeValue.source``),
+чтобы не затирать ручное/1С-значение менее надёжным regex/keyword.
 """
 
 from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-from .source_priority import Source
 from .tool_type import normalize
 
-# Уверенность по источнику (шкала 0–100, см. ProductAttributeValue.confidence).
-CONFIDENCE_REGEX = 100
-CONFIDENCE_KEYWORD = 90
-
-# Виды извлечения атрибута.
-KIND_NUMBER = "number"
-KIND_BOOLEAN = "boolean"
-KIND_SELECT = "select"
-
-# Соответствие kind → AttributeType (строкой, чтобы не тянуть модели в чистый движок).
-KIND_TO_ATTRIBUTE_TYPE = {
-    KIND_NUMBER: "decimal",
-    KIND_BOOLEAN: "boolean",
-    KIND_SELECT: "select",
-}
+SELECT = "select"
+NUMBER = "number"
+BOOLEAN = "boolean"
 
 
 @dataclass(frozen=True)
-class OptionSpec:
-    value: str
-    slug: str
+class Option:
+    """Вариант select-характеристики."""
+
+    value: str  # отображаемое имя (рус.) — попадает в attrs_cache/витрину
+    slug: str  # канонический англо-идентификатор — фильтр/SEO/API
     keywords: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
-class AttributeSpec:
+class AttrRule:
     slug: str
     name: str
-    kind: str  # number | boolean | select
+    kind: str  # select | number | boolean
     unit: str = ""
+    source: str = "regex"
+    priority: int = 0
     is_filter: bool = True
     is_seo_facet: bool = False
     is_ai_feature: bool = False
-    filter_kind: str = "select"  # select | range
-    patterns: tuple[str, ...] = ()  # number
-    true_patterns: tuple[str, ...] = ()  # boolean (позитивные)
-    false_patterns: tuple[str, ...] = ()  # boolean (негативные)
-    options: tuple[OptionSpec, ...] = ()  # select
-
-    @property
-    def attribute_type(self) -> str:
-        return KIND_TO_ATTRIBUTE_TYPE[self.kind]
-
-
-@dataclass(frozen=True)
-class ToolTypeAttributes:
-    tool_type: str  # значение атрибута tool_type, напр. «Дрели и шуруповёрты»
-    slug: str  # slug этого tool_type (dreli-shurupoverty)
-    category: str  # категория верхнего уровня, к которой биндим атрибуты
-    attributes: list[AttributeSpec] = field(default_factory=list)
+    options: tuple[Option, ...] = ()  # select
+    patterns: tuple[re.Pattern, ...] = ()  # number
+    true_keywords: tuple[str, ...] = ()  # boolean
+    false_keywords: tuple[str, ...] = ()  # boolean
 
 
 @dataclass
-class ExtractedValue:
-    """Итог извлечения одного атрибута у одного товара."""
+class AttrValue:
+    """Извлечённое значение одной характеристики."""
 
-    spec: AttributeSpec
-    decimal: float | None = None
-    boolean: bool | None = None
-    option_value: str = ""
+    slug: str
+    kind: str
+    source: str
+    priority: int
+    number: Decimal | None = None
     option_slug: str = ""
+    option_value: str = ""
+    boolean: bool | None = None
+    unit: str = ""
     matched: str = ""
-    source: str = Source.NAME_REGEX
-    confidence: int = CONFIDENCE_REGEX
 
 
 class AttributeRules:
     """Загруженный и проиндексированный словарь правил характеристик."""
 
-    def __init__(self, tool_types: list[ToolTypeAttributes]):
-        self.tool_types = tool_types
-        self._by_value = {t.tool_type: t for t in tool_types}
-        self._by_slug = {t.slug: t for t in tool_types}
+    def __init__(self, by_tool_type: dict[str, list[AttrRule]], source_priority: dict[str, int]):
+        self._by_tt = by_tool_type
+        self.source_priority = source_priority
 
     @classmethod
     def from_file(cls, path: str | Path) -> AttributeRules:
@@ -108,129 +92,108 @@ class AttributeRules:
 
     @classmethod
     def from_dict(cls, data: dict) -> AttributeRules:
-        items: list[ToolTypeAttributes] = []
-        for t in data.get("tool_types", []):
-            specs = [cls._spec_from_dict(a) for a in t.get("attributes", [])]
-            items.append(
-                ToolTypeAttributes(
-                    tool_type=t["tool_type"],
-                    slug=t.get("slug", ""),
-                    category=t.get("category", ""),
-                    attributes=specs,
-                )
-            )
-        return cls(items)
+        source_priority = data.get("source_priority", {})
+        by_tt: dict[str, list[AttrRule]] = {}
+        for tt in data.get("tool_types", []):
+            by_tt[tt["tool_type"]] = [
+                cls._rule(a, source_priority) for a in tt.get("attributes", [])
+            ]
+        return cls(by_tt, source_priority)
 
     @staticmethod
-    def _spec_from_dict(a: dict) -> AttributeSpec:
-        rules = a.get("rules", {})
-        options = tuple(
-            OptionSpec(
-                value=o["value"],
-                slug=o.get("slug", ""),
-                keywords=tuple(o.get("keywords", [])),
-            )
-            for o in a.get("options", [])
-        )
-        return AttributeSpec(
+    def _rule(a: dict, source_priority: dict[str, int]) -> AttrRule:
+        source = a.get("source", "regex")
+        return AttrRule(
             slug=a["slug"],
             name=a["name"],
             kind=a["kind"],
             unit=a.get("unit", ""),
+            source=source,
+            priority=a.get("priority", source_priority.get(source, 0)),
             is_filter=a.get("is_filter", True),
             is_seo_facet=a.get("is_seo_facet", False),
             is_ai_feature=a.get("is_ai_feature", False),
-            filter_kind=a.get("filter_kind", "select"),
-            patterns=tuple(a.get("patterns", [])),
-            true_patterns=tuple(rules.get("true", [])),
-            false_patterns=tuple(rules.get("false", [])),
-            options=options,
+            options=tuple(
+                Option(o["value"], o["slug"], tuple(o.get("keywords", [])))
+                for o in a.get("options", [])
+            ),
+            patterns=tuple(re.compile(p) for p in a.get("regex", [])),
+            true_keywords=tuple(a.get("true_keywords", [])),
+            false_keywords=tuple(a.get("false_keywords", [])),
         )
 
-    # --- доступ ----------------------------------------------------------
+    def rules_for(self, tool_type_slug: str) -> list[AttrRule]:
+        return self._by_tt.get(tool_type_slug, [])
 
-    def get(self, tool_type: str) -> ToolTypeAttributes | None:
-        """Найти набор атрибутов по значению tool_type или по его slug."""
-        return self._by_value.get(tool_type) or self._by_slug.get(tool_type)
-
-    def specs(self, tool_type: str) -> list[AttributeSpec]:
-        item = self.get(tool_type)
-        return list(item.attributes) if item else []
-
-    # --- извлечение ------------------------------------------------------
-
-    def extract_all(self, tool_type: str, name: str) -> list[ExtractedValue]:
-        """Все найденные значения характеристик для товара данного tool_type."""
+    def extract(self, tool_type_slug: str, name: str) -> list[AttrValue]:
+        """Извлечь все характеристики из названия товара указанного tool_type."""
         norm = normalize(name)
-        out: list[ExtractedValue] = []
-        for spec in self.specs(tool_type):
-            value = self._extract_one(spec, norm)
+        out: list[AttrValue] = []
+        for rule in self.rules_for(tool_type_slug):
+            value = self._extract_one(rule, norm)
             if value is not None:
                 out.append(value)
         return out
 
-    def _extract_one(self, spec: AttributeSpec, norm: str) -> ExtractedValue | None:
-        if spec.kind == KIND_NUMBER:
-            return self._extract_number(spec, norm)
-        if spec.kind == KIND_BOOLEAN:
-            return self._extract_boolean(spec, norm)
-        if spec.kind == KIND_SELECT:
-            return self._extract_select(spec, norm)
-        return None
-
     @staticmethod
-    def _extract_number(spec: AttributeSpec, norm: str) -> ExtractedValue | None:
-        for pattern in spec.patterns:
-            m = re.search(pattern, norm)
-            if m:
-                raw = m.group(1).replace(",", ".")
-                try:
-                    number = float(raw)
-                except ValueError:
+    def _extract_one(rule: AttrRule, norm: str) -> AttrValue | None:
+        if rule.kind == SELECT:
+            for opt in rule.options:
+                for kw in opt.keywords:
+                    if normalize(kw) in norm:
+                        return AttrValue(
+                            slug=rule.slug,
+                            kind=SELECT,
+                            source=rule.source,
+                            priority=rule.priority,
+                            option_slug=opt.slug,
+                            option_value=opt.value,
+                            unit=rule.unit,
+                            matched=kw,
+                        )
+            return None
+
+        if rule.kind == NUMBER:
+            for pat in rule.patterns:
+                m = pat.search(norm)
+                if not m:
                     continue
-                return ExtractedValue(
-                    spec=spec,
-                    decimal=number,
+                try:
+                    num = Decimal(m.group(1).replace(",", "."))
+                except (InvalidOperation, IndexError):
+                    continue
+                return AttrValue(
+                    slug=rule.slug,
+                    kind=NUMBER,
+                    source=rule.source,
+                    priority=rule.priority,
+                    number=num,
+                    unit=rule.unit,
                     matched=m.group(0),
-                    source=Source.NAME_REGEX,
-                    confidence=CONFIDENCE_REGEX,
                 )
-        return None
+            return None
 
-    @staticmethod
-    def _extract_boolean(spec: AttributeSpec, norm: str) -> ExtractedValue | None:
-        # Порядок критичен: негативные ДО позитивных («без АКБ и ЗУ» → False).
-        for kw in spec.false_patterns:
-            if normalize(kw) in norm:
-                return ExtractedValue(
-                    spec=spec,
-                    boolean=False,
-                    matched=kw,
-                    source=Source.NAME_KEYWORD,
-                    confidence=CONFIDENCE_KEYWORD,
-                )
-        for kw in spec.true_patterns:
-            if normalize(kw) in norm:
-                return ExtractedValue(
-                    spec=spec,
-                    boolean=True,
-                    matched=kw,
-                    source=Source.NAME_KEYWORD,
-                    confidence=CONFIDENCE_KEYWORD,
-                )
-        return None
-
-    @staticmethod
-    def _extract_select(spec: AttributeSpec, norm: str) -> ExtractedValue | None:
-        for opt in spec.options:
-            for kw in opt.keywords:
+        if rule.kind == BOOLEAN:
+            for kw in rule.false_keywords:
                 if normalize(kw) in norm:
-                    return ExtractedValue(
-                        spec=spec,
-                        option_value=opt.value,
-                        option_slug=opt.slug,
+                    return AttrValue(
+                        slug=rule.slug,
+                        kind=BOOLEAN,
+                        source=rule.source,
+                        priority=rule.priority,
+                        boolean=False,
                         matched=kw,
-                        source=Source.NAME_KEYWORD,
-                        confidence=CONFIDENCE_KEYWORD,
                     )
+            for kw in rule.true_keywords:
+                if normalize(kw) in norm:
+                    return AttrValue(
+                        slug=rule.slug,
+                        kind=BOOLEAN,
+                        source=rule.source,
+                        priority=rule.priority,
+                        boolean=True,
+                        matched=kw,
+                    )
+            return None
+
         return None
