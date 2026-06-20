@@ -2,8 +2,15 @@
 
 from rest_framework import serializers
 
+from apps.pricing.services import RETAIL, price_for
+
 from ..models import Product
 from ..services import attr_value_to_json
+
+
+def _money(value):
+    """Decimal → строка (как DRF рендерит DecimalField), либо None."""
+    return None if value is None else str(value)
 
 
 def _image_url(image, context) -> str | None:
@@ -35,6 +42,7 @@ class ProductImageSerializer(serializers.Serializer):
 class ProductListSerializer(serializers.ModelSerializer):
     category = CategoryRefSerializer(read_only=True)
     main_image = serializers.SerializerMethodField()
+    price_type = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -47,6 +55,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "price",
             "old_price",
             "currency",
+            "price_type",
             "stock_status",
             "main_image",
             "short_description",
@@ -58,6 +67,29 @@ class ProductListSerializer(serializers.ModelSerializer):
             return None
         main = next((i for i in images if i.is_main), images[0])
         return _image_url(main, self.context)
+
+    def get_price_type(self, obj):
+        return ""  # реальное значение проставляется в to_representation (один price_for на товар)
+
+    def to_representation(self, instance):
+        """Цену отдаём ТОЛЬКО через pricing.price_for (ADR-0006), один вызов на товар.
+
+        Для B2C/анонима price_for не ходит в БД (Product.price). Для B2B — 1 запрос
+        на товар.
+        TODO(pricing): для B2B-листингов сделать bulk price resolver (префетч оптовых
+        PriceRecord одним запросом), чтобы каталог не делал N запросов.
+        """
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request is not None else None
+        result = price_for(instance, user)
+        data["price"] = _money(result.final)
+        data["old_price"] = (
+            _money(instance.old_price) if result.price_type == RETAIL and result.discount else None
+        )
+        data["currency"] = result.currency
+        data["price_type"] = result.price_type
+        return data
 
 
 class ProductDetailSerializer(ProductListSerializer):
