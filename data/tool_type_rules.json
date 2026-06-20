@@ -911,6 +911,33 @@
         { "tool_type": "Коврики", "slug": "hoz-kovriki", "match_keywords": ["коврик"], "source": "name_keywords" },
         { "tool_type": "Ножи", "slug": "hoz-nozhi", "match_keywords": ["нож ", "нож,", "ножи ", "нож-", "нож."], "source": "name_keywords" }
       ]
+    },
+    {
+      "category": "Строительное и отделочное",
+      "extraction": "priority_keyword",
+      "note": "Отделочные материалы и малярный инструмент. Типизируем по названию. Порядок precision-first. Чужие товары: ручной инструмент (топоры/ножовки/молотки) и бытовая химия (мыло/моющее) лежат тут ошибочно — recategorize. Осторожно с подстроками: 'топор ' (не ловить «самостопорящаяся»), 'лак '/'лак,' (не «пластик/шлак»).",
+      "rules": [
+        { "tool_type": "⚠ В категорию «Ручной инструмент»", "slug": "_recat_ruchnoy_str", "match_keywords": ["топор ", "топор,", "топор-", "топорик", "ножовка", "молоток", "кувалда", "гвоздодер", "монтировка", "стамеска", "зубило", "пассатиж", "плоскогубц", "отвертка"], "source": "name_keywords", "action": "recategorize" },
+        { "tool_type": "⚠ В категорию «Хозтовары»", "slug": "_recat_hoz_str", "match_keywords": ["мыло", "стиральн", "моющее", "чистящее", "шампунь", "посудомоеч", "пятновывод", "кондиционер для бель", "освежитель", "губка для", "салфетк"], "source": "name_keywords", "action": "recategorize" },
+        { "tool_type": "Кисти", "slug": "str-kisti", "match_keywords": ["кисть", "кисти ", "кисточк", "флейц", "макловиц"], "source": "name_keywords" },
+        { "tool_type": "Валики и ролики", "slug": "str-valiki", "match_keywords": ["валик", "ролик"], "source": "name_keywords" },
+        { "tool_type": "Шпатели", "slug": "str-shpateli", "match_keywords": ["шпатель"], "source": "name_keywords" },
+        { "tool_type": "Кельмы, гладилки, тёрки", "slug": "str-kelmy", "match_keywords": ["кельма", "гладилка", "терка", "терки", "полутер"], "source": "name_keywords" },
+        { "tool_type": "Правила и отвесы", "slug": "str-pravila", "match_keywords": ["правило", "отвес"], "source": "name_keywords" },
+        { "tool_type": "Строительные миксеры и насадки", "slug": "str-miksery", "match_keywords": ["миксер", "насадка-мешалк", "венчик для"], "source": "name_keywords" },
+        { "tool_type": "Эмали, краски, грунтовки", "slug": "str-kraski", "match_keywords": ["эмаль", "краска", "грунт", "краску", "краски ", "колер", "побелка"], "source": "name_keywords" },
+        { "tool_type": "Лаки, пропитки, морилки", "slug": "str-laki", "match_keywords": ["лак ", "лак,", "лак-", "лак для", "лак мебельн", "пропитка", "морилка", "олифа", "антисептик древес", "антисептик для древес"], "source": "name_keywords" },
+        { "tool_type": "Растворители и очистители", "slug": "str-rastvoriteli", "match_keywords": ["растворитель", "уайт-спирит", "уайт спирит", "ацетон", "очиститель", "смывка", "обезжирив", "сольвент"], "source": "name_keywords" },
+        { "tool_type": "Клеи", "slug": "str-klei", "match_keywords": ["клей ", "клей-", "клей,", "клей для", "клеев", "жидкие гвозд"], "source": "name_keywords" },
+        { "tool_type": "Герметики", "slug": "str-germetiki", "match_keywords": ["герметик"], "source": "name_keywords" },
+        { "tool_type": "Монтажная пена", "slug": "str-pena", "match_keywords": ["пена ", "пена,", "пены ", "пена-", "монтажная пена", "пена монт"], "source": "name_keywords" },
+        { "tool_type": "Пистолеты монтажные", "slug": "str-pistolety", "match_keywords": ["пистолет"], "source": "name_keywords" },
+        { "tool_type": "Шпаклёвки, штукатурки, смеси", "slug": "str-smesi", "match_keywords": ["шпатлевка", "шпаклевка", "штукатурка", "ротбанд", "наливной пол", "смесь", "цемент", "гипс", "затирка", "фуга"], "source": "name_keywords" },
+        { "tool_type": "Лестницы и стремянки", "slug": "str-lestnicy", "match_keywords": ["лестница", "стремянка", "вышка-тура", "помост", "подмости"], "source": "name_keywords" },
+        { "tool_type": "Маркеры и карандаши", "slug": "str-markery", "match_keywords": ["маркер", "карандаш", "чоклайн", "шнур разметоч", "разметочн"], "source": "name_keywords" },
+        { "tool_type": "Скобы и гвозди для степлера", "slug": "str-skoby", "match_keywords": ["скобы", "скоба ", "гвозди для", "штифты для"], "source": "name_keywords" },
+        { "tool_type": "Смазки и аэрозоли", "slug": "str-smazki", "match_keywords": ["смазка", "wd-40", "аэрозоль", "силиконовая смаз"], "source": "name_keywords" }
+      ]
     }
   ]
 }
