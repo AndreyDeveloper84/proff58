@@ -28,8 +28,10 @@ Payload каждого сигнала (kwargs у `.send()`) — стабильн
   price_changed         — product_id, old_price, new_price, currency, source
 
 `order_created` уже имеет издателя — `apps.orders.services.place_order` (#26).
-`order_paid`/`order_status_changed`, `payment_*`, `price_changed` пока без
-издателей — это контракт под будущие модули orders/payments/pricing (#8/#60).
+`order_status_changed` — издатель `apps.sync_1c.use_cases.confirm_orders` (#50):
+эмитится при реальной смене `fulfillment_status` по подтверждению из 1С.
+`order_paid`, `payment_*`, `price_changed` пока без издателей — это контракт под
+будущие модули orders/payments/pricing (#8/#60).
 """
 
 from django.dispatch import Signal
@@ -55,7 +57,8 @@ product_updated = Signal()
 
 # --- orders ---
 # order_created — издатель `apps.orders.services.place_order` (#26);
-# order_paid/order_status_changed — контракт под #8.
+# order_status_changed — издатель `apps.sync_1c.use_cases.confirm_orders` (#50);
+# order_paid — контракт под #8.
 order_created = Signal()
 order_paid = Signal()
 order_status_changed = Signal()
