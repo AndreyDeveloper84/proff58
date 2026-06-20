@@ -18,6 +18,7 @@
 потомков/предков без рекурсивных JOIN-ов.
 """
 
+from django.contrib.postgres.indexes import GinIndex
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
@@ -357,6 +358,9 @@ class Product(TimeStampedModel):
         ordering = ["name"]
         indexes = [
             models.Index(fields=["status", "category"]),
+            # GIN по attrs_cache — ускоряет фасетные containment-фильтры (attrs_cache @> {...})
+            # и has_key. Сам GROUP BY не ускоряет (его сужает фильтр+категория).
+            GinIndex(fields=["attrs_cache"], name="catalog_product_attrs_gin"),
         ]
 
     def __str__(self) -> str:

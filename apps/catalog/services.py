@@ -7,10 +7,13 @@
 
 from __future__ import annotations
 
+import operator
 from collections import Counter
+from functools import reduce
 
 from django.core.cache import cache as cache_store
 from django.db.models import Count, Q
+from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Substr
 
 from .filters import filtered_products
@@ -141,8 +144,36 @@ def _sort_facet_values(attr, counter: Counter, options_order: dict) -> list:
     return sorted(items, key=lambda it: (-it[1], str(it[0])))  # text/boolean → по count
 
 
+def _apply_attr_filters(qs, coerced, exclude=None):
+    """drill-down attr-фильтры через JSONB containment (GIN-ускоряемо). exclude — снять фильтр атрибута."""
+    for slug, vals in coerced.items():
+        if slug == exclude:
+            continue
+        if not vals:
+            return qs.none()
+        qs = qs.filter(reduce(operator.or_, (Q(attrs_cache__contains={slug: v}) for v in vals)))
+    return qs
+
+
+def _cast_facet_value(text, attr_type):
+    """Текст из ``->>'slug'`` (KeyTextTransform) → типизированное значение по типу атрибута."""
+    if attr_type == AttributeType.INTEGER:
+        return int(text)
+    if attr_type == AttributeType.DECIMAL:
+        return float(text)
+    if attr_type == AttributeType.BOOLEAN:
+        return text == "true"
+    return text  # text / select
+
+
 def build_facets(category, *, brands=None, stock_status=None, attr_filters=None) -> dict:
-    """Фасеты категории со счётчиками (drill-down). attr_filters: {slug: [raw,...]}."""
+    """Фасеты категории со счётчиками (drill-down). attr_filters: {slug: [raw,...]}.
+
+    Подсчёт — в PostgreSQL (GROUP BY по JSONB ``attrs_cache``), не в Python: на каждый
+    фасет один индексируемый запрос (drill-down — со всеми фильтрами, кроме своего).
+    Контракт ответа и смысл значений сохраняются. list/multiselect-значения в attrs_cache
+    в этой версии не поддерживаются (containment `{slug: value}` не покроет массив).
+    """
     attr_filters = attr_filters or {}
     if len(attr_filters) > MAX_ATTR_FILTERS:
         raise FacetError("Слишком много фильтров-характеристик")
@@ -151,6 +182,8 @@ def build_facets(category, *, brands=None, stock_status=None, attr_filters=None)
     by_slug = {a.slug: a for a in attributes}
 
     # Приведение attr-фильтров: unknown → игнор, invalid known → FacetError.
+    # _coerce даёт ТИП, лежащий в attrs_cache (int/float/bool/str) — это нужно для
+    # JSONB containment ({"voltage":18} ≠ {"voltage":"18"}).
     coerced: dict[str, list] = {}
     for slug, raw_values in attr_filters.items():
         attr = by_slug.get(slug)
@@ -165,25 +198,8 @@ def build_facets(category, *, brands=None, stock_status=None, attr_filters=None)
             vals.append(_coerce(raw, attr.attribute_type))
         coerced[slug] = vals
 
-    rows = list(
-        filtered_products(category, brands=brands, stock_status=stock_status).values_list(
-            "attrs_cache", flat=True
-        )
-    )
-
-    def _match(cache: dict, exclude: str | None = None) -> bool:
-        for slug, vals in coerced.items():
-            if slug == exclude:
-                continue
-            cur = cache.get(slug)
-            if isinstance(cur, list):
-                if not set(cur) & set(vals):
-                    return False
-            elif cur not in vals:
-                return False
-        return True
-
-    total = sum(1 for c in rows if _match(c))
+    base_qs = filtered_products(category, brands=brands, stock_status=stock_status)
+    total = _apply_attr_filters(base_qs, coerced).count()
 
     # Опции select/multiselect одним запросом — для сортировки значений.
     select_ids = [
@@ -198,17 +214,17 @@ def build_facets(category, *, brands=None, stock_status=None, attr_filters=None)
 
     facets = []
     for attr in attributes:
+        # GROUP BY по значению атрибута в выборке с активными фильтрами, КРОМЕ своего.
+        rows = (
+            _apply_attr_filters(base_qs, coerced, exclude=attr.slug)
+            .annotate(_fv=KeyTextTransform(attr.slug, "attrs_cache"))
+            .filter(_fv__isnull=False)  # ключ есть и значение не JSON null (== старое None→skip)
+            .values("_fv")
+            .annotate(c=Count("id"))
+        )
         counter: Counter = Counter()
-        for cache in rows:
-            if not _match(cache, exclude=attr.slug):
-                continue
-            value = cache.get(attr.slug)
-            if value is None:
-                continue
-            if isinstance(value, list):
-                counter.update(value)
-            else:
-                counter[value] += 1
+        for row in rows:
+            counter[_cast_facet_value(row["_fv"], attr.attribute_type)] = row["c"]
         if not counter:
             continue  # пустой фасет не отдаём
 
