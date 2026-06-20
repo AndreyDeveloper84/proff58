@@ -67,7 +67,12 @@ def set_current_price(product: Product, item: Item) -> bool:
 
     if product.code_1c:
         # Снять актуальность со старой цены и создать новую — атомарно.
+        # select_for_update на товар сериализует два параллельных обновления цены одного
+        # code_1c (защита existing-товаров, #126): второй поток ждёт коммита первого и
+        # видит уже новую актуальную цену вместо гонки на partial-unique-констрейнте.
         with transaction.atomic():
+            if product.pk:
+                Product.objects.select_for_update().filter(pk=product.pk).first()
             PriceRecord.objects.filter(
                 code_1c=product.code_1c,
                 price_type=price_type,
