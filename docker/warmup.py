@@ -49,6 +49,13 @@ def _category_path() -> str | None:
     try:
         import django
 
+        # Запуск как `python /app/docker/warmup.py` кладёт в sys.path каталог скрипта
+        # (/app/docker), а не корень проекта (/app) — добавим его, иначе `import apps...`
+        # упадёт и страница категории не прогреется.
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if root not in sys.path:
+            sys.path.insert(0, root)
+
         django.setup()
         from apps.catalog.models import Category
 
