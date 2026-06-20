@@ -293,3 +293,62 @@ def test_services_does_not_import_api():
     src = open(services_module.__file__, encoding="utf-8").read()
     assert "catalog.api" not in src
     assert "from .api" not in src
+
+
+# --- Типизация JSONB-containment (SQL-агрегация фасетов) ---
+
+
+@pytest.mark.django_db
+def test_jsonb_integer_match_typed(client, tree):
+    """attr_power=18 матчит JSON-число 18, а не строку «18» (containment по типу)."""
+    _, leaf = tree
+    link(leaf, make_attr("power", "Мощность", AttributeType.INTEGER))
+    make_product(leaf, "a", {"power": 18})
+    make_product(leaf, "b", {"power": 20})
+
+    data = client.get("/api/catalog/categories/dreli/facets/?attr_power=18").json()
+    assert data["total_products"] == 1  # только товар с power=18
+    facet = get_facet(data, "power")
+    assert values_count(facet) == {18: 1, 20: 1}  # drill-down: оба значения, int-ключи
+
+
+@pytest.mark.django_db
+def test_jsonb_boolean_aggregation_is_bool(client, tree):
+    """Значения boolean-фасета — Python bool True/False, не строки «true»/«false»."""
+    _, leaf = tree
+    link(leaf, make_attr("reverse", "Реверс", AttributeType.BOOLEAN))
+    make_product(leaf, "a", {"reverse": True})
+    make_product(leaf, "b", {"reverse": True})
+    make_product(leaf, "c", {"reverse": False})
+
+    facet = get_facet(client.get("/api/catalog/categories/dreli/facets/").json(), "reverse")
+    counts = values_count(facet)
+    assert counts == {True: 2, False: 1}
+    assert all(isinstance(k, bool) for k in counts)
+
+
+@pytest.mark.django_db
+def test_jsonb_decimal_match_normalized(client, tree):
+    """Decimal: 18.0 в JSONB и фильтр 18 совпадают (float-хранение)."""
+    _, leaf = tree
+    link(leaf, make_attr("weight", "Вес", AttributeType.DECIMAL, unit="кг"))
+    make_product(leaf, "a", {"weight": 18.0})
+    make_product(leaf, "b", {"weight": 2.5})
+
+    data = client.get("/api/catalog/categories/dreli/facets/?attr_weight=18").json()
+    assert data["total_products"] == 1
+    facet = get_facet(data, "weight")
+    assert values_count(facet) == {18.0: 1, 2.5: 1}
+
+
+@pytest.mark.django_db
+def test_facet_queries_scale_with_attrs_not_products(client, tree, django_assert_max_num_queries):
+    """Число запросов задаётся числом фасетов, а не товаров (100 товаров ≤ тот же лимит)."""
+    _, leaf = tree
+    link(leaf, make_attr("power", "Мощность", AttributeType.INTEGER))
+    link(leaf, make_attr("chuck", "Патрон", AttributeType.SELECT))
+    for i in range(100):
+        make_product(leaf, f"p{i}", {"power": 500 + (i % 5), "chuck": "Быстрозажимной"})
+
+    with django_assert_max_num_queries(8):
+        client.get("/api/catalog/categories/dreli/facets/")
