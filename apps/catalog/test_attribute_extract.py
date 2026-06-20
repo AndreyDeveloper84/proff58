@@ -76,10 +76,37 @@ def test_motor_type_brushless_before_brushed(rules):
     assert _by_slug(rules, "Дрель щёточный двигатель").get("motor_type").option_slug == "brushed"
 
 
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Винтоверт DENZEL безщеточ CID-IB-200",  # «з» вместо «с»
+        "Гайковерт Hanskonner бесщеточнаый без аккум",  # опечатка
+        "Дрель б/щ 18В",  # сокращение
+    ],
+)
+def test_motor_type_brushless_typos(rules, name):
+    """Реальные написания «бесщёточный» из выгрузки 1С (опечатки/сокращения)."""
+    assert _by_slug(rules, name).get("motor_type").option_slug == "brushless"
+
+
 def test_battery_included_boolean(rules):
     assert _by_slug(rules, "Шуруповёрт без АКБ").get("battery_included").boolean is False
     assert _by_slug(rules, "Шуруповёрт с АКБ").get("battery_included").boolean is True
     assert "battery_included" not in _by_slug(rules, "Шуруповёрт сетевой")  # не угадываем
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Гайковерт Makita DTW190Z без аккум. и з/у", False),  # сокращение «без аккум»
+        ("Гайковерт Makita DTW251Z без акк. и з/у", False),  # «без акк.»
+        ("Винтоверт THORVIK 20В 2аккум 4Ач", True),  # «2аккум» → АКБ в комплекте
+        ("Винтоверт DENZEL 18В 1аккум 4Ач", True),
+    ],
+)
+def test_battery_included_real_variants(rules, name, expected):
+    """Реальные написания наличия/отсутствия АКБ из выгрузки 1С."""
+    assert _by_slug(rules, name).get("battery_included").boolean is expected
 
 
 def test_priority_from_rules(rules):
