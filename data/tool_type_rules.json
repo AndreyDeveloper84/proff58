@@ -990,6 +990,32 @@
         { "tool_type": "Скобы", "slug": "krep-skoby", "match_keywords": ["скоба", "скобы"], "source": "name_keywords" },
         { "tool_type": "Болты и винты", "slug": "krep-bolty", "match_keywords": ["болт", "винт"], "source": "name_keywords" }
       ]
+    },
+    {
+      "category": "Спецодежда и защита",
+      "extraction": "priority_keyword",
+      "note": "СИЗ (одежда, обувь, защита органов) + пожарная/охранная безопасность. Типизируем по названию. Порядок precision-first: пожарные головки ДО рукавов («головка рукавная» содержит «рукав»). 'пояс' сужен (не ловить «поясной топор/подсумок»); 'щит' не используем голым (ловит «защитный»).",
+      "rules": [
+        { "tool_type": "Перчатки и рукавицы", "slug": "siz-perchatki", "match_keywords": ["перчатки", "перчатк", "рукавиц", "краги", "нарукавник"], "source": "name_keywords" },
+        { "tool_type": "Костюмы, комбинезоны, одежда", "slug": "siz-odezhda", "match_keywords": ["костюм", "комбинезон", "полукомбинезон", "спецовка", "плащ", "дождевик", "халат", "футболка", "жилет", "фартук", "брюки", "куртка", "нагрудник", "спецодежда"], "source": "name_keywords" },
+        { "tool_type": "Обувь", "slug": "siz-obuv", "match_keywords": ["ботинки", "сапоги", "полуботинки", "валенки", "галоши", "обувь", "сабо ", "полусапог"], "source": "name_keywords" },
+        { "tool_type": "Каски и подшлемники", "slug": "siz-kaski", "match_keywords": ["каска", "подшлемник", "каскетка"], "source": "name_keywords" },
+        { "tool_type": "Наколенники и налокотники", "slug": "siz-nakolenniki", "match_keywords": ["наколенник", "налокотник"], "source": "name_keywords" },
+        { "tool_type": "Наушники и беруши", "slug": "siz-naushniki", "match_keywords": ["наушник", "беруши"], "source": "name_keywords" },
+        { "tool_type": "Маски и полумаски", "slug": "siz-maski", "match_keywords": ["полумаска", "маска"], "source": "name_keywords" },
+        { "tool_type": "Респираторы, противогазы, фильтры", "slug": "siz-respiratory", "match_keywords": ["респиратор", "противогаз", "патрон к респир", "патрон противогаз", "патрон сменн", "патрон фильтр", "предфильтр", "фильтр для дых", "клапан выдоха"], "source": "name_keywords" },
+        { "tool_type": "Очки и щитки защитные", "slug": "siz-ochki", "match_keywords": ["очки", "щиток", "щит защитн", "защитный щит", "лицевой щит"], "source": "name_keywords" },
+        { "tool_type": "СИЗ от падения (привязи, пояса, стропы)", "slug": "siz-vysota", "match_keywords": ["привязь", "пояс предохран", "пояс монтажн", "пояс страхов", "пояс лямоч", "пояс безлямоч", "предохранительный пояс", "строп", "карабин страх", "удерживающ", "анкерная лин", "самоблокир", "веревка спасат", "спасательная веревка"], "source": "name_keywords" },
+        { "tool_type": "Аптечки", "slug": "siz-aptechki", "match_keywords": ["аптечка", "аптечк"], "source": "name_keywords" },
+        { "tool_type": "Огнетушители", "slug": "siz-ognetushiteli", "match_keywords": ["огнетушитель"], "source": "name_keywords" },
+        { "tool_type": "Пожарные головки и стволы", "slug": "siz-golovki", "match_keywords": ["головка", "ствол", "гайка-заглушка пож"], "source": "name_keywords" },
+        { "tool_type": "Пожарные рукава", "slug": "siz-rukava", "match_keywords": ["рукав"], "source": "name_keywords" },
+        { "tool_type": "Пожарный инвентарь", "slug": "siz-pozh-inventar", "match_keywords": ["багор", "ведро пожар", "ведро конусное", "гидрант", "гидроэлеватор", "брандспойт", "брандспойнт", "кошма", "покрывало пожар", "лом пожар", "крюк пожар", "мотопомпа пожар"], "source": "name_keywords" },
+        { "tool_type": "Извещатели и оповещатели", "slug": "siz-izveshchateli", "match_keywords": ["извещатель", "оповещатель", "livi", "сигнализатор"], "source": "name_keywords" },
+        { "tool_type": "Знаки безопасности", "slug": "siz-znaki", "match_keywords": ["знак", "табличка"], "source": "name_keywords" },
+        { "tool_type": "Пожарные шкафы и щиты", "slug": "siz-shkafy", "match_keywords": ["шкаф пожарн", "шкаф пож", "шпк", "щит пожарн", "пожарный щит", "стенд пожарн"], "source": "name_keywords" },
+        { "tool_type": "Стёкла и светофильтры", "slug": "siz-stekla", "match_keywords": ["стекло", "светофильтр"], "source": "name_keywords" }
+      ]
     }
   ]
 }
