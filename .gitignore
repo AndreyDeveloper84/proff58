@@ -55,5 +55,9 @@ coverage.xml
 *.swp
 .DS_Store
 
+# Node (только для сборки CSS витрины через Tailwind)
+node_modules/
+npm-debug.log*
+
 # Docker
 *.pid

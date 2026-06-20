@@ -1,74 +1,100 @@
 {% extends "catalog/base.html" %}
 {% block title %}{{ category.name }} — каталог{% endblock %}
 {% block content %}
-  <div class="crumbs">
+  <nav class="mb-4 flex flex-wrap items-center gap-1 text-sm text-slate-400">
     <a href="/catalog/">Каталог</a>
-    {% for a in breadcrumbs %} / <a href="/catalog/{{ a.slug }}/">{{ a.name }}</a>{% endfor %}
-    / <strong>{{ category.name }}</strong>
+    {% for a in breadcrumbs %}<span class="text-slate-300">/</span><a href="/catalog/{{ a.slug }}/">{{ a.name }}</a>{% endfor %}
+    <span class="text-slate-300">/</span>
+    <span class="font-medium text-slate-600 dark:text-slate-300">{{ category.name }}</span>
+  </nav>
+
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <h1 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ category.name }}</h1>
+    <div class="flex flex-wrap gap-1.5">
+      <span class="stat">товаров: {{ counts.total }}</span>
+      <span class="stat"><span class="stat-dot"></span>в наличии: {{ counts.in_stock }}</span>
+    </div>
   </div>
 
-  <h1>{{ category.name }}</h1>
-  <p class="muted">товаров: {{ counts.total }} · в наличии: {{ counts.in_stock }}</p>
-
   {% if facets %}
-    <div>
-      <strong>Тип инструмента (tool_type):</strong>
-      <div class="tiles">
-        <a class="tile {% if not active_tool_type %}active{% endif %}"
+    <div class="mb-3">
+      <div class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Тип инструмента</div>
+      <div class="flex flex-wrap gap-1.5">
+        <a class="chip {% if not active_tool_type %}chip-active{% endif %}"
            href="?{% if in_stock %}in_stock=1{% endif %}">Все</a>
         {% for f in facets %}
-          <a class="tile {% if active_tool_type == f.slug %}active{% endif %}"
+          <a class="chip {% if active_tool_type == f.slug %}chip-active{% endif %}"
              href="?tool_type={{ f.slug }}{% if in_stock %}&in_stock=1{% endif %}">
-            {{ f.value }} <span class="muted">({{ f.count }})</span>
+            {{ f.value }} <span class="opacity-60">({{ f.count }})</span>
           </a>
         {% endfor %}
       </div>
     </div>
   {% endif %}
 
-  <div class="filters">
+  <div class="mb-4">
     {% if in_stock %}
-      <a href="?{% if active_tool_type %}tool_type={{ active_tool_type }}{% endif %}">× Сбросить «в наличии»</a>
+      <a class="chip chip-active" href="?{% if active_tool_type %}tool_type={{ active_tool_type }}{% endif %}">
+        ✕ Сбросить «в наличии»
+      </a>
     {% else %}
-      <a href="?{% if active_tool_type %}tool_type={{ active_tool_type }}&{% endif %}in_stock=1">Только в наличии</a>
+      <a class="chip" href="?{% if active_tool_type %}tool_type={{ active_tool_type }}&{% endif %}in_stock=1">
+        Только в наличии
+      </a>
     {% endif %}
   </div>
 
-  <table>
-    <thead>
-      <tr><th>Название</th><th>external_id</th><th>Остаток</th><th>tool_type</th><th></th></tr>
-    </thead>
-    <tbody>
-      {% for row in rows %}
-        <tr>
-          <td>{{ row.product.name }}</td>
-          <td class="muted">{{ row.product.code_1c }}</td>
-          <td>{{ row.product.stock_quantity|floatformat:"-3" }}</td>
-          <td>
-            {% if row.tool_type %}
-              <span class="badge badge-tt">{{ row.tool_type }}</span>
-            {% else %}
-              <span class="muted">—</span>
-            {% endif %}
-          </td>
-          <td>
-            {% if row.needs_moderation %}<span class="badge badge-mod">⚠ модерация</span>{% endif %}
-            {% if row.recategorize %}<span class="badge badge-recat">↪ сменить категорию</span>{% endif %}
-          </td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="5">Товаров нет.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="card overflow-hidden">
+    <div class="max-h-[70vh] overflow-auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Название</th>
+            <th>external_id</th>
+            <th class="text-right">Остаток</th>
+            <th>tool_type</th>
+            <th>статус</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td class="font-medium text-slate-800 dark:text-slate-100">{{ row.product.name }}</td>
+              <td><span class="code">{{ row.product.code_1c }}</span></td>
+              <td class="text-right tabular-nums">{{ row.product.stock_quantity|floatformat:"-3" }}</td>
+              <td>
+                {% if row.tool_type %}
+                  <span class="badge badge-tt">{{ row.tool_type }}</span>
+                {% else %}
+                  <span class="text-slate-300">—</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="flex flex-wrap gap-1">
+                  {% if row.needs_moderation %}<span class="badge badge-mod">⚠ модерация</span>{% endif %}
+                  {% if row.recategorize %}<span class="badge badge-recat">↪ сменить категорию</span>{% endif %}
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="px-3 py-8 text-center text-slate-400">Товаров нет.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-  <div class="pager">
-    {% if page.has_previous %}
-      <a href="?{% if active_tool_type %}tool_type={{ active_tool_type }}&{% endif %}{% if in_stock %}in_stock=1&{% endif %}page={{ page.previous_page_number }}">← назад</a>
-    {% endif %}
-    <span class="muted">стр. {{ page.number }} из {{ page.paginator.num_pages }}</span>
-    {% if page.has_next %}
-      <a href="?{% if active_tool_type %}tool_type={{ active_tool_type }}&{% endif %}{% if in_stock %}in_stock=1&{% endif %}page={{ page.next_page_number }}">вперёд →</a>
-    {% endif %}
+  <div class="mt-4 flex items-center justify-between gap-3 text-sm">
+    <div>
+      {% if page.has_previous %}
+        <a class="btn btn-ghost" href="?{% if active_tool_type %}tool_type={{ active_tool_type }}&{% endif %}{% if in_stock %}in_stock=1&{% endif %}page={{ page.previous_page_number }}">← назад</a>
+      {% endif %}
+    </div>
+    <span class="text-slate-400">стр. {{ page.number }} из {{ page.paginator.num_pages }}</span>
+    <div>
+      {% if page.has_next %}
+        <a class="btn btn-ghost" href="?{% if active_tool_type %}tool_type={{ active_tool_type }}&{% endif %}{% if in_stock %}in_stock=1&{% endif %}page={{ page.next_page_number }}">вперёд →</a>
+      {% endif %}
+    </div>
   </div>
 {% endblock %}

@@ -1,32 +1,70 @@
+{% load static %}
 <!doctype html>
-<html lang="ru">
+<html lang="ru" class="h-full">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>{% block title %}Каталог «Профессионал»{% endblock %}</title>
-  <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 1.5rem; color: #222; }
-    a { color: #1558b0; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .muted { color: #777; font-size: .9em; }
-    .crumbs { font-size: .9em; margin-bottom: 1rem; }
-    .tiles { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
-    .tile { border: 1px solid #ccc; border-radius: 6px; padding: .4rem .7rem; }
-    .tile.active { background: #1558b0; color: #fff; border-color: #1558b0; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #eee; }
-    .badge { font-size: .8em; padding: .1rem .4rem; border-radius: 4px; white-space: nowrap; }
-    .badge-mod { background: #fde8c4; color: #8a5300; }
-    .badge-recat { background: #e3d3f7; color: #5a2a8a; }
-    .badge-tt { background: #d8efe0; color: #1c6b3d; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .8rem; }
-    .card { border: 1px solid #ddd; border-radius: 8px; padding: .8rem; }
-    .pager { margin: 1rem 0; }
-    .filters { margin: .5rem 0; }
-  </style>
+  {# Тёмная тема без мерцания: ставим класс до первой отрисовки #}
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "dark" || (!t && matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="{% static 'js/htmx.min.js' %}" defer></script>
 </head>
-<body>
-  <p class="muted"><a href="/catalog/">Каталог</a> · тестовая витрина (показаны импортированные данные)</p>
-  {% block content %}{% endblock %}
+<body hx-boost="true" class="flex min-h-full flex-col">
+
+  <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
+    <div class="container-app flex h-14 items-center justify-between gap-4">
+      <a href="/catalog/" class="flex items-center gap-2.5 text-slate-900 hover:no-underline dark:text-white">
+        <span class="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-sm font-bold text-white">П</span>
+        <span class="flex flex-col leading-tight">
+          <span class="text-sm font-semibold">Профессионал</span>
+          <span class="text-[11px] font-medium text-slate-400">витрина каталога</span>
+        </span>
+      </a>
+
+      <nav class="flex items-center gap-1.5">
+        <a href="/catalog/" class="btn btn-ghost">Каталог</a>
+        <a href="/admin/" class="btn btn-ghost hidden sm:inline-flex">Админка</a>
+        <button type="button" onclick="toggleTheme()" aria-label="Переключить тему"
+                class="btn btn-ghost px-2">
+          <svg class="h-4 w-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.42-1.42M7.05 7.05 5.64 5.64m12.72 0-1.42 1.42M7.05 16.95l-1.41 1.41"/>
+            <circle cx="12" cy="12" r="4"/>
+          </svg>
+          <svg class="hidden h-4 w-4 dark:block" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container-app flex-1 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="border-t border-slate-200 dark:border-slate-800">
+    <div class="container-app py-5 text-xs text-slate-400">
+      Тестовая витрина — показаны импортированные данные (инструмент контроля загрузки из 1С).
+    </div>
+  </footer>
+
+  <script>
+    function toggleTheme() {
+      var root = document.documentElement;
+      var dark = root.classList.toggle("dark");
+      try { localStorage.setItem("theme", dark ? "dark" : "light"); } catch (e) {}
+    }
+  </script>
 </body>
 </html>
