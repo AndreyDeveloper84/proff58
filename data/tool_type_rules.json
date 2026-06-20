@@ -968,6 +968,28 @@
         { "tool_type": "Фитинги и переходники", "slug": "bp-fitingi", "match_keywords": ["фитинг", "переходник", "быстроразъем", "муфта", "тройник", "адаптер", "штуцер", "соединитель", "ниппел"], "source": "name_keywords" },
         { "tool_type": "Шланги и рукава", "slug": "bp-shlangi", "match_keywords": ["шланг", "рукав", "пневмотрубка", "трубка пневм"], "source": "name_keywords" }
       ]
+    },
+    {
+      "category": "Крепёж и метизы",
+      "extraction": "priority_keyword",
+      "note": "Однородная категория крепежа. Типизируем по названию. Порядок precision-first: специфичный/составной крепёж (дюбель-гвоздь, анкер, хомут-стяжка, рым-болт) ДО базовых (болт/винт). Заклёпочники — это инструмент, recategorize → «Ручной инструмент».",
+      "rules": [
+        { "tool_type": "⚠ В категорию «Ручной инструмент»", "slug": "_recat_ruchnoy_krep", "match_keywords": ["заклепочник", "клепальн", "инструмент для заклеп"], "source": "name_keywords", "action": "recategorize" },
+        { "tool_type": "Дюбели и анкеры", "slug": "krep-dyubeli", "match_keywords": ["дюбель", "анкер", "анкерный", "капсула химич", "химический анкер", "дюбель-пробк", "дюбель-хомут"], "source": "name_keywords" },
+        { "tool_type": "Хомуты-стяжки", "slug": "krep-styazhki", "match_keywords": ["хомут-стяжка", "стяжка нейлон", "стяжка каб", "кабельная стяжка", "хомут"], "source": "name_keywords" },
+        { "tool_type": "Саморезы", "slug": "krep-samorezy", "match_keywords": ["саморез"], "source": "name_keywords" },
+        { "tool_type": "Шурупы и глухари", "slug": "krep-shurupy", "match_keywords": ["шуруп", "глухарь"], "source": "name_keywords" },
+        { "tool_type": "Заклёпки", "slug": "krep-zaklepki", "match_keywords": ["заклепк", "заклепка-гайка", "резьбовая заклеп"], "source": "name_keywords" },
+        { "tool_type": "Гвозди", "slug": "krep-gvozdi", "match_keywords": ["гвоздь", "гвозди", "дюбель-гвоздь"], "source": "name_keywords" },
+        { "tool_type": "Шпильки", "slug": "krep-shpilki", "match_keywords": ["шпилька", "шпильки"], "source": "name_keywords" },
+        { "tool_type": "Шайбы", "slug": "krep-shaiby", "match_keywords": ["шайба", "шайбы", "гровер"], "source": "name_keywords" },
+        { "tool_type": "Гайки", "slug": "krep-gaiki", "match_keywords": ["гайка", "гайки"], "source": "name_keywords" },
+        { "tool_type": "Карабины, крюки, рымы", "slug": "krep-karabiny", "match_keywords": ["карабин", "крюк", "крючок", "рым-болт", "рым-гайка", "рым "], "source": "name_keywords" },
+        { "tool_type": "Тросы, канаты, такелаж", "slug": "krep-takelazh", "match_keywords": ["канат", "веревка", "шнур", "трос", "шпагат", "коуш", "талреп", "зажим", "цепь", "вертлюг", "кольцо такелаж"], "source": "name_keywords" },
+        { "tool_type": "Системы выравнивания плитки", "slug": "krep-svp", "match_keywords": ["крестик", "клинья", "система выравнив", "свп", "зажим для плитки"], "source": "name_keywords" },
+        { "tool_type": "Скобы", "slug": "krep-skoby", "match_keywords": ["скоба", "скобы"], "source": "name_keywords" },
+        { "tool_type": "Болты и винты", "slug": "krep-bolty", "match_keywords": ["болт", "винт"], "source": "name_keywords" }
+      ]
     }
   ]
 }
