@@ -10,25 +10,87 @@ from __future__ import annotations
 from .models import AttributeType, Product, ProductAttributeValue
 
 
-def attr_value_to_json(pav: ProductAttributeValue):
-    """JSON-safe значение характеристики по её типу.
+def typed_value_to_json(
+    attribute_type: str,
+    *,
+    text=None,
+    integer=None,
+    decimal=None,
+    boolean=None,
+    option_value=None,
+):
+    """ЯДРО конвертации: JSON-safe значение по логическому типу характеристики.
 
-    Decimal → float — намеренно и ТОЛЬКО для характеристик/фасетов (мощность, вес,
-    диаметр и т.п.), не для денег: JSONField без encoder не умеет Decimal, а для
-    числовых фильтров float достаточно.
+    Единый источник правил сериализации для всех путей (обычный PAV и batch-обогащение):
+    оба обязаны давать ИДЕНТИЧНЫЙ результат для одной и той же характеристики.
+
+    Эталонные правила (исторически из ``attr_value_to_json``):
+      * TEXT       → str (как есть),
+      * INTEGER    → int (как есть),
+      * DECIMAL    → float (намеренно для характеристик/фасетов, не для денег:
+                     JSONField без encoder не умеет Decimal, для числовых фильтров
+                     float достаточно),
+      * BOOLEAN    → bool (False СОХРАНЯЕТСЯ, не выбрасывается),
+      * SELECT/MULTISELECT → option_value (рус. ярлык варианта),
+      * None        → None.
+
+    Значение каждого типа передаётся отдельным kwarg; используется только то,
+    что соответствует ``attribute_type``.
     """
-    t = pav.attribute.attribute_type
-    if t == AttributeType.TEXT:
-        return pav.value_text
-    if t == AttributeType.INTEGER:
-        return pav.value_integer
-    if t == AttributeType.DECIMAL:
-        return float(pav.value_decimal) if pav.value_decimal is not None else None
-    if t == AttributeType.BOOLEAN:
-        return pav.value_boolean
-    if t in (AttributeType.SELECT, AttributeType.MULTISELECT):
-        return pav.value_option.value if pav.value_option_id else None
+    if attribute_type == AttributeType.TEXT:
+        return text
+    if attribute_type == AttributeType.INTEGER:
+        return integer
+    if attribute_type == AttributeType.DECIMAL:
+        return float(decimal) if decimal is not None else None
+    if attribute_type == AttributeType.BOOLEAN:
+        return boolean
+    if attribute_type in (AttributeType.SELECT, AttributeType.MULTISELECT):
+        return option_value
     return None
+
+
+def attr_value_to_json(pav: ProductAttributeValue):
+    """JSON-safe значение характеристики по её типу (ЭТАЛОН, путь обычного PAV).
+
+    Адаптер над :func:`typed_value_to_json`: достаёт тип из ``pav.attribute`` и
+    соответствующие ``value_*``/опцию. Поведение не меняется.
+    """
+    option_value = pav.value_option.value if pav.value_option_id else None
+    return typed_value_to_json(
+        pav.attribute.attribute_type,
+        text=pav.value_text,
+        integer=pav.value_integer,
+        decimal=pav.value_decimal,
+        boolean=pav.value_boolean,
+        option_value=option_value,
+    )
+
+
+def extracted_value_to_json(attribute, av, option=None):
+    """JSON-safe значение для attrs_cache из извлечённого значения (путь enrich).
+
+    Адаптер над тем же ЯДРОМ :func:`typed_value_to_json`, что и ``attr_value_to_json``,
+    поэтому результат ТОЧНО совпадает с обычным PAV-путём для того же атрибута.
+
+    КЛЮЧЕВОЕ: логический тип берём из РЕАЛЬНОГО ``attribute.attribute_type`` (а не из
+    грубого ``av.kind``). Это снимает любое возможное расхождение «float vs int»: чем бы
+    ни был тип атрибута, ядро применит к нему те же правила, что и для PAV. ``av`` —
+    :class:`~apps.catalog.attribute_extract.AttrValue` (поля ``number``/``boolean``),
+    ``option`` — выбранный :class:`AttributeOption` для select-характеристик.
+    """
+    return typed_value_to_json(
+        attribute.attribute_type,
+        # number-экстракт пишется и в value_integer, и в value_decimal как одно
+        # Decimal-число; ядро возьмёт нужное поле по реальному типу атрибута.
+        integer=int(av.number) if av.number is not None else None,
+        decimal=av.number,
+        boolean=av.boolean,
+        option_value=option.value if option is not None else None,
+        # TEXT enrich не извлекает; на случай TEXT-атрибута дадим пустую строку,
+        # которую rebuild_attrs_cache отбрасывает как пустое значение.
+        text="",
+    )
 
 
 def rebuild_attrs_cache(product: Product) -> dict:
