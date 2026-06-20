@@ -13,6 +13,7 @@
 """
 
 from django.conf import settings
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import (
     api_view,
@@ -201,6 +202,13 @@ def snapshot(request):
     (price → prices/update, физический stock → stocks/update). reserved/available
     ведёт сайт, 1С их не присылает. В снимок попадают все позиции с code_1c
     (включая скрытые на витрине) — видимость на обмен не влияет.
+
+    Две схемы пагинации (сортировка всегда `code_1c, id`):
+    * **offset** (`?offset=`) — как было, с `count`/`next_offset`. Просто, но дорого
+      на большом каталоге (высокий offset).
+    * **keyset** (`?after_id=`, опц. `?after_code_1c=`) — курсор по последней позиции;
+      O(limit) независимо от глубины, без `count`. Для первой страницы — `after_id=0`.
+    Контракт offset не сломан: keyset включается только при наличии `after_id`.
     """
     max_items = settings.ONEC_MAX_ITEMS
 
@@ -214,26 +222,49 @@ def snapshot(request):
         )
     limit = min(limit, max_items)
 
-    offset, error = _parse_int_param(request.query_params.get("offset"), default=0)
-    if error:
-        return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
-    if offset < 0:
-        return Response(
-            {"detail": "offset не может быть отрицательным."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
     qs = Product.objects.exclude(code_1c__isnull=True).exclude(code_1c="").order_by("code_1c", "id")
-    count = qs.count()
-    rows = qs[offset : offset + limit].values(
-        "code_1c",
-        "price",
-        "currency",
-        "stock_quantity",
-        "reserved_quantity",
-        "available_quantity",
-    )
 
+    keyset = request.query_params.get("after_id") is not None
+    if keyset:
+        after_id, error = _parse_int_param(request.query_params.get("after_id"), default=0)
+        if error:
+            return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
+        if after_id < 0:
+            return Response(
+                {"detail": "after_id не может быть отрицательным."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        after_code_1c = request.query_params.get("after_code_1c", "")
+        page_qs = qs.filter(
+            Q(code_1c__gt=after_code_1c) | (Q(code_1c=after_code_1c) & Q(id__gt=after_id))
+        )[:limit]
+        offset = None
+        count = None
+        next_offset = None
+    else:
+        offset, error = _parse_int_param(request.query_params.get("offset"), default=0)
+        if error:
+            return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
+        if offset < 0:
+            return Response(
+                {"detail": "offset не может быть отрицательным."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        count = qs.count()
+        page_qs = qs[offset : offset + limit]
+        next_offset = offset + limit if offset + limit < count else None
+
+    raw_rows = list(
+        page_qs.values(
+            "id",
+            "code_1c",
+            "price",
+            "currency",
+            "stock_quantity",
+            "reserved_quantity",
+            "available_quantity",
+        )
+    )
     results = [
         {
             "code_1c": row["code_1c"],
@@ -243,10 +274,14 @@ def snapshot(request):
             "reserved": _decimal_to_str(row["reserved_quantity"]),
             "available": _decimal_to_str(row["available_quantity"]),
         }
-        for row in rows
+        for row in raw_rows
     ]
 
-    next_offset = offset + limit if offset + limit < count else None
+    # Курсор следующей страницы: есть ещё, если набрали полную страницу (keyset) или
+    # offset+limit ещё не дошёл до count (offset). На последней странице — null.
+    has_more = (len(raw_rows) == limit) if keyset else (next_offset is not None)
+    next_after_code_1c = raw_rows[-1]["code_1c"] if (has_more and raw_rows) else None
+    next_after_id = raw_rows[-1]["id"] if (has_more and raw_rows) else None
 
     return Response(
         {
@@ -254,6 +289,8 @@ def snapshot(request):
             "limit": limit,
             "offset": offset,
             "next_offset": next_offset,
+            "next_after_code_1c": next_after_code_1c,
+            "next_after_id": next_after_id,
             "results": results,
         }
     )
