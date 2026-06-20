@@ -5,11 +5,13 @@
 КАЖДЫЙ воркер успел скомпилировать шаблоны и открыть соединение с БД до первого
 живого клика (особенно после пересборки docker).
 
-Важно: страницы витрины используют РАЗНЫЕ шаблоны — `/catalog/` рендерит
-index.html, а страница категории `/catalog/<slug>/` — category.html (тяжёлый
-view с фасетами). Поэтому греем и индекс, и реальную категорию, и каркас
-админки (`/admin/login/` — публичен). Каждый URL бьём несколько раз (≈2×воркеров),
-чтобы прогрелись все процессы gunicorn, а не только один.
+Что греем:
+- шаблоны (кэш компиляции — per-process): индекс index.html, страница категории
+  category.html и каркас админки `/admin/login/` — каждый repeat≈2×воркеров раз,
+  чтобы прогрелись ВСЕ процессы gunicorn, а не один;
+- данные: все верхнеуровневые категории по одному разу — чтобы их строки попали в
+  кэш PostgreSQL (он общий для воркеров) и первый клик по большому разделу не читал
+  данные с диска (особенно на HDD это давало 20–30 с на первом обращении).
 
 Для не-healthz путей шлём X-Forwarded-Proto=https (иначе prod-настройка
 SECURE_SSL_REDIRECT вернёт 301) и Host=localhost (точно в ALLOWED_HOSTS).
@@ -40,18 +42,20 @@ def _hit(path: str, *, secure: bool = False, timeout: float = 20.0) -> bool:
         return False
 
 
-def _category_path() -> str | None:
-    """URL верхнеуровневой категории витрины — чтобы прогреть шаблон category.html.
+def _category_paths() -> list[str]:
+    """URL всех верхнеуровневых категорий витрины.
 
-    Slug берём из БД через Django. Любая ошибка (нет категорий, БД недоступна) →
-    None, тогда страницу категории просто не греем.
+    Нужны, чтобы прогреть шаблон category.html и подтянуть строки каждой категории
+    в кэш PostgreSQL (тогда первый живой клик по большому разделу не читает данные
+    с диска). Slug берём из БД через Django. Любая ошибка (нет категорий, БД
+    недоступна) → пустой список, тогда категории просто не греем.
     """
     try:
         import django
 
         # Запуск как `python /app/docker/warmup.py` кладёт в sys.path каталог скрипта
         # (/app/docker), а не корень проекта (/app) — добавим его, иначе `import apps...`
-        # упадёт и страница категории не прогреется.
+        # упадёт и категории не прогреются.
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         if root not in sys.path:
             sys.path.insert(0, root)
@@ -59,15 +63,14 @@ def _category_path() -> str | None:
         django.setup()
         from apps.catalog.models import Category
 
-        slug = (
+        slugs = (
             Category.objects.filter(depth=1, is_active=True, on_site=True)
             .order_by("sort_order", "name")
             .values_list("slug", flat=True)
-            .first()
         )
-        return f"/catalog/{slug}/" if slug else None
+        return [f"/catalog/{slug}/" for slug in slugs]
     except Exception:
-        return None
+        return []
 
 
 def main() -> int:
@@ -80,23 +83,32 @@ def main() -> int:
         print("==> Прогрев пропущен: gunicorn не ответил вовремя", file=sys.stderr, flush=True)
         return 0
 
-    # 2. URL для прогрева: витрина (index.html), страница категории (category.html),
-    #    каркас админки (login.html). Все публичные, без авторизации.
-    paths = ["/catalog/"]
-    category = _category_path()
-    if category:
-        paths.append(category)
-    paths.append("/admin/login/")
-
-    # 3. Бьём каждый URL несколько раз, чтобы прогрелись все воркеры gunicorn
-    #    (кэш скомпилированных шаблонов — per-process).
     workers = int(os.environ.get("GUNICORN_WORKERS", "3") or "3")
     repeat = max(2, workers * 2)
-    for path in paths:
+    categories = _category_paths()
+
+    # 2. Прогрев ШАБЛОНОВ на всех воркерах (кэш скомпилированных шаблонов — per-process):
+    #    индекс (index.html), одна категория (category.html), каркас админки (login.html).
+    #    repeat раз, чтобы запросы разошлись по всем процессам gunicorn.
+    template_paths = ["/catalog/"]
+    if categories:
+        template_paths.append(categories[0])
+    template_paths.append("/admin/login/")
+    for path in template_paths:
         for _ in range(repeat):
             _hit(path, secure=True)
 
-    print(f"==> Прогрев выполнен ({len(paths)} URL x {repeat})", flush=True)
+    # 3. Прогрев ДАННЫХ: остальные категории по одному разу — чтобы их строки попали
+    #    в кэш PostgreSQL (он общий для всех воркеров), и первый клик по любому разделу
+    #    не читал большую категорию с диска. Одного запроса достаточно: кэш БД — серверный.
+    for path in categories[1:]:
+        _hit(path, secure=True)
+
+    print(
+        f"==> Прогрев выполнен (шаблоны: {len(template_paths)} x {repeat}, "
+        f"категорий: {len(categories)})",
+        flush=True,
+    )
     return 0
 
 

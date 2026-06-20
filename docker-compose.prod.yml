@@ -2,6 +2,20 @@ services:
   db:
     image: postgres:16
     restart: always
+    # Тюнинг PostgreSQL под объём RAM сервера (через env, дефолты — под 8 ГБ).
+    # Дефолтный shared_buffers=128MB мал для каталога: большие категории читаются
+    # с диска (особенно HDD) по 20–30 с на первом обращении. ~25% RAM в кэш — стандарт.
+    # Сервер с меньшим RAM — переопредели значения в .env (напр. POSTGRES_SHARED_BUFFERS=1GB).
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${POSTGRES_SHARED_BUFFERS:-2GB}
+      - -c
+      - effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-6GB}
+      - -c
+      - work_mem=${POSTGRES_WORK_MEM:-32MB}
+      - -c
+      - maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-256MB}
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
