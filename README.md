@@ -48,6 +48,19 @@ python manage.py migrate
 python manage.py runserver
 ```
 
+## Тесты локально
+
+Тестам нужен PostgreSQL (используются JSONB-фасеты, GIN — SQLite не подойдёт). По
+умолчанию подключение идёт на `localhost:5432` (см. `DATABASE_URL`).
+
+```bash
+docker compose up -d db          # поднять только Postgres (проброшен на localhost:5432)
+pytest                           # из venv, без Docker для самих тестов
+```
+
+Альтернатива — гонять тесты внутри контейнера: `docker compose run --rm web pytest`
+(там `DATABASE_URL` указывает на сервис `db`). В CI хост задаётся явно.
+
 ## Ветки и поток работы
 
 - `main` — продакшн, защищённая ветка, всегда деплоится.
