@@ -53,13 +53,25 @@ def _rule_matches(rule: CategoryMappingRule, hint: ProductHint) -> bool:
     return False
 
 
-def categorize(hint: ProductHint) -> tuple[Category | None, CategoryMappingRule | None]:
-    """Подобрать категорию сайта по правилам. Вернуть (категория, правило)."""
-    rules = (
+def load_active_rules() -> list[CategoryMappingRule]:
+    """Активные правила по приоритету — один запрос (для пакетной категоризации, #125)."""
+    return list(
         CategoryMappingRule.objects.filter(is_active=True)
         .select_related("target_category")
         .order_by("priority", "id")
     )
+
+
+def categorize(
+    hint: ProductHint, rules: list[CategoryMappingRule] | None = None
+) -> tuple[Category | None, CategoryMappingRule | None]:
+    """Подобрать категорию сайта по правилам. Вернуть (категория, правило).
+
+    ``rules`` — предзагруженный список (пакетный импорт передаёт его, чтобы не читать
+    `CategoryMappingRule` на каждую строку); если ``None`` — читаем сами (одиночный путь).
+    """
+    if rules is None:
+        rules = load_active_rules()
     for rule in rules:
         if _rule_matches(rule, hint):
             return rule.target_category, rule

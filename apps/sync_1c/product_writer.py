@@ -13,7 +13,7 @@ from __future__ import annotations
 from django.db import transaction
 
 from apps.catalog.categorization import ProductHint, categorize
-from apps.catalog.models import Product, ProductStatus
+from apps.catalog.models import CategoryMappingRule, Product, ProductStatus
 from apps.core.events import EventSource, product_created, product_updated
 
 from . import pricing, stock
@@ -43,15 +43,22 @@ def _snapshot(product: Product) -> dict:
     return {f: getattr(product, f) for f in _TRACKED_FIELDS}
 
 
-def create_product(item: Item) -> tuple[Product, bool]:
-    """Создать товар из строки 1С. Вернуть (product, categorized?)."""
+def create_product(
+    item: Item, *, rules: list[CategoryMappingRule] | None = None
+) -> tuple[Product, bool]:
+    """Создать товар из строки 1С. Вернуть (product, categorized?).
+
+    ``rules`` — предзагруженные правила категоризации (пакетный импорт), чтобы не читать
+    `CategoryMappingRule` на каждую строку; ``None`` — categorize прочитает сам.
+    """
     category, rule = categorize(
         ProductHint(
             name=item.name,
             article=item.article,
             brand=item.brand,
             source_group=item.source_group,
-        )
+        ),
+        rules=rules,
     )
     product = Product(
         code_1c=item.code_1c or None,

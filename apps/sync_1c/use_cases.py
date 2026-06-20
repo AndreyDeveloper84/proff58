@@ -21,11 +21,12 @@ from dataclasses import dataclass
 from django.db import transaction
 from django.utils import timezone
 
+from apps.catalog import categorization
 from apps.catalog.models import Product
 from apps.core.events import EventSource, price_changed
 
 from . import matching, normalizers, pricing, product_writer, stock
-from .matching import MatchStatus
+from .matching import MatchMaps, MatchStatus
 from .models import NomenclatureStaging, StagingStatus, SyncLog
 
 _MAX_ERROR_LINES = 50
@@ -77,10 +78,16 @@ def process_row(
     source_file: str,
     create_missing: bool,
     allow_basic_fields: bool,
+    maps: MatchMaps | None = None,
+    rules: list | None = None,
 ) -> tuple[Product | None, str, NomenclatureStaging]:
     """Обработать одну строку. Вернуть (product|None, действие, staging).
 
     Действие: created / updated / skipped / conflict / error.
+
+    ``maps``/``rules`` — предзагруженные карты товаров и правила категоризации
+    (пакетный путь, #125A): matching и категоризация идут без per-row запросов.
+    Если не переданы (одиночный путь `importer`) — работаем как раньше.
     """
     # 1. staging из raw — ДО нормализации и ВНЕ atomic записи товара.
     staging = NomenclatureStaging.objects.create(
@@ -109,8 +116,12 @@ def process_row(
         _mark_error(staging, "Нет идентификатора (code_1c / article).")
         return None, "error", staging
 
-    # 3. matching.
-    match = matching.resolve_for_import(item)
+    # 3. matching — по картам (батч) либо запросом (одиночный путь).
+    match = (
+        matching.resolve_in_memory(item, maps)
+        if maps is not None
+        else matching.resolve_for_import(item)
+    )
     if match.status == MatchStatus.CONFLICT:
         _mark_error(staging, match.reason)
         return None, "conflict", staging
@@ -124,7 +135,7 @@ def process_row(
     try:
         with transaction.atomic():
             if match.status == MatchStatus.NEW:
-                product, categorized = product_writer.create_product(item)
+                product, categorized = product_writer.create_product(item, rules=rules)
                 staging.status = StagingStatus.MATCHED if categorized else StagingStatus.NEW
                 action = "created"
             else:
@@ -135,6 +146,10 @@ def process_row(
     except Exception:  # noqa: BLE001
         _mark_error(staging, _short_traceback())
         return None, "error", staging
+
+    # Учесть новый товар в картах — чтобы дубль в этом же батче нашёлся (как при запросе к БД).
+    if action == "created" and maps is not None:
+        maps.register(product)
 
     staging.product = product
     staging.processed_at = timezone.now()
@@ -225,6 +240,18 @@ def run_import_into(
     return result
 
 
+def _build_maps(raw_items: list[dict]) -> MatchMaps:
+    """Карты существующих товаров для батча. Нормализация чистая (без запросов к БД),
+    поэтому строится 1–2 запросами вместо запроса на строку."""
+    items = []
+    for raw in raw_items:
+        try:
+            items.append(normalizers.normalize_item(raw))
+        except Exception:  # noqa: BLE001
+            continue  # битую строку обработает process_row (запишет ошибку в staging)
+    return matching.build_match_maps(items)
+
+
 def run_rows(
     raw_items: list[dict],
     *,
@@ -234,9 +261,16 @@ def run_rows(
     allow_basic_fields: bool = True,
     error_lines: list[str] | None = None,
 ) -> ImportResult:
-    """Прогнать строки через process_row и собрать ImportResult (без finalize)."""
+    """Прогнать строки через process_row и собрать ImportResult (без finalize).
+
+    Карты товаров и правила категоризации строятся ОДИН раз на батч (#125A) — matching
+    и категоризация больше не делают запросов на каждую строку. Запись товара пока
+    построчная (bulk-запись — #125B).
+    """
     result = ImportResult()
     lines = error_lines if error_lines is not None else []
+    maps = _build_maps(raw_items)
+    rules = categorization.load_active_rules()
     for raw in raw_items:
         product, action, staging = process_row(
             raw,
@@ -244,6 +278,8 @@ def run_rows(
             source_file=source_file,
             create_missing=create_missing,
             allow_basic_fields=allow_basic_fields,
+            maps=maps,
+            rules=rules,
         )
         _tally(result, action, product, staging, lines)
     return result
@@ -287,6 +323,7 @@ def _update_values(
     )
     result = ImportResult()
     error_lines: list[str] = []
+    maps = _build_maps(raw_items)
     for raw in raw_items:
         try:
             item = normalizers.normalize_item(raw)
@@ -299,7 +336,7 @@ def _update_values(
             result.errors += 1
             _append_error_detail(error_lines, ident, "нет идентификатора")
             continue
-        match = matching.resolve_for_import(item)
+        match = matching.resolve_in_memory(item, maps)
         if match.status == MatchStatus.CONFLICT:
             result.errors += 1
             _append_error_detail(error_lines, ident, match.reason)
