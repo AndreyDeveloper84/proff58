@@ -227,6 +227,21 @@ def sync_prices_stock() -> SyncReport:
 # Контракт: docs/1c-api-spec.md · модель статусов: docs/order-lifecycle.md
 ```
 
+### 4.7 `catalog` — характеристики: EAV-истина и read-model (ADR, #96)
+
+Правило провенанса и кэша характеристик товара:
+
+* **Источник истины — `ProductAttributeValue`** (EAV-строка) + поля `source`/`confidence`.
+  Приоритет перезаписи задаёт **`apps/catalog/source_priority.py`** (единственное место,
+  где живут ранги): `manual > import_1c > name_regex > name_keyword > llm`. Авто-источник
+  НЕ затирает значение более авторитетного (ручное и 1С неприкосновенны).
+* **`Product.attrs_cache` — read-model**, производная от EAV для фасетов/фильтров (#25).
+  Его **не редактируют руками**: он всегда пересобирается (`services.rebuild_attrs_cache`
+  или инлайн-bulk в `enrich_*`). Это держит кэш под контролем при росте до 40–60 ключей.
+* Извлечение из названия — словарь `data/attribute_rules.json` + движок
+  `apps/catalog/attribute_extract.py` (зеркало `tool_type.py`). Числовые характеристики
+  поддерживают range-фильтры (`CategoryAttribute.filter_kind=range`); UI-ползунки — позже.
+
 ---
 
 ## 5. Контракты — сигналы (события домена)

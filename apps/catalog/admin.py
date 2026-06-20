@@ -31,6 +31,7 @@ class CategoryAttributeInline(admin.TabularInline):
     model = CategoryAttribute
     extra = 1
     autocomplete_fields = ["attribute"]
+    fields = ("attribute", "is_filter", "filter_kind", "is_seo_facet", "is_required", "sort_order")
 
 
 @admin.register(Category)
@@ -45,8 +46,8 @@ class CategoryAdmin(TreeAdmin):
 
 @admin.register(Attribute)
 class AttributeAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "attribute_type", "unit", "is_filterable")
-    list_filter = ("attribute_type", "is_filterable")
+    list_display = ("name", "slug", "attribute_type", "unit", "is_filterable", "is_ai_feature")
+    list_filter = ("attribute_type", "is_filterable", "is_ai_feature")
     search_fields = ("name", "slug")
     prepopulated_fields = {"slug": ("name",)}
     inlines = [AttributeOptionInline]
@@ -88,6 +89,16 @@ class ProductAttributeValueInline(admin.TabularInline):
     model = ProductAttributeValue
     extra = 0
     autocomplete_fields = ["attribute"]
+    fields = (
+        "attribute",
+        "value_text",
+        "value_integer",
+        "value_decimal",
+        "value_boolean",
+        "value_option",
+        "source",
+        "confidence",
+    )
 
 
 @admin.register(Product)

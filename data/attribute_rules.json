@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "note": "Правила извлечения характеристик из названия товара (Фаза B, #96). Группировка по tool_type. number — regex (\\d с двойным экранированием), boolean — порядок правил: сначала false (негативные), потом true, select — варианты по ключевым словам по порядку. Матчинг по нормализованному названию (lower, ё=е).",
+  "tool_types": [
+    {
+      "tool_type": "Дрели и шуруповёрты",
+      "slug": "dreli-shurupoverty",
+      "category": "Электроинструмент",
+      "attributes": [
+        {
+          "slug": "power_source",
+          "name": "Тип питания",
+          "kind": "select",
+          "is_filter": true,
+          "is_seo_facet": true,
+          "filter_kind": "select",
+          "options": [
+            {
+              "value": "Аккумуляторный",
+              "slug": "akkumulyatornyy",
+              "keywords": ["аккумуляторн", "беспроводн", "cordless", "акб"]
+            },
+            {
+              "value": "Сетевой",
+              "slug": "setevoy",
+              "keywords": ["сетев", "от сети", "230 в сеть"]
+            }
+          ]
+        },
+        {
+          "slug": "voltage",
+          "name": "Напряжение аккумулятора",
+          "kind": "number",
+          "unit": "В",
+          "is_filter": true,
+          "is_seo_facet": false,
+          "filter_kind": "range",
+          "patterns": [
+            "(\\d+(?:[.,]\\d+)?)\\s*-?\\s*вольт",
+            "(\\d+(?:[.,]\\d+)?)\\s*в\\b",
+            "(\\d+(?:[.,]\\d+)?)\\s*v\\b"
+          ]
+        },
+        {
+          "slug": "torque",
+          "name": "Крутящий момент",
+          "kind": "number",
+          "unit": "Н·м",
+          "is_filter": true,
+          "is_seo_facet": false,
+          "filter_kind": "range",
+          "patterns": [
+            "(\\d+(?:[.,]\\d+)?)\\s*н[·.\\s]?м\\b",
+            "(\\d+(?:[.,]\\d+)?)\\s*n\\s*m\\b",
+            "(\\d+(?:[.,]\\d+)?)\\s*ньютон"
+          ]
+        },
+        {
+          "slug": "battery_included",
+          "name": "Аккумулятор в комплекте",
+          "kind": "boolean",
+          "is_filter": true,
+          "is_seo_facet": false,
+          "filter_kind": "select",
+          "rules": {
+            "false": [
+              "без акб",
+              "без аккумулятор",
+              "без батаре",
+              "без зу и акб",
+              "без акб и зу",
+              "без зарядн",
+              "body",
+              "solo",
+              "каркас"
+            ],
+            "true": [
+              "с акб",
+              "в комплекте аккумулятор",
+              "с аккумулятор",
+              "2х акб",
+              "2 акб",
+              "+2 акб",
+              "с зу и акб"
+            ]
+          }
+        },
+        {
+          "slug": "motor_type",
+          "name": "Тип двигателя",
+          "kind": "select",
+          "is_filter": true,
+          "is_seo_facet": false,
+          "is_ai_feature": false,
+          "filter_kind": "select",
+          "options": [
+            {
+              "value": "Бесщёточный",
+              "slug": "beschetochnyy",
+              "keywords": ["бесщеточн", "бесщет", "brushless", "бесколлекторн"]
+            },
+            {
+              "value": "Щёточный",
+              "slug": "schetochnyy",
+              "keywords": ["щеточн", "brushed", "коллекторн"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

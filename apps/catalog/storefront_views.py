@@ -11,9 +11,38 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
 
 from .models import Category, EnrichmentLog, EnrichmentResult
-from .services import category_counts, get_category_tree, products_in, tool_type_facets
+from .services import (
+    category_counts,
+    get_category_tree,
+    products_in,
+    range_filter_attributes,
+    tool_type_facets,
+)
 
 PAGE_SIZE = 24
+
+
+def _parse_float(raw):
+    try:
+        return float(raw.replace(",", ".")) if raw else None
+    except (ValueError, AttributeError):
+        return None
+
+
+def _parse_attr_ranges(request, category) -> dict:
+    """GET ``<slug>_min`` / ``<slug>_max`` → ``{slug: (min, max)}`` (#96 range-фильтры).
+
+    Берём только диапазонные характеристики-фильтры категории; невалидные/пустые
+    границы игнорируем; атрибут попадает в фильтр, только если задана хоть одна.
+    """
+    ranges: dict = {}
+    for attr in range_filter_attributes(category):
+        slug = attr["slug"]
+        lo = _parse_float(request.GET.get(f"{slug}_min"))
+        hi = _parse_float(request.GET.get(f"{slug}_max"))
+        if lo is not None or hi is not None:
+            ranges[slug] = (lo, hi)
+    return ranges
 
 
 def catalog_index(request):
@@ -32,9 +61,10 @@ def category_detail(request, slug_path):
 
     tool_type = request.GET.get("tool_type") or None
     in_stock = request.GET.get("in_stock") == "1"
+    attr_ranges = _parse_attr_ranges(request, category)
 
     qs = (
-        products_in(category, tool_type=tool_type, in_stock=in_stock)
+        products_in(category, tool_type=tool_type, in_stock=in_stock, attr_ranges=attr_ranges)
         .select_related("category")
         .order_by("name")
     )

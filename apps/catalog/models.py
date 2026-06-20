@@ -18,12 +18,15 @@
 потомков/предков без рекурсивных JOIN-ов.
 """
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node
 
 from apps.core.models import TimeStampedModel
+
+from .source_priority import Source
 
 
 class Category(MP_Node):
@@ -89,6 +92,13 @@ class Attribute(models.Model):
     unit = models.CharField(_("Единица измерения"), max_length=32, blank=True)
     is_filterable = models.BooleanField(_("Показывать в фильтре"), default=False)
     is_comparable = models.BooleanField(_("Показывать в сравнении"), default=False)
+    is_ai_feature = models.BooleanField(
+        _("AI-характеристика"),
+        default=False,
+        help_text=_(
+            "Плохо извлекается regex/словарём из названия — кандидат на добор LLM (#62)."
+        ),
+    )
 
     class Meta:
         verbose_name = _("Характеристика")
@@ -122,6 +132,11 @@ class AttributeOption(models.Model):
         return f"{self.attribute.name}: {self.value}"
 
 
+class FilterKind(models.TextChoices):
+    SELECT = "select", _("Список значений")
+    RANGE = "range", _("Диапазон (min/max)")
+
+
 class CategoryAttribute(models.Model):
     """Привязка характеристики к категории с метаданными отображения."""
 
@@ -141,6 +156,16 @@ class CategoryAttribute(models.Model):
         _("SEO-фасет"),
         default=False,
         help_text=_("На основе значений строятся посадочные страницы (вторая ось навигации)."),
+    )
+    filter_kind = models.CharField(
+        _("Вид фильтра"),
+        max_length=8,
+        choices=FilterKind.choices,
+        default=FilterKind.SELECT,
+        help_text=_(
+            "range — числовой диапазон min/max (напряжение, момент); "
+            "select — выбор из значений (тип питания, tool_type)."
+        ),
     )
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
 
@@ -418,6 +443,21 @@ class ProductAttributeValue(models.Model):
     value_boolean = models.BooleanField(_("Булево"), null=True, blank=True)
     value_option = models.ForeignKey(
         AttributeOption, on_delete=models.SET_NULL, null=True, blank=True
+    )
+
+    # --- Провенанс (откуда значение и насколько ему доверяем) ---
+    source = models.CharField(
+        _("Источник"),
+        max_length=12,
+        choices=Source.choices,
+        default=Source.MANUAL,
+        help_text=_("Приоритет перезаписи задаёт apps.catalog.source_priority."),
+    )
+    confidence = models.SmallIntegerField(
+        _("Уверенность"),
+        default=100,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text=_("0–100. regex=100, ключевое слово=90, AI задаёт 75/50."),
     )
 
     class Meta:
