@@ -38,12 +38,15 @@ python /app/docker/warmup.py &
 echo "==> Запуск gunicorn"
 # worker-class=gthread + threads: один медленный запрос (тяжёлая админка) или
 # всплеск ботов-сканеров не блокирует весь сайт — внутри воркера есть потоки.
-# --preload: приложение импортируется один раз в мастер-процессе ДО форка воркеров
-# (быстрее холодный старт после пересборки, меньше памяти за счёт copy-on-write).
+# ВНИМАНИЕ: --preload здесь НЕ используем. С постоянными соединениями БД
+# (CONN_MAX_AGE) форки воркеров наследуют сокет к Postgres из мастера → под
+# параллельными запросами соединение рушится и запросы виснут (ERR_TIMED_OUT).
+# Прогрев выше даёт почти тот же выигрыш на холодном старте без этого риска.
+# (Вернуть --preload можно только вместе с post_fork-хуком, закрывающим
+# унаследованные соединения: django.db.connections.close_all().)
 # access-logformat с %(D)s — время каждого запроса в микросекундах (видно тормоза).
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
-    --preload \
     --workers "${GUNICORN_WORKERS:-3}" \
     --worker-class "${GUNICORN_WORKER_CLASS:-gthread}" \
     --threads "${GUNICORN_THREADS:-4}" \
