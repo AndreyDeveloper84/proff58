@@ -1,9 +1,17 @@
-"""DEPRECATED совместимый слой.
+"""DEPRECATED совместимый слой (compatibility shim).
 
 Логика разнесена по модулям: `parsers`, `normalizers`, `matching`,
-`product_writer`, `pricing`, `stock`, `use_cases`. Этот модуль оставлен для
-обратной совместимости — существующий код/тесты импортируют
-`apps.sync_1c.importer` напрямую. Новый код должен использовать `use_cases`.
+`product_writer`, `pricing`, `stock`, `use_cases`. Этот модуль оставлен ТОЛЬКО
+для обратной совместимости.
+
+ВАЖНО: на текущий момент модуль импортируется ИСКЛЮЧИТЕЛЬНО compat-тестами
+(`apps/sync_1c/tests.py`). Production-код использовать его НЕ должен — это
+гарантирует архитектурный тест `test_importer_not_used_in_production`
+(`apps/core/tests/test_architecture.py`). Новый код обязан использовать
+`use_cases` напрямую.
+
+ПОДЛЕЖИТ УДАЛЕНИЮ после миграции compat-тестов на `use_cases`
+(см. follow-up issue).
 """
 
 from __future__ import annotations
