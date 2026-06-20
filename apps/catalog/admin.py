@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.db import transaction
-from django.db.models import Count, OuterRef, Subquery
+from django.db.models import Count, IntegerField, OuterRef, Subquery
+from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 from treebeard.admin import TreeAdmin
 from treebeard.forms import movenodeform_factory
@@ -68,14 +69,29 @@ class AttributeAdmin(admin.ModelAdmin):
     inlines = [AttributeOptionInline]
 
     def get_queryset(self, request):
-        # Счётчики одним запросом + префетч привязок к категориям (без N+1 в used_in_categories).
+        # Счётчики — коррелированными подзапросами, а НЕ двумя Count(distinct=True) в одном
+        # annotate: две агрегатные JOIN-связи (PAV и options) в одном запросе дают декартово
+        # произведение, и COUNT(DISTINCT) считается по миллионам строк — страница висела секунды.
+        # Подзапрос на каждую связь убирает фан-аут (FK attribute_id проиндексирован).
         # related_name: PAV.attribute не задан → "productattributevalue"; варианты → "options".
+        pav_count = (
+            ProductAttributeValue.objects.filter(attribute=OuterRef("pk"))
+            .values("attribute")
+            .annotate(c=Count("id"))
+            .values("c")
+        )
+        opt_count = (
+            AttributeOption.objects.filter(attribute=OuterRef("pk"))
+            .values("attribute")
+            .annotate(c=Count("id"))
+            .values("c")
+        )
         return (
             super()
             .get_queryset(request)
             .annotate(
-                _values_count=Count("productattributevalue", distinct=True),
-                _options_count=Count("options", distinct=True),
+                _values_count=Coalesce(Subquery(pav_count, output_field=IntegerField()), 0),
+                _options_count=Coalesce(Subquery(opt_count, output_field=IntegerField()), 0),
             )
             .prefetch_related("category_attributes__category")
         )
