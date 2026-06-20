@@ -938,6 +938,36 @@
         { "tool_type": "Скобы и гвозди для степлера", "slug": "str-skoby", "match_keywords": ["скобы", "скоба ", "гвозди для", "штифты для"], "source": "name_keywords" },
         { "tool_type": "Смазки и аэрозоли", "slug": "str-smazki", "match_keywords": ["смазка", "wd-40", "аэрозоль", "силиконовая смаз"], "source": "name_keywords" }
       ]
+    },
+    {
+      "category": "Бензо- и пневмоинструмент",
+      "extraction": "priority_keyword",
+      "note": "Бензотехника + пневмоинструмент + пневмооснастка. Типизируем по названию. Порядок precision-first: пневмо-машины ДО 'шина' (иначе 'шина' ловит «пневмошлифмашина»/«машина»). 'шина' сужена до пильных шин (шина 14/3-8/для), 'бур ' с пробелом.",
+      "rules": [
+        { "tool_type": "Бензопилы", "slug": "bp-benzopily", "match_keywords": ["бензопила", "бензорез"], "source": "name_keywords" },
+        { "tool_type": "Триммеры и мотокосы", "slug": "bp-trimmery", "match_keywords": ["триммер", "бензокоса", "мотокоса", "мотокос"], "source": "name_keywords" },
+        { "tool_type": "Газонокосилки", "slug": "bp-gazonokosilki", "match_keywords": ["газонокосилка", "газонокос"], "source": "name_keywords" },
+        { "tool_type": "Снегоуборщики", "slug": "bp-snegouborshchiki", "match_keywords": ["снегоуборщик", "снегоубор"], "source": "name_keywords" },
+        { "tool_type": "Мотоблоки и культиваторы", "slug": "bp-motobloki", "match_keywords": ["мотоблок", "мотокультиватор", "культиватор"], "source": "name_keywords" },
+        { "tool_type": "Мотопомпы", "slug": "bp-motopompy", "match_keywords": ["мотопомпа", "помпа"], "source": "name_keywords" },
+        { "tool_type": "Мотобуры и шнеки", "slug": "bp-motobury", "match_keywords": ["мотобур", "бензобур", "бур ", "бур,", "бур земл", "шнек"], "source": "name_keywords" },
+        { "tool_type": "Воздуходувки", "slug": "bp-vozdukhoduvki", "match_keywords": ["воздуходувка", "воздуходув"], "source": "name_keywords" },
+        { "tool_type": "Генераторы", "slug": "bp-generatory", "match_keywords": ["генератор"], "source": "name_keywords" },
+        { "tool_type": "Виброплиты и трамбовки", "slug": "bp-vibroplity", "match_keywords": ["виброплита", "виброплит", "вибротрамбов", "трамбовка"], "source": "name_keywords" },
+        { "tool_type": "Пневмогайковёрты", "slug": "bp-pnevmogaikoverty", "match_keywords": ["пневмогайковерт"], "source": "name_keywords" },
+        { "tool_type": "Пневмошлифмашины", "slug": "bp-pnevmoshlif", "match_keywords": ["пневмошлиф", "пневмошлифмаш"], "source": "name_keywords" },
+        { "tool_type": "Пневмодрели", "slug": "bp-pnevmodreli", "match_keywords": ["пневмодрель", "пневмосверлильн"], "source": "name_keywords" },
+        { "tool_type": "Пневмомолотки и зубила", "slug": "bp-pnevmomolotki", "match_keywords": ["пневмомолоток", "пневмозубило", "пневмопика"], "source": "name_keywords" },
+        { "tool_type": "Пневмостеплеры и нейлеры", "slug": "bp-pnevmosteplery", "match_keywords": ["пневмостеплер", "пневмонейлер", "нейлер", "пневмопистолет для гвозд", "гвоздезабивн"], "source": "name_keywords" },
+        { "tool_type": "Пневмоцилиндры", "slug": "bp-pnevmocilindry", "match_keywords": ["пневмоцилиндр"], "source": "name_keywords" },
+        { "tool_type": "Краскораспылители и краскопульты", "slug": "bp-kraskoraspyliteli", "match_keywords": ["краскораспылитель", "краскопульт", "окрасочн", "распылитель"], "source": "name_keywords" },
+        { "tool_type": "Компрессоры", "slug": "bp-kompressory", "match_keywords": ["компрессор"], "source": "name_keywords" },
+        { "tool_type": "Пневмопистолеты", "slug": "bp-pnevmopistolety", "match_keywords": ["пневмопистолет", "пистолет продув", "пистолет для подкач", "пистолет пневм", "пистолет"], "source": "name_keywords" },
+        { "tool_type": "Шины направляющие", "slug": "bp-shiny", "match_keywords": ["шина пил", "шина для", "направляющая шина", "пильная шина", "шина 0.325", "шина 0,325", "шина 3/8", "шина 1", "шина 2", "шина 3", "шина 4"], "source": "name_keywords" },
+        { "tool_type": "Цепи", "slug": "bp-cepi", "match_keywords": ["цепь"], "source": "name_keywords" },
+        { "tool_type": "Фитинги и переходники", "slug": "bp-fitingi", "match_keywords": ["фитинг", "переходник", "быстроразъем", "муфта", "тройник", "адаптер", "штуцер", "соединитель", "ниппел"], "source": "name_keywords" },
+        { "tool_type": "Шланги и рукава", "slug": "bp-shlangi", "match_keywords": ["шланг", "рукав", "пневмотрубка", "трубка пневм"], "source": "name_keywords" }
+      ]
     }
   ]
 }
