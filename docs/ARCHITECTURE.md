@@ -214,6 +214,10 @@ def assist(*, message: str, session: dict) -> AssistReply:
     """AI-консультант (бот MAX, V2). На старте — заглушка, контракт уже зафиксирован."""
 ```
 
+> Детальная архитектура AI-слоя (срезы capability/implementation/runtime, каталог
+> возможностей, guardrails, наблюдаемость `AiCallLog`, eval-harness) —
+> см. [docs/ARCHITECTURE-AI.md](ARCHITECTURE-AI.md).
+
 ### 4.6 `integration_1c.services` (реализовано в `apps/sync_1c`)
 ```python
 def sync_prices_stock() -> SyncReport:
