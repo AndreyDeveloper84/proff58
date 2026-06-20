@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "note": "Правила извлечения характеристик (EAV) из названия товара 1С. Паттерны работают по нормализованному тексту (lower, ё=е). Канонический идентификатор select-значения — slug (англ.), value — рус. ярлык для витрины.",
+  "source_priority": {
+    "manual": 100,
+    "import_1c": 60,
+    "regex": 40,
+    "keyword": 30,
+    "llm": 20
+  },
+  "tool_types": [
+    {
+      "tool_type": "dreli-shurupoverty",
+      "attributes": [
+        {
+          "slug": "power_source",
+          "name": "Питание",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Аккумулятор",
+              "slug": "battery",
+              "keywords": ["аккумулятор", "аккум", "акб", "li-ion", "li-on", "cordless", "бесшнуров"]
+            },
+            {
+              "value": "Сеть",
+              "slug": "mains",
+              "keywords": ["сетев", "от сети", "220 в", "220в"]
+            }
+          ]
+        },
+        {
+          "slug": "voltage",
+          "name": "Напряжение",
+          "kind": "number",
+          "unit": "В",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(\\d+(?:[.,]\\d+)?)\\s*-?\\s*(?:вольтовый|вольтов|вольтный|вольта|вольт|volt|v|в)(?![а-яёa-z])"
+          ]
+        },
+        {
+          "slug": "torque",
+          "name": "Крутящий момент",
+          "kind": "number",
+          "unit": "Н·м",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(\\d+(?:[.,]\\d+)?)\\s*(?:н[·.*\\- ]?м|n[·.*\\- ]?m|nm)(?![а-яёa-z])"
+          ]
+        },
+        {
+          "slug": "battery_capacity",
+          "name": "Ёмкость АКБ",
+          "kind": "number",
+          "unit": "А·ч",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(\\d+(?:[.,]\\d+)?)\\s*(?:а[·.*/ ]?ч|a[·.*/ ]?ч|ah)(?![а-яёa-z])"
+          ]
+        },
+        {
+          "slug": "motor_type",
+          "name": "Тип двигателя",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "options": [
+            {
+              "value": "Бесщёточный",
+              "slug": "brushless",
+              "keywords": ["бесщеточн", "бесщетк", "безщеточн", "brushless", "bl-"]
+            },
+            {
+              "value": "Щёточный",
+              "slug": "brushed",
+              "keywords": ["щеточн", "коллекторн", "brushed"]
+            }
+          ]
+        },
+        {
+          "slug": "battery_included",
+          "name": "АКБ в комплекте",
+          "kind": "boolean",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": false,
+          "false_keywords": [
+            "без акб",
+            "без аккумулятор",
+            "без батаре",
+            "без зу и акб",
+            "без з/у и акб",
+            "без акб и зу",
+            "body only",
+            "каркас",
+            "tool only"
+          ],
+          "true_keywords": [
+            "с акб",
+            "акб в комплект",
+            "с аккумулятор",
+            "2 акб",
+            "2акб",
+            "1 акб",
+            "+ зу",
+            "с зу"
+          ]
+        }
+      ]
+    }
+  ]
+}
