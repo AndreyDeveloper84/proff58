@@ -243,6 +243,11 @@ def sync_prices_stock() -> SyncReport:
   `apps/catalog/attribute_extract.py` (зеркало `tool_type.py`). Числовые характеристики
   (DECIMAL/INTEGER) поддерживают range-фильтры (`?<slug>_min/_max`, фильтр по
   `value_decimal`); вид фильтра выводится из типа атрибута, UI-ползунки — позже.
+* **Правка значения через админку = ручное подтверждение человеком.** Любое изменение
+  значения `ProductAttributeValue` в админке переводит запись в `source=manual`,
+  `confidence=100` (`ProductAttributeValueAdmin.save_model`) — поэтому повторный
+  `enrich_attributes` её не перезаписывает. Это бизнес-правило (важно для AI-обогащения #62);
+  `source`/`confidence` в админке только для чтения, меняются автоматически.
 
 ---
 
