@@ -2,7 +2,7 @@
 
 Единственный способ получить цену товара — :func:`price_for`. Прямое чтение
 ``Product.price`` вне этого слоя запрещено: ``Product.price`` — кэш розницы,
-``PriceRecord`` (sync_1c) — история и типы цен (опт), заказ хранит снимок цены.
+``PriceRecord`` (pricing) — история и типы цен (опт), заказ хранит снимок цены.
 
 Сейчас умеет выбирать розницу (B2C) и опт (B2B), считать скидку розницы и
 отдавать стабильный результат. Промо/купоны/ступенчатые цены по qty и тип
@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from apps.core.features import is_enabled
+
+from .models import PriceRecord
 
 RETAIL = "retail"
 WHOLESALE = "wholesale"
@@ -42,9 +44,6 @@ def _wholesale_price(product) -> Decimal | None:
     """Текущая оптовая цена товара или None. Один запрос к PriceRecord."""
     if not product.code_1c:
         return None
-    # Локальный импорт: PriceRecord живёт в sync_1c (перенос в pricing — отдельная задача).
-    from apps.sync_1c.models import PriceRecord
-
     return (
         PriceRecord.objects.filter(
             code_1c=product.code_1c,

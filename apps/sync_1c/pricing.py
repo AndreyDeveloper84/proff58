@@ -14,9 +14,9 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.catalog.models import Product
+from apps.pricing.models import PriceRecord
 
 from . import matching
-from .models import PriceRecord
 from .normalizers import Item
 
 _PRICE_FIELDS = ["price", "old_price", "currency", "price_updated_at"]

@@ -8,8 +8,8 @@ import pytest
 
 from apps.catalog.models import Product
 from apps.core.events import price_changed
+from apps.pricing.models import PriceRecord
 from apps.sync_1c import use_cases
-from apps.sync_1c.models import PriceRecord
 
 
 @pytest.mark.django_db
@@ -52,6 +52,29 @@ def test_only_old_price_change_updates():
     assert (r.updated, r.skipped) == (1, 0)
     p.refresh_from_db()
     assert p.old_price == Decimal("120")
+
+
+@pytest.mark.django_db
+def test_price_update_emits_price_changed(django_capture_on_commit_callbacks):
+    """1С-обновление цены публикует price_changed (через transaction.on_commit)."""
+    Product.objects.create(name="Т", code_1c="1c-emit", slug="emit", price=Decimal("100.00"))
+    received: list[dict] = []
+
+    def handler(sender, **kw):
+        received.append(kw)
+
+    price_changed.connect(handler)
+    try:
+        with django_capture_on_commit_callbacks(execute=True):
+            use_cases.update_prices([{"external_id": "1c-emit", "price": "150"}])
+    finally:
+        price_changed.disconnect(handler)
+
+    assert len(received) == 1
+    assert received[0]["new_price"] == Decimal("150")
+    assert received[0]["old_price"] == Decimal("100.00")
+    assert received[0]["currency"] == "RUB"
+    assert received[0]["source"] == "1c"
 
 
 @pytest.mark.django_db

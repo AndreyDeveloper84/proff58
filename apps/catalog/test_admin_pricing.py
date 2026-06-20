@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client
 
 from apps.catalog.models import Product
-from apps.sync_1c.models import PriceRecord
+from apps.pricing.models import PriceRecord
 
 User = get_user_model()
 
