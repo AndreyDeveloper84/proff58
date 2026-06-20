@@ -8,8 +8,9 @@ from django.test.utils import CaptureQueriesContext
 
 from apps.catalog.models import Product
 from apps.core.events import product_updated
+from apps.pricing.models import PriceRecord
 from apps.sync_1c import use_cases
-from apps.sync_1c.models import PriceRecord, StockRecord
+from apps.sync_1c.models import StockRecord
 
 
 @pytest.mark.django_db

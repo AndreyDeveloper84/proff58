@@ -8,9 +8,10 @@ from django.test import override_settings
 from rest_framework.test import APIClient
 
 from apps.catalog.models import Product, ProductStatus
+from apps.pricing.models import PriceRecord
 from apps.sync_1c import use_cases
 from apps.sync_1c.api.parsers import OneCJSONParser
-from apps.sync_1c.models import PriceRecord, SyncLog
+from apps.sync_1c.models import SyncLog
 
 API_KEY = "test-key-123"
 EAGER = {"CELERY_TASK_ALWAYS_EAGER": True, "CELERY_TASK_EAGER_PROPAGATES": True}

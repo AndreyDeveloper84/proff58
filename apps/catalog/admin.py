@@ -7,8 +7,8 @@ from treebeard.admin import TreeAdmin
 from treebeard.forms import movenodeform_factory
 
 from apps.core.events import EventSource, product_created, product_updated
+from apps.pricing.models import PriceRecord
 from apps.pricing.services import WHOLESALE, price_for
-from apps.sync_1c.models import PriceRecord
 
 from .models import (
     Attribute,

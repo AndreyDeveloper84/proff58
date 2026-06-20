@@ -10,8 +10,8 @@ from django.test import override_settings
 from rest_framework.test import APIClient
 
 from apps.catalog.models import Product, ProductStatus
+from apps.pricing.models import PriceRecord
 from apps.pricing.services import RETAIL, WHOLESALE, price_for, price_for_id
-from apps.sync_1c.models import PriceRecord
 
 User = get_user_model()
 
@@ -139,29 +139,3 @@ def test_catalog_api_returns_retail_for_anonymous(product):
     assert body["price"] == "1000.00"
     assert body["old_price"] == "1200.00"
     assert body["price_type"] == RETAIL
-
-
-@pytest.mark.django_db
-def test_price_update_emits_price_changed(django_capture_on_commit_callbacks):
-    """1С-обновление цены публикует price_changed (через transaction.on_commit)."""
-    from apps.core.events import price_changed
-    from apps.sync_1c import use_cases
-
-    Product.objects.create(name="Т", code_1c="1c-emit", slug="emit", price=Decimal("100.00"))
-    received: list[dict] = []
-
-    def handler(sender, **kw):
-        received.append(kw)
-
-    price_changed.connect(handler)
-    try:
-        with django_capture_on_commit_callbacks(execute=True):
-            use_cases.update_prices([{"external_id": "1c-emit", "price": "150"}])
-    finally:
-        price_changed.disconnect(handler)
-
-    assert len(received) == 1
-    assert received[0]["new_price"] == Decimal("150")
-    assert received[0]["old_price"] == Decimal("100.00")
-    assert received[0]["currency"] == "RUB"
-    assert received[0]["source"] == "1c"

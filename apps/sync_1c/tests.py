@@ -14,10 +14,10 @@ from apps.catalog.models import (
     ProductStatus,
     StockStatus,
 )
+from apps.pricing.models import PriceRecord
 from apps.sync_1c import importer, normalizers, parsers, product_writer, use_cases
 from apps.sync_1c.models import (
     NomenclatureStaging,
-    PriceRecord,
     StagingStatus,
     StockRecord,
     SyncLog,

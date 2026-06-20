@@ -12,7 +12,7 @@ from apps.accounts.models import Profile
 from apps.catalog.models import Product, ProductStatus
 from apps.orders.models import Cart
 from apps.orders.services import add_to_cart
-from apps.sync_1c.models import PriceRecord
+from apps.pricing.models import PriceRecord
 
 User = get_user_model()
 
