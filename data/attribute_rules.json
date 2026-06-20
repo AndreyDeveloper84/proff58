@@ -11,6 +11,7 @@
   "tool_types": [
     {
       "tool_type": "dreli-shurupoverty",
+      "category": "Электроинструмент",
       "attributes": [
         {
           "slug": "power_source",
@@ -64,7 +65,8 @@
           "unit": "А·ч",
           "source": "regex",
           "priority": 40,
-          "is_filter": true,
+          "is_filter": false,
+          "is_ai_feature": true,
           "regex": [
             "(\\d+(?:[.,]\\d+)?)\\s*(?:а[·.*/ ]?ч|a[·.*/ ]?ч|ah)(?![а-яёa-z])"
           ]
@@ -80,7 +82,7 @@
             {
               "value": "Бесщёточный",
               "slug": "brushless",
-              "keywords": ["бесщеточн", "бесщетк", "безщеточн", "brushless", "bl-"]
+              "keywords": ["бесщеточн", "бесщетк", "безщеточн", "б/щ", "brushless", "bl-"]
             },
             {
               "value": "Щёточный",
@@ -98,6 +100,7 @@
           "is_filter": false,
           "false_keywords": [
             "без акб",
+            "без акк",
             "без аккумулятор",
             "без батаре",
             "без зу и акб",

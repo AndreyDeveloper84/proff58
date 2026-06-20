@@ -313,12 +313,22 @@ def get_category_tree(*, on_site_only: bool = True):
     return tree
 
 
-def products_in(category: Category, *, tool_type=None, in_stock=False, published_only=False):
+def products_in(
+    category: Category,
+    *,
+    tool_type=None,
+    in_stock=False,
+    published_only=False,
+    attr_ranges=None,
+):
     """Товары категории и всех её потомков с фильтрами витрины.
 
     ``tool_type`` — slug варианта атрибута tool_type (вторая ось навигации).
     ``in_stock`` — только с остатком > 0. ``published_only`` — для боевой витрины
     (на тестовой показываем и импортированные, не только опубликованные).
+    ``attr_ranges`` — ``{slug: (min, max)}`` числовые диапазоны по EAV-значениям
+    (#96, range-фильтры): обе границы по ОДНОМУ значению, поэтому каждый атрибут
+    фильтруется отдельным ``filter()`` (иначе границы разъедутся по строкам EAV).
     """
     qs = Product.objects.filter(category_id__in=_subtree_ids(category))
     if published_only:
@@ -332,7 +342,43 @@ def products_in(category: Category, *, tool_type=None, in_stock=False, published
             attribute_values__attribute__slug=TOOL_TYPE_SLUG,
             attribute_values__value_option__slug=tool_type,
         )
+    for slug, (lo, hi) in (attr_ranges or {}).items():
+        conds = {"attribute_values__attribute__slug": slug}
+        if lo is not None:
+            conds["attribute_values__value_decimal__gte"] = lo
+        if hi is not None:
+            conds["attribute_values__value_decimal__lte"] = hi
+        qs = qs.filter(**conds)
     return qs
+
+
+def range_filter_attributes(category: Category) -> list[dict]:
+    """Числовые диапазонные характеристики-фильтры категории (с наследованием).
+
+    Backend-описание для range-фильтров (#96): slug/имя/единица. Вид фильтра
+    выводим из типа атрибута (DECIMAL/INTEGER → диапазон), без отдельного поля.
+    UI-ползунки — отдельная задача; здесь контракт, по которому витрина читает
+    min/max из GET.
+    """
+    ancestors = list(category.get_ancestors())
+    chain_ids = [category.pk, *[c.pk for c in ancestors]]
+    seen: dict[str, dict] = {}
+    qs = (
+        CategoryAttribute.objects.filter(
+            category_id__in=chain_ids,
+            is_filter=True,
+            attribute__is_filterable=True,
+            attribute__attribute_type__in=[AttributeType.DECIMAL, AttributeType.INTEGER],
+        )
+        .select_related("attribute")
+        .order_by("sort_order")
+    )
+    for ca in qs:
+        seen.setdefault(
+            ca.attribute.slug,
+            {"slug": ca.attribute.slug, "name": ca.attribute.name, "unit": ca.attribute.unit},
+        )
+    return list(seen.values())
 
 
 def category_counts(category: Category) -> dict:

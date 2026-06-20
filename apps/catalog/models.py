@@ -18,12 +18,26 @@
 потомков/предков без рекурсивных JOIN-ов.
 """
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node
 
 from apps.core.models import TimeStampedModel
+
+
+class Source(models.TextChoices):
+    """Источник значения характеристики. Значения совпадают с ключами карты
+    ``source_priority`` в ``data/attribute_rules.json``; приоритет перезаписи
+    берётся оттуда (см. apps.catalog.management.commands.enrich_attributes).
+    """
+
+    MANUAL = "manual", _("Вручную")
+    IMPORT_1C = "import_1c", _("Импорт 1С")
+    REGEX = "regex", _("Regex по названию")
+    KEYWORD = "keyword", _("Ключевое слово")
+    LLM = "llm", _("AI/LLM")
 
 
 class Category(MP_Node):
@@ -89,6 +103,11 @@ class Attribute(models.Model):
     unit = models.CharField(_("Единица измерения"), max_length=32, blank=True)
     is_filterable = models.BooleanField(_("Показывать в фильтре"), default=False)
     is_comparable = models.BooleanField(_("Показывать в сравнении"), default=False)
+    is_ai_feature = models.BooleanField(
+        _("AI-характеристика"),
+        default=False,
+        help_text=_("Плохо извлекается regex/словарём из названия — кандидат на добор LLM (#62)."),
+    )
 
     class Meta:
         verbose_name = _("Характеристика")
@@ -418,6 +437,27 @@ class ProductAttributeValue(models.Model):
     value_boolean = models.BooleanField(_("Булево"), null=True, blank=True)
     value_option = models.ForeignKey(
         AttributeOption, on_delete=models.SET_NULL, null=True, blank=True
+    )
+
+    # --- Провенанс (откуда значение и насколько ему доверяем) ---
+    source = models.CharField(
+        _("Источник"),
+        max_length=12,
+        choices=Source.choices,
+        default=Source.MANUAL,
+        help_text=_(
+            "Приоритет перезаписи берётся из source_priority в attribute_rules.json: "
+            "manual не затирается regex/keyword."
+        ),
+    )
+    confidence = models.SmallIntegerField(
+        _("Уверенность"),
+        default=100,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text=_(
+            "0–100. Только аналитика/AI, в решении о перезаписи НЕ участвует "
+            "(перезапись решает source)."
+        ),
     )
 
     class Meta:
