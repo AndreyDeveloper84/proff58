@@ -356,10 +356,10 @@ def test_bad_row_recorded_and_batch_continues():
     """Сбой одной строки попадает в SyncLog.error_details и staging.ERROR, остальные ок."""
     original = product_writer.create_product
 
-    def side_effect(item):
+    def side_effect(item, **kwargs):
         if item.code_1c == "bad-1":
             raise RuntimeError("boom bad-1")
-        return original(item)
+        return original(item, **kwargs)
 
     with mock.patch("apps.sync_1c.product_writer.create_product", side_effect=side_effect):
         sync_log, result = use_cases.import_products(
