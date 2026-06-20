@@ -831,6 +831,43 @@
         { "tool_type": "Лампы", "slug": "lampy", "match_keywords": ["лампа", "лампочк"], "source": "name_keywords" },
         { "tool_type": "Батарейки и аккумуляторы", "slug": "batarejki-akkumulyatory", "match_keywords": ["батарейк", "элемент питания", "адаптер для батаре", "крона", "тип aa", "тип aaa", "cr2032", "lr6", "lr03", "gp"], "source": "name_keywords" }
       ]
+    },
+    {
+      "category": "Запчасти",
+      "extraction": "priority_keyword",
+      "note": "Запчасти к инструменту (8 групп 1С без типизированных подгрупп) — типизируем по названию ДЕТАЛИ. Порядок precision-first: узкие функциональные детали → общие (корпуса, крепёж). Slug с префиксом zap- (изолируем от tool_type инструментов). Электро-наконечники (НШВИ/НКИ/ТМЛ) лежат тут ошибочно — recategorize в «Электрика».",
+      "rules": [
+        { "tool_type": "⚠ В категорию «Электрика и освещение»", "slug": "_recat_elektr_zap", "match_keywords": ["ншви", "нши ", "наконечник кабельн", "наконечник медный", "наконечник штыр", "наконечник тмл", "наконечник нки", "наконечник-гильз", "наконечник кольцев", "наконечник контактн"], "source": "name_keywords", "action": "recategorize" },
+        { "tool_type": "Угольные щётки", "slug": "zap-shchetki-ugolnye", "match_keywords": ["угольн", "щетк"], "source": "name_keywords" },
+        { "tool_type": "Подшипники", "slug": "zap-podshipniki", "match_keywords": ["подшипник"], "source": "name_keywords" },
+        { "tool_type": "Статоры, якоря, роторы", "slug": "zap-statory-yakorya", "match_keywords": ["статор", "якорь", "ротор"], "source": "name_keywords" },
+        { "tool_type": "Карбюраторы", "slug": "zap-karbyuratory", "match_keywords": ["карбюратор"], "source": "name_keywords" },
+        { "tool_type": "Свечи зажигания", "slug": "zap-svechi", "match_keywords": ["свеча"], "source": "name_keywords" },
+        { "tool_type": "Катушки зажигания", "slug": "zap-katushki", "match_keywords": ["катушка"], "source": "name_keywords" },
+        { "tool_type": "Коленвалы и шатуны", "slug": "zap-kolenval-shatun", "match_keywords": ["коленвал", "шатун", "коленчат"], "source": "name_keywords" },
+        { "tool_type": "Поршни и цилиндры", "slug": "zap-porshni-tsilindry", "match_keywords": ["поршень", "поршнев", "цилиндр"], "source": "name_keywords" },
+        { "tool_type": "Стартеры", "slug": "zap-startery", "match_keywords": ["стартер"], "source": "name_keywords" },
+        { "tool_type": "Фильтры", "slug": "zap-filtry", "match_keywords": ["фильтр"], "source": "name_keywords" },
+        { "tool_type": "Редукторы", "slug": "zap-reduktory", "match_keywords": ["редуктор"], "source": "name_keywords" },
+        { "tool_type": "Шестерни и зубчатые колёса", "slug": "zap-shesterni", "match_keywords": ["шестерн", "зубчат", "косозуб"], "source": "name_keywords" },
+        { "tool_type": "Двигатели", "slug": "zap-dvigateli", "match_keywords": ["двигатель", "электродвигатель", "электромотор", "мотор в сборе", "мотор для", "мотор пылесос"], "source": "name_keywords" },
+        { "tool_type": "Ремни приводные", "slug": "zap-remni", "match_keywords": ["ремень", "ремни "], "source": "name_keywords" },
+        { "tool_type": "Уплотнения и прокладки", "slug": "zap-uplotneniya", "match_keywords": ["сальник", "манжет", "прокладка", "уплотнительн", "уплотнение"], "source": "name_keywords" },
+        { "tool_type": "Стопорные и опорные кольца", "slug": "zap-stopornye-koltsa", "match_keywords": ["стопорное", "стопорн", "разжимное кольц", "кольцо разжим", "кольцо опорн", "кольцо пружинн"], "source": "name_keywords" },
+        { "tool_type": "Платы и блоки управления", "slug": "zap-platy-bloki", "match_keywords": ["блок управлен", "блок плавн", "блок розжиг", "блок электрон", "плата ", "электронн", "модуль управлен", "регулятор оборот"], "source": "name_keywords" },
+        { "tool_type": "Выключатели и кнопки", "slug": "zap-vyklyuchateli", "match_keywords": ["выключатель", "кнопка", "переключател"], "source": "name_keywords" },
+        { "tool_type": "Демпферы и амортизаторы", "slug": "zap-dempfery", "match_keywords": ["демпфер", "амортизатор", "виброгасител"], "source": "name_keywords" },
+        { "tool_type": "Пружины", "slug": "zap-pruzhiny", "match_keywords": ["пружина", "пружины"], "source": "name_keywords" },
+        { "tool_type": "Топливные баки", "slug": "zap-baki", "match_keywords": ["бак топлив", "бак с вод", "топливный бак", "бензобак"], "source": "name_keywords" },
+        { "tool_type": "Шланги и рукава", "slug": "zap-shlangi", "match_keywords": ["шланг", "рукав"], "source": "name_keywords" },
+        { "tool_type": "Муфты и сцепления", "slug": "zap-mufty", "match_keywords": ["муфта", "полумуфта", "сцеплен"], "source": "name_keywords" },
+        { "tool_type": "Шпиндели, валы, стволы, патроны", "slug": "zap-shpindeli-valy", "match_keywords": ["шпиндель", "ствол", "патрон"], "source": "name_keywords" },
+        { "tool_type": "Звёздочки и барабаны", "slug": "zap-zvezdochki", "match_keywords": ["звездочк", "барабан"], "source": "name_keywords" },
+        { "tool_type": "Ремкомплекты", "slug": "zap-remkomplekty", "match_keywords": ["ремкомплект", "рем.комплект", "рем комплект", "комплект прокладок", "комплект уплотн"], "source": "name_keywords" },
+        { "tool_type": "Втулки", "slug": "zap-vtulki", "match_keywords": ["втулка"], "source": "name_keywords" },
+        { "tool_type": "Корпуса, крышки, кожухи", "slug": "zap-korpusa-kryshki", "match_keywords": ["корпус", "крышка", "кожух"], "source": "name_keywords" },
+        { "tool_type": "Крепёж (болты, шурупы, гайки)", "slug": "zap-krepezh", "match_keywords": ["фиксирующий шуруп", "фиксирующий болт", "шуруп", "болт ", "болт,", "гайка", "шайба", "шпилька", "штифт", "саморез", "винт "], "source": "name_keywords" }
+      ]
     }
   ]
 }
