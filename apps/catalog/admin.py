@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.db import transaction
-from django.db.models import OuterRef, Subquery
+from django.db.models import Count, OuterRef, Subquery
 from django.utils.translation import gettext_lazy as _
 from treebeard.admin import TreeAdmin
 from treebeard.forms import movenodeform_factory
@@ -12,6 +12,7 @@ from apps.sync_1c.models import PriceRecord
 from .models import (
     Attribute,
     AttributeOption,
+    AttributeType,
     Category,
     CategoryAttribute,
     CategoryMappingRule,
@@ -21,6 +22,7 @@ from .models import (
     ProductAttributeValue,
     ProductImage,
     ProductStatus,
+    Source,
 )
 
 
@@ -49,11 +51,116 @@ class CategoryAdmin(TreeAdmin):
 
 @admin.register(Attribute)
 class AttributeAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "attribute_type", "unit", "is_filterable", "is_ai_feature")
+    list_display = (
+        "name",
+        "slug",
+        "attribute_type",
+        "unit",
+        "is_filterable",
+        "is_ai_feature",
+        "values_count",
+        "options_count",
+        "used_in_categories",
+    )
     list_filter = ("attribute_type", "is_filterable", "is_ai_feature")
     search_fields = ("name", "slug")
     prepopulated_fields = {"slug": ("name",)}
     inlines = [AttributeOptionInline]
+
+    def get_queryset(self, request):
+        # Счётчики одним запросом + префетч привязок к категориям (без N+1 в used_in_categories).
+        # related_name: PAV.attribute не задан → "productattributevalue"; варианты → "options".
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                _values_count=Count("productattributevalue", distinct=True),
+                _options_count=Count("options", distinct=True),
+            )
+            .prefetch_related("category_attributes__category")
+        )
+
+    @admin.display(description=_("Значений"), ordering="_values_count")
+    def values_count(self, obj):
+        return obj._values_count
+
+    @admin.display(description=_("Вариантов"), ordering="_options_count")
+    def options_count(self, obj):
+        return obj._options_count
+
+    @admin.display(description=_("Категории"))
+    def used_in_categories(self, obj):
+        names = [ca.category.name for ca in obj.category_attributes.all()]
+        if not names:
+            return "—"
+        head = ", ".join(names[:5])
+        return head if len(names) <= 5 else f"{head} … (+{len(names) - 5})"
+
+
+class ConfidenceFilter(admin.SimpleListFilter):
+    """Быстрый фильтр уверенности значения — найти ненадёжное извлечение."""
+
+    title = _("Уверенность")
+    parameter_name = "confidence_band"
+
+    def lookups(self, request, model_admin):
+        return [("high", _("100 (точно)")), ("mid", _("90–99")), ("low", _("ниже 90"))]
+
+    def queryset(self, request, queryset):
+        if self.value() == "high":
+            return queryset.filter(confidence=100)
+        if self.value() == "mid":
+            return queryset.filter(confidence__gte=90, confidence__lt=100)
+        if self.value() == "low":
+            return queryset.filter(confidence__lt=90)
+        return queryset
+
+
+@admin.register(ProductAttributeValue)
+class ProductAttributeValueAdmin(admin.ModelAdmin):
+    """Все извлечённые значения характеристик — ревью результатов enrich.
+
+    Бизнес-правило: ручная правка значения здесь = подтверждение человеком →
+    source=manual, confidence=100 (защита от перезаписи enrich_attributes).
+    """
+
+    # Поля значения PAV: их ручная правка переводит запись в source=manual.
+    VALUE_FIELDS = ("value_text", "value_integer", "value_decimal", "value_boolean", "value_option")
+
+    list_display = ("product", "attribute", "display_value", "source", "confidence")
+    list_filter = ("attribute", "source", "attribute__attribute_type", ConfidenceFilter)
+    search_fields = ("product__name", "product__article", "product__code_1c", "value_text")
+    list_select_related = ("product", "attribute", "value_option")
+    autocomplete_fields = ("product", "attribute")
+    raw_id_fields = ("value_option",)
+    # source/confidence меняются только автоматически (см. save_model), руками — нельзя.
+    readonly_fields = ("source", "confidence")
+
+    @admin.display(description=_("Значение"))
+    def display_value(self, obj):
+        t = obj.attribute.attribute_type
+        if t in (AttributeType.SELECT, AttributeType.MULTISELECT):
+            return obj.value_option.value if obj.value_option_id else "—"
+        if t == AttributeType.BOOLEAN:
+            if obj.value_boolean is None:
+                return "—"
+            return _("Да") if obj.value_boolean else _("Нет")
+        if t == AttributeType.DECIMAL:
+            if obj.value_decimal is None:
+                return "—"
+            return f"{obj.value_decimal} {obj.attribute.unit}".strip()
+        if t == AttributeType.INTEGER:
+            if obj.value_integer is None:
+                return "—"
+            return f"{obj.value_integer} {obj.attribute.unit}".strip()
+        return obj.value_text or "—"
+
+    def save_model(self, request, obj, form, change):
+        # Любое ручное изменение значения = подтверждение человеком (authoritative).
+        if any(f in form.changed_data for f in self.VALUE_FIELDS):
+            obj.source = Source.MANUAL
+            obj.confidence = 100
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(CategoryMappingRule)
