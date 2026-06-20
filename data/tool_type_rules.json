@@ -868,6 +868,49 @@
         { "tool_type": "Корпуса, крышки, кожухи", "slug": "zap-korpusa-kryshki", "match_keywords": ["корпус", "крышка", "кожух"], "source": "name_keywords" },
         { "tool_type": "Крепёж (болты, шурупы, гайки)", "slug": "zap-krepezh", "match_keywords": ["фиксирующий шуруп", "фиксирующий болт", "шуруп", "болт ", "болт,", "гайка", "шайба", "шпилька", "штифт", "саморез", "винт "], "source": "name_keywords" }
       ]
+    },
+    {
+      "category": "Хозтовары, сад, огород",
+      "extraction": "priority_keyword",
+      "note": "Разнородная категория: дом + сад/огород + сантехника в одном узле (отдельной «Сантехники» в каталоге нет). Типизируем по названию. Порядок precision-first: узкие (садовый инвентарь, скобянка) → общие (хомуты, ленты, ножи). Осторожно с подстроками: 'нож '/'нож,' (не ловить «ножницы»/«ножка»), 'трос ' (не ловить «быстросъемный»), 'задвижка двер' (не путать с сантех-задвижками), 'фум лент' (не ловить «фумигатор»).",
+      "rules": [
+        { "tool_type": "Ножницы", "slug": "hoz-nozhnitsy", "match_keywords": ["ножниц"], "source": "name_keywords" },
+        { "tool_type": "Лезвия и полотна", "slug": "hoz-lezviya", "match_keywords": ["лезви", "для ножа", "полотно для нож"], "source": "name_keywords" },
+        { "tool_type": "Секаторы и сучкорезы", "slug": "hoz-sekatory", "match_keywords": ["секатор", "сучкорез"], "source": "name_keywords" },
+        { "tool_type": "Грабли", "slug": "hoz-grabli", "match_keywords": ["грабли"], "source": "name_keywords" },
+        { "tool_type": "Вилы", "slug": "hoz-vily", "match_keywords": ["вилы"], "source": "name_keywords" },
+        { "tool_type": "Лопаты и движки снеговые", "slug": "hoz-lopaty", "match_keywords": ["лопата", "совок", "движок снегов", "скрепер снег", "ледоруб", "ледоколот"], "source": "name_keywords" },
+        { "tool_type": "Тачки и тележки", "slug": "hoz-tachki", "match_keywords": ["тачка", "тележка"], "source": "name_keywords" },
+        { "tool_type": "Мётлы, веники, черенки", "slug": "hoz-metly", "match_keywords": ["метла", "метелка", "веник", "черенок"], "source": "name_keywords" },
+        { "tool_type": "Опрыскиватели и лейки", "slug": "hoz-opryskivateli", "match_keywords": ["опрыскиватель", "лейка", "распылитель"], "source": "name_keywords" },
+        { "tool_type": "Замки и скобянка", "slug": "hoz-zamki", "match_keywords": ["замок", "защелка", "шпингалет", "засов", "навес ", "цилиндровый механизм", "цилиндр замка", "накладка дверн", "задвижка двер", "завертка", "петля двер", "петля карточ", "петля накладн", "петля гаражн"], "source": "name_keywords" },
+        { "tool_type": "Дверная и оконная фурнитура", "slug": "hoz-furnitura", "match_keywords": ["ручка дверн", "ручка оконн", "ручка-кноб", "ручка-защелк", "дверная ручка", "доводчик", "глазок дверн", "ограничитель дверн", "шпонка двер"], "source": "name_keywords" },
+        { "tool_type": "Краны и смесители", "slug": "hoz-krany", "match_keywords": ["кран ", "кран,", "краны", "кран-", "шаровой кран", "шаровый кран", "смеситель", "вентиль"], "source": "name_keywords" },
+        { "tool_type": "Трубы и фитинги", "slug": "hoz-truby-fitingi", "match_keywords": ["труба", "тройник", "муфта", "фитинг", "отвод ", "американка", "сгон", "штуцер", "ниппел", "заглушка", "крестовина", "обвод", "соединитель", "клапан"], "source": "name_keywords" },
+        { "tool_type": "Подводки сантехнические", "slug": "hoz-podvodki", "match_keywords": ["подводка", "гибкая подвод"], "source": "name_keywords" },
+        { "tool_type": "Сифоны", "slug": "hoz-sifony", "match_keywords": ["сифон"], "source": "name_keywords" },
+        { "tool_type": "Радиаторы и отопление", "slug": "hoz-radiatory", "match_keywords": ["радиатор", "конвектор"], "source": "name_keywords" },
+        { "tool_type": "Счётчики воды", "slug": "hoz-schetchiki", "match_keywords": ["счетчик"], "source": "name_keywords" },
+        { "tool_type": "Изолента", "slug": "hoz-izolenta", "match_keywords": ["изолента"], "source": "name_keywords" },
+        { "tool_type": "Ленты клейкие и сигнальные", "slug": "hoz-lenty", "match_keywords": ["скотч", "лента клейк", "лента малярн", "лента сигнальн", "лента армир", "лента бордюр", "клейкая лента", "лента двухстор", "фум-лент", "фум лент", "фумлент", "лента фум", "стрейч", "лента упаков", "лента маскиров", "лента "], "source": "name_keywords" },
+        { "tool_type": "Плёнка", "slug": "hoz-plenka", "match_keywords": ["пленка", "пленки"], "source": "name_keywords" },
+        { "tool_type": "Мешки и пакеты", "slug": "hoz-meshki", "match_keywords": ["мешок", "мешки", "пакет"], "source": "name_keywords" },
+        { "tool_type": "Вёдра, тазы, канистры", "slug": "hoz-vedra", "match_keywords": ["ведро", "таз для", "тазик", "канистра", "бидон", "бак пластик"], "source": "name_keywords" },
+        { "tool_type": "Щётки и швабры", "slug": "hoz-shchetki", "match_keywords": ["швабра", "щетка", "сметка"], "source": "name_keywords" },
+        { "tool_type": "Масла и смазки", "slug": "hoz-masla", "match_keywords": ["масло", "смазка", "солидол", "литол"], "source": "name_keywords" },
+        { "tool_type": "Бытовая химия и пасты", "slug": "hoz-himiya", "match_keywords": ["паста", "очиститель", "wd-40", "антисептик", "преобразователь ржав", "пятновыводитель", "чистящ"], "source": "name_keywords" },
+        { "tool_type": "Стеклорезы", "slug": "hoz-steklorezy", "match_keywords": ["стеклорез"], "source": "name_keywords" },
+        { "tool_type": "Лупы", "slug": "hoz-lupy", "match_keywords": ["лупа"], "source": "name_keywords" },
+        { "tool_type": "Тросы, верёвки, шнуры", "slug": "hoz-trosy", "match_keywords": ["тросик", "трос ", "трос,", "трос стальн", "трос оцинк", "веревка", "шнур ", "шнур,", "шпагат", "канат "], "source": "name_keywords" },
+        { "tool_type": "Сетки и укрывной материал", "slug": "hoz-setki", "match_keywords": ["москитная сетка", "антимоскит", "сетка садов", "сетка для", "сетка рабиц", "сетка штукатур", "сетка фасад", "укрывн", "спанбонд", "агроволокно", "мешковина"], "source": "name_keywords" },
+        { "tool_type": "Хомуты", "slug": "hoz-homuty", "match_keywords": ["хомут"], "source": "name_keywords" },
+        { "tool_type": "Шланги", "slug": "hoz-shlangi", "match_keywords": ["шланг"], "source": "name_keywords" },
+        { "tool_type": "Колёса и комплектующие", "slug": "hoz-kolesa", "match_keywords": ["колесо", "колеса "], "source": "name_keywords" },
+        { "tool_type": "Уплотнители", "slug": "hoz-uplotniteli", "match_keywords": ["уплотнитель"], "source": "name_keywords" },
+        { "tool_type": "Проволока", "slug": "hoz-provoloka", "match_keywords": ["проволока"], "source": "name_keywords" },
+        { "tool_type": "Коврики", "slug": "hoz-kovriki", "match_keywords": ["коврик"], "source": "name_keywords" },
+        { "tool_type": "Ножи", "slug": "hoz-nozhi", "match_keywords": ["нож ", "нож,", "ножи ", "нож-", "нож."], "source": "name_keywords" }
+      ]
     }
   ]
 }
