@@ -122,6 +122,12 @@ CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://redis:6379
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = TIME_ZONE
 
+# Задачи 1С — в выделенную очередь `onec` (worker -Q onec -c 1): обмены идут строго
+# последовательно, что снимает гонку «одна актуальная цена» (#126). Остальные задачи —
+# в дефолтной очереди `celery` (отдельный worker, параллельно).
+CELERY_TASK_DEFAULT_QUEUE = "celery"
+CELERY_TASK_ROUTES = {"apps.sync_1c.tasks.*": {"queue": "onec"}}
+
 REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
