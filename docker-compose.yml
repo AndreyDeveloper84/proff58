@@ -5,6 +5,9 @@ services:
       POSTGRES_DB: proff58
       POSTGRES_USER: proff
       POSTGRES_PASSWORD: proff
+    # Проброс на хост — чтобы локальный pytest/manage (вне Docker) ходил на localhost:5432.
+    ports:
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

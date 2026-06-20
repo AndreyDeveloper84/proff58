@@ -73,7 +73,10 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {
-    "default": env.db("DATABASE_URL", default="postgres://proff:proff@db:5432/proff58"),
+    # Дефолт — localhost: чтобы локальный pytest/manage работал без Docker (нужен
+    # доступный Postgres на :5432, напр. `docker compose up -d db`). В Docker и CI
+    # хост задаётся явно через DATABASE_URL (env/.env: `db`/`localhost`), дефолт не используется.
+    "default": env.db("DATABASE_URL", default="postgres://proff:proff@localhost:5432/proff58"),
 }
 # По умолчанию Django открывает новое соединение с БД на КАЖДЫЙ запрос — заметная
 # задержка, особенно «подвисание» первого клика после простоя. Держим соединение
