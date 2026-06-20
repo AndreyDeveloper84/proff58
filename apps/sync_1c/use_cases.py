@@ -25,7 +25,7 @@ from apps.catalog import categorization
 from apps.catalog.models import Product
 from apps.core.events import EventSource, price_changed
 
-from . import matching, normalizers, pricing, product_writer, stock
+from . import bulk_import, matching, normalizers, pricing, product_writer, stock
 from .matching import MatchMaps, MatchStatus
 from .models import NomenclatureStaging, StagingStatus, SyncLog
 
@@ -62,6 +62,12 @@ def _short_traceback() -> str:
 def _append_error_detail(error_lines: list[str], ident: str, reason: str) -> None:
     if len(error_lines) < _MAX_ERROR_LINES:
         error_lines.append(f"{ident}: {reason}")
+
+
+def _tally_error(result: ImportResult, error_lines: list[str], ident: str, reason: str) -> None:
+    """Учесть ошибку строки (для пакетного пути)."""
+    result.errors += 1
+    _append_error_detail(error_lines, ident, reason)
 
 
 def _mark_error(staging: NomenclatureStaging, reason: str) -> None:
@@ -261,12 +267,49 @@ def run_rows(
     allow_basic_fields: bool = True,
     error_lines: list[str] | None = None,
 ) -> ImportResult:
-    """Прогнать строки через process_row и собрать ImportResult (без finalize).
+    """Прогнать строки и собрать ImportResult (без finalize).
 
-    Карты товаров и правила категоризации строятся ОДИН раз на батч (#125A) — matching
-    и категоризация больше не делают запросов на каждую строку. Запись товара пока
-    построчная (bulk-запись — #125B).
+    Пакетный путь (#125B): классификация в памяти → bulk_create/bulk_update. При
+    неожиданном сбое bulk-транзакции — откат на построчный путь (`_run_rows_per_row`,
+    per-row savepoints), чтобы «одна плохая строка не валила батч».
     """
+    lines = error_lines if error_lines is not None else []
+    result = ImportResult()
+    ok = bulk_import.run_rows_bulk(
+        raw_items,
+        sync_log=sync_log,
+        source_file=source_file,
+        create_missing=create_missing,
+        allow_basic_fields=allow_basic_fields,
+        error_lines=lines,
+        result=result,
+        tally_error=_tally_error,
+    )
+    if ok:
+        return result
+    # bulk-транзакция упала — построчный fallback на свежих счётчиках.
+    lines.clear()
+    return _run_rows_per_row(
+        raw_items,
+        sync_log=sync_log,
+        source_file=source_file,
+        create_missing=create_missing,
+        allow_basic_fields=allow_basic_fields,
+        error_lines=lines,
+    )
+
+
+def _run_rows_per_row(
+    raw_items: list[dict],
+    *,
+    sync_log: SyncLog | None = None,
+    source_file: str = "",
+    create_missing: bool = True,
+    allow_basic_fields: bool = True,
+    error_lines: list[str] | None = None,
+) -> ImportResult:
+    """Построчный путь (fallback и одиночный importer): карты/правила один раз (#125A),
+    запись товара построчно (per-row savepoint)."""
     result = ImportResult()
     lines = error_lines if error_lines is not None else []
     maps = _build_maps(raw_items)
