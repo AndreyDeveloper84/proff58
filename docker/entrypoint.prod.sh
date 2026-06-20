@@ -30,12 +30,20 @@ else:
 "
 fi
 
+echo "==> Прогрев воркеров в фоне (не блокирует старт)"
+# Фоновый прогрев: дождётся gunicorn и дёрнет публичные URL, чтобы первый живой
+# запрос после пересборки не ловил компиляцию шаблонов и установку соединения с БД.
+python /app/docker/warmup.py &
+
 echo "==> Запуск gunicorn"
 # worker-class=gthread + threads: один медленный запрос (тяжёлая админка) или
 # всплеск ботов-сканеров не блокирует весь сайт — внутри воркера есть потоки.
+# --preload: приложение импортируется один раз в мастер-процессе ДО форка воркеров
+# (быстрее холодный старт после пересборки, меньше памяти за счёт copy-on-write).
 # access-logformat с %(D)s — время каждого запроса в микросекундах (видно тормоза).
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
+    --preload \
     --workers "${GUNICORN_WORKERS:-3}" \
     --worker-class "${GUNICORN_WORKER_CLASS:-gthread}" \
     --threads "${GUNICORN_THREADS:-4}" \
