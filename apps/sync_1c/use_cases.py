@@ -22,6 +22,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.catalog.models import Product
+from apps.core.events import EventSource, price_changed
 
 from . import matching, normalizers, pricing, product_writer, stock
 from .matching import MatchStatus
@@ -323,10 +324,33 @@ def _update_values(
     return sync_log, result
 
 
+def _apply_price(product: Product, item) -> bool:
+    """set_current_price + издатель price_changed при фактическом изменении цены.
+
+    Эмит из use-case (не из post_save), payload — идентификаторы/снимок, через
+    transaction.on_commit (подписчик читает закоммиченные данные). См. events.py.
+    """
+    old_price = product.price
+    applied = pricing.set_current_price(product, item)
+    if applied and old_price != product.price:
+        new_price, currency = product.price, product.currency
+        transaction.on_commit(
+            lambda p=product, o=old_price, n=new_price, c=currency: price_changed.send(
+                sender=None,
+                product_id=p.pk,
+                old_price=o,
+                new_price=n,
+                currency=c,
+                source=EventSource.ONE_C,
+            )
+        )
+    return applied
+
+
 def update_prices(raw_items: list[dict], *, source_file: str = "") -> tuple[SyncLog, ImportResult]:
     return _update_values(
         raw_items,
-        apply=pricing.set_current_price,
+        apply=_apply_price,
         sync_type=SyncLog.SyncType.PRICES,
         source_file=source_file,
     )

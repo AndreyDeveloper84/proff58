@@ -25,7 +25,7 @@ Payload каждого сигнала (kwargs у `.send()`) — стабильн
   order_status_changed  — order_id, old_status, new_status
   payment_succeeded     — payment_id, order_id
   payment_failed        — payment_id, order_id, reason
-  price_changed         — product_id, old_price, new_price
+  price_changed         — product_id, old_price, new_price, currency, source
 
 `order_*`, `payment_*`, `price_changed` пока без издателей — это контракт под
 будущие модули orders/payments/pricing (#7/#8/#60).
