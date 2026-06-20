@@ -6,6 +6,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.pricing.services import price_map_for_products
+
 from ..filters import ProductFilter, visible_products
 from ..models import Category, StockStatus
 from ..services import FacetError, build_facets
@@ -67,6 +69,22 @@ class ProductListView(generics.ListAPIView):
             .prefetch_related("images")
             .order_by("name")
         )
+
+    def list(self, request, *args, **kwargs):
+        """Считаем опт-цены ОДНИМ bulk-запросом по текущей странице (без N+1).
+
+        price_map строится только по товарам страницы и передаётся сериализатору
+        через context; формат пагинации сохраняется.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        products = list(page) if page is not None else list(queryset)
+        price_map = price_map_for_products(products, request.user)
+        context = {**self.get_serializer_context(), "price_map": price_map}
+        serializer = self.get_serializer_class()(products, many=True, context=context)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
 
 
 class ProductDetailView(generics.RetrieveAPIView):
