@@ -27,8 +27,9 @@ Payload каждого сигнала (kwargs у `.send()`) — стабильн
   payment_failed        — payment_id, order_id, reason
   price_changed         — product_id, old_price, new_price, currency, source
 
-`order_*`, `payment_*`, `price_changed` пока без издателей — это контракт под
-будущие модули orders/payments/pricing (#7/#8/#60).
+`order_created` уже имеет издателя — `apps.orders.services.place_order` (#26).
+`order_paid`/`order_status_changed`, `payment_*`, `price_changed` пока без
+издателей — это контракт под будущие модули orders/payments/pricing (#8/#60).
 """
 
 from django.dispatch import Signal
@@ -52,7 +53,9 @@ b2b_verified = Signal()
 product_created = Signal()
 product_updated = Signal()
 
-# --- orders (контракт; издатель появится с #7) ---
+# --- orders ---
+# order_created — издатель `apps.orders.services.place_order` (#26);
+# order_paid/order_status_changed — контракт под #8.
 order_created = Signal()
 order_paid = Signal()
 order_status_changed = Signal()

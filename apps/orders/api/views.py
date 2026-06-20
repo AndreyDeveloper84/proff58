@@ -1,0 +1,209 @@
+"""DRF-вьюхи заказов и корзины — тонкие, вся логика в services.
+
+Эндпоинты:
+  GET    /api/cart/              — текущая корзина с актуальной ценой
+  POST   /api/cart/items/        — добавить товар
+  PATCH  /api/cart/items/{id}/   — изменить количество
+  DELETE /api/cart/items/{id}/   — удалить строку
+  POST   /api/orders/            — оформить заказ (цена серверная)
+  GET    /api/orders/            — список своих заказов (только аутентифицированный)
+  GET    /api/orders/{number}/   — заказ по номеру (только владелец)
+"""
+
+from __future__ import annotations
+
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.shortcuts import get_object_or_404
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.catalog.models import Product
+
+from .. import services
+from ..models import Cart, CartItem, CartStatus, Order
+from .serializers import (
+    AddCartItemSerializer,
+    CartViewSerializer,
+    CreateOrderSerializer,
+    OrderSerializer,
+    UpdateCartItemSerializer,
+)
+
+
+def _get_session_key(request) -> str:
+    """Гарантированно вернуть ключ сессии (создав сессию при необходимости)."""
+    if not request.session.session_key:
+        request.session.save()
+    return request.session.session_key
+
+
+def _get_or_create_active_cart(request) -> Cart:
+    """Активная корзина текущего покупателя (по пользователю или сессии)."""
+    user = request.user if request.user.is_authenticated else None
+    if user is not None:
+        cart, _ = Cart.objects.get_or_create(
+            user=user, status=CartStatus.ACTIVE, defaults={"session_key": ""}
+        )
+        return cart
+
+    session_key = _get_session_key(request)
+    cart, _ = Cart.objects.get_or_create(
+        session_key=session_key, user__isnull=True, status=CartStatus.ACTIVE
+    )
+    return cart
+
+
+def _get_active_cart(request) -> Cart | None:
+    """Найти активную корзину без создания (None, если нет)."""
+    user = request.user if request.user.is_authenticated else None
+    if user is not None:
+        return Cart.objects.filter(user=user, status=CartStatus.ACTIVE).first()
+    session_key = request.session.session_key
+    if not session_key:
+        return None
+    return Cart.objects.filter(
+        session_key=session_key, user__isnull=True, status=CartStatus.ACTIVE
+    ).first()
+
+
+def _cart_response(request, cart: Cart) -> Response:
+    """Сериализовать корзину с актуальной серверной ценой."""
+    user = request.user if request.user.is_authenticated else None
+    view = services.get_cart_view(cart, user)
+    return Response(CartViewSerializer(view).data)
+
+
+class CartView(APIView):
+    """GET /api/cart/ — текущая корзина."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        cart = _get_or_create_active_cart(request)
+        return _cart_response(request, cart)
+
+
+class CartItemsView(APIView):
+    """POST /api/cart/items/ — добавить товар в корзину."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        ser = AddCartItemSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        product = get_object_or_404(Product, pk=ser.validated_data["product_id"])
+        cart = _get_or_create_active_cart(request)
+        try:
+            services.add_to_cart(cart, product, ser.validated_data["quantity"])
+        except DjangoValidationError as exc:
+            return Response({"detail": exc.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
+        return _cart_response(request, cart)
+
+
+class CartItemDetailView(APIView):
+    """PATCH/DELETE /api/cart/items/{id}/ — изменить/удалить строку."""
+
+    permission_classes = [AllowAny]
+
+    def _get_item(self, request, pk) -> CartItem:
+        """Строка только из АКТИВНОЙ корзины текущего покупателя."""
+        cart = _get_active_cart(request)
+        if cart is None:
+            return None
+        return CartItem.objects.filter(pk=pk, cart=cart).first()
+
+    def patch(self, request, pk):
+        item = self._get_item(request, pk)
+        if item is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        ser = UpdateCartItemSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        try:
+            services.update_cart_item(item, ser.validated_data["quantity"])
+        except DjangoValidationError as exc:
+            return Response({"detail": exc.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
+        return _cart_response(request, item.cart)
+
+    def delete(self, request, pk):
+        item = self._get_item(request, pk)
+        if item is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        cart = item.cart
+        services.remove_from_cart(item)
+        return _cart_response(request, cart)
+
+
+class OrdersView(APIView):
+    """POST /api/orders/ (любой), GET /api/orders/ (только аутентифицированный)."""
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def post(self, request):
+        ser = CreateOrderSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        data = ser.validated_data
+
+        cart = _get_active_cart(request)
+        if cart is None:
+            return Response({"detail": "Корзина пуста."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user if request.user.is_authenticated else None
+        customer_data = {
+            "customer_name": data["customer_name"],
+            "customer_phone": data["customer_phone"],
+            "customer_email": data["customer_email"],
+            "customer_type": data["customer_type"],
+            "company_name": data["company_name"],
+            "inn": data["inn"],
+            "kpp": data["kpp"],
+            "legal_address": data["legal_address"],
+        }
+        delivery = {
+            "delivery_method": data["delivery_method"],
+            "delivery_address": data["delivery_address"],
+            "comment": data["comment"],
+        }
+        try:
+            order = services.place_order(
+                cart,
+                user=user,
+                customer_data=customer_data,
+                delivery=delivery,
+                payment_method=data["payment_method"],
+            )
+        except DjangoValidationError as exc:
+            return Response({"detail": exc.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+    def get(self, request):
+        qs = (
+            Order.objects.filter(user=request.user)
+            .prefetch_related("items")
+            .order_by("-created_at")
+        )
+        return Response(OrderSerializer(qs, many=True).data)
+
+
+class OrderDetailView(APIView):
+    """GET /api/orders/{number}/ — заказ по номеру, только владелец.
+
+    Гостевые заказы по номеру не публичны (риск перебора номеров и утечки ПДн):
+    доступ требует аутентификации и принадлежности заказа пользователю.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, number):
+        order = (
+            Order.objects.filter(order_number=number, user=request.user)
+            .prefetch_related("items")
+            .first()
+        )
+        if order is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(OrderSerializer(order).data)
