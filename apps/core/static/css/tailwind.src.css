@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-200;
+  }
+  a {
+    @apply text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300;
+  }
+}
+
+@layer components {
+  .container-app {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Карточки */
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-card transition
+           hover:border-brand-300 hover:shadow-md
+           dark:border-slate-800 dark:bg-slate-900 dark:hover:border-brand-700;
+  }
+
+  /* Счётчики-статы */
+  .stat {
+    @apply inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50
+           px-2.5 py-1 text-xs font-medium text-slate-600
+           dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400;
+  }
+  .stat-dot {
+    @apply h-1.5 w-1.5 rounded-full bg-brand-500;
+  }
+
+  /* Фильтр-чипы */
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white
+           px-3 py-1 text-sm font-medium text-slate-600 transition
+           hover:border-brand-300 hover:text-brand-700
+           dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-brand-600;
+  }
+  .chip-active {
+    @apply border-brand-600 bg-brand-600 text-white hover:text-white
+           dark:border-brand-500 dark:bg-brand-600;
+  }
+
+  /* Бейджи */
+  .badge {
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-0.5
+           text-xs font-medium;
+  }
+  .badge-mod {
+    @apply bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300;
+  }
+  .badge-recat {
+    @apply bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300;
+  }
+  .badge-tt {
+    @apply bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300;
+  }
+
+  /* Кнопки */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm
+           font-medium transition focus:outline-none focus:ring-2 focus:ring-brand-500/40;
+  }
+  .btn-primary {
+    @apply bg-brand-600 text-white hover:bg-brand-700;
+  }
+  .btn-ghost {
+    @apply border border-slate-200 bg-white text-slate-700 hover:bg-slate-50
+           dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800;
+  }
+
+  /* Таблица данных */
+  .data-table {
+    @apply w-full border-collapse text-sm;
+  }
+  .data-table thead th {
+    @apply sticky top-0 z-10 border-b border-slate-200 bg-slate-100/90 px-3 py-2.5
+           text-left text-xs font-semibold uppercase tracking-wide text-slate-500
+           backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-400;
+  }
+  .data-table tbody td {
+    @apply border-b border-slate-100 px-3 py-2.5 align-middle dark:border-slate-800/70;
+  }
+  .data-table tbody tr {
+    @apply transition hover:bg-brand-50/60 dark:hover:bg-slate-900/60;
+  }
+
+  .code {
+    @apply font-mono text-xs text-slate-500 dark:text-slate-400;
+  }
+}
