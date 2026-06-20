@@ -351,9 +351,11 @@ POST /api/1c/stocks/update
 
 #### `GET /orders/new` — забор новых заказов
 
-Сайт отдаёт заказы со `sync_1c_status = pending` (ещё не выгружены) и **сам**
-переводит их в `exported` по факту выдачи. `payment.status` в payload —
-**информирование** 1С о факте оплаты (1С его не меняет).
+Сайт отдаёт заказы со `sync_1c_status = pending` (ещё не выгружены). Сайт **НЕ
+меняет** `sync_1c_status` на GET: заказ остаётся `pending` и может быть выдан
+повторно, пока 1С не подтвердит приём через `POST /orders/confirm`
+(at-least-once delivery). `payment.status` в payload — **информирование** 1С о
+факте оплаты (1С его не меняет).
 
 ```json
 {
@@ -446,6 +448,11 @@ POST /api/1c/stocks/update
 - **недопустимые переходы сайт отклоняет** по матрице прав
   ([`order-lifecycle.md`](order-lifecycle.md), разд. 7) — например, нельзя
   `completed` из `new` минуя сборку;
+- `sync_1c_status = exported` ставится **только при наличии `onec_order_id`**
+  (подтверждение приёма 1С); первичный `confirm` заказа в статусе `pending` без
+  `onec_order_id` → ошибка по строке. Оси независимы: ошибка перехода
+  `fulfillment` **НЕ откатывает** sync-ack (связка с документом 1С и `exported`
+  сохраняются);
 - `payment_status` и `sync_1c_status` 1С **не присылает**.
 
 Сайт по факту смены статуса: сохраняет его, пишет историю, шлёт уведомление

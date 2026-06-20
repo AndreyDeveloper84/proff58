@@ -18,12 +18,20 @@ from __future__ import annotations
 import traceback
 from dataclasses import dataclass
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
 from apps.catalog import categorization
 from apps.catalog.models import Product
-from apps.core.events import EventSource, price_changed
+from apps.core.events import EventSource, order_status_changed, price_changed
+from apps.orders.models import (
+    FulfillmentStatus,
+    Order,
+    PaymentStatus,
+    Sync1CStatus,
+)
+from apps.orders.transitions import can_transition
 
 from . import bulk_import, matching, normalizers, pricing, product_writer, stock
 from .matching import MatchMaps, MatchStatus
@@ -443,3 +451,266 @@ def update_stocks(raw_items: list[dict], *, source_file: str = "") -> tuple[Sync
         sync_type=SyncLog.SyncType.STOCK,
         source_file=source_file,
     )
+
+
+# ---------------------------------------------------------------------------
+# Заказы (#50): выгрузка в 1С и приём статусов
+#
+# Граница 1С живёт здесь (sync_1c импортирует apps.orders.models). Обе операции
+# синхронные; журнал — SyncLog(sync_type=ORDERS). Контракт — docs/1c-api-spec.md
+# §5.6, оси статусов — docs/order-lifecycle.md.
+# ---------------------------------------------------------------------------
+
+
+def _new_orders_sync_log() -> SyncLog:
+    """Прогон ORDERS со статусом RUNNING (финализируется по итогам обработки)."""
+    return SyncLog.objects.create(
+        sync_type=SyncLog.SyncType.ORDERS,
+        source_file="api:orders",
+        result=SyncLog.SyncResult.RUNNING,
+    )
+
+
+def _decimal_str(value) -> str:
+    """Decimal/число → строка (для JSON-ответа 1С). None → "0.00" не подставляем
+    здесь — вызывающий сам решает дефолт."""
+    return str(value)
+
+
+def _serialize_order_for_export(order: Order) -> dict:
+    """Сериализовать заказ по контракту §5.6 (GET /orders/new).
+
+    Берём СНИМОК строк (OrderItem), а не живой товар: цена/название не «плывут».
+    Доставки как суммы у Order нет (вне scope #50) → cost/delivery_total = "0.00".
+    Все Decimal → str.
+    """
+    items = []
+    for line_id, item in enumerate(order.items.all(), start=1):
+        items.append(
+            {
+                "line_id": line_id,
+                "external_id": item.code_1c,
+                "sku": item.article,
+                "name": item.name,
+                "unit": item.unit,
+                "quantity": str(item.quantity),
+                "price": _decimal_str(item.price_final),
+                "total": _decimal_str(item.line_total),
+            }
+        )
+    return {
+        "site_order_id": order.id,
+        "order_number": order.order_number,
+        "created_at": order.created_at.isoformat(),
+        "fulfillment_status": order.fulfillment_status,
+        "payment": {
+            "method": order.payment_method,
+            "status": order.payment_status,
+        },
+        "customer": {
+            "type": order.customer_type,
+            "name": order.customer_name,
+            "phone": order.customer_phone,
+            "email": order.customer_email,
+        },
+        "delivery": {
+            "method": order.delivery_method,
+            "address": order.delivery_address,
+            "comment": order.comment,
+            "cost": "0.00",
+        },
+        "totals": {
+            "items_total": _decimal_str(order.total),
+            "delivery_total": "0.00",
+            "total": _decimal_str(order.total),
+            "currency": order.currency,
+        },
+        "items": items,
+    }
+
+
+def export_new_orders(limit: int | None = None) -> tuple[SyncLog, list[dict]]:
+    """Отдать новые заказы для 1С (GET /orders/new) и записать прогон.
+
+    Выборка: sync_1c_status=pending, кроме отменённых (fulfillment=cancelled) и
+    с истёкшей оплатой (payment=expired). payment=pending НЕ исключаем —
+    B2B/наличные/онлайн-резерв ждут оплаты, но 1С их забирает.
+
+    sync_1c_status НЕ меняем: at-least-once delivery — заказ остаётся pending и
+    может быть выдан повторно, пока 1С не подтвердит приём через /orders/confirm.
+    """
+    if limit is None:
+        limit = settings.ONEC_MAX_ITEMS
+
+    orders = (
+        Order.objects.filter(sync_1c_status=Sync1CStatus.PENDING)
+        .exclude(fulfillment_status=FulfillmentStatus.CANCELLED)
+        .exclude(payment_status=PaymentStatus.EXPIRED)
+        .order_by("created_at", "id")
+        .prefetch_related("items")[:limit]
+    )
+    orders = list(orders)
+    items = [_serialize_order_for_export(order) for order in orders]
+
+    sync_log = _new_orders_sync_log()
+    n = len(items)
+    sync_log.rows_total = n
+    sync_log.rows_ok = n
+    sync_log.rows_error = 0
+    sync_log.counters = {"ok": n, "errors": 0}
+    sync_log.result = SyncLog.SyncResult.OK
+    sync_log.finished_at = timezone.now()
+    sync_log.save()
+    return sync_log, items
+
+
+def _confirm_error(site_order_id, order_number, detail: str, order: Order | None = None) -> dict:
+    """Сформировать per-item результат с ошибкой (НЕ исключение — иначе откат ack)."""
+    return {
+        "site_order_id": site_order_id if order is None else order.id,
+        "order_number": order_number if order is None else order.order_number,
+        "status": "error",
+        "sync_1c_status": order.sync_1c_status if order is not None else None,
+        "fulfillment_status": order.fulfillment_status if order is not None else None,
+        "detail": detail,
+    }
+
+
+def _find_order_for_confirm(site_order_id, order_number) -> Order | None:
+    """Найти заказ по site_order_id ИЛИ order_number (с блокировкой строки)."""
+    qs = Order.objects.select_for_update()
+    if site_order_id is not None:
+        try:
+            return qs.get(id=site_order_id)
+        except Order.DoesNotExist:
+            return None
+    if order_number:
+        try:
+            return qs.get(order_number=order_number)
+        except Order.DoesNotExist:
+            return None
+    return None
+
+
+def _apply_sync_ack(order: Order, item: dict, reserve: dict | None) -> None:
+    """sync-ack: применяется ВСЕГДА при наличии onec_order_id, независимо от
+    оси обработки. Сохраняет связку с документом 1С, резерв, трек, и однократно
+    проставляет exported/exported_at при первом подтверждении приёма."""
+    order.external_order_id = item["onec_order_id"]
+    if item.get("onec_order_number"):
+        order.external_order_number = item["onec_order_number"]
+    if reserve and reserve.get("ok") and reserve.get("reserved_until"):
+        order.reserved_until = reserve["reserved_until"]
+    if item.get("tracking"):
+        order.tracking_number = item["tracking"]
+    # pending→exported ставим ОДИН РАЗ; если уже exported — exported_at не трогаем.
+    if order.sync_1c_status == Sync1CStatus.PENDING:
+        order.sync_1c_status = Sync1CStatus.EXPORTED
+        order.exported_at = timezone.now()
+
+
+def _confirm_one(item: dict, error_lines: list[str]) -> dict:
+    """Обработать одну строку confirm в собственной транзакции.
+
+    Оси независимы: sync-ack фиксируется при наличии onec_order_id ДО любой
+    проверки fulfillment, поэтому невалидный/недопустимый переход обработки НЕ
+    откатывает подтверждение приёма (ack сохранён, ошибка — только per-item).
+    """
+    site_order_id = item.get("site_order_id")
+    order_number = item.get("order_number")
+    onec_order_id = item.get("onec_order_id")
+    reserve = item.get("reserve")
+    target_fulfillment = item.get("fulfillment_status")
+
+    with transaction.atomic():
+        order = _find_order_for_confirm(site_order_id, order_number)
+        if order is None:
+            detail = "Заказ не найден по site_order_id/order_number."
+            _append_error_detail(error_lines, str(site_order_id or order_number or "—"), detail)
+            return _confirm_error(site_order_id, order_number, detail)
+
+        # Первичный ack без onec_order_id невозможен: нечем связать с документом 1С.
+        if order.sync_1c_status == Sync1CStatus.PENDING and not onec_order_id:
+            detail = "Для первичного подтверждения требуется onec_order_id."
+            _append_error_detail(error_lines, order.order_number, detail)
+            return _confirm_error(None, None, detail, order=order)
+
+        # 1) sync-ack — независимая ось, применяется первой и не откатывается ниже.
+        if onec_order_id:
+            _apply_sync_ack(order, item, reserve)
+
+        # 2) ось обработки (fulfillment) — отдельно от ack.
+        fulfillment_error: str | None = None
+        old_status = order.fulfillment_status
+        reserve_failed = bool(reserve) and reserve.get("ok") is False
+
+        if reserve_failed:
+            # Провал резерва: обработка остаётся текущей, причину — в error_details.
+            lines = reserve.get("lines")
+            reason = f"Резерв не подтверждён 1С: {lines}" if lines else "Резерв не подтверждён 1С."
+            _append_error_detail(error_lines, order.order_number, reason)
+        elif target_fulfillment and target_fulfillment != old_status:
+            if can_transition(old_status, target_fulfillment):
+                order.fulfillment_status = target_fulfillment
+                transaction.on_commit(
+                    lambda oid=order.id, o=old_status, n=target_fulfillment: (
+                        order_status_changed.send(
+                            sender=Order, order_id=oid, old_status=o, new_status=n
+                        )
+                    )
+                )
+            else:
+                fulfillment_error = (
+                    f"Недопустимый переход обработки {old_status} → {target_fulfillment}."
+                )
+                _append_error_detail(error_lines, order.order_number, fulfillment_error)
+
+        order.save()
+
+        status = "error" if (fulfillment_error or reserve_failed) else "ok"
+        detail = fulfillment_error or ("Резерв не подтверждён." if reserve_failed else "")
+        return {
+            "site_order_id": order.id,
+            "order_number": order.order_number,
+            "status": status,
+            "sync_1c_status": order.sync_1c_status,
+            "fulfillment_status": order.fulfillment_status,
+            "detail": detail,
+        }
+
+
+def confirm_orders(items: list[dict]) -> tuple[SyncLog, list[dict]]:
+    """Приём подтверждений 1С (POST /orders/confirm) и запись прогона.
+
+    Каждая строка обрабатывается изолированно (своя transaction.atomic +
+    select_for_update): одна плохая строка не валит батч. Ошибки — per-item
+    результат, а не исключение.
+    """
+    sync_log = _new_orders_sync_log()
+    error_lines: list[str] = []
+    results: list[dict] = []
+    ok = errors = 0
+
+    for item in items:
+        result = _confirm_one(item, error_lines)
+        results.append(result)
+        if result["status"] == "ok":
+            ok += 1
+        else:
+            errors += 1
+
+    sync_log.rows_total = len(items)
+    sync_log.rows_ok = ok
+    sync_log.rows_error = errors
+    sync_log.counters = {"ok": ok, "errors": errors}
+    if errors == 0:
+        sync_log.result = SyncLog.SyncResult.OK
+    elif ok == 0:
+        sync_log.result = SyncLog.SyncResult.ERROR
+    else:
+        sync_log.result = SyncLog.SyncResult.PARTIAL
+    if error_lines:
+        sync_log.error_details = "\n".join(error_lines)
+    sync_log.finished_at = timezone.now()
+    sync_log.save()
+    return sync_log, results
