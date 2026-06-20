@@ -1,10 +1,13 @@
 from django.contrib import admin
 from django.db import transaction
+from django.db.models import OuterRef, Subquery
 from django.utils.translation import gettext_lazy as _
 from treebeard.admin import TreeAdmin
 from treebeard.forms import movenodeform_factory
 
 from apps.core.events import EventSource, product_created, product_updated
+from apps.pricing.services import WHOLESALE, price_for
+from apps.sync_1c.models import PriceRecord
 
 from .models import (
     Attribute,
@@ -101,6 +104,29 @@ class ProductAttributeValueInline(admin.TabularInline):
     )
 
 
+class CurrentPriceInline(admin.TabularInline):
+    """Текущие цены товара из 1С по типам (retail/wholesale) — только просмотр.
+
+    Цены ведёт 1С (ADR-0006), поэтому инлайн read-only: менеджер видит обе цены
+    в карточке, но не редактирует их здесь.
+    """
+
+    model = PriceRecord
+    fk_name = "product"
+    extra = 0
+    can_delete = False
+    verbose_name = _("Цена 1С (текущая)")
+    verbose_name_plural = _("Цены 1С (текущие, по типам)")
+    fields = ("price_type", "value", "currency", "is_current", "valid_from")
+    readonly_fields = fields
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_current=True)
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
@@ -111,6 +137,7 @@ class ProductAdmin(admin.ModelAdmin):
         "status",
         "stock_status",
         "price",
+        "current_wholesale",
         "is_active",
     )
     list_filter = ("status", UncategorizedFilter, "stock_status", "is_active", "brand")
@@ -123,6 +150,7 @@ class ProductAdmin(admin.ModelAdmin):
         "original_name",
         "source_group",
         "matched_rule",
+        "pricing_summary",
         "price_updated_at",
         "stock_updated_at",
         "attrs_cache",
@@ -154,7 +182,13 @@ class ProductAdmin(admin.ModelAdmin):
         (
             _("Цена и наличие"),
             {
+                "description": _(
+                    "«Цена» — кэш розницы из 1С (источник истины — 1С, ручная правка "
+                    "перезатрётся при следующей синхронизации). Что увидит покупатель — "
+                    "ниже в «Расчёт цены»; опт ведётся в «Цены 1С (текущие)»."
+                ),
                 "fields": (
+                    "pricing_summary",
                     "price",
                     "old_price",
                     "currency",
@@ -164,7 +198,7 @@ class ProductAdmin(admin.ModelAdmin):
                     "stock_status",
                     "price_updated_at",
                     "stock_updated_at",
-                )
+                ),
             },
         ),
         (_("SEO"), {"fields": ("meta_title", "meta_description"), "classes": ("collapse",)}),
@@ -173,7 +207,34 @@ class ProductAdmin(admin.ModelAdmin):
             {"fields": ("attrs_cache", "created_at", "updated_at"), "classes": ("collapse",)},
         ),
     )
-    inlines = [ProductImageInline, ProductAttributeValueInline]
+    inlines = [ProductImageInline, ProductAttributeValueInline, CurrentPriceInline]
+
+    def get_queryset(self, request):
+        # Текущая оптовая цена — подзапросом, чтобы колонка списка не делала N+1.
+        wholesale = PriceRecord.objects.filter(
+            product=OuterRef("pk"), price_type=WHOLESALE, is_current=True
+        ).values("value")[:1]
+        return super().get_queryset(request).annotate(_wholesale_price=Subquery(wholesale))
+
+    @admin.display(description=_("Опт"))
+    def current_wholesale(self, obj):
+        value = getattr(obj, "_wholesale_price", None)
+        return value if value is not None else "—"
+
+    @admin.display(description=_("Расчёт цены (price_for)"))
+    def pricing_summary(self, obj):
+        """Что увидит покупатель: розница (аноним) и опт (B2B). Через единый price_for."""
+        if obj.pk is None:
+            return "—"
+        retail = price_for(obj)  # без user → розница
+        retail_str = f"{retail.final} {retail.currency}" if retail.has_price else "—"
+        wholesale = (
+            obj.price_records.filter(price_type=WHOLESALE, is_current=True)
+            .values_list("value", flat=True)
+            .first()
+        )
+        wholesale_str = f"{wholesale} {obj.currency or 'RUB'}" if wholesale is not None else "—"
+        return f"розница: {retail_str}  ·  опт (B2B): {wholesale_str}"
 
     def save_model(self, request, obj, form, change):
         # Менеджер вручную задал категорию → фиксируем, чтобы авторазбор её не трогал.
