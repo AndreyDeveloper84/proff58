@@ -1016,6 +1016,30 @@
         { "tool_type": "Пожарные шкафы и щиты", "slug": "siz-shkafy", "match_keywords": ["шкаф пожарн", "шкаф пож", "шпк", "щит пожарн", "пожарный щит", "стенд пожарн"], "source": "name_keywords" },
         { "tool_type": "Стёкла и светофильтры", "slug": "siz-stekla", "match_keywords": ["стекло", "светофильтр"], "source": "name_keywords" }
       ]
+    },
+    {
+      "category": "Измерительный инструмент",
+      "extraction": "priority_keyword",
+      "note": "Однородная категория измерительного инструмента и приборов. Типизируем по названию. Порядок precision-first: нивелиры ДО уровней (часть названий пересекается). Slug с префиксом izm-.",
+      "rules": [
+        { "tool_type": "Нивелиры и построители", "slug": "izm-niveliry", "match_keywords": ["нивелир", "построитель", "ротационный лазер"], "source": "name_keywords" },
+        { "tool_type": "Уровни", "slug": "izm-urovni", "match_keywords": ["уровень", "гидроуровень", "ватерпас"], "source": "name_keywords" },
+        { "tool_type": "Рулетки", "slug": "izm-ruletki", "match_keywords": ["рулетка"], "source": "name_keywords" },
+        { "tool_type": "Дальномеры", "slug": "izm-dalnomery", "match_keywords": ["дальномер"], "source": "name_keywords" },
+        { "tool_type": "Штангенциркули и глубиномеры", "slug": "izm-shtangen", "match_keywords": ["штангенциркуль", "штангенглубиномер", "штангенрейсмас", "штанген"], "source": "name_keywords" },
+        { "tool_type": "Микрометры и нутромеры", "slug": "izm-mikrometry", "match_keywords": ["микрометр", "нутромер"], "source": "name_keywords" },
+        { "tool_type": "Угольники, угломеры, транспортиры", "slug": "izm-ugolniki", "match_keywords": ["угольник", "угломер", "транспортир", "уголок", "малка"], "source": "name_keywords" },
+        { "tool_type": "Линейки и рейки", "slug": "izm-lineyki", "match_keywords": ["линейка", "рейка", "метршток", "складной метр"], "source": "name_keywords" },
+        { "tool_type": "Мультиметры и тестеры", "slug": "izm-multimetry", "match_keywords": ["мультиметр", "тестер", "амперметр", "мегаомметр", "вольтметр", "омметр", "измеритель сопрот"], "source": "name_keywords" },
+        { "tool_type": "Токоизмерительные клещи", "slug": "izm-kleshchi", "match_keywords": ["клещи"], "source": "name_keywords" },
+        { "tool_type": "Термометры, пирометры, тепловизоры", "slug": "izm-termometry", "match_keywords": ["термометр", "пирометр", "термогигрометр", "тепловизор", "гигрометр"], "source": "name_keywords" },
+        { "tool_type": "Индикаторы, детекторы, пробники", "slug": "izm-indikatory", "match_keywords": ["индикатор", "детектор", "детоектор", "искатель", "пробник", "отвертка-индикатор", "отвертка индикатор"], "source": "name_keywords" },
+        { "tool_type": "Калибры", "slug": "izm-kalibry", "match_keywords": ["калибр", "щуп", "скоба калибр"], "source": "name_keywords" },
+        { "tool_type": "Клейма и шаблоны", "slug": "izm-kleyma", "match_keywords": ["клеймо", "клейма", "шаблон", "набор шаблон"], "source": "name_keywords" },
+        { "tool_type": "Штативы, отражатели, держатели", "slug": "izm-shtativy", "match_keywords": ["штатив", "отражатель", "веха", "нивелирная рейка", "третья рука"], "source": "name_keywords" },
+        { "tool_type": "Влагомеры, анализаторы, приборы", "slug": "izm-analizatory", "match_keywords": ["влагомер", "газоанализатор", "анемометр", "анеометр", "анализатор", "рн-метр", "рн метр", "ph-метр", "люксметр", "шумомер", "толщиномер", "барометр", "видеоскоп", "эндоскоп", "дефектоскоп", "алкотест", "алкометр", "виброметр", "тахометр", "стробоскоп"], "source": "name_keywords" },
+        { "tool_type": "Измерительные колёса (курвиметры)", "slug": "izm-kolesa", "match_keywords": ["курвиметр", "измерительное колесо", "колесо измерит"], "source": "name_keywords" }
+      ]
     }
   ]
 }
