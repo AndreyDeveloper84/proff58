@@ -20,11 +20,41 @@ _PRICE_FIELDS = ["price", "old_price", "currency", "price_updated_at"]
 
 
 def set_current_price(product: Product, item: Item) -> bool:
-    """Записать цену в Product и завести актуальную PriceRecord. Не сохраняет Product."""
+    """Записать цену в Product и завести актуальную PriceRecord. Не сохраняет Product.
+
+    Если цена реально не изменилась — НИЧЕГО не пишем (не плодим PriceRecord, не
+    трогаем Product, не эмитим price_changed): 1С часто шлёт полный прайс без
+    изменений. Возвращаем False (строка уйдёт в skipped).
+    """
     if item.price is None:
         return False
     currency = item.currency or product.currency or "RUB"
     price_type = item.price_type or "retail"
+
+    # Skip-unchanged: текущая актуальная цена этого типа/валюты совпадает, денормализация
+    # Product совпадает, и old_price не меняется. old_price=None трактуем как «не менять»
+    # (1С часто шлёт только price; контракт — в docs/1c-api-spec.md).
+    current_value = None
+    if product.code_1c:
+        current_value = (
+            PriceRecord.objects.filter(
+                code_1c=product.code_1c,
+                price_type=price_type,
+                currency=currency,
+                is_current=True,
+            )
+            .values_list("value", flat=True)
+            .first()
+        )
+    old_price_unchanged = item.old_price is None or product.old_price == item.old_price
+    if (
+        current_value is not None
+        and current_value == item.price
+        and product.price == item.price
+        and product.currency == currency
+        and old_price_unchanged
+    ):
+        return False
 
     product.price = item.price
     if item.old_price is not None:
