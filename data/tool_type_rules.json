@@ -803,25 +803,33 @@
       "extraction": "priority_keyword",
       "note": "Группа 1С «Осветительное и электротехническое оборудование» без подгрупп — типизируем по названию. Порядок: тех.устройства → электромонтаж → свет → бытовое (precision-first).",
       "rules": [
+        { "tool_type": "⚠ В категорию «Сантехника»", "slug": "_recat_santeh", "match_keywords": ["счетчик воды", "кран шаровой", "шланг-дождеват"], "source": "name_keywords", "action": "recategorize" },
         { "tool_type": "Паяльники и паяльные станции", "slug": "payalniki-stancii", "match_keywords": ["паяльник", "паяльная станц", "паяльная лампа", "паяльн"], "source": "name_keywords" },
         { "tool_type": "Расходники для пайки", "slug": "raskhodniki-pajki", "match_keywords": ["припой", "флюс", "канифол"], "source": "name_keywords" },
+        { "tool_type": "Пуско-зарядные устройства", "slug": "pusko-zaryadnye", "match_keywords": ["пусковое устройство", "зарядно-пусков", "зарядно-предпуск", "пуско-зарядн"], "source": "name_keywords" },
+        { "tool_type": "ИБП и преобразователи", "slug": "ibp-preobrazovateli", "match_keywords": ["бесперебойн", "ибп", "преобразователь напряж", "инвертор"], "source": "name_keywords" },
         { "tool_type": "Зарядные устройства", "slug": "zaryadnye", "match_keywords": ["зарядное", "зарядн. устр", "з/у для аккум", "зу для аккум"], "source": "name_keywords" },
-        { "tool_type": "Блоки питания", "slug": "bloki-pitaniya", "match_keywords": ["блок питания", "бп светодиод", "драйвер для свет", "led-драйвер", "драйвер свет"], "source": "name_keywords" },
+        { "tool_type": "Блоки питания", "slug": "bloki-pitaniya", "match_keywords": ["блок питания", "источник питания", "бп светодиод", "драйвер для свет", "led-драйвер", "драйвер свет"], "source": "name_keywords" },
         { "tool_type": "Стабилизаторы напряжения", "slug": "stabilizatory-napryazheniya", "match_keywords": ["стабилизатор"], "source": "name_keywords" },
+        { "tool_type": "Трансформаторы", "slug": "transformatory", "match_keywords": ["трансформатор"], "source": "name_keywords" },
         { "tool_type": "Автоматы и предохранители", "slug": "avtomaty-predohraniteli", "match_keywords": ["предохранитель", "автоматический выключ", "узо"], "source": "name_keywords" },
         { "tool_type": "Реле", "slug": "rele", "match_keywords": ["реле"], "source": "name_keywords" },
+        { "tool_type": "Звонки", "slug": "zvonki", "match_keywords": ["звонок"], "source": "name_keywords" },
         { "tool_type": "Удлинители и сетевые фильтры", "slug": "udliniteli-filtry", "match_keywords": ["удлинитель", "удл.", "сетевой фильтр", "катушка с розет"], "source": "name_keywords" },
-        { "tool_type": "Электроустановочные изделия", "slug": "elektroustanovochnye-izdeliya", "match_keywords": ["выключатель", "розетк", "вилка", "диммер", "рамка"], "source": "name_keywords" },
+        { "tool_type": "Разъёмы и соединители", "slug": "razemy-soediniteli", "match_keywords": ["разъем", "ответвитель", "разветвитель", "колодка", "зви "], "source": "name_keywords" },
+        { "tool_type": "Электроустановочные изделия", "slug": "elektroustanovochnye-izdeliya", "match_keywords": ["выключатель", "розетк", "вилка", "диммер", "рамка", "патрон е"], "source": "name_keywords" },
         { "tool_type": "Клеммы, наконечники и гильзы", "slug": "klemmy-nakonechniki", "match_keywords": ["наконечник", "гильза", "клемма", "муфта", "зажим прокалыв", "соединитель"], "source": "name_keywords" },
+        { "tool_type": "Монтажные коробки", "slug": "montazhnye-korobki", "match_keywords": ["коробка распа", "коробка распред", "коробка клеммн", "распаячн", "монтажная коробка"], "source": "name_keywords" },
         { "tool_type": "Термоусадка", "slug": "termousadka", "match_keywords": ["термоусад", "трубка термо", "т/у трубк"], "source": "name_keywords" },
-        { "tool_type": "Кабель и провод", "slug": "kabel-provod", "match_keywords": ["ввг", "кг-хл", "кгхл", "пвс", "шввп", "кабель силов", "кабель кг", "кабель квт", "провод сип", "сип-"], "source": "name_keywords" },
+        { "tool_type": "Протяжки для кабеля (УЗК)", "slug": "protyazhki-uzk", "match_keywords": ["протяжка каб", "протяжка кабеля", "узк"], "source": "name_keywords" },
+        { "tool_type": "Кабель и провод", "slug": "kabel-provod", "match_keywords": ["ввг", "кг-хл", "кгхл", "пвс", "шввп", "кабель силов", "кабель кг", "кабель квт", "провод сип", "сип-", "кабель utp", "кабель ftp", "utp", "ftp", "кабель пит", "кабель грею", "кабель саморег", "кабель спиральн"], "source": "name_keywords" },
         { "tool_type": "Прожекторы", "slug": "prozhektory", "match_keywords": ["прожектор"], "source": "name_keywords" },
-        { "tool_type": "Светильники", "slug": "svetilniki", "match_keywords": ["светильник"], "source": "name_keywords" },
+        { "tool_type": "Светильники", "slug": "svetilniki", "match_keywords": ["светильник", "рассеиватель"], "source": "name_keywords" },
         { "tool_type": "Фонари", "slug": "fonari", "match_keywords": ["фонар"], "source": "name_keywords" },
         { "tool_type": "Гирлянды", "slug": "girlyandy", "match_keywords": ["гирлянд"], "source": "name_keywords" },
         { "tool_type": "Переноски", "slug": "perenoski", "match_keywords": ["переносн", "переноска"], "source": "name_keywords" },
         { "tool_type": "Лампы", "slug": "lampy", "match_keywords": ["лампа", "лампочк"], "source": "name_keywords" },
-        { "tool_type": "Батарейки и аккумуляторы", "slug": "batarejki-akkumulyatory", "match_keywords": ["батарейк", "элемент питания", "крона", "тип aa", "тип aaa", "cr2032", "lr6", "lr03", "gp"], "source": "name_keywords" }
+        { "tool_type": "Батарейки и аккумуляторы", "slug": "batarejki-akkumulyatory", "match_keywords": ["батарейк", "элемент питания", "адаптер для батаре", "крона", "тип aa", "тип aaa", "cr2032", "lr6", "lr03", "gp"], "source": "name_keywords" }
       ]
     }
   ]
