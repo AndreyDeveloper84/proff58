@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db import transaction
 from django.db.models import Count, IntegerField, OuterRef, Subquery
 from django.db.models.functions import Coalesce
@@ -26,6 +26,7 @@ from .models import (
     ProductStatus,
     Source,
 )
+from .read_models import rebuild_attrs_cache
 
 
 class AttributeOptionInline(admin.TabularInline):
@@ -320,7 +321,7 @@ class ProductAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
-    actions = ["action_publish", "action_needs_review"]
+    actions = ["action_publish", "action_needs_review", "action_rebuild_attrs_cache"]
     fieldsets = (
         (None, {"fields": ("name", "slug", "status", "is_active")}),
         (
@@ -427,6 +428,24 @@ class ProductAdmin(admin.ModelAdmin):
                 )
             )
 
+    def save_related(self, request, form, formsets, change):
+        # Инлайны (в т.ч. значения характеристик) сохраняются здесь — проверку
+        # публикации делаем ПОСЛЕ них, когда PAV уже в БД. clean() на форме ловит
+        # существующий товар до сохранения, но для нового товара порядок сохранения
+        # инлайнов не позволяет валидировать в clean — поэтому здесь safe-fallback:
+        # не публикуем, а откатываем в «Требует проверки» (без исключения).
+        super().save_related(request, form, formsets, change)
+        obj = form.instance
+        if obj.status == ProductStatus.PUBLISHED and obj.publication_errors():
+            obj.status = ProductStatus.NEEDS_REVIEW
+            obj.is_active = False
+            obj.save(update_fields=["status", "is_active", "updated_at"])
+            self.message_user(
+                request,
+                "Не опубликовано: " + "; ".join(obj.publication_errors()),
+                level=messages.ERROR,
+            )
+
     @staticmethod
     def _emit_bulk_updated(ids: list[int], changed_fields: list[str]) -> None:
         """Эмит product_updated по каждому реально изменённому товару (после коммита)."""
@@ -444,13 +463,38 @@ class ProductAdmin(admin.ModelAdmin):
 
     @admin.action(description=_("Опубликовать выбранные товары"))
     def action_publish(self, request, queryset):
-        # Только реально меняющиеся: уже опубликованные и активные пропускаем.
-        qs = queryset.exclude(status=ProductStatus.PUBLISHED, is_active=True)
-        ids = list(qs.values_list("id", flat=True))
-        updated = qs.update(status=ProductStatus.PUBLISHED, is_active=True)
-        if ids:
-            self._emit_bulk_updated(ids, ["status", "is_active"])
-        self.message_user(request, _("Опубликовано: %d") % updated)
+        # НЕ обходим валидацию через queryset.update(): для каждого товара
+        # проверяем publication_errors() (категория + обязательные характеристики).
+        # Невалидные пропускаем; событие эмитим только по реально опубликованным.
+        # Уже опубликованные и активные — no-op: не трогаем (без лишних событий).
+        qs = (
+            queryset.exclude(status=ProductStatus.PUBLISHED, is_active=True)
+            .select_related("category")
+            .prefetch_related("attribute_values__attribute", "attribute_values__value_option")
+        )
+        ok_ids: list[int] = []
+        skipped = 0
+        for p in qs:
+            if p.publication_errors():
+                skipped += 1
+            else:
+                ok_ids.append(p.id)
+        Product.objects.filter(id__in=ok_ids).update(status=ProductStatus.PUBLISHED, is_active=True)
+        if ok_ids:
+            self._emit_bulk_updated(ok_ids, ["status", "is_active"])
+        self.message_user(
+            request,
+            f"Опубликовано: {len(ok_ids)}, пропущено: {skipped} — "
+            "не хватает обязательных характеристик/категории",
+        )
+
+    @admin.action(description=_("Пересобрать attrs_cache"))
+    def action_rebuild_attrs_cache(self, request, queryset):
+        # Пересборка денормализованного кэша характеристик из EAV — без
+        # save_model и доменных событий (это служебная операция, не правка контента).
+        for product in queryset:
+            rebuild_attrs_cache(product)
+        self.message_user(request, f"Пересобрано: {queryset.count()}")
 
     @admin.action(description=_("Вернуть на проверку"))
     def action_needs_review(self, request, queryset):
