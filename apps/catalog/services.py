@@ -15,7 +15,18 @@ from __future__ import annotations
 
 from .category_tree import get_category_tree, invalidate_category_tree_cache
 from .facets import FacetError, build_facets
-from .queries import category_counts, products_in, range_filter_attributes, tool_type_facets
+from .models import CompatibilityKind, ProductCompatibility
+from .queries import (
+    CompatibilityItem,
+    accessories_of,
+    category_counts,
+    compatibility_sections,
+    compatible_of,
+    fits_of,
+    products_in,
+    range_filter_attributes,
+    tool_type_facets,
+)
 from .read_models import attr_value_to_json, rebuild_attrs_cache
 
 __all__ = [
@@ -29,4 +40,12 @@ __all__ = [
     "range_filter_attributes",
     "category_counts",
     "tool_type_facets",
+    # Совместимость товаров (#79)
+    "CompatibilityItem",
+    "CompatibilityKind",
+    "ProductCompatibility",
+    "accessories_of",
+    "fits_of",
+    "compatible_of",
+    "compatibility_sections",
 ]

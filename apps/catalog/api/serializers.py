@@ -130,3 +130,14 @@ class ProductDetailSerializer(ProductListSerializer):
         crumbs = [{"name": c.name, "slug": c.slug} for c in cat.get_ancestors()]
         crumbs.append({"name": cat.name, "slug": cat.slug})
         return crumbs
+
+
+def serialize_compat_item(item, context) -> dict:
+    """Элемент секции совместимости (#79): товар как в листинге + плоское ``note``.
+
+    Цена берётся через ProductListSerializer (context должен содержать price_map,
+    собранный одним bulk-запросом по всем товарам секций).
+    """
+    data = ProductListSerializer(item.product, context=context).data
+    data["note"] = item.note
+    return data
