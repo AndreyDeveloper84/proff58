@@ -183,6 +183,31 @@ def test_ushm_disc_diameter_keyword_context(rules):
     assert _ushm(rules, "Болгарка круг 230").get("disc_diameter").number == Decimal("230")
 
 
+def test_ushm_model_extraction_disc_and_power(rules):
+    # Диаметр/мощность из кода модели «УШМ-<Ø>[-/]<Вт>», AG<Ø>-<Вт>.
+    f1 = _ushm(rules, "Шлифмаш угл ИНТЕРСКОЛ УШМ-125/1100")
+    assert f1["disc_diameter"].number == Decimal("125") and f1["power"].number == Decimal("1100")
+    f2 = _ushm(rules, "Шлифмаш угл ЗУБР ПРОФ УШМ-П230-2000 П")
+    assert f2["disc_diameter"].number == Decimal("230") and f2["power"].number == Decimal("2000")
+    f3 = _ushm(rules, "Шлифмаш угл DENZEL AG125-1500")
+    assert f3["disc_diameter"].number == Decimal("125") and f3["power"].number == Decimal("1500")
+    f4 = _ushm(rules, "Шлифмаш угл AG230-2200")
+    assert f4["disc_diameter"].number == Decimal("230") and f4["power"].number == Decimal("2200")
+
+
+def test_ushm_model_extraction_guards(rules):
+    # Напряжение АКБ в коде модели НЕ должно попасть в power (опасный кейс ревью).
+    f1 = _ushm(rules, "Шлифмаш угл аккум AG125-18V")
+    assert f1["disc_diameter"].number == Decimal("125") and "power" not in f1
+    f2 = _ushm(rules, "Шлифмаш угл аккум. УШМ-125/18В, 1Х4,0Ач ИНТЕРСКОЛ")
+    assert f2["disc_diameter"].number == Decimal("125") and "power" not in f2
+    # Неканоничный код модели → ничего не извлекаем.
+    f3 = _ushm(rules, "Шлифмаш угл ИНТЕРСКОЛ УШМ-2322ЭМ")
+    assert "disc_diameter" not in f3 and "power" not in f3
+    # AG как часть слова (Aggressor/AGCS) не должно ловиться как Ø.
+    assert "disc_diameter" not in _ushm(rules, "Круг лепестковый Aggressor 125")
+
+
 def test_ushm_no_load_speed_takes_max_in_range(rules):
     # «2800-11000 об/мин» → берём максимум 11000, не 2800.
     assert _ushm(rules, "УШМ 900Вт, 2800-11000 об/мин").get("no_load_speed").number == Decimal(
