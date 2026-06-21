@@ -368,6 +368,16 @@ class Product(TimeStampedModel):
             # GIN по attrs_cache — ускоряет фасетные containment-фильтры (attrs_cache @> {...})
             # и has_key. Сам GROUP BY не ускоряет (его сужает фильтр+категория).
             GinIndex(fields=["attrs_cache"], name="catalog_product_attrs_gin"),
+            # Trigram-GIN (pg_trgm) для поиска по каталогу (#52): ускоряет icontains
+            # и trigram_similar (typo-tolerance) по name/article/brand. Требует
+            # расширения pg_trgm — оно создаётся в миграции 0007 ПЕРЕД индексами.
+            GinIndex(fields=["name"], opclasses=["gin_trgm_ops"], name="catalog_product_name_trgm"),
+            GinIndex(
+                fields=["article"], opclasses=["gin_trgm_ops"], name="catalog_product_article_trgm"
+            ),
+            GinIndex(
+                fields=["brand"], opclasses=["gin_trgm_ops"], name="catalog_product_brand_trgm"
+            ),
         ]
 
     def __str__(self) -> str:

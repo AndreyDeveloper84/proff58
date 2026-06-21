@@ -1,5 +1,7 @@
 """Публичный read-only API каталога: дерево категорий, список, карточка, фасеты."""
 
+from django.contrib.postgres.search import TrigramSimilarity
+from django.db.models import Case, FloatField, Q, Value, When
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
@@ -67,12 +69,14 @@ class ProductListView(generics.ListAPIView):
     filterset_class = ProductFilter
 
     def get_queryset(self):
-        return (
-            visible_products()
-            .select_related("category")
-            .prefetch_related("images")
-            .order_by("name")
-        )
+        # При поиске (?search=, len>=2) ordering по релевантности задаёт
+        # ProductFilter.filter_search (.order_by("-_rank", ...)); _rank существует
+        # только тогда. Без поиска — алфавитный порядок здесь.
+        qs = visible_products().select_related("category").prefetch_related("images")
+        q = (self.request.query_params.get("search") or "").strip()
+        if len(q) >= 2:
+            return qs  # ordering проставит filter_search после фильтрации
+        return qs.order_by("name", "id")
 
     def list(self, request, *args, **kwargs):
         """Считаем опт-цены ОДНИМ bulk-запросом по текущей странице (без N+1).
@@ -89,6 +93,46 @@ class ProductListView(generics.ListAPIView):
         if page is not None:
             return self.get_paginated_response(serializer.data)
         return Response(serializer.data)
+
+
+SUGGEST_LIMIT = 10
+
+
+class ProductSuggestView(APIView):
+    """Подсказки автодополнения поиска (#52): лёгкий список {id, name, slug}.
+
+    Только видимые товары, ранжированы по сходству имени (trigram), не более
+    SUGGEST_LIMIT. Запрос короче 2 символов → пустой список.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        q = (request.query_params.get("q") or "").strip()
+        if len(q) < 2:
+            return Response([])
+        # Буст по имени: точное совпадение > префикс > сходство (trigram).
+        rank = Case(
+            When(name__iexact=q, then=Value(2.0)),
+            When(name__istartswith=q, then=Value(1.0)),
+            default=Value(0.0),
+            output_field=FloatField(),
+        ) + TrigramSimilarity("name", q)
+        rows = (
+            visible_products()
+            .annotate(_rank=rank)
+            .filter(
+                Q(name__icontains=q)
+                | Q(name__trigram_similar=q)
+                | Q(name__trigram_word_similar=q)
+                | Q(article__icontains=q)
+                | Q(brand__icontains=q)
+                | Q(code_1c__istartswith=q)
+            )
+            .order_by("-_rank", "name")
+            .values("id", "name", "slug")[:SUGGEST_LIMIT]
+        )
+        return Response(list(rows))
 
 
 class ProductDetailView(generics.RetrieveAPIView):

@@ -15,6 +15,11 @@ urlpatterns = [
     ),
     path("products/", views.ProductListView.as_view(), name="product-list"),
     path(
+        "search/suggest/",
+        views.ProductSuggestView.as_view(),
+        name="product-suggest",
+    ),
+    path(
         "products/<slug:slug>/compatible/",
         views.ProductCompatibleView.as_view(),
         name="product-compatible",
