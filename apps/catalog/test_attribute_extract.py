@@ -95,6 +95,52 @@ def test_full_name_multiple_attributes(rules):
     assert found["battery_included"].boolean is False
 
 
+# --- Перфораторы (tool_type=perforatory) -------------------------------------
+
+PERF = "perforatory"
+
+
+def _perf(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(PERF, name)}
+
+
+def test_perforatory_full_name_sds_plus(rules):
+    found = _perf(rules, "Перфоратор SDS-plus 800Вт 2.7Дж")
+    assert found["power"].number == Decimal("800")
+    assert found["impact_energy"].number == Decimal("2.7")
+    assert found["chuck_type"].option_slug == "sds-plus"
+
+
+def test_perforatory_full_name_sds_max(rules):
+    found = _perf(rules, "Перфоратор SDS-max 1500Вт 10Дж")
+    assert found["power"].number == Decimal("1500")
+    assert found["impact_energy"].number == Decimal("10")
+    assert found["chuck_type"].option_slug == "sds-max"
+
+
+def test_perforatory_chuck_type_max_not_confused_with_plus(rules):
+    # «SDS-max» не должен классифицироваться как «sds-plus» (порядок вариантов).
+    assert _perf(rules, "Перфоратор SDS-max").get("chuck_type").option_slug == "sds-max"
+    assert _perf(rules, "Перфоратор SDS-plus").get("chuck_type").option_slug == "sds-plus"
+
+
+def test_perforatory_power_does_not_match_voltage(rules):
+    # «800Вт» — мощность, не напряжение: «в» внутри «вт» не ловится.
+    found = _perf(rules, "Перфоратор 800Вт")
+    assert found["power"].number == Decimal("800")
+    assert "voltage" not in found
+
+
+def test_perforatory_voltage_for_cordless(rules):
+    # Аккумуляторный кейс: напряжение извлекается.
+    assert _perf(rules, "Перфоратор аккумуляторный 18В").get("voltage").number == Decimal("18")
+
+
+def test_perforatory_kilowatt_not_supported(rules):
+    # Движок без unit-множителя: «1.2кВт» НЕ даёт power (известное поведение, follow-up).
+    assert "power" not in _perf(rules, "Перфоратор 1.2кВт")
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""
