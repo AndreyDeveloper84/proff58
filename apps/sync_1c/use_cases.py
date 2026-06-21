@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import traceback
 from dataclasses import dataclass
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
@@ -231,6 +232,29 @@ def fail_import_job(sync_log: SyncLog, reason: str, *, rows_total: int = 0) -> N
     sync_log.error_details = f"{old}\n{reason}".strip()
     sync_log.finished_at = timezone.now()
     sync_log.save()
+
+
+def mark_stale_imports() -> tuple[int, list[str]]:
+    """Пометить зависшие RUNNING-прогоны как ERROR.
+
+    Зависший = result=RUNNING, finished_at IS NULL, started_at старше SYNC_STALE_TIMEOUT.
+    Идемпотентно: уже финализированные не трогаются (фильтр по RUNNING).
+    """
+    threshold = timezone.now() - timedelta(seconds=settings.SYNC_STALE_TIMEOUT)
+    stale = SyncLog.objects.filter(
+        result=SyncLog.SyncResult.RUNNING,
+        finished_at__isnull=True,
+        started_at__lt=threshold,
+    )
+    uids: list[str] = []
+    for sync_log in stale:
+        sync_log.result = SyncLog.SyncResult.ERROR
+        sync_log.finished_at = timezone.now()
+        note = f"Прогон отмечен зависшим (нет финализации за {settings.SYNC_STALE_TIMEOUT}s)."
+        sync_log.error_details = ((sync_log.error_details or "").strip() + "\n" + note).strip()
+        sync_log.save(update_fields=["result", "finished_at", "error_details"])
+        uids.append(str(sync_log.batch_uid))
+    return len(uids), uids
 
 
 def run_import_into(
