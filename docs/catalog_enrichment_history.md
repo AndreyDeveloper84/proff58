@@ -36,3 +36,23 @@ recategorize **502** из 21 134 → «разобрано» ≈ **96,1%** (assig
 
 **Каркас, переиспользуемый дальше:** движок `tool_type.py`, команды `load_tool_types`/
 `enrich_tool_type`, `services.rebuild_attrs_cache`/`build_facets`, сигналы, `ingest.py`.
+
+## Фаза B — характеристики (EAV)
+
+Извлечение характеристик из названий 1С в `ProductAttributeValue` (EAV) словарём
+`data/attribute_rules.json` + движок `attribute_extract.py`; денормализация в `attrs_cache`
+(read-model) под фасеты. Процесс на тип: `attribute_coverage` → блок в словаре → `load_attributes`
+→ `enrich_attributes`. KPI тот же: **Precision ≥ 98%**, coverage добираем итерациями.
+
+| tool_type | Что сделано |
+|-----------|-------------|
+| **Дрели и шуруповёрты** (каркас, #99 + #96) | Отладка движка и словаря: `power_source`, `voltage`, `torque`, `motor_type`, `battery_included`; `battery_capacity` — `is_ai_feature`. Приоритет источников — карта `source_priority` в словаре. |
+| **Перфораторы** (#160) | 188 товаров. Новые атрибуты: `power` (Вт), `impact_energy` (Дж), `chuck_type` (SDS-plus/SDS-max — фильтр + SEO-фасет); 5 атрибутов переиспользованы с дрелей (идентичные флаги — `CategoryAttribute` у Электроинструмента общий). Покрытие ключевых: **chuck_type 73%** (SDS-plus×108, SDS-max×30), **power 70%**, **impact_energy 67%**. Precision чистый: разводка В/Вт работает (voltage только 18/36/14.4/20В, без ложного 220/800), SDS-сплит корректный. |
+
+**Решения/наблюдения Фазы B:**
+- Имена 1С — бренд+модель+спеки; tool_type присвоен в Фазе A, поэтому покрытие меряется
+  `attribute_coverage --tool-type <slug>` по уже типизированным товарам (не по grep названий).
+- Низкое покрытие вспомогательных атрибутов (у перфораторов `power_source` 13%, `voltage` 9%,
+  `motor_type` 2%) — **name-limited**, не ошибки: сетевые перфораторы и model-only имена не
+  несут токенов. Добор — через LLM (`is_ai_feature`), не keyword-костылями. Follow-up'ы —
+  в [`catalog_enrichment_roadmap.md`](catalog_enrichment_roadmap.md).
