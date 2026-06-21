@@ -163,6 +163,14 @@ ONEC_API_KEY = env("ONEC_API_KEY", default="")
 # Максимум строк в одном пакете 1С (items). Превышение → 400.
 ONEC_MAX_ITEMS = env.int("ONEC_MAX_ITEMS", default=1000)
 
+# Надёжность фон-импорта 1С (#57): зависшие RUNNING + retry.
+# Порог «зависшего» прогона: RUNNING без финализации дольше этого времени janitor
+# (mark_stale_syncs) помечает ERROR. Закрывает дыру «воркер умер между стартом и финалом».
+SYNC_STALE_TIMEOUT = env.int("SYNC_STALE_TIMEOUT", default=30 * 60)  # секунды
+# Hard time_limit задачи импорта (SIGKILL воркера). soft_time_limit на минуту меньше —
+# даёт задаче финализировать прогон в ERROR до жёсткого убийства.
+SYNC_IMPORT_TIME_LIMIT = env.int("SYNC_IMPORT_TIME_LIMIT", default=15 * 60)  # секунды
+
 # Feature-флаги. Инфраструктурные — здесь (через env, меняют разработчики).
 # Бизнес-флаги (reviews/b2b/...) живут в SiteSettings. Проверка — через
 # apps.core.features.is_enabled(); механизм поддерживает override любого флага
