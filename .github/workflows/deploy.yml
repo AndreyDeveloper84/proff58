@@ -51,4 +51,10 @@ jobs:
             git checkout ${{ github.ref_name }}
             git reset --hard origin/${{ github.ref_name }}
             docker compose -f docker-compose.prod.yml up -d --build
+            # nginx подключает default.conf через bind-mount: смена содержимого файла НЕ
+            # пересоздаёт контейнер автоматически (compose смотрит на спеку, не на содержимое
+            # mount) → принудительно проверяем и перечитываем конфиг, иначе изменения маршрутов
+            # (напр. headless: / → Next) не применяются и staging выглядит «без изменений».
+            docker compose -f docker-compose.prod.yml exec -T nginx nginx -t \
+              && docker compose -f docker-compose.prod.yml restart nginx
             docker image prune -f
