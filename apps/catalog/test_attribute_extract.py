@@ -170,9 +170,23 @@ def test_ushm_disc_diameter_only_canonical_with_mm(rules):
     assert "disc_diameter" not in _ushm(rules, "Шлифмаш угл Makita DGA504RF")
 
 
+def test_ushm_disc_diameter_keyword_context(rules):
+    # Размер по контексту «диск/круг/под» + канон — без «мм».
+    assert _ushm(rules, "УШМ под диск 125 ЗУБР").get("disc_diameter").number == Decimal("125")
+    assert _ushm(rules, "Болгарка круг 230").get("disc_diameter").number == Decimal("230")
+
+
 def test_ushm_no_load_speed_takes_max_in_range(rules):
     # «2800-11000 об/мин» → берём максимум 11000, не 2800.
-    assert _ushm(rules, "УШМ 900Вт, 2800-11000 об/мин").get("no_load_speed").number == Decimal("11000")
+    assert _ushm(rules, "УШМ 900Вт, 2800-11000 об/мин").get("no_load_speed").number == Decimal(
+        "11000"
+    )
+
+
+def test_ushm_spindle_thread(rules):
+    assert _ushm(rules, "УШМ Bosch GWS M14 125мм").get("spindle_thread").option_slug == "m14"
+    assert _ushm(rules, "УШМ мини М10 76мм").get("spindle_thread").option_slug == "m10"
+    assert "spindle_thread" not in _ushm(rules, "Шлифмаш угл Makita DGA504RF")
 
 
 def test_ushm_cordless_attributes(rules):
