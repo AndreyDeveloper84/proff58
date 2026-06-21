@@ -8,7 +8,7 @@ from django.test import RequestFactory
 
 from apps.accounts.models import User
 from apps.catalog.admin import ProductAdmin
-from apps.catalog.models import Product, ProductStatus
+from apps.catalog.models import Category, Product, ProductStatus
 from apps.core import events
 from apps.sync_1c import use_cases
 
@@ -108,10 +108,19 @@ def _admin_request():
 
 @pytest.mark.django_db
 def test_bulk_publish_emits_only_for_changed(django_capture_on_commit_callbacks):
-    draft1 = Product.objects.create(name="Черновик 1", status=ProductStatus.DRAFT, is_active=False)
-    draft2 = Product.objects.create(name="Черновик 2", status=ProductStatus.DRAFT, is_active=False)
+    # Категория без обязательных характеристик → товары проходят правило публикации
+    # (action_publish теперь валидирует категорию/обязательные характеристики, #18).
+    cat = Category.add_root(name="Готовая категория", slug="ready-cat-events")
+    draft1 = Product.objects.create(
+        name="Черновик 1", status=ProductStatus.DRAFT, is_active=False, category=cat
+    )
+    draft2 = Product.objects.create(
+        name="Черновик 2", status=ProductStatus.DRAFT, is_active=False, category=cat
+    )
     # уже опубликован и активен — не должен порождать событие
-    Product.objects.create(name="Готовый", status=ProductStatus.PUBLISHED, is_active=True)
+    Product.objects.create(
+        name="Готовый", status=ProductStatus.PUBLISHED, is_active=True, category=cat
+    )
 
     events_got = []
 
