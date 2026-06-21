@@ -9,6 +9,10 @@ from .base import ALLOWED_HOSTS, env
 
 DEBUG = False
 
+# Межсервисные запросы внутри Docker (Next SSR → Django по http://web:8000) приходят с Host "web".
+# Добавляем внутренний хост точечно в prod (не глобально в base) — управляемо через env.
+ALLOWED_HOSTS += env.list("INTERNAL_ALLOWED_HOSTS", default=["web"])
+
 # Кэш — общий Redis для всех воркеров gunicorn. LocMem был бы у каждого процесса
 # свой, и прогретое дерево каталога не переиспользовалось бы между воркерами.
 # Отдельная БД Redis (2), чтобы не пересекаться с брокером (0) и result-backend (1)
