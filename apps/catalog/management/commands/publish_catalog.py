@@ -66,9 +66,7 @@ class Command(BaseCommand):
             planned = total
 
         if opts["dry_run"]:
-            self.stdout.write(
-                f"[dry-run] К публикации: {planned} (всего подходящих: {total})."
-            )
+            self.stdout.write(f"[dry-run] К публикации: {planned} (всего подходящих: {total}).")
             if no_category:
                 self.stdout.write(
                     self.style.WARNING(
