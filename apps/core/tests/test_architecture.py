@@ -8,11 +8,13 @@
 import ast
 from pathlib import Path
 
+import apps.catalog
 import apps.pricing
 import apps.sync_1c
 
 PRICING_DIR = Path(apps.pricing.__file__).resolve().parent
 SYNC_1C_DIR = Path(apps.sync_1c.__file__).resolve().parent
+CATALOG_DIR = Path(apps.catalog.__file__).resolve().parent
 APPS_DIR = SYNC_1C_DIR.parent
 
 
@@ -159,3 +161,25 @@ def test_sync_1c_does_not_write_pricerecord_directly():
         "sync_1c не должен писать PriceRecord напрямую "
         "(используйте apps.pricing.repositories):\n" + "\n".join(offenders)
     )
+
+
+def test_catalog_does_not_import_ai():
+    """Каталог НЕ зависит от AI-слоя (направление зависимости: ai → catalog, #73).
+
+    AI-слой (``apps.ai``) — потребитель каталога (рекомендации по характеристикам);
+    обратная связь ``catalog → ai`` создала бы цикл и нарушила слоистость
+    (ARCHITECTURE-AI §1, принцип 3). Проходим по всем production-модулям
+    ``apps/catalog`` (исключая ``migrations/`` и тестовые файлы
+    ``tests.py``/``test_*.py``; management-команды НЕ исключаем) и через AST
+    (включая внутрифункциональные импорты) проверяем, что ни один не импортирует
+    модуль, начинающийся с ``apps.ai``.
+    """
+    offenders = []
+    for path in CATALOG_DIR.rglob("*.py"):
+        if "migrations" in path.parts or _is_test_path(path):
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for module in _iter_imported_modules(tree):
+            if module == "apps.ai" or module.startswith("apps.ai."):
+                offenders.append(f"{path}: импортирует {module}")
+    assert not offenders, "apps.catalog не должен зависеть от apps.ai:\n" + "\n".join(offenders)
