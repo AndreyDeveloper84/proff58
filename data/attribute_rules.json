@@ -33,22 +33,9 @@
               "slug": "mains",
               "keywords": ["сетев", "от сети", "220 в", "220в"]
             }
-          ]
-        },
-        {
-          "slug": "power_source",
-          "name": "Питание",
-          "kind": "select",
-          "source": "inferred",
-          "is_filter": true,
-          "is_seo_facet": true,
-          "options": [
-            {
-              "value": "Сеть",
-              "slug": "mains"
-            }
           ],
           "derive": {
+            "source": "inferred",
             "set_option": "mains",
             "requires_present": ["power"],
             "requires_absent": ["voltage", "battery_capacity"]
@@ -166,22 +153,9 @@
               "slug": "mains",
               "keywords": ["сетев", "от сети", "220 в", "220в"]
             }
-          ]
-        },
-        {
-          "slug": "power_source",
-          "name": "Питание",
-          "kind": "select",
-          "source": "inferred",
-          "is_filter": true,
-          "is_seo_facet": true,
-          "options": [
-            {
-              "value": "Сеть",
-              "slug": "mains"
-            }
           ],
           "derive": {
+            "source": "inferred",
             "set_option": "mains",
             "requires_present": ["power"],
             "requires_absent": ["voltage", "battery_capacity"]
@@ -332,22 +306,9 @@
               "slug": "mains",
               "keywords": ["сетев", "от сети", "220 в", "220в"]
             }
-          ]
-        },
-        {
-          "slug": "power_source",
-          "name": "Питание",
-          "kind": "select",
-          "source": "inferred",
-          "is_filter": true,
-          "is_seo_facet": true,
-          "options": [
-            {
-              "value": "Сеть",
-              "slug": "mains"
-            }
           ],
           "derive": {
+            "source": "inferred",
             "set_option": "mains",
             "requires_present": ["power"],
             "requires_absent": ["voltage", "battery_capacity"]
