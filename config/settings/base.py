@@ -23,6 +23,8 @@ DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 
 INSTALLED_APPS = [
+    # Современная тема админки (должна идти перед django.contrib.admin).
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -115,6 +117,26 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Тема админки django-jazzmin. Бренд «Профессионал».
+JAZZMIN_SETTINGS = {
+    "site_title": "Профессионал — админка",
+    "site_header": "Профессионал",
+    "site_brand": "Профессионал",
+    "welcome_sign": "Панель управления «Профессионал»",
+    "copyright": "Профессионал",
+    "search_model": ["catalog.Product", "catalog.Category"],
+    "show_ui_builder": False,
+    "related_modal_active": True,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "theme": "flatly",
+    "dark_mode_theme": "darkly",
+    "navbar_fixed": True,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+}
 
 # Celery / Redis
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/0")
