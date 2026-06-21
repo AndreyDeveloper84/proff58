@@ -60,6 +60,7 @@ class AttrRule:
     patterns: tuple[re.Pattern, ...] = ()  # number
     true_keywords: tuple[str, ...] = ()  # boolean
     false_keywords: tuple[str, ...] = ()  # boolean
+    derive: dict | None = None  # инференс по другим атрибутам (см. _derive_one)
 
 
 @dataclass
@@ -120,20 +121,67 @@ class AttributeRules:
             patterns=tuple(re.compile(p) for p in a.get("regex", [])),
             true_keywords=tuple(a.get("true_keywords", [])),
             false_keywords=tuple(a.get("false_keywords", [])),
+            derive=a.get("derive"),
         )
 
     def rules_for(self, tool_type_slug: str) -> list[AttrRule]:
         return self._by_tt.get(tool_type_slug, [])
 
     def extract(self, tool_type_slug: str, name: str) -> list[AttrValue]:
-        """Извлечь все характеристики из названия товара указанного tool_type."""
+        """Извлечь все характеристики из названия товара указанного tool_type.
+
+        Два прохода: сначала обычные правила (regex/keyword/boolean), затем
+        derive-правила — инференс по уже извлечённым атрибутам (см. _derive_one).
+        """
         norm = normalize(name)
         out: list[AttrValue] = []
+        derive_rules: list[AttrRule] = []
         for rule in self.rules_for(tool_type_slug):
+            if rule.derive is not None:
+                derive_rules.append(rule)
+                continue
             value = self._extract_one(rule, norm)
             if value is not None:
                 out.append(value)
+        if derive_rules:
+            present = {v.slug for v in out}
+            for rule in derive_rules:
+                value = self._derive_one(rule, present)
+                if value is not None:
+                    out.append(value)
+                    present.add(value.slug)
         return out
+
+    @staticmethod
+    def _derive_one(rule: AttrRule, present: set[str]) -> AttrValue | None:
+        """Инференс select-значения по наличию/отсутствию других атрибутов.
+
+        Срабатывает (заполняет пробел), если:
+        * свой slug ещё НЕ извлечён (не перетираем regex/keyword/1С);
+        * все ``requires_present`` присутствуют;
+        * ни один ``requires_absent`` не присутствует.
+        Источник ``inferred`` — слабейший приоритет, корректируется 1С/ручным.
+        """
+        d = rule.derive or {}
+        if rule.slug in present:
+            return None
+        if any(s not in present for s in d.get("requires_present", [])):
+            return None
+        if any(s in present for s in d.get("requires_absent", [])):
+            return None
+        opt = next((o for o in rule.options if o.slug == d.get("set_option")), None)
+        if opt is None:
+            return None
+        return AttrValue(
+            slug=rule.slug,
+            kind=SELECT,
+            source=rule.source,
+            priority=rule.priority,
+            option_slug=opt.slug,
+            option_value=opt.value,
+            unit=rule.unit,
+            matched="(inferred)",
+        )
 
     @staticmethod
     def _extract_one(rule: AttrRule, norm: str) -> AttrValue | None:
