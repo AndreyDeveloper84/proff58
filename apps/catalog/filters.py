@@ -10,7 +10,8 @@ import operator
 from functools import reduce
 
 import django_filters
-from django.db.models import Q
+from django.contrib.postgres.search import TrigramSimilarity
+from django.db.models import Case, FloatField, Q, Value, When
 
 from .models import Category, Product, ProductStatus
 
@@ -27,6 +28,8 @@ class ProductFilter(django_filters.FilterSet):
     # tool_type — вторая ось навигации (slug варианта атрибута), in_stock — наличие.
     tool_type = django_filters.CharFilter(method="filter_tool_type")
     in_stock = django_filters.CharFilter(method="filter_in_stock")
+    # Поиск по каталогу (#52): index-accelerated lookups + trigram (typo-tolerance).
+    search = django_filters.CharFilter(method="filter_search")
 
     class Meta:
         model = Product
@@ -52,6 +55,48 @@ class ProductFilter(django_filters.FilterSet):
         if str(value) in ("1", "true", "True", "yes"):
             return queryset.filter(stock_quantity__gt=0)
         return queryset
+
+    def filter_search(self, queryset, name, value):
+        """Поиск по name/article/brand/code_1c (#52), trigram V1.
+
+        Матчинг ускоряется trigram-GIN (name/article/brand — icontains и
+        trigram_similar) и btree (article/code_1c). По code_1c — только
+        точное/префиксное совпадение (это техкод, fuzzy не нужен).
+
+        Ранг — взвешенный (Case/When по типу совпадения + сходство имени);
+        аннотируется ДО фильтра. Ordering задаётся здесь же при len(q) >= 2,
+        чтобы во view не было ссылки на _rank, которой может не быть.
+        """
+        q = (value or "").strip()
+        if len(q) < 2:
+            return queryset
+
+        rank = Case(
+            When(Q(article__iexact=q) | Q(code_1c__iexact=q), then=Value(100.0)),
+            When(Q(article__istartswith=q) | Q(code_1c__istartswith=q), then=Value(50.0)),
+            When(brand__icontains=q, then=Value(20.0)),
+            When(name__icontains=q, then=Value(10.0)),
+            default=Value(0.0),
+            output_field=FloatField(),
+        ) + TrigramSimilarity("name", q)
+        return (
+            queryset.annotate(_rank=rank)
+            .filter(
+                Q(name__icontains=q)
+                | Q(name__trigram_similar=q)
+                # word_similar — пословное сходство (%>): «перфоратр» матчит слово
+                # «Перфоратор» внутри длинного name, где similar по всей строке
+                # проседает ниже порога. Тот же gin_trgm_ops индекс.
+                | Q(name__trigram_word_similar=q)
+                | Q(article__icontains=q)
+                | Q(article__trigram_similar=q)
+                | Q(brand__icontains=q)
+                | Q(brand__trigram_similar=q)
+                | Q(code_1c__iexact=q)
+                | Q(code_1c__istartswith=q)
+            )
+            .order_by("-_rank", "name", "id")
+        )
 
 
 def filtered_products(category, *, brands=None, stock_status=None):
