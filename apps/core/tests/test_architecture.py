@@ -121,3 +121,41 @@ def test_pricerecord_owned_by_pricing():
     assert not hasattr(
         m, "PriceRecord"
     ), "PriceRecord не должен быть в apps.sync_1c.models — он перенесён в apps.pricing"
+
+
+def test_sync_1c_does_not_write_pricerecord_directly():
+    """production-код sync_1c не пишет PriceRecord напрямую — только через repository.
+
+    Запись истории цены принадлежит домену ``pricing`` (см. #152). Проходим по
+    production-модулям ``apps/sync_1c/`` (исключая ``admin.py``, ``migrations/`` и
+    тестовые файлы ``tests.py``/``test_*.py``) и ловим ОБА паттерна обхода контракта:
+      * прямой импорт модели (``from apps.pricing.models import PriceRecord`` /
+        ``import apps.pricing.models``) — через AST;
+      * обращение к менеджеру ``PriceRecord.objects`` — grep по тексту.
+    """
+    offenders: list[str] = []
+    for path in SYNC_1C_DIR.rglob("*.py"):
+        if "migrations" in path.parts or _is_test_path(path):
+            continue
+        if path.name == "admin.py":
+            continue
+        source = path.read_text(encoding="utf-8")
+
+        # 1) AST: импорт модели PriceRecord / apps.pricing.models в любой форме.
+        tree = ast.parse(source, filename=str(path))
+        for module in _iter_imported_modules(tree):
+            if module == "apps.pricing.models" or module.startswith("apps.pricing.models."):
+                offenders.append(f"{path}: импортирует {module}")
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module == "apps.pricing":
+                if any(alias.name == "models" for alias in node.names):
+                    offenders.append(f"{path}: from apps.pricing import models")
+
+        # 2) grep: прямое обращение к менеджеру PriceRecord.objects.
+        if "PriceRecord.objects" in source:
+            offenders.append(f"{path}: использует PriceRecord.objects напрямую")
+
+    assert not offenders, (
+        "sync_1c не должен писать PriceRecord напрямую "
+        "(используйте apps.pricing.repositories):\n" + "\n".join(offenders)
+    )
