@@ -53,6 +53,13 @@ def test_voltage_does_not_match_wattage(rules):
     assert "voltage" not in _by_slug(rules, "Дрель ударная 800 Вт")
 
 
+def test_voltage_ignores_watts_written_as_v(rules):
+    # 1С пишет ватты как «В» без «т»: «230мм 2000В» = 2000 Вт, не напряжение.
+    # Напряжение инструмента ≤ 99 В, поэтому 3-значные «В» (ватты/сеть) не берём.
+    assert "voltage" not in _ushm(rules, "Шлифмаш угл ЗУБР УШМ-П230-2000 П, 230мм 2000В")
+    assert "voltage" not in _perf(rules, "Перфоратор 230В сетевой")
+
+
 @pytest.mark.parametrize("name", ["Дрель 55 Нм", "Дрель 55Нм", "Drill 55 Nm", "Drill 55NM"])
 def test_torque_variants(rules, name):
     v = _by_slug(rules, name).get("torque")
