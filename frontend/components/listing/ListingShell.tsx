@@ -1,45 +1,39 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LayoutGrid, List, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Listing, ListingQuery, RangeFilterValue, SortOption } from "@/lib/types";
-import { applyListing } from "@/lib/filtering";
-import { parseQuery, serializeQuery } from "@/lib/url-state";
+import { serializeQuery } from "@/lib/url-state";
 import { PER_PAGE_OPTIONS, SORT_OPTIONS } from "@/lib/constants";
 import { ProductCard } from "@/components/product/ProductCard";
 import { FacetSidebar } from "@/components/filters/FacetSidebar";
 
+// Презентационный shell: данные уже разрешены на сервере (getListing(query)).
+// Никакой клиентской фильтрации — изменение фильтра меняет URL (router.replace),
+// сервер пересобирает сегмент и отдаёт новый listing. Подходит для тысяч товаров.
 export function ListingShell({
   listing,
-  categorySlug,
+  query,
 }: {
   listing: Listing;
-  categorySlug: string;
+  query: ListingQuery;
 }) {
-  const sp = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
-  const query = useMemo(
-    () => parseQuery(new URLSearchParams(sp.toString()), categorySlug),
-    [sp, categorySlug],
-  );
-  const result = useMemo(() => applyListing(listing, query), [listing, query]);
+  const totalPages = Math.max(1, Math.ceil(listing.total / query.perPage));
+  const page = Math.min(Math.max(1, query.page), totalPages);
 
-  const push = useCallback(
-    (next: ListingQuery) => {
-      const qs = serializeQuery(next);
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    },
-    [router, pathname],
-  );
+  const push = (next: ListingQuery) => {
+    const qs = serializeQuery(next);
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
 
   const setView = (view: "grid" | "list") => push({ ...query, view });
   const setSort = (sort: SortOption) => push({ ...query, sort, page: 1 });
   const setPerPage = (perPage: number) => push({ ...query, perPage, page: 1 });
-  const setPage = (page: number) => push({ ...query, page });
+  const setPage = (p: number) => push({ ...query, page: p });
 
   const toggleCheckbox = (code: string, value: string) => {
     const cur = Array.isArray(query.filters[code]) ? (query.filters[code] as string[]) : [];
@@ -58,6 +52,8 @@ export function ListingShell({
   };
 
   const resetAll = () => push({ ...query, filters: {}, page: 1 });
+
+  const sortOptions = listing.sort.length ? listing.sort : SORT_OPTIONS;
 
   // Чипы применённых фильтров
   const chips: { code: string; value?: string; label: string }[] = [];
@@ -79,9 +75,22 @@ export function ListingShell({
   const removeChip = (code: string, value?: string) =>
     value ? toggleCheckbox(code, value) : setRange(code, {});
 
+  // Оконная пагинация (1 … p-1 p p+1 … N) — не рендерим сотни кнопок.
+  const pageItems: (number | "…")[] = [];
+  {
+    const set = new Set<number>([1, totalPages, page, page - 1, page + 1]);
+    const nums = [...set].filter((n) => n >= 1 && n <= totalPages).sort((a, b) => a - b);
+    let prev = 0;
+    for (const n of nums) {
+      if (n - prev > 1) pageItems.push("…");
+      pageItems.push(n);
+      prev = n;
+    }
+  }
+
   const sidebar = (
     <FacetSidebar
-      facets={result.facets}
+      facets={listing.facets}
       filters={query.filters}
       onToggle={toggleCheckbox}
       onRange={setRange}
@@ -93,7 +102,7 @@ export function ListingShell({
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6">
       <nav aria-label="Хлебные крошки" className="mb-3 flex flex-wrap items-center gap-1 text-xs text-ink-3">
         {listing.category.breadcrumb.map((b, i) => (
-          <span key={b.href} className="flex items-center gap-1">
+          <span key={`${b.href}-${i}`} className="flex items-center gap-1">
             {i > 0 && <span className="text-ink-3">/</span>}
             <a href={b.href} className="hover:text-accent">
               {b.label}
@@ -107,7 +116,9 @@ export function ListingShell({
           <h1 className="font-display text-3xl font-semibold uppercase tracking-wide text-ink">
             {listing.category.title}
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-ink-2">{listing.category.intro}</p>
+          {listing.category.intro && (
+            <p className="mt-2 max-w-2xl text-sm text-ink-2">{listing.category.intro}</p>
+          )}
         </div>
         {listing.promo && (
           <a
@@ -141,7 +152,9 @@ export function ListingShell({
 
         <div className="min-w-0">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface px-3 py-2">
-            <span className="text-sm text-ink-2">Найдено {result.total}</span>
+            <span aria-live="polite" className="text-sm text-ink-2">
+              Найдено {listing.total}
+            </span>
             <div className="flex flex-wrap items-center gap-3">
               <details className="lg:hidden">
                 <summary className="cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm text-ink-2">
@@ -157,7 +170,7 @@ export function ListingShell({
                   onChange={(e) => setSort(e.target.value as SortOption)}
                   className="rounded-md border border-line bg-canvas px-2 py-1 text-sm text-ink"
                 >
-                  {SORT_OPTIONS.map((o) => (
+                  {sortOptions.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
@@ -166,7 +179,7 @@ export function ListingShell({
               </label>
 
               <label className="flex items-center gap-2 text-sm text-ink-3">
-                По
+                На странице
                 <select
                   value={query.perPage}
                   onChange={(e) => setPerPage(Number(e.target.value))}
@@ -232,11 +245,9 @@ export function ListingShell({
             </div>
           )}
 
-          {result.products.length === 0 ? (
+          {listing.products.length === 0 ? (
             <div className="rounded-lg border border-line bg-surface p-10 text-center">
-              <p className="text-ink-2">
-                По этим фильтрам товаров нет. Сбросьте цену или бренд.
-              </p>
+              <p className="text-ink-2">По этим фильтрам товаров нет. Сбросьте цену или бренд.</p>
               <button
                 type="button"
                 onClick={resetAll}
@@ -247,49 +258,52 @@ export function ListingShell({
             </div>
           ) : query.view === "list" ? (
             <div className="flex flex-col gap-3">
-              {result.products.map((p) => (
+              {listing.products.map((p) => (
                 <ProductCard key={p.id} product={p} view="list" />
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-              {result.products.map((p) => (
+              {listing.products.map((p) => (
                 <ProductCard key={p.id} product={p} view="grid" />
               ))}
             </div>
           )}
 
-          {result.totalPages > 1 && (
-            <nav
-              aria-label="Пагинация"
-              className="mt-6 flex items-center justify-center gap-1"
-            >
+          {totalPages > 1 && (
+            <nav aria-label="Пагинация" className="mt-6 flex flex-wrap items-center justify-center gap-1">
               <button
                 type="button"
-                disabled={result.page <= 1}
-                onClick={() => setPage(result.page - 1)}
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
                 className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-2 disabled:opacity-40"
               >
                 ‹
               </button>
-              {Array.from({ length: result.totalPages }, (_, i) => i + 1).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setPage(n)}
-                  aria-current={n === result.page ? "page" : undefined}
-                  className={cn(
-                    "min-w-9 rounded-md border px-3 py-1.5 text-sm",
-                    n === result.page ? "border-accent text-accent" : "border-line text-ink-2",
-                  )}
-                >
-                  {n}
-                </button>
-              ))}
+              {pageItems.map((it, i) =>
+                it === "…" ? (
+                  <span key={`gap-${i}`} className="px-2 text-ink-3">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={it}
+                    type="button"
+                    onClick={() => setPage(it)}
+                    aria-current={it === page ? "page" : undefined}
+                    className={cn(
+                      "min-w-9 rounded-md border px-3 py-1.5 text-sm",
+                      it === page ? "border-accent text-accent" : "border-line text-ink-2",
+                    )}
+                  >
+                    {it}
+                  </button>
+                ),
+              )}
               <button
                 type="button"
-                disabled={result.page >= result.totalPages}
-                onClick={() => setPage(result.page + 1)}
+                disabled={page >= totalPages}
+                onClick={() => setPage(page + 1)}
                 className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-2 disabled:opacity-40"
               >
                 ›
