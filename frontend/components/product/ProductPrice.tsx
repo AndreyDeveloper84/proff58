@@ -9,7 +9,7 @@ export function ProductPrice({ price }: { price: Product["price"] }) {
   }
   return (
     <div className="flex items-baseline gap-2">
-      <span className="font-display text-xl font-semibold text-ink">
+      <span className="font-display text-2xl font-bold text-ink">
         {formatPrice(price.final, price.currency)}
       </span>
       {price.old != null && price.old > price.final && (

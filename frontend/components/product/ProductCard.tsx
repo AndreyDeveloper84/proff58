@@ -73,7 +73,7 @@ export function ProductCard({
       data-event="product_card_click"
       data-product-id={product.id}
       className={cn(
-        "group rounded-lg border border-line bg-surface p-3 transition duration-150 hover:border-accent motion-reduce:transition-none",
+        "group rounded-lg border border-line bg-raised p-3 transition duration-150 hover:border-accent/60 motion-reduce:transition-none",
         isList
           ? "flex gap-4"
           : "flex flex-col gap-2.5 hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none",
@@ -96,7 +96,11 @@ export function ProductCard({
         <ProductAvailability stock={product.stock} />
         <div className="mt-auto flex items-center justify-between gap-2 pt-1">
           <ProductPrice price={product.price} />
-          <AddToCartButton productId={product.id} />
+          <AddToCartButton
+            productId={product.id}
+            stock={product.stock}
+            hasPrice={product.price.final != null}
+          />
         </div>
       </div>
     </article>

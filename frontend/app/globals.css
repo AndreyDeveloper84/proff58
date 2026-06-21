@@ -32,6 +32,10 @@
   --danger: #e5484d; /* скидка, нет в наличии */
   --rating: #e6b45a; /* звёзды (намеренно не зелёные) */
 
+  /* фото-зона карточки — светлая, чтобы товар читался на тёмном каталоге */
+  --photo: #eef1f3;
+  --photo-ink: #8b939a;
+
   /* статусы заказа (бейджи ЛК/опс) */
   --st-wait: #e6b45a;
   --st-confirm: #74b6ee;
@@ -69,6 +73,9 @@
 
   --color-danger: var(--danger);
   --color-rating: var(--rating);
+
+  --color-photo: var(--photo);
+  --color-photo-ink: var(--photo-ink);
 
   --color-st-wait: var(--st-wait);
   --color-st-confirm: var(--st-confirm);

@@ -71,7 +71,7 @@ function CheckboxFacet({
         {visible.map((o) => (
           <label
             key={o.value}
-            className="flex cursor-pointer items-center justify-between gap-2 text-sm text-ink-2"
+            className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-md px-1.5 text-sm text-ink-2 hover:bg-raised md:min-h-9"
           >
             <span className="flex items-center gap-2">
               <input
