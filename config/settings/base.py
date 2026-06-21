@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "apps.sync_1c",
     "apps.pricing",
     "apps.orders",
+    "apps.ai",
 ]
 
 MIDDLEWARE = [
