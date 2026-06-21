@@ -21,6 +21,13 @@
 from django.contrib.postgres.indexes import GinIndex
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import (
+    CheckConstraint,
+    F,
+    Index,
+    Q,
+    UniqueConstraint,
+)
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node
@@ -407,6 +414,98 @@ class Product(TimeStampedModel):
             self.stock_status = StockStatus.IN_STOCK
         else:
             self.stock_status = StockStatus.OUT_OF_STOCK
+
+
+class CompatibilityKind(models.TextChoices):
+    ACCESSORY = "accessory", _("Аксессуар / оснастка / расходник")
+    COMPATIBLE = "compatible", _("Совместим")
+
+
+class ProductCompatibility(TimeStampedModel):
+    """Явная каталожная связь товар↔товар (движок совместимости, #79).
+
+    Два вида связи:
+
+    * ``ACCESSORY`` — НАПРАВЛЕННАЯ: source — основной товар (инструмент),
+      target — аксессуар/оснастка/расходник к нему. Направление значимо и НЕ
+      канонизируется: ребро A→B и B→A — это два разных факта (A — аксессуар к B
+      и наоборот).
+    * ``COMPATIBLE`` — СИММЕТРИЧНАЯ «совместим с». Чтобы не плодить обратные
+      дубли (A↔B и B↔A), храним ребро в каноническом виде ``min(id) → max(id)``.
+
+    Канонизация делается в :meth:`clean` и :meth:`save`. ``bulk_create`` обходит
+    ``save()`` — массовый импорт совместимостей вне scope V1 (при добавлении
+    учесть канонизацию вручную).
+    """
+
+    source = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="compat_out",
+        verbose_name=_("Товар-источник"),
+    )
+    target = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="compat_in",
+        verbose_name=_("Связанный товар"),
+    )
+    kind = models.CharField(_("Тип связи"), max_length=20, choices=CompatibilityKind.choices)
+    note = models.CharField(_("Примечание"), max_length=512, blank=True)
+    sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
+
+    class Meta:
+        verbose_name = _("Связь совместимости товаров")
+        verbose_name_plural = _("Связи совместимости товаров")
+        ordering = ["sort_order", "id"]
+        constraints = [
+            UniqueConstraint(
+                fields=["source", "target", "kind"],
+                name="catalog_productcompat_uniq",
+            ),
+            CheckConstraint(
+                check=~Q(source=F("target")),
+                name="catalog_productcompat_no_self_link",
+            ),
+        ]
+        indexes = [
+            Index(fields=["source", "kind"]),
+            Index(fields=["target", "kind"]),
+        ]
+
+    def _canonicalize(self) -> None:
+        # COMPATIBLE симметричен → храним каноническим min(id)→max(id) (защита от
+        # обратных дублей). ACCESSORY направленный — не трогаем.
+        if (
+            self.kind == CompatibilityKind.COMPATIBLE
+            and self.source_id
+            and self.target_id
+            and self.source_id > self.target_id
+        ):
+            self.source_id, self.target_id = self.target_id, self.source_id
+
+    @classmethod
+    def canonical_pair(cls, source_id, target_id, kind):
+        """Каноническая пара (source_id, target_id) для данного вида связи."""
+        if (
+            kind == CompatibilityKind.COMPATIBLE
+            and source_id
+            and target_id
+            and source_id > target_id
+        ):
+            return target_id, source_id
+        return source_id, target_id
+
+    def clean(self):
+        self._canonicalize()
+        super().clean()
+
+    def save(self, *args, **kwargs):
+        self._canonicalize()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.source} → {self.target} ({self.get_kind_display()})"
 
 
 class ProductImage(models.Model):

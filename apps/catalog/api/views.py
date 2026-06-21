@@ -10,8 +10,12 @@ from apps.pricing.services import price_map_for_products
 
 from ..filters import ProductFilter, visible_products
 from ..models import Category, StockStatus
-from ..services import FacetError, build_facets
-from .serializers import ProductDetailSerializer, ProductListSerializer
+from ..services import FacetError, build_facets, compatibility_sections
+from .serializers import (
+    ProductDetailSerializer,
+    ProductListSerializer,
+    serialize_compat_item,
+)
 
 
 def build_category_tree(nodes) -> list:
@@ -101,6 +105,35 @@ class ProductDetailView(generics.RetrieveAPIView):
                 "attribute_values__attribute",
                 "attribute_values__value_option",
             )
+        )
+
+
+class ProductCompatibleView(APIView):
+    """Совместимость товара (#79): три секции — аксессуары, к чему подходит, совместимые.
+
+    Цены по всем товарам трёх секций считаются ОДНИМ bulk-запросом
+    (price_map_for_products), чтобы не было N+1 по опт-ценам.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug):
+        product = get_object_or_404(visible_products(), slug=slug)
+        sections = compatibility_sections(product)
+
+        # Все товары трёх секций → один price_map (дедуп по pk для bulk-резолвера).
+        all_products = {}
+        for items in sections.values():
+            for item in items:
+                all_products.setdefault(item.product.pk, item.product)
+        price_map = price_map_for_products(list(all_products.values()), request.user)
+        context = {"request": request, "price_map": price_map}
+
+        return Response(
+            {
+                name: [serialize_compat_item(item, context) for item in items]
+                for name, items in sections.items()
+            }
         )
 
 

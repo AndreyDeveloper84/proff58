@@ -8,14 +8,19 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from django.db.models import Count, Q
 
 from .models import (
     AttributeType,
     Category,
     CategoryAttribute,
+    CompatibilityKind,
     Product,
     ProductAttributeValue,
+    ProductCompatibility,
+    ProductStatus,
 )
 
 TOOL_TYPE_SLUG = "tool_type"
@@ -148,3 +153,99 @@ def tool_type_facets(category: Category) -> list[dict]:
         }
         for r in rows
     ]
+
+
+# ---------------------------------------------------------------------------
+# Совместимость товаров (#79): резолверы каталожных связей товар↔товар
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class CompatibilityItem:
+    """Элемент секции совместимости: связанный товар + метаданные ребра."""
+
+    product: Product
+    note: str
+    sort_order: int
+
+
+def accessories_of(product: Product) -> list[CompatibilityItem]:
+    """Аксессуары/оснастка/расходники К товару (ребра ACCESSORY, product=source).
+
+    Только видимые товары-аксессуары (is_active + PUBLISHED), порядок —
+    sort_order, затем id.
+    """
+    edges = (
+        ProductCompatibility.objects.filter(
+            source=product,
+            kind=CompatibilityKind.ACCESSORY,
+            target__is_active=True,
+            target__status=ProductStatus.PUBLISHED,
+        )
+        .select_related("target", "target__category")
+        .prefetch_related("target__images")
+        .order_by("sort_order", "id")
+    )
+    return [
+        CompatibilityItem(product=e.target, note=e.note, sort_order=e.sort_order) for e in edges
+    ]
+
+
+def fits_of(product: Product) -> list[CompatibilityItem]:
+    """Товары, К КОТОРЫМ подходит данный аксессуар (ACCESSORY, product=target).
+
+    Обратное направление accessories_of: для аксессуара показываем инструменты,
+    к которым он подходит. Только видимые источники.
+    """
+    edges = (
+        ProductCompatibility.objects.filter(
+            target=product,
+            kind=CompatibilityKind.ACCESSORY,
+            source__is_active=True,
+            source__status=ProductStatus.PUBLISHED,
+        )
+        .select_related("source", "source__category")
+        .prefetch_related("source__images")
+        .order_by("sort_order", "id")
+    )
+    return [
+        CompatibilityItem(product=e.source, note=e.note, sort_order=e.sort_order) for e in edges
+    ]
+
+
+def compatible_of(product: Product) -> list[CompatibilityItem]:
+    """Симметрично совместимые товары (COMPATIBLE; product как source ИЛИ target).
+
+    Ребро хранится канонически, поэтому ищем по обоим концам. Видимость второго
+    конца проверяем в Python (is_visible), т.к. он может быть и source, и target.
+    Дедуп по other.id (сохраняем первый встреченный порядок).
+    """
+    edges = (
+        ProductCompatibility.objects.filter(
+            Q(source=product) | Q(target=product),
+            kind=CompatibilityKind.COMPATIBLE,
+        )
+        .select_related("source", "target", "source__category", "target__category")
+        .prefetch_related("source__images", "target__images")
+        .order_by("sort_order", "id")
+    )
+    items: list[CompatibilityItem] = []
+    seen: set[int] = set()
+    for e in edges:
+        other = e.target if e.source_id == product.id else e.source
+        if not other.is_visible:
+            continue
+        if other.id in seen:
+            continue
+        seen.add(other.id)
+        items.append(CompatibilityItem(product=other, note=e.note, sort_order=e.sort_order))
+    return items
+
+
+def compatibility_sections(product: Product) -> dict[str, list[CompatibilityItem]]:
+    """Три секции совместимости товара одним вызовом."""
+    return {
+        "accessories": accessories_of(product),
+        "fits": fits_of(product),
+        "compatible": compatible_of(product),
+    }
