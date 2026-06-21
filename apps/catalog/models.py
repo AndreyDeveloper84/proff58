@@ -46,6 +46,7 @@ class Source(models.TextChoices):
     REGEX = "regex", _("Regex по названию")
     KEYWORD = "keyword", _("Ключевое слово")
     LLM = "llm", _("AI/LLM")
+    INFERRED = "inferred", _("Инференс по атрибутам")
 
 
 class Category(MP_Node):

@@ -208,6 +208,32 @@ def test_ushm_model_extraction_guards(rules):
     assert "disc_diameter" not in _ushm(rules, "Круг лепестковый Aggressor 125")
 
 
+def test_power_source_inferred_mains_when_corded(rules):
+    # Сетевая УШМ без слова «сетевой»: есть power, нет voltage/АКБ → инференс «Сеть».
+    for name in ("Шлифмаш угл ИНТЕРСКОЛ УШМ-125/1100", "Шлифмаш угл DENZEL AG125-1500"):
+        ps = _ushm(rules, name).get("power_source")
+        assert ps is not None and ps.option_slug == "mains" and ps.source == "inferred"
+
+
+def test_power_source_inference_skips_cordless(rules):
+    # Аккумуляторная (есть voltage/АКБ) → инференс «Сеть» НЕ срабатывает.
+    f1 = _ushm(rules, "Шлифмаш угл аккум DENZEL AG125-18V, 1х4.0Ач")
+    assert f1["power_source"].option_slug == "battery" and f1["power_source"].source == "keyword"
+    f2 = _ushm(rules, "Шлифмаш угл STURM CAG18125 18В, 125мм")
+    assert f2.get("power_source") is None or f2["power_source"].option_slug != "mains"
+
+
+def test_power_source_explicit_keyword_not_overridden(rules):
+    # Явное «сетевой» → keyword mains (не inferred, без дубля).
+    ps = _ushm(rules, "Шлифмаш угл сетевой ИНТЕРСКОЛ УШМ-125/1100").get("power_source")
+    assert ps.option_slug == "mains" and ps.source == "keyword"
+
+
+def test_power_source_inference_requires_power(rules):
+    # Нет power (только Ø) → инференс молчит (requires_present не выполнен).
+    assert _ushm(rules, "Шлифмаш угл 125мм").get("power_source") is None
+
+
 def test_ushm_no_load_speed_takes_max_in_range(rules):
     # «2800-11000 об/мин» → берём максимум 11000, не 2800.
     assert _ushm(rules, "УШМ 900Вт, 2800-11000 об/мин").get("no_load_speed").number == Decimal(

@@ -6,7 +6,8 @@
     "import_1c": 60,
     "regex": 40,
     "keyword": 30,
-    "llm": 20
+    "llm": 20,
+    "inferred": 10
   },
   "tool_types": [
     {
@@ -33,6 +34,25 @@
               "keywords": ["сетев", "от сети", "220 в", "220в"]
             }
           ]
+        },
+        {
+          "slug": "power_source",
+          "name": "Питание",
+          "kind": "select",
+          "source": "inferred",
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Сеть",
+              "slug": "mains"
+            }
+          ],
+          "derive": {
+            "set_option": "mains",
+            "requires_present": ["power"],
+            "requires_absent": ["voltage", "battery_capacity"]
+          }
         },
         {
           "slug": "voltage",
@@ -147,6 +167,25 @@
               "keywords": ["сетев", "от сети", "220 в", "220в"]
             }
           ]
+        },
+        {
+          "slug": "power_source",
+          "name": "Питание",
+          "kind": "select",
+          "source": "inferred",
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Сеть",
+              "slug": "mains"
+            }
+          ],
+          "derive": {
+            "set_option": "mains",
+            "requires_present": ["power"],
+            "requires_absent": ["voltage", "battery_capacity"]
+          }
         },
         {
           "slug": "voltage",
@@ -294,6 +333,25 @@
               "keywords": ["сетев", "от сети", "220 в", "220в"]
             }
           ]
+        },
+        {
+          "slug": "power_source",
+          "name": "Питание",
+          "kind": "select",
+          "source": "inferred",
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Сеть",
+              "slug": "mains"
+            }
+          ],
+          "derive": {
+            "set_option": "mains",
+            "requires_present": ["power"],
+            "requires_absent": ["voltage", "battery_capacity"]
+          }
         },
         {
           "slug": "voltage",
