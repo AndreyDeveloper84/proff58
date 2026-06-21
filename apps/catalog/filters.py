@@ -28,6 +28,9 @@ class ProductFilter(django_filters.FilterSet):
     # tool_type — вторая ось навигации (slug варианта атрибута), in_stock — наличие.
     tool_type = django_filters.CharFilter(method="filter_tool_type")
     in_stock = django_filters.CharFilter(method="filter_in_stock")
+    # Диапазон розничной цены (PLP-фасет «Цена»): price_min / price_max.
+    price_min = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
+    price_max = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
     # Поиск по каталогу (#52): index-accelerated lookups + trigram (typo-tolerance).
     search = django_filters.CharFilter(method="filter_search")
 

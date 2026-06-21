@@ -65,6 +65,32 @@ services:
       retries: 3
       start_period: 40s
 
+  frontend:
+    # Headless-витрина Next (SSR). Тянет реальные данные из Django-API внутри сети compose.
+    build:
+      context: ./frontend
+    restart: always
+    environment:
+      NODE_ENV: production
+      CATALOG_API_BASE: http://web:8000
+    depends_on:
+      web:
+        condition: service_healthy
+    expose:
+      - "3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   celery:
     build:
       context: .
@@ -126,6 +152,8 @@ services:
       - ./logs:/var/log/nginx
     depends_on:
       web:
+        condition: service_healthy
+      frontend:
         condition: service_healthy
 
 volumes:

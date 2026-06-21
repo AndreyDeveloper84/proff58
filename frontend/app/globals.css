@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Бренд-токены «Профессионал» — ровно из ТЗ (раздел 2).
+  --accent / --primary приходят из SiteSettings.accent_color / primary_color:
+  перекраска экземпляра магазина = смена ЭТИХ переменных, без правки компонентов.
+  В компонентах цвета берём только через var(--…) / соответствующие утилиты ниже.
+*/
+:root {
+  color-scheme: dark;
+
+  /* поверхности (тёмная тема) */
+  --bg: #0e1113;
+  --surface: #16191c;
+  --surface-raised: #1e2226;
+  --border: #2a2f34;
+
+  /* текст */
+  --text: #f2f4f5;
+  --text-secondary: #aeb6bc;
+  --text-muted: #6e767c;
+
+  /* бренд — дефолты, перекрываются из SiteSettings */
+  --accent: #b5e61d; /* CTA, активные состояния */
+  --accent-ink: #1a2400; /* текст на --accent */
+  --primary: #00a14b; /* ссылки, «в наличии», иконки */
+
+  /* семантика */
+  --danger: #e5484d; /* скидка, нет в наличии */
+  --rating: #e6b45a; /* звёзды (намеренно не зелёные) */
+
+  /* фото-зона карточки — светлая, чтобы товар читался на тёмном каталоге */
+  --photo: #eef1f3;
+  --photo-ink: #8b939a;
+
+  /* статусы заказа (бейджи ЛК/опс) */
+  --st-wait: #e6b45a;
+  --st-confirm: #74b6ee;
+  --st-assemble: #c2acf2;
+  --st-ship: #74b6ee;
+  --st-done: #7fd9bc;
+  --st-cancel: #ec8c88;
+
+  /* радиусы */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+}
+
+/*
+  Маппинг бренд-токенов в Tailwind v4 утилиты (имена без коллизий с shadcn-семантикой).
+  Утилиты: bg-canvas, bg-surface, bg-raised, border-line, text-ink, text-ink-2,
+  text-ink-3, text/bg-accent, text-accent-ink, text/bg-brand, text/bg-danger, text-rating,
+  font-display, шкала радиусов.
+*/
+@theme inline {
+  --color-canvas: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--surface-raised);
+  --color-line: var(--border);
+
+  --color-ink: var(--text);
+  --color-ink-2: var(--text-secondary);
+  --color-ink-3: var(--text-muted);
+
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-brand: var(--primary);
+
+  --color-danger: var(--danger);
+  --color-rating: var(--rating);
+
+  --color-photo: var(--photo);
+  --color-photo-ink: var(--photo-ink);
+
+  --color-st-wait: var(--st-wait);
+  --color-st-confirm: var(--st-confirm);
+  --color-st-assemble: var(--st-assemble);
+  --color-st-ship: var(--st-ship);
+  --color-st-done: var(--st-done);
+  --color-st-cancel: var(--st-cancel);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-oswald);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-inter), system-ui, sans-serif;
+  }
+  /* Видимый фокус с клавиатуры (a11y). */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}

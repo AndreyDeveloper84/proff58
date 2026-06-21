@@ -1,0 +1,141 @@
+{
+  "category": {
+    "title": "Перфораторы",
+    "intro": "Профессиональные решения для бурения и долбления в любых условиях. Надёжные модели от ведущих производителей с разной энергией удара и функциональностью.",
+    "breadcrumb": [
+      { "label": "Главная", "href": "/" },
+      { "label": "Электроинструмент", "href": "/catalog/elektroinstrument" },
+      { "label": "Перфораторы", "href": "/catalog/perforatory" }
+    ]
+  },
+  "promo": {
+    "title": "Акция месяца",
+    "subtitle": "Скидки до 20% на выделенную серию перфораторов",
+    "href": "#"
+  },
+  "subcategories": [
+    { "label": "SDS-Plus", "href": "?chuck=sds-plus" },
+    { "label": "SDS-Max", "href": "?chuck=sds-max" },
+    { "label": "В наличии", "href": "?stock=in" },
+    { "label": "До 10 000 ₽", "href": "?price_max=10000" }
+  ],
+  "sort": [
+    { "value": "popular", "label": "Популярные" },
+    { "value": "price_asc", "label": "Сначала дешёвые" },
+    { "value": "price_desc", "label": "Сначала дорогие" },
+    { "value": "new", "label": "Новинки" },
+    { "value": "rating", "label": "По рейтингу" }
+  ],
+  "total": 12,
+  "page": 1,
+  "perPage": 24,
+  "facets": [
+    { "code": "price", "label": "Цена, ₽", "type": "range", "min": 7990, "max": 41990, "unit": "₽" },
+    {
+      "code": "stock",
+      "label": "Наличие",
+      "type": "checkbox",
+      "options": [
+        { "value": "in", "label": "В наличии", "count": 0, "selected": false },
+        { "value": "order", "label": "Под заказ", "count": 0, "selected": false },
+        { "value": "out", "label": "Нет в наличии", "count": 0, "selected": false }
+      ]
+    },
+    {
+      "code": "brand",
+      "label": "Бренд",
+      "type": "checkbox",
+      "options": [
+        { "value": "bosch", "label": "Bosch", "count": 0, "selected": false },
+        { "value": "makita", "label": "Makita", "count": 0, "selected": false },
+        { "value": "dewalt", "label": "DeWalt", "count": 0, "selected": false },
+        { "value": "metabo", "label": "Metabo", "count": 0, "selected": false },
+        { "value": "interskol", "label": "Интерскол", "count": 0, "selected": false }
+      ]
+    },
+    { "code": "energy_impact", "label": "Энергия удара, Дж", "type": "slider", "min": 2, "max": 9, "unit": "Дж" },
+    {
+      "code": "chuck",
+      "label": "Тип патрона",
+      "type": "checkbox",
+      "options": [
+        { "value": "sds-plus", "label": "SDS-Plus", "count": 0, "selected": false },
+        { "value": "sds-max", "label": "SDS-Max", "count": 0, "selected": false }
+      ]
+    }
+  ],
+  "products": [
+    {
+      "id": 1, "slug": "bosch-gbh-2-26-dre", "name": "Перфоратор Bosch GBH 2-26 DRE", "brand": "Bosch",
+      "rating": 4.7, "reviews": 128, "energy": "2.7 Дж", "power": "800 Вт", "chuck": "SDS-Plus",
+      "specs": [{ "label": "Мощность", "value": "800 Вт" }, { "label": "Энергия удара", "value": "2.7 Дж" }, { "label": "Патрон", "value": "SDS-Plus" }],
+      "price": { "final": 12990, "old": 15490, "discountPct": 16, "currency": "RUB" }, "stock": "in", "stockQty": 14, "badges": ["hit", "sale"]
+    },
+    {
+      "id": 2, "slug": "makita-hr2470", "name": "Перфоратор Makita HR2470", "brand": "Makita",
+      "rating": 4.5, "reviews": 64, "energy": "2.4 Дж", "power": "780 Вт", "chuck": "SDS-Plus",
+      "specs": [{ "label": "Мощность", "value": "780 Вт" }, { "label": "Энергия удара", "value": "2.4 Дж" }, { "label": "Патрон", "value": "SDS-Plus" }],
+      "price": { "final": 10490, "currency": "RUB" }, "stock": "order", "badges": ["new"]
+    },
+    {
+      "id": 3, "slug": "dewalt-d25133k", "name": "Перфоратор DeWalt D25133K", "brand": "DeWalt",
+      "rating": 4.7, "reviews": 96, "energy": "2.7 Дж", "power": "800 Вт", "chuck": "SDS-Plus",
+      "specs": [{ "label": "Мощность", "value": "800 Вт" }, { "label": "Энергия удара", "value": "2.7 Дж" }, { "label": "Патрон", "value": "SDS-Plus" }],
+      "price": { "final": 13990, "currency": "RUB" }, "stock": "out", "badges": []
+    },
+    {
+      "id": 4, "slug": "bosch-gbh-2-28-f", "name": "Перфоратор Bosch GBH 2-28 F", "brand": "Bosch",
+      "rating": 4.8, "reviews": 210, "energy": "3.2 Дж", "power": "880 Вт", "chuck": "SDS-Plus",
+      "specs": [{ "label": "Мощность", "value": "880 Вт" }, { "label": "Энергия удара", "value": "3.2 Дж" }, { "label": "Патрон", "value": "SDS-Plus" }],
+      "price": { "final": 17990, "old": 19990, "discountPct": 10, "currency": "RUB" }, "stock": "in", "stockQty": 6, "badges": ["hit", "sale"]
+    },
+    {
+      "id": 5, "slug": "metabo-khe-2660-quick", "name": "Перфоратор Metabo KHE 2660 Quick", "brand": "Metabo",
+      "rating": 4.6, "reviews": 50, "energy": "2.9 Дж", "power": "850 Вт", "chuck": "SDS-Plus",
+      "specs": [{ "label": "Мощность", "value": "850 Вт" }, { "label": "Энергия удара", "value": "2.9 Дж" }, { "label": "Патрон", "value": "SDS-Plus" }],
+      "price": { "final": 16490, "currency": "RUB" }, "stock": "in", "stockQty": 9, "badges": []
+    },
+    {
+      "id": 6, "slug": "interskol-p-26-800er", "name": "Перфоратор Интерскол П-26/800ЭР", "brand": "Интерскол",
+      "rating": 4.5, "reviews": 56, "energy": "2.7 Дж", "power": "800 Вт", "chuck": "SDS-Plus",
+      "specs": [{ "label": "Мощность", "value": "800 Вт" }, { "label": "Энергия удара", "value": "2.7 Дж" }, { "label": "Патрон", "value": "SDS-Plus" }],
+      "price": { "final": 7990, "old": 8990, "discountPct": 11, "currency": "RUB" }, "stock": "in", "stockQty": 21, "badges": ["sale"]
+    },
+    {
+      "id": 7, "slug": "makita-hr4013c", "name": "Перфоратор Makita HR4013C", "brand": "Makita",
+      "rating": 4.9, "reviews": 74, "energy": "8.0 Дж", "power": "1100 Вт", "chuck": "SDS-Max",
+      "specs": [{ "label": "Мощность", "value": "1100 Вт" }, { "label": "Энергия удара", "value": "8.0 Дж" }, { "label": "Патрон", "value": "SDS-Max" }],
+      "price": { "final": 38990, "currency": "RUB" }, "stock": "order", "badges": ["hit"]
+    },
+    {
+      "id": 8, "slug": "bosch-gbh-5-40-dce", "name": "Перфоратор Bosch GBH 5-40 DCE", "brand": "Bosch",
+      "rating": 4.9, "reviews": 41, "energy": "8.8 Дж", "power": "1150 Вт", "chuck": "SDS-Max",
+      "specs": [{ "label": "Мощность", "value": "1150 Вт" }, { "label": "Энергия удара", "value": "8.8 Дж" }, { "label": "Патрон", "value": "SDS-Max" }],
+      "price": { "final": 37990, "currency": "RUB" }, "stock": "in", "stockQty": 4, "badges": []
+    },
+    {
+      "id": 9, "slug": "dewalt-d25481k", "name": "Перфоратор DeWalt D25481K", "brand": "DeWalt",
+      "rating": 4.7, "reviews": 33, "energy": "6.1 Дж", "power": "1050 Вт", "chuck": "SDS-Max",
+      "specs": [{ "label": "Мощность", "value": "1050 Вт" }, { "label": "Энергия удара", "value": "6.1 Дж" }, { "label": "Патрон", "value": "SDS-Max" }],
+      "price": { "final": 32990, "old": 35990, "discountPct": 8, "currency": "RUB" }, "stock": "in", "stockQty": 3, "badges": ["sale"]
+    },
+    {
+      "id": 10, "slug": "metabo-khe-5-40", "name": "Перфоратор Metabo KHE 5-40", "brand": "Metabo",
+      "rating": 4.7, "reviews": 28, "energy": "8.7 Дж", "power": "1100 Вт", "chuck": "SDS-Max",
+      "specs": [{ "label": "Мощность", "value": "1100 Вт" }, { "label": "Энергия удара", "value": "8.7 Дж" }, { "label": "Патрон", "value": "SDS-Max" }],
+      "price": { "final": 41990, "currency": "RUB" }, "stock": "out", "badges": []
+    },
+    {
+      "id": 11, "slug": "makita-dhr243z", "name": "Перфоратор аккумуляторный Makita DHR243Z", "brand": "Makita",
+      "rating": 4.6, "reviews": 39, "energy": "2.0 Дж", "chuck": "SDS-Plus",
+      "specs": [{ "label": "Энергия удара", "value": "2.0 Дж" }, { "label": "Патрон", "value": "SDS-Plus" }, { "label": "Питание", "value": "18 В аккумулятор" }],
+      "price": { "currency": "RUB" }, "stock": "order", "badges": ["new"]
+    },
+    {
+      "id": 12, "slug": "interskol-p-30-900er", "name": "Перфоратор Интерскол П-30/900ЭР", "brand": "Интерскол",
+      "rating": 4.4, "reviews": 45, "energy": "3.5 Дж", "power": "900 Вт", "chuck": "SDS-Plus",
+      "specs": [{ "label": "Мощность", "value": "900 Вт" }, { "label": "Энергия удара", "value": "3.5 Дж" }, { "label": "Патрон", "value": "SDS-Plus" }],
+      "price": { "final": 9490, "currency": "RUB" }, "stock": "in", "stockQty": 17, "badges": []
+    }
+  ]
+}
