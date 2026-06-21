@@ -23,10 +23,6 @@ DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 
 INSTALLED_APPS = [
-    # Современная тема админки (должна идти перед django.contrib.admin).
-    "unfold",
-    "unfold.contrib.filters",
-    "unfold.contrib.forms",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -119,31 +115,6 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# Тема админки django-unfold. Бренд «Профессионал» — синяя палитра brand-*.
-UNFOLD = {
-    "SITE_TITLE": "Профессионал — админка",
-    "SITE_HEADER": "Профессионал",
-    "SITE_SUBHEADER": "Каталог · заказы · обмен с 1С",
-    "SITE_SYMBOL": "construction",
-    "SHOW_HISTORY": True,
-    "SHOW_VIEW_ON_SITE": True,
-    "COLORS": {
-        "primary": {
-            "50": "239 245 255",
-            "100": "219 232 254",
-            "200": "191 215 254",
-            "300": "147 187 253",
-            "400": "96 148 250",
-            "500": "59 112 246",
-            "600": "21 88 176",
-            "700": "26 71 160",
-            "800": "27 61 130",
-            "900": "28 55 107",
-            "950": "21 35 71",
-        },
-    },
-}
 
 # Celery / Redis
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/0")

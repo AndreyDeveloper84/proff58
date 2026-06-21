@@ -6,6 +6,5 @@ redis==5.0.4
 django-environ==0.11.2
 django-filter==24.2
 django-treebeard==4.7.1
-django-unfold==0.90.0
 Pillow==10.3.0
 gunicorn==22.0.0
