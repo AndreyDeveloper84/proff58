@@ -181,6 +181,8 @@ def price_for(product_id: int, user=None, qty: int = 1) -> PriceResult:
 > владеет моделью. Таблица сохраняет историческое имя `sync_1c_pricerecord`
 > (`db_table`), данные не переносились — сменился только владелец модели
 > в Django (миграции SeparateDatabaseAndState, Фаза 1 рефакторинга).
+> `sync_1c` не пишет `PriceRecord` напрямую; запись истории цены идёт через
+> контракт `apps.pricing.repositories` (см. #152, arch-тест это проверяет).
 
 ### 4.2 `orders.services`
 ```python
