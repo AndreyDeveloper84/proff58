@@ -93,14 +93,38 @@ def extracted_value_to_json(attribute, av, option=None):
     )
 
 
-def rebuild_attrs_cache(product: Product) -> dict:
-    """Пересобрать Product.attrs_cache из EAV-значений. Идемпотентно."""
+def _cache_from_pavs(pavs) -> dict:
+    """Собрать словарь attrs_cache из итерируемого набора PAV (единая логика сборки)."""
     cache: dict = {}
-    for pav in product.attribute_values.select_related("attribute", "value_option"):
+    for pav in pavs:
         value = attr_value_to_json(pav)
         # Пустые значения не кладём; boolean False — валидное значение, сохраняем.
         if value is not None and value != "":
             cache[pav.attribute.slug] = value
+    return cache
+
+
+def build_attrs_cache(product: Product) -> dict:
+    """Собрать словарь attrs_cache из EAV-значений товара (БЕЗ сохранения).
+
+    Итерируется по ``product.attribute_values.all()``: если вызывающий заранее сделал
+    ``prefetch_related("attribute_values__attribute", "attribute_values__value_option")``
+    (батч-команда), Django отдаст значения из prefetch-кэша — без N+1. Для одиночного
+    пути без prefetch (сигналы) ``.all()`` выполнит один запрос на PAV, но тогда
+    обращение к ``attribute``/``value_option`` даст доп. запросы — поэтому одиночный
+    :func:`rebuild_attrs_cache` использует select_related-вариант, см. ниже.
+    """
+    return _cache_from_pavs(product.attribute_values.all())
+
+
+def rebuild_attrs_cache(product: Product) -> dict:
+    """Пересобрать Product.attrs_cache из EAV-значений и сохранить. Идемпотентно.
+
+    Зовётся сигналами и тестами — поведение НЕ меняется. Чтобы одиночный путь не
+    порождал N+1 (как и прежняя реализация), читаем PAV одним запросом с
+    ``select_related("attribute", "value_option")``; сборка — общая с батчем.
+    """
+    cache = _cache_from_pavs(product.attribute_values.select_related("attribute", "value_option"))
     product.attrs_cache = cache
     product.save(update_fields=["attrs_cache"])
     return cache
