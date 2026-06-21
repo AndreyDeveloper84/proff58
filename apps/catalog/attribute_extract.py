@@ -135,36 +135,31 @@ class AttributeRules:
         """
         norm = normalize(name)
         out: list[AttrValue] = []
-        derive_rules: list[AttrRule] = []
         for rule in self.rules_for(tool_type_slug):
-            if rule.derive is not None:
-                derive_rules.append(rule)
-                continue
             value = self._extract_one(rule, norm)
             if value is not None:
                 out.append(value)
-        if derive_rules:
-            present = {v.slug for v in out}
-            for rule in derive_rules:
-                value = self._derive_one(rule, present)
-                if value is not None:
-                    out.append(value)
-                    present.add(value.slug)
+        present = {v.slug for v in out}
+        for rule in self.rules_for(tool_type_slug):
+            if rule.derive is None or rule.slug in present:
+                continue
+            value = self._derive_one(rule, present)
+            if value is not None:
+                out.append(value)
+                present.add(value.slug)
         return out
 
-    @staticmethod
-    def _derive_one(rule: AttrRule, present: set[str]) -> AttrValue | None:
+    def _derive_one(self, rule: AttrRule, present: set[str]) -> AttrValue | None:
         """Инференс select-значения по наличию/отсутствию других атрибутов.
 
-        Срабатывает (заполняет пробел), если:
-        * свой slug ещё НЕ извлечён (не перетираем regex/keyword/1С);
+        Фолбэк того же правила: если keyword/regex ничего не дали (свой slug ещё
+        НЕ извлечён), значение выводится из соседних атрибутов. Срабатывает, если:
         * все ``requires_present`` присутствуют;
         * ни один ``requires_absent`` не присутствует.
-        Источник ``inferred`` — слабейший приоритет, корректируется 1С/ручным.
+        Источник берётся из ``derive.source`` (по умолчанию ``inferred`` —
+        слабейший приоритет, корректируется keyword/1С/ручным).
         """
         d = rule.derive or {}
-        if rule.slug in present:
-            return None
         if any(s not in present for s in d.get("requires_present", [])):
             return None
         if any(s in present for s in d.get("requires_absent", [])):
@@ -172,11 +167,12 @@ class AttributeRules:
         opt = next((o for o in rule.options if o.slug == d.get("set_option")), None)
         if opt is None:
             return None
+        source = d.get("source", "inferred")
         return AttrValue(
             slug=rule.slug,
             kind=SELECT,
-            source=rule.source,
-            priority=rule.priority,
+            source=source,
+            priority=self.source_priority.get(source, 0),
             option_slug=opt.slug,
             option_value=opt.value,
             unit=rule.unit,
