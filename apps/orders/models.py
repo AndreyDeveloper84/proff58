@@ -69,11 +69,22 @@ class Order(TimeStampedModel):
         help_text=_("Человекочитаемый уникальный номер, генерируется при оформлении."),
     )
     external_order_id = models.CharField(  # noqa: DJ001 — null отличает «не выгружен» от пустого
-        _("Номер заказа в 1С"),
+        _("ID заказа в 1С"),
         max_length=64,
         null=True,
         blank=True,
-        help_text=_("Заполняется 1С при выгрузке (sync_1c_status=exported). В #26 пуст."),
+        help_text=_("Стабильный технический идентификатор документа 1С (onec_order_id)."),
+    )
+    external_order_number = models.CharField(
+        _("Номер документа 1С"),
+        max_length=64,
+        blank=True,
+        help_text=_("Человекочитаемый номер документа 1С, напр. УТ-000987."),
+    )
+    tracking_number = models.CharField(
+        _("Трек-номер доставки"),
+        max_length=128,
+        blank=True,
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -152,6 +163,12 @@ class Order(TimeStampedModel):
         null=True,
         blank=True,
         help_text=_("Задел под механику резерва (#8). В #26 всегда пуст."),
+    )
+    exported_at = models.DateTimeField(
+        _("Дата выгрузки в 1С"),
+        null=True,
+        blank=True,
+        help_text=_("Момент первого подтверждения приёма заказа в 1С (sync_1c_status=exported)."),
     )
 
     class Meta:

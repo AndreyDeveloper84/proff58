@@ -8,9 +8,10 @@ from django.test import override_settings
 from rest_framework.test import APIClient
 
 from apps.catalog.models import Product, ProductStatus
+from apps.pricing.models import PriceRecord
 from apps.sync_1c import use_cases
 from apps.sync_1c.api.parsers import OneCJSONParser
-from apps.sync_1c.models import PriceRecord, SyncLog
+from apps.sync_1c.models import SyncLog
 
 API_KEY = "test-key-123"
 EAGER = {"CELERY_TASK_ALWAYS_EAGER": True, "CELERY_TASK_EAGER_PROPAGATES": True}
@@ -104,13 +105,14 @@ def test_products_import_cp1251_without_charset_header(auth_client):
 @pytest.mark.django_db
 def test_response_encoded_in_cp1251(auth_client):
     """Ответы 1С-эндпоинтов отдаются в Windows-1251 (1С читает их как cp1251)."""
-    resp = auth_client.get("/api/1c/orders/new")  # detail с кириллицей
-    assert resp.status_code == 501
+    # detail с кириллицей: невалидный limit у snapshot отдаёт текст ошибки.
+    resp = auth_client.get("/api/1c/snapshot/?limit=0")
+    assert resp.status_code == 400
     assert "charset=windows-1251" in resp["Content-Type"].lower()
     # тело реально в cp1251, а не в utf-8
-    assert "Модуль заказов".encode("cp1251") in resp.content
-    assert "Модуль заказов".encode() not in resp.content
-    assert "Модуль заказов" in resp.content.decode("cp1251")
+    assert "должен быть положительным".encode("cp1251") in resp.content
+    assert "должен быть положительным".encode() not in resp.content
+    assert "должен быть положительным" in resp.content.decode("cp1251")
 
 
 @override_settings(ONEC_API_KEY=API_KEY, **EAGER)
@@ -243,9 +245,15 @@ def test_stocks_update_zero_stock_is_valid(auth_client):
 
 @override_settings(ONEC_API_KEY=API_KEY)
 @pytest.mark.django_db
-def test_orders_endpoints_are_stubbed(auth_client):
-    assert auth_client.get("/api/1c/orders/new").status_code == 501
-    assert auth_client.post("/api/1c/orders/confirm", {}, format="json").status_code == 501
+def test_orders_endpoints_implemented(auth_client):
+    """orders/new и orders/confirm реализованы (#50): не 501.
+
+    Подробное покрытие — в test_orders_api.py."""
+    assert auth_client.get("/api/1c/orders/new").status_code == 200
+    # пустой батч → 400 (валидация конверта), а не 501
+    assert (
+        auth_client.post("/api/1c/orders/confirm", {"items": []}, format="json").status_code == 400
+    )
 
 
 @override_settings(ONEC_API_KEY="")

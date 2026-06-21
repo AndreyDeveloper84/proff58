@@ -6,8 +6,8 @@
   POST /api/1c/products/update   — обновление базовых полей (без категорий/SEO)
   POST /api/1c/prices/update     — обновление цен
   POST /api/1c/stocks/update     — обновление остатков
-  GET  /api/1c/orders/new        — забор новых заказов (заглушка, M4)
-  POST /api/1c/orders/confirm    — подтверждение заказа из 1С (заглушка, M4)
+  GET  /api/1c/orders/new        — забор новых заказов сайтом (#50)
+  POST /api/1c/orders/confirm    — подтверждение приёма/статусов из 1С (#50)
 
 Авторизация — заголовок X-Api-Key (см. permissions.HasOneCApiKey).
 """
@@ -31,6 +31,7 @@ from .parsers import OneCJSONParser
 from .permissions import HasOneCApiKey
 from .renderers import OneCJSONRenderer
 from .serializers import (
+    OrderConfirmItemSerializer,
     PriceItemSerializer,
     ProductImportItemSerializer,
     StockItemSerializer,
@@ -154,25 +155,36 @@ def stocks_update(request):
     return _import_response(sync_log, result)
 
 
-# --- Заказы: контракт зафиксирован, реализация — в M4 (EPIC-CHECKOUT) ---
-
-_ORDERS_PENDING = {
-    "detail": "Модуль заказов будет реализован в M4 (EPIC-CHECKOUT). Контракт зафиксирован."
-}
+# --- Заказы (#50): выгрузка в 1С и приём статусов (контракт §5.6) ---
 
 
 @api_view(["GET"])
 @permission_classes([HasOneCApiKey])
 @renderer_classes([OneCJSONRenderer])
 def orders_new(_request):
-    return Response(_ORDERS_PENDING, status=status.HTTP_501_NOT_IMPLEMENTED)
+    """Отдать новые заказы (sync_1c_status=pending) для забора 1С.
+
+    sync_1c_status НЕ меняется на GET (at-least-once): заказ остаётся pending,
+    пока 1С не подтвердит приём через /orders/confirm.
+    """
+    _sync_log, items = use_cases.export_new_orders(settings.ONEC_MAX_ITEMS)
+    return Response({"items": items}, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])
 @permission_classes([HasOneCApiKey])
 @renderer_classes([OneCJSONRenderer])
-def orders_confirm(_request):
-    return Response(_ORDERS_PENDING, status=status.HTTP_501_NOT_IMPLEMENTED)
+@parser_classes([OneCJSONParser])
+def orders_confirm(request):
+    """Принять подтверждения 1С: sync-ack + движение оси обработки."""
+    items, error = _validate_items(request, OrderConfirmItemSerializer)
+    if error:
+        return error
+    sync_log, results = use_cases.confirm_orders(items)
+    return Response(
+        {"items": results, "batch_uid": str(sync_log.batch_uid)},
+        status=status.HTTP_200_OK,
+    )
 
 
 # --- Снимок позиций: 1С забирает актуальные цены/остатки и сравнивает у себя ---

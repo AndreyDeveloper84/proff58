@@ -34,6 +34,7 @@ from apps.catalog.models import (
     ProductAttributeValue,
     Source,
 )
+from apps.catalog.read_models import extracted_value_to_json
 
 BATCH = 1000
 TOOL_TYPE_SLUG = "tool_type"
@@ -153,7 +154,7 @@ class Command(BaseCommand):
                             self._apply_value(pav, av, option)
                             pav_update.append(pav)
 
-                        cache[av.slug] = self._cache_value(av, option)
+                        cache[av.slug] = extracted_value_to_json(attribute, av, option)
                         cache_changed = True
                         stats["by_attribute"][av.slug] = stats["by_attribute"].get(av.slug, 0) + 1
 
@@ -223,14 +224,3 @@ class Command(BaseCommand):
             pav.value_option = option
         elif av.kind == BOOLEAN:
             pav.value_boolean = av.boolean
-
-    @staticmethod
-    def _cache_value(av, option):
-        """JSON-safe значение для attrs_cache (как attr_value_to_json)."""
-        if av.kind == NUMBER:
-            return float(av.number) if av.number is not None else None
-        if av.kind == SELECT:
-            return option.value if option else None
-        if av.kind == BOOLEAN:
-            return av.boolean
-        return None

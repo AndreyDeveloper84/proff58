@@ -72,17 +72,21 @@ class ProductListSerializer(serializers.ModelSerializer):
         return ""  # реальное значение проставляется в to_representation (один price_for на товар)
 
     def to_representation(self, instance):
-        """Цену отдаём ТОЛЬКО через pricing.price_for (ADR-0006), один вызов на товар.
+        """Цену отдаём ТОЛЬКО через pricing (ADR-0006).
 
-        Для B2C/анонима price_for не ходит в БД (Product.price). Для B2B — 1 запрос
-        на товар.
-        TODO(pricing): для B2B-листингов сделать bulk price resolver (префетч оптовых
-        PriceRecord одним запросом), чтобы каталог не делал N запросов.
+        В листинге view кладёт в context bulk ``price_map`` (опт-цены одним
+        запросом) — берём готовый PriceResult оттуда. Вне листинга (карточка и
+        пр.) ``price_map`` нет — фолбэк на поэлементный ``price_for``: для
+        B2C/анонима без БД (Product.price), для B2B — 1 запрос.
         """
         data = super().to_representation(instance)
         request = self.context.get("request")
         user = getattr(request, "user", None) if request is not None else None
-        result = price_for(instance, user)
+        price_map = self.context.get("price_map")
+        if price_map is not None and instance.pk in price_map:
+            result = price_map[instance.pk]
+        else:
+            result = price_for(instance, user)
         data["price"] = _money(result.final)
         data["old_price"] = (
             _money(instance.old_price) if result.price_type == RETAIL and result.discount else None
@@ -126,3 +130,14 @@ class ProductDetailSerializer(ProductListSerializer):
         crumbs = [{"name": c.name, "slug": c.slug} for c in cat.get_ancestors()]
         crumbs.append({"name": cat.name, "slug": cat.slug})
         return crumbs
+
+
+def serialize_compat_item(item, context) -> dict:
+    """Элемент секции совместимости (#79): товар как в листинге + плоское ``note``.
+
+    Цена берётся через ProductListSerializer (context должен содержать price_map,
+    собранный одним bulk-запросом по всем товарам секций).
+    """
+    data = ProductListSerializer(item.product, context=context).data
+    data["note"] = item.note
+    return data

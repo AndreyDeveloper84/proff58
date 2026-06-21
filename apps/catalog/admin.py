@@ -7,8 +7,8 @@ from treebeard.admin import TreeAdmin
 from treebeard.forms import movenodeform_factory
 
 from apps.core.events import EventSource, product_created, product_updated
+from apps.pricing.models import PriceRecord
 from apps.pricing.services import WHOLESALE, price_for
-from apps.sync_1c.models import PriceRecord
 
 from .models import (
     Attribute,
@@ -21,6 +21,7 @@ from .models import (
     ImportRun,
     Product,
     ProductAttributeValue,
+    ProductCompatibility,
     ProductImage,
     ProductStatus,
     Source,
@@ -250,6 +251,45 @@ class CurrentPriceInline(admin.TabularInline):
         return False
 
 
+class ProductCompatibilityInline(admin.TabularInline):
+    """Исходящие связи совместимости (товар = source): аксессуары и «совместим с»."""
+
+    model = ProductCompatibility
+    fk_name = "source"
+    extra = 1
+    autocomplete_fields = ["target"]
+    fields = ("target", "kind", "note", "sort_order")
+    verbose_name = _("Связь совместимости (исходящая)")
+    verbose_name_plural = _("Связи совместимости (исходящие)")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("target")
+
+
+class ProductCompatibilityIncomingInline(admin.TabularInline):
+    """Входящие связи (товар = target) — только просмотр: «к чему подходит / с чем совместим»."""
+
+    model = ProductCompatibility
+    fk_name = "target"
+    extra = 0
+    fields = ("source", "kind", "note", "sort_order")
+    readonly_fields = ("source", "kind", "note", "sort_order")
+    verbose_name = _("Связь совместимости (входящая)")
+    verbose_name_plural = _("Связи совместимости (входящие, только просмотр)")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("source")
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
@@ -330,7 +370,13 @@ class ProductAdmin(admin.ModelAdmin):
             {"fields": ("attrs_cache", "created_at", "updated_at"), "classes": ("collapse",)},
         ),
     )
-    inlines = [ProductImageInline, ProductAttributeValueInline, CurrentPriceInline]
+    inlines = [
+        ProductImageInline,
+        ProductAttributeValueInline,
+        CurrentPriceInline,
+        ProductCompatibilityInline,
+        ProductCompatibilityIncomingInline,
+    ]
 
     def get_queryset(self, request):
         # Текущая оптовая цена — подзапросом, чтобы колонка списка не делала N+1.

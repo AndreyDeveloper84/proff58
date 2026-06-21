@@ -1,8 +1,12 @@
-"""Цены: денормализация в Product + история в PriceRecord.
+"""Адаптер цен 1С: Item → spec, skip-unchanged (#111), денормализация Product, события 1С.
 
-Инвариант: одна актуальная цена на (code_1c, price_type, currency). Защищаем
-его транзакцией прямо здесь — функция публичная внутри слоя и обязана сама
-гарантировать инвариант, даже если вызвана вне внешней транзакции.
+Здесь живёт семантика интеграции 1С: решение skip-unchanged, мутация
+денормализованных полей ``Product`` (price/old_price/currency/price_updated_at) и
+формирование плана пакетного импорта (``PriceChange``).
+
+Запись истории цены (``PriceRecord``) этот слой НЕ делает напрямую — она
+делегируется в :mod:`apps.pricing.repositories` (домен ``pricing`` — владелец
+модели цены). Этот модуль не обращается к менеджеру модели цены напрямую.
 """
 
 from __future__ import annotations
@@ -10,13 +14,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from django.db import transaction
 from django.utils import timezone
 
 from apps.catalog.models import Product
+from apps.pricing import repositories as pricing_repo
 
 from . import matching
-from .models import PriceRecord
 from .normalizers import Item
 
 _PRICE_FIELDS = ["price", "old_price", "currency", "price_updated_at"]
@@ -39,16 +42,7 @@ def set_current_price(product: Product, item: Item) -> bool:
     # (1С часто шлёт только price; контракт — в docs/1c-api-spec.md).
     current_value = None
     if product.code_1c:
-        current_value = (
-            PriceRecord.objects.filter(
-                code_1c=product.code_1c,
-                price_type=price_type,
-                currency=currency,
-                is_current=True,
-            )
-            .values_list("value", flat=True)
-            .first()
-        )
+        current_value = pricing_repo.current_price_value(product.code_1c, price_type, currency)
     old_price_unchanged = item.old_price is None or product.old_price == item.old_price
     if (
         current_value is not None
@@ -66,27 +60,14 @@ def set_current_price(product: Product, item: Item) -> bool:
     product.price_updated_at = timezone.now()
 
     if product.code_1c:
-        # Снять актуальность со старой цены и создать новую — атомарно.
-        # select_for_update на товар сериализует два параллельных обновления цены одного
-        # code_1c (защита existing-товаров, #126): второй поток ждёт коммита первого и
-        # видит уже новую актуальную цену вместо гонки на partial-unique-констрейнте.
-        with transaction.atomic():
-            if product.pk:
-                Product.objects.select_for_update().filter(pk=product.pk).first()
-            PriceRecord.objects.filter(
-                code_1c=product.code_1c,
-                price_type=price_type,
-                currency=currency,
-                is_current=True,
-            ).update(is_current=False)
-            PriceRecord.objects.create(
-                code_1c=product.code_1c,
-                product=product,
-                price_type=price_type,
-                value=item.price,
-                currency=currency,
-                is_current=True,
-            )
+        # Запись истории цены — атомарно, инвариант «одна current» держит repository.
+        pricing_repo.write_current_price(
+            code_1c=product.code_1c,
+            product=product,
+            value=item.price,
+            price_type=price_type,
+            currency=currency,
+        )
     return True
 
 
@@ -119,15 +100,7 @@ class PriceChange:
 
 def prefetch_current_prices(codes) -> dict[tuple[str, str, str], tuple[int, Decimal]]:
     """Карта актуальных цен батча: (code_1c, price_type, currency) → (record_id, value). 1 запрос."""
-    codes = {c for c in codes if c}
-    out: dict[tuple[str, str, str], tuple[int, Decimal]] = {}
-    if not codes:
-        return out
-    for r in PriceRecord.objects.filter(code_1c__in=codes, is_current=True).values(
-        "id", "code_1c", "price_type", "currency", "value"
-    ):
-        out[(r["code_1c"], r["price_type"], r["currency"])] = (r["id"], r["value"])
-    return out
+    return pricing_repo.current_price_map(codes)
 
 
 def plan_price(
@@ -179,32 +152,22 @@ def apply_prices_bulk(
     *,
     batch_size: int = 1000,
 ) -> None:
-    """Снять актуальность со старых цен и создать новые — пачками.
+    """Записать историю цен пачкой через repository.
 
-    Дедуп по (code_1c, price_type, currency) с last-wins: защищает от двух is_current=True
-    при дубле code_1c в одном батче (иначе partial-unique даст IntegrityError).
-    Только товары с code_1c пишут PriceRecord (как `set_current_price`).
+    Маппит `PriceChange` → `pricing_repo.PriceWrite` (только товары с code_1c, как
+    `set_current_price`) и делегирует снятие актуальности/создание новых записей в
+    :func:`apps.pricing.repositories.apply_prices_bulk` (там же дедуп last-wins и
+    атомарность инварианта «одна current»).
     """
-    by_key: dict[tuple[str, str, str], PriceChange] = {}
-    for ch in changes:
-        if ch.code_1c:
-            by_key[(ch.code_1c, ch.price_type, ch.currency)] = ch  # last-wins
-    if not by_key:
-        return
-    flip_ids = [
-        current[k][0] for k in by_key if k in current
-    ]  # id старых актуальных записей этого батча
-    if flip_ids:
-        PriceRecord.objects.filter(id__in=flip_ids).update(is_current=False)
-    creates = [
-        PriceRecord(
+    writes = [
+        pricing_repo.PriceWrite(
             code_1c=ch.code_1c,
             product=ch.product,
             price_type=ch.price_type,
-            value=ch.value,
             currency=ch.currency,
-            is_current=True,
+            value=ch.value,
         )
-        for ch in by_key.values()
+        for ch in changes
+        if ch.code_1c
     ]
-    PriceRecord.objects.bulk_create(creates, batch_size=batch_size)
+    pricing_repo.apply_prices_bulk(writes, current, batch_size=batch_size)

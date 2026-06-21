@@ -1,15 +1,23 @@
 """Публичный read-only API каталога: дерево категорий, список, карточка, фасеты."""
 
+from django.contrib.postgres.search import TrigramSimilarity
+from django.db.models import Case, FloatField, Q, Value, When
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.pricing.services import price_map_for_products
+
 from ..filters import ProductFilter, visible_products
 from ..models import Category, StockStatus
-from ..services import FacetError, build_facets
-from .serializers import ProductDetailSerializer, ProductListSerializer
+from ..services import FacetError, build_facets, compatibility_sections
+from .serializers import (
+    ProductDetailSerializer,
+    ProductListSerializer,
+    serialize_compat_item,
+)
 
 
 def build_category_tree(nodes) -> list:
@@ -61,12 +69,70 @@ class ProductListView(generics.ListAPIView):
     filterset_class = ProductFilter
 
     def get_queryset(self):
-        return (
+        # При поиске (?search=, len>=2) ordering по релевантности задаёт
+        # ProductFilter.filter_search (.order_by("-_rank", ...)); _rank существует
+        # только тогда. Без поиска — алфавитный порядок здесь.
+        qs = visible_products().select_related("category").prefetch_related("images")
+        q = (self.request.query_params.get("search") or "").strip()
+        if len(q) >= 2:
+            return qs  # ordering проставит filter_search после фильтрации
+        return qs.order_by("name", "id")
+
+    def list(self, request, *args, **kwargs):
+        """Считаем опт-цены ОДНИМ bulk-запросом по текущей странице (без N+1).
+
+        price_map строится только по товарам страницы и передаётся сериализатору
+        через context; формат пагинации сохраняется.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        products = list(page) if page is not None else list(queryset)
+        price_map = price_map_for_products(products, request.user)
+        context = {**self.get_serializer_context(), "price_map": price_map}
+        serializer = self.get_serializer_class()(products, many=True, context=context)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
+
+SUGGEST_LIMIT = 10
+
+
+class ProductSuggestView(APIView):
+    """Подсказки автодополнения поиска (#52): лёгкий список {id, name, slug}.
+
+    Только видимые товары, ранжированы по сходству имени (trigram), не более
+    SUGGEST_LIMIT. Запрос короче 2 символов → пустой список.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        q = (request.query_params.get("q") or "").strip()
+        if len(q) < 2:
+            return Response([])
+        # Буст по имени: точное совпадение > префикс > сходство (trigram).
+        rank = Case(
+            When(name__iexact=q, then=Value(2.0)),
+            When(name__istartswith=q, then=Value(1.0)),
+            default=Value(0.0),
+            output_field=FloatField(),
+        ) + TrigramSimilarity("name", q)
+        rows = (
             visible_products()
-            .select_related("category")
-            .prefetch_related("images")
-            .order_by("name")
+            .annotate(_rank=rank)
+            .filter(
+                Q(name__icontains=q)
+                | Q(name__trigram_similar=q)
+                | Q(name__trigram_word_similar=q)
+                | Q(article__icontains=q)
+                | Q(brand__icontains=q)
+                | Q(code_1c__istartswith=q)
+            )
+            .order_by("-_rank", "name")
+            .values("id", "name", "slug")[:SUGGEST_LIMIT]
         )
+        return Response(list(rows))
 
 
 class ProductDetailView(generics.RetrieveAPIView):
@@ -83,6 +149,35 @@ class ProductDetailView(generics.RetrieveAPIView):
                 "attribute_values__attribute",
                 "attribute_values__value_option",
             )
+        )
+
+
+class ProductCompatibleView(APIView):
+    """Совместимость товара (#79): три секции — аксессуары, к чему подходит, совместимые.
+
+    Цены по всем товарам трёх секций считаются ОДНИМ bulk-запросом
+    (price_map_for_products), чтобы не было N+1 по опт-ценам.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug):
+        product = get_object_or_404(visible_products(), slug=slug)
+        sections = compatibility_sections(product)
+
+        # Все товары трёх секций → один price_map (дедуп по pk для bulk-резолвера).
+        all_products = {}
+        for items in sections.values():
+            for item in items:
+                all_products.setdefault(item.product.pk, item.product)
+        price_map = price_map_for_products(list(all_products.values()), request.user)
+        context = {"request": request, "price_map": price_map}
+
+        return Response(
+            {
+                name: [serialize_compat_item(item, context) for item in items]
+                for name, items in sections.items()
+            }
         )
 
 

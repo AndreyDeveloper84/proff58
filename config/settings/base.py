@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     # сторонние
     "rest_framework",
     "django_filters",
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
     "apps.sync_1c",
     "apps.pricing",
     "apps.orders",
+    "apps.ai",
 ]
 
 MIDDLEWARE = [
