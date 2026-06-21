@@ -141,6 +141,55 @@ def test_perforatory_kilowatt_not_supported(rules):
     assert "power" not in _perf(rules, "Перфоратор 1.2кВт")
 
 
+# --- Болгарки/УШМ (tool_type=bolgarki-ushm) ----------------------------------
+
+USHM = "bolgarki-ushm"
+
+
+def _ushm(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(USHM, name)}
+
+
+def test_ushm_corded_full_name(rules):
+    found = _ushm(rules, "Шлифмаш угл Bosch GWS 17-125CIE; 1700Вт, d=125мм, 11000 об/мин")
+    assert found["power"].number == Decimal("1700")
+    assert found["disc_diameter"].number == Decimal("125")
+    assert found["no_load_speed"].number == Decimal("11000")
+
+
+def test_ushm_disc_diameter_variants(rules):
+    assert _ushm(rules, "УШМ d=230 мм").get("disc_diameter").number == Decimal("230")
+    assert _ushm(rules, "Болгарка 115мм").get("disc_diameter").number == Decimal("115")
+    assert _ushm(rules, "Шлифмаш угл ЗУБР AB-80 ф82мм").get("disc_diameter").number == Decimal("82")
+
+
+def test_ushm_disc_diameter_only_canonical_with_mm(rules):
+    # Некатегорийный размер «16мм» (как в щётках 7х17х16мм) не должен матчиться.
+    assert "disc_diameter" not in _ushm(rules, "Щетки угольные 7х17х16мм болгарка")
+    # Размер в модели без «мм» осознанно не берём (precision-first).
+    assert "disc_diameter" not in _ushm(rules, "Шлифмаш угл Makita DGA504RF")
+
+
+def test_ushm_no_load_speed_takes_max_in_range(rules):
+    # «2800-11000 об/мин» → берём максимум 11000, не 2800.
+    assert _ushm(rules, "УШМ 900Вт, 2800-11000 об/мин").get("no_load_speed").number == Decimal("11000")
+
+
+def test_ushm_cordless_attributes(rules):
+    found = _ushm(rules, "Шлифмаш угл аккум STURM CAG18125BLE 18В, 125мм бесщеточная 1х4А/ч ЗУ")
+    assert found["voltage"].number == Decimal("18")
+    assert found["power_source"].option_slug == "battery"
+    assert found["motor_type"].option_slug == "brushless"
+    assert found["disc_diameter"].number == Decimal("125")
+
+
+def test_ushm_power_not_confused_with_voltage(rules):
+    # «1700Вт» — мощность, не напряжение.
+    found = _ushm(rules, "Шлифмаш угл 1700Вт")
+    assert found["power"].number == Decimal("1700")
+    assert "voltage" not in found
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""
