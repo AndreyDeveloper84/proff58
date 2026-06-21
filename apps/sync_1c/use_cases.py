@@ -453,6 +453,70 @@ def update_stocks(raw_items: list[dict], *, source_file: str = "") -> tuple[Sync
     )
 
 
+def update_stocks_bulk(
+    raw_items: list[dict], *, source_file: str = "", chunk: int = 2000
+) -> tuple[SyncLog, ImportResult]:
+    """Bulk-заливка остатков для больших выгрузок (низкая память, пачками).
+
+    В отличие от ``update_stocks`` (построчный ``save()`` в транзакции на строку —
+    тяжело и по памяти, и по числу запросов на десятках тысяч строк), грузит товары
+    по ``code_1c`` ЧАНКАМИ и пишет остаток через ``stock.plan_stock`` (мутация полей
+    без сохранения) + ``Product.bulk_update`` + ``stock.apply_stock_bulk``. Матчинг —
+    только по ``code_1c`` (выгрузка 1С его всегда несёт); строки без ``code_1c`` или
+    не найденные в БД — ``skipped``.
+    """
+    sync_log = SyncLog.objects.create(
+        sync_type=SyncLog.SyncType.STOCK,
+        source_file=source_file,
+        result=SyncLog.SyncResult.RUNNING,
+    )
+    result = ImportResult()
+    error_lines: list[str] = []
+
+    # Нормализуем и индексируем по code_1c (last-wins при дублях) — Item'ы лёгкие.
+    by_code: dict[str, normalizers.Item] = {}
+    for raw in raw_items:
+        try:
+            item = normalizers.normalize_item(raw)
+        except Exception:  # noqa: BLE001
+            result.errors += 1
+            _append_error_detail(error_lines, "—", "ошибка нормализации")
+            continue
+        if not item.code_1c:
+            result.errors += 1
+            _append_error_detail(error_lines, item.article or "—", "нет code_1c")
+            continue
+        by_code[item.code_1c] = item
+
+    codes = list(by_code)
+    try:
+        for start in range(0, len(codes), chunk):
+            part = codes[start : start + chunk]
+            products = list(Product.objects.filter(code_1c__in=part))
+            result.skipped += len(part) - len(products)  # не найдены по code_1c
+            plans, to_update = [], []
+            for product in products:
+                plan = stock.plan_stock(product, by_code[product.code_1c])
+                if plan is None:
+                    result.skipped += 1  # нет полей остатка в строке
+                    continue
+                plans.append(plan)
+                to_update.append(product)
+                result.updated += 1
+            with transaction.atomic():
+                if to_update:
+                    Product.objects.bulk_update(to_update, stock._STOCK_FIELDS, batch_size=1000)
+                stock.apply_stock_bulk(plans)
+    except Exception:  # noqa: BLE001
+        result.errors += 1
+        _append_error_detail(error_lines, "—", _short_traceback())
+        _finalize(sync_log, result, error_lines)
+        raise
+
+    _finalize(sync_log, result, error_lines)
+    return sync_log, result
+
+
 # ---------------------------------------------------------------------------
 # Заказы (#50): выгрузка в 1С и приём статусов
 #

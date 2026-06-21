@@ -5,8 +5,8 @@
 дефектами JSON (пропущена запятая после ``"name"`` перед ``"barcode"``; висячие
 запятые перед ``}``/``]``; управляющие символы в строках). Команда чинит это
 детерминированно, обходит дерево (`ingest.iter_products`) и применяет остатки
-канонически через `use_cases.update_stocks` (матчинг по ``code_1c``, пишет только
-остаток + `SyncLog`).
+через `use_cases.update_stocks_bulk` (матчинг по ``code_1c`` чанками + `bulk_update`
+— низкая память на десятках тысяч строк; пишет только остаток + `SyncLog`).
 
 С ``--publish-in-stock`` товары с остатком > 0 и видимой категорией
 (``on_site=True``, активна) публикуются — зеркало admin-экшена ``action_publish``
@@ -112,7 +112,10 @@ class Command(BaseCommand):
             return
 
         name = Path(opts["path"]).name
-        _log, result = use_cases.update_stocks(items, source_file=f"cmd:apply_stocks_1c:{name}")
+        # bulk-путь: чанками + bulk_update (низкая память, без построчных транзакций).
+        _log, result = use_cases.update_stocks_bulk(
+            items, source_file=f"cmd:apply_stocks_1c:{name}"
+        )
 
         published = 0
         if opts["publish_in_stock"] and in_stock:

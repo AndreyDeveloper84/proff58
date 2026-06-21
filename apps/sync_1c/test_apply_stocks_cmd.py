@@ -8,6 +8,7 @@ import pytest
 from django.core.management import call_command
 
 from apps.catalog.models import Category, Product, ProductStatus, StockStatus
+from apps.sync_1c import use_cases
 from apps.sync_1c.management.commands.apply_stocks_1c import parse_stock_items
 from apps.sync_1c.models import SyncLog
 
@@ -122,3 +123,19 @@ def test_publish_skipped_without_flag(tmp_path):
     p_in.refresh_from_db()
     assert p_in.stock_quantity == Decimal("5")
     assert not p_in.is_visible  # остаток залит, но публикации не было
+
+
+@pytest.mark.django_db
+def test_update_stocks_bulk_chunks_and_skips_unknown():
+    # Несколько чанков (chunk=2 на 4 кода) + ненайденный code_1c → skipped.
+    p_in, p_zero, p_hid = _catalog()
+    items = parse_stock_items(RAW_1C) + [{"code_1c": "NOPE", "stock": "9"}]
+    log, result = use_cases.update_stocks_bulk(items, source_file="test", chunk=2)
+
+    p_in.refresh_from_db()
+    p_hid.refresh_from_db()
+    assert p_in.stock_quantity == Decimal("5") and p_in.stock_status == StockStatus.IN_STOCK
+    assert p_hid.stock_quantity == Decimal("3")
+    assert result.updated == 3  # P-IN, P-ZERO, P-HID
+    assert result.skipped == 1  # NOPE не найден по code_1c
+    assert log.result == SyncLog.SyncResult.OK
