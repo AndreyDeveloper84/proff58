@@ -262,6 +262,61 @@ def test_ushm_power_not_confused_with_voltage(rules):
     assert "voltage" not in found
 
 
+LOBZIKI = "lobziki"
+
+
+def _lobziki(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(LOBZIKI, name)}
+
+
+def test_lobziki_corded_full_name(rules):
+    # Сетевой лобзик: power + stroke_rate, power_source инферится как «Сеть».
+    f = _lobziki(rules, 'Лобзик Bosch GST 65B; "D"захват; 400Вт, 3100х/мин')
+    assert f["power"].number == Decimal("400")
+    assert f["stroke_rate"].number == Decimal("3100")
+    assert f["power_source"].option_slug == "mains" and f["power_source"].source == "inferred"
+
+
+def test_lobziki_stroke_rate_takes_value_at_unit_in_range(rules):
+    # Диапазон «850-3000х/мин» → берётся число у «х/мин» (3000).
+    assert _lobziki(rules, "Лобзик CJ120V; 740Вт, 850-3000х/мин")["stroke_rate"].number == Decimal(
+        "3000"
+    )
+
+
+def test_lobziki_stroke_rate_space_and_hod_variants(rules):
+    # Пробел перед «х/мин» и форма «ход/мин».
+    assert _lobziki(rules, "Лобзик 3000 х/мин")["stroke_rate"].number == Decimal("3000")
+    assert _lobziki(rules, "Лобзик 3000 ход/мин")["stroke_rate"].number == Decimal("3000")
+
+
+def test_lobziki_stroke_rate_guard_rejects_other_units(rules):
+    # «х/метр» не должно ловиться как частота ходов.
+    assert "stroke_rate" not in _lobziki(rules, "Лобзик ход 3000 х/метр")
+
+
+def test_lobziki_cordless_attributes(rules):
+    # Аккумуляторный: voltage/ёмкость/частота; power_source = battery, НЕ инференс.
+    f = _lobziki(rules, "Лобзик аккум CJ10DL; 10,8V,1,5А/ч,Li-ion,0-2700х/м")
+    assert f["stroke_rate"].number == Decimal("2700")
+    assert f["voltage"].number == Decimal("10.8")
+    assert f["battery_capacity"].number == Decimal("1.5")
+    assert f["power_source"].option_slug == "battery"
+
+
+def test_lobziki_power_source_inferred_mains(rules):
+    # Есть power, нет voltage/АКБ/battery_included → инференс «Сеть».
+    assert _lobziki(rules, "Лобзик 600Вт 3000х/мин")["power_source"].option_slug == "mains"
+
+
+def test_lobziki_power_source_inference_blocked_by_battery_included(rules):
+    # Правка ревью: «без АКБ» (battery_included) без распознанного voltage НЕ должно
+    # ошибочно стать mains — даже если есть power. battery_included в requires_absent.
+    f = _lobziki(rules, "Лобзик 500Вт без АКБ 2700х/мин")
+    assert "battery_included" in f and f["battery_included"].boolean is False
+    assert f.get("power_source") is None or f["power_source"].option_slug != "mains"
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""
