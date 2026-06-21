@@ -72,7 +72,7 @@ services:
     restart: always
     environment:
       NODE_ENV: production
-      CATALOG_API_BASE: http://web:8000
+      INTERNAL_API_BASE_URL: http://web:8000
     depends_on:
       web:
         condition: service_healthy

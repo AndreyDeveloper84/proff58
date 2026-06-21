@@ -18,6 +18,14 @@ import type {
   StockState,
 } from "./types";
 
+// Внутренние server-side запросы Next→Django идут по http внутри Docker, а Django в prod
+// редиректит http→https (SECURE_SSL_REDIRECT). Этот заголовок (ТОЛЬКО server-side!) сообщает
+// Django через SECURE_PROXY_SSL_HEADER, что запрос защищён → без редиректа. Из браузера НЕ слать.
+const SSR_HEADERS = { "X-Forwarded-Proto": "https" } as const;
+
+// Ошибка обращения к каталог-API (не 404 категории) — должна вести в error.tsx, а не маскироваться.
+export class CatalogFetchError extends Error {}
+
 type ApiProduct = {
   id: number;
   name: string;
@@ -165,10 +173,10 @@ export async function fetchListingFromApi(
 
   const productsRes = await fetch(
     `${root}/api/catalog/products/?${buildProductParams(query).toString()}`,
-    { cache: "no-store" },
+    { cache: "no-store", headers: SSR_HEADERS },
   );
   if (productsRes.status === 404) return null;
-  if (!productsRes.ok) throw new Error(`products ${productsRes.status}`);
+  if (!productsRes.ok) throw new CatalogFetchError(`products ${productsRes.status}`);
   const productsJson = (await productsRes.json()) as {
     count: number;
     results: ApiProduct[];
@@ -179,7 +187,7 @@ export async function fetchListingFromApi(
   try {
     const facetsRes = await fetch(
       `${root}/api/catalog/categories/${query.category}/facets/?${buildFacetParams(query).toString()}`,
-      { cache: "no-store" },
+      { cache: "no-store", headers: SSR_HEADERS },
     );
     if (facetsRes.ok) {
       const fj = (await facetsRes.json()) as { facets?: ApiFacet[] };
