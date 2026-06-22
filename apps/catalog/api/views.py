@@ -12,7 +12,12 @@ from apps.pricing.services import price_map_for_products
 
 from ..filters import ProductFilter, visible_products
 from ..models import Category, StockStatus
-from ..services import FacetError, build_facets, compatibility_sections
+from ..services import (
+    FacetError,
+    apply_product_attr_filters,
+    build_facets,
+    compatibility_sections,
+)
 from .serializers import (
     ProductDetailSerializer,
     ProductListSerializer,
@@ -68,11 +73,25 @@ class ProductListView(generics.ListAPIView):
     serializer_class = ProductListSerializer
     filterset_class = ProductFilter
 
+    def _attr_filters(self) -> dict[str, list[str]]:
+        """EAV-фасеты PLP: параметры ``attr_<slug>`` → ``{slug: [raw, ...]}``.
+
+        Тот же разбор, что в CategoryFacetsView — список и счётчики фасетов фильтруются
+        одним механизмом (см. apply_product_attr_filters).
+        """
+        params = self.request.query_params
+        out: dict[str, list[str]] = {}
+        for key in params:
+            if key.startswith("attr_") and key[len("attr_") :]:
+                out[key[len("attr_") :]] = params.getlist(key)
+        return out
+
     def get_queryset(self):
         # При поиске (?search=, len>=2) ordering по релевантности задаёт
         # ProductFilter.filter_search (.order_by("-_rank", ...)); _rank существует
         # только тогда. Без поиска — алфавитный порядок здесь.
         qs = visible_products().select_related("category").prefetch_related("images")
+        qs = apply_product_attr_filters(qs, self._attr_filters())
         q = (self.request.query_params.get("search") or "").strip()
         if len(q) >= 2:
             return qs  # ordering проставит filter_search после фильтрации
