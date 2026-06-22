@@ -341,6 +341,100 @@ def test_jsonb_decimal_match_normalized(client, tree):
     assert values_count(facet) == {18.0: 1, 2.5: 1}
 
 
+# --- slug-URL для select-значений (P2) ---
+
+
+@pytest.mark.django_db
+def test_select_slug_emitted_only_when_present(client, tree):
+    """slug отдаём только при заполненном AttributeOption.slug; пустой → поля slug нет."""
+    _, leaf = tree
+    chuck = make_attr("chuck", "Патрон", AttributeType.SELECT)
+    link(leaf, chuck)
+    AttributeOption.objects.create(
+        attribute=chuck, value="Быстрозажимной", slug="bystrozazhimnoy", sort_order=0
+    )
+    AttributeOption.objects.create(attribute=chuck, value="Ключевой", slug="", sort_order=1)
+    make_product(leaf, "p1", {"chuck": "Быстрозажимной"})
+    make_product(leaf, "p2", {"chuck": "Ключевой"})
+
+    facet = get_facet(client.get("/api/catalog/categories/dreli/facets/").json(), "chuck")
+    by_val = {v["value"]: v for v in facet["values"]}
+    assert by_val["Быстрозажимной"]["slug"] == "bystrozazhimnoy"
+    assert "slug" not in by_val["Ключевой"]  # пустой slug → поле не отдаём (fallback на value)
+
+
+@pytest.mark.django_db
+def test_filter_by_slug_and_legacy_raw(client, tree):
+    """Фильтр принимает slug (canonical) и сырое значение (legacy); selected — после резолва."""
+    _, leaf = tree
+    chuck = make_attr("chuck", "Патрон", AttributeType.SELECT)
+    link(leaf, chuck)
+    AttributeOption.objects.create(
+        attribute=chuck, value="Быстрозажимной", slug="bystro", sort_order=0
+    )
+    make_product(leaf, "p1", {"chuck": "Быстрозажимной"})
+    make_product(leaf, "p2", {"chuck": "Ключевой"})
+
+    data = client.get("/api/catalog/categories/dreli/facets/?attr_chuck=bystro").json()
+    assert data["total_products"] == 1
+    assert data["applied_filters"]["attrs"] == {"chuck": ["Быстрозажимной"]}  # резолв slug→value
+    sel = {v["value"]: v["selected"] for v in get_facet(data, "chuck")["values"]}
+    assert sel["Быстрозажимной"] is True  # selected отмечается при URL по slug
+    assert sel["Ключевой"] is False
+
+    # legacy сырое значение тоже фильтрует
+    data2 = client.get("/api/catalog/categories/dreli/facets/?attr_chuck=Быстрозажимной").json()
+    assert data2["total_products"] == 1
+
+
+@pytest.mark.django_db
+def test_unknown_slug_token_does_not_crash(client, tree):
+    """Неизвестный токен: facets-эндпоинт не падает, ничего не находит, selected пуст."""
+    _, leaf = tree
+    chuck = make_attr("chuck", "Патрон", AttributeType.SELECT)
+    link(leaf, chuck)
+    AttributeOption.objects.create(
+        attribute=chuck, value="Быстрозажимной", slug="bystro", sort_order=0
+    )
+    make_product(leaf, "p1", {"chuck": "Быстрозажимной"})
+
+    resp = client.get("/api/catalog/categories/dreli/facets/?attr_chuck=nonexistent")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total_products"] == 0
+    assert all(v["selected"] is False for v in get_facet(data, "chuck")["values"])
+
+
+@pytest.mark.django_db
+def test_slug_does_not_change_value_order(client, tree):
+    """Добавление slug не влияет на порядок значений (сортировка по sort_order)."""
+    _, leaf = tree
+    chuck = make_attr("chuck", "Патрон", AttributeType.SELECT)
+    link(leaf, chuck)
+    AttributeOption.objects.create(attribute=chuck, value="Быстрозажимной", slug="b", sort_order=0)
+    AttributeOption.objects.create(attribute=chuck, value="Ключевой", slug="k", sort_order=1)
+    make_product(leaf, "p1", {"chuck": "Ключевой"})
+    make_product(leaf, "p2", {"chuck": "Быстрозажимной"})
+
+    facet = get_facet(client.get("/api/catalog/categories/dreli/facets/").json(), "chuck")
+    assert [v["value"] for v in facet["values"]] == ["Быстрозажимной", "Ключевой"]
+
+
+@pytest.mark.django_db
+def test_resolve_attr_tokens_dedupes_slug_and_raw(tree):
+    """resolve_attr_tokens: slug и сырое значение схлопываются в один canonical value."""
+    from apps.catalog.facets import resolve_attr_tokens
+
+    _, leaf = tree
+    chuck = make_attr("chuck", "Патрон", AttributeType.SELECT)
+    AttributeOption.objects.create(
+        attribute=chuck, value="Быстрозажимной", slug="bystro", sort_order=0
+    )
+
+    assert resolve_attr_tokens(chuck, ["bystro", "Быстрозажимной"]) == ["Быстрозажимной"]
+    assert resolve_attr_tokens(chuck, ["unknown"]) == ["unknown"]  # неизвестный токен — как есть
+
+
 @pytest.mark.django_db
 def test_facet_queries_scale_with_attrs_not_products(client, tree, django_assert_max_num_queries):
     """Число запросов задаётся числом фасетов, а не товаров (100 товаров ≤ тот же лимит)."""

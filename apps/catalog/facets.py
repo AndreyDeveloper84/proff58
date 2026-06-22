@@ -75,6 +75,59 @@ def _sort_facet_values(attr, counter: Counter, options_order: dict) -> list:
     return sorted(items, key=lambda it: (-it[1], str(it[0])))  # text/boolean → по count
 
 
+def _option_slug_maps(attr_ids) -> dict[int, dict]:
+    """Карты опций select/multiselect ОДНИМ запросом (без N+1).
+
+    ``{attr_id: {"slug_to_value", "value_to_slug", "value_to_sort"}}``:
+      * ``slug_to_value`` — непустой slug опции → её raw value (slug→value резолв URL);
+      * ``value_to_slug`` — raw value → непустой slug (эмиссия slug в фасетах);
+      * ``value_to_sort`` — raw value → sort_order (сортировка значений).
+    """
+    maps: dict[int, dict] = {}
+    if not attr_ids:
+        return maps
+    for opt in AttributeOption.objects.filter(attribute_id__in=attr_ids):
+        m = maps.setdefault(
+            opt.attribute_id,
+            {"slug_to_value": {}, "value_to_slug": {}, "value_to_sort": {}},
+        )
+        m["value_to_sort"][opt.value] = opt.sort_order
+        if opt.slug:
+            m["slug_to_value"][opt.slug] = opt.value
+            m["value_to_slug"][opt.value] = opt.slug
+    return maps
+
+
+def _resolve_tokens(slug_to_value: dict, raw_tokens) -> list:
+    """slug|raw → canonical storage value, дедуп с сохранением порядка.
+
+    Приоритет: токен совпал со slug опции → её value; иначе токен как есть (raw value
+    или неизвестный токен — containment по нему просто ничего не найдёт, без падения).
+    """
+    out: list = []
+    seen: set = set()
+    for tok in raw_tokens:
+        val = slug_to_value.get(tok, tok)
+        if val not in seen:
+            seen.add(val)
+            out.append(val)
+    return out
+
+
+def resolve_attr_tokens(attribute, raw_tokens) -> list:
+    """Публичный slug|raw → canonical value для SELECT (дедуп, порядок сохранён).
+
+    Только для SELECT включён slug-маппинг; для прочих типов токены лишь дедуплицируются
+    (коерсия по типу — отдельно в ``_coerce``). Делает свой запрос опций для одного
+    атрибута; в горячих путях (build_facets/apply_product_attr_filters) используются
+    предзагруженные ``_option_slug_maps``, чтобы не плодить запросы.
+    """
+    if attribute.attribute_type != AttributeType.SELECT:
+        return _resolve_tokens({}, raw_tokens)
+    maps = _option_slug_maps([attribute.id])
+    return _resolve_tokens(maps.get(attribute.id, {}).get("slug_to_value", {}), raw_tokens)
+
+
 def _apply_attr_filters(qs, coerced, exclude=None):
     """drill-down attr-фильтры через JSONB containment (GIN-ускоряемо). exclude — снять фильтр атрибута."""
     for slug, vals in coerced.items():
@@ -112,9 +165,17 @@ def build_facets(category, *, brands=None, stock_status=None, attr_filters=None)
     attributes = _category_filter_attributes(category)
     by_slug = {a.slug: a for a in attributes}
 
+    # Опции select/multiselect ОДНИМ запросом: сортировка + slug→value резолв + эмиссия slug.
+    select_ids = [
+        a.id
+        for a in attributes
+        if a.attribute_type in (AttributeType.SELECT, AttributeType.MULTISELECT)
+    ]
+    option_maps = _option_slug_maps(select_ids)
+
     # Приведение attr-фильтров: unknown → игнор, invalid known → FacetError.
-    # _coerce даёт ТИП, лежащий в attrs_cache (int/float/bool/str) — это нужно для
-    # JSONB containment ({"voltage":18} ≠ {"voltage":"18"}).
+    # SELECT: slug|raw → canonical storage value (slug-URL, P2). Прочие типы → _coerce под
+    # тип в attrs_cache (JSONB containment: {"voltage":18} ≠ {"voltage":"18"}).
     coerced: dict[str, list] = {}
     for slug, raw_values in attr_filters.items():
         attr = by_slug.get(slug)
@@ -122,26 +183,17 @@ def build_facets(category, *, brands=None, stock_status=None, attr_filters=None)
             continue
         if len(raw_values) > MAX_VALUES_PER_ATTR:
             raise FacetError(f"Слишком много значений для «{slug}»")
-        vals = []
         for raw in raw_values:
             if len(raw) > MAX_VALUE_LENGTH:
                 raise FacetError("Слишком длинное значение фильтра")
-            vals.append(_coerce(raw, attr.attribute_type))
-        coerced[slug] = vals
+        if attr.attribute_type == AttributeType.SELECT:
+            slug_to_value = option_maps.get(attr.id, {}).get("slug_to_value", {})
+            coerced[slug] = _resolve_tokens(slug_to_value, raw_values)
+        else:
+            coerced[slug] = [_coerce(raw, attr.attribute_type) for raw in raw_values]
 
     base_qs = filtered_products(category, brands=brands, stock_status=stock_status)
     total = _apply_attr_filters(base_qs, coerced).count()
-
-    # Опции select/multiselect одним запросом — для сортировки значений.
-    select_ids = [
-        a.id
-        for a in attributes
-        if a.attribute_type in (AttributeType.SELECT, AttributeType.MULTISELECT)
-    ]
-    options_by_attr: dict[int, dict] = {}
-    if select_ids:
-        for opt in AttributeOption.objects.filter(attribute_id__in=select_ids):
-            options_by_attr.setdefault(opt.attribute_id, {})[opt.value] = opt.sort_order
 
     facets = []
     for attr in attributes:
@@ -159,18 +211,30 @@ def build_facets(category, *, brands=None, stock_status=None, attr_filters=None)
         if not counter:
             continue  # пустой фасет не отдаём
 
+        # selected — ПОСЛЕ slug→value резолва (coerced уже в canonical value): иначе при
+        # ?attr_=<slug> чекбокс не подсветился бы (значение фасета — raw value из attrs_cache).
         selected = set(coerced.get(attr.slug, []))
-        ordered = _sort_facet_values(attr, counter, options_by_attr.get(attr.id, {}))
+        amap = option_maps.get(attr.id, {})
+        value_to_slug = amap.get("value_to_slug", {})
+        is_select = attr.attribute_type == AttributeType.SELECT
+        ordered = _sort_facet_values(attr, counter, amap.get("value_to_sort", {}))
+        values = []
+        for v, n in ordered[:MAX_FACET_VALUES]:
+            # value = raw canonical storage value (из attrs_cache); slug = preferred URL token
+            # (только при заполненном AttributeOption.slug, только SELECT); label на фронте = value.
+            entry = {"value": v, "count": n, "selected": v in selected}
+            if is_select:
+                slug_token = value_to_slug.get(v)
+                if slug_token:
+                    entry["slug"] = slug_token
+            values.append(entry)
         facets.append(
             {
                 "slug": attr.slug,
                 "name": attr.name,
                 "type": attr.attribute_type,
                 "unit": attr.unit,
-                "values": [
-                    {"value": v, "count": n, "selected": v in selected}
-                    for v, n in ordered[:MAX_FACET_VALUES]
-                ],
+                "values": values,
             }
         )
 
@@ -201,19 +265,26 @@ def apply_product_attr_filters(qs, attr_filters: dict[str, list[str]]):
     by_slug = {
         a.slug: a for a in Attribute.objects.filter(slug__in=list(attr_filters), is_filterable=True)
     }
+    select_ids = [a.id for a in by_slug.values() if a.attribute_type == AttributeType.SELECT]
+    option_maps = _option_slug_maps(select_ids)
     coerced: dict[str, list] = {}
     for slug, raw_values in attr_filters.items():
         attr = by_slug.get(slug)
         if attr is None:
             continue
-        vals = []
-        for raw in raw_values:
-            if not raw:
-                continue
-            try:
-                vals.append(_coerce(raw, attr.attribute_type))
-            except FacetError:
-                continue  # битое значение игнорируем, а не роняем листинг
+        if attr.attribute_type == AttributeType.SELECT:
+            # SELECT: slug|raw → canonical value (slug-URL, P2); unknown токен → как есть (0 товаров).
+            slug_to_value = option_maps.get(attr.id, {}).get("slug_to_value", {})
+            vals = _resolve_tokens(slug_to_value, [r for r in raw_values if r])
+        else:
+            vals = []
+            for raw in raw_values:
+                if not raw:
+                    continue
+                try:
+                    vals.append(_coerce(raw, attr.attribute_type))
+                except FacetError:
+                    continue  # битое значение игнорируем, а не роняем листинг
         if vals:
             coerced[slug] = vals
     return _apply_attr_filters(qs, coerced)

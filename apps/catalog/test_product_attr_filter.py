@@ -10,6 +10,7 @@ from rest_framework.test import APIClient
 
 from apps.catalog.models import (
     Attribute,
+    AttributeOption,
     AttributeType,
     Category,
     CategoryAttribute,
@@ -97,6 +98,29 @@ def test_empty_attr_value_ignored(client, tree):
     make_drills_and_crowns(leaf)
     # пустое значение игнорируется (а не «ноль товаров»)
     assert count(client, "category=osnastka-i-rashodniki&attr_tool_type=") == 6
+
+
+@pytest.mark.django_db
+def test_attr_filter_by_slug_and_legacy_raw(client, tree):
+    """Список товаров фильтруется и по slug опции (canonical URL), и по сырому значению (legacy)."""
+    _, leaf = tree
+    make_drills_and_crowns(leaf)
+    tt = Attribute.objects.get(slug="tool_type")
+    AttributeOption.objects.create(attribute=tt, value="Коронки", slug="coronki", sort_order=0)
+    # canonical slug-URL
+    assert count(client, "category=osnastka-i-rashodniki&attr_tool_type=coronki") == 3
+    # legacy сырое значение
+    assert count(client, "category=osnastka-i-rashodniki&attr_tool_type=Коронки") == 3
+
+
+@pytest.mark.django_db
+def test_attr_filter_unknown_slug_zero(client, tree):
+    """Неизвестный slug-токен → 0 товаров, без падения листинга."""
+    _, leaf = tree
+    make_drills_and_crowns(leaf)
+    tt = Attribute.objects.get(slug="tool_type")
+    AttributeOption.objects.create(attribute=tt, value="Коронки", slug="coronki", sort_order=0)
+    assert count(client, "category=osnastka-i-rashodniki&attr_tool_type=unknown-token") == 0
 
 
 @pytest.mark.django_db
