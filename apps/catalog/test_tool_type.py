@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from django.conf import settings
 from django.test import TestCase
 
 from apps.catalog.models import (
@@ -157,3 +160,18 @@ class LogModelsTests(TestCase):
 
     def test_enrichment_result_choices(self):
         self.assertEqual(set(EnrichmentResult.values), {"assigned", "moderation", "recategorize"})
+
+
+class RealRulesRegressionTests(TestCase):
+    """Регресс на реальном data/tool_type_rules.json."""
+
+    def test_diamond_discs_subgroup_maps_to_canonical_slug(self):
+        # Имя подгруппы в правиле выровнено с категорией сайта «Алмазные круги».
+        # Иначе inherit не матчит → фолбэк-slug (tip-N) → характеристики дисков
+        # (disc_diameter/bore/disc_type) не извлекаются. См. фикс tip-5 → krugi-almaznye.
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+        ex = rules.extract(
+            "Оснастка и расходники", "Круг алмаз. отрез. 125х1,2х10х22,23", "Алмазные круги"
+        )
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.slug, "krugi-almaznye")
