@@ -20,6 +20,7 @@ from apps.catalog.models import (
     AttributeOption,
     AttributeType,
     Category,
+    CategoryAttribute,
     Product,
     ProductAttributeValue,
     Source,
@@ -175,3 +176,17 @@ def test_load_attributes_idempotent(catalog):
     call_command("load_attributes")  # повтор не плодит дубли
     assert Attribute.objects.count() == attrs
     assert AttributeOption.objects.count() == opts
+
+
+@pytest.mark.django_db
+def test_load_attributes_binds_to_subcategory(db):
+    """krugi-almaznye биндит фасеты к под-категории «Алмазные круги», не к топу."""
+    top = Category.add_root(name="Оснастка и расходники", slug="osnastka", on_site=True)
+    sub = top.add_child(name="Алмазные круги", slug="almaznye-krugi", on_site=True)
+
+    call_command("load_attributes")
+
+    ca = CategoryAttribute.objects.filter(category=sub, attribute__slug="bore").first()
+    assert ca is not None and ca.category.depth == 2  # привязано к под-категории
+    # и НЕ к широкой топ-категории (иначе bore засорит буры/биты/свёрла)
+    assert not CategoryAttribute.objects.filter(category=top, attribute__slug="bore").exists()

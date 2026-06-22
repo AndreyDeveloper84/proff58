@@ -564,6 +564,62 @@
           ]
         }
       ]
+    },
+    {
+      "tool_type": "krugi-almaznye",
+      "category": "Алмазные круги",
+      "attributes": [
+        {
+          "slug": "disc_diameter",
+          "name": "Диаметр диска",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "regex": [
+            "(?<!\\d)(70|76|90|100|105|115|125|150|180|200|230|250|300|350|360|400|450|500)(?!\\d)"
+          ]
+        },
+        {
+          "slug": "bore",
+          "name": "Посадочный диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?:70|76|90|100|105|115|125|150|180|200|230|250|300|350|360|400|450|500).*?[x*х]\\s*(22(?:[.,]2\\d?)?|25[.,]4|32)(?![\\d.,])"
+          ]
+        },
+        {
+          "slug": "disc_type",
+          "name": "Тип диска",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "options": [
+            {
+              "value": "Турбо",
+              "slug": "turbo",
+              "keywords": ["турбо"]
+            },
+            {
+              "value": "Сегментный",
+              "slug": "segment",
+              "keywords": ["сегмент"]
+            },
+            {
+              "value": "Сплошной",
+              "slug": "solid",
+              "keywords": ["сплошн"]
+            }
+          ]
+        }
+      ]
     }
   ]
 }
