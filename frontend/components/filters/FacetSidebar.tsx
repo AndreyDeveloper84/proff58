@@ -175,16 +175,20 @@ function RangeFacet({
     (immediate ? flush : debounced)(next);
   };
   const fieldNum = (s: string, fallback: number) => (s === "" ? fallback : Number(s));
-  // Обычный интерактивный range (без pointer-events-хака — он и ломал коммит): нативный thumb
-  // через accent-color. Два отдельных ползунка min/max, каждый полностью кликабелен.
-  const rangeCls = "h-1.5 w-full cursor-pointer appearance-none rounded-full bg-line accent-accent";
   const fieldCls =
     "w-full rounded-md border border-line bg-canvas px-2 py-1 text-sm text-ink placeholder:text-ink-3";
+
+  // Позиции бегунков/заливки в % — ОДНА дорожка, два наложенных range на ней (CSS .range-dual).
+  const span = hi - lo || 1;
+  const minPct = ((draft.min - lo) / span) * 100;
+  const maxPct = ((draft.max - lo) / span) * 100;
 
   return (
     <fieldset className="border-0 p-0" aria-label={facet.label}>
       <legend className="mb-2 text-sm font-medium text-ink">{`${facet.label}${unit}`}</legend>
-      <div className="mb-3 flex flex-col gap-2">
+      <div className="range-dual mb-3">
+        <div className="range-track" />
+        <div className="range-fill" style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }} />
         <input
           type="range"
           min={lo}
@@ -195,7 +199,8 @@ function RangeFacet({
           onChange={(e) => setMin(Number(e.target.value), false)}
           onPointerUp={(e) => setMin(Number((e.target as HTMLInputElement).value), true)}
           onKeyUp={(e) => setMin(Number((e.target as HTMLInputElement).value), true)}
-          className={rangeCls}
+          // когда бегунки сошлись — min поверх, чтобы оставался захватываемым
+          style={{ zIndex: draft.min >= draft.max ? 5 : 3 }}
         />
         <input
           type="range"
@@ -207,7 +212,7 @@ function RangeFacet({
           onChange={(e) => setMax(Number(e.target.value), false)}
           onPointerUp={(e) => setMax(Number((e.target as HTMLInputElement).value), true)}
           onKeyUp={(e) => setMax(Number((e.target as HTMLInputElement).value), true)}
-          className={rangeCls}
+          style={{ zIndex: 4 }}
         />
       </div>
       <div className="flex items-center gap-2">

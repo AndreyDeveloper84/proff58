@@ -92,6 +92,74 @@
   --radius-lg: var(--radius-lg);
 }
 
+/*
+  Dual-thumb диапазон (две input[type=range] на ОДНОЙ дорожке) для фильтров PLP.
+  Намеренно обычный CSS, а не Tailwind arbitrary-варианты псевдоэлементов: именно их
+  ненадёжная компиляция ломала кликабельность бегунка ранее. pointer-events:none на самом
+  инпуте + pointer-events:auto на бегунке → событие ловит только бегунок, поэтому два
+  наложенных инпута не перехватывают drag друг у друга.
+*/
+.range-dual {
+  position: relative;
+  height: 20px;
+}
+.range-dual .range-track,
+.range-dual .range-fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+}
+.range-dual .range-track {
+  left: 0;
+  right: 0;
+  background: var(--border);
+}
+.range-dual .range-fill {
+  background: var(--accent);
+}
+.range-dual input[type="range"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: none;
+}
+.range-dual input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.range-dual input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.range-dual input[type="range"]::-moz-range-track {
+  background: transparent;
+}
+.range-dual input[type="range"]:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 @layer base {
   * {
     border-color: var(--border);

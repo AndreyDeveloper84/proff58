@@ -240,9 +240,15 @@ function buildProductParams(query: ListingQuery): URLSearchParams {
 
   // EAV-фасеты PLP: ключи фильтров с префиксом attr_ (напр. attr_tool_type) уходят в
   // products-эндпоинт как есть — тем же параметром, что и в фасеты (один механизм фильтрации).
+  // Чекбоксы → attr_x=v; числовой диапазон → attr_x_min / attr_x_max.
   for (const [code, val] of Object.entries(f)) {
     if (!code.startsWith("attr_")) continue;
-    if (Array.isArray(val)) for (const v of val) sp.append(code, v);
+    if (Array.isArray(val)) {
+      for (const v of val) sp.append(code, v);
+    } else if (val) {
+      if (val.min != null) sp.set(`${code}_min`, String(val.min));
+      if (val.max != null) sp.set(`${code}_max`, String(val.max));
+    }
   }
 
   // Серверная сортировка: дефолт (popular) бэку не шлём (он и так по name). rating бэк
@@ -269,10 +275,16 @@ function buildFacetParams(query: ListingQuery): URLSearchParams {
     if (price.min != null) sp.set("price_min", String(price.min));
     if (price.max != null) sp.set("price_max", String(price.max));
   }
-  // EAV-фасеты уже имеют префикс attr_ в ключе фильтра → шлём как есть (attr_tool_type=value).
+  // EAV-фасеты уже имеют префикс attr_ в ключе фильтра → шлём как есть: чекбоксы attr_x=value,
+  // числовой диапазон attr_x_min / attr_x_max (drill-down счётчиков учитывает выбранный диапазон).
   for (const [code, val] of Object.entries(f)) {
     if (!code.startsWith("attr_")) continue;
-    if (Array.isArray(val)) for (const v of val) sp.append(code, v);
+    if (Array.isArray(val)) {
+      for (const v of val) sp.append(code, v);
+    } else if (val) {
+      if (val.min != null) sp.set(`${code}_min`, String(val.min));
+      if (val.max != null) sp.set(`${code}_max`, String(val.max));
+    }
   }
   return sp;
 }

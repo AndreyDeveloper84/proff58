@@ -71,23 +71,45 @@ class CategoryTreeView(APIView):
         return Response(build_category_tree(nodes))
 
 
+def parse_attr_params(params) -> tuple[dict[str, list[str]], dict[str, tuple]]:
+    """Разобрать EAV-параметры PLP в фильтры и числовые диапазоны (общий разбор для вьюх).
+
+    ``attr_<slug>`` → ``filters[slug] = [raw, ...]`` (чекбоксы/select, OR внутри атрибута).
+    ``attr_<slug>_min`` / ``attr_<slug>_max`` → ``ranges[slug] = (lo, hi)`` (float; мусор/пусто
+    игнорируем — ни список, ни фасеты не должны падать на кривом URL). Деление по суффиксу
+    ``_min/_max``; slug select-атрибутов так не оканчивается, поэтому пересечения нет.
+    Список товаров и счётчики фасетов используют ОДИН разбор → выдача согласована.
+    """
+    prefix = "attr_"
+    filters: dict[str, list[str]] = {}
+    ranges_acc: dict[str, list] = {}  # slug -> [lo, hi]
+    for key in params:
+        if not key.startswith(prefix) or not key[len(prefix) :]:
+            continue
+        body = key[len(prefix) :]
+        if body.endswith("_min") or body.endswith("_max"):
+            slug = body[:-4]
+            if not slug:
+                continue
+            try:
+                val = float(params.get(key))
+            except (TypeError, ValueError):
+                continue  # пустое/мусор → диапазон без этой границы
+            lo, hi = ranges_acc.get(slug, [None, None])
+            if body.endswith("_min"):
+                lo = val
+            else:
+                hi = val
+            ranges_acc[slug] = [lo, hi]
+        else:
+            filters[body] = params.getlist(key)
+    return filters, {slug: (b[0], b[1]) for slug, b in ranges_acc.items()}
+
+
 class ProductListView(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = ProductListSerializer
     filterset_class = ProductFilter
-
-    def _attr_filters(self) -> dict[str, list[str]]:
-        """EAV-фасеты PLP: параметры ``attr_<slug>`` → ``{slug: [raw, ...]}``.
-
-        Тот же разбор, что в CategoryFacetsView — список и счётчики фасетов фильтруются
-        одним механизмом (см. apply_product_attr_filters).
-        """
-        params = self.request.query_params
-        out: dict[str, list[str]] = {}
-        for key in params:
-            if key.startswith("attr_") and key[len("attr_") :]:
-                out[key[len("attr_") :]] = params.getlist(key)
-        return out
 
     def get_queryset(self):
         # При поиске (?search=, len>=2) ordering по релевантности задаёт
@@ -107,7 +129,8 @@ class ProductListView(generics.ListAPIView):
                 ),
             )
         )
-        qs = apply_product_attr_filters(qs, self._attr_filters())
+        attr_filters, attr_ranges = parse_attr_params(self.request.query_params)
+        qs = apply_product_attr_filters(qs, attr_filters, attr_ranges)
         q = (self.request.query_params.get("search") or "").strip()
         if len(q) >= 2:
             return qs  # поиск → релевантность (filter_search); ?sort игнорируется
@@ -277,10 +300,7 @@ class CategoryFacetsView(APIView):
         if stock_status and stock_status not in StockStatus.values:
             return Response({"detail": "Недопустимый stock_status"}, status=400)
 
-        attr_filters = {}
-        for key in params:
-            if key.startswith("attr_") and key[len("attr_") :]:
-                attr_filters[key[len("attr_") :]] = params.getlist(key)
+        attr_filters, attr_ranges = parse_attr_params(params)
 
         def _price(name):
             raw = params.get(name)
@@ -297,6 +317,7 @@ class CategoryFacetsView(APIView):
                 brands=params.getlist("brand") or None,
                 stock_status=stock_status or None,
                 attr_filters=attr_filters,
+                attr_ranges=attr_ranges,
                 price_min=_price("price_min"),
                 price_max=_price("price_max"),
             )
