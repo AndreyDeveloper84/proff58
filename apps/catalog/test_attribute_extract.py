@@ -394,6 +394,53 @@ def test_almaz_adapter_ring_extracts_nothing(rules):
     assert "bore" not in _almaz(rules, "Кольцо переходное 30х22,2 для дисков")  # Ø-anchor
 
 
+# --- Новые типы Электроинструмента (переиспользуют power/voltage/impact_energy + saw_type) ---
+
+
+def test_shlifmashiny_power_and_source(rules):
+    f = {
+        v.slug: v
+        for v in rules.extract("shlifmashiny", "Шлифмаш вибр Bosch GSS 23 AE, 190Вт, сетевая")
+    }
+    assert f["power"].number == Decimal("190")
+    assert f["power_source"].option_slug == "mains"
+
+
+def test_shlifmashiny_cordless_voltage(rules):
+    f = {
+        v.slug: v
+        for v in rules.extract("shlifmashiny", "Шлифмаш эксцентрик аккум 18В Li-ion без АКБ")
+    }
+    assert f["voltage"].number == Decimal("18")
+    assert f["power_source"].option_slug == "battery"
+    assert f["battery_included"].boolean is False
+
+
+def test_otboynye_molotki_power_and_impact(rules):
+    f = {
+        v.slug: v
+        for v in rules.extract(
+            "otboynye-molotki", "Молоток отб TE-DH 32. SDS-MAX ,1500Вт, 32Дж, 10,8 кг"
+        )
+    }
+    assert f["power"].number == Decimal("1500")
+    assert f["impact_energy"].number == Decimal("32")
+
+
+def test_pily_saw_type(rules):
+    def slug(name):
+        return {v.slug: v for v in rules.extract("pily", name)}["saw_type"].option_slug
+
+    assert slug("Пила дисковая аккум. Makita DSS610") == "diskovaya"
+    assert slug("Пила сабельная аккум DENZEL CRC-115") == "sabelnaya"
+    assert slug("Пила цепная электрическая 2000Вт") == "tsepnaya"
+
+
+def test_frezery_power(rules):
+    f = {v.slug: v for v in rules.extract("frezery", "Фрезер Einhell TC-RO 1155 E, 1100Вт, 55мм")}
+    assert f["power"].number == Decimal("1100")
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""
