@@ -17,7 +17,14 @@ from apps.catalog.models import (
     Product,
     ProductAttributeValue,
 )
-from apps.catalog.tool_type import ASSIGNED, MODERATION, RECATEGORIZE, ToolTypeRules, normalize
+from apps.catalog.tool_type import (
+    ASSIGNED,
+    MODERATION,
+    RECATEGORIZE,
+    ToolTypeRules,
+    normalize,
+    transliterate,
+)
 
 RULES = {
     "version": 1,
@@ -175,3 +182,29 @@ class RealRulesRegressionTests(TestCase):
         )
         self.assertEqual(ex.result, ASSIGNED)
         self.assertEqual(ex.slug, "krugi-almaznye")
+
+    def test_osnastka_subgroups_have_canonical_slugs(self):
+        # Имена правил выровнены с категориями сайта (как #185), иначе inherit падает
+        # в tip-N, который теперь публичен в URL фасетов (?attr_tool_type=tip-N).
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+        expected = {
+            "Отрезные и шлифовальные круги": "krugi-shlif",
+            "Наборы бит и насадок": "nabory-bit",
+            "Развёртки и фрезы": "razvertki-frezy",
+            "Прочая оснастка": "prochaya-osnastka",
+        }
+        for subgroup, slug in expected.items():
+            ex = rules.extract("Оснастка и расходники", "товар", subgroup)
+            self.assertEqual(ex.result, ASSIGNED, subgroup)
+            self.assertEqual(ex.slug, slug, subgroup)
+
+
+class TransliterateTests(TestCase):
+    """Транслитерация кириллицы для слугов (фолбэк _unique_option_slug, C2)."""
+
+    def test_basic_cyrillic_to_latin(self):
+        self.assertEqual(transliterate("Прочая оснастка"), "prochaya osnastka")
+        self.assertEqual(transliterate("Щётки"), "schetki")  # щ→sch, ё→e
+
+    def test_latin_and_digits_untouched(self):
+        self.assertEqual(transliterate("SDS-MAX 18В"), "sds-max 18v")

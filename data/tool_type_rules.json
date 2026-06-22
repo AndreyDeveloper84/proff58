@@ -752,7 +752,7 @@
           "source": "1c_subgroup"
         },
         {
-          "tool_type": "Наборы бит, насадок, сверел",
+          "tool_type": "Наборы бит и насадок",
           "slug": "nabory-bit",
           "source": "1c_subgroup"
         },
@@ -767,7 +767,7 @@
           "source": "1c_subgroup"
         },
         {
-          "tool_type": "Круги, шлифовалка",
+          "tool_type": "Отрезные и шлифовальные круги",
           "slug": "krugi-shlif",
           "source": "1c_subgroup"
         },
@@ -782,7 +782,7 @@
           "source": "1c_subgroup"
         },
         {
-          "tool_type": "Развертки, фрезы",
+          "tool_type": "Развёртки и фрезы",
           "slug": "razvertki-frezy",
           "source": "1c_subgroup"
         },
@@ -794,6 +794,11 @@
         {
           "tool_type": "Мешки для пылесосов",
           "slug": "meshki-pylesos",
+          "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Прочая оснастка",
+          "slug": "prochaya-osnastka",
           "source": "1c_subgroup"
         }
       ]

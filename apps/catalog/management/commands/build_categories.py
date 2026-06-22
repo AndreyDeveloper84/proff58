@@ -15,50 +15,9 @@ from django.utils.text import slugify
 
 from apps.catalog.ingest import load_group_mapping
 from apps.catalog.models import Category
+from apps.catalog.tool_type import transliterate
 
 OFFSITE_ROOT_NAME = "Не на сайте"
-
-# Транслитерация для ЧПУ-слугов категорий (латиница, как у tool_type-слугов):
-# /catalog/elektroinstrument/, а не /catalog/электроинструмент/.
-_TRANSLIT = {
-    "а": "a",
-    "б": "b",
-    "в": "v",
-    "г": "g",
-    "д": "d",
-    "е": "e",
-    "ё": "e",
-    "ж": "zh",
-    "з": "z",
-    "и": "i",
-    "й": "y",
-    "к": "k",
-    "л": "l",
-    "м": "m",
-    "н": "n",
-    "о": "o",
-    "п": "p",
-    "р": "r",
-    "с": "s",
-    "т": "t",
-    "у": "u",
-    "ф": "f",
-    "х": "h",
-    "ц": "ts",
-    "ч": "ch",
-    "ш": "sh",
-    "щ": "sch",
-    "ъ": "",
-    "ы": "y",
-    "ь": "",
-    "э": "e",
-    "ю": "yu",
-    "я": "ya",
-}
-
-
-def transliterate(text: str) -> str:
-    return "".join(_TRANSLIT.get(ch, _TRANSLIT.get(ch.lower(), ch)) for ch in text.lower())
 
 
 def _unique_slug(name: str) -> str:
