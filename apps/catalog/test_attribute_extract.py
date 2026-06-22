@@ -317,6 +317,60 @@ def test_lobziki_power_source_inference_blocked_by_battery_included(rules):
     assert f.get("power_source") is None or f["power_source"].option_slug != "mains"
 
 
+# --- Алмазные круги (tool_type=krugi-almaznye) -------------------------------
+
+ALMAZ = "krugi-almaznye"
+
+
+def _almaz(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(ALMAZ, name)}
+
+
+def test_almaz_full_format_diameter_and_bore(rules):
+    f = _almaz(rules, "Круг алмаз. отрез. 125х2,0х22,23 ЗУБР")
+    assert f["disc_diameter"].number == Decimal("125")
+    assert f["bore"].number == Decimal("22.23")
+
+
+def test_almaz_bore_after_third_separator(rules):
+    # Посадочный — после 3-го «х» в «125х1,2х10х22,23».
+    f = _almaz(rules, "Круг алмаз. отрез. 125х1,2х10х22,23 SKYWER")
+    assert f["disc_diameter"].number == Decimal("125")
+    assert f["bore"].number == Decimal("22.23")
+
+
+def test_almaz_diameter_bore_disc_type(rules):
+    f1 = _almaz(rules, "Круг алмаз. отрез. 230х22,2 сплошной")
+    assert f1["disc_diameter"].number == Decimal("230")
+    assert f1["bore"].number == Decimal("22.2")
+    assert f1["disc_type"].option_slug == "solid"
+    f2 = _almaz(rules, "Круг алмаз отрез 350х25,4 сегмент")
+    assert f2["disc_diameter"].number == Decimal("350")
+    assert f2["bore"].number == Decimal("25.4")
+    assert f2["disc_type"].option_slug == "segment"
+
+
+def test_almaz_disc_type_turbo_wins_over_segment(rules):
+    # «турбо-сегментный» → turbo (порядок вариантов turbo раньше segment).
+    assert (
+        _almaz(rules, "Круг алмазный турбо-сегментный 230х22,23")["disc_type"].option_slug
+        == "turbo"
+    )
+
+
+def test_almaz_bare_diameter_whitelist(rules):
+    # «125 УНИВЕРСАЛ» без «х» — whitelist ловит Ø; посадочного/типа нет.
+    f = _almaz(rules, "Круг алмаз. отрез. 125 УНИВЕРСАЛ ЗУБР")
+    assert f["disc_diameter"].number == Decimal("125")
+    assert "bore" not in f and "disc_type" not in f
+
+
+def test_almaz_adapter_ring_extracts_nothing(rules):
+    # Кольца-переходники не несут Ø из whitelist → ничего не извлекаем (важный негатив).
+    assert _almaz(rules, "Кольцо переходное 22,2-20 мм для дисков") == {}
+    assert "bore" not in _almaz(rules, "Кольцо переходное 30х22,2 для дисков")  # Ø-anchor
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""

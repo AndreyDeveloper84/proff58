@@ -104,17 +104,21 @@ class Command(BaseCommand):
         return attribute, opt_count
 
     def _bind_category(self, attribute: Attribute, a: dict, category_name: str) -> bool:
-        top = Category.objects.filter(depth=1, name=category_name).first()
-        if top is None:
+        # Депт-1 (топ) имеет приоритет — обратная совместимость; если топа с таким
+        # именем нет, а имя уникально в дереве — биндим к точной под-категории
+        # (напр. «Алмазные круги»), чтобы фасет не засорял всю топ-категорию.
+        qs = Category.objects.filter(name=category_name)
+        category = qs.filter(depth=1).first() or (qs.first() if qs.count() == 1 else None)
+        if category is None:
             self.stdout.write(
                 self.style.WARNING(
-                    f"  категория верхнего уровня «{category_name}» не найдена — "
+                    f"  категория «{category_name}» не найдена или неоднозначна — "
                     f"сначала выполните build_categories."
                 )
             )
             return False
         CategoryAttribute.objects.update_or_create(
-            category=top,
+            category=category,
             attribute=attribute,
             defaults=dict(
                 is_filter=a.get("is_filter", True),
