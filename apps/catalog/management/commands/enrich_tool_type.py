@@ -72,6 +72,7 @@ class Command(BaseCommand):
         logs: list[EnrichmentLog] = []
         pav_create: list[ProductAttributeValue] = []
         pav_update: list[ProductAttributeValue] = []
+        pav_delete_ids: list[int] = []
         cache_updates: list[Product] = []
 
         qs = (
@@ -112,8 +113,10 @@ class Command(BaseCommand):
                         cache_updates.append(product)
                     elif ex.result == RECATEGORIZE:
                         stats["recategorize_flagged"] += 1
+                        self._prune_tool_type(product, existing_pav, pav_delete_ids, cache_updates)
                     else:
                         stats["moderation"] += 1
+                        self._prune_tool_type(product, existing_pav, pav_delete_ids, cache_updates)
 
                     logs.append(
                         EnrichmentLog(
@@ -143,6 +146,9 @@ class Command(BaseCommand):
                             cache_updates, ["attrs_cache"], batch_size=BATCH
                         )
                         cache_updates.clear()
+                    if len(pav_delete_ids) >= BATCH:
+                        ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
+                        pav_delete_ids.clear()
 
                 if logs:
                     EnrichmentLog.objects.bulk_create(logs, batch_size=BATCH)
@@ -154,6 +160,8 @@ class Command(BaseCommand):
                     )
                 if cache_updates:
                     Product.objects.bulk_update(cache_updates, ["attrs_cache"], batch_size=BATCH)
+                if pav_delete_ids:
+                    ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
 
                 run.status = ImportRunStatus.DONE
         except Exception as exc:  # noqa: BLE001
@@ -207,6 +215,18 @@ class Command(BaseCommand):
                 opt_by_slug[opt.slug] = opt
             opt_by_value[normalize(opt.value)] = opt
         return opt_by_slug, opt_by_value
+
+    @staticmethod
+    def _prune_tool_type(product, existing_pav, pav_delete_ids, cache_updates) -> None:
+        """Снять устаревший tool_type у товара, переставшего быть assigned (стал
+        recategorize/moderation): удалить PAV и убрать ключ из attrs_cache. Иначе
+        товар остаётся в старом фасете (напр. садовая техника в «Аккумуляторах»)."""
+        pav = existing_pav.get(product.id)
+        if pav is not None:
+            pav_delete_ids.append(pav.id)
+        if product.attrs_cache and "tool_type" in product.attrs_cache:
+            product.attrs_cache = {k: v for k, v in product.attrs_cache.items() if k != "tool_type"}
+            cache_updates.append(product)
 
     def _resolve_option(self, attribute, ex, opt_by_slug, opt_by_value) -> AttributeOption:
         """Опция tool_type для assigned. Для inherit-подгрупп вне правил — создаём."""
