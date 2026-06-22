@@ -1,15 +1,18 @@
 """Маршруты публичного API каталога под префиксом /api/catalog/."""
 
-from django.urls import path
+from django.urls import path, re_path
 
 from . import views
 
 app_name = "catalog_api"
 
+# \w в Python 3 включает Unicode → кириллические slug работают
+_SLUG = r"(?P<slug>[-\w]+)"
+
 urlpatterns = [
     path("categories/", views.CategoryTreeView.as_view(), name="categories"),
-    path(
-        "categories/<slug:slug>/facets/",
+    re_path(
+        rf"^categories/{_SLUG}/facets/$",
         views.CategoryFacetsView.as_view(),
         name="category-facets",
     ),
@@ -19,10 +22,10 @@ urlpatterns = [
         views.ProductSuggestView.as_view(),
         name="product-suggest",
     ),
-    path(
-        "products/<slug:slug>/compatible/",
+    re_path(
+        rf"^products/{_SLUG}/compatible/$",
         views.ProductCompatibleView.as_view(),
         name="product-compatible",
     ),
-    path("products/<slug:slug>/", views.ProductDetailView.as_view(), name="product-detail"),
+    re_path(rf"^products/{_SLUG}/$", views.ProductDetailView.as_view(), name="product-detail"),
 ]
