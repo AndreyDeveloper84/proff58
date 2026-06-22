@@ -1347,6 +1347,143 @@
           ]
         }
       ]
+    },
+    {
+      "tool_type": "koronki",
+      "category": "Оснастка и расходники",
+      "attributes": [
+        {
+          "slug": "diameter",
+          "name": "Диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?<![\\d.,])(\\d{1,3})\\s*мм",
+            "(?<![\\d.,])(\\d{1,3})\\s*[х*x]\\s*\\d"
+          ]
+        },
+        {
+          "slug": "mount",
+          "name": "Посадка",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "SDS-max",
+              "slug": "sds-max",
+              "keywords": [
+                "sds-max",
+                "sds max"
+              ]
+            },
+            {
+              "value": "SDS-plus",
+              "slug": "sds-plus",
+              "keywords": [
+                "sds-plus",
+                "sds plus",
+                "sds+"
+              ]
+            },
+            {
+              "value": "М14",
+              "slug": "m14",
+              "keywords": [
+                "м14"
+              ]
+            },
+            {
+              "value": "М16",
+              "slug": "m16",
+              "keywords": [
+                "м16"
+              ]
+            },
+            {
+              "value": "М22",
+              "slug": "m22",
+              "keywords": [
+                "м22"
+              ]
+            },
+            {
+              "value": "1¼\"",
+              "slug": "thread-1-1-4",
+              "keywords": [
+                "1 1/4",
+                "1-1/4",
+                "1.1/4"
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "purpose",
+          "name": "Назначение",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "По бетону",
+              "slug": "beton",
+              "keywords": [
+                "по бетону",
+                "бетон"
+              ]
+            },
+            {
+              "value": "По металлу",
+              "slug": "metall",
+              "keywords": [
+                "по металл",
+                "металл"
+              ]
+            },
+            {
+              "value": "По дереву",
+              "slug": "derevo",
+              "keywords": [
+                "по дерев",
+                "дерев"
+              ]
+            },
+            {
+              "value": "По гипсокартону",
+              "slug": "gipsokarton",
+              "keywords": [
+                "гипсокартон",
+                "гкл"
+              ]
+            },
+            {
+              "value": "По плитке/керамике",
+              "slug": "plitka",
+              "keywords": [
+                "плитк",
+                "кафел",
+                "керамогранит",
+                "керам"
+              ]
+            },
+            {
+              "value": "Универсальная",
+              "slug": "universal",
+              "keywords": [
+                "универсал"
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

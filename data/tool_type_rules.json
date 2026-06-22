@@ -773,6 +773,20 @@
           "source": "1c_subgroup"
         },
         {
+          "tool_type": "Наборы коронок",
+          "slug": "nabory-koronok",
+          "subgroup": "Коронки",
+          "match_keywords": ["набор", "комплект"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Оснастка для коронок",
+          "slug": "osnastka-koronok",
+          "subgroup": "Коронки",
+          "match_keywords": ["адаптер", "адептер", "удлинитель", "оправк", "центрир", "центров", "пилот", "направля", "выталкиват", "головка", "клин для", "держатель для", "державк для", "хвостовик для", "пылеотвод для"],
+          "source": "name_keywords"
+        },
+        {
           "tool_type": "Биты",
           "slug": "bity",
           "source": "1c_subgroup"

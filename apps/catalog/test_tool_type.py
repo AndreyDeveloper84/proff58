@@ -253,6 +253,18 @@ class RealRulesRegressionTests(TestCase):
         self.assertEqual(slug("Удлинитель для бура SDS-plus 300мм ЗУБР"), "osnastka-burov")
         self.assertEqual(slug("Бур садовый шнековый, 1085 мм"), "sadovye-bury")
 
+    def test_koronki_subtypes_split(self):
+        # «Коронки»: наборы и оснастка (адаптеры/удлинители/центр.свёрла) отделяются.
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+
+        def slug(name):
+            return rules.extract("Оснастка и расходники", name, "Коронки").slug
+
+        self.assertEqual(slug("Коронка 65мм по бетону SDS+ СЕБ"), "koronki")
+        self.assertEqual(slug("Набор буровых коронок 5шт 33,50,68,82,100мм"), "nabory-koronok")
+        self.assertEqual(slug("Адаптер для алмазных коронок KRAFTOOL М16"), "osnastka-koronok")
+        self.assertEqual(slug("Удлинитель для коронок 200мм"), "osnastka-koronok")
+
     def test_accessory_keywords_scoped_to_diamond_discs(self):
         # «Держатель»/«переходник» в других подгруппах НЕ переклассифицируются.
         rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")

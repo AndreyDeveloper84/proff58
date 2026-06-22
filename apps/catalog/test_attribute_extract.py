@@ -459,6 +459,23 @@ def test_bury_sds_max_two_digit_diameter(rules):
     assert f["shank_type"].option_slug == "sds-max"
 
 
+# --- Коронки (tool_type=koronki): одиночный Ø + посадка + назначение ----------
+
+
+def test_koronki_single_diameter_mount_purpose(rules):
+    f = {v.slug: v for v in rules.extract("koronki", "Коронка 65 мм по бетону SDS+ СЕБ")}
+    assert f["diameter"].number == Decimal("65")
+    assert f["mount"].option_slug == "sds-plus"
+    assert f["purpose"].option_slug == "beton"
+
+
+def test_koronki_small_diamond_bit_m14(rules):
+    # Алмазная коронка «6 мм М14» — одноцифровой Ø и посадка М14.
+    f = {v.slug: v for v in rules.extract("koronki", "Коронка алм. 6 мм М14 ЗУБР керамогранит")}
+    assert f["diameter"].number == Decimal("6")
+    assert f["mount"].option_slug == "m14"
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""
