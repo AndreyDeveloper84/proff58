@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -10,7 +11,7 @@ from rest_framework.views import APIView
 from apps.ai.api.serializers import serialize_recommendation
 from apps.ai.services import DEFAULT_LIMIT, recommend
 from apps.catalog.filters import visible_products
-from apps.catalog.models import Product
+from apps.catalog.models import Product, ProductAttributeValue
 from apps.pricing.services import price_map_for_products
 
 
@@ -42,7 +43,16 @@ class ProductRecommendationsView(APIView):
             p.id: p
             for p in Product.objects.filter(id__in=[r.product_id for r in recs])
             .select_related("category")
-            .prefetch_related("images")
+            .prefetch_related(
+                "images",
+                # specs карточки (ProductListSerializer.attributes) — без N+1.
+                Prefetch(
+                    "attribute_values",
+                    queryset=ProductAttributeValue.objects.select_related(
+                        "attribute", "value_option"
+                    ),
+                ),
+            )
         }
         ordered = [(by_id[r.product_id], r) for r in recs if r.product_id in by_id]
 

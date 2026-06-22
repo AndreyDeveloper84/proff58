@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 
 from .models import (
     AttributeType,
@@ -24,6 +24,14 @@ from .models import (
 )
 
 TOOL_TYPE_SLUG = "tool_type"
+
+
+def _attrs_prefetch(rel: str) -> Prefetch:
+    """Prefetch характеристик связанного товара (specs в карточках секций совместимости)."""
+    return Prefetch(
+        f"{rel}__attribute_values",
+        queryset=ProductAttributeValue.objects.select_related("attribute", "value_option"),
+    )
 
 
 def _subtree_ids(category: Category) -> list[int]:
@@ -183,7 +191,7 @@ def accessories_of(product: Product) -> list[CompatibilityItem]:
             target__status=ProductStatus.PUBLISHED,
         )
         .select_related("target", "target__category")
-        .prefetch_related("target__images")
+        .prefetch_related("target__images", _attrs_prefetch("target"))
         .order_by("sort_order", "id")
     )
     return [
@@ -205,7 +213,7 @@ def fits_of(product: Product) -> list[CompatibilityItem]:
             source__status=ProductStatus.PUBLISHED,
         )
         .select_related("source", "source__category")
-        .prefetch_related("source__images")
+        .prefetch_related("source__images", _attrs_prefetch("source"))
         .order_by("sort_order", "id")
     )
     return [
@@ -226,7 +234,9 @@ def compatible_of(product: Product) -> list[CompatibilityItem]:
             kind=CompatibilityKind.COMPATIBLE,
         )
         .select_related("source", "target", "source__category", "target__category")
-        .prefetch_related("source__images", "target__images")
+        .prefetch_related(
+            "source__images", "target__images", _attrs_prefetch("source"), _attrs_prefetch("target")
+        )
         .order_by("sort_order", "id")
     )
     items: list[CompatibilityItem] = []

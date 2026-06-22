@@ -13,11 +13,11 @@ import operator
 from collections import Counter
 from functools import reduce
 
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Min, Q
 from django.db.models.fields.json import KeyTextTransform
 
 from .filters import filtered_products
-from .models import Attribute, AttributeOption, AttributeType
+from .models import Attribute, AttributeOption, AttributeType, StockStatus
 from .queries import _category_filter_attributes
 
 # --- Лимиты фасетного эндпоинта (публичный AllowAny) ---
@@ -25,6 +25,7 @@ MAX_ATTR_FILTERS = 20
 MAX_VALUES_PER_ATTR = 50
 MAX_VALUE_LENGTH = 255
 MAX_FACET_VALUES = 100
+MAX_BRAND_FACETS = 50
 
 _BOOL_TRUE = {"true", "1", "yes", "да"}
 _BOOL_FALSE = {"false", "0", "no", "нет"}
@@ -139,6 +140,15 @@ def _apply_attr_filters(qs, coerced, exclude=None):
     return qs
 
 
+def _apply_price(qs, price_min, price_max):
+    """Числовой фильтр цены (drill-down). None-границы игнорируются."""
+    if price_min is not None:
+        qs = qs.filter(price__gte=price_min)
+    if price_max is not None:
+        qs = qs.filter(price__lte=price_max)
+    return qs
+
+
 def _cast_facet_value(text, attr_type):
     """Текст из ``->>'slug'`` (KeyTextTransform) → типизированное значение по типу атрибута."""
     if attr_type == AttributeType.INTEGER:
@@ -150,7 +160,9 @@ def _cast_facet_value(text, attr_type):
     return text  # text / select
 
 
-def build_facets(category, *, brands=None, stock_status=None, attr_filters=None) -> dict:
+def build_facets(
+    category, *, brands=None, stock_status=None, attr_filters=None, price_min=None, price_max=None
+) -> dict:
     """Фасеты категории со счётчиками (drill-down). attr_filters: {slug: [raw,...]}.
 
     Подсчёт — в PostgreSQL (GROUP BY по JSONB ``attrs_cache``), не в Python: на каждый
@@ -192,7 +204,9 @@ def build_facets(category, *, brands=None, stock_status=None, attr_filters=None)
         else:
             coerced[slug] = [_coerce(raw, attr.attribute_type) for raw in raw_values]
 
-    base_qs = filtered_products(category, brands=brands, stock_status=stock_status)
+    # base_bs — category+brand+stock (без цены); base_qs — ещё и +price (drill-down для attr/total).
+    base_bs = filtered_products(category, brands=brands, stock_status=stock_status)
+    base_qs = _apply_price(base_bs, price_min, price_max)
     total = _apply_attr_filters(base_qs, coerced).count()
 
     facets = []
@@ -238,8 +252,73 @@ def build_facets(category, *, brands=None, stock_status=None, attr_filters=None)
             }
         )
 
+    # --- price/brand/stock фасеты: drill-down (каждый БЕЗ собственного измерения) ---
+    # price: база БЕЗ price (category+brand+stock+attrs), только товары с ценой.
+    pa = (
+        _apply_attr_filters(base_bs, coerced)
+        .filter(price__isnull=False)
+        .aggregate(lo=Min("price"), hi=Max("price"))
+    )
+    price = {
+        "min": float(pa["lo"]) if pa["lo"] is not None else None,
+        "max": float(pa["hi"]) if pa["hi"] is not None else None,
+    }
+    # brands: база БЕЗ brand (category+stock+price+attrs), один group-by.
+    brand_base = _apply_attr_filters(
+        _apply_price(
+            filtered_products(category, brands=None, stock_status=stock_status),
+            price_min,
+            price_max,
+        ),
+        coerced,
+    )
+    selected_brands = {b.lower() for b in (brands or [])}
+    brands_out = [
+        {
+            "value": r["brand"],
+            "label": r["brand"],
+            "count": r["c"],
+            "selected": r["brand"].lower() in selected_brands,
+        }
+        for r in brand_base.exclude(brand="")
+        .values("brand")
+        .annotate(c=Count("id"))
+        .order_by("-c", "brand")[:MAX_BRAND_FACETS]
+    ]
+    # stock: база БЕЗ stock (category+brand+price+attrs), один group-by.
+    stock_base = _apply_attr_filters(
+        _apply_price(
+            filtered_products(category, brands=brands, stock_status=None),
+            price_min,
+            price_max,
+        ),
+        coerced,
+    )
+    stock_labels = dict(StockStatus.choices)
+    stock_out = [
+        {
+            "value": r["stock_status"],
+            "label": str(stock_labels.get(r["stock_status"], r["stock_status"])),
+            "count": r["c"],
+            "selected": r["stock_status"] == stock_status,
+        }
+        for r in stock_base.values("stock_status").annotate(c=Count("id")).order_by("-c")
+    ]
+
     return {
-        "category": category.slug,
+        "category": {
+            "name": category.name,
+            "slug": category.slug,
+            "description": getattr(category, "description", "") or "",
+            "breadcrumb": [{"name": c.name, "slug": c.slug} for c in category.get_ancestors()]
+            + [{"name": category.name, "slug": category.slug}],
+        },
+        "subcategories": [
+            {"name": c.name, "slug": c.slug} for c in category.get_children().filter(is_active=True)
+        ],
+        "price": price,
+        "brands": brands_out,
+        "stock": stock_out,
         "total_products": total,
         "applied_filters": {
             "brands": list(brands or []),

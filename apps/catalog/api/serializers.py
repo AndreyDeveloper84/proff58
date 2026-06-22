@@ -7,10 +7,23 @@ from apps.pricing.services import RETAIL, price_for
 from ..models import Product
 from ..services import attr_value_to_json
 
+# Сколько характеристик отдаём в листинге (карточке хватает 3-5; не раздуваем PLP).
+CARD_ATTRS_LIMIT = 10
+
 
 def _money(value):
     """Decimal → строка (как DRF рендерит DecimalField), либо None."""
     return None if value is None else str(value)
+
+
+def _attr_dict(pav):
+    """Характеристика товара для API: {name, slug, unit, value} (value типизирован)."""
+    return {
+        "name": pav.attribute.name,
+        "slug": pav.attribute.slug,
+        "unit": pav.attribute.unit,
+        "value": attr_value_to_json(pav),
+    }
 
 
 def _image_url(image, context) -> str | None:
@@ -43,6 +56,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     category = CategoryRefSerializer(read_only=True)
     main_image = serializers.SerializerMethodField()
     price_type = serializers.SerializerMethodField()
+    attributes = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -59,7 +73,22 @@ class ProductListSerializer(serializers.ModelSerializer):
             "stock_status",
             "main_image",
             "short_description",
+            "attributes",
         )
+
+    def get_attributes(self, obj):
+        """Ключевые характеристики для строки спеков карточки (ограничено и упорядочено).
+
+        Только фильтруемые/сравниваемые, по имени, не более ``CARD_ATTRS_LIMIT``. Полный
+        набор — в ``ProductDetailSerializer``. Источник — prefetched ``attribute_values``.
+        """
+        pavs = [
+            p
+            for p in obj.attribute_values.all()
+            if p.attribute.is_filterable or p.attribute.is_comparable
+        ]
+        pavs.sort(key=lambda p: p.attribute.name)
+        return [_attr_dict(p) for p in pavs[:CARD_ATTRS_LIMIT]]
 
     def get_main_image(self, obj):
         images = list(obj.images.all())  # prefetched — без новых запросов
@@ -98,14 +127,13 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 class ProductDetailSerializer(ProductListSerializer):
     images = serializers.SerializerMethodField()
-    attributes = serializers.SerializerMethodField()
     breadcrumb = serializers.SerializerMethodField()
 
     class Meta(ProductListSerializer.Meta):
+        # attributes уже в базовом списке; detail отдаёт ПОЛНЫЙ набор (override get_attributes ниже).
         fields = ProductListSerializer.Meta.fields + (
             "description",
             "images",
-            "attributes",
             "breadcrumb",
         )
 
@@ -113,15 +141,7 @@ class ProductDetailSerializer(ProductListSerializer):
         return ProductImageSerializer(obj.images.all(), many=True, context=self.context).data
 
     def get_attributes(self, obj):
-        return [
-            {
-                "name": pav.attribute.name,
-                "slug": pav.attribute.slug,
-                "unit": pav.attribute.unit,
-                "value": attr_value_to_json(pav),
-            }
-            for pav in obj.attribute_values.all()  # prefetched
-        ]
+        return [_attr_dict(pav) for pav in obj.attribute_values.all()]  # все, prefetched
 
     def get_breadcrumb(self, obj):
         if obj.category_id is None:

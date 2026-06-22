@@ -282,7 +282,7 @@ def test_no_nplus1(client, tree, django_assert_max_num_queries):
     for i in range(10):
         make_product(leaf, f"p{i}", {"power": 500 + i, "chuck": "Быстрозажимной"})
 
-    with django_assert_max_num_queries(8):
+    with django_assert_max_num_queries(12):
         client.get("/api/catalog/categories/dreli/facets/")
 
 
@@ -444,5 +444,5 @@ def test_facet_queries_scale_with_attrs_not_products(client, tree, django_assert
     for i in range(100):
         make_product(leaf, f"p{i}", {"power": 500 + (i % 5), "chuck": "Быстрозажимной"})
 
-    with django_assert_max_num_queries(8):
+    with django_assert_max_num_queries(12):
         client.get("/api/catalog/categories/dreli/facets/")
