@@ -5,6 +5,9 @@ services:
       POSTGRES_DB: proff58
       POSTGRES_USER: proff
       POSTGRES_PASSWORD: proff
+    # Проброс на хост — чтобы локальный pytest/manage (вне Docker) ходил на localhost:5432.
+    ports:
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -38,7 +41,20 @@ services:
 
   celery:
     build: .
-    command: celery -A config worker -l info
+    # Только дефолтная очередь; 1С-задачи разбирает отдельный celery-onec (-c 1).
+    command: celery -A config worker -Q celery -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+
+  celery-onec:
+    build: .
+    # Очередь 1С строго последовательно (concurrency=1) — без гонки «одна актуальная цена» (#126).
+    command: celery -A config worker -Q onec -c 1 -l info
     volumes:
       - .:/app
     env_file:

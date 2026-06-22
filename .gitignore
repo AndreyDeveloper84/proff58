@@ -19,6 +19,8 @@ ENV/
 
 # Django
 *.log
+logs/*
+!logs/.gitkeep
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -52,6 +54,10 @@ coverage.xml
 .idea/
 *.swp
 .DS_Store
+
+# Node (только для сборки CSS витрины через Tailwind)
+node_modules/
+npm-debug.log*
 
 # Docker
 *.pid

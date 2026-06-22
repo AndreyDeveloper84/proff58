@@ -1,0 +1,13 @@
+{
+  "name": "proff58-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Сборка CSS витрины «Профессионал» (Tailwind). Python-проект, Node нужен только для билда стилей.",
+  "scripts": {
+    "build:css": "tailwindcss -i ./apps/core/static/css/tailwind.src.css -o ./apps/core/static/css/app.css --minify",
+    "watch:css": "tailwindcss -i ./apps/core/static/css/tailwind.src.css -o ./apps/core/static/css/app.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}

@@ -7,6 +7,7 @@ from . import views
 app_name = "sync_1c_api"
 
 urlpatterns = [
+    path("snapshot/", views.snapshot, name="snapshot"),
     path("products/import", views.products_import, name="products-import"),
     path("products/update", views.products_update, name="products-update"),
     path("prices/update", views.prices_update, name="prices-update"),

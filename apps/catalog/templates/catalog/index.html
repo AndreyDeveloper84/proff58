@@ -1,0 +1,32 @@
+{% extends "catalog/base.html" %}
+{% block title %}Каталог — категории{% endblock %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Каталог</h1>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Категории верхнего уровня</p>
+    </div>
+    <span class="stat"><span class="stat-dot"></span>категорий: {{ categories|length }}</span>
+  </div>
+
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    {% for cat in categories %}
+      <a href="/catalog/{{ cat.slug }}/" class="card group flex flex-col gap-3 p-4 hover:no-underline">
+        <div class="flex items-start justify-between gap-2">
+          <span class="font-medium text-slate-900 group-hover:text-brand-700 dark:text-white dark:group-hover:text-brand-300">{{ cat.name }}</span>
+          <svg class="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <span class="stat">товаров: {{ cat.total }}</span>
+          <span class="stat"><span class="stat-dot"></span>в наличии: {{ cat.in_stock }}</span>
+        </div>
+      </a>
+    {% empty %}
+      <div class="card col-span-full p-6 text-center text-sm text-slate-500">
+        Категорий нет. Выполните <code class="code">bootstrap_catalog</code>.
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

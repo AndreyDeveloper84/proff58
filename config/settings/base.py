@@ -9,6 +9,8 @@ from pathlib import Path
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
 
 env = environ.Env(
     DJANGO_DEBUG=(bool, False),
@@ -21,20 +23,27 @@ DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 
 INSTALLED_APPS = [
+    # Современная тема админки (должна идти перед django.contrib.admin).
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     # сторонние
     "rest_framework",
     "django_filters",
     "treebeard",
     # приложения проекта
+    "apps.core",
     "apps.accounts",
     "apps.catalog",
     "apps.sync_1c",
+    "apps.pricing",
+    "apps.orders",
+    "apps.ai",
 ]
 
 MIDDLEWARE = [
@@ -69,7 +78,25 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {
-    "default": env.db("DATABASE_URL", default="postgres://proff:proff@db:5432/proff58"),
+    # Дефолт — localhost: чтобы локальный pytest/manage работал без Docker (нужен
+    # доступный Postgres на :5432, напр. `docker compose up -d db`). В Docker и CI
+    # хост задаётся явно через DATABASE_URL (env/.env: `db`/`localhost`), дефолт не используется.
+    "default": env.db("DATABASE_URL", default="postgres://proff:proff@localhost:5432/proff58"),
+}
+# По умолчанию Django открывает новое соединение с БД на КАЖДЫЙ запрос — заметная
+# задержка, особенно «подвисание» первого клика после простоя. Держим соединение
+# открытым между запросами; CONN_HEALTH_CHECKS отбраковывает протухшее соединение
+# перед запросом (иначе первый запрос после простоя мог бы упасть на мёртвом сокете).
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("DJANGO_CONN_MAX_AGE", default=60)
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+
+# Кэш приложения. По умолчанию — локальный, чтобы dev и CI не зависели от Redis.
+# В проде переопределяется на общий Redis (см. config/settings/prod.py).
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "proff58-default",
+    }
 }
 
 AUTH_USER_MODEL = "accounts.User"
@@ -93,11 +120,37 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Тема админки django-jazzmin. Бренд «Профессионал».
+JAZZMIN_SETTINGS = {
+    "site_title": "Профессионал — админка",
+    "site_header": "Профессионал",
+    "site_brand": "Профессионал",
+    "welcome_sign": "Панель управления «Профессионал»",
+    "copyright": "Профессионал",
+    "search_model": ["catalog.Product", "catalog.Category"],
+    "show_ui_builder": False,
+    "related_modal_active": True,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "theme": "flatly",
+    "dark_mode_theme": "darkly",
+    "navbar_fixed": True,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+}
+
 # Celery / Redis
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://redis:6379/1")
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = TIME_ZONE
+
+# Задачи 1С — в выделенную очередь `onec` (worker -Q onec -c 1): обмены идут строго
+# последовательно, что снимает гонку «одна актуальная цена» (#126). Остальные задачи —
+# в дефолтной очереди `celery` (отдельный worker, параллельно).
+CELERY_TASK_DEFAULT_QUEUE = "celery"
+CELERY_TASK_ROUTES = {"apps.sync_1c.tasks.*": {"queue": "onec"}}
 
 REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
@@ -109,3 +162,77 @@ REST_FRAMEWORK = {
 ONEC_API_KEY = env("ONEC_API_KEY", default="")
 # Максимум строк в одном пакете 1С (items). Превышение → 400.
 ONEC_MAX_ITEMS = env.int("ONEC_MAX_ITEMS", default=1000)
+
+# Надёжность фон-импорта 1С (#57): зависшие RUNNING + retry.
+# Порог «зависшего» прогона: RUNNING без финализации дольше этого времени janitor
+# (mark_stale_syncs) помечает ERROR. Закрывает дыру «воркер умер между стартом и финалом».
+SYNC_STALE_TIMEOUT = env.int("SYNC_STALE_TIMEOUT", default=30 * 60)  # секунды
+# Hard time_limit задачи импорта (SIGKILL воркера). soft_time_limit на минуту меньше —
+# даёт задаче финализировать прогон в ERROR до жёсткого убийства.
+SYNC_IMPORT_TIME_LIMIT = env.int("SYNC_IMPORT_TIME_LIMIT", default=15 * 60)  # секунды
+
+# Feature-флаги. Инфраструктурные — здесь (через env, меняют разработчики).
+# Бизнес-флаги (reviews/b2b/...) живут в SiteSettings. Проверка — через
+# apps.core.features.is_enabled(); механизм поддерживает override любого флага
+# через этот словарь.
+FEATURES = {
+    "crm": env.bool("FEATURE_CRM", default=False),
+    "ai": env.bool("FEATURE_AI", default=False),
+    "eventbus": env.bool("FEATURE_EVENTBUS", default=True),
+    "external_integrations": env.bool("FEATURE_EXTERNAL_INTEGRATIONS", default=True),
+}
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+        "django_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "django.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "standard",
+        },
+        "onec_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "1c.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "standard",
+        },
+        "payments_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "payments.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "standard",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "django_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "apps.sync_1c": {
+            "handlers": ["console", "onec_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "payments": {
+            "handlers": ["console", "payments_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}

@@ -14,10 +14,10 @@ from apps.catalog.models import (
     ProductStatus,
     StockStatus,
 )
+from apps.pricing.models import PriceRecord
 from apps.sync_1c import importer, normalizers, parsers, product_writer, use_cases
 from apps.sync_1c.models import (
     NomenclatureStaging,
-    PriceRecord,
     StagingStatus,
     StockRecord,
     SyncLog,
@@ -345,27 +345,35 @@ def test_duplicate_names_get_unique_slugs():
         ]
     )
     assert result.created == 3 and result.errors == 0
-    assert Product.objects.get(code_1c="dup-1").slug == "дрель-2"
-    assert Product.objects.get(code_1c="dup-2").slug == "дрель-3"
+    # Инвариант — УНИКАЛЬНОСТЬ slug (не точный суффикс): bulk использует стабильный
+    # «{base}-{code_1c}» при коллизии, одиночный путь — числовой суффикс.
+    slugs = {Product.objects.get(code_1c=c).slug for c in ("dup-1", "dup-2", "ok-1", "exist-1")}
+    assert len(slugs) == 4  # все уникальны, ни одна строка не потеряна
+    for c in ("dup-1", "dup-2"):
+        assert Product.objects.get(code_1c=c).slug.startswith("дрель")  # база сохранена
     assert Product.objects.get(code_1c="ok-1").slug == "молоток"
-    assert Product.objects.filter(slug="дрель").count() == 1
+    assert Product.objects.filter(slug="дрель").count() == 1  # существующий не тронут
 
 
 @pytest.mark.django_db
 def test_bad_row_recorded_and_batch_continues():
-    """Сбой одной строки попадает в SyncLog.error_details и staging.ERROR, остальные ок."""
-    original = product_writer.create_product
+    """Сбой обработки одной строки → staging.ERROR + SyncLog.error_details, остальные ок.
 
-    def side_effect(item):
+    В bulk-пути запись товара собирается через build_new_product — туда и инжектим сбой;
+    классификация строки изолирована (partial-failure), батч продолжается.
+    """
+    original = product_writer.build_new_product
+
+    def side_effect(item, **kwargs):
         if item.code_1c == "bad-1":
             raise RuntimeError("boom bad-1")
-        return original(item)
+        return original(item, **kwargs)
 
-    with mock.patch("apps.sync_1c.product_writer.create_product", side_effect=side_effect):
+    with mock.patch("apps.sync_1c.product_writer.build_new_product", side_effect=side_effect):
         sync_log, result = use_cases.import_products(
             [
                 {"external_id": "ok-1", "name": "Молоток", "price": "100"},
-                {"external_id": "bad-1", "name": "Дрель", "price": "200"},  # сбой записи
+                {"external_id": "bad-1", "name": "Дрель", "price": "200"},  # сбой обработки
                 {"external_id": "ok-2", "name": "Пила", "price": "300"},
             ]
         )

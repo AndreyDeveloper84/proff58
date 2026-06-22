@@ -1,18 +1,28 @@
-"""Публичный read-only API каталога: дерево категорий, список и карточка товара."""
+"""Публичный read-only API каталога: дерево категорий, список, карточка, фасеты."""
 
-import django_filters
+from django.contrib.postgres.search import TrigramSimilarity
+from django.db.models import Case, F, FloatField, Prefetch, Q, Value, When
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Category, Product, ProductStatus
-from .serializers import ProductDetailSerializer, ProductListSerializer
+from apps.pricing.services import price_map_for_products
 
-
-def visible_products():
-    """Товары, видимые на витрине (is_visible нельзя использовать в queryset)."""
-    return Product.objects.filter(is_active=True, status=ProductStatus.PUBLISHED)
+from ..filters import ProductFilter, visible_products
+from ..models import Category, ProductAttributeValue, StockStatus
+from ..services import (
+    FacetError,
+    apply_product_attr_filters,
+    build_facets,
+    compatibility_sections,
+)
+from .serializers import (
+    ProductDetailSerializer,
+    ProductListSerializer,
+    serialize_compat_item,
+)
 
 
 def build_category_tree(nodes) -> list:
@@ -58,36 +68,119 @@ class CategoryTreeView(APIView):
         return Response(build_category_tree(nodes))
 
 
-class ProductFilter(django_filters.FilterSet):
-    # Категория + все потомки: зайдя в «Электроинструмент», видим товары из «Дрелей».
-    category = django_filters.CharFilter(method="filter_category")
-    brand = django_filters.CharFilter(field_name="brand", lookup_expr="iexact")
-
-    class Meta:
-        model = Product
-        fields = ["stock_status"]  # category/brand — объявлены выше явными фильтрами
-
-    def filter_category(self, queryset, name, value):
-        try:
-            cat = Category.objects.get(slug=value)
-        except Category.DoesNotExist:
-            return queryset.none()
-        ids = [cat.pk, *cat.get_descendants().values_list("pk", flat=True)]
-        return queryset.filter(category_id__in=ids)
-
-
 class ProductListView(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = ProductListSerializer
     filterset_class = ProductFilter
 
+    def _attr_filters(self) -> dict[str, list[str]]:
+        """EAV-фасеты PLP: параметры ``attr_<slug>`` → ``{slug: [raw, ...]}``.
+
+        Тот же разбор, что в CategoryFacetsView — список и счётчики фасетов фильтруются
+        одним механизмом (см. apply_product_attr_filters).
+        """
+        params = self.request.query_params
+        out: dict[str, list[str]] = {}
+        for key in params:
+            if key.startswith("attr_") and key[len("attr_") :]:
+                out[key[len("attr_") :]] = params.getlist(key)
+        return out
+
     def get_queryset(self):
-        return (
+        # При поиске (?search=, len>=2) ordering по релевантности задаёт
+        # ProductFilter.filter_search (.order_by("-_rank", ...)); _rank существует
+        # только тогда. Без поиска — серверная сортировка (?sort=) / алфавит.
+        qs = (
             visible_products()
             .select_related("category")
-            .prefetch_related("images")
-            .order_by("name")
+            .prefetch_related(
+                "images",
+                # specs на карточке: атрибуты товара одним prefetch (без N+1 по странице).
+                Prefetch(
+                    "attribute_values",
+                    queryset=ProductAttributeValue.objects.select_related(
+                        "attribute", "value_option"
+                    ),
+                ),
+            )
         )
+        qs = apply_product_attr_filters(qs, self._attr_filters())
+        q = (self.request.query_params.get("search") or "").strip()
+        if len(q) >= 2:
+            return qs  # поиск → релевантность (filter_search); ?sort игнорируется
+        return self._apply_sort(qs)
+
+    def _apply_sort(self, qs):
+        """Серверная сортировка (whitelist) ДО пагинации. Дефолт — алфавит.
+
+        Источник цены = ``Product.price`` (= отображаемая для аноним/B2C); товары без цены —
+        в конец (nulls_last). Сортировка по эффективной B2B-цене (per-user) — follow-up.
+        Неизвестное/popular/rating → дефолт.
+        """
+        sort = self.request.query_params.get("sort")
+        if sort == "price_asc":
+            return qs.order_by(F("price").asc(nulls_last=True), "id")
+        if sort == "price_desc":
+            return qs.order_by(F("price").desc(nulls_last=True), "id")
+        if sort == "new":
+            return qs.order_by("-created_at", "id")
+        return qs.order_by("name", "id")
+
+    def list(self, request, *args, **kwargs):
+        """Считаем опт-цены ОДНИМ bulk-запросом по текущей странице (без N+1).
+
+        price_map строится только по товарам страницы и передаётся сериализатору
+        через context; формат пагинации сохраняется.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        products = list(page) if page is not None else list(queryset)
+        price_map = price_map_for_products(products, request.user)
+        context = {**self.get_serializer_context(), "price_map": price_map}
+        serializer = self.get_serializer_class()(products, many=True, context=context)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
+
+SUGGEST_LIMIT = 10
+
+
+class ProductSuggestView(APIView):
+    """Подсказки автодополнения поиска (#52): лёгкий список {id, name, slug}.
+
+    Только видимые товары, ранжированы по сходству имени (trigram), не более
+    SUGGEST_LIMIT. Запрос короче 2 символов → пустой список.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        q = (request.query_params.get("q") or "").strip()
+        if len(q) < 2:
+            return Response([])
+        # Буст по имени: точное совпадение > префикс > сходство (trigram).
+        rank = Case(
+            When(name__iexact=q, then=Value(2.0)),
+            When(name__istartswith=q, then=Value(1.0)),
+            default=Value(0.0),
+            output_field=FloatField(),
+        ) + TrigramSimilarity("name", q)
+        rows = (
+            visible_products()
+            .annotate(_rank=rank)
+            .filter(
+                Q(name__icontains=q)
+                | Q(name__trigram_similar=q)
+                | Q(name__trigram_word_similar=q)
+                | Q(article__icontains=q)
+                | Q(brand__icontains=q)
+                | Q(code_1c__istartswith=q)
+            )
+            .order_by("-_rank", "name")
+            .values("id", "name", "slug")[:SUGGEST_LIMIT]
+        )
+        return Response(list(rows))
 
 
 class ProductDetailView(generics.RetrieveAPIView):
@@ -105,3 +198,73 @@ class ProductDetailView(generics.RetrieveAPIView):
                 "attribute_values__value_option",
             )
         )
+
+
+class ProductCompatibleView(APIView):
+    """Совместимость товара (#79): три секции — аксессуары, к чему подходит, совместимые.
+
+    Цены по всем товарам трёх секций считаются ОДНИМ bulk-запросом
+    (price_map_for_products), чтобы не было N+1 по опт-ценам.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug):
+        product = get_object_or_404(visible_products(), slug=slug)
+        sections = compatibility_sections(product)
+
+        # Все товары трёх секций → один price_map (дедуп по pk для bulk-резолвера).
+        all_products = {}
+        for items in sections.values():
+            for item in items:
+                all_products.setdefault(item.product.pk, item.product)
+        price_map = price_map_for_products(list(all_products.values()), request.user)
+        context = {"request": request, "price_map": price_map}
+
+        return Response(
+            {
+                name: [serialize_compat_item(item, context) for item in items]
+                for name, items in sections.items()
+            }
+        )
+
+
+class CategoryFacetsView(APIView):
+    """Фасеты категории: фильтруемые характеристики со счётчиками (drill-down)."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug):
+        category = get_object_or_404(Category, slug=slug, is_active=True)
+        params = request.query_params
+
+        stock_status = params.get("stock_status")
+        if stock_status and stock_status not in StockStatus.values:
+            return Response({"detail": "Недопустимый stock_status"}, status=400)
+
+        attr_filters = {}
+        for key in params:
+            if key.startswith("attr_") and key[len("attr_") :]:
+                attr_filters[key[len("attr_") :]] = params.getlist(key)
+
+        def _price(name):
+            raw = params.get(name)
+            if not raw:
+                return None
+            try:
+                return float(raw)
+            except ValueError:
+                return None  # мусор в цене игнорируем (фасеты не должны падать)
+
+        try:
+            data = build_facets(
+                category,
+                brands=params.getlist("brand") or None,
+                stock_status=stock_status or None,
+                attr_filters=attr_filters,
+                price_min=_price("price_min"),
+                price_max=_price("price_max"),
+            )
+        except FacetError as exc:
+            return Response({"detail": str(exc)}, status=400)
+        return Response(data)

@@ -2,6 +2,20 @@ services:
   db:
     image: postgres:16
     restart: always
+    # Тюнинг PostgreSQL под объём RAM сервера (через env, дефолты — под 8 ГБ).
+    # Дефолтный shared_buffers=128MB мал для каталога: большие категории читаются
+    # с диска (особенно HDD) по 20–30 с на первом обращении. ~25% RAM в кэш — стандарт.
+    # Сервер с меньшим RAM — переопредели значения в .env (напр. POSTGRES_SHARED_BUFFERS=1GB).
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${POSTGRES_SHARED_BUFFERS:-2GB}
+      - -c
+      - effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-6GB}
+      - -c
+      - work_mem=${POSTGRES_WORK_MEM:-32MB}
+      - -c
+      - maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-256MB}
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -30,6 +44,7 @@ services:
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
+      - ./logs:/app/logs
     depends_on:
       db:
         condition: service_healthy
@@ -37,6 +52,44 @@ services:
         condition: service_started
     expose:
       - "8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz/').status == 200 else 1)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    # Headless-витрина Next (SSR). Тянет реальные данные из Django-API внутри сети compose.
+    build:
+      context: ./frontend
+    restart: always
+    environment:
+      NODE_ENV: production
+      INTERNAL_API_BASE_URL: http://web:8000
+    depends_on:
+      web:
+        condition: service_healthy
+    expose:
+      - "3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   celery:
     build:
@@ -44,9 +97,28 @@ services:
       args:
         REQUIREMENTS: prod
     restart: always
-    command: celery -A config worker -l info
+    # Только дефолтная очередь; 1С-задачи разбирает отдельный celery-onec (-c 1).
+    command: celery -A config worker -Q celery -l info
     env_file:
       - .env
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - db
+      - redis
+
+  celery-onec:
+    build:
+      context: .
+      args:
+        REQUIREMENTS: prod
+    restart: always
+    # Очередь 1С строго последовательно (concurrency=1) — без гонки «одна актуальная цена» (#126).
+    command: celery -A config worker -Q onec -c 1 -l info
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       - db
       - redis
@@ -60,6 +132,8 @@ services:
     command: celery -A config beat -l info
     env_file:
       - .env
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       - db
       - redis
@@ -75,8 +149,12 @@ services:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - static_volume:/app/staticfiles:ro
       - media_volume:/app/media:ro
+      - ./logs:/var/log/nginx
     depends_on:
-      - web
+      web:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
 
 volumes:
   pgdata:
