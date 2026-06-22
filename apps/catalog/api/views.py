@@ -1,7 +1,7 @@
 """Публичный read-only API каталога: дерево категорий, список, карточка, фасеты."""
 
 from django.contrib.postgres.search import TrigramSimilarity
-from django.db.models import Case, FloatField, Q, Value, When
+from django.db.models import Case, F, FloatField, Prefetch, Q, Value, When
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from apps.pricing.services import price_map_for_products
 
 from ..filters import ProductFilter, visible_products
-from ..models import Category, StockStatus
+from ..models import Category, ProductAttributeValue, StockStatus
 from ..services import (
     FacetError,
     apply_product_attr_filters,
@@ -89,12 +89,41 @@ class ProductListView(generics.ListAPIView):
     def get_queryset(self):
         # При поиске (?search=, len>=2) ordering по релевантности задаёт
         # ProductFilter.filter_search (.order_by("-_rank", ...)); _rank существует
-        # только тогда. Без поиска — алфавитный порядок здесь.
-        qs = visible_products().select_related("category").prefetch_related("images")
+        # только тогда. Без поиска — серверная сортировка (?sort=) / алфавит.
+        qs = (
+            visible_products()
+            .select_related("category")
+            .prefetch_related(
+                "images",
+                # specs на карточке: атрибуты товара одним prefetch (без N+1 по странице).
+                Prefetch(
+                    "attribute_values",
+                    queryset=ProductAttributeValue.objects.select_related(
+                        "attribute", "value_option"
+                    ),
+                ),
+            )
+        )
         qs = apply_product_attr_filters(qs, self._attr_filters())
         q = (self.request.query_params.get("search") or "").strip()
         if len(q) >= 2:
-            return qs  # ordering проставит filter_search после фильтрации
+            return qs  # поиск → релевантность (filter_search); ?sort игнорируется
+        return self._apply_sort(qs)
+
+    def _apply_sort(self, qs):
+        """Серверная сортировка (whitelist) ДО пагинации. Дефолт — алфавит.
+
+        Источник цены = ``Product.price`` (= отображаемая для аноним/B2C); товары без цены —
+        в конец (nulls_last). Сортировка по эффективной B2B-цене (per-user) — follow-up.
+        Неизвестное/popular/rating → дефолт.
+        """
+        sort = self.request.query_params.get("sort")
+        if sort == "price_asc":
+            return qs.order_by(F("price").asc(nulls_last=True), "id")
+        if sort == "price_desc":
+            return qs.order_by(F("price").desc(nulls_last=True), "id")
+        if sort == "new":
+            return qs.order_by("-created_at", "id")
         return qs.order_by("name", "id")
 
     def list(self, request, *args, **kwargs):
@@ -218,12 +247,23 @@ class CategoryFacetsView(APIView):
             if key.startswith("attr_") and key[len("attr_") :]:
                 attr_filters[key[len("attr_") :]] = params.getlist(key)
 
+        def _price(name):
+            raw = params.get(name)
+            if not raw:
+                return None
+            try:
+                return float(raw)
+            except ValueError:
+                return None  # мусор в цене игнорируем (фасеты не должны падать)
+
         try:
             data = build_facets(
                 category,
                 brands=params.getlist("brand") or None,
                 stock_status=stock_status or None,
                 attr_filters=attr_filters,
+                price_min=_price("price_min"),
+                price_max=_price("price_max"),
             )
         except FacetError as exc:
             return Response({"detail": str(exc)}, status=400)

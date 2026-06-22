@@ -5,7 +5,7 @@ export const DEFAULT_PER_PAGE = 24;
 export const DEFAULT_SORT: SortOption = "popular";
 
 export const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "popular", label: "Популярные" },
+  { value: "popular", label: "По умолчанию" },
   { value: "price_asc", label: "Сначала дешёвые" },
   { value: "price_desc", label: "Сначала дорогие" },
   { value: "new", label: "Новинки" },
