@@ -65,8 +65,33 @@ class Command(BaseCommand):
         else:
             planned = total
 
+        # Единое правило публикации (как в ProductAdmin.action_publish): не
+        # публикуем товары без категории / без обязательных характеристик. Считаем
+        # причину через publication_errors() — единый источник правил (#179).
+        # prefetch снимает N+1 при per-row проверке; затем один .update() по
+        # списку валидных id (без save() в цикле — bulk-эффективность сохранена).
+        scan_qs = qs.select_related("category").prefetch_related(
+            "attribute_values__attribute", "attribute_values__value_option"
+        )
+        valid_ids: list[int] = []
+        skipped = 0
+        for product in scan_qs:
+            if product.publication_errors():
+                skipped += 1
+            else:
+                valid_ids.append(product.pk)
+
         if opts["dry_run"]:
-            self.stdout.write(f"[dry-run] К публикации: {planned} (всего подходящих: {total}).")
+            self.stdout.write(
+                f"[dry-run] К публикации: {len(valid_ids)} (подходящих по статусу: {planned}, "
+                f"всего: {total})."
+            )
+            if skipped:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Пропущено: {skipped} — нет категории/обязательных характеристик."
+                    )
+                )
             if no_category:
                 self.stdout.write(
                     self.style.WARNING(
@@ -75,11 +100,19 @@ class Command(BaseCommand):
                 )
             return
 
-        updated = qs.update(status=ProductStatus.PUBLISHED, is_active=True)
+        updated = Product.objects.filter(pk__in=valid_ids).update(
+            status=ProductStatus.PUBLISHED, is_active=True
+        )
         # bulk update минует сигналы → инвалидируем кэш дерева/счётчиков каталога вручную.
         invalidate_category_tree_cache()
 
         self.stdout.write(self.style.SUCCESS(f"Опубликовано: {updated}."))
+        if skipped:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Пропущено: {skipped} — нет категории/обязательных характеристик."
+                )
+            )
         if no_category:
             self.stdout.write(
                 self.style.WARNING(

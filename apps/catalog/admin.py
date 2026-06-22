@@ -1,7 +1,9 @@
 from django.contrib import admin, messages
 from django.db import transaction
-from django.db.models import Count, IntegerField, OuterRef, Subquery
+from django.db.models import Count, IntegerField, OuterRef, Q, Subquery
 from django.db.models.functions import Coalesce
+from django.utils.html import format_html_join
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from treebeard.admin import TreeAdmin
 from treebeard.forms import movenodeform_factory
@@ -208,6 +210,42 @@ class UncategorizedFilter(admin.SimpleListFilter):
         return queryset
 
 
+class ModerationQueueFilter(admin.SimpleListFilter):
+    """Очередь модерации каталога (#51).
+
+    Все три значения — чистый SQL по полям (status/category), без вызова
+    publication_errors() построчно (иначе фильтрация тяжёлая на больших выборках).
+    Точную причину (нехватку обязательных характеристик) показывает колонка
+    `moderation_reason`, а не этот фильтр.
+    """
+
+    title = _("Очередь модерации")
+    parameter_name = "moderation"
+
+    def lookups(self, request, model_admin):
+        return [
+            ("attention", _("Требуют внимания")),
+            ("needs_review", _("Требуют проверки")),
+            ("imported", _("Импортированы (не разобраны)")),
+        ]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == "needs_review":
+            return queryset.filter(status=ProductStatus.NEEDS_REVIEW)
+        if value == "imported":
+            return queryset.filter(status=ProductStatus.IMPORTED)
+        if value == "attention":
+            # Не опубликован И (без категории ИЛИ статус imported/needs_review).
+            # Точную нехватку обязательных характеристик на уровне SQL не ловим —
+            # её видно в колонке moderation_reason.
+            return queryset.exclude(status=ProductStatus.PUBLISHED).filter(
+                Q(category__isnull=True)
+                | Q(status__in=[ProductStatus.IMPORTED, ProductStatus.NEEDS_REVIEW])
+            )
+        return queryset
+
+
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
     extra = 1
@@ -299,17 +337,26 @@ class ProductAdmin(admin.ModelAdmin):
         "brand",
         "category",
         "status",
+        "moderation_reason",
         "stock_status",
         "price",
         "current_wholesale",
         "is_active",
     )
-    list_filter = ("status", UncategorizedFilter, "stock_status", "is_active", "brand")
+    list_filter = (
+        "status",
+        ModerationQueueFilter,
+        UncategorizedFilter,
+        "stock_status",
+        "is_active",
+        "brand",
+    )
     search_fields = ("name", "original_name", "article", "code_1c", "slug")
     prepopulated_fields = {"slug": ("name",)}
     autocomplete_fields = ["category"]
     list_select_related = ("category",)
     readonly_fields = (
+        "moderation_reason_detail",
         "code_1c",
         "original_name",
         "source_group",
@@ -323,7 +370,10 @@ class ProductAdmin(admin.ModelAdmin):
     )
     actions = ["action_publish", "action_needs_review", "action_rebuild_attrs_cache"]
     fieldsets = (
-        (None, {"fields": ("name", "slug", "status", "is_active")}),
+        (
+            None,
+            {"fields": ("moderation_reason_detail", "name", "slug", "status", "is_active")},
+        ),
         (
             _("Категория сайта"),
             {"fields": ("category", "category_is_manual", "matched_rule")},
@@ -380,11 +430,92 @@ class ProductAdmin(admin.ModelAdmin):
     ]
 
     def get_queryset(self, request):
+        # Сброс кэша required-атрибутов на КАЖДЫЙ рендер списка: ProductAdmin —
+        # синглтон на процесс, без сброса карта category_id -> [CategoryAttribute]
+        # пережила бы запрос и колонка moderation_reason показывала бы устаревшую
+        # причину после правки обязательных атрибутов категории. get_queryset
+        # вызывается раз на отрисовку changelist → кэш становится request-scoped.
+        self._req_attrs_cache = {}
         # Текущая оптовая цена — подзапросом, чтобы колонка списка не делала N+1.
         wholesale = PriceRecord.objects.filter(
             product=OuterRef("pk"), price_type=WHOLESALE, is_current=True
         ).values("value")[:1]
-        return super().get_queryset(request).annotate(_wholesale_price=Subquery(wholesale))
+        # select_related("category") + prefetch значений характеристик: чтобы
+        # колонка moderation_reason (publication_errors / missing_required_attributes)
+        # не плодила N+1 на категории и на attribute_values.
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(_wholesale_price=Subquery(wholesale))
+            .select_related("category")
+            .prefetch_related("attribute_values__attribute")
+        )
+
+    # Решение по N+1 в колонке moderation_reason:
+    # missing_required_attributes() на каждый товар делает запрос к
+    # CategoryAttribute. Чтобы это не давало N+1 по числу ТОВАРОВ, держим на
+    # инстансе admin (живёт в рамках одного рендера changelist) карту
+    # category_id -> [required CategoryAttribute] с ленивой дозагрузкой по
+    # КАТЕГОРИЯМ: первая встреча незнакомой категории добирает её required-атрибуты
+    # одним запросом и кэширует. Итог: число запросов = число УНИКАЛЬНЫХ категорий
+    # на странице (десятки в худшем случае), а не число товаров. attribute_values
+    # берутся из prefetch (см. get_queryset), категория — из select_related.
+    def _required_attrs_for_category(self, category_id):
+        cache = getattr(self, "_req_attrs_cache", None)
+        if cache is None:
+            cache = {}
+            self._req_attrs_cache = cache
+        if category_id not in cache:
+            cache[category_id] = list(
+                CategoryAttribute.objects.filter(
+                    category_id=category_id, is_required=True
+                ).select_related("attribute")
+            )
+        return cache[category_id]
+
+    @admin.display(description=_("Причина в очереди"))
+    def moderation_reason(self, obj):
+        """Краткая причина, почему товар не публикуется (вычисляется на лету).
+
+        Опубликованный товар → «—». Иначе — короткий текст: «Нет категории»
+        и/или «Не хватает: …». Без N+1: категория из select_related, значения из
+        prefetch (get_queryset), required-атрибуты — из кэша по категориям.
+        """
+        if obj.status == ProductStatus.PUBLISHED:
+            return "—"
+
+        parts: list[str] = []
+        if not obj.category_id:
+            parts.append("Нет категории")
+        else:
+            required = self._required_attrs_for_category(obj.category_id)
+            if required:
+                from .read_models import attr_value_to_json
+
+                filled = set()
+                for pav in obj.attribute_values.all():
+                    value = attr_value_to_json(pav)
+                    if value is not None and value != "":
+                        filled.add(pav.attribute_id)
+                missing = [ca.attribute.name for ca in required if ca.attribute_id not in filled]
+                if missing:
+                    parts.append("Не хватает: " + ", ".join(missing))
+        return "; ".join(parts) if parts else "—"
+
+    @admin.display(description=_("Причина непубликации"))
+    def moderation_reason_detail(self, obj):
+        """Полный список ошибок публикации построчно — для карточки товара.
+
+        Использует единый источник правил publication_errors(). На форме одного
+        товара N+1 неважен (одна запись).
+        """
+        if obj is None or obj.pk is None:
+            return "—"
+        errors = obj.publication_errors()
+        if not errors:
+            return "—" if obj.status == ProductStatus.PUBLISHED else "Готов к публикации"
+        # Построчно через <br>; каждая строка экранируется (format_html).
+        return format_html_join(mark_safe("<br>"), "• {}", ((e,) for e in errors))
 
     @admin.display(description=_("Опт"))
     def current_wholesale(self, obj):
