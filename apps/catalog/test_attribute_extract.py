@@ -476,6 +476,25 @@ def test_koronki_small_diamond_bit_m14(rules):
     assert f["mount"].option_slug == "m14"
 
 
+# --- Свёрла (tool_type=sverla): Ø + материал + назначение + хвостовик ----------
+
+
+def test_sverla_metal_drill_full(rules):
+    f = {v.slug: v for v in rules.extract("sverla", "Сверло по металлу ц/х 6,0 мм Р6М5 ГОСТ")}
+    assert f["diameter"].number == Decimal("6.0")
+    assert f["shank_type"].option_slug == "tsilindr"
+    assert f["material"].option_slug == "hss"
+    assert f["purpose"].option_slug == "metall"
+
+
+def test_sverla_hex_shank_diameter_via_f(rules):
+    f = {
+        v.slug: v for v in rules.extract("sverla", "Сверло 6-гранное ф 4,0 мм Р4М3 нитридтитановое")
+    }
+    assert f["diameter"].number == Decimal("4.0")
+    assert f["shank_type"].option_slug == "hex"
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""
