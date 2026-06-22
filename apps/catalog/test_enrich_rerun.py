@@ -131,6 +131,30 @@ def test_enrich_prunes_stale_engine_value():
 
 
 @pytest.mark.django_db
+def test_enrich_tool_type_prunes_pav_on_recategorize():
+    """Товар, переставший быть assigned (стал recategorize), теряет старый tool_type
+    PAV и ключ из attrs_cache — иначе остаётся в чужом фасете (садовая техника в АКБ)."""
+    top = Category.add_root(name="Электроинструмент", slug="elektro", on_site=True)
+    p = Product.objects.create(
+        category=top, name="Газонокосилка аккумуляторная ЗУБР ГКЛ-4336", slug="g1", code_1c="g1"
+    )
+    call_command("load_tool_types")
+    tt = Attribute.objects.get(slug="tool_type")
+
+    # Имитируем старое (баговое) состояние: товар был привязан к «Аккумуляторам».
+    akk = tt.options.get(slug="akkumulyatory")
+    ProductAttributeValue.objects.create(product=p, attribute=tt, value_option=akk)
+    p.attrs_cache = {"tool_type": akk.value}
+    p.save(update_fields=["attrs_cache"])
+
+    call_command("enrich_tool_type")  # «газонокосилка» → recategorize
+
+    assert not ProductAttributeValue.objects.filter(product=p, attribute=tt).exists()
+    p.refresh_from_db()
+    assert "tool_type" not in (p.attrs_cache or {})
+
+
+@pytest.mark.django_db
 @pytest.mark.parametrize("source", [Source.MANUAL, Source.IMPORT_1C, Source.LLM])
 def test_enrich_keeps_non_engine_value(source):
     """Авторитетные (manual/import_1c) и llm-значения enrich НЕ удаляет, даже если не извлёк."""
