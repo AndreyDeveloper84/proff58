@@ -813,6 +813,13 @@
           "source": "1c_subgroup"
         },
         {
+          "tool_type": "Оснастка для бит",
+          "slug": "osnastka-bit",
+          "subgroup": "Биты",
+          "match_keywords": ["адаптер", "держатель", "удлинитель", "магнитная вставка"],
+          "source": "name_keywords"
+        },
+        {
           "tool_type": "Наборы бит и насадок",
           "slug": "nabory-bit",
           "source": "1c_subgroup"
@@ -823,9 +830,23 @@
           "source": "1c_subgroup"
         },
         {
+          "tool_type": "Наборы пик и долот",
+          "slug": "nabory-piki",
+          "subgroup": "Пики и долота",
+          "match_keywords": ["набор", "комплект"],
+          "source": "name_keywords"
+        },
+        {
           "tool_type": "Пилки и полотна",
           "slug": "pilki-polotna",
           "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Наборы пилок и полотен",
+          "slug": "nabory-pilok",
+          "subgroup": "Пилки и полотна",
+          "match_keywords": ["набор"],
+          "source": "name_keywords"
         },
         {
           "tool_type": "Отрезные и шлифовальные круги",
@@ -879,6 +900,13 @@
           "tool_type": "Резцы",
           "slug": "reztsy",
           "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Оснастка для резцов",
+          "slug": "osnastka-reztsov",
+          "subgroup": "Резцы",
+          "match_keywords": ["набор", "комплект", "пластина", "державка", "заготовка", "головка", "лезви", "ролик"],
+          "source": "name_keywords"
         },
         {
           "tool_type": "Мешки для пылесосов",

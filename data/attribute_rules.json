@@ -1641,6 +1641,244 @@
           ]
         }
       ]
+    },
+    {
+      "tool_type": "piki-dolota",
+      "category": "Оснастка и расходники",
+      "attributes": [
+        {
+          "slug": "shank_type",
+          "name": "Тип хвостовика",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "SDS-max",
+              "slug": "sds-max",
+              "keywords": [
+                "sds-max",
+                "sds max"
+              ]
+            },
+            {
+              "value": "SDS-plus",
+              "slug": "sds-plus",
+              "keywords": [
+                "sds-plus",
+                "sds plus",
+                "sds+"
+              ]
+            },
+            {
+              "value": "HEX-30",
+              "slug": "hex30",
+              "keywords": [
+                "hex 30",
+                "hex30",
+                "hex-30",
+                "6-гран 30"
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?<![\\d.,])\\d{1,3}\\s*[х*x]\\s*(\\d{2,4})"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "bity",
+      "category": "Оснастка и расходники",
+      "attributes": [
+        {
+          "slug": "bit_type",
+          "name": "Тип биты",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Torx (звезда)",
+              "slug": "torx",
+              "keywords": [
+                "torx",
+                "tx",
+                "т10",
+                "т15",
+                "т20",
+                "т25",
+                "т27",
+                "т30",
+                "т40",
+                "звезд"
+              ]
+            },
+            {
+              "value": "Шестигранник (HEX)",
+              "slug": "hex",
+              "keywords": [
+                "hex",
+                "шестигран"
+              ]
+            },
+            {
+              "value": "Pozidriv (PZ)",
+              "slug": "pz",
+              "keywords": [
+                "pz",
+                "позидрайв"
+              ]
+            },
+            {
+              "value": "Phillips (PH)",
+              "slug": "ph",
+              "keywords": [
+                "ph",
+                "филлипс",
+                "крестов"
+              ]
+            },
+            {
+              "value": "Шлиц (плоская)",
+              "slug": "slot",
+              "keywords": [
+                "шлиц",
+                "sl ",
+                "плоск"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "pilki-polotna",
+      "category": "Оснастка и расходники",
+      "attributes": [
+        {
+          "slug": "purpose",
+          "name": "Назначение",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "По дереву",
+              "slug": "derevo",
+              "keywords": [
+                "по дерев",
+                "дерев"
+              ]
+            },
+            {
+              "value": "По металлу",
+              "slug": "metall",
+              "keywords": [
+                "по металл",
+                "металл"
+              ]
+            },
+            {
+              "value": "Универсальная",
+              "slug": "universal",
+              "keywords": [
+                "универсал"
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "saw_for",
+          "name": "Для инструмента",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Электролобзик",
+              "slug": "lobzik",
+              "keywords": [
+                "лобзик",
+                "эл/лобз",
+                "электролоб"
+              ]
+            },
+            {
+              "value": "Сабельная пила",
+              "slug": "sabel",
+              "keywords": [
+                "сабельн"
+              ]
+            },
+            {
+              "value": "Реноватор",
+              "slug": "renovator",
+              "keywords": [
+                "реноватор",
+                "мультиинстр",
+                "unilock"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "reztsy",
+      "category": "Оснастка и расходники",
+      "attributes": [
+        {
+          "slug": "material",
+          "name": "Материал",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Твердосплав",
+              "slug": "carbide",
+              "keywords": [
+                "твердоспл",
+                "тв.спл",
+                "тв спл",
+                "карбид",
+                "вк8",
+                "т15к6"
+              ]
+            },
+            {
+              "value": "Быстрорез (HSS)",
+              "slug": "hss",
+              "keywords": [
+                "р6м5",
+                "р18",
+                "hss",
+                "быстрорез"
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

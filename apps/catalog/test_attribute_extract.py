@@ -495,6 +495,37 @@ def test_sverla_hex_shank_diameter_via_f(rules):
     assert f["shank_type"].option_slug == "hex"
 
 
+# --- Хвост Оснастки: Пики/долота, Биты, Пилки/полотна, Резцы -------------------
+
+
+def test_piki_dolota_shank_and_length(rules):
+    f = {v.slug: v for v in rules.extract("piki-dolota", "Долото 20х250 SDS-PLUS ЗУБР")}
+    assert f["shank_type"].option_slug == "sds-plus"
+    assert f["length"].number == Decimal("250")
+
+
+def test_bity_bit_type(rules):
+    def opt(name):
+        return {v.slug: v for v in rules.extract("bity", name)}["bit_type"].option_slug
+
+    assert opt("Бита PH2 25мм") == "ph"
+    assert opt("Бита TX20 50мм") == "torx"
+    assert opt("Бита PZ2 50мм ЗУБР") == "pz"
+
+
+def test_pilki_purpose_and_saw_for(rules):
+    f = {
+        v.slug: v for v in rules.extract("pilki-polotna", "Пилки для электролобзика по металлу 2шт")
+    }
+    assert f["purpose"].option_slug == "metall"
+    assert f["saw_for"].option_slug == "lobzik"
+
+
+def test_reztsy_material(rules):
+    f = {v.slug: v for v in rules.extract("reztsy", "Резец проходной 16х16 Т15К6 твердосплав")}
+    assert f["material"].option_slug == "carbide"
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""
