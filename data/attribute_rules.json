@@ -605,17 +605,17 @@
             {
               "value": "Турбо",
               "slug": "turbo",
-              "keywords": ["турбо"]
+              "keywords": ["турбо", "turbo"]
             },
             {
               "value": "Сегментный",
               "slug": "segment",
-              "keywords": ["сегмент"]
+              "keywords": ["сегмент", "segment"]
             },
             {
               "value": "Сплошной",
               "slug": "solid",
-              "keywords": ["сплошн"]
+              "keywords": ["сплош", "1a1r", "1а1р"]
             }
           ]
         }
