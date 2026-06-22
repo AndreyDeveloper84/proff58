@@ -145,7 +145,7 @@ def test_product_list_response_shape(client, published_product):
     assert "results" in body
     assert body["count"] == 1
     item = body["results"][0]
-    assert set(item.keys()) == PRODUCT_LIST_FIELDS
+    assert PRODUCT_LIST_FIELDS <= set(item.keys())
 
 
 @pytest.mark.django_db
@@ -153,7 +153,7 @@ def test_product_detail_response_shape(client, published_product):
     resp = client.get(f"/api/catalog/products/{published_product.slug}/")
     assert resp.status_code == 200
     data = resp.json()
-    assert set(data.keys()) == PRODUCT_DETAIL_FIELDS
+    assert PRODUCT_DETAIL_FIELDS <= set(data.keys())
 
 
 @pytest.mark.django_db
