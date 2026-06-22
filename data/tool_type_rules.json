@@ -742,6 +742,27 @@
           "source": "1c_subgroup"
         },
         {
+          "tool_type": "Зенковки и зенкеры",
+          "slug": "zenkovki",
+          "subgroup": "Сверла",
+          "match_keywords": ["зенковк", "фаскоснимат", "цековк"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Наборы свёрл",
+          "slug": "nabory-sverel",
+          "subgroup": "Сверла",
+          "match_keywords": ["набор"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Оснастка для свёрл",
+          "slug": "osnastka-sverel",
+          "subgroup": "Сверла",
+          "match_keywords": ["удлинитель", "кондуктор", "державк", "ограничитель глубины", "штифт-выталкиват", "адаптер для", "патрон для"],
+          "source": "name_keywords"
+        },
+        {
           "tool_type": "Буры",
           "slug": "bury",
           "source": "1c_subgroup"

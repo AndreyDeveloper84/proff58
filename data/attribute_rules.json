@@ -1484,6 +1484,163 @@
           ]
         }
       ]
+    },
+    {
+      "tool_type": "sverla",
+      "category": "Оснастка и расходники",
+      "attributes": [
+        {
+          "slug": "diameter",
+          "name": "Диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "ф\\.?\\s*(\\d{1,2}(?:[.,]\\d{1,2})?)(?![\\dмx*х])",
+            "(?:ц/х|к/х|ш/х|6-гран\\w*|шестигран\\w*)\\s*(\\d{1,2}(?:[.,]\\d{1,2})?)(?!\\d)",
+            "(?<![\\d.,])(\\d{1,2}(?:[.,]\\d{1,2})?)\\s*[х*x]\\s*\\d",
+            "(?<![\\d.,])(\\d{1,2}(?:[.,]\\d{1,2})?)\\s*мм",
+            "сверло\\s+(?:[a-zа-я.\\-]+\\s+)*?(\\d{1,2}(?:[.,]\\d{1,2})?)(?!\\S)"
+          ]
+        },
+        {
+          "slug": "material",
+          "name": "Материал",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Кобальт",
+              "slug": "cobalt",
+              "keywords": [
+                "кобальт",
+                "co5",
+                "co8",
+                "hsco"
+              ]
+            },
+            {
+              "value": "Твердосплав",
+              "slug": "carbide",
+              "keywords": [
+                "твердоспл",
+                "тв.спл",
+                "тв спл",
+                "карбид",
+                "вк8",
+                "победит"
+              ]
+            },
+            {
+              "value": "Быстрорез (HSS)",
+              "slug": "hss",
+              "keywords": [
+                "р6м5",
+                "р18",
+                "р4м3",
+                "hss",
+                "быстрорез"
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "purpose",
+          "name": "Назначение",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "По металлу",
+              "slug": "metall",
+              "keywords": [
+                "по металл",
+                "металл"
+              ]
+            },
+            {
+              "value": "По бетону",
+              "slug": "beton",
+              "keywords": [
+                "по бетону",
+                "бетон"
+              ]
+            },
+            {
+              "value": "По дереву",
+              "slug": "derevo",
+              "keywords": [
+                "по дерев",
+                "дерев"
+              ]
+            },
+            {
+              "value": "По плитке/керамике",
+              "slug": "plitka",
+              "keywords": [
+                "по кафел",
+                "кафел",
+                "плитк",
+                "керам",
+                "стекл",
+                "гранит"
+              ]
+            },
+            {
+              "value": "Универсальная",
+              "slug": "universal",
+              "keywords": [
+                "универсал"
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "shank_type",
+          "name": "Тип хвостовика",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Конический",
+              "slug": "konich",
+              "keywords": [
+                "к/х",
+                "конический хвост",
+                "кон.хвост"
+              ]
+            },
+            {
+              "value": "Цилиндрический",
+              "slug": "tsilindr",
+              "keywords": [
+                "ц/х",
+                "цилиндрич"
+              ]
+            },
+            {
+              "value": "Шестигранный",
+              "slug": "hex",
+              "keywords": [
+                "шестигран",
+                "6-гран",
+                "ш/х"
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -265,6 +265,20 @@ class RealRulesRegressionTests(TestCase):
         self.assertEqual(slug("Адаптер для алмазных коронок KRAFTOOL М16"), "osnastka-koronok")
         self.assertEqual(slug("Удлинитель для коронок 200мм"), "osnastka-koronok")
 
+    def test_sverla_subtypes_split(self):
+        # «Сверла»: зенковки/наборы/оснастка отделяются; «сверло с зенкером» — это сверло.
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+
+        def slug(name):
+            return rules.extract("Оснастка и расходники", name, "Сверла").slug
+
+        self.assertEqual(slug("Сверло по металлу ц/х 6,0 мм Р6М5"), "sverla")
+        self.assertEqual(slug("Зенковка к/х 16.0 угол 60"), "zenkovki")
+        self.assertEqual(slug("Набор свёрл по металлу 19 шт ЗУБР"), "nabory-sverel")
+        self.assertEqual(slug("Удлинитель для сверла 300мм"), "osnastka-sverel")
+        # важный негатив: сверло С зенкером — это сверло, не зенковка
+        self.assertEqual(slug("Сверло с зенкером для мебельных стяжек 5,0мм"), "sverla")
+
     def test_accessory_keywords_scoped_to_diamond_discs(self):
         # «Держатель»/«переходник» в других подгруппах НЕ переклассифицируются.
         rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
