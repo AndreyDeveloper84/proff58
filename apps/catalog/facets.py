@@ -17,7 +17,7 @@ from django.db.models import Count, Q
 from django.db.models.fields.json import KeyTextTransform
 
 from .filters import filtered_products
-from .models import AttributeOption, AttributeType
+from .models import Attribute, AttributeOption, AttributeType
 from .queries import _category_filter_attributes
 
 # --- Лимиты фасетного эндпоинта (публичный AllowAny) ---
@@ -184,3 +184,36 @@ def build_facets(category, *, brands=None, stock_status=None, attr_filters=None)
         },
         "facets": facets,
     }
+
+
+def apply_product_attr_filters(qs, attr_filters: dict[str, list[str]]):
+    """Отфильтровать список товаров по EAV-атрибутам — ТЕМ ЖЕ механизмом, что фасеты.
+
+    ``attr_filters``: ``{slug: [raw, ...]}`` — как разбирает ``CategoryFacetsView`` из
+    параметров ``attr_<slug>``. Семантика: OR внутри одного атрибута, AND между разными.
+    Неизвестный/нефильтруемый slug, пустые и неприводимые значения игнорируются (листинг
+    не должен падать на мусоре в URL). Значения коерсятся по типу атрибута (как в
+    ``build_facets``) — иначе JSONB containment не совпадёт ({"voltage":18} ≠ {"voltage":"18"})
+    и список разойдётся со счётчиками фасетов.
+    """
+    if not attr_filters:
+        return qs
+    by_slug = {
+        a.slug: a for a in Attribute.objects.filter(slug__in=list(attr_filters), is_filterable=True)
+    }
+    coerced: dict[str, list] = {}
+    for slug, raw_values in attr_filters.items():
+        attr = by_slug.get(slug)
+        if attr is None:
+            continue
+        vals = []
+        for raw in raw_values:
+            if not raw:
+                continue
+            try:
+                vals.append(_coerce(raw, attr.attribute_type))
+            except FacetError:
+                continue  # битое значение игнорируем, а не роняем листинг
+        if vals:
+            coerced[slug] = vals
+    return _apply_attr_filters(qs, coerced)

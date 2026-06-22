@@ -11,6 +11,7 @@ import {
   DEFAULT_SORT,
   PER_PAGE_OPTIONS,
   RANGE_FACETS,
+  RESERVED_QUERY_PARAMS,
 } from "./constants";
 import type { ListingQuery, RangeFilterValue, SortOption } from "./types";
 
@@ -51,6 +52,22 @@ export function parseQuery(sp: URLSearchParams, category: string): ListingQuery 
     const min = num(sp.get(`${code}_min`));
     const max = num(sp.get(`${code}_max`));
     if (min != null || max != null) filters[code] = { min, max } as RangeFilterValue;
+  }
+
+  // Динамические EAV-фасеты приходят из API с префиксом attr_ (коды заранее не известны →
+  // парсим по префиксу, а не по белому списку). Диапазонные attr_*_min/_max — вне scope.
+  // RESERVED_QUERY_PARAMS не нужны (attr_ их и так исключает), но проверяем для надёжности.
+  for (const key of new Set(sp.keys())) {
+    if (!key.startsWith("attr_")) continue;
+    if (key.endsWith("_min") || key.endsWith("_max")) continue;
+    if (RESERVED_QUERY_PARAMS.has(key) || filters[key]) continue;
+    const raw = sp.get(key);
+    if (!raw) continue;
+    const vals = raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (vals.length) filters[key] = vals;
   }
 
   return { category, page, perPage, sort, view, filters };

@@ -84,13 +84,16 @@ export function apiProductToProduct(ap: ApiProduct): Product {
 }
 
 export function apiFacetToFacet(af: ApiFacet): Facet {
+  // Код EAV-фасета храним С префиксом attr_ — это и есть имя query-параметра витрины и API
+  // (attr_tool_type), однозначно отделённое от legacy-навигации ?tool_type=<slug> и UI-state.
+  const code = `attr_${af.slug}`;
   const isRange = af.type === "integer" || af.type === "decimal";
   if (isRange) {
     const nums = (af.values ?? [])
       .map((v) => num(v.value))
       .filter((n): n is number => n != null);
     return {
-      code: af.slug,
+      code,
       label: af.name,
       type: "range",
       unit: af.unit || undefined,
@@ -99,7 +102,7 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
     };
   }
   return {
-    code: af.slug,
+    code,
     label: af.name,
     type: "checkbox",
     unit: af.unit || undefined,
@@ -142,6 +145,13 @@ function buildProductParams(query: ListingQuery): URLSearchParams {
     if (price.min != null) sp.set("price_min", String(price.min));
     if (price.max != null) sp.set("price_max", String(price.max));
   }
+
+  // EAV-фасеты PLP: ключи фильтров с префиксом attr_ (напр. attr_tool_type) уходят в
+  // products-эндпоинт как есть — тем же параметром, что и в фасеты (один механизм фильтрации).
+  for (const [code, val] of Object.entries(f)) {
+    if (!code.startsWith("attr_")) continue;
+    if (Array.isArray(val)) for (const v of val) sp.append(code, v);
+  }
   return sp;
 }
 
@@ -157,10 +167,10 @@ function buildFacetParams(query: ListingQuery): URLSearchParams {
   if (Array.isArray(f.stock) && f.stock.length && stockMap[f.stock[0]]) {
     sp.set("stock_status", stockMap[f.stock[0]]);
   }
-  // Прочие чекбокс-фасеты — это EAV-атрибуты: attr_<slug>=value.
+  // EAV-фасеты уже имеют префикс attr_ в ключе фильтра → шлём как есть (attr_tool_type=value).
   for (const [code, val] of Object.entries(f)) {
-    if (code === "brand" || code === "stock" || code === "price") continue;
-    if (Array.isArray(val)) for (const v of val) sp.append(`attr_${code}`, v);
+    if (!code.startsWith("attr_")) continue;
+    if (Array.isArray(val)) for (const v of val) sp.append(code, v);
   }
   return sp;
 }
