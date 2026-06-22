@@ -85,6 +85,7 @@ class Rule:
     slug: str
     match_keywords: tuple[str, ...] = ()
     action: str | None = None  # None | "recategorize"
+    subgroup: str = ""  # для inherit-override: ключевые слова применяются только в этой подгруппе
 
     @property
     def is_recategorize(self) -> bool:
@@ -130,6 +131,7 @@ class ToolTypeRules:
                     slug=r["slug"],
                     match_keywords=tuple(r.get("match_keywords", [])),
                     action=r.get("action"),
+                    subgroup=r.get("subgroup", ""),
                 )
                 for r in c.get("rules", [])
             ]
@@ -162,6 +164,25 @@ class ToolTypeRules:
             sub = (subgroup or "").strip()
             if not sub:
                 return Extraction(result=MODERATION)
+            # Override по имени ВНУТРИ подгруппы: аксессуары (кольца, чашки, головки,
+            # приспособления) внутри товарной подгруппы получают свой tool_type, не
+            # засоряя фасет основной подгруппы. Скоуп по subgroup — иначе ключи воруют
+            # товары из соседних подгрупп («держатель бит», «торцевые головки»).
+            norm_name = normalize(name)
+            target = normalize(sub)
+            for rule in cat.rules:
+                if not (rule.subgroup and rule.match_keywords):
+                    continue
+                if normalize(rule.subgroup) != target:
+                    continue
+                for kw in rule.match_keywords:
+                    if normalize(kw) in norm_name:
+                        return Extraction(
+                            result=ASSIGNED,
+                            tool_type=rule.tool_type,
+                            slug=rule.slug,
+                            matched_keyword=kw,
+                        )
             slug = self._inherit_slug(cat, sub)
             return Extraction(result=ASSIGNED, tool_type=sub, slug=slug)
 
