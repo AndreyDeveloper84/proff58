@@ -28,6 +28,50 @@ def normalize(text: str | None) -> str:
     return (text or "").lower().replace("ё", "е")
 
 
+# Транслитерация кириллицы для ЧПУ-слугов (латиница, как у слугов категорий):
+# tool_type/категория → /catalog/elektroinstrument/, а не /catalog/электроинструмент/.
+_TRANSLIT = {
+    "а": "a",
+    "б": "b",
+    "в": "v",
+    "г": "g",
+    "д": "d",
+    "е": "e",
+    "ё": "e",
+    "ж": "zh",
+    "з": "z",
+    "и": "i",
+    "й": "y",
+    "к": "k",
+    "л": "l",
+    "м": "m",
+    "н": "n",
+    "о": "o",
+    "п": "p",
+    "р": "r",
+    "с": "s",
+    "т": "t",
+    "у": "u",
+    "ф": "f",
+    "х": "h",
+    "ц": "ts",
+    "ч": "ch",
+    "ш": "sh",
+    "щ": "sch",
+    "ъ": "",
+    "ы": "y",
+    "ь": "",
+    "э": "e",
+    "ю": "yu",
+    "я": "ya",
+}
+
+
+def transliterate(text: str) -> str:
+    """Кириллица → латиница по таблице ``_TRANSLIT`` (для построения слугов)."""
+    return "".join(_TRANSLIT.get(ch, _TRANSLIT.get(ch.lower(), ch)) for ch in text.lower())
+
+
 # Результаты извлечения (совпадают с EnrichmentResult в models).
 ASSIGNED = "assigned"
 MODERATION = "moderation"

@@ -31,7 +31,7 @@ from apps.catalog.models import (
     Product,
     ProductAttributeValue,
 )
-from apps.catalog.tool_type import ASSIGNED, RECATEGORIZE, ToolTypeRules, normalize
+from apps.catalog.tool_type import ASSIGNED, RECATEGORIZE, ToolTypeRules, normalize, transliterate
 
 BATCH = 1000
 
@@ -226,7 +226,10 @@ class Command(BaseCommand):
 
     @staticmethod
     def _unique_option_slug(attribute: Attribute, value: str) -> str:
-        base = slugify(value, allow_unicode=False) or "tip"
+        # Транслитерируем кириллицу до slugify: иначе slugify(allow_unicode=False)
+        # вырезает её в пустоту → бессмысленные tip-N. «Прочая оснастка» →
+        # prochaya-osnastka. Фолбэк tip — только для совсем пустого результата.
+        base = slugify(transliterate(value), allow_unicode=False) or "tip"
         slug = base
         n = 2
         taken = set(attribute.options.values_list("slug", flat=True))
