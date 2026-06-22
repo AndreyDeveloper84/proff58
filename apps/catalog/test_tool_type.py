@@ -241,6 +241,18 @@ class RealRulesRegressionTests(TestCase):
             ex = rules.extract("Оснастка и расходники", name, "Алмазные круги")
             self.assertEqual(ex.slug, slug, name)
 
+    def test_bury_subtypes_split_from_masonry_bits(self):
+        # Внутри подгруппы «Буры» наборы/удлинители/садовые отделяются, бур остаётся bury.
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+
+        def slug(name):
+            return rules.extract("Оснастка и расходники", name, "Буры").slug
+
+        self.assertEqual(slug("Бур 6х110 SDS PLUS СЕБ"), "bury")
+        self.assertEqual(slug("Набор буров SDS-plus 7 шт. Uragan"), "nabory-burov")
+        self.assertEqual(slug("Удлинитель для бура SDS-plus 300мм ЗУБР"), "osnastka-burov")
+        self.assertEqual(slug("Бур садовый шнековый, 1085 мм"), "sadovye-bury")
+
     def test_accessory_keywords_scoped_to_diamond_discs(self):
         # «Держатель»/«переходник» в других подгруппах НЕ переклассифицируются.
         rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")

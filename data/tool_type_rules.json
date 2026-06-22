@@ -747,6 +747,27 @@
           "source": "1c_subgroup"
         },
         {
+          "tool_type": "Наборы буров",
+          "slug": "nabory-burov",
+          "subgroup": "Буры",
+          "match_keywords": ["набор буров", "набор бур", "наборы буров"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Оснастка для буров",
+          "slug": "osnastka-burov",
+          "subgroup": "Буры",
+          "match_keywords": ["удлинитель для бура", "адаптер", "переходник", "ограничитель глубины", "державка"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Садовые буры",
+          "slug": "sadovye-bury",
+          "subgroup": "Буры",
+          "match_keywords": ["бур садов", "ледобур", "шнеков", "бур ручной", "садовый бур"],
+          "source": "name_keywords"
+        },
+        {
           "tool_type": "Коронки",
           "slug": "koronki",
           "source": "1c_subgroup"
