@@ -217,16 +217,9 @@
           "slug": "nabory-elektro",
           "match_keywords": [
             "набор инструмента",
-            "набор электроинстр"
-          ],
-          "source": "name_keywords"
-        },
-        {
-          "tool_type": "Аккумуляторы",
-          "slug": "akkumulyatory",
-          "match_keywords": [
-            "аккумулятор",
-            "акб "
+            "набор электроинстр",
+            "набор аккумуляторн",
+            "набор аккум"
           ],
           "source": "name_keywords"
         },
@@ -320,7 +313,10 @@
             "кусторез",
             "скарификатор",
             "опрыскиватель",
-            "бетоносмеситель"
+            "бетоносмеситель",
+            "секатор",
+            "снегоуборщ",
+            "мотоблок"
           ],
           "source": "name_keywords",
           "action": "recategorize"
@@ -336,6 +332,15 @@
           ],
           "source": "name_keywords",
           "action": "recategorize"
+        },
+        {
+          "tool_type": "Аккумуляторы",
+          "slug": "akkumulyatory",
+          "match_keywords": [
+            "аккумулятор",
+            "акб "
+          ],
+          "source": "name_keywords"
         }
       ]
     },

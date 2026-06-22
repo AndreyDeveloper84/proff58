@@ -251,6 +251,28 @@ class RealRulesRegressionTests(TestCase):
         )
         self.assertEqual(ex.slug, "koronki")
 
+    def test_akkumulyatory_does_not_swallow_cordless_tools(self):
+        # Правило «аккумулятор» стоит последним: садовая/прочая техника
+        # «аккумуляторная» классифицируется по своему типу, а не как АКБ.
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+
+        def res(name):
+            return rules.extract("Электроинструмент", name)
+
+        # настоящая АКБ → akkumulyatory
+        self.assertEqual(res("Аккумулятор Einhell PXC 18В 4,0А/ч").slug, "akkumulyatory")
+        # садовая техника → recategorize (не akkumulyatory)
+        self.assertEqual(res("Газонокосилка аккумуляторная ЗУБР ГКЛ-4336").result, RECATEGORIZE)
+        self.assertEqual(res("Опрыскиватель аккумуляторный ЗУБР ОПЛ-10").result, RECATEGORIZE)
+        # зарядное устройство → zaryadnye
+        self.assertEqual(res("Зарядное устройство ЗУБР 14,4-18В для АКБ Li-ion").slug, "zaryadnye")
+        # фонарь аккумуляторный → recategorize в свет
+        self.assertEqual(res("Фонарь BOSCH GLI 18V-1900 без АКБ и ЗУ").result, RECATEGORIZE)
+        # набор аккумуляторного инструмента → nabory-elektro
+        self.assertEqual(
+            res("Набор аккумуляторного инструмента Metabo Combo").slug, "nabory-elektro"
+        )
+
 
 class TransliterateTests(TestCase):
     """Транслитерация кириллицы для слугов (фолбэк _unique_option_slug, C2)."""
