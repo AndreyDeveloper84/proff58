@@ -441,6 +441,24 @@ def test_frezery_power(rules):
     assert f["power"].number == Decimal("1100")
 
 
+# --- Буры (tool_type=bury): Ø×длина + хвостовик SDS ---------------------------
+
+
+def test_bury_diameter_length_shank_plus(rules):
+    # «Бур 5х165х100» → Ø=5, длина=165 (по первому «х»), хвостовик SDS-plus.
+    f = {v.slug: v for v in rules.extract("bury", "Бур 5х165х100 SDS+ Hitachi")}
+    assert f["diameter"].number == Decimal("5")
+    assert f["length"].number == Decimal("165")
+    assert f["shank_type"].option_slug == "sds-plus"
+
+
+def test_bury_sds_max_two_digit_diameter(rules):
+    f = {v.slug: v for v in rules.extract("bury", "Бур SDS-max 18х450 Bosch")}
+    assert f["diameter"].number == Decimal("18")
+    assert f["length"].number == Decimal("450")
+    assert f["shank_type"].option_slug == "sds-max"
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""

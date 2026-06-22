@@ -1287,6 +1287,66 @@
           ]
         }
       ]
+    },
+    {
+      "tool_type": "bury",
+      "category": "Оснастка и расходники",
+      "attributes": [
+        {
+          "slug": "diameter",
+          "name": "Диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?:^|\\s)(\\d{1,2}(?:[.,]\\d)?)\\s*[х*x]\\s*\\d"
+          ]
+        },
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?:^|\\s)\\d{1,2}(?:[.,]\\d)?\\s*[х*x]\\s*(\\d{2,4})"
+          ]
+        },
+        {
+          "slug": "shank_type",
+          "name": "Тип хвостовика",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "SDS-max",
+              "slug": "sds-max",
+              "keywords": [
+                "sds-max",
+                "sds max",
+                "sdsmax"
+              ]
+            },
+            {
+              "value": "SDS-plus",
+              "slug": "sds-plus",
+              "keywords": [
+                "sds-plus",
+                "sds plus",
+                "sds+",
+                "sdsplus"
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }
