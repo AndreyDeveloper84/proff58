@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.pricing",
     "apps.orders",
     "apps.ai",
+    "apps.integration_max",
 ]
 
 MIDDLEWARE = [
@@ -170,6 +171,10 @@ SYNC_STALE_TIMEOUT = env.int("SYNC_STALE_TIMEOUT", default=30 * 60)  # секу�
 # Hard time_limit задачи импорта (SIGKILL воркера). soft_time_limit на минуту меньше —
 # даёт задаче финализировать прогон в ERROR до жёсткого убийства.
 SYNC_IMPORT_TIME_LIMIT = env.int("SYNC_IMPORT_TIME_LIMIT", default=15 * 60)  # секунды
+
+# MAX Bot
+MAX_BOT_TOKEN = env("MAX_BOT_TOKEN", default="")
+MAX_BOT_API_URL = env("MAX_BOT_API_URL", default="https://platform-api.max.ru")
 
 # Feature-флаги. Инфраструктурные — здесь (через env, меняют разработчики).
 # Бизнес-флаги (reviews/b2b/...) живут в SiteSettings. Проверка — через
