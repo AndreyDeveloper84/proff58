@@ -40,7 +40,13 @@ type ApiProduct = {
   short_description?: string | null;
 };
 
-type ApiFacetValue = { value: unknown; count: number; selected: boolean };
+type ApiFacetValue = {
+  value: unknown;
+  // preferred URL token (slug-URL, P2); присутствует только когда у опции задан slug — иначе fallback на value
+  slug?: string;
+  count: number;
+  selected: boolean;
+};
 type ApiFacet = {
   slug: string;
   name: string;
@@ -107,7 +113,9 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
     type: "checkbox",
     unit: af.unit || undefined,
     options: (af.values ?? []).map((v) => ({
-      value: String(v.value),
+      // value — токен для URL/фильтра: canonical slug, если он есть, иначе raw value (legacy)
+      value: String(v.slug ?? v.value),
+      // label — то, что видит пользователь (всегда человекочитаемое raw value)
       label: String(v.value),
       count: v.count,
       selected: v.selected,
