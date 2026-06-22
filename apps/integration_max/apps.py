@@ -9,7 +9,10 @@ class IntegrationMaxConfig(AppConfig):
     verbose_name = "Интеграция с MAX"
 
     def ready(self) -> None:
-        from apps.core.features import is_enabled
+        try:
+            from apps.core.features import is_enabled
 
-        if is_enabled("max_chat"):
-            from . import receivers  # noqa: F401
+            if is_enabled("max_chat"):
+                from . import receivers  # noqa: F401
+        except Exception:
+            pass
