@@ -16,6 +16,7 @@ from functools import reduce
 from django.db.models import Count, Max, Min, Q
 from django.db.models.fields.json import KeyTextTransform
 
+from .brand_slugs import build_brand_slug_map
 from .filters import filtered_products
 from .models import Attribute, AttributeOption, AttributeType, StockStatus
 from .queries import _category_filter_attributes
@@ -204,8 +205,21 @@ def build_facets(
         else:
             coerced[slug] = [_coerce(raw, attr.attribute_type) for raw in raw_values]
 
+    # Бренд: входящие токены (slug|raw) → канонический Product.brand (dual-accept, P-полировка).
+    # Глобальная карта (все видимые бренды) — один запрос; brand_to_slug для эмиссии value=slug.
+    brand_slug_to_brand, brand_to_slug = build_brand_slug_map()
+    resolved_brands = None
+    if brands:
+        resolved_brands = []
+        _seen_brand: set = set()
+        for tok in brands:
+            b = brand_slug_to_brand.get(tok, tok)
+            if b not in _seen_brand:
+                _seen_brand.add(b)
+                resolved_brands.append(b)
+
     # base_bs — category+brand+stock (без цены); base_qs — ещё и +price (drill-down для attr/total).
-    base_bs = filtered_products(category, brands=brands, stock_status=stock_status)
+    base_bs = filtered_products(category, brands=resolved_brands, stock_status=stock_status)
     base_qs = _apply_price(base_bs, price_min, price_max)
     total = _apply_attr_filters(base_qs, coerced).count()
 
@@ -272,10 +286,10 @@ def build_facets(
         ),
         coerced,
     )
-    selected_brands = {b.lower() for b in (brands or [])}
+    selected_brands = {b.lower() for b in (resolved_brands or [])}
     brands_out = [
         {
-            "value": r["brand"],
+            "value": brand_to_slug.get(r["brand"], r["brand"]),
             "label": r["brand"],
             "count": r["c"],
             "selected": r["brand"].lower() in selected_brands,
@@ -288,7 +302,7 @@ def build_facets(
     # stock: база БЕЗ stock (category+brand+price+attrs), один group-by.
     stock_base = _apply_attr_filters(
         _apply_price(
-            filtered_products(category, brands=brands, stock_status=None),
+            filtered_products(category, brands=resolved_brands, stock_status=None),
             price_min,
             price_max,
         ),

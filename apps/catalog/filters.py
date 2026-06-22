@@ -13,6 +13,7 @@ import django_filters
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Case, FloatField, Q, Value, When
 
+from .brand_slugs import resolve_brand_tokens
 from .models import Category, Product, ProductStatus
 
 
@@ -24,7 +25,7 @@ def visible_products():
 class ProductFilter(django_filters.FilterSet):
     # Категория + все потомки: зайдя в «Электроинструмент», видим товары из «Дрелей».
     category = django_filters.CharFilter(method="filter_category")
-    brand = django_filters.CharFilter(field_name="brand", lookup_expr="iexact")
+    brand = django_filters.CharFilter(method="filter_brand")
     # tool_type — вторая ось навигации (slug варианта атрибута), in_stock — наличие.
     tool_type = django_filters.CharFilter(method="filter_tool_type")
     in_stock = django_filters.CharFilter(method="filter_in_stock")
@@ -45,6 +46,19 @@ class ProductFilter(django_filters.FilterSet):
             return queryset.none()
         ids = [cat.pk, *cat.get_descendants().values_list("pk", flat=True)]
         return queryset.filter(category_id__in=ids)
+
+    def filter_brand(self, queryset, name, value):
+        """Бренд по slug ИЛИ сырой строке (dual-accept, P-полировка). comma-list → OR.
+
+        Токены резолвятся slug→Product.brand (``resolve_brand_tokens``), фильтр —
+        регистронезависимый OR (iexact; brand__in регистрозависим). Неизвестный токен
+        просто ничего не находит, листинг не падает.
+        """
+        tokens = [t.strip() for t in (value or "").split(",") if t.strip()]
+        brands = resolve_brand_tokens(tokens)
+        if not brands:
+            return queryset
+        return queryset.filter(reduce(operator.or_, (Q(brand__iexact=b) for b in brands)))
 
     def filter_tool_type(self, queryset, name, value):
         if not value:

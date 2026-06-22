@@ -167,14 +167,14 @@ def test_brand_facet_drilldown_keeps_others_and_marks_selected(client, tree):
     make_product(leaf, "p2", brand="Makita", price=200)
     make_product(leaf, "p3", brand="Bosch", price=300)
 
-    data = facets(client, "perforatory", "brand=Bosch")
-    brands = {b["value"]: b for b in data["brands"]}
+    data = facets(client, "perforatory", "brand=bosch")  # фильтр по slug
+    brands = {b["label"]: b for b in data["brands"]}  # value теперь slug → ключуемся по label
     # бренды НЕ схлопываются при выбранном Bosch (counts по базе без brand)
     assert brands["Bosch"]["count"] == 2
     assert brands["Makita"]["count"] == 1
+    assert brands["Bosch"]["value"] == "bosch"
     assert brands["Bosch"]["selected"] is True
     assert brands["Makita"]["selected"] is False
-    assert brands["Bosch"]["label"] == "Bosch"
 
 
 @pytest.mark.django_db
@@ -206,3 +206,62 @@ def test_category_block_and_subcategories(client, tree):
     assert crumbs == ["ei", "perforatory"]  # предки + сама
     subs = [s["slug"] for s in data["subcategories"]]
     assert subs == ["sds-plus"]  # неактивная подкатегория не попадает
+
+
+# --- P-B: brand-slug (ЧПУ латиницей, dual-accept) ---
+
+
+@pytest.mark.django_db
+def test_brand_facet_emits_slug_value_and_label(client, tree):
+    _, leaf = tree
+    make_product(leaf, "p1", brand="Интерскол", price=100)
+    b = {x["label"]: x for x in facets(client, "perforatory")["brands"]}
+    assert b["Интерскол"]["value"] == "interskol"  # value — латинский slug
+    assert b["Интерскол"]["label"] == "Интерскол"  # label — человекочитаемое
+
+
+@pytest.mark.django_db
+def test_brand_filter_by_slug_and_legacy(client, tree):
+    _, leaf = tree
+    make_product(leaf, "p1", brand="Интерскол", price=100)
+    make_product(leaf, "p2", brand="Bosch", price=200)
+    assert {r["slug"] for r in results(client, "category=perforatory&brand=interskol")} == {"p1"}
+    # legacy сырое значение (dual-accept)
+    assert {r["slug"] for r in results(client, "category=perforatory&brand=Интерскол")} == {"p1"}
+
+
+@pytest.mark.django_db
+def test_brand_facet_selected_by_slug_and_legacy(client, tree):
+    _, leaf = tree
+    make_product(leaf, "p1", brand="Интерскол", price=100)
+    make_product(leaf, "p2", brand="Bosch", price=200)
+    for q in ("brand=interskol", "brand=Интерскол"):
+        sel = {x["label"]: x["selected"] for x in facets(client, "perforatory", q)["brands"]}
+        assert sel["Интерскол"] is True
+        assert sel["Bosch"] is False
+
+
+@pytest.mark.django_db
+def test_brand_unknown_slug_zero(client, tree):
+    _, leaf = tree
+    make_product(leaf, "p1", brand="Bosch", price=1)
+    assert results(client, "category=perforatory&brand=nonexistent") == []
+
+
+@pytest.mark.django_db
+def test_brand_multi_comma_or(client, tree):
+    _, leaf = tree
+    make_product(leaf, "p1", brand="Bosch", price=1)
+    make_product(leaf, "p2", brand="Makita", price=1)
+    make_product(leaf, "p3", brand="DeWalt", price=1)
+    got = {r["slug"] for r in results(client, "category=perforatory&brand=bosch,makita")}
+    assert got == {"p1", "p2"}  # OR
+
+
+@pytest.mark.django_db
+def test_brand_slug_collision_gets_suffix(client, tree):
+    _, leaf = tree
+    make_product(leaf, "p1", brand="Тест-1", price=1)
+    make_product(leaf, "p2", brand="Тест 1", price=1)  # тот же base-slug "test-1"
+    slugs = {x["value"] for x in facets(client, "perforatory")["brands"]}
+    assert slugs == {"test-1", "test-1-2"}  # детерминированный суффикс
