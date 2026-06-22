@@ -9,7 +9,7 @@
 |---|---|---|
 | [obra/superpowers](https://github.com/obra/superpowers) | Плагин-методология разработки + скиллы | ✅ подключён и **включён** |
 | [affaan-m/ECC](https://github.com/affaan-m/ECC) | Большой marketplace (67 агентов, 271+ скиллов) | ✅ подключён и **включён** |
-| [xu-xiang/everything-claude-code-zh](https://github.com/xu-xiang/everything-claude-code-zh) | Китайский перевод everything-claude-code (подмножество ECC, тот же автор) | ⏭️ пропущен как дубль ECC |
+| [xu-xiang/everything-claude-code-zh](https://github.com/xu-xiang/everything-claude-code-zh) | Китайский перевод everything-claude-code (подмножество ECC, тот же автор) | ◐ точечный curated-набор (см. раздел 5) |
 | [garrytan/gstack](https://github.com/garrytan/gstack) | 23+ скилла «инженерной команды» | 📦 в репозитории, **по запросу** |
 | [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents) | 238 специализированных агентов | 📦 базовый набор включён, остальное **по запросу** |
 | [hesreallyhim/awesome-claude-code](https://github.com/hesreallyhim/awesome-claude-code) | Список ссылок (awesome-list) | 🔗 устанавливать нечего, ссылка для справки |
@@ -76,6 +76,31 @@ ln -s "$(pwd)/.claude/skills-library/gstack" ~/.claude/skills/gstack
 Это курируемый список ссылок, а не устанавливаемый пакет. Используйте его как
 каталог для поиска новых скиллов/команд/агентов:
 <https://github.com/hesreallyhim/awesome-claude-code>
+
+---
+
+## 5. everything-claude-code-zh — точечный curated-набор
+
+Репозиторий — китайское подмножество ECC (уже включён плагином), поэтому **целиком
+не ставился** (был бы дубль). Взято только то, что либо дополняет, либо адаптировано
+под наш стек:
+
+**Скиллы (по запросу)** — `.claude/skills-library/ecc-zh/`: `django-patterns`,
+`django-security`, `django-tdd`, `django-verification`, `postgres-patterns`,
+`python-testing`, `backend-patterns`, `tdd-workflow`, `verification-loop`. Локальный
+быстрый доступ к Django/Python-практикам (контент на китайском — дубль ECC по сути).
+
+**Агенты-ревьюеры** — `.claude/agents/ecc-{python,database,security}-reviewer.md`.
+Python/DB/security-специализация (запускают `ruff`/`mypy`/`black`, проверки SQL-инъекций
+и т.п.) — помогают при ревью PR. Дополняют общий `engineering-code-reviewer`.
+
+**Хук автоформата Python (НЕТТО-НОВОЕ, главная ценность)** —
+`.claude/hooks/format-python.sh`, подключён в `settings.json` как `PostToolUse`
+(`Edit|Write|MultiEdit`). После правки `.py` гоняет `ruff check --fix` + `black` из
+`.venv`. **Намеренно НЕ взяты** JS-ориентированные хуки ecc-zh (Biome/Prettier,
+TypeScript-typecheck, `console.log`-варнинги, session-state) — они неприменимы к
+Django и/или бесполезны в эфемерном окружении. Хук безопасен: всегда `exit 0`, правит
+только `.py` внутри проекта.
 
 ---
 

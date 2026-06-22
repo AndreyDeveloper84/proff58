@@ -16,5 +16,18 @@
   "enabledPlugins": {
     "superpowers@superpowers-dev": true,
     "ecc@ecc": true
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/format-python.sh\""
+          }
+        ]
+      }
+    ]
   }
 }
