@@ -358,6 +358,29 @@ def test_almaz_disc_type_turbo_wins_over_segment(rules):
     )
 
 
+def test_almaz_disc_type_latin_turbo(rules):
+    # В названиях 1С массово латинское «Turbo/TURBO» — учитываем обе раскладки.
+    assert (
+        _almaz(rules, "Круг алмаз. отрез. 115х2,0х7х22,2 TURBO EXTRA")["disc_type"].option_slug
+        == "turbo"
+    )
+
+
+def test_almaz_disc_type_1a1r_is_solid(rules):
+    # Код формы 1A1R = сплошной обод (continuous rim) — самый частый маркер сплошных.
+    assert (
+        _almaz(rules, "Круг алмаз. отрез. 125х1,4х10х22,23 1A1R Сухорез")["disc_type"].option_slug
+        == "solid"
+    )
+    # Турбо приоритетнее обода: «1A1R Turbo» → turbo (порядок вариантов).
+    assert (
+        _almaz(rules, "Круг алмаз. отрез. 115х1,1х10х22,23 1A1R Turbo SUPREME")[
+            "disc_type"
+        ].option_slug
+        == "turbo"
+    )
+
+
 def test_almaz_bare_diameter_whitelist(rules):
     # «125 УНИВЕРСАЛ» без «х» — whitelist ловит Ø; посадочного/типа нет.
     f = _almaz(rules, "Круг алмаз. отрез. 125 УНИВЕРСАЛ ЗУБР")
