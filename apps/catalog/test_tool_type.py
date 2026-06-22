@@ -56,6 +56,12 @@ RULES = {
             "extraction": "inherit_1c_subgroup",
             "rules": [
                 {"tool_type": "Сверла", "slug": "sverla", "source": "1c_subgroup"},
+                {
+                    "tool_type": "Переходные кольца",
+                    "slug": "perehodnye-koltsa",
+                    "subgroup": "Сверла",
+                    "match_keywords": ["кольцо переходн"],
+                },
             ],
         },
     ],
@@ -95,6 +101,25 @@ class ExtractionEngineTests(TestCase):
         self.assertEqual(ex.result, ASSIGNED)
         self.assertEqual(ex.tool_type, "Свёрла")
         self.assertEqual(ex.slug, "sverla")  # канонический slug по нормализованному совпадению
+
+    def test_inherit_keyword_override_inside_subgroup(self):
+        # «Кольцо переходное» в подгруппе «Сверла» → свой tool_type, а не sverla.
+        ex = self.rules.extract(
+            "Оснастка и расходники", "Кольцо переходное 20х16", subgroup="Сверла"
+        )
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.slug, "perehodnye-koltsa")
+
+    def test_inherit_override_does_not_touch_plain_items(self):
+        # Обычное сверло в той же подгруппе override не задевает → sverla.
+        ex = self.rules.extract("Оснастка и расходники", "Сверло по металлу 5мм", subgroup="Сверла")
+        self.assertEqual(ex.slug, "sverla")
+
+    def test_inherit_override_is_scoped_to_its_subgroup(self):
+        # Тот же ключ в ДРУГОЙ подгруппе («Буры») не срабатывает (скоуп по subgroup).
+        ex = self.rules.extract("Оснастка и расходники", "Кольцо переходное 20х16", subgroup="Буры")
+        self.assertEqual(ex.tool_type, "Буры")
+        self.assertNotEqual(ex.slug, "perehodnye-koltsa")
 
     def test_options_exclude_recategorize(self):
         opts = self.rules.options("Электроинструмент")
@@ -197,6 +222,34 @@ class RealRulesRegressionTests(TestCase):
             ex = rules.extract("Оснастка и расходники", "товар", subgroup)
             self.assertEqual(ex.result, ASSIGNED, subgroup)
             self.assertEqual(ex.slug, slug, subgroup)
+
+    def test_diamond_disc_accessories_split_by_keyword(self):
+        # Аксессуары внутри подгруппы «Алмазные круги» получают свой tool_type,
+        # не засоряя фасет отрезных дисков (D).
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+        cases = {
+            "Кольцо переходное 22,23х20 для дисков": "perehodnye-koltsa",
+            "Чашка алмазная 125 мм KRAFTOOL двухрядная": "chashki-shlif",
+            "Головка алмазная шлифовальная d95 АЛАТОН": "golovki-shlif",
+            "Франкфурт шлифовальный GFB 00": "golovki-shlif",
+            "Приспособление для алмазного сверления": "prisposobleniya-osnastka",
+            # сами отрезные/дисковые круги остаются krugi-almaznye
+            "Круг алмаз. отрез. 125х1,4х10х22,23 1A1R Turbo": "krugi-almaznye",
+            "Круг алмазный 11V9 125х40х20 Tyrolit": "krugi-almaznye",
+        }
+        for name, slug in cases.items():
+            ex = rules.extract("Оснастка и расходники", name, "Алмазные круги")
+            self.assertEqual(ex.slug, slug, name)
+
+    def test_accessory_keywords_scoped_to_diamond_discs(self):
+        # «Держатель»/«переходник» в других подгруппах НЕ переклассифицируются.
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+        ex = rules.extract("Оснастка и расходники", "Держатель бит для шуруповерта", "Биты")
+        self.assertEqual(ex.slug, "bity")
+        ex = rules.extract(
+            "Оснастка и расходники", "Коронка алм. 22хМ16 бетон+переходник", "Коронки"
+        )
+        self.assertEqual(ex.slug, "koronki")
 
 
 class TransliterateTests(TestCase):

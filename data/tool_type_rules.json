@@ -777,6 +777,34 @@
           "source": "1c_subgroup"
         },
         {
+          "tool_type": "Переходные кольца",
+          "slug": "perehodnye-koltsa",
+          "subgroup": "Алмазные круги",
+          "match_keywords": ["кольцо переходн", "переходное кольцо", "переходник"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Шлифовальные чашки",
+          "slug": "chashki-shlif",
+          "subgroup": "Алмазные круги",
+          "match_keywords": ["чашка"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Шлифовальные головки",
+          "slug": "golovki-shlif",
+          "subgroup": "Алмазные круги",
+          "match_keywords": ["головка", "франкфурт"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Приспособления для оснастки",
+          "slug": "prisposobleniya-osnastka",
+          "subgroup": "Алмазные круги",
+          "match_keywords": ["приспособлен", "держатель", "оправк"],
+          "source": "name_keywords"
+        },
+        {
           "tool_type": "Метчики и плашки",
           "slug": "metchiki-plashki",
           "source": "1c_subgroup"
