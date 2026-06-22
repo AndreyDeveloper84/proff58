@@ -19,6 +19,7 @@
 """
 
 from django.contrib.postgres.indexes import GinIndex
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import (
@@ -418,6 +419,67 @@ class Product(TimeStampedModel):
     def is_visible(self) -> bool:
         """Виден ли товар на витрине."""
         return self.is_active and self.status == ProductStatus.PUBLISHED
+
+    def missing_required_attributes(self) -> list[str]:
+        """Имена обязательных характеристик категории, у которых нет значения.
+
+        Проверяется ТОЛЬКО текущая категория товара (без наследования по дереву).
+        «Заполнено» определяется через ``attr_value_to_json``: значение считается
+        заполненным, если оно не None и не пустая строка (boolean False —
+        валидное заполненное значение, см. read_models). Если категория не
+        задана — список пуст (правило про категорию проверяется отдельно).
+        """
+        if not self.category_id or self.pk is None:
+            # Без pk нельзя обратиться к attribute_values (новый товар ещё не
+            # сохранён). Для нового товара правило применяется в admin.save_related
+            # уже после сохранения инлайнов.
+            return []
+
+        # Локальный импорт: read_models импортирует модели — избегаем цикла.
+        from .read_models import attr_value_to_json
+
+        required = CategoryAttribute.objects.filter(
+            category_id=self.category_id, is_required=True
+        ).select_related("attribute")
+
+        # Значения товара по attribute_id (один проход; используем prefetch при наличии).
+        pav_by_attr = {pav.attribute_id: pav for pav in self.attribute_values.all()}
+
+        missing: list[str] = []
+        for ca in required:
+            pav = pav_by_attr.get(ca.attribute_id)
+            filled = False
+            if pav is not None:
+                value = attr_value_to_json(pav)
+                filled = value is not None and value != ""
+            if not filled:
+                missing.append(ca.attribute.name)
+        return missing
+
+    def publication_errors(self) -> list[str]:
+        """Единый источник правил публикации. Пустой список = можно публиковать.
+
+        Цена НЕ проверяется (источник истины — 1С, может временно отсутствовать).
+        """
+        errors: list[str] = []
+        if not self.category_id:
+            errors.append("Укажите категорию")
+        missing = self.missing_required_attributes()
+        if missing:
+            errors.append("Заполните обязательные характеристики: " + ", ".join(missing))
+        return errors
+
+    def clean(self):
+        """Блокируем перевод в «Опубликован» при незаполненных правилах.
+
+        Программные save() из импорта 1С не зовут clean() — импорт не страдает.
+        Покрывает редактирование существующего товара через admin-форму.
+        """
+        super().clean()
+        if self.status == ProductStatus.PUBLISHED:
+            errors = self.publication_errors()
+            if errors:
+                raise ValidationError(errors)
 
     def recalc_stock_status(self) -> None:
         """Пересчитать статус наличия по доступному остатку."""

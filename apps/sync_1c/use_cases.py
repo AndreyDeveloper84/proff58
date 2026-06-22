@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import traceback
 from dataclasses import dataclass
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
@@ -231,6 +232,29 @@ def fail_import_job(sync_log: SyncLog, reason: str, *, rows_total: int = 0) -> N
     sync_log.error_details = f"{old}\n{reason}".strip()
     sync_log.finished_at = timezone.now()
     sync_log.save()
+
+
+def mark_stale_imports() -> tuple[int, list[str]]:
+    """Пометить зависшие RUNNING-прогоны как ERROR.
+
+    Зависший = result=RUNNING, finished_at IS NULL, started_at старше SYNC_STALE_TIMEOUT.
+    Идемпотентно: уже финализированные не трогаются (фильтр по RUNNING).
+    """
+    threshold = timezone.now() - timedelta(seconds=settings.SYNC_STALE_TIMEOUT)
+    stale = SyncLog.objects.filter(
+        result=SyncLog.SyncResult.RUNNING,
+        finished_at__isnull=True,
+        started_at__lt=threshold,
+    )
+    uids: list[str] = []
+    for sync_log in stale:
+        sync_log.result = SyncLog.SyncResult.ERROR
+        sync_log.finished_at = timezone.now()
+        note = f"Прогон отмечен зависшим (нет финализации за {settings.SYNC_STALE_TIMEOUT}s)."
+        sync_log.error_details = ((sync_log.error_details or "").strip() + "\n" + note).strip()
+        sync_log.save(update_fields=["result", "finished_at", "error_details"])
+        uids.append(str(sync_log.batch_uid))
+    return len(uids), uids
 
 
 def run_import_into(
@@ -451,6 +475,70 @@ def update_stocks(raw_items: list[dict], *, source_file: str = "") -> tuple[Sync
         sync_type=SyncLog.SyncType.STOCK,
         source_file=source_file,
     )
+
+
+def update_stocks_bulk(
+    raw_items: list[dict], *, source_file: str = "", chunk: int = 2000
+) -> tuple[SyncLog, ImportResult]:
+    """Bulk-заливка остатков для больших выгрузок (низкая память, пачками).
+
+    В отличие от ``update_stocks`` (построчный ``save()`` в транзакции на строку —
+    тяжело и по памяти, и по числу запросов на десятках тысяч строк), грузит товары
+    по ``code_1c`` ЧАНКАМИ и пишет остаток через ``stock.plan_stock`` (мутация полей
+    без сохранения) + ``Product.bulk_update`` + ``stock.apply_stock_bulk``. Матчинг —
+    только по ``code_1c`` (выгрузка 1С его всегда несёт); строки без ``code_1c`` или
+    не найденные в БД — ``skipped``.
+    """
+    sync_log = SyncLog.objects.create(
+        sync_type=SyncLog.SyncType.STOCK,
+        source_file=source_file,
+        result=SyncLog.SyncResult.RUNNING,
+    )
+    result = ImportResult()
+    error_lines: list[str] = []
+
+    # Нормализуем и индексируем по code_1c (last-wins при дублях) — Item'ы лёгкие.
+    by_code: dict[str, normalizers.Item] = {}
+    for raw in raw_items:
+        try:
+            item = normalizers.normalize_item(raw)
+        except Exception:  # noqa: BLE001
+            result.errors += 1
+            _append_error_detail(error_lines, "—", "ошибка нормализации")
+            continue
+        if not item.code_1c:
+            result.errors += 1
+            _append_error_detail(error_lines, item.article or "—", "нет code_1c")
+            continue
+        by_code[item.code_1c] = item
+
+    codes = list(by_code)
+    try:
+        for start in range(0, len(codes), chunk):
+            part = codes[start : start + chunk]
+            products = list(Product.objects.filter(code_1c__in=part))
+            result.skipped += len(part) - len(products)  # не найдены по code_1c
+            plans, to_update = [], []
+            for product in products:
+                plan = stock.plan_stock(product, by_code[product.code_1c])
+                if plan is None:
+                    result.skipped += 1  # нет полей остатка в строке
+                    continue
+                plans.append(plan)
+                to_update.append(product)
+                result.updated += 1
+            with transaction.atomic():
+                if to_update:
+                    Product.objects.bulk_update(to_update, stock._STOCK_FIELDS, batch_size=1000)
+                stock.apply_stock_bulk(plans)
+    except Exception:  # noqa: BLE001
+        result.errors += 1
+        _append_error_detail(error_lines, "—", _short_traceback())
+        _finalize(sync_log, result, error_lines)
+        raise
+
+    _finalize(sync_log, result, error_lines)
+    return sync_log, result
 
 
 # ---------------------------------------------------------------------------

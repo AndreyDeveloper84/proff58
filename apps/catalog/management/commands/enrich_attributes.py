@@ -39,6 +39,10 @@ from apps.catalog.read_models import extracted_value_to_json
 BATCH = 1000
 TOOL_TYPE_SLUG = "tool_type"
 
+# Источники, которыми владеет движок: их устаревшие значения можно удалять при
+# повторном enrich. manual/import_1c (авторитетные) и llm (отдельный проход) — НЕ трогаем.
+PRUNABLE_SOURCES = frozenset({Source.REGEX, Source.KEYWORD, Source.INFERRED})
+
 # Уверенность по источнику (только аналитика/AI, НЕ участвует в overwrite).
 SOURCE_CONFIDENCE = {
     Source.MANUAL: 100,
@@ -67,6 +71,12 @@ class Command(BaseCommand):
 
         tt_slugs = [tt["tool_type"] for tt in raw.get("tool_types", [])]
         managed_slugs = {a["slug"] for tt in raw.get("tool_types", []) for a in tt["attributes"]}
+        # slug'и атрибутов, которыми движок управляет в рамках каждого tool_type
+        # (для идемпотентной чистки — чужие типы не задеваем).
+        managed_by_tt = {
+            tt["tool_type"]: {a["slug"] for a in tt["attributes"]}
+            for tt in raw.get("tool_types", [])
+        }
 
         attr_by_slug = {a.slug: a for a in Attribute.objects.filter(slug__in=managed_slugs)}
         missing = managed_slugs - set(attr_by_slug)
@@ -102,10 +112,17 @@ class Command(BaseCommand):
             existing[(pav.product_id, pav.attribute.slug)] = pav
 
         run = ImportRun.objects.create(source="enrich_attributes")
-        stats = {"processed": 0, "no_attributes": 0, "by_attribute": {}, "skipped_priority": 0}
+        stats = {
+            "processed": 0,
+            "no_attributes": 0,
+            "by_attribute": {},
+            "skipped_priority": 0,
+            "pruned": {},
+        }
 
         pav_create: list[ProductAttributeValue] = []
         pav_update: list[ProductAttributeValue] = []
+        pav_delete_ids: list[int] = []
         cache_updates: list[Product] = []
 
         qs = Product.objects.filter(id__in=product_ids).iterator(chunk_size=2000)
@@ -116,12 +133,30 @@ class Command(BaseCommand):
                     tt_slug = product_tt[product.id]
                     name = product.original_name or product.name
                     values = rules.extract(tt_slug, name)
-                    if not values:
-                        stats["no_attributes"] += 1
-                        continue
+                    current = {av.slug for av in values}
 
                     cache = dict(product.attrs_cache or {})
                     cache_changed = False
+
+                    # Идемпотентность: убрать engine-значения, которых движок больше
+                    # не извлекает (устаревший regex/keyword/inferred). Авторитетные
+                    # источники (manual/import_1c) и llm не трогаем.
+                    for slug in managed_by_tt.get(tt_slug, ()):
+                        if slug in current:
+                            continue
+                        pav = existing.get((product.id, slug))
+                        if pav is None or pav.pk is None or pav.source not in PRUNABLE_SOURCES:
+                            continue
+                        pav_delete_ids.append(pav.pk)
+                        existing.pop((product.id, slug), None)
+                        if slug in cache:
+                            del cache[slug]
+                            cache_changed = True
+                        stats["pruned"][slug] = stats["pruned"].get(slug, 0) + 1
+
+                    if not values:
+                        stats["no_attributes"] += 1
+
                     for av in values:
                         attribute = attr_by_slug[av.slug]
                         option = None
@@ -162,6 +197,9 @@ class Command(BaseCommand):
                         product.attrs_cache = cache
                         cache_updates.append(product)
 
+                    if len(pav_delete_ids) >= BATCH:
+                        ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
+                        pav_delete_ids.clear()
                     if len(pav_create) >= BATCH:
                         ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
                         pav_create.clear()
@@ -176,6 +214,8 @@ class Command(BaseCommand):
                         )
                         cache_updates.clear()
 
+                if pav_delete_ids:
+                    ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
                 if pav_create:
                     ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
                 if pav_update:
@@ -199,11 +239,18 @@ class Command(BaseCommand):
         run.save()
 
         by_attr = ", ".join(f"{k}: {v}" for k, v in sorted(stats["by_attribute"].items()))
+        pruned_total = sum(stats["pruned"].values())
+        pruned_detail = (
+            " (" + ", ".join(f"{k}: {v}" for k, v in sorted(stats["pruned"].items())) + ")"
+            if stats["pruned"]
+            else ""
+        )
         self.stdout.write(
             self.style.SUCCESS(
                 f"Характеристики: обработано {stats['processed']}, "
                 f"без характеристик {stats['no_attributes']}, "
-                f"пропущено по приоритету {stats['skipped_priority']}. По атрибутам — {by_attr}."
+                f"пропущено по приоритету {stats['skipped_priority']}, "
+                f"удалено устаревших {pruned_total}{pruned_detail}. По атрибутам — {by_attr}."
             )
         )
         return str(run.pk)
