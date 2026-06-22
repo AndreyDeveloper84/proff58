@@ -97,9 +97,11 @@ class SendOrderNotificationTest(TestCase):
         self.assertEqual(result, {"ok": True})
         call_args = mock_urlopen.call_args
         req = call_args[0][0]
-        body = req.data.decode("utf-8")
-        self.assertIn("ORD-005", body)
-        self.assertIn("Трек: ABC123", body)
+        import json
+
+        payload = json.loads(req.data.decode("utf-8"))
+        self.assertIn("ORD-005", payload["text"])
+        self.assertIn("Трек: ABC123", payload["text"])
 
 
 @override_settings(
