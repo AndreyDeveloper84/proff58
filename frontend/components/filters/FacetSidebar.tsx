@@ -175,21 +175,16 @@ function RangeFacet({
     (immediate ? flush : debounced)(next);
   };
   const fieldNum = (s: string, fallback: number) => (s === "" ? fallback : Number(s));
-  const rangeCls =
-    "pointer-events-none absolute inset-0 h-1 w-full appearance-none bg-transparent " +
-    "[&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-3 " +
-    "[&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none " +
-    "[&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent " +
-    "[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-3 " +
-    "[&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 " +
-    "[&::-moz-range-thumb]:bg-accent";
+  // Обычный интерактивный range (без pointer-events-хака — он и ломал коммит): нативный thumb
+  // через accent-color. Два отдельных ползунка min/max, каждый полностью кликабелен.
+  const rangeCls = "h-1.5 w-full cursor-pointer appearance-none rounded-full bg-line accent-accent";
   const fieldCls =
     "w-full rounded-md border border-line bg-canvas px-2 py-1 text-sm text-ink placeholder:text-ink-3";
 
   return (
     <fieldset className="border-0 p-0" aria-label={facet.label}>
       <legend className="mb-2 text-sm font-medium text-ink">{`${facet.label}${unit}`}</legend>
-      <div className="relative mb-3 h-1 rounded-full bg-line">
+      <div className="mb-3 flex flex-col gap-2">
         <input
           type="range"
           min={lo}
