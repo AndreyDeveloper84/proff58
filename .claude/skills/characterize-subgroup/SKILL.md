@@ -93,8 +93,14 @@ description: >-
   атрибутов на реальном `attribute_rules.json`.
 
 ### 5. Проверка
-`python3 -m pytest apps/catalog/ -q` (нужен Postgres; см. скилл reliability/devops)
-и `black`. Симуляцию покрытия — через `analyze_subgroup --spec`.
+Перед пушем прогнать **то же, что CI** (`.github/workflows`):
+```bash
+ruff check .                              # lint (CI падает на B905 zip без strict= и пр.)
+black --check apps/ data/                 # форматирование (только Python, не .md/.json)
+python3 -m pytest apps/catalog/ -q        # тесты (нужен Postgres; см. скилл reliability/devops)
+```
+Симуляцию покрытия — через `analyze_subgroup --spec`. `ruff` обязателен: одного
+`black` мало — CI делает `ruff check .` отдельным шагом (на нём упал #215).
 
 ### 6. PR
 Ветка от свежего `origin/dev`, один коммит на подгруппу, PR в `dev`. В описании —
