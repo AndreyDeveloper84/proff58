@@ -3,8 +3,11 @@
 
 Бьёт по эндпоинтам ``/api/1c/`` на указанном сервере (по умолчанию staging
 ``https://dev.proff58.ru``) и проверяет И happy-path, И ошибочные ответы
-(403/400/404/501 + счётчики). Зависимостей нет — только стандартная библиотека,
+(403/400/404 + счётчики). Зависимостей нет — только стандартная библиотека,
 запускается прямо из venv.
+
+Заказы (#50) проверяются по факту реализации (orders/new → 200, orders/confirm
+валидирует конверт и отдаёт per-item-результат), а не как заглушки 501.
 
 ВНИМАНИЕ: скрипт ПИШЕТ в БД сервера — создаёт/обновляет тестовый товар
 ``SMOKE-1C-001`` (идемпотентно по ``code_1c``) и шлёт ``products/update`` для
@@ -43,12 +46,23 @@ _UNSET = object()
 
 
 def _parse_body(raw: bytes):
+    """Распарсить тело так же, как это делает 1С: сначала UTF-8, затем CP1251.
+
+    Эндпоинты 1С отдают JSON в windows-1251 (``OneCJSONRenderer``), поэтому ответы
+    с кириллицей (тексты ошибок, ``detail``) нельзя декодировать одним UTF-8 — иначе
+    тело «ломается» в строку и проверки счётчиков/полей не видят dict.
+    """
     if not raw:
         return None
-    try:
-        return json.loads(raw.decode("utf-8"))
-    except (ValueError, UnicodeDecodeError):
-        return raw.decode("utf-8", "replace")
+    for enc in ("utf-8", "cp1251"):
+        try:
+            return json.loads(raw.decode(enc))
+        except UnicodeDecodeError:
+            continue
+        except ValueError:
+            # Декодировалось, но это не JSON — отдадим как текст в той же кодировке.
+            return raw.decode(enc, "replace")
+    return raw.decode("utf-8", "replace")
 
 
 class OneCSmokeClient:
@@ -350,11 +364,55 @@ def check_snapshot_reflects(
     )
 
 
-def check_orders_stubs(r: Runner, client: OneCSmokeClient):
-    status, _ = client.get("orders/new")
-    r.check("orders/new → 501", status == 501, f"получено {status}")
-    status, _ = client.post("orders/confirm", {})
-    r.check("orders/confirm → 501", status == 501, f"получено {status}")
+def check_orders_flow(r: Runner, client: OneCSmokeClient):
+    """Реальная проверка обмена заказами (#50), контракт §5.6.
+
+    Без сидинга заказов через HTTP: orders/new только читает (валидируем форму),
+    orders/confirm проверяем на путях валидации и per-item-ошибке (неизвестный
+    заказ → ``error`` в строке, а не 500). Создаётся служебный SyncLog(orders) —
+    товаров/заказов не плодит.
+    """
+    # 1) orders/new — 200 + конверт {"items": [...]}; если заказы есть, проверяем форму строки.
+    status, body = client.get("orders/new")
+    shape_ok = status == 200 and isinstance(body, dict) and isinstance(body.get("items"), list)
+    r.check("orders/new → 200 + items[]", bool(shape_ok), f"status={status}")
+    if shape_ok and body["items"]:
+        first = body["items"][0]
+        keys = {"site_order_id", "order_number", "fulfillment_status", "payment", "items"}
+        r.check(
+            "orders/new: строка заказа содержит ключи контракта §5.6",
+            keys <= set(first),
+            f"keys={sorted(first)}",
+        )
+
+    # 2) orders/confirm — валидация конверта.
+    empty = client.post("orders/confirm", {"items": []})
+    r.check("orders/confirm: пустой items → 400", empty[0] == 400, f"получено {empty[0]}")
+
+    no_id = client.post("orders/confirm", {"items": [{"onec_order_id": "1c-x"}]})
+    r.check(
+        "orders/confirm: строка без site_order_id/order_number → 400",
+        no_id[0] == 400,
+        f"получено {no_id[0]}",
+    )
+
+    # 3) orders/confirm — неизвестный заказ: 200 + per-item error (НЕ 500, НЕ откат батча).
+    status, body = client.post(
+        "orders/confirm",
+        {"items": [{"site_order_id": 999_999_999, "onec_order_id": "1c-smoke-x"}]},
+    )
+    per_item = (
+        status == 200
+        and isinstance(body, dict)
+        and body.get("items")
+        and body["items"][0].get("status") == "error"
+        and "batch_uid" in body
+    )
+    r.check(
+        "orders/confirm: неизвестный заказ → 200, items[0].status=error, есть batch_uid",
+        bool(per_item),
+        f"status={status}, body={body}",
+    )
 
 
 def main(argv=None) -> int:
@@ -396,7 +454,9 @@ def main(argv=None) -> int:
             runner.record(f"[нужен --key] {name}", SKIP, "передайте --key или env ONEC_API_KEY")
         return runner.summary_exit_code()
 
-    price = Decimal("1234.56")
+    # Цена меняется между запусками: иначе при повторном smoke цена не отличается
+    # от текущей и идёт в skipped (идемпотентность #111), а не updated.
+    price = Decimal(f"{1000 + int(time.time()) % 9000}.{int(time.time() * 100) % 100:02d}")
     stock = Decimal("10.000")
     reserved = Decimal("3.000")
 
@@ -408,7 +468,7 @@ def main(argv=None) -> int:
     check_prices(runner, client, args.code, price)
     check_stocks(runner, client, args.code, stock, reserved)
     check_snapshot_reflects(runner, client, args.code, price, stock, reserved)
-    check_orders_stubs(runner, client)
+    check_orders_flow(runner, client)
 
     return runner.summary_exit_code()
 
