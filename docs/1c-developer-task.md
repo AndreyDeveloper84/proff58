@@ -251,6 +251,8 @@ GET /api/1c/snapshot/?limit=1000&offset=0
   "limit": 1000,
   "offset": 0,
   "next_offset": 1000,
+  "next_after_code_1c": "1c-000999",
+  "next_after_id": 12345,
   "results": [
     { "code_1c": "1c-000123", "price": "5900.00", "currency": "RUB", "stock": "7.000", "reserved": "2.000", "available": "5.000" }
   ]
@@ -259,8 +261,9 @@ GET /api/1c/snapshot/?limit=1000&offset=0
 
 | Поле | Смысл |
 |---|---|
-| `count` | всего позиций в снимке |
-| `next_offset` | `offset` следующей страницы; на последней — `null` |
+| `count` | всего позиций (offset-режим); в keyset-режиме — `null` (не считаем) |
+| `next_offset` | `offset` следующей страницы; на последней / в keyset — `null` |
+| `next_after_code_1c`, `next_after_id` | курсор следующей keyset-страницы (передать в `after_code_1c`/`after_id`); на последней — `null` |
 | `code_1c` | код 1С позиции (ключ сравнения) |
 | `price` | актуальная цена; `null`, если не задана |
 | `currency` | валюта (всегда есть, по умолчанию `RUB`) |
@@ -481,9 +484,9 @@ GET /api/1c/orders/new
       "created_at": "2026-06-16T10:30:00+03:00",
       "fulfillment_status": "new",
       "customer": { "type": "b2c", "name": "Иван Иванов", "phone": "+79000000000", "email": "client@example.com" },
-      "delivery": { "method": "delivery", "address": "Пенза, ул. Московская, 1", "comment": "Позвонить за час", "cost": "300.00" },
+      "delivery": { "method": "delivery", "address": "Пенза, ул. Московская, 1", "comment": "Позвонить за час", "cost": "0.00" },
       "payment": { "method": "online", "status": "paid" },
-      "totals": { "items_total": "5900.00", "delivery_total": "300.00", "total": "6200.00", "currency": "RUB" },
+      "totals": { "items_total": "5900.00", "delivery_total": "0.00", "total": "5900.00", "currency": "RUB" },
       "items": [
         { "line_id": 1, "external_id": "1c-000123", "sku": "BOSCH-GSB13RE", "name": "Дрель ударная BOSCH GSB 13 RE", "unit": "шт", "quantity": "1.000", "price": "5900.00", "total": "5900.00" }
       ]
@@ -491,6 +494,10 @@ GET /api/1c/orders/new
   ]
 }
 ```
+
+> Стоимость доставки пока **не передаётся**: `delivery.cost` и `delivery_total`
+> всегда `"0.00"`, `total` равен `items_total`. Поле наполнится, когда на сайте
+> появится расчёт доставки в чекауте; до тех пор не полагаться на него.
 
 1С сохраняет `site_order_id`/`order_number`, чтобы не плодить дубли. Один заказ
 может прийти повторно, пока 1С не подтвердила приём — обработка должна быть
