@@ -79,21 +79,32 @@ class Command(BaseCommand):
     help = "Анализ 1С-подгруппы: состав, кандидаты-сплиты (доля ложных), покрытие атрибутов."
 
     def add_arguments(self, parser):
-        parser.add_argument("subgroup", help="Имя 1С-подгруппы (source_group), напр. «Буры»")
+        parser.add_argument("subgroup", nargs="?", help="Имя 1С-подгруппы (source_group)")
         parser.add_argument("--spec", default=None, help="JSON-спека сплитов/атрибутов")
+        parser.add_argument("--batch", default=None, help="JSON {подгруппа: спека} — пачкой")
         parser.add_argument("--examples", type=int, default=10, help="Сколько примеров-промахов")
 
     def handle(self, *args, **opts):
-        names = names_for_subgroup(opts["subgroup"])
+        n_ex = opts["examples"]
+        if opts["batch"]:
+            batch = json.loads(Path(opts["batch"]).read_text(encoding="utf-8"))
+            for subgroup, spec in batch.items():
+                self._analyze(subgroup, spec, n_ex)
+            return
+        if not opts["subgroup"]:
+            raise CommandError("Укажите подгруппу или --batch <specs.json>.")
+        spec = json.loads(Path(opts["spec"]).read_text(encoding="utf-8")) if opts["spec"] else None
+        self._analyze(opts["subgroup"], spec, n_ex)
+
+    def _analyze(self, subgroup: str, spec: dict | None, examples: int) -> None:
+        names = names_for_subgroup(subgroup)
         low = [normalize(n) for n in names]
         total = len(low)
-        if total == 0:
-            raise CommandError(
-                f"Подгруппа {opts['subgroup']!r} не найдена в catalog_fixed.json "
-                f"(проверьте точное имя source_group)."
-            )
         write = self.stdout.write
-        write(f"\nПодгруппа «{opts['subgroup']}»: {total} товаров")
+        if total == 0:
+            write(f"\n=== «{subgroup}» — не найдена в catalog_fixed.json (0 товаров) ===")
+            return
+        write(f"\n{'=' * 64}\nПодгруппа «{subgroup}»: {total} товаров")
 
         # 1) Состав — частоты первых слов (видны подтипы/аксессуары).
         first = Counter(n.split()[0] for n in low if n.split())
@@ -101,14 +112,13 @@ class Command(BaseCommand):
         for word, count in first.most_common(15):
             write(f"  {count:5}  {word}")
 
-        if not opts["spec"]:
-            write("\n(spec не передан — только состав. Добавьте --spec для сплитов/покрытия.)")
+        if not spec:
+            write("\n(spec нет — только состав. Добавьте --spec/--batch для сплитов/покрытия.)")
             return
 
-        spec = json.loads(Path(opts["spec"]).read_text(encoding="utf-8"))
         core_words = {normalize(w) for w in spec.get("core_words", [])}
         splits = spec.get("splits", {})
-        n_ex = opts["examples"]
+        n_ex = examples
 
         def split_of(name: str):
             for slug, keywords in splits.items():
@@ -120,7 +130,7 @@ class Command(BaseCommand):
             head = name.split()[0].lstrip("я") if name.split() else ""
             return head in core_words
 
-        # 2) Сплиты — распределение + доля ложных (целевой тип ушёл в сплит).
+        # 2) Сплиты — распределение + сколько core-товаров ушло в сплит (подсказка).
         if splits:
             dist = Counter(split_of(n) or "CORE" for n in low)
             write("\n--- сплит подтипов ---")
@@ -149,8 +159,8 @@ class Command(BaseCommand):
             write(f"\n  {slug}: {hits}/{len(core)} = {pct}%")
             for value, count in Counter(v for v in values if v is not None).most_common(6):
                 write(f"      {count:5}  {value}")
+            misses = examples
             for name, value in zip(core, values, strict=True):
-                if value is None and n_ex > 0:
+                if value is None and misses > 0:
                     write(f"      нет матча: {name[:64]}")
-                    n_ex -= 1
-            n_ex = opts["examples"]
+                    misses -= 1
