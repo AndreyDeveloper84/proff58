@@ -446,3 +446,28 @@ def test_facet_queries_scale_with_attrs_not_products(client, tree, django_assert
 
     with django_assert_max_num_queries(12):
         client.get("/api/catalog/categories/dreli/facets/")
+
+
+@pytest.mark.django_db
+def test_facets_attr_range_drilldown(client, tree):
+    """Числовой range-фильтр в фасетах: total согласован со списком, drill-down считает
+    остальные фасеты в пределах диапазона, а сам числовой фасет НЕ схлопывается к выбору."""
+    _, leaf = tree
+    link(leaf, make_attr("diameter", "Диаметр", AttributeType.DECIMAL, unit="мм"))
+    link(leaf, make_attr("chuck", "Патрон", AttributeType.SELECT), sort_order=1)
+    make_product(leaf, "d10", {"diameter": 10, "chuck": "A"})
+    make_product(leaf, "d20", {"diameter": 20, "chuck": "B"})
+    make_product(leaf, "d30", {"diameter": 30, "chuck": "A"})
+    make_product(leaf, "nod", {"chuck": "B"})  # без diameter — должен выпадать из диапазона
+
+    qs = "attr_diameter_min=5&attr_diameter_max=25"
+    data = client.get(f"/api/catalog/categories/dreli/facets/?{qs}").json()
+    # total: diameter∈[5,25] → d10,d20 (nod исключён, d30 вне); совпадает со списком товаров
+    assert data["total_products"] == 2
+    list_count = client.get(f"/api/catalog/products/?category=dreli&{qs}").json()["count"]
+    assert list_count == 2
+    # chuck-фасет считается в пределах диапазона: A(d10)=1, B(d20)=1
+    assert values_count(get_facet(data, "chuck")) == {"A": 1, "B": 1}
+    # diameter-фасет НЕ схлопнут к [5,25] — показывает все значения (own-axis исключён),
+    # иначе пользователь не смог бы расширить диапазон обратно
+    assert set(values_count(get_facet(data, "diameter"))) == {10.0, 20.0, 30.0}

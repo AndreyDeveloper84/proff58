@@ -55,12 +55,20 @@ export function parseQuery(sp: URLSearchParams, category: string): ListingQuery 
   }
 
   // Динамические EAV-фасеты приходят из API с префиксом attr_ (коды заранее не известны →
-  // парсим по префиксу, а не по белому списку). Диапазонные attr_*_min/_max — вне scope.
-  // RESERVED_QUERY_PARAMS не нужны (attr_ их и так исключает), но проверяем для надёжности.
+  // парсим по префиксу, а не по белому списку): чекбоксы (attr_x=v1,v2) и числовые
+  // диапазоны (attr_x_min / attr_x_max → {min,max}). RESERVED_QUERY_PARAMS не нужны
+  // (attr_ их и так исключает), но проверяем для надёжности.
   for (const key of new Set(sp.keys())) {
-    if (!key.startsWith("attr_")) continue;
-    if (key.endsWith("_min") || key.endsWith("_max")) continue;
-    if (RESERVED_QUERY_PARAMS.has(key) || filters[key]) continue;
+    if (!key.startsWith("attr_") || RESERVED_QUERY_PARAMS.has(key)) continue;
+    if (key.endsWith("_min") || key.endsWith("_max")) {
+      const code = key.slice(0, -4); // отрезаем _min/_max → базовый код фасета
+      if (code.length <= "attr_".length || filters[code]) continue; // attr__min и т.п. — мусор
+      const min = num(sp.get(`${code}_min`));
+      const max = num(sp.get(`${code}_max`));
+      if (min != null || max != null) filters[code] = { min, max } as RangeFilterValue;
+      continue;
+    }
+    if (filters[key]) continue;
     const raw = sp.get(key);
     if (!raw) continue;
     const vals = raw

@@ -13,8 +13,9 @@ import operator
 from collections import Counter
 from functools import reduce
 
-from django.db.models import Count, Max, Min, Q
+from django.db.models import Count, FloatField, Max, Min, Q
 from django.db.models.fields.json import KeyTextTransform
+from django.db.models.functions import Cast
 
 from .brand_slugs import build_brand_slug_map
 from .filters import filtered_products
@@ -141,6 +142,27 @@ def _apply_attr_filters(qs, coerced, exclude=None):
     return qs
 
 
+def _apply_attr_ranges(qs, ranges, exclude=None):
+    """Числовой диапазон по EAV-значению из ``attrs_cache`` (INTEGER/DECIMAL).
+
+    ``ranges``: ``{slug: (lo, hi)}`` (границы — float либо None). Сравнение через
+    ``Cast(KeyTextTransform → FloatField)``: отсутствие ключа → NULL → товар отбрасывается,
+    т.е. товары БЕЗ атрибута исключаются (containment этого не делал — он сравнивал значение,
+    а не наличие). ``exclude`` — снять диапазон своего фасета (drill-down). Alias по индексу,
+    чтобы slug с дефисами не ломал имя аннотации и диапазоны не конфликтовали между собой.
+    """
+    for i, (slug, (lo, hi)) in enumerate(ranges.items()):
+        if slug == exclude or (lo is None and hi is None):
+            continue
+        alias = f"_rng_{i}"
+        qs = qs.annotate(**{alias: Cast(KeyTextTransform(slug, "attrs_cache"), FloatField())})
+        if lo is not None:
+            qs = qs.filter(**{f"{alias}__gte": lo})
+        if hi is not None:
+            qs = qs.filter(**{f"{alias}__lte": hi})
+    return qs
+
+
 def _apply_price(qs, price_min, price_max):
     """Числовой фильтр цены (drill-down). None-границы игнорируются."""
     if price_min is not None:
@@ -162,9 +184,20 @@ def _cast_facet_value(text, attr_type):
 
 
 def build_facets(
-    category, *, brands=None, stock_status=None, attr_filters=None, price_min=None, price_max=None
+    category,
+    *,
+    brands=None,
+    stock_status=None,
+    attr_filters=None,
+    attr_ranges=None,
+    price_min=None,
+    price_max=None,
 ) -> dict:
     """Фасеты категории со счётчиками (drill-down). attr_filters: {slug: [raw,...]}.
+
+    ``attr_ranges``: ``{slug: (lo, hi)}`` — числовые диапазоны по EAV (INTEGER/DECIMAL),
+    применяются ко всем срезам drill-down наравне с ``attr_filters``; для собственного
+    числового фасета его диапазон исключается (иначе границы ползунка схлопнулись бы к выбору).
 
     Подсчёт — в PostgreSQL (GROUP BY по JSONB ``attrs_cache``), не в Python: на каждый
     фасет один индексируемый запрос (drill-down — со всеми фильтрами, кроме своего).
@@ -172,11 +205,23 @@ def build_facets(
     в этой версии не поддерживаются (containment `{slug: value}` не покроет массив).
     """
     attr_filters = attr_filters or {}
+    attr_ranges = attr_ranges or {}
     if len(attr_filters) > MAX_ATTR_FILTERS:
         raise FacetError("Слишком много фильтров-характеристик")
 
     attributes = _category_filter_attributes(category)
     by_slug = {a.slug: a for a in attributes}
+
+    # Диапазоны: только известные числовые атрибуты категории (прочее — игнор, без падения).
+    ranges: dict[str, tuple] = {}
+    for slug, bounds in attr_ranges.items():
+        attr = by_slug.get(slug)
+        if attr is None or attr.attribute_type not in (
+            AttributeType.INTEGER,
+            AttributeType.DECIMAL,
+        ):
+            continue
+        ranges[slug] = (bounds[0], bounds[1])
 
     # Опции select/multiselect ОДНИМ запросом: сортировка + slug→value резолв + эмиссия slug.
     select_ids = [
@@ -221,13 +266,16 @@ def build_facets(
     # base_bs — category+brand+stock (без цены); base_qs — ещё и +price (drill-down для attr/total).
     base_bs = filtered_products(category, brands=resolved_brands, stock_status=stock_status)
     base_qs = _apply_price(base_bs, price_min, price_max)
-    total = _apply_attr_filters(base_qs, coerced).count()
+    total = _apply_attr_ranges(_apply_attr_filters(base_qs, coerced), ranges).count()
 
     facets = []
     for attr in attributes:
-        # GROUP BY по значению атрибута в выборке с активными фильтрами, КРОМЕ своего.
+        # GROUP BY по значению атрибута в выборке с активными фильтрами, КРОМЕ своего
+        # (и checkbox-, и range-измерение своего фасета исключаем — drill-down).
         rows = (
-            _apply_attr_filters(base_qs, coerced, exclude=attr.slug)
+            _apply_attr_ranges(
+                _apply_attr_filters(base_qs, coerced, exclude=attr.slug), ranges, exclude=attr.slug
+            )
             .annotate(_fv=KeyTextTransform(attr.slug, "attrs_cache"))
             .filter(_fv__isnull=False)  # ключ есть и значение не JSON null (== старое None→skip)
             .values("_fv")
@@ -269,7 +317,7 @@ def build_facets(
     # --- price/brand/stock фасеты: drill-down (каждый БЕЗ собственного измерения) ---
     # price: база БЕЗ price (category+brand+stock+attrs), только товары с ценой.
     pa = (
-        _apply_attr_filters(base_bs, coerced)
+        _apply_attr_ranges(_apply_attr_filters(base_bs, coerced), ranges)
         .filter(price__isnull=False)
         .aggregate(lo=Min("price"), hi=Max("price"))
     )
@@ -278,13 +326,16 @@ def build_facets(
         "max": float(pa["hi"]) if pa["hi"] is not None else None,
     }
     # brands: база БЕЗ brand (category+stock+price+attrs), один group-by.
-    brand_base = _apply_attr_filters(
-        _apply_price(
-            filtered_products(category, brands=None, stock_status=stock_status),
-            price_min,
-            price_max,
+    brand_base = _apply_attr_ranges(
+        _apply_attr_filters(
+            _apply_price(
+                filtered_products(category, brands=None, stock_status=stock_status),
+                price_min,
+                price_max,
+            ),
+            coerced,
         ),
-        coerced,
+        ranges,
     )
     selected_brands = {b.lower() for b in (resolved_brands or [])}
     brands_out = [
@@ -300,13 +351,16 @@ def build_facets(
         .order_by("-c", "brand")[:MAX_BRAND_FACETS]
     ]
     # stock: база БЕЗ stock (category+brand+price+attrs), один group-by.
-    stock_base = _apply_attr_filters(
-        _apply_price(
-            filtered_products(category, brands=resolved_brands, stock_status=None),
-            price_min,
-            price_max,
+    stock_base = _apply_attr_ranges(
+        _apply_attr_filters(
+            _apply_price(
+                filtered_products(category, brands=resolved_brands, stock_status=None),
+                price_min,
+                price_max,
+            ),
+            coerced,
         ),
-        coerced,
+        ranges,
     )
     stock_labels = dict(StockStatus.choices)
     stock_out = [
@@ -338,26 +392,33 @@ def build_facets(
             "brands": list(brands or []),
             "stock_status": stock_status or None,
             "attrs": coerced,
+            "attr_ranges": {s: list(b) for s, b in ranges.items()},
         },
         "facets": facets,
     }
 
 
-def apply_product_attr_filters(qs, attr_filters: dict[str, list[str]]):
+def apply_product_attr_filters(
+    qs, attr_filters: dict[str, list[str]], attr_ranges: dict[str, tuple] | None = None
+):
     """Отфильтровать список товаров по EAV-атрибутам — ТЕМ ЖЕ механизмом, что фасеты.
 
     ``attr_filters``: ``{slug: [raw, ...]}`` — как разбирает ``CategoryFacetsView`` из
     параметров ``attr_<slug>``. Семантика: OR внутри одного атрибута, AND между разными.
+    ``attr_ranges``: ``{slug: (lo, hi)}`` — числовые диапазоны (INTEGER/DECIMAL) из
+    ``attr_<slug>_min|_max``; через тот же ``_apply_attr_ranges``, что и фасеты, поэтому
+    список товаров и счётчики совпадают, а товары без атрибута исключаются.
     Неизвестный/нефильтруемый slug, пустые и неприводимые значения игнорируются (листинг
     не должен падать на мусоре в URL). Значения коерсятся по типу атрибута (как в
     ``build_facets``) — иначе JSONB containment не совпадёт ({"voltage":18} ≠ {"voltage":"18"})
     и список разойдётся со счётчиками фасетов.
     """
-    if not attr_filters:
+    attr_filters = attr_filters or {}
+    attr_ranges = attr_ranges or {}
+    if not attr_filters and not attr_ranges:
         return qs
-    by_slug = {
-        a.slug: a for a in Attribute.objects.filter(slug__in=list(attr_filters), is_filterable=True)
-    }
+    all_slugs = list({*attr_filters, *attr_ranges})
+    by_slug = {a.slug: a for a in Attribute.objects.filter(slug__in=all_slugs, is_filterable=True)}
     select_ids = [a.id for a in by_slug.values() if a.attribute_type == AttributeType.SELECT]
     option_maps = _option_slug_maps(select_ids)
     coerced: dict[str, list] = {}
@@ -380,4 +441,14 @@ def apply_product_attr_filters(qs, attr_filters: dict[str, list[str]]):
                     continue  # битое значение игнорируем, а не роняем листинг
         if vals:
             coerced[slug] = vals
-    return _apply_attr_filters(qs, coerced)
+    # Диапазоны: только известные числовые атрибуты (прочее — игнор, без падения листинга).
+    ranges: dict[str, tuple] = {}
+    for slug, bounds in attr_ranges.items():
+        attr = by_slug.get(slug)
+        if attr is None or attr.attribute_type not in (
+            AttributeType.INTEGER,
+            AttributeType.DECIMAL,
+        ):
+            continue
+        ranges[slug] = (bounds[0], bounds[1])
+    return _apply_attr_ranges(_apply_attr_filters(qs, coerced), ranges)

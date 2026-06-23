@@ -132,3 +132,64 @@ def test_non_filterable_attr_ignored(client, tree):
     make_product(leaf, "x2", {"secret": "b"})
     # нефильтруемый атрибут не применяется
     assert count(client, "category=osnastka-i-rashodniki&attr_secret=a") == 2
+
+
+# --- Числовые диапазоны (attr_<slug>_min / _max) ---------------------------------
+
+
+def make_diameter_products(leaf):
+    """3 товара с diameter (10.5/15/25) + 2 БЕЗ diameter — для проверки range-фильтра."""
+    make_attr("diameter", "Диаметр", AttributeType.DECIMAL)
+    make_product(leaf, "d-10", {"diameter": 10.5})
+    make_product(leaf, "d-15", {"diameter": 15})
+    make_product(leaf, "d-25", {"diameter": 25})
+    make_product(leaf, "no-d-1", {"tool_type": "Буры"})  # есть другой атрибут, diameter нет
+    make_product(leaf, "no-d-2", {})  # вообще без атрибутов
+
+
+@pytest.mark.django_db
+def test_attr_range_filters_and_excludes_attrless(client, tree):
+    """Ключевой кейс бага B: диапазон по diameter сужает выдачу И исключает товары без diameter."""
+    _, leaf = tree
+    make_diameter_products(leaf)
+    assert count(client, "category=osnastka-i-rashodniki") == 5  # без фильтра — все
+    # [10,20]: подходят 10.5 и 15; 25 — вне диапазона; оба «no-d» исключены (нет атрибута)
+    qs = "category=osnastka-i-rashodniki&attr_diameter_min=10&attr_diameter_max=20"
+    assert count(client, qs) == 2
+
+
+@pytest.mark.django_db
+def test_attr_range_min_only(client, tree):
+    _, leaf = tree
+    make_diameter_products(leaf)
+    assert count(client, "category=osnastka-i-rashodniki&attr_diameter_min=15") == 2  # 15, 25
+
+
+@pytest.mark.django_db
+def test_attr_range_max_only(client, tree):
+    _, leaf = tree
+    make_diameter_products(leaf)
+    assert count(client, "category=osnastka-i-rashodniki&attr_diameter_max=15") == 2  # 10.5, 15
+
+
+@pytest.mark.django_db
+def test_attr_range_garbage_ignored(client, tree):
+    _, leaf = tree
+    make_diameter_products(leaf)
+    # мусор в границе → фильтр не применяется, листинг не падает
+    assert count(client, "category=osnastka-i-rashodniki&attr_diameter_min=abc") == 5
+
+
+@pytest.mark.django_db
+def test_attr_range_with_checkbox_and(client, tree):
+    """Диапазон + чекбокс одновременно: AND между разными атрибутами."""
+    _, leaf = tree
+    make_diameter_products(leaf)
+    make_attr("tool_type", "Тип инструмента", AttributeType.SELECT)
+    make_product(leaf, "d-bur", {"diameter": 12, "tool_type": "Буры"})
+    qs = (
+        "category=osnastka-i-rashodniki"
+        "&attr_diameter_min=10&attr_diameter_max=20&attr_tool_type=Буры"
+    )
+    # diameter∈[10,20] И tool_type=Буры → только d-bur (no-d-1 без diameter исключён)
+    assert count(client, qs) == 1
