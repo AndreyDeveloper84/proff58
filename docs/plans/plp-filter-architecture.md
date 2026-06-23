@@ -87,6 +87,19 @@ SEO-роуты вида:
 Листовая категория → полный релевантный набор, если категория действительно однородная
 ```
 
+**Технический критерий «широкой категории»** (чтобы реализация не гадала по depth/детям/флагу):
+
+```text
+Широкая категория — категория, где:
+1. есть несколько значимых tool_type;
+2. товары внутри неоднородны по техническим атрибутам;
+3. технические фильтры применимы только к части товаров;
+4. TypePanel содержит более одного значения с count > 0.
+```
+
+Источник режима — явное поле `category_filter_mode = broad | typed | leaf`; на старте допускается авто-определение:
+`broad` ⇔ `count(tool_type options с count > 0) > 1`.
+
 ## 4. Архитектурный факт
 `tool_type` уже существует как EAV-атрибут SELECT. Он не является узлом дерева категорий. Опции `tool_type`
 имеют slug:
@@ -113,7 +126,15 @@ bity
 ```text
 ?tool_type=perforatory
 ```
-Это верхнеуровневый параметр, не `attr_tool_type`.
+Это верхнеуровневый параметр, не `attr_tool_type`. Конфликт двух источников разрешаем жёстко:
+
+```text
+Если одновременно пришли tool_type и attr_tool_type:
+- canonical input = tool_type;
+- attr_tool_type для типа инструмента игнорируется/нормализуется;
+- frontend не сериализует attr_tool_type для tool_type.
+```
+(Иначе `?tool_type=perforatory&attr_tool_type=koronki` — неоднозначность «перфораторы или коронки».)
 
 ### 5.2. Обычные чекбоксы
 ```text
@@ -268,7 +289,16 @@ is_sidebar_filter
 низкое покрытие → скрыть или отправить в “Дополнительные”
 coverage < 5% → скрыть или Дополнительные
 ```
-Финальный порог можно уточнить после анализа данных.
+
+Одного процента мало (20 товаров × 10% = 2 шт — бессмысленно; 10 000 × 4% = 400 шт — возможно в «Дополнительные»).
+Coverage gate учитывает **процент + абсолютное количество + бизнес-важность**:
+
+```text
+Основной фильтр:  coverage >= 30%  ИЛИ атрибут закреплён куратором.
+Дополнительный:   coverage 5–30%.
+Скрыть:           coverage < 5%  И нет кураторского закрепления.
+```
+Финальные числа — ориентиры, уточняются после анализа данных.
 
 ## 11. Базовые фильтры
 Базовые фильтры не являются жёстким списком для всех категорий.
@@ -350,8 +380,20 @@ TypePanel:
 1. `sort_order` из `AttributeOption` / `CategoryAttribute`, если есть;
 2. иначе count desc;
 3. активный тип не перемещаем наверх;
-4. нулевые типы не показываем;
+4. нулевые типы — см. правило ниже;
 5. если типов больше 10–12, используем горизонтальный scroll или «Ещё».
+
+**Нулевые counts после фильтрации** (чтобы панель не «прыгала» и пользователь не терял выбранный тип):
+
+```text
+До применения фильтров: типы с count=0 не показываем.
+После применения фильтров:
+- активный тип показываем ВСЕГДА, даже если count стал 0;
+- остальные типы с 0 — можно скрывать или показывать disabled, но порядок панели не должен резко прыгать.
+```
+
+Особенно для empty-state: если выбран `tool_type=perforatory`, а другие фильтры дали 0 товаров, активный тип
+остаётся видимым.
 
 ## 15. Subcategories vs TypePanel
 `subcategories` и `TypePanel` — разные сущности: `subcategories` — дерево каталога; `tool_type` — EAV-навигация.
@@ -409,8 +451,18 @@ Facets endpoint — критичный по нагрузке. На больши�
 и пересчёт счётчиков могут быть дорогими.
 
 ### 18.1. Бюджет
+Бюджет разделён по уровням (где измеряем):
+
 ```text
-facets endpoint p95 < 500–800 мс на категории до 10–12 тыс. товаров
+- backend facets API p95 < 500–800 мс на staging для крупных категорий;
+- product list API p95 — отдельно;
+- frontend perceived update после клика по фильтру — без full-page spinner, с skeleton/transition.
+```
+
+В PR-комментарии фиксируем (чтобы performance-review не был субъективным):
+
+```text
+SQL count | total DB time | API response time | category size | active filters
 ```
 Финальный бюджет уточнить после замеров на staging.
 
@@ -444,6 +496,18 @@ Displayed price = price filter = price sort
 После внедрения pricing: price facet / price sort / card price переходят на единый price_for / effective price contract
 ```
 
+**Текущая temporary inconsistency (явно).** Сортировка по цене уже переведена на `effective_price` для B2B
+(см. реализацию B2B-сортировки), а price facet/filter пока на `Product.price` (retail). Инвариант
+`Displayed price = price filter = price sort` — целевой, НЕ текущий:
+
+```text
+До завершения role-aware price facets:
+- card price может быть B2B/effective;
+- sort может быть effective;
+- price filter/facet временно остаётся retail;
+- это known limitation и должно быть видно в issue/PR.
+```
+
 ## 20. SEO и canonical
 SEO-роуты типов откладываются, но canonical-дисциплину надо заложить раньше.
 
@@ -464,6 +528,17 @@ canonical-страницами; фильтрованные URL не должны
 
 Минимальная задача до Фазы 4: добавить базовый canonical для параметрических PLP URL.
 
+**MVP canonical/noindex (консервативно, безопасно).** Открытый вопрос — canonical для `?tool_type=` вести на
+базовую категорию или self-canonical (оба варианта имеют последствия; решаем отдельно). Рекомендация до Эпика G:
+
+```text
+Для всех параметрических PLP URL — noindex/follow, canonical на базовую категорию.
+- sort/view/per_page не индексируем как самостоятельные страницы;
+- page > 1 — отдельное SEO-решение;
+- фильтры brand/price/attr_* — noindex/follow до SEO-фазы;
+- исключения для tool_type появятся только после Эпика G (redirect/canonical ?tool_type= → /catalog/<type>).
+```
+
 ## 21. Analytics / events
 TypePanel и фильтры должны сразу отдавать события аналитики.
 
@@ -482,6 +557,19 @@ mobile_filter_open
 mobile_filter_apply
 product_card_click
 add_to_cart_from_plp
+```
+
+**Data contract событий** (поля, чтобы каждый не лепил по-своему):
+
+```text
+tool_type_select:
+- category_slug | tool_type_slug | tool_type_label | result_count | previous_tool_type | active_filters_count
+
+filter_apply:
+- category_slug | filter_code | filter_type | filter_value | result_count
+
+range_filter_commit:
+- category_slug | filter_code | min | max | unit | result_count
 ```
 
 ### 21.2. Что измерять
@@ -544,8 +632,10 @@ add_to_cart_from_plp
 - **PR A2 — frontend TypePanel:** A3 [FE] url-state (`tool_type`); A4 [FE] `TypePanel` над выдачей; A5 [FE]
   убрать `tool_type` из sidebar; selected/reset/chip.
 
-**Минимум C в MVP TypePanel** (без него пользователь не поймёт, что произошло): чип типа; reset типа; «Найдено N»
-обновляется; skeleton/«Обновляем…»; empty-state с точечным сбросом. Эти пункты C1–C4 входят в Фазу 1 вместе с A.
+**C-lite в составе PR A2 (отдельного PR C на MVP не создаём):** чип типа; reset типа; «Найдено N» обновляется;
+skeleton/«Обновляем…»; empty-state с точечным сбросом. Это минимум, без которого пользователь не поймёт, что
+произошло. **C-full** (расширенный empty-state, skeleton-вариации, RU-чипы ВСЕХ диапазонов) — отдельный эпик
+позже (Фаза 1.5/2), не в PR A2.
 
 **Эпик C. Applied chips / loading / empty-state**
 - C1 [FE] RU-чипы диапазонов.
@@ -628,6 +718,14 @@ add_to_cart_from_plp
 **UX**
 - если числовой фильтр скрывает товары без атрибута, empty-state объясняет причину и предлагает сбросить
   конкретный фильтр.
+
+**Regression** (внедрение `tool_type` как отдельного URL-параметра легко ломает старый `attr_*` pipeline)
+- обычные brand/stock/price фильтры продолжают работать;
+- `attr_*` checkbox фильтры продолжают работать;
+- `attr_*` range фильтры продолжают работать;
+- direct URL с фильтрами восстанавливается;
+- `reset all` не ломает sort/view/per_page поведение;
+- products list и facets дают одинаковый count.
 
 ## 27. Инварианты
 1. URL — единственный источник состояния.
