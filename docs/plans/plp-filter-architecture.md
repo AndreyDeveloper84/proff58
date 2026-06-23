@@ -235,14 +235,23 @@ bity
 Сначала определяем место показа: `tool_type` → TypePanel; базовые фильтры → sidebar; технические фильтры →
 sidebar после выбора типа; сценарии → ScenarioChips; SEO-фасеты → отдельная будущая логика.
 
-Важно: SEO-фасет и UI-навигационный фасет — не одно и то же. На текущем этапе допускается использовать
-`CategoryAttribute.is_seo_facet=True` для `tool_type` как временный источник `is_nav=true`, но долгосрочно нужен
-отдельный признак:
+Важно: **SEO-фасет ≠ навигационный UI-фасет.** Сегодня `tool_type` рендерим как TypePanel, но завтра
+SEO-фасетом может стать «SDS-Plus», «Bosch», «125 мм», «До 10 000 ₽» — и не всё это должно попадать в верхнюю
+панель типов. На текущем этапе допускается использовать `CategoryAttribute.is_seo_facet=True` для `tool_type`
+как временный источник `is_nav=true`, но долгосрочно нужен отдельный UI-признак:
 
 ```text
 ui_placement = sidebar | type_panel | scenario_chip
 ```
-или `is_navigation_facet`.
+или отдельные флаги:
+```text
+is_navigation_facet
+is_scenario_facet
+is_sidebar_filter
+```
+
+Иначе через несколько итераций `is_seo_facet` начнёт отвечать сразу за SEO, UX и placement — это приведёт к
+путанице. Placement определяется UI-признаком, а не SEO-флагом.
 
 ### 10.2. Category/tool_type gate
 Фасет может попасть в sidebar только если он разрешён для текущей категории или выбранного `tool_type`. Источник:
@@ -529,12 +538,14 @@ add_to_cart_from_plp
 ## 24. Декомпозиция на фазы
 
 ### Фаза 1. Навигация по типам + applied state
-**Эпик A. TypePanel**
-- A1 [BE] `is_nav` / navigation facet в ответе фасетов.
-- A2 [BE] `tool_type` как drill-down для списка и фасетов.
-- A3 [FE] `TypePanel` над выдачей.
-- A4 [FE] убрать `tool_type` из sidebar.
-- A5 [FE] активное состояние, chip типа, reset all.
+**Эпик A. TypePanel** — режем на ДВА PR (проще ревью/откат):
+- **PR A1 — backend contract:** A1 [BE] `is_nav`/navigation facet; A2 [BE] `tool_type` как drill-down для списка
+  и фасетов; counts own-axis exclude; тесты list ↔ facets согласованы.
+- **PR A2 — frontend TypePanel:** A3 [FE] url-state (`tool_type`); A4 [FE] `TypePanel` над выдачей; A5 [FE]
+  убрать `tool_type` из sidebar; selected/reset/chip.
+
+**Минимум C в MVP TypePanel** (без него пользователь не поймёт, что произошло): чип типа; reset типа; «Найдено N»
+обновляется; skeleton/«Обновляем…»; empty-state с точечным сбросом. Эти пункты C1–C4 входят в Фазу 1 вместе с A.
 
 **Эпик C. Applied chips / loading / empty-state**
 - C1 [FE] RU-чипы диапазонов.
@@ -557,6 +568,9 @@ add_to_cart_from_plp
 - E1 [FE] FiltersSheet.
 - E2 [FE] sticky «Показать N товаров».
 - E3 [FE] mobile sorting.
+
+> Условие приоритета: если мобильный трафик > 40%, Эпик E поднимается в Фазу 2 — сразу после базового
+> TypePanel и гейтинга, не дожидаясь D.
 
 ### Фаза 4. Сценарии и SEO
 **Эпик F. ScenarioChips**
@@ -598,6 +612,22 @@ add_to_cart_from_plp
 - `reset all` снимает тип и все фильтры.
 - Empty-state предлагает точечный сброс.
 - «Найдено N» меняется заметно; список и counts согласованы.
+
+**Performance**
+- facets endpoint проверен на крупной категории; нет N+1; SQL count/time зафиксированы в комментарии PR.
+
+**Data quality**
+- есть coverage-отчёт по `tool_type` и ключевым атрибутам хотя бы для 2–3 основных типов.
+
+**Analytics**
+- `tool_type_select` отправляется (обязателен для Эпика A); `filter_apply` / `range_filter_commit` отправляются.
+
+**SEO**
+- canonical/noindex-поведение для параметрических PLP URL зафиксировано хотя бы на уровне решения.
+
+**UX**
+- если числовой фильтр скрывает товары без атрибута, empty-state объясняет причину и предлагает сбросить
+  конкретный фильтр.
 
 ## 27. Инварианты
 1. URL — единственный источник состояния.
