@@ -541,6 +541,38 @@ def test_krugi_shlif_grinding_type(rules):
     assert f["disc_type"].option_slug == "grinding"
 
 
+# --- Ручной инструмент: ключи / отвёртки / головки / воротки / молотки ---------
+
+
+def test_klyuchi_type_and_size(rules):
+    f = {v.slug: v for v in rules.extract("klyuchi-gaechnye", "Ключ комбинированный 17мм CrV ЗУБР")}
+    assert f["wrench_type"].option_slug == "kombinir"
+    assert f["size"].number == Decimal("17")
+
+
+def test_golovki_drive_and_size(rules):
+    f = {v.slug: v for v in rules.extract("golovki", 'Головка торцевая 1/2" 13мм 6-гранная')}
+    assert f["drive"].option_slug == "d-1-2"
+    assert f["size"].number == Decimal("13")
+
+
+def test_vorotki_drive_and_type(rules):
+    f = {v.slug: v for v in rules.extract("vorotki", "Вороток 1/2 250мм Т-образный с трещоткой")}
+    assert f["drive"].option_slug == "d-1-2"
+    assert f["vorotok_type"].option_slug == "treshch"  # трещотка приоритетнее
+
+
+def test_molotki_weight_and_type(rules):
+    f = {v.slug: v for v in rules.extract("molotki", "Молоток слесарный 500г фиберглас")}
+    assert f["weight"].number == Decimal("500")
+    assert f["molotok_type"].option_slug == "slesar"
+
+
+def test_otvertki_bit_profile(rules):
+    f = {v.slug: v for v in rules.extract("otvertki", "Отвертка крестовая PH2x100мм")}
+    assert f["bit_type"].option_slug == "ph"
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""
