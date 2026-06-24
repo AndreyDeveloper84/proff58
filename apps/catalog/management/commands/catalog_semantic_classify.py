@@ -72,11 +72,16 @@ class Command(BaseCommand):
 
         slug = rules_doc.get("section_slug", "section")
         section = rules_doc.get("section", slug)
-        # Компилируем правила: список (subcat, subtype, confidence, [compiled_kw]).
+        # Компилируем правила: (subcat, subtype, confidence, [keywords], [exclude]).
+        # exclude — негативные guard'ы: правило НЕ срабатывает, если совпал exclude
+        # (напр. «бур» НО не «для бурения земли»; «диск» НО не «дисковая пила»).
         compiled = []
         for r in rules_doc.get("rules", []):
             pats = [re.compile(k) for k in r.get("keywords", [])]
-            compiled.append((r["subcat"], r.get("subtype"), r.get("confidence", "medium"), pats))
+            expats = [re.compile(k) for k in r.get("exclude", [])]
+            compiled.append(
+                (r["subcat"], r.get("subtype"), r.get("confidence", "medium"), pats, expats)
+            )
 
         products = list(_iter_products(tree))
         rows = []  # per-item для CSV
@@ -90,9 +95,9 @@ class Command(BaseCommand):
             nm = _norm(name)
             ist = 1 if _stock(p) > 0 else 0
             hit = None
-            for subcat, subtype, conf, pats in compiled:
+            for subcat, subtype, conf, pats, expats in compiled:
                 kw = next((pp.pattern for pp in pats if pp.search(nm)), None)
-                if kw is not None:
+                if kw is not None and not any(ep.search(nm) for ep in expats):
                     hit = (subcat, subtype, conf, kw)
                     break
             if hit is None:
