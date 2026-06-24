@@ -1961,6 +1961,370 @@
           ]
         }
       ]
+    },
+    {
+      "tool_type": "klyuchi-gaechnye",
+      "category": "Ручной инструмент",
+      "attributes": [
+        {
+          "slug": "wrench_type",
+          "name": "Тип ключа",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Накидной",
+              "slug": "nakidnoy",
+              "keywords": [
+                "накидн"
+              ]
+            },
+            {
+              "value": "Рожковый",
+              "slug": "rozhkovy",
+              "keywords": [
+                "рожков"
+              ]
+            },
+            {
+              "value": "Комбинированный",
+              "slug": "kombinir",
+              "keywords": [
+                "комбинир"
+              ]
+            },
+            {
+              "value": "Разводной",
+              "slug": "razvodnoy",
+              "keywords": [
+                "разводн"
+              ]
+            },
+            {
+              "value": "Трубный/газовый",
+              "slug": "trubny",
+              "keywords": [
+                "трубн",
+                "газов"
+              ]
+            },
+            {
+              "value": "Динамометрический",
+              "slug": "dinamo",
+              "keywords": [
+                "динамометр"
+              ]
+            },
+            {
+              "value": "Трещоточный",
+              "slug": "treshch",
+              "keywords": [
+                "трещот"
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "size",
+          "name": "Размер «под ключ»",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?<![\\d.,/])(\\d{1,2}(?:[.,]\\d)?)\\s*мм"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "otvertki",
+      "category": "Ручной инструмент",
+      "attributes": [
+        {
+          "slug": "bit_type",
+          "name": "Профиль шлица",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Torx (звезда)",
+              "slug": "torx",
+              "keywords": [
+                "torx",
+                "tx",
+                "звезд"
+              ]
+            },
+            {
+              "value": "Шестигранник (HEX)",
+              "slug": "hex",
+              "keywords": [
+                "hex",
+                "шестигран"
+              ]
+            },
+            {
+              "value": "Pozidriv (PZ)",
+              "slug": "pz",
+              "keywords": [
+                "pz",
+                "позидрайв"
+              ]
+            },
+            {
+              "value": "Phillips (PH)",
+              "slug": "ph",
+              "keywords": [
+                "ph",
+                "крестов",
+                "филлипс"
+              ]
+            },
+            {
+              "value": "Шлиц (плоская)",
+              "slug": "slot",
+              "keywords": [
+                "шлиц",
+                "sl ",
+                "плоск",
+                "прям"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "golovki",
+      "category": "Ручной инструмент",
+      "attributes": [
+        {
+          "slug": "drive",
+          "name": "Привод",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "1/4\"",
+              "slug": "d-1-4",
+              "keywords": [
+                "1/4"
+              ]
+            },
+            {
+              "value": "3/8\"",
+              "slug": "d-3-8",
+              "keywords": [
+                "3/8"
+              ]
+            },
+            {
+              "value": "1/2\"",
+              "slug": "d-1-2",
+              "keywords": [
+                "1/2"
+              ]
+            },
+            {
+              "value": "3/4\"",
+              "slug": "d-3-4",
+              "keywords": [
+                "3/4"
+              ]
+            },
+            {
+              "value": "1\"",
+              "slug": "d-1",
+              "keywords": [
+                "1\""
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "size",
+          "name": "Размер «под ключ»",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?<![\\d.,/])(\\d{1,2}(?:[.,]\\d)?)\\s*мм"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "vorotki",
+      "category": "Ручной инструмент",
+      "attributes": [
+        {
+          "slug": "drive",
+          "name": "Привод",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "1/4\"",
+              "slug": "d-1-4",
+              "keywords": [
+                "1/4"
+              ]
+            },
+            {
+              "value": "3/8\"",
+              "slug": "d-3-8",
+              "keywords": [
+                "3/8"
+              ]
+            },
+            {
+              "value": "1/2\"",
+              "slug": "d-1-2",
+              "keywords": [
+                "1/2"
+              ]
+            },
+            {
+              "value": "3/4\"",
+              "slug": "d-3-4",
+              "keywords": [
+                "3/4"
+              ]
+            },
+            {
+              "value": "1\"",
+              "slug": "d-1",
+              "keywords": [
+                "1\""
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "vorotok_type",
+          "name": "Тип воротка",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Трещоточный",
+              "slug": "treshch",
+              "keywords": [
+                "трещот"
+              ]
+            },
+            {
+              "value": "Шарнирный/карданный",
+              "slug": "sharnir",
+              "keywords": [
+                "шарнирн",
+                "карданн"
+              ]
+            },
+            {
+              "value": "Т-образный",
+              "slug": "t",
+              "keywords": [
+                "т-образн",
+                "т образн"
+              ]
+            },
+            {
+              "value": "Г-образный",
+              "slug": "g",
+              "keywords": [
+                "г-образн",
+                "г образн"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "molotki",
+      "category": "Ручной инструмент",
+      "attributes": [
+        {
+          "slug": "weight",
+          "name": "Вес",
+          "kind": "number",
+          "unit": "г",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(\\d{2,4})\\s*г(?:р|рамм)?(?![а-яёa-zрад])"
+          ]
+        },
+        {
+          "slug": "molotok_type",
+          "name": "Тип молотка",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Кувалда",
+              "slug": "kuvalda",
+              "keywords": [
+                "кувалда"
+              ]
+            },
+            {
+              "value": "Слесарный",
+              "slug": "slesar",
+              "keywords": [
+                "слесарн"
+              ]
+            },
+            {
+              "value": "Киянка",
+              "slug": "kiyanka",
+              "keywords": [
+                "киянка"
+              ]
+            },
+            {
+              "value": "Безынерционный",
+              "slug": "bezyn",
+              "keywords": [
+                "безынерц",
+                "безинерц"
+              ]
+            },
+            {
+              "value": "Столярный/плотницкий",
+              "slug": "stolyar",
+              "keywords": [
+                "столярн",
+                "плотницк"
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }
