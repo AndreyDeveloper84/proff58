@@ -14,6 +14,7 @@ import { BASE_FACET_CODES } from "./constants";
 import { formatRu, humanizeToken } from "./format";
 import type {
   Facet,
+  FacetGroupKind,
   FilterMode,
   Listing,
   ListingQuery,
@@ -86,6 +87,8 @@ type ApiFacet = {
   unit?: string;
   // Навигационный фасет (tool_type): рендерится TypePanel, выбор → верхнеуровневый ?tool_type=.
   is_nav?: boolean;
+  // Раздел сайдбара (§22.4, D1): "main"|"extra". Любая иная/пустая строка → main (дефолт).
+  group?: string;
   values?: ApiFacetValue[];
 };
 
@@ -207,6 +210,10 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
   // Гейтинг-класс (§3.3/§6): nav → TypePanel; базовый код (напр. attr_power_source) → base;
   // прочие attr_* → tech (скрыты до выбора tool_type). По коду, не по названию.
   const kind: Facet["kind"] = isNav ? "nav" : BASE_CODES.has(code) ? "base" : "tech";
+  // Группа сайдбара (§22.4, D2): доверяем только whitelisted "extra"; всё прочее (включая
+  // "main"/пусто/мусор) → undefined, что группировка трактует как «Основные». Осмыслена
+  // лишь для технических фасетов — для base/nav группа игнорируется при разбиении на секции.
+  const group: FacetGroupKind | undefined = af.group === "extra" ? "extra" : undefined;
   const isRange = af.type === "integer" || af.type === "decimal";
   if (isRange) {
     const nums = (af.values ?? [])
@@ -219,6 +226,7 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
       unit: af.unit || undefined,
       isNav,
       kind,
+      group,
       min: nums.length ? Math.min(...nums) : undefined,
       max: nums.length ? Math.max(...nums) : undefined,
     };
@@ -230,6 +238,7 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
     unit: af.unit || undefined,
     isNav,
     kind,
+    group,
     options: (af.values ?? []).map((v) => ({
       // value — токен для URL/фильтра: canonical slug, если он есть, иначе raw value (legacy)
       value: String(v.slug ?? v.value),

@@ -35,6 +35,9 @@ export type FacetOption = {
 // видны только после выбора tool_type или на листовой/типизированной категории.
 export type FacetKind = "nav" | "base" | "tech";
 
+// Группа технического фасета в сайдбаре (§22.4): «Основные» / «Дополнительные».
+export type FacetGroupKind = "main" | "extra";
+
 export type Facet = {
   code: string;
   label: string;
@@ -48,6 +51,10 @@ export type Facet = {
   isNav?: boolean;
   // Класс для гейтинга сайдбара (классифицируется в adapters при маппинге).
   kind?: FacetKind;
+  // Раздел сайдбара (§22.4, D1/D2): main — «Основные»; extra — «Дополнительные» (свёрнуты).
+  // Маппится из ApiFacet.group. Осмыслен только для технических (kind:"tech") фасетов;
+  // базовые (kind:"base") и навигация (kind:"nav") группируются отдельно. undefined → main.
+  group?: FacetGroupKind;
 };
 
 export type SortOption = "popular" | "price_asc" | "price_desc" | "new" | "rating";
