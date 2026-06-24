@@ -96,11 +96,16 @@ def _tool_type_buckets(qs) -> dict:
     for pid, slug in rows:
         (compl_ids if slug in COMPLEMENT_TOOL_TYPES else tool_ids).add(pid)
     all_ids = set(qs.values_list("id", flat=True))
+    # Назначение: инструмент И «без типа» → в раздел; только-комплектующие → подкатегория.
+    section_ids = tool_ids | (all_ids - tool_ids - compl_ids)
+    complement_ids = compl_ids - tool_ids
     return {
         "tool": len(tool_ids),
-        "complement": len(compl_ids - tool_ids),
+        "complement": len(complement_ids),
         "no_type": len(all_ids - tool_ids - compl_ids),
-        "no_type_ids": list(all_ids - tool_ids - compl_ids),
+        "no_type_ids": sorted(all_ids - tool_ids - compl_ids),
+        "section_ids": sorted(section_ids),
+        "complement_ids": sorted(complement_ids),
     }
 
 
@@ -142,7 +147,7 @@ class Command(BaseCommand):
         self._report(section, target, sources, keeps, options["samples"])
 
         if options["commit"]:
-            self._commit(section, target, sources)
+            self._commit(section, target, sources, keeps[0][1])
         else:
             self.stdout.write(
                 self.style.WARNING(
@@ -296,18 +301,20 @@ class Command(BaseCommand):
                 shown += 1
 
     # ------------------------------------------------------------------ #
-    def _commit(self, section, target, sources):
+    def _commit(self, section, target, sources, complement_cat):
         ts = timezone.now().strftime("%Y%m%d-%H%M%S")
         backup_dir = Path(settings.BASE_DIR) / "var" / "restructure"
         backup_dir.mkdir(parents=True, exist_ok=True)
         backup_path = backup_dir / f"{section}-{ts}.json"
         backup = {"section": section, "target_id": target.pk, "products": [], "nodes": []}
 
-        moved_ids: list[int] = []
+        to_section: list[int] = []
+        to_complement: list[int] = []
         with transaction.atomic():
             for _spec, cat in sources:
-                rows = list(products_in(cat).values("id", "category_id", "category_is_manual"))
-                for r in rows:
+                qs = products_in(cat)
+                # Снимок отката — по ВСЕМ товарам узла (вернём category/manual как было).
+                for r in qs.values("id", "category_id", "category_is_manual"):
                     backup["products"].append(
                         {
                             "id": r["id"],
@@ -315,16 +322,23 @@ class Command(BaseCommand):
                             "category_is_manual": r["category_is_manual"],
                         }
                     )
-                ids = [r["id"] for r in rows]
-                Product.objects.filter(id__in=ids).update(category=target, category_is_manual=True)
-                moved_ids += ids
+                b = _tool_type_buckets(qs)
+                # Инструмент + «без типа» → раздел; только-комплектующие → подкатегорию.
+                Product.objects.filter(id__in=b["section_ids"]).update(
+                    category=target, category_is_manual=True
+                )
+                Product.objects.filter(id__in=b["complement_ids"]).update(
+                    category=complement_cat, category_is_manual=True
+                )
+                to_section += b["section_ids"]
+                to_complement += b["complement_ids"]
                 backup["nodes"].append({"id": cat.pk, "on_site": cat.on_site})
                 cat.on_site = False
                 cat.save(update_fields=["on_site"])
 
             backup_path.write_text(json.dumps(backup, ensure_ascii=False, indent=2))
 
-            def _emit(ids=tuple(moved_ids)):
+            def _emit(ids=tuple(to_section + to_complement)):
                 for pid in ids:
                     product_updated.send(
                         sender=Product,
@@ -337,14 +351,17 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"\nCOMMIT: перенесено {len(moved_ids)} товаров, скрыто узлов "
+                f"\nCOMMIT: в раздел «{target.name}» {len(to_section)}, в подкатегорию "
+                f"«{complement_cat.name}» {len(to_complement)}; скрыто узлов "
                 f"{len(backup['nodes'])}. Снимок отката: {backup_path}"
             )
         )
         self.stdout.write(
             self.style.WARNING(
-                "301-redirect НЕ созданы (модели redirect нет — Фаза 3). Обновите также "
-                "seed-маппинг data/group_mapping.json отдельным изменением (O6 плана)."
+                "Не-инструмент «без типа» перенесён в раздел вместе с инструментом (как и был "
+                "в поддереве) — типизацию и разбор хвоста делаем отдельным шагом. 301-redirect "
+                "НЕ созданы (модели redirect нет — Фаза 3); обновите seed-маппинг "
+                "data/group_mapping.json отдельным изменением (O6 плана)."
             )
         )
 
