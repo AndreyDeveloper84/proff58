@@ -53,11 +53,32 @@ jobs:
             git fetch origin ${{ github.ref_name }}
             git checkout ${{ github.ref_name }}
             git reset --hard origin/${{ github.ref_name }}
-            docker compose -f docker-compose.prod.yml up -d --build
+
+            # BuildKit: переиспользуем слойный кэш между деплоями (cache-mount'ы npm ci и
+            # next build в Dockerfile фронта) — при неизменном package-lock.json фронт берётся
+            # из кэша, а не пересобирается с нуля по ~17 мин.
+            export DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1
+            compose="docker compose -f docker-compose.prod.yml"
+
+            # Сетевые икоты Docker Hub (напр. «load metadata for node:22-slim → TLS handshake
+            # timeout») роняли деплой на ровном месте. Оборачиваем тягу и сборку в ретрай с
+            # экспоненциальным backoff, чтобы транзиентный сбой реестра не валил весь выкат.
+            retry() {
+              local n=1 max=3 delay=15
+              until "$@"; do
+                [ "$n" -ge "$max" ] && { echo "::error::Не удалось после $max попыток: $*"; return 1; }
+                echo "::warning::Попытка $n/$max не удалась — повтор через ${delay}с…"
+                sleep "$delay"; n=$((n + 1)); delay=$((delay * 2))
+              done
+            }
+
+            # Сборка (с BuildKit-кэшем) + тяга образов + подъём, всё под ретраем. Повтор
+            # идемпотентен: неизменные слои берутся из кэша, уже поднятые контейнеры не трогаются.
+            retry $compose up -d --build
+
             # nginx подключает default.conf через bind-mount: смена содержимого файла НЕ
             # пересоздаёт контейнер автоматически (compose смотрит на спеку, не на содержимое
             # mount) → принудительно проверяем и перечитываем конфиг, иначе изменения маршрутов
             # (напр. headless: / → Next) не применяются и staging выглядит «без изменений».
-            docker compose -f docker-compose.prod.yml exec -T nginx nginx -t \
-              && docker compose -f docker-compose.prod.yml restart nginx
+            $compose exec -T nginx nginx -t && $compose restart nginx
             docker image prune -f
