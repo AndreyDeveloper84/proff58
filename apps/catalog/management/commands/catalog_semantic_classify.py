@@ -19,18 +19,15 @@ from __future__ import annotations
 
 import csv
 import json
-import re
 from collections import defaultdict
 from pathlib import Path
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
+from apps.catalog.semantic import classify, load_rules
+
 GROUP_NODE = "1"
-
-
-def _norm(s: str) -> str:
-    return " " + re.sub(r"\s+", " ", (s or "").lower().replace("ё", "е")) + " "
 
 
 def _iter_products(tree: list[dict]):
@@ -65,23 +62,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         base = Path(settings.BASE_DIR)
         try:
-            rules_doc = json.loads((base / options["rules"]).read_text(encoding="utf-8"))
+            rules_doc, compiled = load_rules(options["rules"])
             tree = json.loads((base / options["source"]).read_text(encoding="utf-8"))
         except (FileNotFoundError, ValueError) as exc:
             raise CommandError(f"Не прочитать вход: {exc}") from exc
 
         slug = rules_doc.get("section_slug", "section")
         section = rules_doc.get("section", slug)
-        # Компилируем правила: (subcat, subtype, confidence, [keywords], [exclude]).
-        # exclude — негативные guard'ы: правило НЕ срабатывает, если совпал exclude
-        # (напр. «бур» НО не «для бурения земли»; «диск» НО не «дисковая пила»).
-        compiled = []
-        for r in rules_doc.get("rules", []):
-            pats = [re.compile(k) for k in r.get("keywords", [])]
-            expats = [re.compile(k) for k in r.get("exclude", [])]
-            compiled.append(
-                (r["subcat"], r.get("subtype"), r.get("confidence", "medium"), pats, expats)
-            )
 
         products = list(_iter_products(tree))
         rows = []  # per-item для CSV
@@ -92,16 +79,10 @@ class Command(BaseCommand):
 
         for p in products:
             name = p.get("name", "")
-            nm = _norm(name)
             ist = 1 if _stock(p) > 0 else 0
-            hit = None
-            for subcat, subtype, conf, pats, expats in compiled:
-                kw = next((pp.pattern for pp in pats if pp.search(nm)), None)
-                if kw is not None and not any(ep.search(nm) for ep in expats):
-                    hit = (subcat, subtype, conf, kw)
-                    break
+            hit = classify(name, compiled)
             if hit is None:
-                continue  # не Оснастка (другой раздел) — не отчитываем как «пропуск»
+                continue  # не этот раздел — не отчитываем как «пропуск»
             subcat, subtype, conf, kw = hit
             matched_in += ist
             matched_tot += 1
