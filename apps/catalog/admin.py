@@ -376,7 +376,7 @@ class ProductActionForm(ActionForm):
     """Action-форма списка товаров с выбором целевой категории для bulk-перепривязки."""
 
     target_category = forms.ModelChoiceField(
-        queryset=Category.objects.all(),
+        queryset=Category.objects.filter(is_active=True),
         required=False,
         label=_("Категория для перепривязки"),
         help_text=_("Используется действием «Перепривязать…»."),
@@ -674,21 +674,31 @@ class ProductAdmin(admin.ModelAdmin):
                 level=messages.WARNING,
             )
             return
-        category = Category.objects.filter(pk=cat_id).first()
+        category = Category.objects.filter(is_active=True, pk=cat_id).first()
         if category is None:
-            self.message_user(request, _("Категория не найдена."), level=messages.ERROR)
+            self.message_user(
+                request,
+                _("Категория не найдена или неактивна."),
+                level=messages.ERROR,
+            )
             return
-        ids = list(queryset.values_list("id", flat=True))
-        updated = queryset.update(category=category, category_is_manual=True)
+        # Меняем ТОЛЬКО товары с другой категорией (паттерн action_publish): чтобы
+        # не слать ложные product_updated и не переводить в «ручной» режим товары,
+        # которые и так уже в этой категории. Категория не влияет на attrs_cache —
+        # update() безопасен.
+        changed = queryset.exclude(category=category)
+        ids = list(changed.values_list("id", flat=True))
+        updated = changed.update(category=category, category_is_manual=True)
+        skipped = queryset.count() - updated
         if ids:
             self._emit_bulk_updated(ids, ["category"])
         self.message_user(
             request,
             _(
-                "Перепривязано в «%(cat)s»: %(n)d. Зафиксировано как ручное — "
-                "переразбор/импорт 1С эти товары не изменит."
+                "Перепривязано в «%(cat)s»: %(n)d (уже были в категории: %(s)d). "
+                "Зафиксировано как ручное — переразбор/импорт 1С эти товары не изменит."
             )
-            % {"cat": category.name, "n": updated},
+            % {"cat": category.name, "n": updated, "s": skipped},
         )
 
     @admin.action(description=_("Опубликовать выбранные товары"))

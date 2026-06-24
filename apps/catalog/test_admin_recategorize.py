@@ -43,6 +43,29 @@ def test_bulk_recategorize_sets_category_and_manual(admin_client):
 
 
 @pytest.mark.django_db
+def test_bulk_recategorize_skips_already_in_target(admin_client):
+    # Товар уже в целевой категории с авторазбором (category_is_manual=False):
+    # действие не должно его трогать и переводить в «ручной» режим.
+    dst = Category.add_root(name="Уже там", slug="rc-already")
+    p = Product.objects.create(name="Y", slug="rc-y", category=dst)
+    assert p.category_is_manual is False
+
+    admin_client.post(
+        reverse(CHANGELIST),
+        {
+            "action": "action_set_category",
+            "target_category": dst.pk,
+            "_selected_action": [p.pk],
+        },
+        follow=True,
+    )
+
+    p.refresh_from_db()
+    assert p.category_id == dst.pk
+    assert p.category_is_manual is False  # не переведён в ручной режим
+
+
+@pytest.mark.django_db
 def test_bulk_recategorize_without_target_is_noop(admin_client):
     src = Category.add_root(name="Старая2", slug="rc-old2")
     p = Product.objects.create(name="X", slug="rc-x", category=src)
