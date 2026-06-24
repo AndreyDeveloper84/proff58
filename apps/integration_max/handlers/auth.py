@@ -62,7 +62,7 @@ def handle_contact(chat_id: int, contact_payload: dict) -> dict | None:
             "Зарегистрируйтесь на сайте, затем вернитесь сюда.",
         }
 
-    if user.max_chat_id == chat_id:
+    if getattr(user, "max_chat_id", None) == chat_id:
         return {
             "chat_id": chat_id,
             "text": "Ваш аккаунт уже привязан! Вы будете получать уведомления о заказах.",
