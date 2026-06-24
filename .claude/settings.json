@@ -2,22 +2,26 @@
   "extraKnownMarketplaces": {
     "superpowers-dev": {
       "source": {
-        "source": "github",
-        "repo": "obra/superpowers"
-      }
-    },
-    "ecc": {
-      "source": {
-        "source": "github",
-        "repo": "affaan-m/ECC"
+        "source": "directory",
+        "path": "/home/user/proff58/.claude/skills-library/superpowers"
       }
     }
   },
   "enabledPlugins": {
-    "superpowers@superpowers-dev": true,
-    "ecc@ecc": true
+    "superpowers@superpowers-dev": true
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/activate-extras.sh\""
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",

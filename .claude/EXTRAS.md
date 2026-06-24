@@ -20,21 +20,33 @@
 
 ---
 
-## 1. Плагины marketplace (включены)
+## 1. Плагины marketplace (superpowers — включён; ecc — через локальные эквиваленты)
 
-Зарегистрированы в [`settings.json`](settings.json) (`extraKnownMarketplaces` +
-`enabledPlugins`) и подтянутся автоматически в каждой сессии:
+> **Важно про remote-окружение.** В облачных сессиях Claude Code сетевой git-прокси
+> разрешает только репозиторий проекта — внешние marketplace (`obra/superpowers`,
+> `affaan-m/ECC`) при `claude plugin marketplace add` дают **403**. Поэтому наборы
+> **вендорятся в репозиторий** и активируются локально, без обращения к github.
 
-- `superpowers@superpowers-dev`
-- `ecc@ecc`
+**superpowers** — вендорен в [`skills-library/superpowers/`](skills-library/superpowers/)
+(скиллы + хуки + `.claude-plugin`). Ставится как плагин из локальной директории:
+[`settings.json`](settings.json) объявляет marketplace `superpowers-dev` с
+`source: directory` (грузится на старте), а SessionStart-хук
+[`hooks/activate-extras.sh`](hooks/activate-extras.sh) переустанавливает его каждую
+сессию (эфемерный `~/.claude` обнуляется). Доступны все 14 скиллов: `test-driven-development`,
+`systematic-debugging`, `verification-before-completion`, `requesting-code-review`,
+`brainstorming`, `writing-plans`, `executing-plans` и др.
+
+**ecc** — целиком не ставится (github заблокирован). Вместо плагина — локальные
+эквиваленты из ecc-zh (раздел 5): `django-tdd`, `django-patterns`, `postgres-patterns`
+скопированы в активную [`skills/`](skills/) и грузятся как project-скиллы; ревью —
+агенты `ecc-{python,database,security}-reviewer`.
 
 Управление:
 
 ```bash
-claude plugin list                       # что установлено
-claude plugin details ecc                # инвентарь и оценка токенов
-claude plugin disable ecc@ecc            # временно отключить
-claude plugin marketplace update         # обновить из источников
+claude plugin list                       # что установлено (superpowers)
+claude plugin marketplace list           # источники (superpowers-dev → directory)
+bash .claude/hooks/activate-extras.sh    # ручная переактивация (обычно делает SessionStart-хук)
 ```
 
 ## 2. Базовый набор агентов (включён)
@@ -55,25 +67,23 @@ finance, gis и т.д.). Чтобы активировать нужного аг
 cp .claude/agent-library/agency-agents/<категория>/<агент>.md .claude/agents/
 ```
 
-### gstack — инженерные скиллы
+### gstack — инженерные скиллы (теперь ВКЛЮЧЁН)
 
 Лежит в [`skills-library/gstack/`](skills-library/gstack/) (без тестов и собранного
-`diagram-render`, чтобы уменьшить вес). Требуется Bun. Активация — симлинк в
-пользовательскую папку скиллов, после чего gstack подхватится как скилл:
-
-```bash
-ln -s "$(pwd)/.claude/skills-library/gstack" ~/.claude/skills/gstack
-# либо штатный установщик gstack:
-( cd .claude/skills-library/gstack && ./setup )
-```
-
-После активации появятся команды gstack (`/office-hours`, `/review`, `/ship`,
-`/qa`, `/design`, `/cso` и др.). Подробности — в
-`skills-library/gstack/README.md` и `skills-library/gstack/SKILL.md`.
+`diagram-render`). Требуется Bun (для browser/QA-скиллов). **Активируется автоматически**
+SessionStart-хуком [`hooks/activate-extras.sh`](hooks/activate-extras.sh): он симлинкует
+все 52 скилла в `~/.claude/skills/` (пропуская конфликты имён со встроенными скиллами,
+например `review`). Появляются команды `/office-hours`, `/ship`, `/qa`, `/spec`,
+`/investigate`, `/health`, `/design-review`, `/plan-eng-review`, `/cso` и др. Часть
+browser/ios-скиллов требует Bun и/или Chromium — без них они просто не запустятся.
+Подробности — `skills-library/gstack/README.md` и `SKILL.md`.
 
 ## 4. awesome-claude-code
 
-Это курируемый список ссылок, а не устанавливаемый пакет. Используйте его как
+Это **курируемый список ссылок** (awesome-list), а не устанавливаемый пакет — ставить
+нечего. Сам `README.md` репозитория сейчас — заглушка «TODO»; актуальный полный список
+(~210 ресурсов: Agent Skills, Workflows, Tooling, Hooks, Slash-Commands, CLAUDE.md Files,
+Status Lines и т.д.) лежит в `README_ALTERNATIVES/README_AWESOME.md`. Используйте как
 каталог для поиска новых скиллов/команд/агентов:
 <https://github.com/hesreallyhim/awesome-claude-code>
 
@@ -85,10 +95,12 @@ ln -s "$(pwd)/.claude/skills-library/gstack" ~/.claude/skills/gstack
 не ставился** (был бы дубль). Взято только то, что либо дополняет, либо адаптировано
 под наш стек:
 
-**Скиллы (по запросу)** — `.claude/skills-library/ecc-zh/`: `django-patterns`,
-`django-security`, `django-tdd`, `django-verification`, `postgres-patterns`,
-`python-testing`, `backend-patterns`, `tdd-workflow`, `verification-loop`. Локальный
-быстрый доступ к Django/Python-практикам (контент на китайском — дубль ECC по сути).
+**Скиллы** — `.claude/skills-library/ecc-zh/`: `django-patterns`, `django-security`,
+`django-tdd`, `django-verification`, `postgres-patterns`, `python-testing`,
+`backend-patterns`, `tdd-workflow`, `verification-loop` (контент на китайском — дубль ECC
+по сути). **Включены** (скопированы в активную `skills/`): `django-tdd`, `django-patterns`,
+`postgres-patterns` — как замена недоступному ecc-плагину для ядра A1. Остальные — по
+запросу (скопировать нужную папку в `.claude/skills/`).
 
 **Агенты-ревьюеры** — `.claude/agents/ecc-{python,database,security}-reviewer.md`.
 Python/DB/security-специализация (запускают `ruff`/`mypy`/`black`, проверки SQL-инъекций
@@ -107,6 +119,11 @@ Django и/или бесполезны в эфемерном окружении. 
 ## Важно про эфемерность окружения
 
 Облачное окружение Claude Code временное: всё, что попадает в `~/.claude`,
-пропадает после сессии. Поэтому конфиг плагинов и сами наборы хранятся **в
-репозитории** (в `.claude/`) и переживают пересоздание контейнера. Команды
-активации из раздела 3 при необходимости можно вынести в SessionStart-хук.
+пропадает после сессии, а внешние marketplace недоступны (403). Поэтому конфиг
+плагинов и сами наборы хранятся **в репозитории** (в `.claude/`) и переживают
+пересоздание контейнера, а активация автоматизирована SessionStart-хуком
+[`hooks/activate-extras.sh`](hooks/activate-extras.sh): он каждую сессию ставит
+плагин `superpowers` из вендоренной директории и симлинкует скиллы `gstack` в
+`~/.claude/skills/`. project-скиллы (`skills/`: `django-tdd`, `django-patterns`,
+`postgres-patterns`, `reliability`, `devops`, `characterize-subgroup`) грузятся
+штатно — хук для них не нужен.
