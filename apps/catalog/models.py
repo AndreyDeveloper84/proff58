@@ -186,6 +186,7 @@ class CategoryAttribute(models.Model):
 class MappingRuleType(models.TextChoices):
     ARTICLE = "article", _("По артикулу (точное совпадение)")
     NAME_CONTAINS = "name_contains", _("По слову в названии")
+    REGEX = "regex", _("По регулярному выражению (имя)")
     BRAND_PREFIX = "brand_prefix", _("По бренду + серии модели")
     SOURCE_GROUP = "source_group", _("По исходной группе 1С")
 
@@ -205,6 +206,15 @@ class CategoryMappingRule(models.Model):
         help_text=_(
             "Артикул / слово в названии / серия модели / название группы 1С — "
             "в зависимости от типа правила."
+        ),
+    )
+    exclude_pattern = models.CharField(
+        _("Исключение (regex по имени)"),
+        max_length=255,
+        blank=True,
+        help_text=_(
+            "Негативный guard: если выражение найдено в названии — правило НЕ "
+            "срабатывает (напр. «бур», но исключить «бурения земл|мотобур»)."
         ),
     )
     brand = models.CharField(

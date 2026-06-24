@@ -265,9 +265,16 @@ class ProductAttributeValueAdmin(admin.ModelAdmin):
 
 @admin.register(CategoryMappingRule)
 class CategoryMappingRuleAdmin(admin.ModelAdmin):
-    list_display = ("priority", "rule_type", "pattern", "brand", "target_category", "is_active")
+    list_display = (
+        "priority",
+        "rule_type",
+        "pattern",
+        "exclude_pattern",
+        "target_category",
+        "is_active",
+    )
     list_filter = ("rule_type", "is_active", "target_category")
-    search_fields = ("pattern", "brand", "note")
+    search_fields = ("pattern", "exclude_pattern", "brand", "note")
     list_editable = ("is_active",)
     autocomplete_fields = ["target_category"]
     ordering = ("priority", "id")
@@ -285,6 +292,7 @@ class CategoryMappingRuleAdmin(admin.ModelAdmin):
                 "fields": (
                     "rule_type",
                     "pattern",
+                    "exclude_pattern",
                     "brand",
                     "target_category",
                     "priority",
