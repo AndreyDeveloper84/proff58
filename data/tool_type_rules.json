@@ -438,11 +438,20 @@
           "source": "name_keywords"
         },
         {
+          "tool_type": "Наборы отвёрток",
+          "slug": "nabory-otvertok",
+          "match_keywords": [
+            "набор отверт",
+            "отвертка с наб",
+            "отвертки с наб"
+          ],
+          "source": "name_keywords"
+        },
+        {
           "tool_type": "Отвёртки",
           "slug": "otvertki",
           "match_keywords": [
             "отвертка",
-            "набор отверток",
             "отверточн"
           ],
           "source": "name_keywords"

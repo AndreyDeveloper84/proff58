@@ -573,6 +573,27 @@ def test_otvertki_bit_profile(rules):
     assert f["bit_type"].option_slug == "ph"
 
 
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Набор отверток 10шт KRAFTOOL X-DRIVE", 10),
+        ("Набор отвертка 6 предметов Ultra Grip", 6),
+        ("Набор отверток 34 предмета ЗУБР Компакт", 34),
+        ("Набор отверток KRAFTOOL 19в1", 19),
+        ("Отвертка с набором бит 145 предметов Cablexpert", 145),
+    ],
+)
+def test_nabory_otvertok_piece_count(rules, name, expected):
+    v = {x.slug: x for x in rules.extract("nabory-otvertok", name)}.get("piece_count")
+    assert v is not None and v.number == Decimal(str(expected))
+
+
+def test_nabory_otvertok_piece_count_ignores_model_codes(rules):
+    # Модельный код без «шт/предметов» (латиница не транслитерируется) не даёт ложного piece_count.
+    f = {x.slug: x for x in rules.extract("nabory-otvertok", "Набор отверток SD-9302 ProsKit")}
+    assert "piece_count" not in f
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""

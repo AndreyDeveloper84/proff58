@@ -2103,6 +2103,29 @@
       ]
     },
     {
+      "tool_type": "nabory-otvertok",
+      "category": "Ручной инструмент",
+      "attributes": [
+        {
+          "slug": "piece_count",
+          "name": "Предметов в наборе",
+          "kind": "number",
+          "unit": "шт",
+          "source": "regex",
+          "priority": 20,
+          "is_filter": true,
+          "regex": [
+            "(\\d{1,3})\\s*предмет",
+            "(\\d{1,3})\\s*предм",
+            "(\\d{1,3})\\s*пред\\b",
+            "(\\d{1,3})\\s*шт",
+            "(\\d{1,3})\\s*пр\\b",
+            "(\\d{1,3})\\s*в\\s*1\\b"
+          ]
+        }
+      ]
+    },
+    {
       "tool_type": "golovki",
       "category": "Ручной инструмент",
       "attributes": [
