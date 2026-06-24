@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import type { Listing, ListingQuery, RangeFilterValue, SortOption } from "@/lib/types";
 import { serializeQuery } from "@/lib/url-state";
 import { humanizeToken, rangeChipLabel } from "@/lib/format";
+import { sidebarFacets } from "@/lib/listing";
 import { track } from "@/lib/analytics";
 import { PER_PAGE_OPTIONS, SORT_OPTIONS } from "@/lib/constants";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -169,9 +170,13 @@ export function ListingShell({
     }
   }
 
+  // Контекстный гейтинг (§6): на широкой категории без выбранного типа — только базовые
+  // фильтры; после выбора tool_type / на листовой — все пришедшие. Применённые chips и
+  // восстановление из URL не затронуты (работают по query.filters, а не по составу сайдбара).
+  const visibleFacets = sidebarFacets(listing, query.toolType);
   const sidebar = (
     <FacetSidebar
-      facets={listing.facets}
+      facets={visibleFacets}
       filters={query.filters}
       onToggle={toggleCheckbox}
       onRange={setRange}
