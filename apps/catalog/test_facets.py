@@ -471,3 +471,58 @@ def test_facets_attr_range_drilldown(client, tree):
     # diameter-фасет НЕ схлопнут к [5,25] — показывает все значения (own-axis исключён),
     # иначе пользователь не смог бы расширить диапазон обратно
     assert set(values_count(get_facet(data, "diameter"))) == {10.0, 20.0, 30.0}
+
+
+# --- B1 (#222, §10.2/§22.3): per-category CategoryAttribute.is_filter гейтит состав фасетов ---
+
+
+@pytest.mark.django_db
+def test_is_filter_false_excludes_facet(client, tree):
+    """Атрибут, привязанный к категории с is_filter=False, НЕ попадает в facets,
+    хотя глобально is_filterable=True и значения у товаров есть."""
+    _, leaf = tree
+    power = make_attr("power", "Мощность", AttributeType.INTEGER)
+    chuck = make_attr("chuck", "Патрон", AttributeType.SELECT)
+    # power выключен как фильтр для ЭТОЙ категории; chuck — оставлен
+    CategoryAttribute.objects.create(category=leaf, attribute=power, is_filter=False)
+    CategoryAttribute.objects.create(category=leaf, attribute=chuck, is_filter=True, sort_order=1)
+    make_product(leaf, "p1", {"power": 500, "chuck": "Быстрозажимной"})
+    make_product(leaf, "p2", {"power": 650, "chuck": "Ключевой"})
+
+    data = client.get("/api/catalog/categories/dreli/facets/").json()
+    slugs = {f["slug"] for f in data["facets"]}
+    assert "power" not in slugs  # отключён per-category
+    assert "chuck" in slugs  # остался
+    # total и прочие фасеты считаются как обычно (гейт только про состав)
+    assert data["total_products"] == 2
+
+
+@pytest.mark.django_db
+def test_is_filter_true_includes_facet(client, tree):
+    """Тот же атрибут с is_filter=True попадает в facets (контроль к предыдущему тесту)."""
+    _, leaf = tree
+    power = make_attr("power", "Мощность", AttributeType.INTEGER)
+    CategoryAttribute.objects.create(category=leaf, attribute=power, is_filter=True)
+    make_product(leaf, "p1", {"power": 500})
+    make_product(leaf, "p2", {"power": 650})
+
+    data = client.get("/api/catalog/categories/dreli/facets/").json()
+    assert "power" in {f["slug"] for f in data["facets"]}
+    assert values_count(get_facet(data, "power")) == {500: 1, 650: 1}
+
+
+@pytest.mark.django_db
+def test_is_filter_false_inherited_from_ancestor(client, tree):
+    """Гейт наследуется: атрибут привязан только к ПРЕДКУ с is_filter=False (у листа своей
+    привязки нет) → у листа он тоже не показывается. Двойной гейт применяется по всей цепочке."""
+    root, leaf = tree
+    power = make_attr("power", "Мощность", AttributeType.INTEGER)
+    chuck = make_attr("chuck", "Патрон", AttributeType.SELECT)
+    CategoryAttribute.objects.create(category=root, attribute=power, is_filter=False)
+    CategoryAttribute.objects.create(category=root, attribute=chuck, is_filter=True)
+    make_product(leaf, "p1", {"power": 500, "chuck": "A"})
+
+    data = client.get("/api/catalog/categories/dreli/facets/").json()
+    slugs = {f["slug"] for f in data["facets"]}
+    assert "power" not in slugs  # унаследованное исключение с предка
+    assert "chuck" in slugs  # унаследованный включённый фильтр
