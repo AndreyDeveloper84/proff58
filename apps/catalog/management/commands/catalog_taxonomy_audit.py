@@ -17,7 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from apps.catalog.ingest import load_json
 from apps.catalog.taxonomy_audit import AuditResult, analyze
@@ -43,10 +43,15 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        mapping = load_json("group_mapping.json")
-        tree = load_json("catalog_fixed.json")
-        tt_rules = load_json("tool_type_rules.json")
-        attr_rules = load_json("attribute_rules.json")
+        # Отсутствующий/битый data-файл — понятная CommandError, а не голый трейсбек
+        # (json.JSONDecodeError — подкласс ValueError).
+        try:
+            mapping = load_json("group_mapping.json")
+            tree = load_json("catalog_fixed.json")
+            tt_rules = load_json("tool_type_rules.json")
+            attr_rules = load_json("attribute_rules.json")
+        except (FileNotFoundError, ValueError) as exc:
+            raise CommandError(f"Не удалось прочитать data-файлы каталога: {exc}") from exc
 
         result = analyze(mapping, tree, tt_rules, attr_rules)
 

@@ -289,7 +289,8 @@ def _collect_findings(
         )
 
     # F7 — tool_type-категории без приёмника в публичном дереве.
-    root_names = {normalize(r.get("site_path", [None])[0]) for r in mapping if r.get("site_path")}
+    # guard `if r.get("site_path")` гарантирует непустой список → индексируем напрямую.
+    root_names = {normalize(r["site_path"][0]) for r in mapping if r.get("site_path")}
     recat_targets = _recategorize_targets(tool_type_rules)
     missing = [(t, 0) for t in recat_targets if normalize(t) not in root_names]
     if missing:
