@@ -347,6 +347,26 @@ class RealRulesRegressionTests(TestCase):
             res("Набор аккумуляторного инструмента Metabo Combo").slug, "nabory-elektro"
         )
 
+    def test_otvertki_sets_split_from_screwdrivers(self):
+        # «Наборы отвёрток» отделяются в свой тип (как nabory-shlif в #226): уходят из
+        # знаменателя otvertki и получают свой фасет. Одиночные отвёртки остаются otvertki;
+        # наборы ключей/головок/бит не воруются — их ловят свои правила раньше по порядку.
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+
+        def slug(name):
+            return rules.extract("Ручной инструмент", name).slug
+
+        self.assertEqual(slug("Набор отверток 10шт KRAFTOOL X-DRIVE"), "nabory-otvertok")
+        self.assertEqual(slug("Набор отвертка 6 предметов Ultra Grip КОБАЛЬТ"), "nabory-otvertok")
+        self.assertEqual(slug("Отвертка с набором бит 145 предметов Cablexpert"), "nabory-otvertok")
+        # одиночная отвёртка остаётся otvertki
+        self.assertEqual(slug("Отвертка диэлектрическая SL5,5х125 KRAFTOOL"), "otvertki")
+        self.assertEqual(slug("Отвертка PH2x100 ЗУБР"), "otvertki")
+        # негативы: наборы соседних типов не воруются (ловятся своими правилами раньше)
+        self.assertEqual(slug("Набор ключей рожковых 8 шт ЗУБР"), "klyuchi-gaechnye")
+        self.assertEqual(slug("Набор головок 1/2 24шт"), "golovki")
+        self.assertEqual(slug("Набор бит 32 предмета KRAFTOOL"), "nabory-instrumenta")
+
 
 class TransliterateTests(TestCase):
     """Транслитерация кириллицы для слугов (фолбэк _unique_option_slug, C2)."""
