@@ -20,7 +20,7 @@ from django.db.models.functions import Cast
 from .brand_slugs import build_brand_slug_map
 from .filters import filtered_products
 from .models import Attribute, AttributeOption, AttributeType, StockStatus
-from .queries import _category_filter_attributes
+from .queries import TOOL_TYPE_SLUG, _category_filter_attributes
 
 # --- Лимиты фасетного эндпоинта (публичный AllowAny) ---
 MAX_ATTR_FILTERS = 20
@@ -163,6 +163,22 @@ def _apply_attr_ranges(qs, ranges, exclude=None):
     return qs
 
 
+def _apply_tool_type(qs, slug):
+    """Навигация по типу инструмента — relational EAV (как ``ProductFilter.filter_tool_type``).
+
+    Намеренно НЕ через attrs_cache-containment: список товаров фильтрует `tool_type`
+    relational-механизмом (``attribute_values__value_option__slug``), и фасеты обязаны
+    сужаться ТЕМ ЖЕ способом, иначе list и facets разойдутся. Пусто/None → без фильтра.
+    Связь 1:1 (SELECT, один value_option на товар) — джойн не дублирует строки.
+    """
+    if not slug:
+        return qs
+    return qs.filter(
+        attribute_values__attribute__slug=TOOL_TYPE_SLUG,
+        attribute_values__value_option__slug=slug,
+    )
+
+
 def _apply_price(qs, price_min, price_max):
     """Числовой фильтр цены (drill-down). None-границы игнорируются."""
     if price_min is not None:
@@ -183,9 +199,53 @@ def _cast_facet_value(text, attr_type):
     return text  # text / select
 
 
+def _build_tool_type_panel(panel_base, tt_attr, selected_slug):
+    """TypePanel: GROUP BY value_option на own-axis базе (без tool_type), один запрос.
+
+    ``panel_base`` уже несёт brand/stock/price/attr, но НЕ tool_type — панель показывает
+    все типы со счётчиками, чтобы можно было переключиться (§13). Поля значения:
+    ``{value, slug, count, selected}``; порядок — ``value_option.sort_order``, затем
+    ``-count``, затем ``slug`` (детерминизм при равных счётчиках).
+
+    ``Count("id")`` без distinct: JOIN сужен фильтром до ОДНОЙ tool_type-строки на товар
+    (``unique_together(product, attribute)`` в ``ProductAttributeValue``), поэтому
+    инфляции нет — ровно как в ``ProductFilter.filter_tool_type``, чтобы панель и список
+    считались одинаково. Пусто → ``None`` (панель не отдаём, как и пустой обычный фасет).
+    """
+    opt = "attribute_values__value_option"
+    values = [
+        {
+            "value": r[f"{opt}__value"],
+            "slug": r[f"{opt}__slug"],
+            "count": r["c"],
+            "selected": r[f"{opt}__slug"] == selected_slug,
+        }
+        for r in (
+            panel_base.filter(
+                attribute_values__attribute__slug=TOOL_TYPE_SLUG,
+                **{f"{opt}__isnull": False},
+            )
+            .values(f"{opt}__slug", f"{opt}__value", f"{opt}__sort_order")
+            .annotate(c=Count("id"))
+            .order_by(f"{opt}__sort_order", "-c", f"{opt}__slug")[:MAX_FACET_VALUES]
+        )
+    ]
+    if not values:
+        return None
+    return {
+        "slug": tt_attr.slug,
+        "name": tt_attr.name,
+        "type": tt_attr.attribute_type,
+        "unit": tt_attr.unit,
+        "is_nav": True,
+        "values": values,
+    }
+
+
 def build_facets(
     category,
     *,
+    tool_type=None,
     brands=None,
     stock_status=None,
     attr_filters=None,
@@ -195,17 +255,26 @@ def build_facets(
 ) -> dict:
     """Фасеты категории со счётчиками (drill-down). attr_filters: {slug: [raw,...]}.
 
+    ``tool_type`` (slug опции) — НАВИГАЦИЯ по типу инструмента (панель над выдачей,
+    а не сайдбар-фасет). Сужает все срезы relational-механизмом (как
+    ``ProductFilter.filter_tool_type``), поэтому список товаров и фасеты совпадают.
+    Сам `tool_type` эмитится отдельной панелью с ``is_nav=True`` и own-axis exclude:
+    панель показывает ВСЕ типы со счётчиками (свою ось не фильтрует), но учитывает
+    brand/stock/price/attr. Прочие фасеты получают ``is_nav=False``.
+
     ``attr_ranges``: ``{slug: (lo, hi)}`` — числовые диапазоны по EAV (INTEGER/DECIMAL),
     применяются ко всем срезам drill-down наравне с ``attr_filters``; для собственного
     числового фасета его диапазон исключается (иначе границы ползунка схлопнулись бы к выбору).
 
-    Подсчёт — в PostgreSQL (GROUP BY по JSONB ``attrs_cache``), не в Python: на каждый
-    фасет один индексируемый запрос (drill-down — со всеми фильтрами, кроме своего).
-    Контракт ответа и смысл значений сохраняются. list/multiselect-значения в attrs_cache
-    в этой версии не поддерживаются (containment `{slug: value}` не покроет массив).
+    Подсчёт — в PostgreSQL (GROUP BY по JSONB ``attrs_cache``, для tool_type — по
+    ``value_option``), не в Python: на каждый фасет один индексируемый запрос (drill-down —
+    со всеми фильтрами, кроме своего). Контракт ответа и смысл значений сохраняются.
+    list/multiselect-значения в attrs_cache в этой версии не поддерживаются (containment
+    `{slug: value}` не покроет массив).
     """
     attr_filters = attr_filters or {}
     attr_ranges = attr_ranges or {}
+    tool_type = tool_type or None  # "" → None (нет фильтра) один раз, дальше единообразно
     if len(attr_filters) > MAX_ATTR_FILTERS:
         raise FacetError("Слишком много фильтров-характеристик")
 
@@ -263,19 +332,36 @@ def build_facets(
                 _seen_brand.add(b)
                 resolved_brands.append(b)
 
-    # base_bs — category+brand+stock (без цены); base_qs — ещё и +price (drill-down для attr/total).
-    base_bs = filtered_products(category, brands=resolved_brands, stock_status=stock_status)
-    base_qs = _apply_price(base_bs, price_min, price_max)
-    total = _apply_attr_ranges(_apply_attr_filters(base_qs, coerced), ranges).count()
+    # Единая сборка drill-down среза. Каждый «own-axis» фасет считается на базе со ВСЕМИ
+    # активными фильтрами, КРОМЕ своей оси — её нейтрализуем kwarg-ом (brands=None /
+    # stock_status=None / tool_type=None / price=False / exclude_attr=slug). Так «забыть
+    # ось» на одном из срезов невозможно, и list/facets гарантированно согласованы.
+    def drilldown(
+        *,
+        brands=resolved_brands,
+        stock_status=stock_status,
+        tool_type=tool_type,
+        price=True,
+        exclude_attr=None,
+    ):
+        qs = _apply_tool_type(
+            filtered_products(category, brands=brands, stock_status=stock_status), tool_type
+        )
+        if price:
+            qs = _apply_price(qs, price_min, price_max)
+        qs = _apply_attr_filters(qs, coerced, exclude=exclude_attr)
+        return _apply_attr_ranges(qs, ranges, exclude=exclude_attr)
+
+    total = drilldown().count()
 
     facets = []
     for attr in attributes:
+        if attr.slug == TOOL_TYPE_SLUG:
+            continue  # tool_type — навигация: эмитим отдельной панелью, не attrs_cache-фасетом
         # GROUP BY по значению атрибута в выборке с активными фильтрами, КРОМЕ своего
         # (и checkbox-, и range-измерение своего фасета исключаем — drill-down).
         rows = (
-            _apply_attr_ranges(
-                _apply_attr_filters(base_qs, coerced, exclude=attr.slug), ranges, exclude=attr.slug
-            )
+            drilldown(exclude_attr=attr.slug)
             .annotate(_fv=KeyTextTransform(attr.slug, "attrs_cache"))
             .filter(_fv__isnull=False)  # ключ есть и значение не JSON null (== старое None→skip)
             .values("_fv")
@@ -310,14 +396,22 @@ def build_facets(
                 "name": attr.name,
                 "type": attr.attribute_type,
                 "unit": attr.unit,
+                "is_nav": False,
                 "values": values,
             }
         )
 
+    # --- TypePanel: навигационный фасет tool_type (own-axis exclude — без tool_type) ---
+    tt_attr = by_slug.get(TOOL_TYPE_SLUG)
+    if tt_attr is not None:
+        panel = _build_tool_type_panel(drilldown(tool_type=None), tt_attr, tool_type)
+        if panel is not None:
+            facets.append(panel)
+
     # --- price/brand/stock фасеты: drill-down (каждый БЕЗ собственного измерения) ---
-    # price: база БЕЗ price (category+brand+stock+attrs), только товары с ценой.
+    # price: own-axis — без price (но с tool_type/brand/stock/attr), только товары с ценой.
     pa = (
-        _apply_attr_ranges(_apply_attr_filters(base_bs, coerced), ranges)
+        drilldown(price=False)
         .filter(price__isnull=False)
         .aggregate(lo=Min("price"), hi=Max("price"))
     )
@@ -325,18 +419,8 @@ def build_facets(
         "min": float(pa["lo"]) if pa["lo"] is not None else None,
         "max": float(pa["hi"]) if pa["hi"] is not None else None,
     }
-    # brands: база БЕЗ brand (category+stock+price+attrs), один group-by.
-    brand_base = _apply_attr_ranges(
-        _apply_attr_filters(
-            _apply_price(
-                filtered_products(category, brands=None, stock_status=stock_status),
-                price_min,
-                price_max,
-            ),
-            coerced,
-        ),
-        ranges,
-    )
+    # brands: own-axis — без brand (category+stock+price+attrs+tool_type), один group-by.
+    brand_base = drilldown(brands=None)
     selected_brands = {b.lower() for b in (resolved_brands or [])}
     brands_out = [
         {
@@ -350,18 +434,8 @@ def build_facets(
         .annotate(c=Count("id"))
         .order_by("-c", "brand")[:MAX_BRAND_FACETS]
     ]
-    # stock: база БЕЗ stock (category+brand+price+attrs), один group-by.
-    stock_base = _apply_attr_ranges(
-        _apply_attr_filters(
-            _apply_price(
-                filtered_products(category, brands=resolved_brands, stock_status=None),
-                price_min,
-                price_max,
-            ),
-            coerced,
-        ),
-        ranges,
-    )
+    # stock: own-axis — без stock (category+brand+price+attrs+tool_type), один group-by.
+    stock_base = drilldown(stock_status=None)
     stock_labels = dict(StockStatus.choices)
     stock_out = [
         {
@@ -389,6 +463,7 @@ def build_facets(
         "stock": stock_out,
         "total_products": total,
         "applied_filters": {
+            "tool_type": tool_type,
             "brands": list(brands or []),
             "stock_status": stock_status or None,
             "attrs": coerced,

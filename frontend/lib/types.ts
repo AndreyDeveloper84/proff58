@@ -37,6 +37,9 @@ export type Facet = {
   min?: number;
   max?: number;
   unit?: string;
+  // Навигационный фасет (tool_type): рендерится TypePanel над выдачей, а НЕ в сайдбаре.
+  // Маппится из ApiFacet.is_nav. Выбор идёт верхнеуровневым ?tool_type=, не attr_*.
+  isNav?: boolean;
 };
 
 export type SortOption = "popular" | "price_asc" | "price_desc" | "new" | "rating";
@@ -48,6 +51,9 @@ export type ListingQuery = {
   perPage: number;
   sort: SortOption;
   view: "grid" | "list";
+  // tool_type — НАВИГАЦИЯ (панель типов над выдачей), верхнеуровневый ?tool_type=<slug>.
+  // Хранится отдельно от filters: это не сайдбар-фасет и не attr_* (§3.1, §5.1).
+  toolType?: string;
   filters: Record<string, string[] | RangeFilterValue>;
 };
 

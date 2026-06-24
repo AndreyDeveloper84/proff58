@@ -9,6 +9,7 @@ import {
   CHECKBOX_FACETS,
   DEFAULT_PER_PAGE,
   DEFAULT_SORT,
+  NAV_ATTR_KEYS,
   PER_PAGE_OPTIONS,
   RANGE_FACETS,
   RESERVED_QUERY_PARAMS,
@@ -36,6 +37,11 @@ export function parseQuery(sp: URLSearchParams, category: string): ListingQuery 
 
   const page = Math.max(1, Math.trunc(num(sp.get("page")) ?? 1));
 
+  // tool_type — верхнеуровневый навигационный параметр (§5.1). Приоритет у tool_type над
+  // legacy attr_tool_type: последний для ТИПА не парсим в filters (см. цикл attr_ ниже).
+  const toolTypeRaw = (sp.get("tool_type") ?? "").trim();
+  const toolType = toolTypeRaw || undefined;
+
   const filters: ListingQuery["filters"] = {};
 
   for (const code of CHECKBOX_FACETS) {
@@ -60,6 +66,9 @@ export function parseQuery(sp: URLSearchParams, category: string): ListingQuery 
   // (attr_ их и так исключает), но проверяем для надёжности.
   for (const key of new Set(sp.keys())) {
     if (!key.startsWith("attr_") || RESERVED_QUERY_PARAMS.has(key)) continue;
+    // attr_tool_type* — это ТИП (навигация). Канонический параметр — верхнеуровневый
+    // tool_type, поэтому в filters не кладём (§5.1, приоритет tool_type).
+    if (NAV_ATTR_KEYS.has(key)) continue;
     if (key.endsWith("_min") || key.endsWith("_max")) {
       const code = key.slice(0, -4); // отрезаем _min/_max → базовый код фасета
       if (code.length <= "attr_".length || filters[code]) continue; // attr__min и т.п. — мусор
@@ -78,13 +87,17 @@ export function parseQuery(sp: URLSearchParams, category: string): ListingQuery 
     if (vals.length) filters[key] = vals;
   }
 
-  return { category, page, perPage, sort, view, filters };
+  return { category, page, perPage, sort, view, toolType, filters };
 }
 
 export function serializeQuery(q: ListingQuery): string {
   const sp = new URLSearchParams();
 
+  // tool_type — верхнеуровневый навигационный параметр (не filters, не attr_*; §5.1).
+  if (q.toolType) sp.set("tool_type", q.toolType);
+
   for (const [code, val] of Object.entries(q.filters)) {
+    if (NAV_ATTR_KEYS.has(code)) continue; // тип сериализуем только как tool_type (§5.1)
     if (Array.isArray(val)) {
       if (val.length) sp.set(code, val.join(","));
     } else {
