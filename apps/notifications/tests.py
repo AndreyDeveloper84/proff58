@@ -128,7 +128,7 @@ def test_send_channel_disabled(mock_max, user):
 # ═══════════════════════════════════════════════════════════════════════
 
 
-@override_settings(**MAX_SETTINGS)
+@override_settings(**MAX_SETTINGS, CELERY_TASK_EAGER_PROPAGATES=False)
 @pytest.mark.django_db
 @pytest.mark.usefixtures("_enable_max")
 @mock.patch(
@@ -197,7 +197,7 @@ def test_send_no_chat_id_skips(mock_max):
 # ═══════════════════════════════════════════════════════════════════════
 
 
-@override_settings(**MAX_SETTINGS)
+@override_settings(**MAX_SETTINGS, CELERY_TASK_EAGER_PROPAGATES=False)
 @pytest.mark.django_db
 @pytest.mark.usefixtures("_enable_max")
 @mock.patch(
