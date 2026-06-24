@@ -44,6 +44,9 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
+          # Полная пересборка образов (особенно фронт: npm ci + next build) на VPS
+          # дольше дефолтных 10m → SSH-команда падала по таймауту («Run Command Timeout»).
+          command_timeout: 30m
           script: |
             set -euo pipefail
             cd "${{ secrets.DEPLOY_PATH }}"
