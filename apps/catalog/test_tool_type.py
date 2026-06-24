@@ -295,6 +295,23 @@ class RealRulesRegressionTests(TestCase):
         self.assertEqual(slug("Резец проходной 16х16 Т15К6", "Резцы"), "reztsy")
         self.assertEqual(slug("Набор резцов 12шт хвост 12мм", "Резцы"), "osnastka-reztsov")
 
+    def test_krugi_shlif_abrasive_subtypes_split(self):
+        # «Отрезные и шлифовальные круги» — сборная подгруппа: круги остаются
+        # krugi-shlif, а корщётки/наждачка/шарошки/ленты отделяются в свои типы.
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+
+        def slug(name):
+            return rules.extract(
+                "Оснастка и расходники", name, "Отрезные и шлифовальные круги"
+            ).slug
+
+        self.assertEqual(slug("Круг лепестковый КЛТ 125х22,2 P60"), "krugi-shlif")
+        self.assertEqual(slug("Корщётка дисковая 125мм витая"), "korshchetki")
+        self.assertEqual(slug("Бумага шлифовальная P120 рулон"), "nazhdachka")
+        self.assertEqual(slug("Шарошка по металлу 10мм"), "sharoshki")
+        self.assertEqual(slug("Лента шлифовальная 75х533 P80"), "lenty-shlif")
+        self.assertEqual(slug("Надфиль плоский 160мм"), "nadfili-shlif")
+
     def test_accessory_overrides_are_subgroup_scoped(self):
         # Override-ключи действуют только в своей подгруппе: «держатель» в «Биты» даёт
         # оснастку для бит (свой тип), а НЕ disc-аксессуар prisposobleniya-osnastka.
