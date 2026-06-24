@@ -526,6 +526,21 @@ def test_reztsy_material(rules):
     assert f["material"].option_slug == "carbide"
 
 
+# --- Шлифкруги (tool_type=krugi-shlif): Ø-whitelist + тип абразива --------------
+
+
+def test_krugi_shlif_diameter_and_type(rules):
+    f = {v.slug: v for v in rules.extract("krugi-shlif", "Круг лепестковый КЛТ 125х22,2 P60 ЗУБР")}
+    assert f["disc_diameter"].number == Decimal("125")
+    assert f["disc_type"].option_slug == "flap"
+
+
+def test_krugi_shlif_grinding_type(rules):
+    f = {v.slug: v for v in rules.extract("krugi-shlif", "Круг шлифовальный 150х20х32 14А")}
+    assert f["disc_diameter"].number == Decimal("150")
+    assert f["disc_type"].option_slug == "grinding"
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""

@@ -1879,6 +1879,88 @@
           ]
         }
       ]
+    },
+    {
+      "tool_type": "krugi-shlif",
+      "category": "Отрезные и шлифовальные круги",
+      "attributes": [
+        {
+          "slug": "disc_diameter",
+          "name": "Диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?<!\\d)(70|76|90|100|105|115|125|150|180|200|230|250|300|350|360|400|450|500)(?!\\d)"
+          ]
+        },
+        {
+          "slug": "bore",
+          "name": "Посадочный диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?:70|76|90|100|105|115|125|150|180|200|230|250|300|350|360|400|450|500).*?[x*х]\\s*(22(?:[.,]2\\d?)?|25[.,]4|32)(?![\\d.,])"
+          ]
+        },
+        {
+          "slug": "disc_type",
+          "name": "Тип круга",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Лепестковый",
+              "slug": "flap",
+              "keywords": [
+                "лепестк",
+                "клт",
+                "клс"
+              ]
+            },
+            {
+              "value": "Отрезной",
+              "slug": "otreznoy",
+              "keywords": [
+                "отрезн"
+              ]
+            },
+            {
+              "value": "Шлифовальный/обдирочный",
+              "slug": "grinding",
+              "keywords": [
+                "шлифов",
+                "обдир",
+                "зачистн",
+                "шлиф."
+              ]
+            },
+            {
+              "value": "Фибровый",
+              "slug": "fibre",
+              "keywords": [
+                "фибр"
+              ]
+            },
+            {
+              "value": "Тарельчатый",
+              "slug": "depressed",
+              "keywords": [
+                "тарельчат",
+                "тарелк"
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }
