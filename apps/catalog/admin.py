@@ -67,11 +67,71 @@ class CategoryAdminForm(movenodeform_factory(Category)):
 @admin.register(Category)
 class CategoryAdmin(TreeAdmin):
     form = CategoryAdminForm
-    list_display = ("name", "slug", "external_id_1c", "on_site", "is_active", "sort_order")
+    list_display = (
+        "name",
+        "slug",
+        "external_id_1c",
+        "products_count",
+        "published_count",
+        "on_site",
+        "is_active",
+        "sort_order",
+    )
     list_filter = ("on_site", "is_active")
     prepopulated_fields = {"slug": ("name",)}
     search_fields = ("name", "slug", "external_id_1c")
     inlines = [CategoryAttributeInline]
+    actions = [
+        "action_show_on_site",
+        "action_hide_from_site",
+        "action_activate",
+        "action_deactivate",
+    ]
+
+    def get_queryset(self, request):
+        # Количество товаров (всего и опубликованных) в категории — аннотацией,
+        # чтобы колонки списка не плодили N+1. distinct=True обязателен: два Count
+        # по одной связи products без него перемножились бы.
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                _products=Count("products", distinct=True),
+                _published=Count(
+                    "products",
+                    filter=Q(products__status=ProductStatus.PUBLISHED),
+                    distinct=True,
+                ),
+            )
+        )
+
+    @admin.display(description=_("Товаров"), ordering="_products")
+    def products_count(self, obj):
+        return getattr(obj, "_products", 0)
+
+    @admin.display(description=_("Опубл."), ordering="_published")
+    def published_count(self, obj):
+        return getattr(obj, "_published", 0)
+
+    @admin.action(description=_("Показать на сайте"))
+    def action_show_on_site(self, request, queryset):
+        n = queryset.update(on_site=True)
+        self.message_user(request, _("Показано на сайте: %d") % n)
+
+    @admin.action(description=_("Скрыть с сайта"))
+    def action_hide_from_site(self, request, queryset):
+        n = queryset.update(on_site=False)
+        self.message_user(request, _("Скрыто с сайта: %d") % n)
+
+    @admin.action(description=_("Активировать"))
+    def action_activate(self, request, queryset):
+        n = queryset.update(is_active=True)
+        self.message_user(request, _("Активировано: %d") % n)
+
+    @admin.action(description=_("Деактивировать"))
+    def action_deactivate(self, request, queryset):
+        n = queryset.update(is_active=False)
+        self.message_user(request, _("Деактивировано: %d") % n)
 
 
 @admin.register(Attribute)
