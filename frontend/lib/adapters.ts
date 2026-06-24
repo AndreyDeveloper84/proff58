@@ -10,13 +10,19 @@
 //  - серверная сортировка через ?sort (price_asc|price_desc|new), дефолт — name;
 //  - facets-эндпоинт отдаёт price/brands/stock + category/subcategories помимо EAV-атрибутов.
 
+import { BASE_FACET_CODES } from "./constants";
+import { formatRu, humanizeToken } from "./format";
 import type {
   Facet,
+  FilterMode,
   Listing,
   ListingQuery,
   Product,
   StockState,
 } from "./types";
+
+// Код фасета базовый? (§3.3/§6 — видим всегда). Список — в constants (по коду, не по названию).
+const BASE_CODES: ReadonlySet<string> = new Set(BASE_FACET_CODES);
 
 // Внутренние server-side запросы Next→Django идут по http внутри Docker, а Django в prod
 // редиректит http→https (SECURE_SSL_REDIRECT). Этот заголовок (ТОЛЬКО server-side!) сообщает
@@ -56,8 +62,15 @@ type ApiFacetsResponse = {
   price?: { min: number | null; max: number | null };
   brands?: ApiBrand[];
   stock?: ApiStock[];
+  // §3.4: сырое поле API (любая строка); доверяем только после whitelist-проверки asFilterMode.
+  category_filter_mode?: string;
   facets?: ApiFacet[];
 };
+
+// Сужение сырого значения API к FilterMode (или undefined → авто-определение во фронте).
+function asFilterMode(v: unknown): FilterMode | undefined {
+  return v === "broad" || v === "typed" || v === "leaf" ? v : undefined;
+}
 
 type ApiFacetValue = {
   value: unknown;
@@ -71,6 +84,8 @@ type ApiFacet = {
   name: string;
   type: string; // text|integer|decimal|boolean|select|multiselect
   unit?: string;
+  // Навигационный фасет (tool_type): рендерится TypePanel, выбор → верхнеуровневый ?tool_type=.
+  is_nav?: boolean;
   values?: ApiFacetValue[];
 };
 
@@ -99,7 +114,7 @@ function formatSpecValue(value: unknown, unit?: string): string {
   if (value == null || value === "") return "";
   let s: string;
   if (typeof value === "boolean") s = value ? "Да" : "Нет";
-  else if (typeof value === "number") s = String(value).replace(".", ",");
+  else if (typeof value === "number") s = formatRu(value);
   else s = String(value);
   const u = (unit ?? "").trim();
   if (u && !s.includes(u)) s = `${s} ${u}`;
@@ -139,10 +154,18 @@ export function apiProductToProduct(ap: ApiProduct): Product {
   };
 }
 
-// --- фасеты price/brand/stock из нового facets-контракта (B0) ---
+// --- фасеты price/brand/stock из нового facets-контракта (B0) — всегда kind: "base" (§6.2) ---
 function priceFacet(price?: { min: number | null; max: number | null }): Facet | null {
   if (!price || price.min == null || price.max == null) return null;
-  return { code: "price", label: "Цена", type: "range", unit: "₽", min: price.min, max: price.max };
+  return {
+    code: "price",
+    label: "Цена",
+    type: "range",
+    unit: "₽",
+    kind: "base",
+    min: price.min,
+    max: price.max,
+  };
 }
 function stockFacet(stock?: ApiStock[]): Facet | null {
   if (!stock || !stock.length) return null;
@@ -150,6 +173,7 @@ function stockFacet(stock?: ApiStock[]): Facet | null {
     code: "stock",
     label: "Наличие",
     type: "checkbox",
+    kind: "base",
     options: stock.map((s) => ({
       value: STOCK_API_TO_UI[s.value] ?? s.value,
       label: s.label,
@@ -164,6 +188,7 @@ function brandFacet(brands?: ApiBrand[]): Facet | null {
     code: "brand",
     label: "Бренд",
     type: "checkbox",
+    kind: "base",
     options: brands.map((b) => ({
       value: b.value,
       label: b.label,
@@ -174,9 +199,14 @@ function brandFacet(brands?: ApiBrand[]): Facet | null {
 }
 
 export function apiFacetToFacet(af: ApiFacet): Facet {
-  // Код EAV-фасета храним С префиксом attr_ — это и есть имя query-параметра витрины и API
-  // (attr_tool_type), однозначно отделённое от legacy-навигации ?tool_type=<slug> и UI-state.
-  const code = `attr_${af.slug}`;
+  // Классификация nav vs обычный фасет. tool_type (is_nav) — НАВИГАЦИЯ: код = bare slug
+  // (tool_type), выбор идёт верхнеуровневым ?tool_type=, рендер — TypePanel. Остальные EAV
+  // хранятся С префиксом attr_ — это имя query-параметра сайдбар-фильтра (attr_<slug>).
+  const isNav = af.is_nav === true;
+  const code = isNav ? af.slug : `attr_${af.slug}`;
+  // Гейтинг-класс (§3.3/§6): nav → TypePanel; базовый код (напр. attr_power_source) → base;
+  // прочие attr_* → tech (скрыты до выбора tool_type). По коду, не по названию.
+  const kind: Facet["kind"] = isNav ? "nav" : BASE_CODES.has(code) ? "base" : "tech";
   const isRange = af.type === "integer" || af.type === "decimal";
   if (isRange) {
     const nums = (af.values ?? [])
@@ -187,6 +217,8 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
       label: af.name,
       type: "range",
       unit: af.unit || undefined,
+      isNav,
+      kind,
       min: nums.length ? Math.min(...nums) : undefined,
       max: nums.length ? Math.max(...nums) : undefined,
     };
@@ -196,6 +228,8 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
     label: af.name,
     type: "checkbox",
     unit: af.unit || undefined,
+    isNav,
+    kind,
     options: (af.values ?? []).map((v) => ({
       // value — токен для URL/фильтра: canonical slug, если он есть, иначе raw value (legacy)
       value: String(v.slug ?? v.value),
@@ -207,9 +241,7 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
   };
 }
 
-function humanize(slug: string): string {
-  return slug.replace(/[-_]/g, " ").replace(/^\p{L}/u, (c) => c.toUpperCase());
-}
+const humanize = humanizeToken; // алиас: единый источник в lib/format (N4)
 
 // query-параметры products-эндпоинта из нормализованного ListingQuery.
 function buildProductParams(query: ListingQuery): URLSearchParams {
@@ -217,6 +249,10 @@ function buildProductParams(query: ListingQuery): URLSearchParams {
   sp.set("category", query.category);
   sp.set("limit", String(query.perPage));
   sp.set("offset", String((query.page - 1) * query.perPage));
+
+  // tool_type — навигация: верхнеуровневый ?tool_type=<slug> (тот же параметр, что в facets,
+  // — list и фасеты сужаются одним relational-механизмом, A1/#223).
+  if (query.toolType) sp.set("tool_type", query.toolType);
 
   const f = query.filters;
   const brand = f.brand;
@@ -259,6 +295,9 @@ function buildProductParams(query: ListingQuery): URLSearchParams {
 
 function buildFacetParams(query: ListingQuery): URLSearchParams {
   const sp = new URLSearchParams();
+  // tool_type → facets-эндпоинт: панель типов (own-axis) и прочие фасеты сужаются так же,
+  // как список (A1/#223). Без этого counts разошлись бы с выдачей.
+  if (query.toolType) sp.set("tool_type", query.toolType);
   const f = query.filters;
   if (Array.isArray(f.brand)) for (const b of f.brand) sp.append("brand", b);
   const stockMap: Record<string, string> = {
@@ -310,6 +349,7 @@ export async function fetchListingFromApi(
   let facets: Facet[] = [];
   let categoryBlock: ApiCategoryBlock | undefined;
   let subcategories: { label: string; href: string }[] = [];
+  let filterMode: FilterMode | undefined;
   try {
     const facetsRes = await fetch(
       `${root}/api/catalog/categories/${query.category}/facets/?${buildFacetParams(query).toString()}`,
@@ -326,6 +366,7 @@ export async function fetchListingFromApi(
         ...attrFacets,
       ].filter((x): x is Facet => x != null);
       categoryBlock = fj.category;
+      filterMode = asFilterMode(fj.category_filter_mode);
       subcategories = (fj.subcategories ?? []).map((s) => ({
         label: s.name,
         href: `/catalog/${s.slug}`,
@@ -349,6 +390,7 @@ export async function fetchListingFromApi(
       intro: categoryBlock?.description ?? "",
       breadcrumb: [{ label: "Главная", href: "/" }, ...crumbs],
     },
+    filterMode,
     subcategories,
     facets,
     sort: [],

@@ -295,6 +295,23 @@ class RealRulesRegressionTests(TestCase):
         self.assertEqual(slug("Резец проходной 16х16 Т15К6", "Резцы"), "reztsy")
         self.assertEqual(slug("Набор резцов 12шт хвост 12мм", "Резцы"), "osnastka-reztsov")
 
+    def test_krugi_shlif_abrasive_subtypes_split(self):
+        # «Отрезные и шлифовальные круги» — сборная подгруппа: круги остаются
+        # krugi-shlif, а корщётки/наждачка/шарошки/ленты отделяются в свои типы.
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+
+        def slug(name):
+            return rules.extract(
+                "Оснастка и расходники", name, "Отрезные и шлифовальные круги"
+            ).slug
+
+        self.assertEqual(slug("Круг лепестковый КЛТ 125х22,2 P60"), "krugi-shlif")
+        self.assertEqual(slug("Корщётка дисковая 125мм витая"), "korshchetki")
+        self.assertEqual(slug("Бумага шлифовальная P120 рулон"), "nazhdachka")
+        self.assertEqual(slug("Шарошка по металлу 10мм"), "sharoshki")
+        self.assertEqual(slug("Лента шлифовальная 75х533 P80"), "lenty-shlif")
+        self.assertEqual(slug("Надфиль плоский 160мм"), "nadfili-shlif")
+
     def test_accessory_overrides_are_subgroup_scoped(self):
         # Override-ключи действуют только в своей подгруппе: «держатель» в «Биты» даёт
         # оснастку для бит (свой тип), а НЕ disc-аксессуар prisposobleniya-osnastka.
@@ -329,6 +346,26 @@ class RealRulesRegressionTests(TestCase):
         self.assertEqual(
             res("Набор аккумуляторного инструмента Metabo Combo").slug, "nabory-elektro"
         )
+
+    def test_otvertki_sets_split_from_screwdrivers(self):
+        # «Наборы отвёрток» отделяются в свой тип (как nabory-shlif в #226): уходят из
+        # знаменателя otvertki и получают свой фасет. Одиночные отвёртки остаются otvertki;
+        # наборы ключей/головок/бит не воруются — их ловят свои правила раньше по порядку.
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+
+        def slug(name):
+            return rules.extract("Ручной инструмент", name).slug
+
+        self.assertEqual(slug("Набор отверток 10шт KRAFTOOL X-DRIVE"), "nabory-otvertok")
+        self.assertEqual(slug("Набор отвертка 6 предметов Ultra Grip КОБАЛЬТ"), "nabory-otvertok")
+        self.assertEqual(slug("Отвертка с набором бит 145 предметов Cablexpert"), "nabory-otvertok")
+        # одиночная отвёртка остаётся otvertki
+        self.assertEqual(slug("Отвертка диэлектрическая SL5,5х125 KRAFTOOL"), "otvertki")
+        self.assertEqual(slug("Отвертка PH2x100 ЗУБР"), "otvertki")
+        # негативы: наборы соседних типов не воруются (ловятся своими правилами раньше)
+        self.assertEqual(slug("Набор ключей рожковых 8 шт ЗУБР"), "klyuchi-gaechnye")
+        self.assertEqual(slug("Набор головок 1/2 24шт"), "golovki")
+        self.assertEqual(slug("Набор бит 32 предмета KRAFTOOL"), "nabory-instrumenta")
 
 
 class TransliterateTests(TestCase):

@@ -438,11 +438,20 @@
           "source": "name_keywords"
         },
         {
+          "tool_type": "Наборы отвёрток",
+          "slug": "nabory-otvertok",
+          "match_keywords": [
+            "набор отверт",
+            "отвертка с наб",
+            "отвертки с наб"
+          ],
+          "source": "name_keywords"
+        },
+        {
           "tool_type": "Отвёртки",
           "slug": "otvertki",
           "match_keywords": [
             "отвертка",
-            "набор отверток",
             "отверточн"
           ],
           "source": "name_keywords"
@@ -852,6 +861,55 @@
           "tool_type": "Отрезные и шлифовальные круги",
           "slug": "krugi-shlif",
           "source": "1c_subgroup"
+        },
+        {
+          "tool_type": "Корщётки",
+          "slug": "korshchetki",
+          "subgroup": "Отрезные и шлифовальные круги",
+          "match_keywords": ["корщетк", "кордщетк", "щетк"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Наждачная бумага и сетка",
+          "slug": "nazhdachka",
+          "subgroup": "Отрезные и шлифовальные круги",
+          "match_keywords": ["бумага", "шлифлист", "лист шлиф", "наждач", "шкурка", "сетка", "рулон"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Шарошки и борфрезы",
+          "slug": "sharoshki",
+          "subgroup": "Отрезные и шлифовальные круги",
+          "match_keywords": ["шарошк", "борфрез"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Ленты шлифовальные",
+          "slug": "lenty-shlif",
+          "subgroup": "Отрезные и шлифовальные круги",
+          "match_keywords": ["лента"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Надфили",
+          "slug": "nadfili-shlif",
+          "subgroup": "Отрезные и шлифовальные круги",
+          "match_keywords": ["надфил"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Бруски и оселки",
+          "slug": "bruski-shlif",
+          "subgroup": "Отрезные и шлифовальные круги",
+          "match_keywords": ["брусок", "брус абразив", "оселок"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Наборы абразива",
+          "slug": "nabory-shlif",
+          "subgroup": "Отрезные и шлифовальные круги",
+          "match_keywords": ["набор"],
+          "source": "name_keywords"
         },
         {
           "tool_type": "Алмазные круги",

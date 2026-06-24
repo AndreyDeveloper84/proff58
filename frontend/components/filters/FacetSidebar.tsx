@@ -15,6 +15,9 @@ type Props = {
 };
 
 export function FacetSidebar({ facets, filters, onToggle, onRange, onReset }: Props) {
+  // tool_type (isNav) — навигация, рендерится TypePanel над выдачей, а НЕ в сайдбаре (§3.1, §23.5).
+  // Defensive-слой: гейтинг состава (base/tech) уже сделан в lib/listing.sidebarFacets выше.
+  const visibleFacets = facets.filter((f) => !f.isNav);
   return (
     <div className="flex flex-col gap-5 rounded-lg border border-line bg-surface p-4">
       <div className="flex items-center justify-between">
@@ -26,7 +29,7 @@ export function FacetSidebar({ facets, filters, onToggle, onRange, onReset }: Pr
         </button>
       </div>
 
-      {facets.map((f) =>
+      {visibleFacets.map((f) =>
         f.type === "checkbox" ? (
           <CheckboxFacet key={f.code} facet={f} onToggle={onToggle} />
         ) : (

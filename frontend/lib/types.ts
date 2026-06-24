@@ -29,6 +29,12 @@ export type FacetOption = {
   count: number;
   selected: boolean;
 };
+
+// Класс фасета для контекстного гейтинга (§3.3–3.4, §6): nav — TypePanel над выдачей;
+// base — базовые фильтры (Наличие/Бренд/Цена/Тип питания), видны всегда; tech — технические,
+// видны только после выбора tool_type или на листовой/типизированной категории.
+export type FacetKind = "nav" | "base" | "tech";
+
 export type Facet = {
   code: string;
   label: string;
@@ -37,10 +43,20 @@ export type Facet = {
   min?: number;
   max?: number;
   unit?: string;
+  // Навигационный фасет (tool_type): рендерится TypePanel над выдачей, а НЕ в сайдбаре.
+  // Маппится из ApiFacet.is_nav. Выбор идёт верхнеуровневым ?tool_type=, не attr_*.
+  isNav?: boolean;
+  // Класс для гейтинга сайдбара (классифицируется в adapters при маппинге).
+  kind?: FacetKind;
 };
 
 export type SortOption = "popular" | "price_asc" | "price_desc" | "new" | "rating";
 export type RangeFilterValue = { min?: number; max?: number };
+
+// Режим показа фильтров категории (§3.4): broad — широкая (только базовые до выбора типа);
+// typed — доминирует один тип; leaf — листовая (полный набор сразу). Источник — поле API
+// category_filter_mode, если есть; иначе авто-определение по TypePanel (см. lib/listing.ts).
+export type FilterMode = "broad" | "typed" | "leaf";
 
 export type ListingQuery = {
   category: string;
@@ -48,6 +64,9 @@ export type ListingQuery = {
   perPage: number;
   sort: SortOption;
   view: "grid" | "list";
+  // tool_type — НАВИГАЦИЯ (панель типов над выдачей), верхнеуровневый ?tool_type=<slug>.
+  // Хранится отдельно от filters: это не сайдбар-фасет и не attr_* (§3.1, §5.1).
+  toolType?: string;
   filters: Record<string, string[] | RangeFilterValue>;
 };
 
@@ -59,6 +78,8 @@ export type Listing = {
   };
   promo?: { title: string; subtitle: string; href: string };
   subcategories: { label: string; href: string }[];
+  // Режим гейтинга фильтров (§3.4). undefined → авто-определение по TypePanel (lib/listing.ts).
+  filterMode?: FilterMode;
   facets: Facet[];
   sort: { value: SortOption; label: string }[];
   total: number;

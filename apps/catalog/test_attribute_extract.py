@@ -526,6 +526,74 @@ def test_reztsy_material(rules):
     assert f["material"].option_slug == "carbide"
 
 
+# --- Шлифкруги (tool_type=krugi-shlif): Ø-whitelist + тип абразива --------------
+
+
+def test_krugi_shlif_diameter_and_type(rules):
+    f = {v.slug: v for v in rules.extract("krugi-shlif", "Круг лепестковый КЛТ 125х22,2 P60 ЗУБР")}
+    assert f["disc_diameter"].number == Decimal("125")
+    assert f["disc_type"].option_slug == "flap"
+
+
+def test_krugi_shlif_grinding_type(rules):
+    f = {v.slug: v for v in rules.extract("krugi-shlif", "Круг шлифовальный 150х20х32 14А")}
+    assert f["disc_diameter"].number == Decimal("150")
+    assert f["disc_type"].option_slug == "grinding"
+
+
+# --- Ручной инструмент: ключи / отвёртки / головки / воротки / молотки ---------
+
+
+def test_klyuchi_type_and_size(rules):
+    f = {v.slug: v for v in rules.extract("klyuchi-gaechnye", "Ключ комбинированный 17мм CrV ЗУБР")}
+    assert f["wrench_type"].option_slug == "kombinir"
+    assert f["size"].number == Decimal("17")
+
+
+def test_golovki_drive_and_size(rules):
+    f = {v.slug: v for v in rules.extract("golovki", 'Головка торцевая 1/2" 13мм 6-гранная')}
+    assert f["drive"].option_slug == "d-1-2"
+    assert f["size"].number == Decimal("13")
+
+
+def test_vorotki_drive_and_type(rules):
+    f = {v.slug: v for v in rules.extract("vorotki", "Вороток 1/2 250мм Т-образный с трещоткой")}
+    assert f["drive"].option_slug == "d-1-2"
+    assert f["vorotok_type"].option_slug == "treshch"  # трещотка приоритетнее
+
+
+def test_molotki_weight_and_type(rules):
+    f = {v.slug: v for v in rules.extract("molotki", "Молоток слесарный 500г фиберглас")}
+    assert f["weight"].number == Decimal("500")
+    assert f["molotok_type"].option_slug == "slesar"
+
+
+def test_otvertki_bit_profile(rules):
+    f = {v.slug: v for v in rules.extract("otvertki", "Отвертка крестовая PH2x100мм")}
+    assert f["bit_type"].option_slug == "ph"
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Набор отверток 10шт KRAFTOOL X-DRIVE", 10),
+        ("Набор отвертка 6 предметов Ultra Grip", 6),
+        ("Набор отверток 34 предмета ЗУБР Компакт", 34),
+        ("Набор отверток KRAFTOOL 19в1", 19),
+        ("Отвертка с набором бит 145 предметов Cablexpert", 145),
+    ],
+)
+def test_nabory_otvertok_piece_count(rules, name, expected):
+    v = {x.slug: x for x in rules.extract("nabory-otvertok", name)}.get("piece_count")
+    assert v is not None and v.number == Decimal(str(expected))
+
+
+def test_nabory_otvertok_piece_count_ignores_model_codes(rules):
+    # Модельный код без «шт/предметов» (латиница не транслитерируется) не даёт ложного piece_count.
+    f = {x.slug: x for x in rules.extract("nabory-otvertok", "Набор отверток SD-9302 ProsKit")}
+    assert "piece_count" not in f
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""
