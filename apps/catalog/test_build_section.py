@@ -1,0 +1,104 @@
+"""Тесты команды catalog_build_section (E3 — построение раздела + расселение).
+
+Использует реальный словарь data/product_type_rules.json. Проверяет:
+  * dry-run ничего не создаёт и не перемещает;
+  * --commit создаёт узлы (раздел → подкат → подтип) и расселяет high-confidence
+    товары (category_is_manual=True), пропуская medium/low и уже-ручные;
+  * --rollback восстанавливает товары и удаляет созданные пустые узлы.
+
+Нужен PostgreSQL (как и остальной каталог).
+"""
+
+from __future__ import annotations
+
+from io import StringIO
+from pathlib import Path
+
+import pytest
+from django.conf import settings
+from django.core.management import call_command
+
+from apps.catalog.models import Category, Product, ProductStatus
+
+
+def _mk(name, slug, **kw):
+    return Product.objects.create(name=name, slug=slug, status=ProductStatus.IMPORTED, **kw)
+
+
+@pytest.fixture
+def products():
+    return {
+        "sverlo": _mk("Сверло по металлу 5 мм HSS", "p-sverlo"),  # → Свёрла (high)
+        "krug": _mk("Круг лепестковый КЛТ 125 P40", "p-krug"),  # → Круги/Лепестковые (high)
+        "bolt": _mk("Болт М10х50 DIN933", "p-bolt"),  # не Оснастка → не трогаем
+        "molotok": _mk("Молоток слесарный 500 г", "p-molotok"),  # Ручной → не трогаем здесь
+    }
+
+
+@pytest.mark.django_db
+def test_dry_run_changes_nothing(products):
+    out = StringIO()
+    call_command("catalog_build_section", "--section", "osnastka", stdout=out)
+    assert "DRY-RUN" in out.getvalue()
+    assert not Category.objects.filter(slug="osnastka").exists()
+    for p in products.values():
+        p.refresh_from_db()
+        assert p.category_id is None
+
+
+@pytest.mark.django_db
+def test_commit_builds_tree_and_assigns(products):
+    out = StringIO()
+    call_command("catalog_build_section", "--section", "osnastka", "--commit", stdout=out)
+    assert "COMMIT:" in out.getvalue()
+
+    root = Category.objects.get(slug="osnastka")
+    sverla = Category.objects.get(name="Свёрла")
+    krugi = Category.objects.get(name="Круги")
+    lepest = Category.objects.get(name="Лепестковые")
+    assert sverla.get_parent().pk == root.pk
+    assert lepest.get_parent().pk == krugi.pk  # 3-й уровень
+
+    products["sverlo"].refresh_from_db()
+    products["krug"].refresh_from_db()
+    products["bolt"].refresh_from_db()
+    assert products["sverlo"].category_id == sverla.pk
+    assert products["sverlo"].category_is_manual is True
+    assert products["krug"].category_id == lepest.pk  # ушёл в подтип
+    assert products["bolt"].category_id is None  # не Оснастка — не тронут
+
+    backups = sorted(
+        (Path(settings.BASE_DIR) / "var" / "restructure").glob("build-osnastka-*.json")
+    )
+    assert backups, "снимок отката не создан"
+
+
+@pytest.mark.django_db
+def test_commit_skips_manual(products):
+    # Уже-ручной товar, который классифицируется как оснастка, НЕ перетирается.
+    sverlo = products["sverlo"]
+    other = Category.add_root(name="Чужая", slug="chuzhaya")
+    sverlo.category = other
+    sverlo.category_is_manual = True
+    sverlo.save(update_fields=["category", "category_is_manual"])
+
+    call_command("catalog_build_section", "--section", "osnastka", "--commit", stdout=StringIO())
+
+    sverlo.refresh_from_db()
+    assert sverlo.category_id == other.pk  # ручная категория сохранена
+
+
+@pytest.mark.django_db
+def test_rollback_restores(products):
+    call_command("catalog_build_section", "--section", "osnastka", "--commit", stdout=StringIO())
+    snap = sorted((Path(settings.BASE_DIR) / "var" / "restructure").glob("build-osnastka-*.json"))[
+        -1
+    ]
+
+    call_command("catalog_build_section", "--rollback", str(snap), stdout=StringIO())
+
+    products["sverlo"].refresh_from_db()
+    assert products["sverlo"].category_id is None
+    assert products["sverlo"].category_is_manual is False
+    # Созданные пустые узлы удалены.
+    assert not Category.objects.filter(slug="osnastka").exists()

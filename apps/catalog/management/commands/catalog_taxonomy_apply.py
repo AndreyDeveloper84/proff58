@@ -232,6 +232,11 @@ class Command(BaseCommand):
             ):
                 w(f"    – {name[:64]}")
 
+        # --- узлы к скрытию ---
+        w(self.style.MIGRATE_HEADING("\n-- Узлы к скрытию (is_active=False + on_site=False) --"))
+        for _spec, cat in sources:
+            w(f"  «{cat.name}» (slug={cat.slug}) — уйдёт из чипов-подкатегорий и резолва страницы")
+
         # --- redirects ---
         w(
             self.style.MIGRATE_HEADING(
@@ -332,9 +337,15 @@ class Command(BaseCommand):
                 )
                 to_section += b["section_ids"]
                 to_complement += b["complement_ids"]
-                backup["nodes"].append({"id": cat.pk, "on_site": cat.on_site})
+                # Скрываем опустевший узел И из витрины (is_active — по нему
+                # фильтруются чипы-подкатегории и резолв страницы), И из публичного
+                # дерева (on_site). Иначе остался бы пустой битый чип подкатегории.
+                backup["nodes"].append(
+                    {"id": cat.pk, "on_site": cat.on_site, "is_active": cat.is_active}
+                )
                 cat.on_site = False
-                cat.save(update_fields=["on_site"])
+                cat.is_active = False
+                cat.save(update_fields=["on_site", "is_active"])
 
             backup_path.write_text(json.dumps(backup, ensure_ascii=False, indent=2))
 
@@ -382,7 +393,10 @@ class Command(BaseCommand):
                     category_is_manual=r["category_is_manual"],
                 )
             for n in data.get("nodes", []):
-                Category.objects.filter(id=n["id"]).update(on_site=n["on_site"])
+                fields = {"on_site": n["on_site"]}
+                if "is_active" in n:  # снимки старого формата — без is_active
+                    fields["is_active"] = n["is_active"]
+                Category.objects.filter(id=n["id"]).update(**fields)
 
         self.stdout.write(
             self.style.SUCCESS(
