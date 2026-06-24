@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.pricing",
     "apps.orders",
     "apps.ai",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
