@@ -314,6 +314,7 @@ class CategoryFacetsView(APIView):
         try:
             data = build_facets(
                 category,
+                tool_type=params.get("tool_type") or None,
                 brands=params.getlist("brand") or None,
                 stock_status=stock_status or None,
                 attr_filters=attr_filters,
