@@ -27,12 +27,16 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
-from apps.catalog.models import Category, Product, ProductStatus
+from apps.catalog.models import Category, Product, ProductAttributeValue, ProductStatus
 from apps.catalog.services import products_in, tool_type_facets
 from apps.core.events import EventSource, product_updated
 
 POWER_SLUG = "power_source"
 POWER_LABELS = {"Аккумулятор", "Сеть"}  # значения опций power_source — не типы инструмента
+TOOL_TYPE_SLUG = "tool_type"
+# tool_type-значения, которые на самом деле НЕ типы инструмента, а комплектующие
+# (их место — подкатегория «Аккумуляторы и ЗУ», а не панель типов раздела).
+COMPLEMENT_TOOL_TYPES = {"akkumulyatory", "zaryadnye"}
 
 # Описание разделов. Каждый «collapse» — узел, чьи товары переносятся в target,
 # а сам узел скрывается; «keep» — остаётся как есть. ``power`` — ожидаемый
@@ -72,6 +76,32 @@ def _power_filled(qs) -> int:
         .distinct()
         .count()
     )
+
+
+def _tool_type_buckets(qs) -> dict:
+    """Разложить товары выборки по 3 корзинам по их tool_type.
+
+    * ``tool`` — есть настоящий тип инструмента (не комплектующее) → переносить в раздел;
+    * ``complement`` — tool_type ∈ комплектующие (Аккумуляторы/Зарядные) → в подкатегорию;
+    * ``no_type`` — типа нет вовсе (кандидаты на «не-инструмент»: антенны/сварка/рации,
+      разбираются отдельным шагом позже).
+    """
+    rows = ProductAttributeValue.objects.filter(
+        product__in=qs,
+        attribute__slug=TOOL_TYPE_SLUG,
+        value_option__isnull=False,
+    ).values_list("product_id", "value_option__slug")
+    tool_ids: set[int] = set()
+    compl_ids: set[int] = set()
+    for pid, slug in rows:
+        (compl_ids if slug in COMPLEMENT_TOOL_TYPES else tool_ids).add(pid)
+    all_ids = set(qs.values_list("id", flat=True))
+    return {
+        "tool": len(tool_ids),
+        "complement": len(compl_ids - tool_ids),
+        "no_type": len(all_ids - tool_ids - compl_ids),
+        "no_type_ids": list(all_ids - tool_ids - compl_ids),
+    }
 
 
 class Command(BaseCommand):
@@ -168,6 +198,35 @@ class Command(BaseCommand):
             f"ОСТАНУТСЯ без питания после переноса: {total - filled}"
         )
 
+        # --- разбивка переносимых по tool_type-корзинам ---
+        w(self.style.MIGRATE_HEADING("\n-- Разбивка переносимых по tool_type --"))
+        b_tool = b_compl = b_none = 0
+        none_ids: list[int] = []
+        for _spec, cat in sources:
+            b = _tool_type_buckets(products_in(cat))
+            b_tool += b["tool"]
+            b_compl += b["complement"]
+            b_none += b["no_type"]
+            none_ids += b["no_type_ids"]
+            w(
+                f"  «{cat.name}»: инструмент {b['tool']}  | комплектующие {b['complement']}  "
+                f"| без типа {b['no_type']}"
+            )
+        w(
+            self.style.SUCCESS(
+                f"  ИТОГО: настоящий инструмент {b_tool}  | комплектующие (→ подкатегория) "
+                f"{b_compl}  | без типа / не-инструмент {b_none}"
+            )
+        )
+        if none_ids:
+            w("  Примеры «без типа» (кандидаты на разбор отдельным шагом):")
+            for name in (
+                Product.objects.filter(id__in=none_ids[:12])
+                .order_by("name")
+                .values_list("name", flat=True)
+            ):
+                w(f"    – {name[:64]}")
+
         # --- redirects ---
         w(
             self.style.MIGRATE_HEADING(
@@ -195,13 +254,18 @@ class Command(BaseCommand):
         # --- TypePanel проверка ---
         w(self.style.MIGRATE_HEADING("\n-- TypePanel раздела (ось tool_type, не питание) --"))
         types = tool_type_facets(target)
-        bad = [t for t in types if t["value"] in POWER_LABELS]
+        power_in = [t["value"] for t in types if t["value"] in POWER_LABELS]
+        compl_in = [t["value"] for t in types if t["slug"] in COMPLEMENT_TOOL_TYPES]
         for t in types[:12]:
-            w(f"  {t['value']:32s} {t['count']:5d}  ({t['slug']})")
-        if bad:
+            mark = "  ← комплектующее" if t["slug"] in COMPLEMENT_TOOL_TYPES else ""
+            w(f"  {t['value']:32s} {t['count']:5d}  ({t['slug']}){mark}")
+        if power_in:
+            w(self.style.ERROR(f"  ВНИМАНИЕ: в панели типов есть значения питания: {power_in}"))
+        elif compl_in:
             w(
-                self.style.ERROR(
-                    f"  ВНИМАНИЕ: в панели типов есть значения питания: {[t['value'] for t in bad]}"
+                self.style.WARNING(
+                    f"  В панели типов есть комплектующие: {compl_in} — их место в подкатегории "
+                    "«Аккумуляторы и ЗУ» (учтём в стратегии переноса)."
                 )
             )
         else:

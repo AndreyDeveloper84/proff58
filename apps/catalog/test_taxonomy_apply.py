@@ -83,6 +83,8 @@ def test_dry_run_changes_nothing(section):
     # Отчёт посчитал объёмы: к переносу 3, без питания после переноса 1 (set-2).
     assert "ИТОГО к переносу: 3" in text
     assert "ОСТАНУТСЯ без питания после переноса: 1" in text
+    # Разбивка по tool_type: все 3 — настоящий инструмент (perforatory).
+    assert "настоящий инструмент 3" in text
     assert "DRY-RUN" in text
 
     # Ничего не изменилось.
@@ -139,3 +141,31 @@ def test_missing_category_raises(section):
 
     with pytest.raises(CommandError):
         call_command("catalog_taxonomy_apply", "--section", "electroinstrument", stdout=StringIO())
+
+
+@pytest.mark.django_db
+def test_dry_run_tool_type_breakdown(section):
+    # Добавляем в «Сетевой» комплектующее (tool_type=akkumulyatory) и «не-инструмент»
+    # (без tool_type) — проверяем три корзины разбивки.
+    setevoy = section["setevoy"]
+    tt = Attribute.objects.get(slug="tool_type")
+    o_akb = AttributeOption.objects.create(attribute=tt, value="Аккумуляторы", slug="akkumulyatory")
+
+    p_compl = Product.objects.create(
+        category=setevoy, name="АКБ 18В", slug="akb-1", status=ProductStatus.PUBLISHED
+    )
+    ProductAttributeValue.objects.create(product=p_compl, attribute=tt, value_option=o_akb)
+    # «Антенна» — без tool_type вовсе (кандидат на разбор отдельным шагом).
+    Product.objects.create(
+        category=setevoy, name="Антенна авто", slug="antenna-1", status=ProductStatus.PUBLISHED
+    )
+
+    out = StringIO()
+    call_command("catalog_taxonomy_apply", "--section", "electroinstrument", stdout=out)
+    text = out.getvalue()
+
+    # 3 perforatory (инструмент) + 1 akkumulyatory (комплектующее) + 1 без типа.
+    assert "настоящий инструмент 3" in text
+    assert "комплектующие (→ подкатегория) 1" in text
+    assert "без типа / не-инструмент 1" in text
+    assert "Антенна авто" in text  # показан в примерах «без типа»
