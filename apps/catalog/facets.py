@@ -19,7 +19,7 @@ from django.db.models.functions import Cast
 
 from .brand_slugs import build_brand_slug_map
 from .filters import filtered_products
-from .models import Attribute, AttributeOption, AttributeType, StockStatus
+from .models import Attribute, AttributeOption, AttributeType, FacetGroup, StockStatus
 from .queries import TOOL_TYPE_SLUG, _category_filter_attributes
 
 # --- Лимиты фасетного эндпоинта (публичный AllowAny) ---
@@ -64,13 +64,18 @@ def _sort_facet_values(attr, counter: Counter, options_order: dict) -> list:
     items = list(counter.items())
     t = attr.attribute_type
     if t in (AttributeType.SELECT, AttributeType.MULTISELECT):
+        # D3 (§22.4 «сортирует значения»): кураторский ``sort_order`` — главный ключ; при
+        # равных (по дефолту все 0, т.е. опции не упорядочены вручную) — по убыванию count
+        # (популярные сверху), затем по label для детерминизма. Так упорядоченные опции
+        # сохраняют заданный порядок, а неупорядоченные деградируют к «по популярности», а
+        # не к алфавиту. ``unknown`` (значения без AttributeOption) — сразу по count.
         known = sorted(
             (it for it in items if it[0] in options_order),
-            key=lambda it: (options_order[it[0]], str(it[0])),
+            key=lambda it: (options_order[it[0]], -it[1], str(it[0])),
         )
         unknown = sorted(
             (it for it in items if it[0] not in options_order),
-            key=lambda it: str(it[0]),
+            key=lambda it: (-it[1], str(it[0])),
         )
         return known + unknown
     if t in (AttributeType.INTEGER, AttributeType.DECIMAL):
@@ -397,6 +402,9 @@ def build_facets(
                 "type": attr.attribute_type,
                 "unit": attr.unit,
                 "is_nav": False,
+                # Группа сайдбара (D1, §22.4): main|extra из ближайшей CategoryAttribute
+                # (closest-wins, проброшено transient на Attribute). Дефолт — main.
+                "group": getattr(attr, "_facet_group", FacetGroup.MAIN),
                 "values": values,
             }
         )

@@ -43,7 +43,7 @@ class CategoryAttributeInline(admin.TabularInline):
     model = CategoryAttribute
     extra = 1
     autocomplete_fields = ["attribute"]
-    fields = ("attribute", "is_filter", "is_seo_facet", "is_required", "sort_order")
+    fields = ("attribute", "is_filter", "group", "is_seo_facet", "is_required", "sort_order")
 
 
 class CategoryAdminForm(movenodeform_factory(Category)):
