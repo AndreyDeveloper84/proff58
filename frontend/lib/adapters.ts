@@ -10,14 +10,19 @@
 //  - серверная сортировка через ?sort (price_asc|price_desc|new), дефолт — name;
 //  - facets-эндпоинт отдаёт price/brands/stock + category/subcategories помимо EAV-атрибутов.
 
+import { BASE_FACET_CODES } from "./constants";
 import { formatRu, humanizeToken } from "./format";
 import type {
   Facet,
+  FilterMode,
   Listing,
   ListingQuery,
   Product,
   StockState,
 } from "./types";
+
+// Код фасета базовый? (§3.3/§6 — видим всегда). Список — в constants (по коду, не по названию).
+const BASE_CODES: ReadonlySet<string> = new Set(BASE_FACET_CODES);
 
 // Внутренние server-side запросы Next→Django идут по http внутри Docker, а Django в prod
 // редиректит http→https (SECURE_SSL_REDIRECT). Этот заголовок (ТОЛЬКО server-side!) сообщает
@@ -57,8 +62,15 @@ type ApiFacetsResponse = {
   price?: { min: number | null; max: number | null };
   brands?: ApiBrand[];
   stock?: ApiStock[];
+  // §3.4: сырое поле API (любая строка); доверяем только после whitelist-проверки asFilterMode.
+  category_filter_mode?: string;
   facets?: ApiFacet[];
 };
+
+// Сужение сырого значения API к FilterMode (или undefined → авто-определение во фронте).
+function asFilterMode(v: unknown): FilterMode | undefined {
+  return v === "broad" || v === "typed" || v === "leaf" ? v : undefined;
+}
 
 type ApiFacetValue = {
   value: unknown;
@@ -142,10 +154,18 @@ export function apiProductToProduct(ap: ApiProduct): Product {
   };
 }
 
-// --- фасеты price/brand/stock из нового facets-контракта (B0) ---
+// --- фасеты price/brand/stock из нового facets-контракта (B0) — всегда kind: "base" (§6.2) ---
 function priceFacet(price?: { min: number | null; max: number | null }): Facet | null {
   if (!price || price.min == null || price.max == null) return null;
-  return { code: "price", label: "Цена", type: "range", unit: "₽", min: price.min, max: price.max };
+  return {
+    code: "price",
+    label: "Цена",
+    type: "range",
+    unit: "₽",
+    kind: "base",
+    min: price.min,
+    max: price.max,
+  };
 }
 function stockFacet(stock?: ApiStock[]): Facet | null {
   if (!stock || !stock.length) return null;
@@ -153,6 +173,7 @@ function stockFacet(stock?: ApiStock[]): Facet | null {
     code: "stock",
     label: "Наличие",
     type: "checkbox",
+    kind: "base",
     options: stock.map((s) => ({
       value: STOCK_API_TO_UI[s.value] ?? s.value,
       label: s.label,
@@ -167,6 +188,7 @@ function brandFacet(brands?: ApiBrand[]): Facet | null {
     code: "brand",
     label: "Бренд",
     type: "checkbox",
+    kind: "base",
     options: brands.map((b) => ({
       value: b.value,
       label: b.label,
@@ -182,6 +204,9 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
   // хранятся С префиксом attr_ — это имя query-параметра сайдбар-фильтра (attr_<slug>).
   const isNav = af.is_nav === true;
   const code = isNav ? af.slug : `attr_${af.slug}`;
+  // Гейтинг-класс (§3.3/§6): nav → TypePanel; базовый код (напр. attr_power_source) → base;
+  // прочие attr_* → tech (скрыты до выбора tool_type). По коду, не по названию.
+  const kind: Facet["kind"] = isNav ? "nav" : BASE_CODES.has(code) ? "base" : "tech";
   const isRange = af.type === "integer" || af.type === "decimal";
   if (isRange) {
     const nums = (af.values ?? [])
@@ -193,6 +218,7 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
       type: "range",
       unit: af.unit || undefined,
       isNav,
+      kind,
       min: nums.length ? Math.min(...nums) : undefined,
       max: nums.length ? Math.max(...nums) : undefined,
     };
@@ -203,6 +229,7 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
     type: "checkbox",
     unit: af.unit || undefined,
     isNav,
+    kind,
     options: (af.values ?? []).map((v) => ({
       // value — токен для URL/фильтра: canonical slug, если он есть, иначе raw value (legacy)
       value: String(v.slug ?? v.value),
@@ -322,6 +349,7 @@ export async function fetchListingFromApi(
   let facets: Facet[] = [];
   let categoryBlock: ApiCategoryBlock | undefined;
   let subcategories: { label: string; href: string }[] = [];
+  let filterMode: FilterMode | undefined;
   try {
     const facetsRes = await fetch(
       `${root}/api/catalog/categories/${query.category}/facets/?${buildFacetParams(query).toString()}`,
@@ -338,6 +366,7 @@ export async function fetchListingFromApi(
         ...attrFacets,
       ].filter((x): x is Facet => x != null);
       categoryBlock = fj.category;
+      filterMode = asFilterMode(fj.category_filter_mode);
       subcategories = (fj.subcategories ?? []).map((s) => ({
         label: s.name,
         href: `/catalog/${s.slug}`,
@@ -361,6 +390,7 @@ export async function fetchListingFromApi(
       intro: categoryBlock?.description ?? "",
       breadcrumb: [{ label: "Главная", href: "/" }, ...crumbs],
     },
+    filterMode,
     subcategories,
     facets,
     sort: [],
