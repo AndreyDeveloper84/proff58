@@ -201,12 +201,17 @@ docker compose run --rm web pytest   # альтернатива: всё внут
 ## 9. Полезные management-команды
 
 - **1С/обмен:** `import_1c`, `apply_stocks_1c`, `mark_stale_syncs`, `demo_1c_orders`
+- **Заказы:** `seed_test_orders` (сидер «новых, не выгруженных» заказов для приёмки
+  обмена 1С — отдаются в `GET /api/1c/orders/new`)
 - **Каталог (импорт/обогащение):** `import_products`, `bootstrap_catalog`,
   `build_categories`, `load_tool_types`, `load_attributes`, `enrich_attributes`,
   `enrich_tool_type`, `publish_catalog`, `rebuild_attrs_cache`, `attribute_coverage`,
-  `analyze_subgroup`, `tool_type_gaps`, `backfill_option_slugs`
+  `survey_catalog` (read-only обзор подгрупп — приоритизация характеризации),
+  `analyze_subgroup` (поддерживает `--batch` — массовый анализ), `tool_type_gaps`,
+  `backfill_option_slugs`
 
-(скилл `characterize-subgroup` помогает расставлять характеристики подгрупп каталога.)
+(скилл `characterize-subgroup` помогает расставлять характеристики подгрупп каталога;
+`survey_catalog` → `analyze_subgroup` — стартовая точка выбора подгруппы.)
 
 ## 10. Публичные API (для фронта)
 
@@ -216,6 +221,11 @@ docker compose run --rm web pytest   # альтернатива: всё внут
 - `/api/` — `cart/`, `cart/items/`, `orders/`, `orders/<number>/`
 - `/api/1c/` — обмен с 1С (см. §5)
 - `/healthz/` — health (БД + Redis)
+
+**MAX-бот** (мессенджер — уведомления/авторизация) пока на уровне настроек и доков:
+`MAX_BOT_TOKEN` / `MAX_WEBHOOK_SECRET` / `MAX_BOT_API_URL` в `config/settings/base.py`,
+контракт и настройка — `docs/max-bot-setup.md`, проверка токена/подписки —
+`python scripts/smoke_max.py --token <BOT_TOKEN>`. HTTP-роута `/api/max/` ещё нет.
 
 ## 11. Поток работы и стиль
 
