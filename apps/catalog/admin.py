@@ -1,4 +1,6 @@
+from django import forms
 from django.contrib import admin, messages
+from django.contrib.admin.helpers import ActionForm
 from django.db import transaction
 from django.db.models import Count, IntegerField, OuterRef, Q, Subquery
 from django.db.models.functions import Coalesce
@@ -44,9 +46,27 @@ class CategoryAttributeInline(admin.TabularInline):
     fields = ("attribute", "is_filter", "is_seo_facet", "is_required", "sort_order")
 
 
+class CategoryAdminForm(movenodeform_factory(Category)):
+    """Форма дерева категорий с подсказкой о независимости от 1С.
+
+    Дерево категорий — мастер структуры сайта (ведётся ЗДЕСЬ). Связь с 1С
+    (`external_id_1c`) — справочная: переразбор/импорт 1С не меняет дерево и не
+    перетирает ручные категории товаров (`category_is_manual`).
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "external_id_1c" in self.fields:
+            self.fields["external_id_1c"].help_text = _(
+                "Справочный код группы 1С. Дерево категорий ведётся здесь, в админке "
+                "(сайт — мастер структуры). Импорт/переразбор 1С НЕ меняет это дерево и "
+                "не перетирает ручные категории товаров."
+            )
+
+
 @admin.register(Category)
 class CategoryAdmin(TreeAdmin):
-    form = movenodeform_factory(Category)
+    form = CategoryAdminForm
     list_display = ("name", "slug", "external_id_1c", "on_site", "is_active", "sort_order")
     list_filter = ("on_site", "is_active")
     prepopulated_fields = {"slug": ("name",)}
@@ -191,6 +211,29 @@ class CategoryMappingRuleAdmin(admin.ModelAdmin):
     list_editable = ("is_active",)
     autocomplete_fields = ["target_category"]
     ordering = ("priority", "id")
+    fieldsets = (
+        (
+            None,
+            {
+                "description": _(
+                    "Слой маршрутизации «группа/признак 1С → категория сайта». Правила "
+                    "влияют только на авторазбор НОВЫХ и ещё не размеченных вручную "
+                    "товаров: товар с ручной категорией (category_is_manual) правила НЕ "
+                    "трогают. Само дерево категорий правила не меняют — оно ведётся в "
+                    "разделе «Категории»."
+                ),
+                "fields": (
+                    "rule_type",
+                    "pattern",
+                    "brand",
+                    "target_category",
+                    "priority",
+                    "is_active",
+                    "note",
+                ),
+            },
+        ),
+    )
 
 
 class UncategorizedFilter(admin.SimpleListFilter):
@@ -329,8 +372,20 @@ class ProductCompatibilityIncomingInline(admin.TabularInline):
         return False
 
 
+class ProductActionForm(ActionForm):
+    """Action-форма списка товаров с выбором целевой категории для bulk-перепривязки."""
+
+    target_category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        label=_("Категория для перепривязки"),
+        help_text=_("Используется действием «Перепривязать…»."),
+    )
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    action_form = ProductActionForm
     list_display = (
         "name",
         "article",
@@ -368,7 +423,12 @@ class ProductAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
-    actions = ["action_publish", "action_needs_review", "action_rebuild_attrs_cache"]
+    actions = [
+        "action_set_category",
+        "action_publish",
+        "action_needs_review",
+        "action_rebuild_attrs_cache",
+    ]
     fieldsets = (
         (
             None,
@@ -376,7 +436,15 @@ class ProductAdmin(admin.ModelAdmin):
         ),
         (
             _("Категория сайта"),
-            {"fields": ("category", "category_is_manual", "matched_rule")},
+            {
+                "description": _(
+                    "Категория ведётся на сайте (1С её не диктует). Ручное назначение "
+                    "включает «Категория задана вручную» — после этого импорт/авторазбор "
+                    "1С её НЕ меняет. Массовая перепривязка — действием «Перепривязать "
+                    "выбранные товары…» в списке товаров."
+                ),
+                "fields": ("category", "category_is_manual", "matched_rule"),
+            },
         ),
         (
             _("Данные из 1С"),
@@ -591,6 +659,37 @@ class ProductAdmin(admin.ModelAdmin):
                 )
 
         transaction.on_commit(_send)
+
+    @admin.action(description=_("Перепривязать выбранные товары в категорию (поле справа)"))
+    def action_set_category(self, request, queryset):
+        # Bulk-перепривязка в категорию из поля action-формы. Фиксируем
+        # category_is_manual=True — это и есть защита: дальнейший авторазбор/импорт
+        # 1С эти товары не перевесит. Категория не влияет на attrs_cache, поэтому
+        # update() безопасен; событие эмитим по реально затронутым.
+        cat_id = request.POST.get("target_category")
+        if not cat_id:
+            self.message_user(
+                request,
+                _("Выберите категорию в поле «Категория для перепривязки» рядом с действием."),
+                level=messages.WARNING,
+            )
+            return
+        category = Category.objects.filter(pk=cat_id).first()
+        if category is None:
+            self.message_user(request, _("Категория не найдена."), level=messages.ERROR)
+            return
+        ids = list(queryset.values_list("id", flat=True))
+        updated = queryset.update(category=category, category_is_manual=True)
+        if ids:
+            self._emit_bulk_updated(ids, ["category"])
+        self.message_user(
+            request,
+            _(
+                "Перепривязано в «%(cat)s»: %(n)d. Зафиксировано как ручное — "
+                "переразбор/импорт 1С эти товары не изменит."
+            )
+            % {"cat": category.name, "n": updated},
+        )
 
     @admin.action(description=_("Опубликовать выбранные товары"))
     def action_publish(self, request, queryset):
