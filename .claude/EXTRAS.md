@@ -13,6 +13,9 @@
 | [garrytan/gstack](https://github.com/garrytan/gstack) | 23+ скилла «инженерной команды» | 📦 в репозитории, **по запросу** |
 | [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents) | 238 специализированных агентов | 📦 базовый набор включён, остальное **по запросу** |
 | [hesreallyhim/awesome-claude-code](https://github.com/hesreallyhim/awesome-claude-code) | Список ссылок (awesome-list) | 🔗 устанавливать нечего, ссылка для справки |
+| [trailofbits/skills](https://github.com/trailofbits/skills) | Marketplace навыков безопасности (40+) | ✅ подключён, включены 5 Python-релевантных |
+| [nizos/tdd-guard](https://github.com/nizos/tdd-guard) | Принудительный TDD через хук | ◐ установлен, но **спит** (см. раздел 6) |
+| *(своя разработка)* | Лёгкий анти-инъекшн хук вместо parry-guard | ✅ активен (см. раздел 6) |
 
 > Установлено «без дублей»: из пары ECC / everything-claude-code взят только ECC
 > (он суперсет). Тяжёлые наборы (gstack, все 238 агентов) вынесены в «библиотеку»,
@@ -27,6 +30,12 @@
 
 - `superpowers@superpowers-dev`
 - `ecc@ecc`
+- `trailofbits/skills` — навыки безопасности (marketplace `trailofbits`). Из 40+
+  включены 5 Python/Django-релевантных: `modern-python`, `static-analysis`,
+  `supply-chain-risk-auditor`, `insecure-defaults`, `differential-review`.
+  Остальные (смарт-контракты, C/Rust) намеренно не включены, чтобы не раздувать
+  меню. Навык `static-analysis` опирается на Semgrep/CodeQL — без этих бинарей в
+  окружении он работает частично. Лицензия CC-BY-SA 4.0.
 
 Управление:
 
@@ -122,6 +131,57 @@ Django и/или бесполезны в эфемерном окружении. 
 > Симлинк gstack живёт в `~/.claude` (эфемерно) — пересоздаётся командой из
 > раздела 3; ecc-zh-скиллы лежат в репозитории и переживают пересборку.
 > Деактивация: удалить папки из `.claude/skills/` и симлинк.
+
+## 7. Хуки безопасности и дисциплины (из awesome-claude-code)
+
+Две интеграции из каталога awesome-claude-code, адаптированные под наш стек и
+эфемерное окружение.
+
+### TDD Guard ([nizos/tdd-guard](https://github.com/nizos/tdd-guard)) — установлен, но СПИТ
+
+Принудительный TDD: хук перехватывает `Write/Edit/MultiEdit` и блокирует написание
+реализации без падающего теста. Поддерживает pytest.
+
+**Почему спит по умолчанию.** Валидатор TDD Guard делает LLM-вызов на каждую правку
+и требует API-ключ/клиент — это латентность, стоимость и риск заблокировать правку
+не-тестового кода. Поэтому всё проводное, но выключено.
+
+Реализация — ручная (не плагином, чтобы не плодить интерактивный `/tdd-guard:setup`
+и двойные хуки):
+
+- `.claude/hooks/tdd-guard.sh` — обёртка над CLI. Выключена, пока
+  `TDD_GUARD_ENABLE` ≠ `1`; если бинаря нет — `exit 0` (не блокирует работу).
+  Висит на `SessionStart` / `UserPromptSubmit` / `PreToolUse`.
+- `.claude/hooks/bootstrap-session.sh` — на `SessionStart` доустанавливает рантайм
+  в эфемерном окружении: npm-CLI `tdd-guard` (Node ≥22) + pytest-репортёр
+  `tdd-guard-pytest` в `.venv`. Тоже срабатывает только при `TDD_GUARD_ENABLE=1`.
+
+**Как включить:**
+
+```bash
+export TDD_GUARD_ENABLE=1          # активировать обёртку и bootstrap
+# перезапустить сессию → bootstrap поставит tdd-guard + tdd-guard-pytest
+# при необходимости настроить валидатор (VALIDATION_CLIENT / TDD_GUARD_ANTHROPIC_API_KEY)
+```
+
+Репортёр пишет результаты в `.claude/tdd-guard/data/test.json`. `tdd_guard_project_root`
+намеренно НЕ задан (нужен абсолютный путь, который различается на Windows и в облаке) —
+репортёр падает обратно на CWD, а pytest у нас запускается из корня проекта.
+
+### Анти-инъекшн сканер (своя разработка, замена parry-guard)
+
+`parry-guard` не взят: он на Rust и тянет ~500 МБ gated-моделей HuggingFace + токен —
+несовместимо с эфемерным окружением. Вместо него — лёгкий bash-хук
+`.claude/hooks/scan-untrusted.sh` (висит на `UserPromptSubmit` и
+`PostToolUse: WebFetch|WebSearch|Read`):
+
+- Сканирует недоверенный текст на **скрытые/bidi/tag Unicode-символы** (zero-width,
+  RTL-override, word-joiner, tag-символы U+E0000–E007F), которыми прячут инструкции.
+- **Без homoglyph-эвристики** (смешение кириллицы/латиницы): проект русский,
+  кириллица легитимна повсюду → это дало бы лавину ложных срабатываний.
+- Неблокирующий (всегда `exit 0`): при находке печатает предупреждение в контекст.
+- Кросс-платформенный: принудительный UTF-8 для stdin/stdout, пропуск заглушки
+  `python3` из Microsoft Store на Windows.
 
 ---
 
