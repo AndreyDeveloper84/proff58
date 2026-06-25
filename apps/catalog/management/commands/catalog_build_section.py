@@ -26,17 +26,12 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.catalog.models import Category, Product
-from apps.catalog.semantic import classify, load_rules, translit_slug
+from apps.catalog.semantic import SECTION_RULES, classify, load_rules, translit_slug
 from apps.core.events import EventSource, product_updated
 
-# Раздел → файл правил + (имя, slug) корня раздела.
-SECTIONS = {
-    "osnastka": {
-        "rules": "data/product_type_rules.json",
-        "root_name": "Оснастка и расходные материалы",
-        "root_slug": "osnastka",
-    },
-}
+# Раздел → файл словаря (общая карта в semantic.py). Имя/slug корня берутся
+# из самого словаря (section / section_slug).
+SECTIONS = SECTION_RULES
 _CONF_RANK = {"low": 0, "medium": 1, "high": 2}
 
 
@@ -61,11 +56,15 @@ class Command(BaseCommand):
         section = options["section"]
         if not section:
             raise CommandError("Укажите --section или --rollback FILE.")
-        cfg = SECTIONS[section]
         try:
-            _doc, compiled = load_rules(cfg["rules"])
+            doc, compiled = load_rules(SECTIONS[section])
         except (FileNotFoundError, ValueError) as exc:
             raise CommandError(f"Не прочитать правила: {exc}") from exc
+        cfg = {
+            "rules": SECTIONS[section],
+            "root_name": doc["section"],
+            "root_slug": doc["section_slug"],
+        }
 
         # План узлов из правил (порядок первого появления).
         subcats: list[str] = []

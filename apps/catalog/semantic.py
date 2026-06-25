@@ -57,6 +57,24 @@ def translit_slug(name: str) -> str:
     return s or "x"
 
 
+# Карта «раздел → файл словаря» (один источник для build_section и sync_rules).
+SECTION_RULES = {
+    "osnastka": "data/product_type_rules.json",
+    "ruchnoy": "data/product_type_rules-ruchnoy.json",
+    "krepezh": "data/product_type_rules-krepezh.json",
+    "izmeritelnyy": "data/product_type_rules-izmeritelnyy.json",
+    "elektrika": "data/product_type_rules-elektrika.json",
+    "siz": "data/product_type_rules-siz.json",
+    "svarka": "data/product_type_rules-svarka.json",
+    "silovaya": "data/product_type_rules-silovaya.json",
+    "avto": "data/product_type_rules-avto.json",
+    "hranenie": "data/product_type_rules-hranenie.json",
+    "stroitelnyy": "data/product_type_rules-stroitelnyy.json",
+    "zapchasti": "data/product_type_rules-zapchasti.json",
+    "sadovaya": "data/product_type_rules-sadovaya.json",
+}
+
+
 def load_rules(path: str = "data/product_type_rules.json"):
     """Вернуть (doc, compiled). compiled — список (subcat, subtype, conf, kw, exclude)."""
     doc = json.loads((Path(settings.BASE_DIR) / path).read_text(encoding="utf-8"))

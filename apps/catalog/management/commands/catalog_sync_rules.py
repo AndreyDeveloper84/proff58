@@ -19,7 +19,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.catalog.models import Category, CategoryMappingRule, MappingRuleType
-from apps.catalog.semantic import load_rules
+from apps.catalog.semantic import SECTION_RULES, load_rules
 
 _CONF_RANK = {"low": 0, "medium": 1, "high": 2}
 _AUTO_PRIORITY_BASE = 1000
@@ -29,14 +29,15 @@ class Command(BaseCommand):
     help = "Сгенерировать CategoryMappingRule (regex) из словаря на v2-узлы раздела."
 
     def add_arguments(self, parser):
-        parser.add_argument("--section", default="osnastka")
-        parser.add_argument("--rules", default="data/product_type_rules.json")
+        parser.add_argument("--section", default="osnastka", choices=sorted(SECTION_RULES))
+        parser.add_argument("--rules", default=None, help="Переопределить файл словаря.")
         parser.add_argument("--commit", action="store_true")
         parser.add_argument("--min-confidence", choices=["high", "medium"], default="medium")
 
     def handle(self, *args, **options):
+        rules_path = options["rules"] or SECTION_RULES[options["section"]]
         try:
-            doc, compiled = load_rules(options["rules"])
+            doc, compiled = load_rules(rules_path)
         except (FileNotFoundError, ValueError) as exc:
             raise CommandError(f"Не прочитать правила: {exc}") from exc
 

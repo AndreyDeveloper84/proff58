@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "section": "Спецодежда и СИЗ",
+  "section_slug": "siz",
+  "note": "Плоские узлы. Размер/класс защиты — фасеты.",
+  "rules": [
+    {"subcat": "Перчатки и рукавицы", "subtype": null, "confidence": "high", "keywords": ["перчатк", "рукавиц", "краги"]},
+    {"subcat": "Очки защитные", "subtype": null, "confidence": "high", "keywords": ["\\bочки", "очки защит", "очки открыт", "очки закрыт"]},
+    {"subcat": "Респираторы и маски", "subtype": null, "confidence": "high", "keywords": ["респиратор", "полумаск", "противогаз", "защитн маска"], "exclude": ["маска сварщ", "маска хамелеон"]},
+    {"subcat": "Защита слуха", "subtype": null, "confidence": "high", "keywords": ["наушник", "беруши", "противошум"]},
+    {"subcat": "Каски и защита головы", "subtype": null, "confidence": "high", "keywords": ["\\bкаск", "защитн каск", "подшлемник"]},
+    {"subcat": "Щитки и защита лица", "subtype": null, "confidence": "high", "keywords": ["щиток защитн", "щиток лицев", "забрало"], "exclude": ["щиток сварщ"]},
+    {"subcat": "Спецодежда", "subtype": null, "confidence": "high", "keywords": ["костюм рабоч", "\\bкуртк", "\\bжилет", "комбинез", "полукомбинез", "\\bхалат", "\\bбрюки", "фартук", "сигнальн жилет", "нарукавник"]},
+    {"subcat": "Спецобувь", "subtype": null, "confidence": "high", "keywords": ["\\bсапог", "ботинк", "\\bобувь", "галош", "сабо рабоч"]},
+    {"subcat": "Страховочное снаряжение", "subtype": null, "confidence": "high", "keywords": ["страховочн пояс", "строп страхов", "карабин страхов", "привязь страхов"]},
+    {"subcat": "Аптечки и защита от падений", "subtype": null, "confidence": "medium", "keywords": ["аптечк", "наколенник", "налокотник"]}
+  ]
+}
