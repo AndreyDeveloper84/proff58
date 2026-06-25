@@ -1,258 +1,214 @@
-# Runbook: прогон таксономии v2 по всему каталогу (`catalog_build_section`)
+# Runbook: миграция каталога на v2 (скрытый build → секционный swap)
 
-Пошаговый сценарий разворачивания v2-дерева каталога на **всех node-разделах**:
-создать узлы из словарей, расселить товары по смыслу названия (high-confidence),
-сгенерировать авто-правила для новых товаров 1С (E2). Рассчитан на **staging**;
-на прод — тем же порядком после приёмки.
+Сценарий **варианта A** («скрыто → секционный swap»): v2-дерево строится **скрытым**
+параллельно живому legacy-дереву; по готовности раздела делается **секционный swap**
+(показать v2, скрыть парный legacy). Каждый раздел проверяется и откатывается
+независимо. Рассчитан на **staging**; на прод — тем же порядком после приёмки.
 
-> Источники: словари `data/product_type_rules*.json`, команды
-> `apps/catalog/management/commands/catalog_build_section.py` и
-> `catalog_sync_rules.py`, карта разделов `apps/catalog/semantic.py::SECTION_RULES`.
-> План v2 — `docs/plans/catalog-taxonomy-v2.md`.
+Сокращение: `WEB="docker compose -f docker-compose.prod.yml exec web python manage.py"`.
+
+> Команды: `catalog_build_section` (строит скрыто + расселяет),
+> `catalog_v2_report` (пред-swap отчёт по DoD), `catalog_v2_swap` (включение раздела),
+> `catalog_sync_rules` (E2 — авто-классификация новых товаров 1С).
+> Карта разделов — `apps/catalog/semantic.py::SECTION_RULES`. План v2 —
+> `docs/plans/catalog-taxonomy-v2.md`.
 
 ---
 
-## 0. Что делает прогон (и чего НЕ делает)
+## 0. Механика (вариант A)
 
 `catalog_build_section --section <slug> --commit`:
+- создаёт v2-узлы **скрытыми** (`is_active=False` + `on_site=False` — нужны ОБА: первый
+  убирает из API-дерева/чипов, второй из меню; см. карту видимости);
+- заводит на раздел скрытый узел **«На модерацию»**;
+- **high** → нормальный узел (`category_is_manual=True`, защита от 1С);
+- **medium/low** → «На модерацию» (`category_is_manual=False` — ждут разбора);
+- **no_match** (раздел не матчит) → не трогает (глобальный хвост, см. отчёт);
+- ручные (`category_is_manual=True`) не перетирает;
+- пишет снимок отката + **CSV модерации** `var/restructure/moderation-<section>-<ts>.csv`.
 
-1. создаёт узлы 2-го (и 3-го для Оснастки) уровня раздела (имена из словаря,
-   slug — латиница), корень — из `section`/`section_slug` словаря;
-2. расселяет товары с **high-confidence**-классификацией в нужный узел и ставит
-   `category_is_manual=True` (защита от перезаписи импортом 1С, ADR-0007);
-3. товары `category_is_manual=True` (уже размеченные вручную/предыдущим разделом)
-   **пропускает** — отсюда важность порядка (см. §2);
-4. пишет снимок отката `var/restructure/build-<section>-<ts>.json`;
-5. на commit шлёт `product_updated` (через `on_commit`) — на staging Celery
-   реальный, поэтому поедут подписчики (реиндекс/кэши).
+`catalog_v2_swap --section <slug> --hide-legacy <slug,...> --commit`:
+- v2-узлы → видимы (КРОМЕ «На модерацию»); указанные legacy-корни → скрыты;
+- снимок отката видимости + **CSV плана 301** (реальные redirect не создаются — модели
+  нет, Фаза 3).
 
-**НЕ делает:** не меняет `is_visible`/`status`/цены/остатки; medium/low-классификацию
-не трогает (очередь модерации); чужой ручной разбор не перетирает. Видимость
-товара — отдельный шаг (`publish_catalog`, §6).
-
-`catalog_sync_rules --section <slug> --commit` (E2): генерирует
-`CategoryMappingRule(rule_type=REGEX)` из того же словаря на построенные узлы, чтобы
-**новые** товары 1С автоматически попадали в те же узлы при импорте.
+**Важно:** товары остаются видимы по `Product.is_active/status` независимо от флагов
+категории. На staging «обеднённые» legacy-категории в окне между build и swap — норма.
 
 ---
 
-## 1. Предусловия (выполнить один раз перед прогоном)
+## 1. Предусловия (один раз)
 
 ```bash
-# 1.1 Зайти на staging-хост, в каталог проекта. Все команды — внутри контейнера web.
-#     Ниже COMPOSE = "docker compose -f docker-compose.prod.yml" (как в scripts/backup.sh).
-
-# 1.2 ОБЯЗАТЕЛЬНО: свежий бэкап БД (откат на случай форс-мажора целиком).
+# 1.1 На staging-хосте, в каталоге проекта.
+# 1.2 ОБЯЗАТЕЛЬНО бэкап БД (полный откат):
 bash scripts/backup.sh
-#   → db-<ts>.sql.gz в $BACKUP_DIR. Проверь, что файл создан и весит адекватно.
 
-# 1.3 Проверить, что словари на месте (должно быть 13) и код задеплоен.
-docker compose -f docker-compose.prod.yml exec web ls data/ | grep -c product_type_rules
-docker compose -f docker-compose.prod.yml exec web python manage.py help catalog_build_section >/dev/null && echo "команда есть"
-
-# 1.4 Снять «до»-срез ДЕРЕВА ИЗ БД (именно его меняет build_section).
-#     ВНИМАНИЕ: catalog_taxonomy_audit здесь НЕ годится — он анализирует статический
-#     дамп data/catalog_fixed.json, а не живую БД (срез был бы одинаковым до/после).
-docker compose -f docker-compose.prod.yml exec web python manage.py shell -c "
+# 1.3 Снимок дерева ИЗ БД «до» (НЕ catalog_taxonomy_audit — он читает статический дамп):
+$WEB shell -c "
 from apps.catalog.models import Category, Product
-print('Всего товаров:', Product.objects.count(),
-      '| ручных(manual):', Product.objects.filter(category_is_manual=True).count(),
+print('Всего:', Product.objects.count(),
+      '| ручных:', Product.objects.filter(category_is_manual=True).count(),
       '| без категории:', Product.objects.filter(category__isnull=True).count())
-print('slug | раздел | узлов | товаров(с потомками)')
 for root in Category.get_root_nodes():
-    nodes = [root] + list(root.get_descendants())
-    n = Product.objects.filter(category__in=nodes).count()
-    print(f'{root.slug:22s} {root.name:34s} {len(nodes):4d} {n:7d}')
+    nodes=[root]+list(root.get_descendants())
+    print(f'{root.slug:24s} on_site={root.on_site} act={root.is_active} '
+          f'товаров={Product.objects.filter(category__in=nodes).count()}')
 " | tee /tmp/tree-before.txt
+
+# 1.4 НОРМАЛИЗАЦИЯ ПИЛОТА: v2-osnastka был построен СТАРОЙ командой ВИДИМЫМ — скрыть его
+#     поддерево, чтобы соответствовать варианту A (видимость включит только swap).
+$WEB shell -c "
+from apps.catalog.models import Category
+root=Category.objects.get(slug='osnastka')
+ids=[root.id]+list(root.get_descendants().values_list('id',flat=True))
+Category.objects.filter(id__in=ids).update(is_active=False, on_site=False)
+print('скрыто узлов osnastka:', len(ids))
+"
 ```
 
-> Везде далее: `WEB="docker compose -f docker-compose.prod.yml exec web python manage.py"`.
+> Опционально для osnastka можно прогнать новый `build_section --section osnastka --commit`
+> ещё раз (идемпотентно): добавит узел «На модерацию» и уведёт его medium/low-хвост.
+> high-узлы (manual) не тронутся.
 
 ---
 
-## 2. Порядок разделов (НЕ менять без причины)
+## 2. Порядок разделов (specific → generic, техника → запчасти)
 
-Принцип: **специфичное → общее**, **техника → запчасти/хранение**. Кто первый
-разметил товар (`category_is_manual=True`), тот и владелец; общие разделы
-(Запчасти, Хранение) идут последними, чтобы не перехватывать профильные товары.
-
-| # | slug | раздел | почему здесь |
+| # | slug | раздел | парный(ые) legacy для --hide-legacy (уточнить по /tmp/tree-before.txt) |
 |---|---|---|---|
-| 1 | `osnastka` | Оснастка | самый специфичный лексикон (буры, диски, биты) |
-| 2 | `krepezh` | Крепёж | болт/гайка/саморез — узкие термины |
-| 3 | `izmeritelnyy` | Измерительный | приборы с однозначными названиями |
-| 4 | `svarka` | Сварка | «сварочн…», электроды |
-| 5 | `elektrika` | Электрика и освещение | кабель/розетка/лампа |
-| 6 | `silovaya` | Силовая, пневмо, компрессоры | генератор/компрессор/насос |
-| 7 | `avto` | Автоинструмент | домкрат/съёмник (до Запчастей!) |
-| 8 | `sadovaya` | Садовая техника | газонокос/триммер/бензопила (до Запчастей!) |
-| 9 | `stroitelnyy` | Строительный/отделочный | ЛКМ, шпатели, валики |
-| 10 | `siz` | СИЗ | перчатки/очки/каска |
-| 11 | `hranenie` | Хранение | кейсы/сумки/тележки — «общий» инвентарь |
-| 12 | `zapchasti` | Запчасти, аккумуляторы | аккумуляторы/подшипники — последними |
-| 13 | `ruchnoy` | Ручной инструмент | широкие термины (ключ/нож/головка) — в конце |
+| 1 | `osnastka` | Оснастка | `osnastka-i-rashodniki` |
+| 2 | `krepezh` | Крепёж | `krepezh-i-metizy` |
+| 3 | `izmeritelnyy` | Измерительный | `izmeritelnyy-instrument` |
+| 4 | `svarka` | Сварка | `svarochnoe-oborudovanie` |
+| 5 | `elektrika` | Электрика/освещение | `elektrika-i-osveschenie` |
+| 6 | `silovaya` | Силовая/пневмо | `benzo-i-pnevmoinstrument`, `oborudovanie` (частично) |
+| 7 | `avto` | Автоинструмент | (нет точного парного — swap без --hide-legacy или частично) |
+| 8 | `sadovaya` | Садовая | `hoztovary-sad-ogorod` |
+| 9 | `stroitelnyy` | Строительный | `stroitelnoe-i-otdelochnoe` |
+| 10 | `siz` | СИЗ | `spetsodezhda-i-zaschita` |
+| 11 | `hranenie` | Хранение | (нет парного — без --hide-legacy) |
+| 12 | `zapchasti` | Запчасти | `zapchasti` |
+| 13 | `ruchnoy` | Ручной | `ruchnoy-instrument` |
 
-> **Электроинструмент** в этот runbook НЕ входит: это facet-раздел по `tool_type`
-> (навигация TypePanel уже на dev), узлы дерева для него не строим.
-> **Внутренняя часть Садовой** («Садовая техника» как набор типов) — гибрид;
-> здесь строим только node-узлы из словаря `sadovaya`.
-
----
-
-## 3. Шаблон шага на ОДИН раздел
-
-Повторить для каждого `<slug>` строго в порядке §2. Пример на `osnastka`.
-
-```bash
-# 3.1 DRY-RUN — ничего не меняет, печатает узлы и сколько товаров привяжет.
-$WEB catalog_build_section --section osnastka | tee /tmp/dry-osnastka.txt
-```
-
-**Что проверить в dry-run перед commit:**
-- «создать узлов ~N» — соответствует словарю (нет мусорных узлов);
-- «привязать товаров M» — порядок величины ожидаемый (ориентиры — таблица в PR #243);
-- «пропущено ручных (category_is_manual) K» — на 1-м разделе ≈0, далее растёт
-  (это и есть работа порядка: товар уже занят более специфичным разделом);
-- нет узла с подозрительно огромным числом (признак жадного ключевого слова).
-
-```bash
-# 3.2 COMMIT — в транзакции, со снимком отката.
-$WEB catalog_build_section --section osnastka --commit | tee /tmp/commit-osnastka.txt
-#   → запомни путь снимка: var/restructure/build-osnastka-<ts>.json  (нужен для отката)
-
-# 3.3 E2 — авто-правила для новых товаров 1С этого раздела.
-$WEB catalog_sync_rules --section osnastka | tee /tmp/dry-rules-osnastka.txt   # dry-run
-$WEB catalog_sync_rules --section osnastka --commit                            # применить
-
-# 3.4 VERIFY — точечная проверка раздела (см. §4).
-```
-
-> По умолчанию `build_section` берёт только `--min-confidence high`. Не понижать до
-> `medium` в массовом прогоне — medium идёт в модерацию вручную.
+> Парность legacy↔v2 **не 1:1** (один legacy кормит несколько v2 и наоборот). Перед
+> swap раздела свериться с отчётом: legacy-корень скрывать, только когда его остаток —
+> это либо no_match-хвост, либо то, что уже мигрировало. `--hide-legacy` принимает список.
+> Электроинструмент (`elektroinstrument`) — facet-раздел (TypePanel), его НЕ строим и
+> при свапах node-разделов **не скрываем**.
 
 ---
 
-## 4. Проверка после каждого раздела
+## 3. Шаблон на ОДИН раздел (пример — `krepezh`)
 
+### 3.1 Build (скрыто)
 ```bash
-# 4.1 Узлы и счётчики раздела (через shell). Пример для osnastka:
-$WEB shell -c "
-from apps.catalog.models import Category
-root = Category.objects.get(slug='osnastka')
-for n in root.get_descendants():
-    print(f'{n.depth:>2} {n.name:40s} товаров={n.products.count()}')
-print('ИТОГО в разделе:', sum(c.products.count() for c in root.get_descendants()))
-"
+$WEB catalog_build_section --section krepezh | tee /tmp/dry-krepezh.txt      # dry-run
+$WEB catalog_build_section --section krepezh --commit | tee /tmp/commit-krepezh.txt
+```
+Проверить в dry-run: число узлов = словарю; «high → норма» ожидаемо; «medium/low →
+модерация» разумно; **нет slug-конфликтов** (иначе разобрать; `--strict` остановит commit).
 
-# 4.2 Спот-чек на ложные срабатывания: 10 случайных названий из «подозрительного» узла.
-$WEB shell -c "
-from apps.catalog.models import Category
-n = Category.objects.get(slug='<slug-узла>')
-for p in n.products.order_by('?')[:10]:
-    print(p.name)
-"
+### 3.2 Отчёт (DoD)
+```bash
+$WEB catalog_v2_report --section krepezh | tee /tmp/report-krepezh.txt
+```
+Смотреть: расселение норма/модерация; stock>0; хвост no_match; **утечек скрытого v2 нет**;
+slug-конфликтов нет; sample breadcrumb корректен.
+
+### 3.3 Section swap (gated — после твоего «go»)
+```bash
+# dry-run: что покажем / что скроем
+$WEB catalog_v2_swap --section krepezh --hide-legacy krepezh-i-metizy | tee /tmp/swap-krepezh.txt
+# применить:
+$WEB catalog_v2_swap --section krepezh --hide-legacy krepezh-i-metizy --commit --force
 ```
 
-**Критерий приёмки раздела:** счётчики совпадают с dry-run; в спот-чеке нет товаров
-из чужого раздела; «пропущено ручных» растёт по мере продвижения по порядку.
-
-После всех 13 разделов — снять «после»-срез ДЕРЕВА из БД (тем же скриптом, что в §1.4)
-и сравнить с «до»:
-
+### 3.4 E2 — авто-классификация новых товаров 1С (ПОСЛЕ swap)
 ```bash
-$WEB shell -c "
-from apps.catalog.models import Category, Product
-print('Всего товаров:', Product.objects.count(),
-      '| ручных(manual):', Product.objects.filter(category_is_manual=True).count(),
-      '| без категории:', Product.objects.filter(category__isnull=True).count())
-print('slug | раздел | узлов | товаров(с потомками)')
-for root in Category.get_root_nodes():
-    nodes = [root] + list(root.get_descendants())
-    n = Product.objects.filter(category__in=nodes).count()
-    print(f'{root.slug:22s} {root.name:34s} {len(nodes):4d} {n:7d}')
-" | tee /tmp/tree-after.txt
-diff /tmp/tree-before.txt /tmp/tree-after.txt
+$WEB catalog_sync_rules --section krepezh --commit
 ```
+> E2 запускать только ПОСЛЕ swap: до swap v2 скрыт, и новые товары 1С не должны утекать
+> в невидимые узлы.
+
+### 3.5 Проверка витрины
+Открыть раздел на staging: v2 в меню/чипах, breadcrumbs целые, фасеты/фильтры работают,
+старый legacy-раздел исчез из меню, дублей нет.
+
+---
+
+## 4. DoD перед swap раздела (обязательный чек-лист)
+
+- [ ] v2-root создан скрытым (`is_active=False, on_site=False`);
+- [ ] товары stock>0 классифицированы; high перенесены в нормальные узлы;
+- [ ] medium/low в «На модерацию» (CSV модерации снят);
+- [ ] нет дублей категорий (по отчёту);
+- [ ] нет slug-конфликтов;
+- [ ] нет утечек скрытого v2 (отчёт: все не-свапнутые узлы скрыты);
+- [ ] sample breadcrumbs корректны;
+- [ ] filters/facets на v2-разделе работают;
+- [ ] парный legacy-root определён и его остаток понятен (no_match/хвост);
+- [ ] rollback понятен (снимки build + swap на месте).
 
 ---
 
 ## 5. Откат
 
-**Один раздел** (точечно, безопасно — восстанавливает прежние категории и удаляет
-только пустые созданные узлы):
-
+**Build раздела** (вернуть категории + удалить пустые узлы):
 ```bash
 $WEB catalog_build_section --rollback var/restructure/build-<section>-<ts>.json
-# авто-правила E2 раздела при необходимости снять отдельно:
-$WEB shell -c "
-from apps.catalog.models import CategoryMappingRule
-CategoryMappingRule.objects.filter(note__startswith='[auto:<slug>]').delete()
-"
 ```
-
-**Всё целиком** (форс-мажор) — восстановить дамп БД из §1.2:
-
+**Swap раздела** (вернуть видимость v2/legacy):
+```bash
+$WEB catalog_v2_swap --rollback var/restructure/swap-<section>-<ts>.json
+```
+**E2-правила раздела** (снять авто-правила):
+```bash
+$WEB shell -c "from apps.catalog.models import CategoryMappingRule; CategoryMappingRule.objects.filter(note__startswith='[auto:<slug>]').delete()"
+```
+**Всё целиком** (форс-мажор) — из дампа §1.2:
 ```bash
 gunzip -c $BACKUP_DIR/db-<ts>.sql.gz | docker compose -f docker-compose.prod.yml exec -T db psql -U $POSTGRES_USER -d $POSTGRES_DB
 ```
 
 ---
 
-## 6. Завершение прогона
+## 6. Завершение (после всех swap)
 
 ```bash
-# 6.1 Пересобрать кэш атрибутов/фасетов.
-$WEB rebuild_attrs_cache
-
-# 6.2 (опционально) Опубликовать новые расселённые товары, если нужно их показать.
-#     build_section видимость НЕ меняет. Сначала dry-run, смотрим число.
-$WEB publish_catalog --all --dry-run
-$WEB publish_catalog --all          # применить (переводит imported/needs_review → published)
-
-# 6.3 Отчёт покрытия характеристик по типам (для последующей характеризации).
-$WEB coverage_report --format md > docs/reports/coverage-after-rollout.md
+$WEB catalog_v2_report | tee /tmp/report-final.txt      # глобальный отчёт по всем разделам
+$WEB rebuild_attrs_cache                                 # кэш фасетов
+# снимок дерева «после» и diff с «до»:
+$WEB shell -c "
+from apps.catalog.models import Category, Product
+for root in Category.get_root_nodes():
+    nodes=[root]+list(root.get_descendants())
+    print(f'{root.slug:24s} on_site={root.on_site} act={root.is_active} '
+          f'товаров={Product.objects.filter(category__in=nodes).count()}')
+" | tee /tmp/tree-after.txt
+diff /tmp/tree-before.txt /tmp/tree-after.txt
 ```
-
-> Публикацию (6.2) согласовать с заказчиком: возможно, часть разделов должна
-> оставаться скрытой до ручной модерации medium-классификации.
+Публикация скрытых товаров (если нужно) — `publish_catalog --all --dry-run` затем без
+`--dry-run`, по согласованию. Хвост в «На модерацию» разбирается отдельно (CSV модерации).
 
 ---
 
-## 7. Известные нюансы (держать в голове на прогоне)
+## 7. Нюансы
 
-1. **`zapchasti:Аккумуляторы`** ловит аккумуляторный инструмент
-   (*«Газонокосилка аккумуляторная»*). На массовом прогоне это лечит порядок:
-   Садовая/Силовая/Авто идут раньше Запчастей и занимают такие товары первыми.
-   Для **новых** товаров 1С (E2) этого недостаточно — кросс-секционная
-   приоритизация авто-правил вынесена в отдельную задачу; до неё спот-чекать
-   узел «Аккумуляторы» после импортов.
-2. **Пустые узлы** (структура есть, товаров 0 на текущем срезе): Сварка→Сопла/Пайка,
-   Силовая→Лебёдки/Виброплиты, Авто→Пуско-зарядные/Автохимия, Хранение→Тара/Крюки,
-   Запчасти→Кнопки/Корпусные, СИЗ→Аптечки, Садовая→Снегоуборка, Электрика→Звонки.
-   Это норма (структура ≠ снапшот); часть — кандидаты на расширение ключевых слов
-   после анализа промахов.
-3. **Идемпотентность.** Повторный `build_section --commit` того же раздела безопасен:
-   существующие узлы переиспользуются, уже размеченные (manual) товары пропускаются.
-4. **E2-правила** пересоздаются на каждом `sync_rules --commit` (note `[auto:<slug>]`);
-   ручные `CategoryMappingRule` не трогаются.
+1. **legacy↔v2 не 1:1** — swap гасит legacy-корень через явный `--hide-legacy`; команда
+   с guard сообщит, сколько товаров в нём останется не видно в дереве (требует `--force`).
+2. **Хвост no_match** остаётся в legacy; если его legacy-корень скрыт — товары уходят из
+   дерева (видны только по прямой ссылке/поиску). Перед скрытием — проверить отчётом.
+3. **`zapchasti:Аккумуляторы`** ловит аккумуляторный инструмент → порядок (техника
+   раньше Запчастей) + спот-чек.
+4. **Redirects/canonical** — модели в проекте нет (Фаза 3); swap пишет только CSV-план.
+5. **Идемпотентность** — повторный build безопасен; повторный swap создаёт новый снимок.
 
 ---
 
 ## 8. Чек-лист прогона
 
-- [ ] §1 Бэкап БД снят, словари (13) на месте, audit-before сохранён
-- [ ] 1. osnastka — dry → commit → sync_rules → verify
-- [ ] 2. krepezh
-- [ ] 3. izmeritelnyy
-- [ ] 4. svarka
-- [ ] 5. elektrika
-- [ ] 6. silovaya
-- [ ] 7. avto
-- [ ] 8. sadovaya
-- [ ] 9. stroitelnyy
-- [ ] 10. siz
-- [ ] 11. hranenie
-- [ ] 12. zapchasti
-- [ ] 13. ruchnoy
-- [ ] §4 Общий audit-after, diff просмотрен
-- [ ] §6 rebuild_attrs_cache; публикация согласована/выполнена; coverage-отчёт снят
+- [ ] §1 бэкап + tree-before + нормализация пилота osnastka
+- [ ] для каждого раздела по §2: build(скрыто) → report → **[твоё go]** → swap → E2 → проверка витрины
+- [ ] §6 финальный report, rebuild_attrs_cache, tree-after + diff
+- [ ] публикация/разбор «На модерацию» — по согласованию
