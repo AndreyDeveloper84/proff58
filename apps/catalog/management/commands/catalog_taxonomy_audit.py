@@ -6,7 +6,7 @@
 безопасна и идемпотентна (перезаписывает только свои отчёты).
 
     ./manage.py catalog_taxonomy_audit
-    ./manage.py catalog_taxonomy_audit --out docs/reports --stdout
+    ./manage.py catalog_taxonomy_audit --out docs/reports --echo
 
 См. ``apps/catalog/taxonomy_audit.py`` (чистая логика) и
 ``docs/plans/catalog-taxonomy-redesign.md`` (план редизайна).
@@ -37,7 +37,7 @@ class Command(BaseCommand):
             help="Каталог для отчётов (по умолчанию <BASE_DIR>/docs/reports).",
         )
         parser.add_argument(
-            "--stdout",
+            "--echo",
             action="store_true",
             help="Печатать audit-отчёт в stdout (файлы всё равно пишутся).",
         )
@@ -65,7 +65,7 @@ class Command(BaseCommand):
         (out_dir / _COVERAGE).write_text(render_coverage(result), encoding="utf-8")
         (out_dir / _MAPPING).write_text(render_mapping(result), encoding="utf-8")
 
-        if options["stdout"]:
+        if options["echo"]:
             self.stdout.write(audit_md)
 
         self.stdout.write(
