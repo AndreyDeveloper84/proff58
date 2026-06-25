@@ -30,6 +30,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.catalog.category_tree import invalidate_category_tree_cache
+from apps.catalog.facets import invalidate_facets_cache
 from apps.catalog.management.commands.catalog_build_section import _MODERATION_NAME
 from apps.catalog.models import Category, Product
 from apps.catalog.semantic import SECTION_RULES, load_rules
@@ -147,6 +149,10 @@ class Command(BaseCommand):
 
             backup_path.write_text(json.dumps(backup, ensure_ascii=False, indent=2))
             self._write_redirects(redirect_path, root, legacy_roots)
+            # bulk .update() обошёл post_save → сбрасываем кэш фасетов/дерева вручную,
+            # иначе после свапа витрина отдаёт старую видимость/фасеты до TTL.
+            transaction.on_commit(invalidate_facets_cache)
+            transaction.on_commit(invalidate_category_tree_cache)
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -194,6 +200,8 @@ class Command(BaseCommand):
                 Category.objects.filter(id=n["id"]).update(
                     is_active=n["is_active"], on_site=n["on_site"]
                 )
+            transaction.on_commit(invalidate_facets_cache)
+            transaction.on_commit(invalidate_category_tree_cache)
         self.stdout.write(
             self.style.SUCCESS(
                 f"ROLLBACK SWAP: восстановлена видимость {len(data.get('nodes', []))} узлов."
