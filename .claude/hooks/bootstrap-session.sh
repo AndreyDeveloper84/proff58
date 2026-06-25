@@ -18,12 +18,21 @@ if command -v npm >/dev/null 2>&1 && ! command -v tdd-guard >/dev/null 2>&1; the
   npm install -g tdd-guard >/dev/null 2>&1 || true
 fi
 
-# pytest-репортёр в venv проекта (Linux .venv/bin или Windows .venv/Scripts)
-pip="$root/.venv/bin/pip"
-[ -x "$pip" ] || pip="$root/.venv/Scripts/pip.exe"
-[ -x "$pip" ] || pip="$(command -v pip3 || command -v pip || true)"
-if [ -n "$pip" ] && ! "$pip" show tdd-guard-pytest >/dev/null 2>&1; then
-  "$pip" install tdd-guard-pytest >/dev/null 2>&1 || true
+# pytest-репортёр в venv проекта. Venv управляется uv (pip-модуля внутри нет),
+# поэтому приоритет — uv; дальше fallback на python -m pip и глобальный pip,
+# чтобы работало и в иначе устроенном облачном окружении.
+vpy="$root/.venv/bin/python"                 # Linux
+[ -x "$vpy" ] || vpy="$root/.venv/Scripts/python.exe"   # Windows
+
+if [ -x "$vpy" ] && "$vpy" -c "import tdd_guard_pytest" >/dev/null 2>&1; then
+  :  # уже установлен — ничего не делаем
+elif [ -x "$vpy" ] && command -v uv >/dev/null 2>&1; then
+  uv pip install --python "$vpy" tdd-guard-pytest >/dev/null 2>&1 || true
+elif [ -x "$vpy" ] && "$vpy" -m pip --version >/dev/null 2>&1; then
+  "$vpy" -m pip install tdd-guard-pytest >/dev/null 2>&1 || true
+else
+  pip="$(command -v pip3 || command -v pip || true)"
+  [ -n "$pip" ] && "$pip" install tdd-guard-pytest >/dev/null 2>&1 || true
 fi
 
 exit 0

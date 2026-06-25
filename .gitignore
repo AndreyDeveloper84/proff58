@@ -1,3 +1,6 @@
+# TDD Guard — транзиентное состояние (результаты тестов, журнал правок)
+.claude/tdd-guard/
+
 # Python
 __pycache__/
 *.py[cod]
