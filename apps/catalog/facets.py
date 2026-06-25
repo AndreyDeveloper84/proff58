@@ -20,7 +20,7 @@ from django.db.models.functions import Cast
 from .brand_slugs import build_brand_slug_map
 from .filters import filtered_products
 from .models import Attribute, AttributeOption, AttributeType, FacetGroup, StockStatus
-from .queries import TOOL_TYPE_SLUG, _category_filter_attributes
+from .queries import TOOL_TYPE_SLUG, _category_filter_attributes, _subtree_ids
 
 # --- Лимиты фасетного эндпоинта (публичный AllowAny) ---
 MAX_ATTR_FILTERS = 20
@@ -286,6 +286,10 @@ def build_facets(
     attributes = _category_filter_attributes(category)
     by_slug = {a.slug: a for a in attributes}
 
+    # Поддерево считаем ОДИН раз: drilldown() строит N+5 срезов на запрос фасетов, и без
+    # этого get_descendants() бил бы в дерево на каждом (P1 ревью — лишние ~N запросов).
+    subtree_ids = _subtree_ids(category)
+
     # Диапазоны: только известные числовые атрибуты категории (прочее — игнор, без падения).
     ranges: dict[str, tuple] = {}
     for slug, bounds in attr_ranges.items():
@@ -350,7 +354,10 @@ def build_facets(
         exclude_attr=None,
     ):
         qs = _apply_tool_type(
-            filtered_products(category, brands=brands, stock_status=stock_status), tool_type
+            filtered_products(
+                category, brands=brands, stock_status=stock_status, subtree_ids=subtree_ids
+            ),
+            tool_type,
         )
         if price:
             qs = _apply_price(qs, price_min, price_max)
