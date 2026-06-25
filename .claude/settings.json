@@ -1,4 +1,7 @@
 {
+  "env": {
+    "TDD_GUARD_ENABLE": "1"
+  },
   "extraKnownMarketplaces": {
     "superpowers-dev": {
       "source": {
