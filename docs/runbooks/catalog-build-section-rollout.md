@@ -116,6 +116,16 @@ $WEB catalog_v2_report --section krepezh | tee /tmp/report-krepezh.txt
 Смотреть: расселение норма/модерация; stock>0; хвост no_match; **утечек скрытого v2 нет**;
 slug-конфликтов нет; sample breadcrumb корректен.
 
+### 3.2b Посев фильтров (характеристики)
+Характеризация (`CategoryAttribute`) сидит на **легаси-корнях**, v2-листы наследуют её
+от родителя. Новый v2-корень голый → фильтры пропадут. Копируем конфиг с легаси-корня:
+```bash
+$WEB catalog_seed_filters --section krepezh --from krepezh-i-metizy | tee /tmp/seed-krepezh.txt
+$WEB catalog_seed_filters --section krepezh --from krepezh-i-metizy --commit
+```
+Проверка: `GET /api/catalog/categories/<v2-slug>/facets/` → в `facets[]` есть характеристики
+(не только price/brand/stock). Источник `--from` — те же легаси-корни, что и `--hide-legacy`.
+
 ### 3.3 Section swap (gated — после твоего «go»)
 ```bash
 # dry-run: что покажем / что скроем
