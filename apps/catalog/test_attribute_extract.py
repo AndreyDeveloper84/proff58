@@ -594,6 +594,74 @@ def test_nabory_otvertok_piece_count_ignores_model_codes(rules):
     assert "piece_count" not in f
 
 
+def _attrs(rules, tt, name):
+    return {v.slug: v for v in rules.extract(tt, name)}
+
+
+@pytest.mark.parametrize(
+    "name,length,ptype",
+    [
+        ("Длинногубцы 160 мм прямые Matrix", 160, "dlinnogubtsy"),
+        ("Пассатижи 200мм ЗУБР", 200, "passatizhi-t"),
+        ("Утконосы 250 мм Matrix", 250, "utkonosy"),
+        ("Круглогубцы 140 мм", 140, "kruglogubtsy"),
+    ],
+)
+def test_passatizhi_length_and_type(rules, name, length, ptype):
+    f = _attrs(rules, "passatizhi", name)
+    assert f["length"].number == Decimal(str(length))
+    assert f["plier_type"].option_slug == ptype
+
+
+@pytest.mark.parametrize(
+    "name,length,btype",
+    [
+        ("Бокорезы 110 мм МИНИ Archimedes", 110, "bokorezy-t"),
+        ("Кусачки боковые 160мм KRAFTOOL", 160, "kusachki"),
+        ("Клещи переставные 250мм Hanskonner", 250, "kleshchi"),
+    ],
+)
+def test_bokorezy_length_and_type(rules, name, length, btype):
+    f = _attrs(rules, "bokorezy", name)
+    assert f["length"].number == Decimal(str(length))
+    assert f["bokorez_type"].option_slug == btype
+
+
+@pytest.mark.parametrize(
+    "name,cap,dtype",
+    [
+        ("Домкрат бутылочный 2т 150-310мм ЗУБР", "2", "butylochnyy"),
+        ("Домкрат 1,5т ромбовый 110-360мм Stels", "1.5", "rombovyy"),
+        ("Домкрат подкатной гидравлический 3т Inforce", "3", "gidravl"),
+        ("Домкрат реечный 5 т", "5", "reechnyy"),
+    ],
+)
+def test_domkraty_capacity_and_type(rules, name, cap, dtype):
+    f = _attrs(rules, "domkraty", name)
+    assert f["capacity"].number == Decimal(cap)
+    assert f["domkrat_type"].option_slug == dtype
+
+
+def test_domkraty_capacity_ignores_cyrillic_after_t(rules):
+    # «т» внутри слова (телескопический/тонна без цифры) не должно давать ложную тоннаж.
+    f = _attrs(rules, "domkraty", "Домкрат телескопический подкатной")
+    assert "capacity" not in f
+
+
+@pytest.mark.parametrize(
+    "name,length,saw_for",
+    [
+        ("Ножовка по дереву 450мм Бобер", 450, "po-derevu"),
+        ("Ножовка по металлу 300 мм STAYER", 300, "po-metallu"),
+        ("Ножовка для газобетона 700мм", 700, "po-gazobetonu"),
+    ],
+)
+def test_nozhovki_length_and_purpose(rules, name, length, saw_for):
+    f = _attrs(rules, "nozhovki", name)
+    assert f["length"].number == Decimal(str(length))
+    assert f["nozhovka_for"].option_slug == saw_for
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""

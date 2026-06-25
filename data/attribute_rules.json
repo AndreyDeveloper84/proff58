@@ -2348,6 +2348,275 @@
           ]
         }
       ]
+    },
+    {
+      "tool_type": "passatizhi",
+      "category": "Ручной инструмент",
+      "attributes": [
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?<![\\d.,/x*х-])(\\d{2,4})\\s*мм"
+          ]
+        },
+        {
+          "slug": "plier_type",
+          "name": "Тип",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Длинногубцы",
+              "slug": "dlinnogubtsy",
+              "keywords": [
+                "длинногубц"
+              ]
+            },
+            {
+              "value": "Круглогубцы",
+              "slug": "kruglogubtsy",
+              "keywords": [
+                "круглогубц"
+              ]
+            },
+            {
+              "value": "Утконосы",
+              "slug": "utkonosy",
+              "keywords": [
+                "утконос"
+              ]
+            },
+            {
+              "value": "Тонкогубцы",
+              "slug": "tonkogubtsy",
+              "keywords": [
+                "тонкогубц"
+              ]
+            },
+            {
+              "value": "Переставные",
+              "slug": "perestavnye",
+              "keywords": [
+                "переставн"
+              ]
+            },
+            {
+              "value": "Плоскогубцы",
+              "slug": "ploskogubtsy",
+              "keywords": [
+                "плоскогубц"
+              ]
+            },
+            {
+              "value": "Пассатижи",
+              "slug": "passatizhi-t",
+              "keywords": [
+                "пассатиж"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "bokorezy",
+      "category": "Ручной инструмент",
+      "attributes": [
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?<![\\d.,/x*х-])(\\d{2,4})\\s*мм"
+          ]
+        },
+        {
+          "slug": "bokorez_type",
+          "name": "Тип",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Бокорезы",
+              "slug": "bokorezy-t",
+              "keywords": [
+                "бокорез"
+              ]
+            },
+            {
+              "value": "Кусачки",
+              "slug": "kusachki",
+              "keywords": [
+                "кусачк"
+              ]
+            },
+            {
+              "value": "Клещи",
+              "slug": "kleshchi",
+              "keywords": [
+                "клещи"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "domkraty",
+      "category": "Ручной инструмент",
+      "attributes": [
+        {
+          "slug": "capacity",
+          "name": "Грузоподъёмность",
+          "kind": "number",
+          "unit": "т",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(\\d{1,2}(?:[.,]\\d)?)\\s*т(?![а-яё])",
+            "(\\d{1,2}(?:[.,]\\d)?)\\s*тонн"
+          ]
+        },
+        {
+          "slug": "domkrat_type",
+          "name": "Тип",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "Гидравлический",
+              "slug": "gidravl",
+              "keywords": [
+                "гидравл"
+              ]
+            },
+            {
+              "value": "Подкатной",
+              "slug": "podkatnoy",
+              "keywords": [
+                "подкатн"
+              ]
+            },
+            {
+              "value": "Бутылочный",
+              "slug": "butylochnyy",
+              "keywords": [
+                "бутылочн"
+              ]
+            },
+            {
+              "value": "Реечный",
+              "slug": "reechnyy",
+              "keywords": [
+                "реечн"
+              ]
+            },
+            {
+              "value": "Ромбовый",
+              "slug": "rombovyy",
+              "keywords": [
+                "ромб"
+              ]
+            },
+            {
+              "value": "Винтовой",
+              "slug": "vintovoy",
+              "keywords": [
+                "винтов"
+              ]
+            },
+            {
+              "value": "Телескопический",
+              "slug": "teleskop",
+              "keywords": [
+                "телескопич"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "nozhovki",
+      "category": "Ручной инструмент",
+      "attributes": [
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?<![\\d.,/x*х-])(\\d{2,4})\\s*мм"
+          ]
+        },
+        {
+          "slug": "nozhovka_for",
+          "name": "Назначение",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {
+              "value": "По дереву",
+              "slug": "po-derevu",
+              "keywords": [
+                "по дерев",
+                "для дерев"
+              ]
+            },
+            {
+              "value": "По металлу",
+              "slug": "po-metallu",
+              "keywords": [
+                "по металл",
+                "для металл"
+              ]
+            },
+            {
+              "value": "По газобетону/гипсу",
+              "slug": "po-gazobetonu",
+              "keywords": [
+                "газобетон",
+                "гипс",
+                "пенобетон"
+              ]
+            },
+            {
+              "value": "Садовая",
+              "slug": "sadovaya",
+              "keywords": [
+                "садов",
+                "сучкорез"
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }
