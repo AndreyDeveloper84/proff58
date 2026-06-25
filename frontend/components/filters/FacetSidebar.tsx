@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Facet, ListingQuery, RangeFilterValue } from "@/lib/types";
+import { groupSidebarFacets } from "@/lib/listing";
 
 // Шаг слайдера диапазона: для цены крупнее, прочее — 1.
 const RANGE_STEP: Record<string, number> = { price: 100 };
@@ -16,7 +17,29 @@ type Props = {
 
 export function FacetSidebar({ facets, filters, onToggle, onRange, onReset }: Props) {
   // tool_type (isNav) — навигация, рендерится TypePanel над выдачей, а НЕ в сайдбаре (§3.1, §23.5).
-  const sidebarFacets = facets.filter((f) => !f.isNav);
+  // Defensive-слой: гейтинг состава (base/tech) уже сделан в lib/listing.sidebarFacets выше.
+  const visibleFacets = facets.filter((f) => !f.isNav);
+
+  // Разбиение на секции Базовые/Основные/Дополнительные (D2, §22.4) — единый источник для
+  // обоих путей рендера. Одна секция → рендерим плоско, без заголовка (как до D2): на широкой
+  // категории без типа это лишь базовые фильтры.
+  const sections = groupSidebarFacets(visibleFacets);
+  const grouped = sections.length > 1;
+
+  // Рендер одного фасета: ключ диапазона включает границы и текущее значение, чтобы при их
+  // смене RangeFacet перемонтировался (draft-состояние слайдера переинициализировалось).
+  const renderFacet = (f: Facet) =>
+    f.type === "checkbox" ? (
+      <CheckboxFacet key={f.code} facet={f} onToggle={onToggle} />
+    ) : (
+      <RangeFacet
+        key={`${f.code}-${f.min ?? ""}-${f.max ?? ""}-${(filters[f.code] as RangeFilterValue | undefined)?.min ?? ""}-${(filters[f.code] as RangeFilterValue | undefined)?.max ?? ""}`}
+        facet={f}
+        value={(filters[f.code] as RangeFilterValue) ?? {}}
+        onRange={onRange}
+      />
+    );
+
   return (
     <div className="flex flex-col gap-5 rounded-lg border border-line bg-surface p-4">
       <div className="flex items-center justify-between">
@@ -28,18 +51,32 @@ export function FacetSidebar({ facets, filters, onToggle, onRange, onReset }: Pr
         </button>
       </div>
 
-      {sidebarFacets.map((f) =>
-        f.type === "checkbox" ? (
-          <CheckboxFacet key={f.code} facet={f} onToggle={onToggle} />
-        ) : (
-          <RangeFacet
-            key={`${f.code}-${f.min ?? ""}-${f.max ?? ""}-${(filters[f.code] as RangeFilterValue | undefined)?.min ?? ""}-${(filters[f.code] as RangeFilterValue | undefined)?.max ?? ""}`}
-            facet={f}
-            value={(filters[f.code] as RangeFilterValue) ?? {}}
-            onRange={onRange}
-          />
-        ),
-      )}
+      {!grouped
+        ? (sections[0]?.facets ?? []).map(renderFacet)
+        : sections.map((section) =>
+            section.key === "extra" ? (
+              // «Дополнительные» — свёрнуты по умолчанию (§7.2): редкие/второстепенные фильтры
+              // не загромождают сайдбар, но доступны раскрытием.
+              <details key={section.key} className="border-t border-line pt-4">
+                <summary className="-mt-1 mb-1 cursor-pointer list-none text-xs font-semibold uppercase tracking-wide text-ink-3 hover:text-accent">
+                  {section.label} ({section.facets.length})
+                </summary>
+                <div className="mt-3 flex flex-col gap-5">
+                  {section.facets.map(renderFacet)}
+                </div>
+              </details>
+            ) : (
+              <div key={section.key} className="flex flex-col gap-5">
+                {/* «Базовые» — без заголовка (первая секция, очевидна); прочие — с заголовком. */}
+                {section.key !== "base" && (
+                  <span className="text-xs font-semibold uppercase tracking-wide text-ink-3">
+                    {section.label}
+                  </span>
+                )}
+                {section.facets.map(renderFacet)}
+              </div>
+            ),
+          )}
     </div>
   );
 }

@@ -13,14 +13,14 @@ import operator
 from collections import Counter
 from functools import reduce
 
-from django.db.models import Count, FloatField, Max, Min, Q
+from django.db.models import Case, Count, FloatField, Max, Min, Q, Value, When
 from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast
 
 from .brand_slugs import build_brand_slug_map
 from .filters import filtered_products
-from .models import Attribute, AttributeOption, AttributeType, StockStatus
-from .queries import TOOL_TYPE_SLUG, _category_filter_attributes
+from .models import Attribute, AttributeOption, AttributeType, FacetGroup, StockStatus
+from .queries import TOOL_TYPE_SLUG, _category_filter_attributes, _subtree_ids
 
 # --- Лимиты фасетного эндпоинта (публичный AllowAny) ---
 MAX_ATTR_FILTERS = 20
@@ -31,6 +31,11 @@ MAX_BRAND_FACETS = 50
 
 _BOOL_TRUE = {"true", "1", "yes", "да"}
 _BOOL_FALSE = {"false", "0", "no", "нет"}
+
+# Числовой литерал для guarded-каста диапазонов (целое/десятичное, опц. минус). POSIX-regex
+# Postgres (lookup ``__regex`` → ``~``). Нечисловая строка под числовым атрибутом не должна
+# ронять запрос в DataError → CASE кастит только прошедшие этот гард (см. _apply_attr_ranges).
+_NUMERIC_RE = r"^-?[0-9]+(\.[0-9]+)?$"
 
 
 class FacetError(ValueError):
@@ -64,13 +69,18 @@ def _sort_facet_values(attr, counter: Counter, options_order: dict) -> list:
     items = list(counter.items())
     t = attr.attribute_type
     if t in (AttributeType.SELECT, AttributeType.MULTISELECT):
+        # D3 (§22.4 «сортирует значения»): кураторский ``sort_order`` — главный ключ; при
+        # равных (по дефолту все 0, т.е. опции не упорядочены вручную) — по убыванию count
+        # (популярные сверху), затем по label для детерминизма. Так упорядоченные опции
+        # сохраняют заданный порядок, а неупорядоченные деградируют к «по популярности», а
+        # не к алфавиту. ``unknown`` (значения без AttributeOption) — сразу по count.
         known = sorted(
             (it for it in items if it[0] in options_order),
-            key=lambda it: (options_order[it[0]], str(it[0])),
+            key=lambda it: (options_order[it[0]], -it[1], str(it[0])),
         )
         unknown = sorted(
             (it for it in items if it[0] not in options_order),
-            key=lambda it: str(it[0]),
+            key=lambda it: (-it[1], str(it[0])),
         )
         return known + unknown
     if t in (AttributeType.INTEGER, AttributeType.DECIMAL):
@@ -150,12 +160,31 @@ def _apply_attr_ranges(qs, ranges, exclude=None):
     т.е. товары БЕЗ атрибута исключаются (containment этого не делал — он сравнивал значение,
     а не наличие). ``exclude`` — снять диапазон своего фасета (drill-down). Alias по индексу,
     чтобы slug с дефисами не ломал имя аннотации и диапазоны не конфликтовали между собой.
+
+    Guarded cast: голый ``::float`` падал бы с DataError (→ HTTP 500 на публичном AllowAny
+    эндпоинте), если у товара под числовым атрибутом в кэше лежит нечисловая строка
+    (рассинхрон пайплайна импорта, ручная правка). ``CASE`` гарантирует, что ``Cast``
+    выполняется ТОЛЬКО для значений, прошедших ``_NUMERIC_RE``; прочее → NULL → товар
+    отбрасывается (та же семантика, что и отсутствие ключа).
     """
     for i, (slug, (lo, hi)) in enumerate(ranges.items()):
         if slug == exclude or (lo is None and hi is None):
             continue
+        txt = f"_rngtxt_{i}"
         alias = f"_rng_{i}"
-        qs = qs.annotate(**{alias: Cast(KeyTextTransform(slug, "attrs_cache"), FloatField())})
+        qs = qs.annotate(**{txt: KeyTextTransform(slug, "attrs_cache")})
+        qs = qs.annotate(
+            **{
+                alias: Case(
+                    When(
+                        **{f"{txt}__regex": _NUMERIC_RE},
+                        then=Cast(KeyTextTransform(slug, "attrs_cache"), FloatField()),
+                    ),
+                    default=Value(None),
+                    output_field=FloatField(),
+                )
+            }
+        )
         if lo is not None:
             qs = qs.filter(**{f"{alias}__gte": lo})
         if hi is not None:
@@ -281,6 +310,10 @@ def build_facets(
     attributes = _category_filter_attributes(category)
     by_slug = {a.slug: a for a in attributes}
 
+    # Поддерево считаем ОДИН раз: drilldown() строит N+5 срезов на запрос фасетов, и без
+    # этого get_descendants() бил бы в дерево на каждом (P1 ревью — лишние ~N запросов).
+    subtree_ids = _subtree_ids(category)
+
     # Диапазоны: только известные числовые атрибуты категории (прочее — игнор, без падения).
     ranges: dict[str, tuple] = {}
     for slug, bounds in attr_ranges.items():
@@ -345,7 +378,10 @@ def build_facets(
         exclude_attr=None,
     ):
         qs = _apply_tool_type(
-            filtered_products(category, brands=brands, stock_status=stock_status), tool_type
+            filtered_products(
+                category, brands=brands, stock_status=stock_status, subtree_ids=subtree_ids
+            ),
+            tool_type,
         )
         if price:
             qs = _apply_price(qs, price_min, price_max)
@@ -369,7 +405,13 @@ def build_facets(
         )
         counter: Counter = Counter()
         for row in rows:
-            counter[_cast_facet_value(row["_fv"], attr.attribute_type)] = row["c"]
+            try:
+                key = _cast_facet_value(row["_fv"], attr.attribute_type)
+            except (ValueError, TypeError):
+                # Нечисловой мусор под числовым атрибутом (рассинхрон кэша): пропускаем
+                # значение, а не роняем весь ответ фасетов в 500 (парный гард к _apply_attr_ranges).
+                continue
+            counter[key] = row["c"]
         if not counter:
             continue  # пустой фасет не отдаём
 
@@ -397,6 +439,9 @@ def build_facets(
                 "type": attr.attribute_type,
                 "unit": attr.unit,
                 "is_nav": False,
+                # Группа сайдбара (D1, §22.4): main|extra из ближайшей CategoryAttribute
+                # (closest-wins, проброшено transient на Attribute). Дефолт — main.
+                "group": getattr(attr, "_facet_group", FacetGroup.MAIN),
                 "values": values,
             }
         )

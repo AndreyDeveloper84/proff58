@@ -116,12 +116,23 @@ class ProductFilter(django_filters.FilterSet):
         )
 
 
-def filtered_products(category, *, brands=None, stock_status=None):
+def filtered_products(category, *, brands=None, stock_status=None, subtree_ids=None):
     """Видимые товары категории (+ все потомки) с опциональными фильтрами.
 
     brands — список брендов, OR с регистронезависимым сравнением.
+    ``subtree_ids`` — заранее посчитанные id поддерева (категория + потомки). Передаётся,
+    когда выборка строится многократно для одной категории (фасеты считают N+ срезов
+    drill-down): иначе ``get_descendants()`` бил бы в дерево на каждом срезе. None →
+    считаем сами (обычный одиночный листинг).
     """
-    ids = [category.pk, *category.get_descendants().values_list("pk", flat=True)]
+    ids = (
+        subtree_ids
+        if subtree_ids is not None
+        else [
+            category.pk,
+            *category.get_descendants().values_list("pk", flat=True),
+        ]
+    )
     qs = visible_products().filter(category_id__in=ids)
     if brands:
         qs = qs.filter(reduce(operator.or_, (Q(brand__iexact=b) for b in brands)))

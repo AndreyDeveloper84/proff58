@@ -23,12 +23,39 @@ export type Product = {
   badges: BadgeKind[];
 };
 
+// Изображение товара для галереи карточки (PDP). isMain — главное фото (показываем первым).
+export type ProductImageData = { url: string; alt: string; isMain: boolean };
+
+// Секции совместимости карточки товара (бэк: /products/{slug}/compatible/).
+export type CompatibilitySections = {
+  accessories: Product[]; // аксессуары/оснастка К товару
+  fits: Product[]; // к чему подходит (для аксессуара)
+  compatible: Product[]; // симметрично совместимые
+};
+
+// Полные данные карточки товара (PDP): Product + поля detail-эндпоинта.
+export type ProductDetail = Product & {
+  images: ProductImageData[];
+  description: string;
+  breadcrumb: { name: string; slug: string }[]; // категории от корня (без «Главная/Каталог»)
+  compatible?: CompatibilitySections;
+};
+
 export type FacetOption = {
   value: string;
   label: string;
   count: number;
   selected: boolean;
 };
+
+// Класс фасета для контекстного гейтинга (§3.3–3.4, §6): nav — TypePanel над выдачей;
+// base — базовые фильтры (Наличие/Бренд/Цена/Тип питания), видны всегда; tech — технические,
+// видны только после выбора tool_type или на листовой/типизированной категории.
+export type FacetKind = "nav" | "base" | "tech";
+
+// Группа технического фасета в сайдбаре (§22.4): «Основные» / «Дополнительные».
+export type FacetGroupKind = "main" | "extra";
+
 export type Facet = {
   code: string;
   label: string;
@@ -40,10 +67,21 @@ export type Facet = {
   // Навигационный фасет (tool_type): рендерится TypePanel над выдачей, а НЕ в сайдбаре.
   // Маппится из ApiFacet.is_nav. Выбор идёт верхнеуровневым ?tool_type=, не attr_*.
   isNav?: boolean;
+  // Класс для гейтинга сайдбара (классифицируется в adapters при маппинге).
+  kind?: FacetKind;
+  // Раздел сайдбара (§22.4, D1/D2): main — «Основные»; extra — «Дополнительные» (свёрнуты).
+  // Маппится из ApiFacet.group. Осмыслен только для технических (kind:"tech") фасетов;
+  // базовые (kind:"base") и навигация (kind:"nav") группируются отдельно. undefined → main.
+  group?: FacetGroupKind;
 };
 
 export type SortOption = "popular" | "price_asc" | "price_desc" | "new" | "rating";
 export type RangeFilterValue = { min?: number; max?: number };
+
+// Режим показа фильтров категории (§3.4): broad — широкая (только базовые до выбора типа);
+// typed — доминирует один тип; leaf — листовая (полный набор сразу). Источник — поле API
+// category_filter_mode, если есть; иначе авто-определение по TypePanel (см. lib/listing.ts).
+export type FilterMode = "broad" | "typed" | "leaf";
 
 export type ListingQuery = {
   category: string;
@@ -65,6 +103,8 @@ export type Listing = {
   };
   promo?: { title: string; subtitle: string; href: string };
   subcategories: { label: string; href: string }[];
+  // Режим гейтинга фильтров (§3.4). undefined → авто-определение по TypePanel (lib/listing.ts).
+  filterMode?: FilterMode;
   facets: Facet[];
   sort: { value: SortOption; label: string }[];
   total: number;

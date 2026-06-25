@@ -10,14 +10,23 @@
 //  - серверная сортировка через ?sort (price_asc|price_desc|new), дефолт — name;
 //  - facets-эндпоинт отдаёт price/brands/stock + category/subcategories помимо EAV-атрибутов.
 
+import { BASE_FACET_CODES } from "./constants";
 import { formatRu, humanizeToken } from "./format";
 import type {
+  CompatibilitySections,
   Facet,
+  FacetGroupKind,
+  FilterMode,
   Listing,
   ListingQuery,
   Product,
+  ProductDetail,
+  ProductImageData,
   StockState,
 } from "./types";
+
+// Код фасета базовый? (§3.3/§6 — видим всегда). Список — в constants (по коду, не по названию).
+const BASE_CODES: ReadonlySet<string> = new Set(BASE_FACET_CODES);
 
 // Внутренние server-side запросы Next→Django идут по http внутри Docker, а Django в prod
 // редиректит http→https (SECURE_SSL_REDIRECT). Этот заголовок (ТОЛЬКО server-side!) сообщает
@@ -43,6 +52,20 @@ type ApiProduct = {
   attributes?: ApiAttr[];
 };
 
+type ApiImage = { url: string; alt?: string | null; is_main?: boolean };
+// Detail-эндпоинт (/products/{slug}/) = ApiProduct + description/images/breadcrumb.
+type ApiProductDetail = ApiProduct & {
+  description?: string | null;
+  images?: ApiImage[];
+  breadcrumb?: { name: string; slug: string }[];
+};
+// /products/{slug}/compatible/ — три секции товаров (ApiProduct + опц. note).
+type ApiCompatibleResponse = {
+  accessories?: ApiProduct[];
+  fits?: ApiProduct[];
+  compatible?: ApiProduct[];
+};
+
 type ApiBrand = { value: string; label: string; count: number; selected: boolean };
 type ApiStock = { value: string; label: string; count: number; selected: boolean };
 type ApiCategoryBlock = {
@@ -57,8 +80,15 @@ type ApiFacetsResponse = {
   price?: { min: number | null; max: number | null };
   brands?: ApiBrand[];
   stock?: ApiStock[];
+  // §3.4: сырое поле API (любая строка); доверяем только после whitelist-проверки asFilterMode.
+  category_filter_mode?: string;
   facets?: ApiFacet[];
 };
+
+// Сужение сырого значения API к FilterMode (или undefined → авто-определение во фронте).
+function asFilterMode(v: unknown): FilterMode | undefined {
+  return v === "broad" || v === "typed" || v === "leaf" ? v : undefined;
+}
 
 type ApiFacetValue = {
   value: unknown;
@@ -74,6 +104,8 @@ type ApiFacet = {
   unit?: string;
   // Навигационный фасет (tool_type): рендерится TypePanel, выбор → верхнеуровневый ?tool_type=.
   is_nav?: boolean;
+  // Раздел сайдбара (§22.4, D1): "main"|"extra". Любая иная/пустая строка → main (дефолт).
+  group?: string;
   values?: ApiFacetValue[];
 };
 
@@ -142,10 +174,37 @@ export function apiProductToProduct(ap: ApiProduct): Product {
   };
 }
 
-// --- фасеты price/brand/stock из нового facets-контракта (B0) ---
+function apiProductToDetail(ap: ApiProductDetail): ProductDetail {
+  const base = apiProductToProduct(ap);
+  const images: ProductImageData[] = (ap.images ?? [])
+    .filter((im) => im && im.url)
+    .map((im) => ({ url: im.url, alt: im.alt || base.name, isMain: im.is_main === true }));
+  // main_image как fallback, если detail не отдал галерею.
+  if (!images.length && base.image) {
+    images.push({ url: base.image, alt: base.name, isMain: true });
+  }
+  // главное фото — первым (isMain), затем остальные.
+  images.sort((a, b) => Number(b.isMain) - Number(a.isMain));
+  return {
+    ...base,
+    images,
+    description: ap.description ?? "",
+    breadcrumb: ap.breadcrumb ?? [],
+  };
+}
+
+// --- фасеты price/brand/stock из нового facets-контракта (B0) — всегда kind: "base" (§6.2) ---
 function priceFacet(price?: { min: number | null; max: number | null }): Facet | null {
   if (!price || price.min == null || price.max == null) return null;
-  return { code: "price", label: "Цена", type: "range", unit: "₽", min: price.min, max: price.max };
+  return {
+    code: "price",
+    label: "Цена",
+    type: "range",
+    unit: "₽",
+    kind: "base",
+    min: price.min,
+    max: price.max,
+  };
 }
 function stockFacet(stock?: ApiStock[]): Facet | null {
   if (!stock || !stock.length) return null;
@@ -153,6 +212,7 @@ function stockFacet(stock?: ApiStock[]): Facet | null {
     code: "stock",
     label: "Наличие",
     type: "checkbox",
+    kind: "base",
     options: stock.map((s) => ({
       value: STOCK_API_TO_UI[s.value] ?? s.value,
       label: s.label,
@@ -167,6 +227,7 @@ function brandFacet(brands?: ApiBrand[]): Facet | null {
     code: "brand",
     label: "Бренд",
     type: "checkbox",
+    kind: "base",
     options: brands.map((b) => ({
       value: b.value,
       label: b.label,
@@ -182,6 +243,13 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
   // хранятся С префиксом attr_ — это имя query-параметра сайдбар-фильтра (attr_<slug>).
   const isNav = af.is_nav === true;
   const code = isNav ? af.slug : `attr_${af.slug}`;
+  // Гейтинг-класс (§3.3/§6): nav → TypePanel; базовый код (напр. attr_power_source) → base;
+  // прочие attr_* → tech (скрыты до выбора tool_type). По коду, не по названию.
+  const kind: Facet["kind"] = isNav ? "nav" : BASE_CODES.has(code) ? "base" : "tech";
+  // Группа сайдбара (§22.4, D2): доверяем только whitelisted "extra"; всё прочее (включая
+  // "main"/пусто/мусор) → undefined, что группировка трактует как «Основные». Осмыслена
+  // лишь для технических фасетов — для base/nav группа игнорируется при разбиении на секции.
+  const group: FacetGroupKind | undefined = af.group === "extra" ? "extra" : undefined;
   const isRange = af.type === "integer" || af.type === "decimal";
   if (isRange) {
     const nums = (af.values ?? [])
@@ -193,6 +261,8 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
       type: "range",
       unit: af.unit || undefined,
       isNav,
+      kind,
+      group,
       min: nums.length ? Math.min(...nums) : undefined,
       max: nums.length ? Math.max(...nums) : undefined,
     };
@@ -203,6 +273,8 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
     type: "checkbox",
     unit: af.unit || undefined,
     isNav,
+    kind,
+    group,
     options: (af.values ?? []).map((v) => ({
       // value — токен для URL/фильтра: canonical slug, если он есть, иначе raw value (legacy)
       value: String(v.slug ?? v.value),
@@ -322,6 +394,7 @@ export async function fetchListingFromApi(
   let facets: Facet[] = [];
   let categoryBlock: ApiCategoryBlock | undefined;
   let subcategories: { label: string; href: string }[] = [];
+  let filterMode: FilterMode | undefined;
   try {
     const facetsRes = await fetch(
       `${root}/api/catalog/categories/${query.category}/facets/?${buildFacetParams(query).toString()}`,
@@ -338,6 +411,7 @@ export async function fetchListingFromApi(
         ...attrFacets,
       ].filter((x): x is Facet => x != null);
       categoryBlock = fj.category;
+      filterMode = asFilterMode(fj.category_filter_mode);
       subcategories = (fj.subcategories ?? []).map((s) => ({
         label: s.name,
         href: `/catalog/${s.slug}`,
@@ -359,8 +433,13 @@ export async function fetchListingFromApi(
     category: {
       title: categoryName,
       intro: categoryBlock?.description ?? "",
-      breadcrumb: [{ label: "Главная", href: "/" }, ...crumbs],
+      breadcrumb: [
+        { label: "Главная", href: "/" },
+        { label: "Каталог", href: "/catalog" },
+        ...crumbs,
+      ],
     },
+    filterMode,
     subcategories,
     facets,
     sort: [],
@@ -369,4 +448,44 @@ export async function fetchListingFromApi(
     perPage: query.perPage,
     products,
   };
+}
+
+// Карточка товара (PDP): detail-эндпоинт + best-effort секции совместимости.
+// 404 → null (→ notFound() в page.tsx); иная ошибка detail → CatalogFetchError (→ error.tsx).
+export async function fetchProductFromApi(
+  base: string,
+  slug: string,
+): Promise<ProductDetail | null> {
+  const root = base.replace(/\/$/, "");
+  const res = await fetch(`${root}/api/catalog/products/${encodeURIComponent(slug)}/`, {
+    cache: "no-store",
+    headers: SSR_HEADERS,
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new CatalogFetchError(`product ${res.status}`);
+  const detail = await fetchProductCompatible(root, slug);
+  return { ...apiProductToDetail((await res.json()) as ApiProductDetail), compatible: detail };
+}
+
+// Секции совместимости — best-effort: упал эндпоинт → пустые секции, карточка всё равно рендерится.
+async function fetchProductCompatible(
+  root: string,
+  slug: string,
+): Promise<CompatibilitySections> {
+  const empty: CompatibilitySections = { accessories: [], fits: [], compatible: [] };
+  try {
+    const res = await fetch(
+      `${root}/api/catalog/products/${encodeURIComponent(slug)}/compatible/`,
+      { cache: "no-store", headers: SSR_HEADERS },
+    );
+    if (!res.ok) return empty;
+    const cj = (await res.json()) as ApiCompatibleResponse;
+    return {
+      accessories: (cj.accessories ?? []).map(apiProductToProduct),
+      fits: (cj.fits ?? []).map(apiProductToProduct),
+      compatible: (cj.compatible ?? []).map(apiProductToProduct),
+    };
+  } catch {
+    return empty;
+  }
 }

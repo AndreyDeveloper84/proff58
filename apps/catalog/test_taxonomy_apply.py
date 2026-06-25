@@ -110,10 +110,12 @@ def test_commit_moves_and_hides_then_rollback(section):
         p.refresh_from_db()
         assert p.category_id == root.pk
         assert p.category_is_manual is True
-    # Опустевшие узлы скрыты.
+    # Опустевшие узлы скрыты и из дерева (on_site), и из витрины (is_active —
+    # по нему фильтруются чипы-подкатегории).
     setevoy.refresh_from_db()
     akkum.refresh_from_db()
     assert setevoy.on_site is False and akkum.on_site is False
+    assert setevoy.is_active is False and akkum.is_active is False
 
     # Снимок отката создан.
     backup_dir = Path(settings.BASE_DIR) / "var" / "restructure"
@@ -129,6 +131,7 @@ def test_commit_moves_and_hides_then_rollback(section):
     assert all(p.category_is_manual is False for p in section["products"])
     setevoy.refresh_from_db()
     assert setevoy.on_site is True
+    assert setevoy.is_active is True  # видимость восстановлена
 
 
 @pytest.mark.django_db
@@ -169,3 +172,33 @@ def test_dry_run_tool_type_breakdown(section):
     assert "комплектующие (→ подкатегория) 1" in text
     assert "без типа / не-инструмент 1" in text
     assert "Антенна авто" in text  # показан в примерах «без типа»
+
+
+@pytest.mark.django_db
+def test_commit_routes_complement_to_subcategory(section):
+    # Комплектующее (tool_type=akkumulyatory) при --commit уходит в подкатегорию
+    # «Аккумуляторы и ЗУ», а обычный инструмент — в раздел. «Без типа» — в раздел.
+    setevoy, root = section["setevoy"], section["root"]
+    keep = Category.objects.get(slug="akkumulyatory-i-zaryadnye-ustroystva")
+    tt = Attribute.objects.get(slug="tool_type")
+    o_akb = AttributeOption.objects.create(attribute=tt, value="Аккумуляторы", slug="akkumulyatory")
+
+    p_compl = Product.objects.create(
+        category=setevoy, name="АКБ 18В", slug="akb-c", status=ProductStatus.PUBLISHED
+    )
+    ProductAttributeValue.objects.create(product=p_compl, attribute=tt, value_option=o_akb)
+    p_notype = Product.objects.create(
+        category=setevoy, name="Антенна авто", slug="antenna-c", status=ProductStatus.PUBLISHED
+    )
+
+    call_command(
+        "catalog_taxonomy_apply", "--section", "electroinstrument", "--commit", stdout=StringIO()
+    )
+
+    p_compl.refresh_from_db()
+    p_notype.refresh_from_db()
+    section["products"][0].refresh_from_db()
+    assert p_compl.category_id == keep.pk  # комплектующее → подкатегория
+    assert p_compl.category_is_manual is True
+    assert p_notype.category_id == root.pk  # «без типа» → раздел
+    assert section["products"][0].category_id == root.pk  # инструмент → раздел
