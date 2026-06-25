@@ -9,10 +9,14 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import operator
 from collections import Counter
 from functools import reduce
 
+from django.conf import settings
+from django.core.cache import cache as cache_store
 from django.db.models import Case, Count, FloatField, Max, Min, Q, Value, When
 from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast
@@ -572,3 +576,76 @@ def apply_product_attr_filters(
             continue
         ranges[slug] = (bounds[0], bounds[1])
     return _apply_attr_ranges(_apply_attr_filters(qs, coerced), ranges)
+
+
+# --- Кэш фасетов (#222, P1-2) ----------------------------------------------------------------
+# build_facets пересобирает 2N+ индексируемых запросов на КАЖДЫЙ хит публичного (AllowAny)
+# фасет-эндпоинта. Результат детерминирован по (категория, параметры) и меняется только при
+# изменении данных каталога, поэтому кэшируем его (как get_category_tree). Ключей по
+# (category, params) бесконечно много — перечислить и удалить их при инвалидации, как 2 ключа
+# дерева, нельзя; поэтому инвалидация ВЕРСИОННАЯ: bump общей версии орфанит все старые ключи
+# разом, а TTL добивает осиротевшие. Сигналы-издатели версии — в apps/catalog/signals.py
+# (post_save/post_delete товаров/категорий/привязок), как и у дерева: ловит и 1С-обновления
+# цены/остатка (они делают product.save()), не завися от наличия доменного издателя.
+FACETS_CACHE_VERSION_KEY = "catalog:facets:version"
+
+
+def _facets_cache_ttl() -> int:
+    """TTL кэша фасетов (сек). <=0 → кэш выключен (dev/CI: тесты не зависят от кэша); прод
+    включает через FACETS_CACHE_TTL (см. config/settings/prod.py)."""
+    return getattr(settings, "FACETS_CACHE_TTL", 0)
+
+
+def _facets_version() -> int:
+    """Текущая версия кэша фасетов (часть ключа). Инициализируется в 1 без срока жизни."""
+    v = cache_store.get(FACETS_CACHE_VERSION_KEY)
+    if v is None:
+        cache_store.set(FACETS_CACHE_VERSION_KEY, 1, None)  # счётчик версии не истекает
+        return 1
+    return v
+
+
+def invalidate_facets_cache() -> None:
+    """Версионная инвалидация: bump версии делает все ранее закэшированные (category, params)
+    ключи недостижимыми (старые добиваются TTL). Зовётся из сигналов изменения данных каталога.
+    No-op при выключенном кэше — не трогаем стор зря."""
+    if _facets_cache_ttl() <= 0:
+        return
+    try:
+        cache_store.incr(FACETS_CACHE_VERSION_KEY)
+    except ValueError:  # ключа ещё нет — инициализируем (следующее чтение возьмёт 1)
+        cache_store.set(FACETS_CACHE_VERSION_KEY, 1, None)
+
+
+def _facets_cache_key(category, kwargs: dict) -> str:
+    """Стабильный ключ по (версия, slug категории, нормализованные параметры build_facets).
+    Параметры канонизируются (сортировка по slug, списки в исходном порядке) и хэшируются —
+    один и тот же набор фильтров (в любом порядке query-параметров) даёт один ключ."""
+    payload = {
+        "tool_type": kwargs.get("tool_type") or None,
+        "brands": list(kwargs.get("brands") or []),
+        "stock_status": kwargs.get("stock_status") or None,
+        "attr_filters": {k: list(v) for k, v in sorted((kwargs.get("attr_filters") or {}).items())},
+        "attr_ranges": {k: list(v) for k, v in sorted((kwargs.get("attr_ranges") or {}).items())},
+        "price_min": kwargs.get("price_min"),
+        "price_max": kwargs.get("price_max"),
+    }
+    raw = json.dumps(payload, sort_keys=True, default=str, ensure_ascii=False)
+    digest = hashlib.sha1(raw.encode("utf-8")).hexdigest()
+    return f"catalog:facets:v{_facets_version()}:{category.slug}:{digest}"
+
+
+def build_facets_cached(category, **kwargs) -> dict:
+    """Кэшированная обёртка над build_facets. FacetError (валидация параметров) поднимается
+    ДО кэша — невалидный запрос не кэшируется. Кэш выключен (TTL<=0) → прозрачный вызов
+    build_facets без обращения к стору."""
+    ttl = _facets_cache_ttl()
+    if ttl <= 0:
+        return build_facets(category, **kwargs)
+    key = _facets_cache_key(category, kwargs)
+    cached = cache_store.get(key)
+    if cached is not None:
+        return cached
+    data = build_facets(category, **kwargs)
+    cache_store.set(key, data, ttl)
+    return data
