@@ -23,6 +23,24 @@ export type Product = {
   badges: BadgeKind[];
 };
 
+// Изображение товара для галереи карточки (PDP). isMain — главное фото (показываем первым).
+export type ProductImageData = { url: string; alt: string; isMain: boolean };
+
+// Секции совместимости карточки товара (бэк: /products/{slug}/compatible/).
+export type CompatibilitySections = {
+  accessories: Product[]; // аксессуары/оснастка К товару
+  fits: Product[]; // к чему подходит (для аксессуара)
+  compatible: Product[]; // симметрично совместимые
+};
+
+// Полные данные карточки товара (PDP): Product + поля detail-эндпоинта.
+export type ProductDetail = Product & {
+  images: ProductImageData[];
+  description: string;
+  breadcrumb: { name: string; slug: string }[]; // категории от корня (без «Главная/Каталог»)
+  compatible?: CompatibilitySections;
+};
+
 export type FacetOption = {
   value: string;
   label: string;

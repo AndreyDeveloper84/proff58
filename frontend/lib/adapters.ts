@@ -13,11 +13,14 @@
 import { BASE_FACET_CODES } from "./constants";
 import { formatRu, humanizeToken } from "./format";
 import type {
+  CompatibilitySections,
   Facet,
   FilterMode,
   Listing,
   ListingQuery,
   Product,
+  ProductDetail,
+  ProductImageData,
   StockState,
 } from "./types";
 
@@ -46,6 +49,20 @@ type ApiProduct = {
   main_image?: string | null;
   short_description?: string | null;
   attributes?: ApiAttr[];
+};
+
+type ApiImage = { url: string; alt?: string | null; is_main?: boolean };
+// Detail-эндпоинт (/products/{slug}/) = ApiProduct + description/images/breadcrumb.
+type ApiProductDetail = ApiProduct & {
+  description?: string | null;
+  images?: ApiImage[];
+  breadcrumb?: { name: string; slug: string }[];
+};
+// /products/{slug}/compatible/ — три секции товаров (ApiProduct + опц. note).
+type ApiCompatibleResponse = {
+  accessories?: ApiProduct[];
+  fits?: ApiProduct[];
+  compatible?: ApiProduct[];
 };
 
 type ApiBrand = { value: string; label: string; count: number; selected: boolean };
@@ -151,6 +168,25 @@ export function apiProductToProduct(ap: ApiProduct): Product {
     stock: mapStock(ap.stock_status),
     // sale — из скидки (данные есть). new/hit — вне scope (нет надёжного признака новизны).
     badges: hasDiscount ? ["sale"] : [],
+  };
+}
+
+function apiProductToDetail(ap: ApiProductDetail): ProductDetail {
+  const base = apiProductToProduct(ap);
+  const images: ProductImageData[] = (ap.images ?? [])
+    .filter((im) => im && im.url)
+    .map((im) => ({ url: im.url, alt: im.alt || base.name, isMain: im.is_main === true }));
+  // main_image как fallback, если detail не отдал галерею.
+  if (!images.length && base.image) {
+    images.push({ url: base.image, alt: base.name, isMain: true });
+  }
+  // главное фото — первым (isMain), затем остальные.
+  images.sort((a, b) => Number(b.isMain) - Number(a.isMain));
+  return {
+    ...base,
+    images,
+    description: ap.description ?? "",
+    breadcrumb: ap.breadcrumb ?? [],
   };
 }
 
@@ -388,7 +424,11 @@ export async function fetchListingFromApi(
     category: {
       title: categoryName,
       intro: categoryBlock?.description ?? "",
-      breadcrumb: [{ label: "Главная", href: "/" }, ...crumbs],
+      breadcrumb: [
+        { label: "Главная", href: "/" },
+        { label: "Каталог", href: "/catalog" },
+        ...crumbs,
+      ],
     },
     filterMode,
     subcategories,
@@ -399,4 +439,44 @@ export async function fetchListingFromApi(
     perPage: query.perPage,
     products,
   };
+}
+
+// Карточка товара (PDP): detail-эндпоинт + best-effort секции совместимости.
+// 404 → null (→ notFound() в page.tsx); иная ошибка detail → CatalogFetchError (→ error.tsx).
+export async function fetchProductFromApi(
+  base: string,
+  slug: string,
+): Promise<ProductDetail | null> {
+  const root = base.replace(/\/$/, "");
+  const res = await fetch(`${root}/api/catalog/products/${encodeURIComponent(slug)}/`, {
+    cache: "no-store",
+    headers: SSR_HEADERS,
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new CatalogFetchError(`product ${res.status}`);
+  const detail = await fetchProductCompatible(root, slug);
+  return { ...apiProductToDetail((await res.json()) as ApiProductDetail), compatible: detail };
+}
+
+// Секции совместимости — best-effort: упал эндпоинт → пустые секции, карточка всё равно рендерится.
+async function fetchProductCompatible(
+  root: string,
+  slug: string,
+): Promise<CompatibilitySections> {
+  const empty: CompatibilitySections = { accessories: [], fits: [], compatible: [] };
+  try {
+    const res = await fetch(
+      `${root}/api/catalog/products/${encodeURIComponent(slug)}/compatible/`,
+      { cache: "no-store", headers: SSR_HEADERS },
+    );
+    if (!res.ok) return empty;
+    const cj = (await res.json()) as ApiCompatibleResponse;
+    return {
+      accessories: (cj.accessories ?? []).map(apiProductToProduct),
+      fits: (cj.fits ?? []).map(apiProductToProduct),
+      compatible: (cj.compatible ?? []).map(apiProductToProduct),
+    };
+  } catch {
+    return empty;
+  }
 }
