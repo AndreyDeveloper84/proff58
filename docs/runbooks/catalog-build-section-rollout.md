@@ -51,7 +51,7 @@ docker compose -f docker-compose.prod.yml exec web ls data/ | grep -c product_ty
 docker compose -f docker-compose.prod.yml exec web python manage.py help catalog_build_section >/dev/null && echo "команда есть"
 
 # 1.4 Снять «до»-срез дерева для сравнения (аудит пишет отчёты в docs/reports).
-docker compose -f docker-compose.prod.yml exec web python manage.py catalog_taxonomy_audit --print | tee /tmp/audit-before.txt
+docker compose -f docker-compose.prod.yml exec web python manage.py catalog_taxonomy_audit --stdout | tee /tmp/audit-before.txt
 ```
 
 > Везде далее: `WEB="docker compose -f docker-compose.prod.yml exec web python manage.py"`.
@@ -147,7 +147,7 @@ for p in n.products.order_by('?')[:10]:
 После всех 13 разделов — общий аудит и сравнение с «до»:
 
 ```bash
-$WEB catalog_taxonomy_audit --print | tee /tmp/audit-after.txt
+$WEB catalog_taxonomy_audit --stdout | tee /tmp/audit-after.txt
 diff /tmp/audit-before.txt /tmp/audit-after.txt | head -60
 ```
 
