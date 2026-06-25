@@ -4,7 +4,8 @@ from django.contrib.admin.helpers import ActionForm
 from django.db import transaction
 from django.db.models import Count, IntegerField, OuterRef, Q, Subquery
 from django.db.models.functions import Coalesce
-from django.utils.html import format_html_join
+from django.urls import reverse
+from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from treebeard.admin import TreeAdmin
@@ -107,13 +108,26 @@ class CategoryAdmin(TreeAdmin):
             )
         )
 
+    @staticmethod
+    def _product_count_link(category_id, count, *, status=None):
+        """Счётчик-ссылка в список товаров админки, отфильтрованный по этой категории
+        (прямой FK — число и страница совпадают). 0 — без ссылки."""
+        if not count:
+            return count
+        url = f"{reverse('admin:catalog_product_changelist')}?category__id__exact={category_id}"
+        if status:
+            url += f"&status={status}"
+        return format_html('<a href="{}">{}</a>', url, count)
+
     @admin.display(description=_("Товаров"), ordering="_products")
     def products_count(self, obj):
-        return getattr(obj, "_products", 0)
+        return self._product_count_link(obj.pk, getattr(obj, "_products", 0))
 
     @admin.display(description=_("Опубл."), ordering="_published")
     def published_count(self, obj):
-        return getattr(obj, "_published", 0)
+        return self._product_count_link(
+            obj.pk, getattr(obj, "_published", 0), status=ProductStatus.PUBLISHED.value
+        )
 
     @admin.action(description=_("Показать на сайте"))
     def action_show_on_site(self, request, queryset):
@@ -480,6 +494,14 @@ class ProductAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     autocomplete_fields = ["category"]
     list_select_related = ("category",)
+
+    def lookup_allowed(self, lookup, value, request=None):
+        # Drill-down из списка категорий: ссылка ?category__id__exact=<id>. Категорию НЕ кладём
+        # в list_filter (дропдаун всех узлов дерева был бы тяжёлым) — точечно разрешаем лукап.
+        if lookup == "category__id__exact":
+            return True
+        return super().lookup_allowed(lookup, value, request)
+
     readonly_fields = (
         "moderation_reason_detail",
         "code_1c",
