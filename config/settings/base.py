@@ -99,6 +99,11 @@ CACHES = {
     }
 }
 
+# Кэш фасетов каталога (#222, P1-2). 0 → выключен (dev/CI: тесты не зависят от кэша и его
+# межтестовой персистентности). В проде включается (см. config/settings/prod.py). Инвалидация —
+# версионная, по сигналам изменения товаров/категорий/привязок атрибутов (apps/catalog/signals.py).
+FACETS_CACHE_TTL = env.int("FACETS_CACHE_TTL", default=0)
+
 AUTH_USER_MODEL = "accounts.User"
 
 AUTH_PASSWORD_VALIDATORS = [

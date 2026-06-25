@@ -474,6 +474,30 @@ def test_facets_attr_range_drilldown(client, tree):
     assert set(values_count(get_facet(data, "diameter"))) == {10.0, 20.0, 30.0}
 
 
+@pytest.mark.django_db
+def test_facets_attr_range_ignores_nonnumeric_cache(client, tree):
+    """Нечисловая строка в attrs_cache под числовым атрибутом НЕ роняет фасеты (guarded cast,
+    P2-4): эндпоинт отдаёт 200, мусорный товар выпадает (как без значения), числовые считаются.
+    Без гарда был бы DataError в SQL-касте диапазона и ValueError в Python-касте значения фасета."""
+    _, leaf = tree
+    link(leaf, make_attr("diameter", "Диаметр", AttributeType.DECIMAL, unit="мм"))
+    make_product(leaf, "d10", {"diameter": 10})
+    make_product(leaf, "d20", {"diameter": 20})
+    make_product(leaf, "bad", {"diameter": "н/д"})  # нечисловой мусор под числовым атрибутом
+
+    qs = "attr_diameter_min=5&attr_diameter_max=25"
+    resp = client.get(f"/api/catalog/categories/dreli/facets/?{qs}")
+    assert resp.status_code == 200  # без guarded cast здесь был бы 500
+    data = resp.json()
+    # diameter∈[5,25] → d10,d20; "bad" исключён (нечисловое = как отсутствие значения)
+    assert data["total_products"] == 2
+    # список товаров согласован с фасетами тем же (защищённым) механизмом
+    list_count = client.get(f"/api/catalog/products/?category=dreli&{qs}").json()["count"]
+    assert list_count == 2
+    # diameter-фасет (own-axis, без диапазона) считает только валидные числа; "н/д" пропущен
+    assert set(values_count(get_facet(data, "diameter"))) == {10.0, 20.0}
+
+
 # --- B1 (#222, §10.2/§22.3): per-category CategoryAttribute.is_filter гейтит состав фасетов ---
 
 

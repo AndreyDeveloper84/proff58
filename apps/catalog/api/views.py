@@ -18,7 +18,7 @@ from ..models import Category, ProductAttributeValue, StockStatus
 from ..services import (
     FacetError,
     apply_product_attr_filters,
-    build_facets,
+    build_facets_cached,
     compatibility_sections,
 )
 from .serializers import (
@@ -312,7 +312,7 @@ class CategoryFacetsView(APIView):
                 return None  # мусор в цене игнорируем (фасеты не должны падать)
 
         try:
-            data = build_facets(
+            data = build_facets_cached(
                 category,
                 tool_type=params.get("tool_type") or None,
                 brands=params.getlist("brand") or None,

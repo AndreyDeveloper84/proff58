@@ -23,6 +23,24 @@ export type Product = {
   badges: BadgeKind[];
 };
 
+// Изображение товара для галереи карточки (PDP). isMain — главное фото (показываем первым).
+export type ProductImageData = { url: string; alt: string; isMain: boolean };
+
+// Секции совместимости карточки товара (бэк: /products/{slug}/compatible/).
+export type CompatibilitySections = {
+  accessories: Product[]; // аксессуары/оснастка К товару
+  fits: Product[]; // к чему подходит (для аксессуара)
+  compatible: Product[]; // симметрично совместимые
+};
+
+// Полные данные карточки товара (PDP): Product + поля detail-эндпоинта.
+export type ProductDetail = Product & {
+  images: ProductImageData[];
+  description: string;
+  breadcrumb: { name: string; slug: string }[]; // категории от корня (без «Главная/Каталог»)
+  compatible?: CompatibilitySections;
+};
+
 export type FacetOption = {
   value: string;
   label: string;
@@ -93,4 +111,90 @@ export type Listing = {
   page: number;
   perPage: number;
   products: Product[];
+};
+
+// ---------------------------------------------------------------------------
+// Корзина и заказ (#246). Формы 1:1 с контрактом DRF apps/orders/api/serializers
+// (денежные поля — строки, как их рендерит DecimalField; null при отсутствии цены).
+// Доступ из браузера — только через same-origin BFF (app/api/cart*, app/api/orders).
+// ---------------------------------------------------------------------------
+export type CartLine = {
+  id: number;
+  product_id: number;
+  name: string;
+  slug: string;
+  quantity: number;
+  price_final: string | null;
+  price_base: string | null;
+  discount: string | null;
+  price_type: string;
+  currency: string;
+  line_total: string | null;
+};
+
+export type Cart = {
+  id: number;
+  status: string;
+  lines: CartLine[];
+  total: string;
+  currency: string;
+};
+
+export type OrderItem = {
+  id: number;
+  product_id: number | null;
+  code_1c: string;
+  article: string;
+  name: string;
+  unit: string;
+  price_base: string | null;
+  price_final: string | null;
+  discount: string | null;
+  price_type: string;
+  currency: string;
+  quantity: number;
+  line_total: string | null;
+};
+
+export type Order = {
+  id: number;
+  order_number: string;
+  external_order_id: string;
+  fulfillment_status: string;
+  payment_status: string;
+  sync_1c_status: string;
+  display_status: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  customer_type: string;
+  company_name: string;
+  inn: string;
+  kpp: string;
+  legal_address: string;
+  delivery_method: string;
+  delivery_address: string;
+  comment: string;
+  payment_method: string;
+  total: string;
+  currency: string;
+  created_at: string;
+  items: OrderItem[];
+};
+
+// Тело POST /api/orders/ (см. CreateOrderSerializer). Цена считается на сервере —
+// никакие price-поля не передаём. Пустые опциональные поля бэк примет как "".
+export type PlaceOrderData = {
+  customer_name: string;
+  customer_phone: string;
+  customer_email?: string;
+  customer_type?: string;
+  company_name?: string;
+  inn?: string;
+  kpp?: string;
+  legal_address?: string;
+  delivery_method: string;
+  delivery_address?: string;
+  comment?: string;
+  payment_method: string;
 };

@@ -25,6 +25,10 @@ CACHES = {
     }
 }
 
+# Кэш фасетов каталога (#222, P1-2) включён в проде; TTL — бэкстоп поверх версионной
+# инвалидации по сигналам изменения данных каталога (см. apps/catalog/facets.py).
+FACETS_CACHE_TTL = env.int("FACETS_CACHE_TTL", default=300)
+
 # Для входа в админку за nginx/HTTPS Django требует доверенные origin-ы.
 _public_hosts = [h for h in ALLOWED_HOSTS if h not in ("*", "localhost", "127.0.0.1")]
 CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in _public_hosts] + [
