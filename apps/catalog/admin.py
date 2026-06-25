@@ -67,6 +67,8 @@ class CategoryAdminForm(movenodeform_factory(Category)):
 @admin.register(Category)
 class CategoryAdmin(TreeAdmin):
     form = CategoryAdminForm
+    # Крупный заголовок с именем редактируемой категории (вместо общего «Категории»).
+    change_form_template = "admin/catalog/category/change_form.html"
     list_display = (
         "name",
         "slug",
