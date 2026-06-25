@@ -50,6 +50,22 @@ def test_dry_run_changes_nothing(products):
 
 
 @pytest.mark.django_db
+def test_v2_root_not_reused_from_legacy_by_name(products):
+    # legacy-узел с тем же ИМЕНЕМ, что и раздел osnastka, но другим slug.
+    # v2-корень должен быть СОЗДАН отдельно (slug=osnastka, скрыт), а не переиспользован.
+    legacy = Category.add_root(
+        name="Оснастка и расходные материалы", slug="osnastka-legacy", on_site=True
+    )
+    call_command("catalog_build_section", "--section", "osnastka", "--commit", stdout=StringIO())
+
+    v2 = Category.objects.get(slug="osnastka")
+    assert v2.id != legacy.id  # legacy НЕ переиспользован как v2-корень
+    assert v2.is_active is False and v2.on_site is False  # v2 скрыт
+    legacy.refresh_from_db()
+    assert legacy.on_site is True and legacy.get_children().count() == 0  # legacy не тронут
+
+
+@pytest.mark.django_db
 def test_commit_builds_hidden_tree_and_assigns(products):
     out = StringIO()
     call_command("catalog_build_section", "--section", "osnastka", "--commit", stdout=out)

@@ -177,10 +177,7 @@ class Command(BaseCommand):
         self, cfg, subcats, subtypes, normal_assign, moderation_ids, skipped_manual, conflicts
     ):
         w = self.stdout.write
-        root = (
-            Category.objects.filter(slug=cfg["root_slug"]).first()
-            or Category.objects.filter(name=cfg["root_name"]).first()
-        )
+        root = Category.objects.filter(slug=cfg["root_slug"]).first()
         w(
             self.style.MIGRATE_HEADING(
                 f"\n=== Построение раздела «{cfg['root_name']}» (скрыто, dry-run) ==="
@@ -256,10 +253,11 @@ class Command(BaseCommand):
         moved: list[int] = []
 
         with transaction.atomic():
-            root = (
-                Category.objects.filter(slug=cfg["root_slug"]).first()
-                or Category.objects.filter(name=cfg["root_name"]).first()
-            )
+            # Корень v2 — СТРОГО по slug (section_slug). Имя-фолбэк убран намеренно:
+            # имя раздела в словаре часто совпадает с именем legacy-корня (свар­ка,
+            # Крепёж…), и фолбэк по имени переиспользовал бы legacy как v2-корень,
+            # ломая модель «скрытый build → swap». Нет узла по slug → создаём скрытым.
+            root = Category.objects.filter(slug=cfg["root_slug"]).first()
             if root is None:
                 root = Category.add_root(
                     name=cfg["root_name"],
