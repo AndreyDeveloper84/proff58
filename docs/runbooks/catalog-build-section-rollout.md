@@ -50,8 +50,20 @@ bash scripts/backup.sh
 docker compose -f docker-compose.prod.yml exec web ls data/ | grep -c product_type_rules
 docker compose -f docker-compose.prod.yml exec web python manage.py help catalog_build_section >/dev/null && echo "команда есть"
 
-# 1.4 Снять «до»-срез дерева для сравнения (аудит пишет отчёты в docs/reports).
-docker compose -f docker-compose.prod.yml exec web python manage.py catalog_taxonomy_audit --stdout | tee /tmp/audit-before.txt
+# 1.4 Снять «до»-срез ДЕРЕВА ИЗ БД (именно его меняет build_section).
+#     ВНИМАНИЕ: catalog_taxonomy_audit здесь НЕ годится — он анализирует статический
+#     дамп data/catalog_fixed.json, а не живую БД (срез был бы одинаковым до/после).
+docker compose -f docker-compose.prod.yml exec web python manage.py shell -c "
+from apps.catalog.models import Category, Product
+print('Всего товаров:', Product.objects.count(),
+      '| ручных(manual):', Product.objects.filter(category_is_manual=True).count(),
+      '| без категории:', Product.objects.filter(category__isnull=True).count())
+print('slug | раздел | узлов | товаров(с потомками)')
+for root in Category.get_root_nodes():
+    nodes = [root] + list(root.get_descendants())
+    n = Product.objects.filter(category__in=nodes).count()
+    print(f'{root.slug:22s} {root.name:34s} {len(nodes):4d} {n:7d}')
+" | tee /tmp/tree-before.txt
 ```
 
 > Везде далее: `WEB="docker compose -f docker-compose.prod.yml exec web python manage.py"`.
@@ -144,11 +156,22 @@ for p in n.products.order_by('?')[:10]:
 **Критерий приёмки раздела:** счётчики совпадают с dry-run; в спот-чеке нет товаров
 из чужого раздела; «пропущено ручных» растёт по мере продвижения по порядку.
 
-После всех 13 разделов — общий аудит и сравнение с «до»:
+После всех 13 разделов — снять «после»-срез ДЕРЕВА из БД (тем же скриптом, что в §1.4)
+и сравнить с «до»:
 
 ```bash
-$WEB catalog_taxonomy_audit --stdout | tee /tmp/audit-after.txt
-diff /tmp/audit-before.txt /tmp/audit-after.txt | head -60
+$WEB shell -c "
+from apps.catalog.models import Category, Product
+print('Всего товаров:', Product.objects.count(),
+      '| ручных(manual):', Product.objects.filter(category_is_manual=True).count(),
+      '| без категории:', Product.objects.filter(category__isnull=True).count())
+print('slug | раздел | узлов | товаров(с потомками)')
+for root in Category.get_root_nodes():
+    nodes = [root] + list(root.get_descendants())
+    n = Product.objects.filter(category__in=nodes).count()
+    print(f'{root.slug:22s} {root.name:34s} {len(nodes):4d} {n:7d}')
+" | tee /tmp/tree-after.txt
+diff /tmp/tree-before.txt /tmp/tree-after.txt
 ```
 
 ---
