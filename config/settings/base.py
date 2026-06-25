@@ -99,6 +99,11 @@ CACHES = {
     }
 }
 
+# Кэш фасетов каталога (#222, P1-2). 0 → выключен (dev/CI: тесты не зависят от кэша и его
+# межтестовой персистентности). В проде включается (см. config/settings/prod.py). Инвалидация —
+# версионная, по сигналам изменения товаров/категорий/привязок атрибутов (apps/catalog/signals.py).
+FACETS_CACHE_TTL = env.int("FACETS_CACHE_TTL", default=0)
+
 AUTH_USER_MODEL = "accounts.User"
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -170,6 +175,11 @@ SYNC_STALE_TIMEOUT = env.int("SYNC_STALE_TIMEOUT", default=30 * 60)  # секу�
 # Hard time_limit задачи импорта (SIGKILL воркера). soft_time_limit на минуту меньше —
 # даёт задаче финализировать прогон в ERROR до жёсткого убийства.
 SYNC_IMPORT_TIME_LIMIT = env.int("SYNC_IMPORT_TIME_LIMIT", default=15 * 60)  # секунды
+
+# MAX Bot (мессенджер) — уведомления и авторизация (docs/max-bot-setup.md).
+MAX_BOT_TOKEN = env("MAX_BOT_TOKEN", default="")
+MAX_WEBHOOK_SECRET = env("MAX_WEBHOOK_SECRET", default="")
+MAX_BOT_API_URL = env("MAX_BOT_API_URL", default="https://platform-api.max.ru")
 
 # Feature-флаги. Инфраструктурные — здесь (через env, меняют разработчики).
 # Бизнес-флаги (reviews/b2b/...) живут в SiteSettings. Проверка — через

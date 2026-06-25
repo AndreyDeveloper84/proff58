@@ -495,6 +495,173 @@ def test_sverla_hex_shank_diameter_via_f(rules):
     assert f["shank_type"].option_slug == "hex"
 
 
+# --- Хвост Оснастки: Пики/долота, Биты, Пилки/полотна, Резцы -------------------
+
+
+def test_piki_dolota_shank_and_length(rules):
+    f = {v.slug: v for v in rules.extract("piki-dolota", "Долото 20х250 SDS-PLUS ЗУБР")}
+    assert f["shank_type"].option_slug == "sds-plus"
+    assert f["length"].number == Decimal("250")
+
+
+def test_bity_bit_type(rules):
+    def opt(name):
+        return {v.slug: v for v in rules.extract("bity", name)}["bit_type"].option_slug
+
+    assert opt("Бита PH2 25мм") == "ph"
+    assert opt("Бита TX20 50мм") == "torx"
+    assert opt("Бита PZ2 50мм ЗУБР") == "pz"
+
+
+def test_pilki_purpose_and_saw_for(rules):
+    f = {
+        v.slug: v for v in rules.extract("pilki-polotna", "Пилки для электролобзика по металлу 2шт")
+    }
+    assert f["purpose"].option_slug == "metall"
+    assert f["saw_for"].option_slug == "lobzik"
+
+
+def test_reztsy_material(rules):
+    f = {v.slug: v for v in rules.extract("reztsy", "Резец проходной 16х16 Т15К6 твердосплав")}
+    assert f["material"].option_slug == "carbide"
+
+
+# --- Шлифкруги (tool_type=krugi-shlif): Ø-whitelist + тип абразива --------------
+
+
+def test_krugi_shlif_diameter_and_type(rules):
+    f = {v.slug: v for v in rules.extract("krugi-shlif", "Круг лепестковый КЛТ 125х22,2 P60 ЗУБР")}
+    assert f["disc_diameter"].number == Decimal("125")
+    assert f["disc_type"].option_slug == "flap"
+
+
+def test_krugi_shlif_grinding_type(rules):
+    f = {v.slug: v for v in rules.extract("krugi-shlif", "Круг шлифовальный 150х20х32 14А")}
+    assert f["disc_diameter"].number == Decimal("150")
+    assert f["disc_type"].option_slug == "grinding"
+
+
+# --- Ручной инструмент: ключи / отвёртки / головки / воротки / молотки ---------
+
+
+def test_klyuchi_type_and_size(rules):
+    f = {v.slug: v for v in rules.extract("klyuchi-gaechnye", "Ключ комбинированный 17мм CrV ЗУБР")}
+    assert f["wrench_type"].option_slug == "kombinir"
+    assert f["size"].number == Decimal("17")
+
+
+def test_golovki_drive_and_size(rules):
+    f = {v.slug: v for v in rules.extract("golovki", 'Головка торцевая 1/2" 13мм 6-гранная')}
+    assert f["drive"].option_slug == "d-1-2"
+    assert f["size"].number == Decimal("13")
+
+
+def test_vorotki_drive_and_type(rules):
+    f = {v.slug: v for v in rules.extract("vorotki", "Вороток 1/2 250мм Т-образный с трещоткой")}
+    assert f["drive"].option_slug == "d-1-2"
+    assert f["vorotok_type"].option_slug == "treshch"  # трещотка приоритетнее
+
+
+def test_molotki_weight_and_type(rules):
+    f = {v.slug: v for v in rules.extract("molotki", "Молоток слесарный 500г фиберглас")}
+    assert f["weight"].number == Decimal("500")
+    assert f["molotok_type"].option_slug == "slesar"
+
+
+def test_otvertki_bit_profile(rules):
+    f = {v.slug: v for v in rules.extract("otvertki", "Отвертка крестовая PH2x100мм")}
+    assert f["bit_type"].option_slug == "ph"
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Набор отверток 10шт KRAFTOOL X-DRIVE", 10),
+        ("Набор отвертка 6 предметов Ultra Grip", 6),
+        ("Набор отверток 34 предмета ЗУБР Компакт", 34),
+        ("Набор отверток KRAFTOOL 19в1", 19),
+        ("Отвертка с набором бит 145 предметов Cablexpert", 145),
+    ],
+)
+def test_nabory_otvertok_piece_count(rules, name, expected):
+    v = {x.slug: x for x in rules.extract("nabory-otvertok", name)}.get("piece_count")
+    assert v is not None and v.number == Decimal(str(expected))
+
+
+def test_nabory_otvertok_piece_count_ignores_model_codes(rules):
+    # Модельный код без «шт/предметов» (латиница не транслитерируется) не даёт ложного piece_count.
+    f = {x.slug: x for x in rules.extract("nabory-otvertok", "Набор отверток SD-9302 ProsKit")}
+    assert "piece_count" not in f
+
+
+def _attrs(rules, tt, name):
+    return {v.slug: v for v in rules.extract(tt, name)}
+
+
+@pytest.mark.parametrize(
+    "name,length,ptype",
+    [
+        ("Длинногубцы 160 мм прямые Matrix", 160, "dlinnogubtsy"),
+        ("Пассатижи 200мм ЗУБР", 200, "passatizhi-t"),
+        ("Утконосы 250 мм Matrix", 250, "utkonosy"),
+        ("Круглогубцы 140 мм", 140, "kruglogubtsy"),
+    ],
+)
+def test_passatizhi_length_and_type(rules, name, length, ptype):
+    f = _attrs(rules, "passatizhi", name)
+    assert f["length"].number == Decimal(str(length))
+    assert f["plier_type"].option_slug == ptype
+
+
+@pytest.mark.parametrize(
+    "name,length,btype",
+    [
+        ("Бокорезы 110 мм МИНИ Archimedes", 110, "bokorezy-t"),
+        ("Кусачки боковые 160мм KRAFTOOL", 160, "kusachki"),
+        ("Клещи переставные 250мм Hanskonner", 250, "kleshchi"),
+    ],
+)
+def test_bokorezy_length_and_type(rules, name, length, btype):
+    f = _attrs(rules, "bokorezy", name)
+    assert f["length"].number == Decimal(str(length))
+    assert f["bokorez_type"].option_slug == btype
+
+
+@pytest.mark.parametrize(
+    "name,cap,dtype",
+    [
+        ("Домкрат бутылочный 2т 150-310мм ЗУБР", "2", "butylochnyy"),
+        ("Домкрат 1,5т ромбовый 110-360мм Stels", "1.5", "rombovyy"),
+        ("Домкрат подкатной гидравлический 3т Inforce", "3", "gidravl"),
+        ("Домкрат реечный 5 т", "5", "reechnyy"),
+    ],
+)
+def test_domkraty_capacity_and_type(rules, name, cap, dtype):
+    f = _attrs(rules, "domkraty", name)
+    assert f["capacity"].number == Decimal(cap)
+    assert f["domkrat_type"].option_slug == dtype
+
+
+def test_domkraty_capacity_ignores_cyrillic_after_t(rules):
+    # «т» внутри слова (телескопический/тонна без цифры) не должно давать ложную тоннаж.
+    f = _attrs(rules, "domkraty", "Домкрат телескопический подкатной")
+    assert "capacity" not in f
+
+
+@pytest.mark.parametrize(
+    "name,length,saw_for",
+    [
+        ("Ножовка по дереву 450мм Бобер", 450, "po-derevu"),
+        ("Ножовка по металлу 300 мм STAYER", 300, "po-metallu"),
+        ("Ножовка для газобетона 700мм", 700, "po-gazobetonu"),
+    ],
+)
+def test_nozhovki_length_and_purpose(rules, name, length, saw_for):
+    f = _attrs(rules, "nozhovki", name)
+    assert f["length"].number == Decimal(str(length))
+    assert f["nozhovka_for"].option_slug == saw_for
+
+
 @pytest.mark.django_db
 def test_attribute_coverage_command_counts():
     """Команда attribute_coverage считает покрытие по товарам нужного tool_type."""

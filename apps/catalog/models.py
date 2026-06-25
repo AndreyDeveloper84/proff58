@@ -151,6 +151,15 @@ class AttributeOption(models.Model):
         return f"{self.attribute.name}: {self.value}"
 
 
+class FacetGroup(models.TextChoices):
+    """Раздел фильтра в сайдбаре витрины (§22.4). «Базовые» (бренд/наличие/цена/тип
+    питания) и навигация (tool_type) определяются отдельно, поэтому здесь только две
+    группы технических фильтров: основные и дополнительные (последние сворачиваются)."""
+
+    MAIN = "main", _("Основные")
+    EXTRA = "extra", _("Дополнительные")
+
+
 class CategoryAttribute(models.Model):
     """Привязка характеристики к категории с метаданными отображения."""
 
@@ -165,6 +174,16 @@ class CategoryAttribute(models.Model):
         _("Использовать в фильтре"),
         default=True,
         help_text=_("Характеристика участвует в фасетных фильтрах этой категории."),
+    )
+    group = models.CharField(
+        _("Группа фильтра"),
+        max_length=8,
+        choices=FacetGroup.choices,
+        default=FacetGroup.MAIN,
+        help_text=_(
+            "Раздел в сайдбаре: «Основные» или «Дополнительные» (свёрнуты по умолчанию). "
+            "Куратор переносит сюда второстепенные характеристики (вход — coverage-отчёт #225)."
+        ),
     )
     is_seo_facet = models.BooleanField(
         _("SEO-фасет"),
@@ -186,6 +205,7 @@ class CategoryAttribute(models.Model):
 class MappingRuleType(models.TextChoices):
     ARTICLE = "article", _("По артикулу (точное совпадение)")
     NAME_CONTAINS = "name_contains", _("По слову в названии")
+    REGEX = "regex", _("По регулярному выражению (имя)")
     BRAND_PREFIX = "brand_prefix", _("По бренду + серии модели")
     SOURCE_GROUP = "source_group", _("По исходной группе 1С")
 
@@ -205,6 +225,15 @@ class CategoryMappingRule(models.Model):
         help_text=_(
             "Артикул / слово в названии / серия модели / название группы 1С — "
             "в зависимости от типа правила."
+        ),
+    )
+    exclude_pattern = models.CharField(
+        _("Исключение (regex по имени)"),
+        max_length=255,
+        blank=True,
+        help_text=_(
+            "Негативный guard: если выражение найдено в названии — правило НЕ "
+            "срабатывает (напр. «бур», но исключить «бурения земл|мотобур»)."
         ),
     )
     brand = models.CharField(

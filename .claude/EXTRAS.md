@@ -163,6 +163,24 @@ export TDD_GUARD_ENABLE=1          # активировать обёртку и 
 - Неблокирующий (всегда `exit 0`): при находке печатает предупреждение в контекст.
 - Кросс-платформенный: принудительный UTF-8 для stdin/stdout, пропуск заглушки
   `python3` из Microsoft Store на Windows.
+## 7. Активировано для задачи «Таксономия каталога»
+
+Под редизайн иерархии каталога (`docs/plans/catalog-taxonomy-redesign.md`)
+включён минимально-достаточный набор:
+
+- **Каталог-иерархия:** `characterize-subgroup` (проектный, уже был активен).
+- **Код/логика (Django/Postgres):** скопированы в `.claude/skills/` из
+  `skills-library/ecc-zh/` — `django-patterns`, `django-tdd`,
+  `django-verification`, `postgres-patterns` (содержание ECC на китайском —
+  методология под наш стек; на общение по-русски не влияет).
+- **Инженерный процесс:** `gstack` подключён симлинком
+  `~/.claude/skills/gstack → .claude/skills-library/gstack` (без сборки
+  браузер-бинаря). Доступны `/spec`, `/review`, `/qa`, `/plan-eng-review`,
+  `/ship`, `/retro`.
+
+> Симлинк gstack живёт в `~/.claude` (эфемерно) — пересоздаётся командой из
+> раздела 3; ecc-zh-скиллы лежат в репозитории и переживают пересборку.
+> Деактивация: удалить папки из `.claude/skills/` и симлинк.
 
 ---
 

@@ -1,4 +1,6 @@
+from django import forms
 from django.contrib import admin, messages
+from django.contrib.admin.helpers import ActionForm
 from django.db import transaction
 from django.db.models import Count, IntegerField, OuterRef, Q, Subquery
 from django.db.models.functions import Coalesce
@@ -41,17 +43,97 @@ class CategoryAttributeInline(admin.TabularInline):
     model = CategoryAttribute
     extra = 1
     autocomplete_fields = ["attribute"]
-    fields = ("attribute", "is_filter", "is_seo_facet", "is_required", "sort_order")
+    fields = ("attribute", "is_filter", "group", "is_seo_facet", "is_required", "sort_order")
+
+
+class CategoryAdminForm(movenodeform_factory(Category)):
+    """Форма дерева категорий с подсказкой о независимости от 1С.
+
+    Дерево категорий — мастер структуры сайта (ведётся ЗДЕСЬ). Связь с 1С
+    (`external_id_1c`) — справочная: переразбор/импорт 1С не меняет дерево и не
+    перетирает ручные категории товаров (`category_is_manual`).
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "external_id_1c" in self.fields:
+            self.fields["external_id_1c"].help_text = _(
+                "Справочный код группы 1С. Дерево категорий ведётся здесь, в админке "
+                "(сайт — мастер структуры). Импорт/переразбор 1С НЕ меняет это дерево и "
+                "не перетирает ручные категории товаров."
+            )
 
 
 @admin.register(Category)
 class CategoryAdmin(TreeAdmin):
-    form = movenodeform_factory(Category)
-    list_display = ("name", "slug", "external_id_1c", "on_site", "is_active", "sort_order")
+    form = CategoryAdminForm
+    # Крупный заголовок с именем редактируемой категории (вместо общего «Категории»).
+    change_form_template = "admin/catalog/category/change_form.html"
+    list_display = (
+        "name",
+        "slug",
+        "external_id_1c",
+        "products_count",
+        "published_count",
+        "on_site",
+        "is_active",
+        "sort_order",
+    )
     list_filter = ("on_site", "is_active")
     prepopulated_fields = {"slug": ("name",)}
     search_fields = ("name", "slug", "external_id_1c")
     inlines = [CategoryAttributeInline]
+    actions = [
+        "action_show_on_site",
+        "action_hide_from_site",
+        "action_activate",
+        "action_deactivate",
+    ]
+
+    def get_queryset(self, request):
+        # Количество товаров (всего и опубликованных) в категории — аннотацией,
+        # чтобы колонки списка не плодили N+1. distinct=True обязателен: два Count
+        # по одной связи products без него перемножились бы.
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                _products=Count("products", distinct=True),
+                _published=Count(
+                    "products",
+                    filter=Q(products__status=ProductStatus.PUBLISHED),
+                    distinct=True,
+                ),
+            )
+        )
+
+    @admin.display(description=_("Товаров"), ordering="_products")
+    def products_count(self, obj):
+        return getattr(obj, "_products", 0)
+
+    @admin.display(description=_("Опубл."), ordering="_published")
+    def published_count(self, obj):
+        return getattr(obj, "_published", 0)
+
+    @admin.action(description=_("Показать на сайте"))
+    def action_show_on_site(self, request, queryset):
+        n = queryset.update(on_site=True)
+        self.message_user(request, _("Показано на сайте: %d") % n)
+
+    @admin.action(description=_("Скрыть с сайта"))
+    def action_hide_from_site(self, request, queryset):
+        n = queryset.update(on_site=False)
+        self.message_user(request, _("Скрыто с сайта: %d") % n)
+
+    @admin.action(description=_("Активировать"))
+    def action_activate(self, request, queryset):
+        n = queryset.update(is_active=True)
+        self.message_user(request, _("Активировано: %d") % n)
+
+    @admin.action(description=_("Деактивировать"))
+    def action_deactivate(self, request, queryset):
+        n = queryset.update(is_active=False)
+        self.message_user(request, _("Деактивировано: %d") % n)
 
 
 @admin.register(Attribute)
@@ -185,12 +267,43 @@ class ProductAttributeValueAdmin(admin.ModelAdmin):
 
 @admin.register(CategoryMappingRule)
 class CategoryMappingRuleAdmin(admin.ModelAdmin):
-    list_display = ("priority", "rule_type", "pattern", "brand", "target_category", "is_active")
+    list_display = (
+        "priority",
+        "rule_type",
+        "pattern",
+        "exclude_pattern",
+        "target_category",
+        "is_active",
+    )
     list_filter = ("rule_type", "is_active", "target_category")
-    search_fields = ("pattern", "brand", "note")
+    search_fields = ("pattern", "exclude_pattern", "brand", "note")
     list_editable = ("is_active",)
     autocomplete_fields = ["target_category"]
     ordering = ("priority", "id")
+    fieldsets = (
+        (
+            None,
+            {
+                "description": _(
+                    "Слой маршрутизации «группа/признак 1С → категория сайта». Правила "
+                    "влияют только на авторазбор НОВЫХ и ещё не размеченных вручную "
+                    "товаров: товар с ручной категорией (category_is_manual) правила НЕ "
+                    "трогают. Само дерево категорий правила не меняют — оно ведётся в "
+                    "разделе «Категории»."
+                ),
+                "fields": (
+                    "rule_type",
+                    "pattern",
+                    "exclude_pattern",
+                    "brand",
+                    "target_category",
+                    "priority",
+                    "is_active",
+                    "note",
+                ),
+            },
+        ),
+    )
 
 
 class UncategorizedFilter(admin.SimpleListFilter):
@@ -329,8 +442,20 @@ class ProductCompatibilityIncomingInline(admin.TabularInline):
         return False
 
 
+class ProductActionForm(ActionForm):
+    """Action-форма списка товаров с выбором целевой категории для bulk-перепривязки."""
+
+    target_category = forms.ModelChoiceField(
+        queryset=Category.objects.filter(is_active=True),
+        required=False,
+        label=_("Категория для перепривязки"),
+        help_text=_("Используется действием «Перепривязать…»."),
+    )
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    action_form = ProductActionForm
     list_display = (
         "name",
         "article",
@@ -368,7 +493,12 @@ class ProductAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
-    actions = ["action_publish", "action_needs_review", "action_rebuild_attrs_cache"]
+    actions = [
+        "action_set_category",
+        "action_publish",
+        "action_needs_review",
+        "action_rebuild_attrs_cache",
+    ]
     fieldsets = (
         (
             None,
@@ -376,7 +506,15 @@ class ProductAdmin(admin.ModelAdmin):
         ),
         (
             _("Категория сайта"),
-            {"fields": ("category", "category_is_manual", "matched_rule")},
+            {
+                "description": _(
+                    "Категория ведётся на сайте (1С её не диктует). Ручное назначение "
+                    "включает «Категория задана вручную» — после этого импорт/авторазбор "
+                    "1С её НЕ меняет. Массовая перепривязка — действием «Перепривязать "
+                    "выбранные товары…» в списке товаров."
+                ),
+                "fields": ("category", "category_is_manual", "matched_rule"),
+            },
         ),
         (
             _("Данные из 1С"),
@@ -591,6 +729,47 @@ class ProductAdmin(admin.ModelAdmin):
                 )
 
         transaction.on_commit(_send)
+
+    @admin.action(description=_("Перепривязать выбранные товары в категорию (поле справа)"))
+    def action_set_category(self, request, queryset):
+        # Bulk-перепривязка в категорию из поля action-формы. Фиксируем
+        # category_is_manual=True — это и есть защита: дальнейший авторазбор/импорт
+        # 1С эти товары не перевесит. Категория не влияет на attrs_cache, поэтому
+        # update() безопасен; событие эмитим по реально затронутым.
+        cat_id = request.POST.get("target_category")
+        if not cat_id:
+            self.message_user(
+                request,
+                _("Выберите категорию в поле «Категория для перепривязки» рядом с действием."),
+                level=messages.WARNING,
+            )
+            return
+        category = Category.objects.filter(is_active=True, pk=cat_id).first()
+        if category is None:
+            self.message_user(
+                request,
+                _("Категория не найдена или неактивна."),
+                level=messages.ERROR,
+            )
+            return
+        # Меняем ТОЛЬКО товары с другой категорией (паттерн action_publish): чтобы
+        # не слать ложные product_updated и не переводить в «ручной» режим товары,
+        # которые и так уже в этой категории. Категория не влияет на attrs_cache —
+        # update() безопасен.
+        changed = queryset.exclude(category=category)
+        ids = list(changed.values_list("id", flat=True))
+        updated = changed.update(category=category, category_is_manual=True)
+        skipped = queryset.count() - updated
+        if ids:
+            self._emit_bulk_updated(ids, ["category"])
+        self.message_user(
+            request,
+            _(
+                "Перепривязано в «%(cat)s»: %(n)d (уже были в категории: %(s)d). "
+                "Зафиксировано как ручное — переразбор/импорт 1С эти товары не изменит."
+            )
+            % {"cat": category.name, "n": updated, "s": skipped},
+        )
 
     @admin.action(description=_("Опубликовать выбранные товары"))
     def action_publish(self, request, queryset):

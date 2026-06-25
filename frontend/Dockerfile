@@ -1,15 +1,18 @@
+# syntax=docker/dockerfile:1
 # Headless storefront (Next.js standalone). Отдельный контейнер за nginx.
 FROM node:22-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+# Кэш npm между деплоями (BuildKit): при изменении lockfile не качаем пакеты заново.
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 FROM node:22-slim AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+# Кэш инкрементальной сборки Next (.next/cache) между деплоями — резко ускоряет next build.
+RUN --mount=type=cache,target=/app/.next/cache npm run build
 
 FROM node:22-slim AS runner
 WORKDIR /app

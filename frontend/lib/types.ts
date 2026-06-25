@@ -53,6 +53,9 @@ export type FacetOption = {
 // видны только после выбора tool_type или на листовой/типизированной категории.
 export type FacetKind = "nav" | "base" | "tech";
 
+// Группа технического фасета в сайдбаре (§22.4): «Основные» / «Дополнительные».
+export type FacetGroupKind = "main" | "extra";
+
 export type Facet = {
   code: string;
   label: string;
@@ -66,6 +69,10 @@ export type Facet = {
   isNav?: boolean;
   // Класс для гейтинга сайдбара (классифицируется в adapters при маппинге).
   kind?: FacetKind;
+  // Раздел сайдбара (§22.4, D1/D2): main — «Основные»; extra — «Дополнительные» (свёрнуты).
+  // Маппится из ApiFacet.group. Осмыслен только для технических (kind:"tech") фасетов;
+  // базовые (kind:"base") и навигация (kind:"nav") группируются отдельно. undefined → main.
+  group?: FacetGroupKind;
 };
 
 export type SortOption = "popular" | "price_asc" | "price_desc" | "new" | "rating";
@@ -104,4 +111,90 @@ export type Listing = {
   page: number;
   perPage: number;
   products: Product[];
+};
+
+// ---------------------------------------------------------------------------
+// Корзина и заказ (#246). Формы 1:1 с контрактом DRF apps/orders/api/serializers
+// (денежные поля — строки, как их рендерит DecimalField; null при отсутствии цены).
+// Доступ из браузера — только через same-origin BFF (app/api/cart*, app/api/orders).
+// ---------------------------------------------------------------------------
+export type CartLine = {
+  id: number;
+  product_id: number;
+  name: string;
+  slug: string;
+  quantity: number;
+  price_final: string | null;
+  price_base: string | null;
+  discount: string | null;
+  price_type: string;
+  currency: string;
+  line_total: string | null;
+};
+
+export type Cart = {
+  id: number;
+  status: string;
+  lines: CartLine[];
+  total: string;
+  currency: string;
+};
+
+export type OrderItem = {
+  id: number;
+  product_id: number | null;
+  code_1c: string;
+  article: string;
+  name: string;
+  unit: string;
+  price_base: string | null;
+  price_final: string | null;
+  discount: string | null;
+  price_type: string;
+  currency: string;
+  quantity: number;
+  line_total: string | null;
+};
+
+export type Order = {
+  id: number;
+  order_number: string;
+  external_order_id: string;
+  fulfillment_status: string;
+  payment_status: string;
+  sync_1c_status: string;
+  display_status: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  customer_type: string;
+  company_name: string;
+  inn: string;
+  kpp: string;
+  legal_address: string;
+  delivery_method: string;
+  delivery_address: string;
+  comment: string;
+  payment_method: string;
+  total: string;
+  currency: string;
+  created_at: string;
+  items: OrderItem[];
+};
+
+// Тело POST /api/orders/ (см. CreateOrderSerializer). Цена считается на сервере —
+// никакие price-поля не передаём. Пустые опциональные поля бэк примет как "".
+export type PlaceOrderData = {
+  customer_name: string;
+  customer_phone: string;
+  customer_email?: string;
+  customer_type?: string;
+  company_name?: string;
+  inn?: string;
+  kpp?: string;
+  legal_address?: string;
+  delivery_method: string;
+  delivery_address?: string;
+  comment?: string;
+  payment_method: string;
 };
