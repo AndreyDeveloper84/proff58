@@ -13,7 +13,7 @@ import operator
 from collections import Counter
 from functools import reduce
 
-from django.db.models import Count, FloatField, Max, Min, Q
+from django.db.models import Case, Count, FloatField, Max, Min, Q, Value, When
 from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast
 
@@ -31,6 +31,11 @@ MAX_BRAND_FACETS = 50
 
 _BOOL_TRUE = {"true", "1", "yes", "да"}
 _BOOL_FALSE = {"false", "0", "no", "нет"}
+
+# Числовой литерал для guarded-каста диапазонов (целое/десятичное, опц. минус). POSIX-regex
+# Postgres (lookup ``__regex`` → ``~``). Нечисловая строка под числовым атрибутом не должна
+# ронять запрос в DataError → CASE кастит только прошедшие этот гард (см. _apply_attr_ranges).
+_NUMERIC_RE = r"^-?[0-9]+(\.[0-9]+)?$"
 
 
 class FacetError(ValueError):
@@ -155,12 +160,31 @@ def _apply_attr_ranges(qs, ranges, exclude=None):
     т.е. товары БЕЗ атрибута исключаются (containment этого не делал — он сравнивал значение,
     а не наличие). ``exclude`` — снять диапазон своего фасета (drill-down). Alias по индексу,
     чтобы slug с дефисами не ломал имя аннотации и диапазоны не конфликтовали между собой.
+
+    Guarded cast: голый ``::float`` падал бы с DataError (→ HTTP 500 на публичном AllowAny
+    эндпоинте), если у товара под числовым атрибутом в кэше лежит нечисловая строка
+    (рассинхрон пайплайна импорта, ручная правка). ``CASE`` гарантирует, что ``Cast``
+    выполняется ТОЛЬКО для значений, прошедших ``_NUMERIC_RE``; прочее → NULL → товар
+    отбрасывается (та же семантика, что и отсутствие ключа).
     """
     for i, (slug, (lo, hi)) in enumerate(ranges.items()):
         if slug == exclude or (lo is None and hi is None):
             continue
+        txt = f"_rngtxt_{i}"
         alias = f"_rng_{i}"
-        qs = qs.annotate(**{alias: Cast(KeyTextTransform(slug, "attrs_cache"), FloatField())})
+        qs = qs.annotate(**{txt: KeyTextTransform(slug, "attrs_cache")})
+        qs = qs.annotate(
+            **{
+                alias: Case(
+                    When(
+                        **{f"{txt}__regex": _NUMERIC_RE},
+                        then=Cast(KeyTextTransform(slug, "attrs_cache"), FloatField()),
+                    ),
+                    default=Value(None),
+                    output_field=FloatField(),
+                )
+            }
+        )
         if lo is not None:
             qs = qs.filter(**{f"{alias}__gte": lo})
         if hi is not None:
@@ -381,7 +405,13 @@ def build_facets(
         )
         counter: Counter = Counter()
         for row in rows:
-            counter[_cast_facet_value(row["_fv"], attr.attribute_type)] = row["c"]
+            try:
+                key = _cast_facet_value(row["_fv"], attr.attribute_type)
+            except (ValueError, TypeError):
+                # Нечисловой мусор под числовым атрибутом (рассинхрон кэша): пропускаем
+                # значение, а не роняем весь ответ фасетов в 500 (парный гард к _apply_attr_ranges).
+                continue
+            counter[key] = row["c"]
         if not counter:
             continue  # пустой фасет не отдаём
 
