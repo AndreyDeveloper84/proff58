@@ -34,6 +34,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.catalog.category_tree import invalidate_category_tree_cache
+from apps.catalog.facets import invalidate_facets_cache
 from apps.catalog.models import Category, Product
 from apps.catalog.semantic import SECTION_RULES, classify, load_rules, translit_slug
 from apps.core.events import EventSource, product_updated
@@ -306,6 +308,10 @@ class Command(BaseCommand):
                         source=EventSource.SYSTEM,
                         changed_fields=["category"],
                     )
+                # bulk .update() обошёл post_save → инвалидация кэшей вручную (иначе
+                # фасеты/дерево «залипнут» до TTL после создания узлов и переноса товаров).
+                invalidate_facets_cache()
+                invalidate_category_tree_cache()
 
             transaction.on_commit(_emit)
 
@@ -367,6 +373,8 @@ class Command(BaseCommand):
             for node in sorted(nodes, key=lambda c: c.depth, reverse=True):
                 if not node.get_children().exists() and not node.products.exists():
                     node.delete()
+            transaction.on_commit(invalidate_facets_cache)
+            transaction.on_commit(invalidate_category_tree_cache)
         self.stdout.write(
             self.style.SUCCESS(
                 f"ROLLBACK: восстановлено товаров {len(data.get('products', []))}, "
