@@ -450,6 +450,22 @@ export async function fetchListingFromApi(
   };
 }
 
+// Поиск по каталогу (SSR-страница /search): ProductListView c ?search= ранжирует по
+// релевантности (trigram). Серверный вызов Next→Django (как fetchListingFromApi). Запрос
+// короче 2 символов или сбой API → пустой список (страница покажет «ничего не найдено»).
+export async function fetchSearchFromApi(base: string, q: string): Promise<Product[]> {
+  const query = q.trim();
+  if (query.length < 2) return [];
+  const root = base.replace(/\/$/, "");
+  const res = await fetch(
+    `${root}/api/catalog/products/?search=${encodeURIComponent(query)}`,
+    { cache: "no-store", headers: SSR_HEADERS },
+  );
+  if (!res.ok) return [];
+  const json = (await res.json()) as { results?: ApiProduct[] };
+  return (json.results ?? []).map(apiProductToProduct);
+}
+
 // Карточка товара (PDP): detail-эндпоинт + best-effort секции совместимости.
 // 404 → null (→ notFound() в page.tsx); иная ошибка detail → CatalogFetchError (→ error.tsx).
 export async function fetchProductFromApi(

@@ -5,9 +5,9 @@
 // NEXT_PUBLIC_USE_FIXTURES=true (не тихий fallback на staging).
 
 import perforatory from "@/fixtures/listing.perforatory.json";
-import { fetchListingFromApi, fetchProductFromApi } from "./adapters";
+import { fetchListingFromApi, fetchProductFromApi, fetchSearchFromApi } from "./adapters";
 import { applyListing } from "./filtering";
-import type { Listing, ListingQuery, ProductDetail } from "./types";
+import type { Listing, ListingQuery, Product, ProductDetail } from "./types";
 
 const FIXTURES: Record<string, Listing> = {
   perforatory: perforatory as unknown as Listing,
@@ -36,6 +36,14 @@ export async function getListing(query: ListingQuery): Promise<Listing | null> {
 
 export function listingCategories(): string[] {
   return Object.keys(FIXTURES);
+}
+
+// Поиск товаров для SSR-страницы /search. Без API_BASE (фикстур поиска нет) → пустой список.
+export async function searchProducts(q: string): Promise<Product[]> {
+  if (API_BASE && !FORCE_FIXTURES) {
+    return await fetchSearchFromApi(API_BASE, q);
+  }
+  return [];
 }
 
 // Карточка товара (PDP). Только режим API (фикстуры товара нет): без API_BASE или при
