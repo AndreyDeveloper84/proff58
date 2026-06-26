@@ -28,3 +28,23 @@ def test_invalid_phone_rejected(product):
     )
     assert not s.is_valid()
     assert "phone" in s.errors
+
+
+@pytest.mark.django_db
+def test_consultation_valid_without_product():
+    s = ProductInquirySerializer(
+        data={"kind": InquiryKind.CONSULTATION, "phone": "89990001122", "name": "Иван"}
+    )
+    assert s.is_valid(), s.errors
+    inquiry = s.save()
+    assert inquiry.product_id is None
+    assert inquiry.phone == "+79990001122"
+
+
+@pytest.mark.django_db
+def test_price_request_requires_product():
+    s = ProductInquirySerializer(
+        data={"kind": InquiryKind.PRICE_REQUEST, "phone": "89990001122"}
+    )
+    assert not s.is_valid()
+    assert "product" in s.errors
