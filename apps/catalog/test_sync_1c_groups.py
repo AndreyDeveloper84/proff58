@@ -59,13 +59,25 @@ def test_active_stale_discovered():
 
 
 @pytest.mark.django_db
-def test_mapped_category_by_external_id():
-    # категория с кодом группы «Биты» (00003859 в group_mapping.json) → привяжется.
-    cat = Category.add_root(name="Биты (сайт)", slug="bity-site", external_id_1c="00003859")
+def test_mapping_not_auto_set_and_preserved():
+    # Синк НЕ авто-ставит mapped_category (чистое состояние «только из 1С»).
     _p("Бита", "p-bit", "Биты")
     call_command("catalog_sync_1c_groups", "--commit", stdout=StringIO())
     bity = OneCGroup.objects.get(name="Биты")
-    assert bity.mapped_category_id == cat.id
+    assert bity.mapped_category_id is None
+
+    # Куратор задал категорию — повторный синк её НЕ затирает.
+    cat = Category.add_root(name="Биты v2", slug="bity-v2")
+    bity.mapped_category = cat
+    bity.save(update_fields=["mapped_category"])
+    call_command("catalog_sync_1c_groups", "--commit", stdout=StringIO())
+    bity.refresh_from_db()
+    assert bity.mapped_category_id == cat.id  # выбор куратора сохранён
+
+    # --reset-mapping обнуляет.
+    call_command("catalog_sync_1c_groups", "--commit", "--reset-mapping", stdout=StringIO())
+    bity.refresh_from_db()
+    assert bity.mapped_category_id is None
 
 
 @pytest.mark.django_db
