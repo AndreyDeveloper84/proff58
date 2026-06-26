@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "apps.sync_1c",
     "apps.pricing",
     "apps.orders",
+    "apps.leads",
     "apps.ai",
 ]
 
@@ -161,6 +162,7 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 24,
+    "DEFAULT_THROTTLE_RATES": {"inquiry": "20/hour"},
 }
 
 # Ключ для интеграции с 1С (заголовок X-Api-Key). Пустой = API для 1С закрыт.
