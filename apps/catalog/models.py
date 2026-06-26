@@ -74,6 +74,16 @@ class Category(MP_Node):
             "с учётной системой (ADR-0002). Узлы-контейнеры остаются пустыми."
         ),
     )
+    is_site_v2 = models.BooleanField(
+        _("Узел витрины v2"),
+        default=False,
+        db_index=True,
+        help_text=_(
+            "True — узел курируемого v2-дерева сайта (создан build_skeleton/build_section). "
+            "Отличает витринное дерево от легаси-категорий, зеркалящих группы 1С. Раздел "
+            "«Категории (сайт)» показывает только такие узлы."
+        ),
+    )
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
     meta_title = models.CharField(_("Meta title"), max_length=255, blank=True)
     meta_description = models.CharField(_("Meta description"), max_length=512, blank=True)
