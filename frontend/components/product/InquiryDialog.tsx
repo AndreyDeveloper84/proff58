@@ -83,8 +83,9 @@ export function InquiryDialog({
           <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => phase !== "submitting" && onClose()}
             aria-label="Закрыть"
+            disabled={phase === "submitting"}
             className="text-ink-3 hover:text-ink"
           >
             <X className="h-5 w-5" aria-hidden />
@@ -121,7 +122,7 @@ export function InquiryDialog({
             />
             {phase === "error" && (
               <p className="text-xs text-red-600">
-                Не удалось отправить. Проверьте телефон и попробуйте ещё раз.
+                Не удалось отправить заявку. Попробуйте ещё раз.
               </p>
             )}
             <Button type="submit" variant="accent" disabled={phase === "submitting"}>
