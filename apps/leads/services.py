@@ -9,7 +9,7 @@ from apps.core.events import product_inquiry_created
 from .models import ProductInquiry
 
 
-def create_inquiry(*, kind, product, phone, name="", message=""):
+def create_inquiry(*, kind, product=None, phone, name="", message=""):
     """Создать заявку по товару и опубликовать факт `product_inquiry_created`.
 
     Событие эмитится через on_commit — подписчик видит уже закоммиченную запись.
