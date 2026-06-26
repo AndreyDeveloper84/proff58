@@ -30,7 +30,7 @@ export function CategoryGrid({ categories }: CategoryGridProps) {
                     alt={cat.name}
                     fill
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="object-cover motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-105"
                   />
                 </div>
                 <span className="px-3 py-3 text-sm font-medium text-ink-2 transition group-hover:text-ink">
