@@ -106,6 +106,7 @@ export function Header() {
             <a
               href={HOME_CONTENT.topbar.phoneHref}
               className="py-2.5 text-sm font-medium text-ink"
+              onClick={() => setOpen(false)}
             >
               {HOME_CONTENT.topbar.phone}
             </a>

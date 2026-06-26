@@ -14,13 +14,40 @@ export function InquiryModal({ open, onClose }: InquiryModalProps) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const firstFieldRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
-  // Esc закрывает; фокус — в первое поле при открытии.
+  // Esc закрывает; фокус — в первое поле при открытии; Tab-фокус-трап внутри диалога.
   useEffect(() => {
     if (!open) return;
     firstFieldRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key === "Tab") {
+        const container = dialogRef.current;
+        if (!container) return;
+        const focusable = Array.from(
+          container.querySelectorAll<HTMLElement>(
+            'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((el) => !el.hasAttribute("disabled"));
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -76,6 +103,7 @@ export function InquiryModal({ open, onClose }: InquiryModalProps) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" onClick={onClose}>
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="inquiry-title"
@@ -108,6 +136,7 @@ export function InquiryModal({ open, onClose }: InquiryModalProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ваше имя"
+              aria-label="Ваше имя"
               className="w-full rounded-md border border-line bg-canvas px-3 py-2.5 text-sm text-ink outline-none focus:border-accent"
             />
             <input
@@ -115,12 +144,14 @@ export function InquiryModal({ open, onClose }: InquiryModalProps) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Телефон"
+              aria-label="Телефон"
               className="w-full rounded-md border border-line bg-canvas px-3 py-2.5 text-sm text-ink outline-none focus:border-accent"
             />
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Что подобрать? (необязательно)"
+              aria-label="Что подобрать?"
               rows={3}
               className="w-full rounded-md border border-line bg-canvas px-3 py-2.5 text-sm text-ink outline-none focus:border-accent"
             />
