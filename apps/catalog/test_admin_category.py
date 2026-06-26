@@ -51,3 +51,16 @@ def test_product_changelist_accepts_category_lookup(admin_client):
     resp = admin_client.get(url)
     assert resp.status_code == 200
     assert "Дрель" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_category_change_page_shows_product_count(admin_client):
+    """На странице правки категории есть поле «Товаров в категории» со ссылкой-drill-down."""
+    leaf = _leaf_with_product()
+
+    resp = admin_client.get(reverse("admin:catalog_category_change", args=[leaf.pk]))
+    assert resp.status_code == 200
+    html = resp.content.decode()
+    assert "Товаров в категории" in html
+    target = f'{reverse("admin:catalog_product_changelist")}?category__id__exact={leaf.pk}'
+    assert target in html

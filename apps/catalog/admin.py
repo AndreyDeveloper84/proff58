@@ -85,6 +85,7 @@ class CategoryAdmin(TreeAdmin):
     prepopulated_fields = {"slug": ("name",)}
     search_fields = ("name", "slug", "external_id_1c")
     inlines = [CategoryAttributeInline]
+    readonly_fields = ("products_total",)
     actions = [
         "action_show_on_site",
         "action_hide_from_site",
@@ -129,6 +130,18 @@ class CategoryAdmin(TreeAdmin):
         return self._product_count_link(
             obj.pk, getattr(obj, "_published", 0), status=ProductStatus.PUBLISHED.value
         )
+
+    @admin.display(description=_("Товаров в категории"))
+    def products_total(self, obj):
+        """Счётчик товаров на странице правки категории (со ссылкой-drill-down в список
+        товаров). Аннотация _products доступна и на форме (admin.get_object → get_queryset);
+        fallback на запрос — на случай отсутствия аннотации. На добавлении — прочерк."""
+        if obj is None or not obj.pk:
+            return "—"
+        count = getattr(obj, "_products", None)
+        if count is None:
+            count = obj.products.count()
+        return self._product_count_link(obj.pk, count)
 
     @admin.action(description=_("Показать на сайте"))
     def action_show_on_site(self, request, queryset):
