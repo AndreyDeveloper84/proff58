@@ -57,6 +57,10 @@ class Category(MP_Node):
     slug = models.SlugField(_("Slug"), max_length=255, unique=True)
     description = models.TextField(_("Описание"), blank=True)
     image = models.ImageField(_("Изображение"), upload_to="categories/", blank=True)
+    hero_image = models.ImageField(_("Hero: фон"), upload_to="categories/hero/", blank=True)
+    hero_eyebrow = models.CharField(_("Hero: слоган"), max_length=120, blank=True)
+    hero_cta_label = models.CharField(_("Hero: текст кнопки"), max_length=60, blank=True)
+    hero_cta_href = models.CharField(_("Hero: ссылка кнопки"), max_length=512, blank=True)
     is_active = models.BooleanField(_("Активна"), default=True)
     on_site = models.BooleanField(
         _("Показывать на сайте"),
