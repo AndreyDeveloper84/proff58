@@ -285,6 +285,14 @@ class OneCGroup(models.Model):
 
     code = models.CharField(_("Код 1С (external_id)"), max_length=50, blank=True, db_index=True)
     name = models.CharField(_("Имя группы 1С"), max_length=255, unique=True)
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="children",
+        verbose_name=_("Родительская группа 1С"),
+    )
     site_path = models.JSONField(_("Путь на сайте (из маппинга)"), default=list, blank=True)
     mapped_category = models.ForeignKey(
         "Category",
@@ -326,6 +334,20 @@ class GroupCategoryMapping(OneCGroup):
         proxy = True
         verbose_name = _("Сопоставление группы и категории")
         verbose_name_plural = _("Сопоставление групп и категорий")
+
+
+class SiteCategory(Category):
+    """Proxy-вид Category для раздела админки «Категории (сайт)».
+
+    Показывает ТОЛЬКО курируемое v2-дерево (поддеревья корней-разделов из
+    ``semantic.SECTION_RULES``), без легаси-категорий, зеркалящих группы 1С.
+    Та же таблица, что и «Категории»; фильтрация — в админке.
+    """
+
+    class Meta:
+        proxy = True
+        verbose_name = _("Категория (сайт)")
+        verbose_name_plural = _("Категории (сайт)")
 
 
 class ProductStatus(models.TextChoices):

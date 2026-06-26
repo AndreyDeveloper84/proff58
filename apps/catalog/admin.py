@@ -31,6 +31,7 @@ from .models import (
     ProductCompatibility,
     ProductImage,
     ProductStatus,
+    SiteCategory,
     Source,
 )
 from .read_models import rebuild_attrs_cache
@@ -931,25 +932,40 @@ class EnrichmentLogAdmin(admin.ModelAdmin):
 
 @admin.register(OneCGroup)
 class OneCGroupAdmin(admin.ModelAdmin):
-    """Реестр групп номенклатуры 1С (синкается catalog_sync_1c_groups; правится обменом)."""
+    """Реестр групп номенклатуры 1С (синкается catalog_sync_1c_groups; правится обменом).
+
+    Иерархия 1С: колонка «Родитель» + отступ в имени по глубине вложенности.
+    """
 
     list_display = (
-        "name",
+        "indented_name",
         "code",
+        "parent",
         "status",
         "product_count",
         "mapped_category",
-        "updated_at",
     )
-    list_filter = ("status",)
+    list_filter = ("status", "parent")
     search_fields = ("name", "code")
-    autocomplete_fields = ["mapped_category"]
+    autocomplete_fields = ["mapped_category", "parent"]
     readonly_fields = ("product_count", "updated_at")
-    ordering = ("-product_count", "name")
+    ordering = ("name",)
+    list_select_related = ("parent", "mapped_category")
 
     def has_add_permission(self, request):
         # Группы заводятся синком из 1С/маппинга, не вручную.
         return False
+
+    @admin.display(description=_("Группа 1С (с иерархией)"), ordering="name")
+    def indented_name(self, obj):
+        # Глубина по цепочке родителей (дерево неглубокое — 2–3 уровня).
+        depth, p, seen = 0, obj.parent, set()
+        while p is not None and p.id not in seen:
+            seen.add(p.id)
+            depth += 1
+            p = p.parent
+        prefix = format_html("".join(["&nbsp;&nbsp;&nbsp;&nbsp;"] * depth))
+        return format_html("{}{}{}", prefix, "└ " if depth else "", obj.name)
 
 
 @admin.register(GroupCategoryMapping)
@@ -983,3 +999,20 @@ class GroupCategoryMappingAdmin(admin.ModelAdmin):
             % {"m": moved, "s": skipped},
             level=messages.SUCCESS if moved else messages.WARNING,
         )
+
+
+@admin.register(SiteCategory)
+class SiteCategoryAdmin(CategoryAdmin):
+    """«Категории (сайт)» — только курируемое v2-дерево (поддеревья корней-разделов)."""
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        from apps.catalog.semantic import SECTION_RULES
+
+        roots = list(Category.objects.filter(slug__in=list(SECTION_RULES.keys())))
+        if not roots:
+            return qs.none()
+        cond = Q()
+        for r in roots:
+            cond |= Q(path__startswith=r.path)
+        return qs.filter(cond)

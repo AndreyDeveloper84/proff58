@@ -59,6 +59,18 @@ def test_active_stale_discovered():
 
 
 @pytest.mark.django_db
+def test_hierarchy_parent_set():
+    # «Биты» в дереве 1С лежит под «Буры, коронки, биты, пилки и полотна».
+    call_command("catalog_sync_1c_groups", "--commit", stdout=StringIO())
+    bity = OneCGroup.objects.get(name="Биты")
+    assert bity.parent is not None
+    assert bity.parent.name == "Буры, коронки, биты, пилки и полотна"
+    # у корневой группы родителя нет
+    root = OneCGroup.objects.get(name="Буры, коронки, биты, пилки и полотна")
+    assert root.parent is None
+
+
+@pytest.mark.django_db
 def test_mapping_not_auto_set_and_preserved():
     # Синк НЕ авто-ставит mapped_category (чистое состояние «только из 1С»).
     _p("Бита", "p-bit", "Биты")
