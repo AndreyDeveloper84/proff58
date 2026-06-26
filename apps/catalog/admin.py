@@ -31,6 +31,7 @@ from .models import (
     ProductCompatibility,
     ProductImage,
     ProductStatus,
+    SiteCategory,
     Source,
 )
 from .read_models import rebuild_attrs_cache
@@ -998,3 +999,20 @@ class GroupCategoryMappingAdmin(admin.ModelAdmin):
             % {"m": moved, "s": skipped},
             level=messages.SUCCESS if moved else messages.WARNING,
         )
+
+
+@admin.register(SiteCategory)
+class SiteCategoryAdmin(CategoryAdmin):
+    """«Категории (сайт)» — только курируемое v2-дерево (поддеревья корней-разделов)."""
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        from apps.catalog.semantic import SECTION_RULES
+
+        roots = list(Category.objects.filter(slug__in=list(SECTION_RULES.keys())))
+        if not roots:
+            return qs.none()
+        cond = Q()
+        for r in roots:
+            cond |= Q(path__startswith=r.path)
+        return qs.filter(cond)

@@ -336,6 +336,20 @@ class GroupCategoryMapping(OneCGroup):
         verbose_name_plural = _("Сопоставление групп и категорий")
 
 
+class SiteCategory(Category):
+    """Proxy-вид Category для раздела админки «Категории (сайт)».
+
+    Показывает ТОЛЬКО курируемое v2-дерево (поддеревья корней-разделов из
+    ``semantic.SECTION_RULES``), без легаси-категорий, зеркалящих группы 1С.
+    Та же таблица, что и «Категории»; фильтрация — в админке.
+    """
+
+    class Meta:
+        proxy = True
+        verbose_name = _("Категория (сайт)")
+        verbose_name_plural = _("Категории (сайт)")
+
+
 class ProductStatus(models.TextChoices):
     IMPORTED = "imported", _("Импортирован (не разобран)")
     NEEDS_REVIEW = "needs_review", _("Требует проверки")
