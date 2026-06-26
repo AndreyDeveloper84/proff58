@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Oswald } from "next/font/google";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import "./globals.css";
 
 // Body / UI — Inter; display (заголовки/цена/спек-статы) — узкий Oswald.
@@ -36,8 +37,11 @@ export default function RootLayout({
       <body className="min-h-full antialiased">
         {/* CartProvider — общее состояние корзины (счётчик Header, add-to-cart). */}
         <CartProvider>
-          <Header />
-          {children}
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
         </CartProvider>
       </body>
     </html>
