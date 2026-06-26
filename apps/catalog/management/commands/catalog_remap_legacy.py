@@ -10,6 +10,13 @@
     ./manage.py catalog_remap_legacy --section krepezh --from krepezh-i-metizy --commit  # применить
     ./manage.py catalog_remap_legacy --rollback var/restructure/remap-<...>.json
 
+Если таксономии расходятся по именам (легаси-подкатегория названа иначе, чем v2-узел),
+явные пары задаются через ``--map 'Легаси-имя=v2-имя'`` (повторяемо):
+
+    ./manage.py catalog_remap_legacy --section osnastka --from osnastka-i-rashodniki \\
+        --map 'Отрезные и шлифовальные круги=Круги' \\
+        --map 'Алмазные круги=Алмазная оснастка' --commit
+
 Матчинг — по нормализованному имени (lower, ё→е, схлоп пробелов). Несопоставленные
 легаси-узлы (нет v2-пары) НЕ трогаются — печатаются как хвост на разбор. v2-узлы
 переиспользуются по имени (их создаёт ``catalog_build_skeleton``); НОВЫХ узлов команда
@@ -49,6 +56,15 @@ class Command(BaseCommand):
         parser.add_argument("--from", dest="legacy", metavar="LEGACY_SLUG")
         parser.add_argument("--commit", action="store_true")
         parser.add_argument("--rollback", metavar="FILE")
+        parser.add_argument(
+            "--map",
+            dest="maps",
+            action="append",
+            default=[],
+            metavar="LEGACY=V2",
+            help="Явное соответствие имён, когда легаси-подкатегория названа иначе, чем "
+            "v2-узел (повторяемо): --map 'Отрезные и шлифовальные круги=Круги'.",
+        )
 
     # ------------------------------------------------------------------ #
     def handle(self, *args, **options):
@@ -79,15 +95,29 @@ class Command(BaseCommand):
         for node in v2.get_descendants():
             v2_by_name.setdefault(_norm(node.name), node)
 
+        # Явные соответствия имён (для расходящихся таксономий): легаси-имя → v2-имя.
+        explicit: dict[str, str] = {}
+        for m in options.get("maps") or []:
+            if "=" not in m:
+                raise CommandError(f"--map ожидает 'Легаси-имя=v2-имя', получено: {m!r}")
+            leg_name, v2_name = m.split("=", 1)
+            v2_key = _norm(v2_name)
+            if v2_key not in v2_by_name:
+                raise CommandError(
+                    f"--map: v2-узел «{v2_name.strip()}» не найден среди подкатегорий раздела."
+                )
+            explicit[_norm(leg_name)] = v2_key
+
         # План: для каждого легаси-узла (корень + потомки) — его ПРЯМЫЕ товары → одноимённый
-        # v2-узел. Узлы без v2-пары — в хвост (не трогаем).
+        # v2-узел (или указанный через --map). Узлы без v2-пары — в хвост (не трогаем).
         plan: list[tuple[Category, Category, list[int]]] = []
         unmatched: list[tuple[Category, int]] = []
         for ln in [legacy] + list(legacy.get_descendants()):
             pids = list(Product.objects.filter(category_id=ln.id).values_list("id", flat=True))
             if not pids:
                 continue
-            target = v2_by_name.get(_norm(ln.name))
+            key = _norm(ln.name)
+            target = v2_by_name.get(key) or v2_by_name.get(explicit.get(key, ""))
             if target is None or target.pk == ln.pk:
                 unmatched.append((ln, len(pids)))
                 continue
