@@ -393,6 +393,20 @@ class StockStatus(models.TextChoices):
     ON_ORDER = "on_order", _("Под заказ")
 
 
+class EnrichStatus(models.TextChoices):
+    PENDING = "pending", _("Ожидает")
+    IN_QUEUE = "in_queue", _("В очереди")
+    DONE = "done", _("Готово")
+    MODERATION = "moderation", _("На модерации")
+    FAILED = "failed", _("Ошибка")
+
+
+class ContentSource(models.TextChoices):
+    MANUAL = "manual", _("Вручную")
+    IMPORT_1C = "import_1c", _("Импорт 1С")
+    LLM = "llm", _("AI-генерация")
+
+
 class Product(TimeStampedModel):
     """Товар.
 
@@ -451,6 +465,23 @@ class Product(TimeStampedModel):
             "Если включено — импорт из 1С не перезаписывает контентные поля "
             "(витринное название, описание, SEO). ADR: 1С не затирает ручную работу."
         ),
+    )
+    enrich_status = models.CharField(
+        _("Статус обогащения"),
+        max_length=12,
+        choices=EnrichStatus.choices,
+        default=EnrichStatus.PENDING,
+        db_index=True,
+    )
+    content_source = models.CharField(
+        _("Источник карточного контента"),
+        max_length=12,
+        choices=ContentSource.choices,
+        null=True,
+        blank=True,
+    )
+    content_confidence = models.FloatField(
+        _("Уверенность контента"), null=True, blank=True
     )
     matched_rule = models.ForeignKey(
         CategoryMappingRule,
