@@ -100,6 +100,12 @@ export type Listing = {
     title: string;
     intro: string;
     breadcrumb: { label: string; href: string }[];
+    hero?: {
+      image: string | null;
+      eyebrow: string;
+      ctaLabel: string;
+      ctaHref: string;
+    };
   };
   promo?: { title: string; subtitle: string; href: string };
   subcategories: { label: string; href: string }[];
