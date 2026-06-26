@@ -1,0 +1,77 @@
+"""Тесты catalog_sync_1c_groups — реестр групп 1С (OneCGroup).
+
+Проверяет статусы (active/stale/discovered), счётчики по source_group, привязку
+категории по external_id_1c, dry-run и идемпотентность. Использует реальный
+data/group_mapping.json (там есть «Биты», «Буры»). Нужен PostgreSQL.
+"""
+
+from __future__ import annotations
+
+from io import StringIO
+
+import pytest
+from django.core.management import call_command
+
+from apps.catalog.models import (
+    Category,
+    OneCGroup,
+    OneCGroupStatus,
+    Product,
+    ProductStatus,
+)
+
+
+def _p(name, slug, group):
+    return Product.objects.create(
+        name=name, slug=slug, source_group=group, status=ProductStatus.IMPORTED
+    )
+
+
+@pytest.mark.django_db
+def test_dry_run_writes_nothing():
+    _p("Бита PH2", "p-bit", "Биты")
+    out = StringIO()
+    call_command("catalog_sync_1c_groups", stdout=out)
+    assert "DRY-RUN" in out.getvalue()
+    assert OneCGroup.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_active_stale_discovered():
+    _p("Бита PH2 50мм", "p-bit", "Биты")  # есть в маппинге + товар → active
+    _p("Нечто странное", "p-x", "ВымышленнаяГруппаXYZ")  # нет в маппинге → discovered
+    call_command("catalog_sync_1c_groups", "--commit", stdout=StringIO())
+
+    bity = OneCGroup.objects.get(name="Биты")
+    assert bity.status == OneCGroupStatus.ACTIVE
+    assert bity.product_count == 1
+    assert bity.code  # external_id подтянулся из маппинга
+    assert bity.site_path  # путь на сайте из маппинга
+
+    bury = OneCGroup.objects.get(name="Буры")  # в маппинге, товаров нет
+    assert bury.status == OneCGroupStatus.STALE
+    assert bury.product_count == 0
+
+    disc = OneCGroup.objects.get(name="ВымышленнаяГруппаXYZ")
+    assert disc.status == OneCGroupStatus.DISCOVERED
+    assert disc.product_count == 1
+    assert disc.code == ""
+
+
+@pytest.mark.django_db
+def test_mapped_category_by_external_id():
+    # категория с кодом группы «Биты» (00003859 в group_mapping.json) → привяжется.
+    cat = Category.add_root(name="Биты (сайт)", slug="bity-site", external_id_1c="00003859")
+    _p("Бита", "p-bit", "Биты")
+    call_command("catalog_sync_1c_groups", "--commit", stdout=StringIO())
+    bity = OneCGroup.objects.get(name="Биты")
+    assert bity.mapped_category_id == cat.id
+
+
+@pytest.mark.django_db
+def test_idempotent():
+    _p("Бита", "p-bit", "Биты")
+    call_command("catalog_sync_1c_groups", "--commit", stdout=StringIO())
+    n1 = OneCGroup.objects.count()
+    call_command("catalog_sync_1c_groups", "--commit", stdout=StringIO())
+    assert OneCGroup.objects.count() == n1  # дублей нет (upsert по имени)

@@ -264,6 +264,56 @@ class CategoryMappingRule(models.Model):
         return f"[{self.get_rule_type_display()}] {self.pattern} → {self.target_category}"
 
 
+class OneCGroupStatus(models.TextChoices):
+    ACTIVE = "active", _("Активна (есть товары)")
+    STALE = "stale", _("Пустая (нет товаров)")
+    DISCOVERED = "discovered", _("Найдена в выгрузке (нет в маппинге)")
+
+
+class OneCGroup(models.Model):
+    """Группа номенклатуры 1С — отдельный реестр (НЕ часть дерева сайта).
+
+    Источник истины: ``data/group_mapping.json`` (код ``external_id`` + имя ``group_1c``
+    + ``site_path``); живость/счётчики — по ``Product.source_group`` (последняя выгрузка).
+    Синкается командой ``catalog_sync_1c_groups``. Связь с категорией сайта — через
+    ``mapped_category`` и правила сопоставления (см. ``GroupCategoryMap``).
+
+    Статусы: ``active`` — есть товары; ``stale`` — была в маппинге, но товаров нет;
+    ``discovered`` — встретилась в ``source_group``, но в маппинге её нет (надо сопоставить).
+    Принцип: 1С — источник, сайт — мастер структуры; пере-импорт дерево сайта не меняет.
+    """
+
+    code = models.CharField(_("Код 1С (external_id)"), max_length=50, blank=True, db_index=True)
+    name = models.CharField(_("Имя группы 1С"), max_length=255, unique=True)
+    site_path = models.JSONField(_("Путь на сайте (из маппинга)"), default=list, blank=True)
+    mapped_category = models.ForeignKey(
+        "Category",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="onec_groups",
+        verbose_name=_("Категория сайта"),
+    )
+    product_count = models.PositiveIntegerField(_("Товаров (по source_group)"), default=0)
+    status = models.CharField(
+        _("Статус"),
+        max_length=12,
+        choices=OneCGroupStatus.choices,
+        default=OneCGroupStatus.DISCOVERED,
+        db_index=True,
+    )
+    updated_at = models.DateTimeField(_("Обновлено"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("Группа 1С")
+        verbose_name_plural = _("Группы 1С")
+        ordering = ["name"]
+        indexes = [models.Index(fields=["status", "name"])]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code or '—'})"
+
+
 class ProductStatus(models.TextChoices):
     IMPORTED = "imported", _("Импортирован (не разобран)")
     NEEDS_REVIEW = "needs_review", _("Требует проверки")

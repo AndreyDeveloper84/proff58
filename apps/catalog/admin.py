@@ -24,6 +24,7 @@ from .models import (
     CategoryMappingRule,
     EnrichmentLog,
     ImportRun,
+    OneCGroup,
     Product,
     ProductAttributeValue,
     ProductCompatibility,
@@ -924,4 +925,27 @@ class EnrichmentLogAdmin(admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(OneCGroup)
+class OneCGroupAdmin(admin.ModelAdmin):
+    """Реестр групп номенклатуры 1С (синкается catalog_sync_1c_groups; правится обменом)."""
+
+    list_display = (
+        "name",
+        "code",
+        "status",
+        "product_count",
+        "mapped_category",
+        "updated_at",
+    )
+    list_filter = ("status",)
+    search_fields = ("name", "code")
+    autocomplete_fields = ["mapped_category"]
+    readonly_fields = ("product_count", "updated_at")
+    ordering = ("-product_count", "name")
+
+    def has_add_permission(self, request):
+        # Группы заводятся синком из 1С/маппинга, не вручную.
         return False
