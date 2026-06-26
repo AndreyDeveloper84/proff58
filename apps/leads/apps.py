@@ -7,8 +7,9 @@ class LeadsConfig(AppConfig):
     verbose_name = "Заявки"
 
     def ready(self):
-        from apps.core.features import is_enabled
         from apps.core.events import product_inquiry_created
+        from apps.core.features import is_enabled
+
         from . import receivers
 
         if is_enabled("eventbus"):
