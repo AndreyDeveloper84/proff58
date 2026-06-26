@@ -56,6 +56,7 @@ type ApiImage = { url: string; alt?: string | null; is_main?: boolean };
 // Detail-эндпоинт (/products/{slug}/) = ApiProduct + description/images/breadcrumb.
 type ApiProductDetail = ApiProduct & {
   description?: string | null;
+  video_url?: string | null;
   images?: ApiImage[];
   breadcrumb?: { name: string; slug: string }[];
 };
@@ -195,6 +196,7 @@ function apiProductToDetail(ap: ApiProductDetail): ProductDetail {
     ...base,
     images,
     description: ap.description ?? "",
+    videoUrl: ap.video_url ?? undefined,
     breadcrumb: ap.breadcrumb ?? [],
   };
 }
