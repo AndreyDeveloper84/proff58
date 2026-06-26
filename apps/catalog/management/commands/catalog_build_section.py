@@ -38,6 +38,7 @@ from apps.catalog.category_tree import invalidate_category_tree_cache
 from apps.catalog.facets import invalidate_facets_cache
 from apps.catalog.models import Category, Product
 from apps.catalog.semantic import SECTION_RULES, classify, load_rules, translit_slug
+from apps.catalog.v2_build import resolve_v2_root
 from apps.core.events import EventSource, product_updated
 
 # Раздел → файл словаря (общая карта в semantic.py). Имя/slug корня берутся
@@ -179,7 +180,7 @@ class Command(BaseCommand):
         self, cfg, subcats, subtypes, normal_assign, moderation_ids, skipped_manual, conflicts
     ):
         w = self.stdout.write
-        root = Category.objects.filter(slug=cfg["root_slug"]).first()
+        root = Category.objects.filter(slug=cfg["root_slug"], is_site_v2=True).first()
         w(
             self.style.MIGRATE_HEADING(
                 f"\n=== Построение раздела «{cfg['root_name']}» (скрыто, dry-run) ==="
@@ -239,6 +240,7 @@ class Command(BaseCommand):
             sort_order=order,
             is_active=False,
             on_site=False,
+            is_site_v2=True,
         )
         created.append(node.pk)
         return node
@@ -255,19 +257,16 @@ class Command(BaseCommand):
         moved: list[int] = []
 
         with transaction.atomic():
-            # Корень v2 — СТРОГО по slug (section_slug). Имя-фолбэк убран намеренно:
-            # имя раздела в словаре часто совпадает с именем legacy-корня (свар­ка,
-            # Крепёж…), и фолбэк по имени переиспользовал бы legacy как v2-корень,
-            # ломая модель «скрытый build → swap». Нет узла по slug → создаём скрытым.
-            root = Category.objects.filter(slug=cfg["root_slug"]).first()
-            if root is None:
-                root = Category.add_root(
-                    name=cfg["root_name"],
-                    slug=cfg["root_slug"],
-                    is_active=False,
-                    on_site=False,
-                )
-                backup["created_nodes"].append(root.pk)
+            # Корень v2 — по slug, но НЕ переиспользуя легаси (зеркало группы 1С):
+            # slug v2 может совпасть с легаси (напр. legacy «Запчасти» имеет slug
+            # zapchasti). resolve_v2_root отдаёт slug под v2, легаси уступает (переименов.),
+            # все v2-узлы помечаются is_site_v2=True.
+            root, _created = resolve_v2_root(
+                cfg["root_slug"],
+                cfg["root_name"],
+                visible=False,
+                created_ids=backup["created_nodes"],
+            )
 
             node_map: dict[tuple[str, str | None], Category] = {}
             for i, sc in enumerate(subcats):

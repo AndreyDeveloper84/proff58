@@ -1003,16 +1003,11 @@ class GroupCategoryMappingAdmin(admin.ModelAdmin):
 
 @admin.register(SiteCategory)
 class SiteCategoryAdmin(CategoryAdmin):
-    """«Категории (сайт)» — только курируемое v2-дерево (поддеревья корней-разделов)."""
+    """«Категории (сайт)» — только курируемое v2-дерево (узлы is_site_v2=True).
+
+    Признак is_site_v2 ставят build_skeleton/build_section; легаси-зеркала групп 1С
+    его не имеют, поэтому не попадают сюда (даже при совпадении slug).
+    """
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        from apps.catalog.semantic import SECTION_RULES
-
-        roots = list(Category.objects.filter(slug__in=list(SECTION_RULES.keys())))
-        if not roots:
-            return qs.none()
-        cond = Q()
-        for r in roots:
-            cond |= Q(path__startswith=r.path)
-        return qs.filter(cond)
+        return super().get_queryset(request).filter(is_site_v2=True)
