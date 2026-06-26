@@ -53,6 +53,16 @@ export function InquiryModal({ open, onClose }: InquiryModalProps) {
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  // Сброс ошибки/статуса при открытии (чтобы старая ошибка не показывалась при переоткрытии).
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => {
+      setStatus("idle");
+      setError("");
+    }, 0);
+    return () => clearTimeout(t);
+  }, [open]);
+
   // Авто-закрытие после успеха.
   useEffect(() => {
     if (status !== "success") return;
