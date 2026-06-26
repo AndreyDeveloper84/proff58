@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
 import { ApiError } from "@/lib/api";
 import type { StockState } from "@/lib/types";
+import { QuantityStepper } from "./QuantityStepper";
+import { InquiryDialog } from "./InquiryDialog";
 
-// CTA карточки товара (PDP). Для товара в наличии с ценой — РЕАЛЬНОЕ добавление в корзину (#246);
-// прочие сценарии — заявочные (аналитика), реальной корзины для них нет:
-//   нет цены        → «Запросить цену»
-//   нет в наличии   → «Уточнить поступление»
-//   цена + наличие  → «В корзину»
+// CTA карточки товара (PDP). Сценарии:
+//   нет цены        → «Запросить цену»     → модалка заявки (price_request)
+//   нет в наличии   → «Уточнить поступление» → модалка заявки (restock_notify)
+//   in / order      → выбор количества + добавление в корзину (под заказ — тот же поток)
 export function OrderCta({
   productId,
   stock = "in",
@@ -21,29 +22,66 @@ export function OrderCta({
   stock?: StockState;
   hasPrice?: boolean;
 }) {
+  const [dialog, setDialog] = useState<null | "price_request" | "restock_notify">(null);
+
   if (!hasPrice) {
     return (
-      <Button variant="accent" data-event="request_price" data-product-id={productId}>
-        <FileText className="h-4 w-4" aria-hidden />
-        Запросить цену
-      </Button>
+      <>
+        <Button
+          variant="accent"
+          onClick={() => setDialog("price_request")}
+          data-event="request_price"
+          data-product-id={productId}
+        >
+          <FileText className="h-4 w-4" aria-hidden />
+          Запросить цену
+        </Button>
+        {dialog && (
+          <InquiryDialog
+            open
+            onClose={() => setDialog(null)}
+            productId={productId}
+            kind={dialog}
+            title={dialog === "price_request" ? "Запросить цену" : "Уточнить поступление"}
+          />
+        )}
+      </>
     );
   }
+
   if (stock === "out") {
     return (
-      <Button variant="outline" data-event="notify_restock" data-product-id={productId}>
-        <Bell className="h-4 w-4" aria-hidden />
-        Уточнить поступление
-      </Button>
+      <>
+        <Button
+          variant="outline"
+          onClick={() => setDialog("restock_notify")}
+          data-event="notify_restock"
+          data-product-id={productId}
+        >
+          <Bell className="h-4 w-4" aria-hidden />
+          Уточнить поступление
+        </Button>
+        {dialog && (
+          <InquiryDialog
+            open
+            onClose={() => setDialog(null)}
+            productId={productId}
+            kind={dialog}
+            title={dialog === "price_request" ? "Запросить цену" : "Уточнить поступление"}
+          />
+        )}
+      </>
     );
   }
-  return <AddToCartCta productId={productId} />;
+
+  return <AddToCartCta productId={productId} isOrder={stock === "order"} />;
 }
 
 type Phase = "idle" | "loading" | "added" | "error";
 
-function AddToCartCta({ productId }: { productId: number }) {
+function AddToCartCta({ productId, isOrder }: { productId: number; isOrder: boolean }) {
   const { add } = useCart();
+  const [qty, setQty] = useState(1);
   const [phase, setPhase] = useState<Phase>("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -58,7 +96,7 @@ function AddToCartCta({ productId }: { productId: number }) {
     if (phase === "loading") return;
     setPhase("loading");
     try {
-      await add(productId, 1);
+      await add(productId, qty);
       setPhase("added");
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => setPhase("idle"), 1800);
@@ -70,26 +108,27 @@ function AddToCartCta({ productId }: { productId: number }) {
     }
   };
 
+  const label = isOrder ? "Под заказ" : "В корзину";
+
   return (
-    <Button
-      variant="accent"
-      disabled={phase === "loading"}
-      onClick={handleClick}
-      data-event="add_to_cart_from_pdp"
-      data-product-id={productId}
-    >
-      {phase === "loading" ? (
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-      ) : phase === "added" ? (
-        <Check className="h-4 w-4" aria-hidden />
-      ) : (
-        <ShoppingCart className="h-4 w-4" aria-hidden />
-      )}
-      {phase === "added"
-        ? "Добавлено"
-        : phase === "error"
-          ? "Ошибка, повторить"
-          : "В корзину"}
-    </Button>
+    <div className="flex items-center gap-3">
+      <QuantityStepper value={qty} min={1} onChange={setQty} disabled={phase === "loading"} />
+      <Button
+        variant="accent"
+        disabled={phase === "loading"}
+        onClick={handleClick}
+        data-event="add_to_cart_from_pdp"
+        data-product-id={productId}
+      >
+        {phase === "loading" ? (
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        ) : phase === "added" ? (
+          <Check className="h-4 w-4" aria-hidden />
+        ) : (
+          <ShoppingCart className="h-4 w-4" aria-hidden />
+        )}
+        {phase === "added" ? "Добавлено" : phase === "error" ? "Ошибка, повторить" : label}
+      </Button>
+    </div>
   );
 }
