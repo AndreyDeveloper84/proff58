@@ -11,6 +11,7 @@ def test_post_inquiry_creates_201(api, product):
         format="json",
     )
     assert resp.status_code == 201, resp.content
+    assert set(resp.data.keys()) == {"id", "kind", "status"}
     assert resp.data["status"] == "new"
     inq = ProductInquiry.objects.get(pk=resp.data["id"])
     assert inq.phone == "+79990000004"
