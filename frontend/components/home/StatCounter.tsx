@@ -8,10 +8,14 @@ export function StatCounter({ value, suffix, label }: HomeStat) {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
-  const [display, setDisplay] = useState(reduce ? value : 0);
+  const [display, setDisplay] = useState(0);
 
   useEffect(() => {
-    if (reduce || !inView) return;
+    if (!inView) return;
+    if (reduce) {
+      const raf = requestAnimationFrame(() => setDisplay(value));
+      return () => cancelAnimationFrame(raf);
+    }
     const controls = animate(0, value, {
       duration: 1.4,
       ease: "easeOut",
