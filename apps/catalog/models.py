@@ -314,6 +314,20 @@ class OneCGroup(models.Model):
         return f"{self.name} ({self.code or '—'})"
 
 
+class GroupCategoryMapping(OneCGroup):
+    """Proxy-вид OneCGroup для отдельного раздела админки «Сопоставление групп и категорий».
+
+    Та же таблица, что и «Группы 1С», но админка сфокусирована на правке
+    ``mapped_category`` (группа → категория сайта) и действии «применить» (расставить
+    товары группы по ``source_group`` в выбранную категорию). Своей таблицы не создаёт.
+    """
+
+    class Meta:
+        proxy = True
+        verbose_name = _("Сопоставление группы и категории")
+        verbose_name_plural = _("Сопоставление групп и категорий")
+
+
 class ProductStatus(models.TextChoices):
     IMPORTED = "imported", _("Импортирован (не разобран)")
     NEEDS_REVIEW = "needs_review", _("Требует проверки")

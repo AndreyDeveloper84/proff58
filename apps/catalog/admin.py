@@ -23,6 +23,7 @@ from .models import (
     CategoryAttribute,
     CategoryMappingRule,
     EnrichmentLog,
+    GroupCategoryMapping,
     ImportRun,
     OneCGroup,
     Product,
@@ -949,3 +950,36 @@ class OneCGroupAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         # Группы заводятся синком из 1С/маппинга, не вручную.
         return False
+
+
+@admin.register(GroupCategoryMapping)
+class GroupCategoryMappingAdmin(admin.ModelAdmin):
+    """Сопоставление «группа 1С → категория сайта» + действие «применить к товарам»."""
+
+    list_display = ("name", "code", "status", "product_count", "mapped_category")
+    list_filter = ("status",)
+    search_fields = ("name", "code")
+    autocomplete_fields = ["mapped_category"]
+    readonly_fields = ("name", "code", "site_path", "product_count", "status", "updated_at")
+    ordering = ("-product_count", "name")
+    actions = ["action_apply"]
+
+    def has_add_permission(self, request):
+        return False
+
+    @admin.action(description=_("Применить: расставить товары групп в их категории"))
+    def action_apply(self, request, queryset):
+        from .onec_groups import apply_group_mapping
+
+        moved = skipped = 0
+        for group in queryset:
+            if not group.mapped_category_id:
+                skipped += 1
+                continue
+            moved += apply_group_mapping(group)
+        self.message_user(
+            request,
+            _("Перенесено товаров: %(m)d. Групп без категории пропущено: %(s)d.")
+            % {"m": moved, "s": skipped},
+            level=messages.SUCCESS if moved else messages.WARNING,
+        )
