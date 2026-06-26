@@ -6,6 +6,7 @@ import { ProductAvailability } from "@/components/product/ProductAvailability";
 import { ProductBadges } from "@/components/product/ProductBadges";
 import { OrderCta } from "@/components/product/OrderCta";
 import { CompatibilitySections } from "@/components/product/CompatibilitySections";
+import { StickyBuyBar } from "@/components/product/StickyBuyBar";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -56,7 +57,10 @@ export default async function ProductPage({ params }: Props) {
           <h1 className="font-display text-2xl font-semibold text-ink">{product.name}</h1>
           <ProductBadges badges={product.badges} discountPct={product.price.discountPct} />
           <ProductAvailability stock={product.stock} />
-          <div className="flex flex-wrap items-center gap-4 rounded-lg border border-line bg-surface p-4">
+          <div
+            id="buybox-anchor"
+            className="flex flex-wrap items-center gap-4 rounded-lg border border-line bg-surface p-4"
+          >
             <ProductPrice price={product.price} />
             <OrderCta
               productId={product.id}
@@ -93,6 +97,8 @@ export default async function ProductPage({ params }: Props) {
       <div className="mt-10">
         <CompatibilitySections sections={product.compatible} />
       </div>
+
+      <StickyBuyBar product={product} />
     </div>
   );
 }
