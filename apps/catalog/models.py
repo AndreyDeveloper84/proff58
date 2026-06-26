@@ -280,6 +280,11 @@ class OneCGroupStatus(models.TextChoices):
     DISCOVERED = "discovered", _("Найдена в выгрузке (нет в маппинге)")
 
 
+# Разделитель материализованного пути групп 1С (unit separator — сортируется раньше
+# печатных символов, поэтому родитель идёт перед детьми в pre-order).
+ONEC_TREE_SEP = "\x1f"
+
+
 class OneCGroup(models.Model):
     """Группа номенклатуры 1С — отдельный реестр (НЕ часть дерева сайта).
 
@@ -302,6 +307,17 @@ class OneCGroup(models.Model):
         blank=True,
         related_name="children",
         verbose_name=_("Родительская группа 1С"),
+    )
+    tree_path = models.CharField(
+        _("Путь в дереве 1С"),
+        max_length=1024,
+        blank=True,
+        db_index=True,
+        # db_collation="C" — побайтовая сортировка: разделитель \x1f (0x1f) меньше пробела
+        # и любых букв, поэтому родитель идёт строго перед детьми (pre-order). Локальная
+        # UTF-8-коллация игнорирует управляющие символы и ломала бы вложенность.
+        db_collation="C",
+        help_text=_("Материализованный путь имён (для древовидной сортировки админки)."),
     )
     site_path = models.JSONField(_("Путь на сайте (из маппинга)"), default=list, blank=True)
     mapped_category = models.ForeignKey(

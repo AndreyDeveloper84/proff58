@@ -30,7 +30,7 @@ from django.db import transaction
 from django.db.models import Count
 
 from apps.catalog.ingest import GROUP_NODE, load_group_mapping, load_json
-from apps.catalog.models import OneCGroup, OneCGroupStatus, Product
+from apps.catalog.models import ONEC_TREE_SEP, OneCGroup, OneCGroupStatus, Product
 
 
 def _walk_groups(nodes, parent_name=None):
@@ -113,6 +113,23 @@ class Command(BaseCommand):
                 if node and node.parent_id != (parent.id if parent else None):
                     node.parent = parent
                     node.save(update_fields=["parent"])
+
+            # Пас 3: материализованный путь имён (для древовидной сортировки админки).
+            by_id = {g.id: g for g in OneCGroup.objects.all()}
+
+            def _path(g):
+                parts, cur, seen = [], g, set()
+                while cur is not None and cur.id not in seen:
+                    seen.add(cur.id)
+                    parts.append(cur.name)
+                    cur = by_id.get(cur.parent_id) if cur.parent_id else None
+                return ONEC_TREE_SEP.join(reversed(parts))
+
+            for g in by_id.values():
+                p = _path(g)
+                if g.tree_path != p:
+                    g.tree_path = p
+                    g.save(update_fields=["tree_path"])
 
         note = " (mapped_category обнулён)" if reset else ""
         self.stdout.write(

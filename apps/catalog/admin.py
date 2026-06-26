@@ -940,30 +940,29 @@ class OneCGroupAdmin(admin.ModelAdmin):
     list_display = (
         "indented_name",
         "code",
-        "parent",
         "status",
         "product_count",
         "mapped_category",
     )
-    list_filter = ("status", "parent")
+    list_filter = ("status",)
     search_fields = ("name", "code")
     autocomplete_fields = ["mapped_category", "parent"]
     readonly_fields = ("product_count", "updated_at")
-    ordering = ("name",)
+    # Сортировка по материализованному пути → дети идут сразу под родителем (pre-order,
+    # как дерево «Категории»). Заполняется синком (tree_path).
+    ordering = ("tree_path", "name")
     list_select_related = ("parent", "mapped_category")
 
     def has_add_permission(self, request):
         # Группы заводятся синком из 1С/маппинга, не вручную.
         return False
 
-    @admin.display(description=_("Группа 1С (с иерархией)"), ordering="name")
+    @admin.display(description=_("Группа 1С (дерево)"), ordering="tree_path")
     def indented_name(self, obj):
-        # Глубина по цепочке родителей (дерево неглубокое — 2–3 уровня).
-        depth, p, seen = 0, obj.parent, set()
-        while p is not None and p.id not in seen:
-            seen.add(p.id)
-            depth += 1
-            p = p.parent
+        # Глубина = число разделителей в материализованном пути (быстро, без запросов).
+        from apps.catalog.models import ONEC_TREE_SEP
+
+        depth = (obj.tree_path or "").count(ONEC_TREE_SEP)
         prefix = format_html("".join(["&nbsp;&nbsp;&nbsp;&nbsp;"] * depth))
         return format_html("{}{}{}", prefix, "└ " if depth else "", obj.name)
 
