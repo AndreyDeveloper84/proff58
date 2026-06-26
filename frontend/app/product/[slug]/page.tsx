@@ -6,6 +6,10 @@ import { ProductAvailability } from "@/components/product/ProductAvailability";
 import { ProductBadges } from "@/components/product/ProductBadges";
 import { OrderCta } from "@/components/product/OrderCta";
 import { CompatibilitySections } from "@/components/product/CompatibilitySections";
+import { StickyBuyBar } from "@/components/product/StickyBuyBar";
+import { ProductJsonLd } from "@/components/product/ProductJsonLd";
+import { Collapsible } from "@/components/product/Collapsible";
+import { ShareButton } from "@/components/product/ShareButton";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -28,8 +32,27 @@ export default async function ProductPage({ params }: Props) {
     ...product.breadcrumb.map((c) => ({ label: c.name, href: `/catalog/${c.slug}` })),
   ];
 
+  // Длинные характеристики/описание сворачиваем (порог по объёму).
+  const specsDl = (
+    <dl className="divide-y divide-line rounded-lg border border-line">
+      {product.specs.map((s, i) => (
+        <div key={`${s.label}-${i}`} className="flex gap-3 px-3 py-2 text-sm">
+          <dt className="w-1/2 text-ink-3">{s.label}</dt>
+          <dd className="w-1/2 text-ink-2">{s.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+
+  const descriptionBlock = product.description ? (
+    <p className="whitespace-pre-line text-sm leading-relaxed text-ink-2">
+      {product.description}
+    </p>
+  ) : null;
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
+      <ProductJsonLd product={product} crumbs={crumbs} />
       <nav
         aria-label="Хлебные крошки"
         className="mb-4 flex flex-wrap items-center gap-1 text-xs text-ink-3"
@@ -54,9 +77,15 @@ export default async function ProductPage({ params }: Props) {
         <div className="flex flex-col gap-4">
           {product.brand && <span className="text-sm text-ink-3">{product.brand}</span>}
           <h1 className="font-display text-2xl font-semibold text-ink">{product.name}</h1>
-          <ProductBadges badges={product.badges} discountPct={product.price.discountPct} />
+          <div className="flex items-center justify-between gap-3">
+            <ProductBadges badges={product.badges} discountPct={product.price.discountPct} />
+            <ShareButton title={product.name} />
+          </div>
           <ProductAvailability stock={product.stock} />
-          <div className="flex flex-wrap items-center gap-4 rounded-lg border border-line bg-surface p-4">
+          <div
+            id="buybox-anchor"
+            className="flex flex-wrap items-center gap-4 rounded-lg border border-line bg-surface p-4"
+          >
             <ProductPrice price={product.price} />
             <OrderCta
               productId={product.id}
@@ -68,14 +97,11 @@ export default async function ProductPage({ params }: Props) {
           {product.specs.length > 0 && (
             <section aria-label="Характеристики">
               <h2 className="mb-2 font-display text-lg font-semibold text-ink">Характеристики</h2>
-              <dl className="divide-y divide-line rounded-lg border border-line">
-                {product.specs.map((s, i) => (
-                  <div key={`${s.label}-${i}`} className="flex gap-3 px-3 py-2 text-sm">
-                    <dt className="w-1/2 text-ink-3">{s.label}</dt>
-                    <dd className="w-1/2 text-ink-2">{s.value}</dd>
-                  </div>
-                ))}
-              </dl>
+              {product.specs.length > 8 ? (
+                <Collapsible collapsedHeight={300}>{specsDl}</Collapsible>
+              ) : (
+                specsDl
+              )}
             </section>
           )}
         </div>
@@ -84,15 +110,19 @@ export default async function ProductPage({ params }: Props) {
       {product.description && (
         <section aria-label="Описание" className="mt-8">
           <h2 className="mb-2 font-display text-lg font-semibold text-ink">Описание</h2>
-          <p className="whitespace-pre-line text-sm leading-relaxed text-ink-2">
-            {product.description}
-          </p>
+          {product.description.length > 600 ? (
+            <Collapsible collapsedHeight={200}>{descriptionBlock}</Collapsible>
+          ) : (
+            descriptionBlock
+          )}
         </section>
       )}
 
       <div className="mt-10">
         <CompatibilitySections sections={product.compatible} />
       </div>
+
+      <StickyBuyBar product={product} />
     </div>
   );
 }
