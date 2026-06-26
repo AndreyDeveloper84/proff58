@@ -114,21 +114,21 @@ def _perf(rules: AttributeRules, name: str):
 def test_perforatory_full_name_sds_plus(rules):
     found = _perf(rules, "Перфоратор SDS-plus 800Вт 2.7Дж")
     assert found["power"].number == Decimal("800")
-    assert found["impact_energy"].number == Decimal("2.7")
-    assert found["chuck_type"].option_slug == "sds-plus"
+    assert found["energy_impact"].number == Decimal("2.7")
+    assert found["chuck"].option_slug == "sds-plus"
 
 
 def test_perforatory_full_name_sds_max(rules):
     found = _perf(rules, "Перфоратор SDS-max 1500Вт 10Дж")
     assert found["power"].number == Decimal("1500")
-    assert found["impact_energy"].number == Decimal("10")
-    assert found["chuck_type"].option_slug == "sds-max"
+    assert found["energy_impact"].number == Decimal("10")
+    assert found["chuck"].option_slug == "sds-max"
 
 
-def test_perforatory_chuck_type_max_not_confused_with_plus(rules):
+def test_perforatory_chuck_max_not_confused_with_plus(rules):
     # «SDS-max» не должен классифицироваться как «sds-plus» (порядок вариантов).
-    assert _perf(rules, "Перфоратор SDS-max").get("chuck_type").option_slug == "sds-max"
-    assert _perf(rules, "Перфоратор SDS-plus").get("chuck_type").option_slug == "sds-plus"
+    assert _perf(rules, "Перфоратор SDS-max").get("chuck").option_slug == "sds-max"
+    assert _perf(rules, "Перфоратор SDS-plus").get("chuck").option_slug == "sds-plus"
 
 
 def test_perforatory_power_does_not_match_voltage(rules):
@@ -394,7 +394,7 @@ def test_almaz_adapter_ring_extracts_nothing(rules):
     assert "bore" not in _almaz(rules, "Кольцо переходное 30х22,2 для дисков")  # Ø-anchor
 
 
-# --- Новые типы Электроинструмента (переиспользуют power/voltage/impact_energy + saw_type) ---
+# --- Новые типы Электроинструмента (переиспользуют power/voltage/energy_impact + saw_type) ---
 
 
 def test_shlifmashiny_power_and_source(rules):
@@ -424,7 +424,7 @@ def test_otboynye_molotki_power_and_impact(rules):
         )
     }
     assert f["power"].number == Decimal("1500")
-    assert f["impact_energy"].number == Decimal("32")
+    assert f["energy_impact"].number == Decimal("32")
 
 
 def test_pily_saw_type(rules):
