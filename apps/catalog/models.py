@@ -313,6 +313,10 @@ class OneCGroup(models.Model):
         max_length=1024,
         blank=True,
         db_index=True,
+        # db_collation="C" — побайтовая сортировка: разделитель \x1f (0x1f) меньше пробела
+        # и любых букв, поэтому родитель идёт строго перед детьми (pre-order). Локальная
+        # UTF-8-коллация игнорирует управляющие символы и ломала бы вложенность.
+        db_collation="C",
         help_text=_("Материализованный путь имён (для древовидной сортировки админки)."),
     )
     site_path = models.JSONField(_("Путь на сайте (из маппинга)"), default=list, blank=True)

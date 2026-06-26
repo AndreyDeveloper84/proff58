@@ -74,6 +74,21 @@ def test_hierarchy_parent_set():
 
 
 @pytest.mark.django_db
+def test_tree_path_preorder_separates_prefix_siblings():
+    # Регрессия скрина: «Запасные части» (корень) с ребёнком «ЗУБР» и отдельный корень
+    # «Запасные части Хитачи». При db_collation="C" разделитель \x1f сортируется раньше
+    # пробела, поэтому ребёнок ЗУБР идёт ВНУТРИ своего родителя, а не уезжает к чужому
+    # корню с тем же префиксом имени.
+    call_command("catalog_sync_1c_groups", "--commit", stdout=StringIO())
+    names = list(
+        OneCGroup.objects.filter(name__in=["Запасные части", "ЗУБР", "Запасные части Хитачи"])
+        .order_by("tree_path", "name")
+        .values_list("name", flat=True)
+    )
+    assert names == ["Запасные части", "ЗУБР", "Запасные части Хитачи"]
+
+
+@pytest.mark.django_db
 def test_mapping_not_auto_set_and_preserved():
     # Синк НЕ авто-ставит mapped_category (чистое состояние «только из 1С»).
     _p("Бита", "p-bit", "Биты")
