@@ -33,7 +33,7 @@ export function Footer() {
   return (
     <footer className="mt-12 border-t border-line bg-surface">
       {/* Trust-бейджи */}
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-4 py-6 sm:grid-cols-3 lg:grid-cols-5 sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 px-4 py-6 sm:px-6 lg:px-8">
         {SITE.trustBadges.map((b) => {
           const Icon = TRUST_ICONS[b.icon] ?? ShieldCheck;
           return (
@@ -46,13 +46,13 @@ export function Footer() {
       </div>
 
       <div className="border-t border-line">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-4 py-8 md:grid-cols-4 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-4 gap-8 px-4 py-8 sm:px-6 lg:px-8">
           {/* Колонки ссылок */}
           {SITE.footerColumns.map((col) => (
             <nav key={col.title} aria-label={col.title}>
-              <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-ink">
+              <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-ink">
                 {col.title}
-              </h3>
+              </h2>
               <ul className="space-y-2">
                 {col.links.map((l) => (
                   <li key={l.label}>
@@ -67,9 +67,9 @@ export function Footer() {
 
           {/* Колонка контактов */}
           <div>
-            <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-ink">
+            <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-ink">
               Контакты
-            </h3>
+            </h2>
             <ul className="space-y-2 text-sm text-ink-2">
               <li>
                 <a href={SITE.phone.href} className="flex items-center gap-2 hover:text-accent">

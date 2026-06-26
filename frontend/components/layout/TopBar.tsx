@@ -51,7 +51,7 @@ export function TopBar() {
             <Link
               href="/account"
               aria-label="Вход в личный кабинет"
-              title="Вход"
+              title="Вход в личный кабинет"
               className="grid h-7 w-7 place-items-center rounded-md text-ink-3 hover:text-accent"
             >
               <User className="h-4 w-4" aria-hidden />
