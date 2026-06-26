@@ -32,6 +32,26 @@
 - снимок отката видимости + **CSV плана 301** (реальные redirect не создаются — модели
   нет, Фаза 3).
 
+### 0.1 Два сценария наполнения раздела
+
+Перед build смотри состояние парного легаси (товаров / `manual`):
+
+- **Легаси НЕ размечен** (товары `manual=False`) → `catalog_build_section` (словарная
+  классификация по названию товара). Это база (напр. оснастка, сварка).
+- **Легаси УЖЕ вручную разложен** (`manual=True`, подкатегории совпадают с v2-скелетом по
+  именам — напр. крепёж) → `catalog_build_section` его НЕ возьмёт (manual-защита, «high→0»).
+  Используй **`catalog_remap_legacy --section <slug> --from <legacy-slug>`**: переносит
+  товары каждой легаси-подкатегории в **одноимённый** v2-узел, сохраняя курацию
+  (`manual=True`). Несопоставленные легаси-узлы (нет v2-пары) остаются в легаси — хвост на
+  разбор (по нему потом `build_section` или ручной разбор). Dry-run / снимок отката
+  `var/restructure/remap-<section>-<ts>.json` / откат `--rollback`.
+
+  ```bash
+  $WEB catalog_remap_legacy --section krepezh --from krepezh-i-metizy            # dry-run
+  $WEB catalog_remap_legacy --section krepezh --from krepezh-i-metizy --commit    # применить
+  ```
+  Дальше — как обычно: `catalog_v2_report` → `catalog_seed_filters` → `catalog_v2_swap`.
+
 **Важно:** товары остаются видимы по `Product.is_active/status` независимо от флагов
 категории. На staging «обеднённые» legacy-категории в окне между build и swap — норма.
 

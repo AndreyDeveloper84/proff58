@@ -50,19 +50,29 @@ def test_dry_run_changes_nothing(products):
 
 
 @pytest.mark.django_db
-def test_v2_root_not_reused_from_legacy_by_name(products):
-    # legacy-узел с тем же ИМЕНЕМ, что и раздел osnastka, но другим slug.
-    # v2-корень должен быть СОЗДАН отдельно (slug=osnastka, скрыт), а не переиспользован.
+def test_v2_root_not_reused_from_legacy_slug(products):
+    # Легаси-узел с ТЕМ ЖЕ slug, что и v2-раздел, + код 1С (зеркало группы 1С).
+    # build НЕ должен его переиспользовать: легаси уступает slug, v2-корень — отдельный.
     legacy = Category.add_root(
-        name="Оснастка и расходные материалы", slug="osnastka-legacy", on_site=True
+        name="Старая оснастка", slug="osnastka", external_id_1c="00099999", on_site=True
     )
     call_command("catalog_build_section", "--section", "osnastka", "--commit", stdout=StringIO())
 
-    v2 = Category.objects.get(slug="osnastka")
-    assert v2.id != legacy.id  # legacy НЕ переиспользован как v2-корень
+    v2 = Category.objects.get(slug="osnastka", is_site_v2=True)
+    assert v2.id != legacy.id  # отдельный v2-корень
     assert v2.is_active is False and v2.on_site is False  # v2 скрыт
     legacy.refresh_from_db()
-    assert legacy.on_site is True and legacy.get_children().count() == 0  # legacy не тронут
+    assert legacy.slug != "osnastka"  # легаси уступил slug
+    assert legacy.is_site_v2 is False and legacy.on_site is True  # легаси не тронут (кроме slug)
+
+
+@pytest.mark.django_db
+def test_v2_marks_is_site_v2(products):
+    call_command("catalog_build_section", "--section", "osnastka", "--commit", stdout=StringIO())
+    root = Category.objects.get(slug="osnastka", is_site_v2=True)
+    assert root.is_site_v2 is True
+    # дочерние узлы тоже помечены
+    assert all(c.is_site_v2 for c in root.get_children())
 
 
 @pytest.mark.django_db

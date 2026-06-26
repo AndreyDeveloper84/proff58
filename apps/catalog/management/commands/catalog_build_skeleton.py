@@ -34,6 +34,7 @@ from apps.catalog.category_tree import invalidate_category_tree_cache
 from apps.catalog.facets import invalidate_facets_cache
 from apps.catalog.models import Category
 from apps.catalog.semantic import SECTION_RULES, load_rules, translit_slug
+from apps.catalog.v2_build import resolve_v2_root
 
 
 class Command(BaseCommand):
@@ -99,31 +100,36 @@ class Command(BaseCommand):
 
     def _ensure(self, parent, name, order, visible, created, slug=None):
         if parent is None:
-            node = Category.objects.filter(slug=slug).first() if slug else None
-            node = node or Category.objects.filter(name=name, depth=1).first()
-        else:
-            node = parent.get_children().filter(name=name).first()
+            # Корень v2 — через resolve_v2_root: НЕ переиспользует легаси (slug-коллизия),
+            # помечает is_site_v2. Видимость подравниваем под флаг команды.
+            root, _c = resolve_v2_root(slug, name, visible=visible, created_ids=created)
+            if root.is_active != visible or root.on_site != visible:
+                root.is_active = visible
+                root.on_site = visible
+                root.save(update_fields=["is_active", "on_site"])
+            return root
+
+        node = parent.get_children().filter(name=name).first()
         if node:
+            changed = []
             if node.is_active != visible or node.on_site != visible:
                 node.is_active = visible
                 node.on_site = visible
-                node.save(update_fields=["is_active", "on_site"])
+                changed += ["is_active", "on_site"]
+            if not node.is_site_v2:
+                node.is_site_v2 = True
+                changed.append("is_site_v2")
+            if changed:
+                node.save(update_fields=changed)
             return node
-        if parent is None:
-            node = Category.add_root(
-                name=name,
-                slug=slug or self._unique_slug(name, None),
-                is_active=visible,
-                on_site=visible,
-            )
-        else:
-            node = parent.add_child(
-                name=name,
-                slug=self._unique_slug(name, parent),
-                sort_order=order,
-                is_active=visible,
-                on_site=visible,
-            )
+        node = parent.add_child(
+            name=name,
+            slug=self._unique_slug(name, parent),
+            sort_order=order,
+            is_active=visible,
+            on_site=visible,
+            is_site_v2=True,
+        )
         created.append(node.pk)
         return node
 

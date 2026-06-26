@@ -2,7 +2,7 @@ from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
 from django.db import transaction
-from django.db.models import Count, IntegerField, OuterRef, Q, Subquery
+from django.db.models import Count, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils.html import format_html, format_html_join
@@ -31,6 +31,7 @@ from .models import (
     ProductCompatibility,
     ProductImage,
     ProductStatus,
+    SiteCategory,
     Source,
 )
 from .read_models import rebuild_attrs_cache
@@ -94,55 +95,77 @@ class CategoryAdmin(TreeAdmin):
         "action_deactivate",
     ]
 
+    @staticmethod
+    def _subtree_count_sq(*, published=False):
+        """Подзапрос: число товаров во ВСЁМ поддереве категории (узел + потомки).
+
+        Дерево treebeard MP_Node: потомки имеют path с префиксом path узла, поэтому
+        ``category__path__startswith=path`` накрывает узел и всех потомков. Скаляр-агрегат
+        по КОНСТАНТНОЙ строковой группе (Value("x")) — одна строка-счётчик; строку (не int)
+        берём нарочно, чтобы PostgreSQL не принял ``GROUP BY <int>`` за номер колонки. На
+        PostgreSQL лукап startswith по выражению (OuterRef) даёт ``LIKE outer.path || '%'`` —
+        корректный префикс (пути treebeard без LIKE-метасимволов)."""
+        qs = Product.objects.filter(category__path__startswith=OuterRef("path"))
+        if published:
+            qs = qs.filter(status=ProductStatus.PUBLISHED)
+        return Coalesce(
+            Subquery(
+                qs.order_by()
+                .annotate(_g=Value("x"))
+                .values("_g")
+                .annotate(c=Count("pk"))
+                .values("c"),
+                output_field=IntegerField(),
+            ),
+            0,
+        )
+
     def get_queryset(self, request):
-        # Количество товаров (всего и опубликованных) в категории — аннотацией,
-        # чтобы колонки списка не плодили N+1. distinct=True обязателен: два Count
-        # по одной связи products без него перемножились бы.
+        # «Товаров»/«Опубл.» считаем по ВСЕМУ поддереву (включая родительские узлы, у
+        # которых нет прямых товаров — они лежат в листьях). Подзапросом на узел, без N+1.
         return (
             super()
             .get_queryset(request)
             .annotate(
-                _products=Count("products", distinct=True),
-                _published=Count(
-                    "products",
-                    filter=Q(products__status=ProductStatus.PUBLISHED),
-                    distinct=True,
-                ),
+                _products=self._subtree_count_sq(),
+                _published=self._subtree_count_sq(published=True),
             )
         )
 
     @staticmethod
-    def _product_count_link(category_id, count, *, status=None):
-        """Счётчик-ссылка в список товаров админки, отфильтрованный по этой категории
-        (прямой FK — число и страница совпадают). 0 — без ссылки."""
+    def _product_count_link(path, count, *, status=None):
+        """Счётчик-ссылка в список товаров админки по ВСЕМУ поддереву категории
+        (``category__path__startswith=<path>`` — узел + потомки, число и страница
+        совпадают). 0 — без ссылки."""
         if not count:
             return count
-        url = f"{reverse('admin:catalog_product_changelist')}?category__id__exact={category_id}"
+        url = f"{reverse('admin:catalog_product_changelist')}?category__path__startswith={path}"
         if status:
             url += f"&status={status}"
         return format_html('<a href="{}">{}</a>', url, count)
 
     @admin.display(description=_("Товаров"), ordering="_products")
     def products_count(self, obj):
-        return self._product_count_link(obj.pk, getattr(obj, "_products", 0))
+        return self._product_count_link(obj.path, getattr(obj, "_products", 0))
 
     @admin.display(description=_("Опубл."), ordering="_published")
     def published_count(self, obj):
         return self._product_count_link(
-            obj.pk, getattr(obj, "_published", 0), status=ProductStatus.PUBLISHED.value
+            obj.path, getattr(obj, "_published", 0), status=ProductStatus.PUBLISHED.value
         )
 
     @admin.display(description=_("Товаров в категории"))
     def products_total(self, obj):
         """Счётчик товаров на странице правки категории (со ссылкой-drill-down в список
-        товаров). Аннотация _products доступна и на форме (admin.get_object → get_queryset);
-        fallback на запрос — на случай отсутствия аннотации. На добавлении — прочерк."""
+        товаров) — по всему поддереву. Аннотация _products доступна и на форме
+        (admin.get_object → get_queryset); fallback на запрос — на случай отсутствия
+        аннотации. На добавлении — прочерк."""
         if obj is None or not obj.pk:
             return "—"
         count = getattr(obj, "_products", None)
         if count is None:
-            count = obj.products.count()
-        return self._product_count_link(obj.pk, count)
+            count = Product.objects.filter(category__path__startswith=obj.path).count()
+        return self._product_count_link(obj.path, count)
 
     @admin.action(description=_("Показать на сайте"))
     def action_show_on_site(self, request, queryset):
@@ -511,9 +534,10 @@ class ProductAdmin(admin.ModelAdmin):
     list_select_related = ("category",)
 
     def lookup_allowed(self, lookup, value, request=None):
-        # Drill-down из списка категорий: ссылка ?category__id__exact=<id>. Категорию НЕ кладём
-        # в list_filter (дропдаун всех узлов дерева был бы тяжёлым) — точечно разрешаем лукап.
-        if lookup == "category__id__exact":
+        # Drill-down из списка категорий: ссылка по поддереву (?category__path__startswith=<path>)
+        # или по точному узлу (?category__id__exact=<id>). Категорию НЕ кладём в list_filter
+        # (дропдаун всех узлов дерева был бы тяжёлым) — точечно разрешаем эти лукапы.
+        if lookup in ("category__id__exact", "category__path__startswith"):
             return True
         return super().lookup_allowed(lookup, value, request)
 
@@ -931,25 +955,39 @@ class EnrichmentLogAdmin(admin.ModelAdmin):
 
 @admin.register(OneCGroup)
 class OneCGroupAdmin(admin.ModelAdmin):
-    """Реестр групп номенклатуры 1С (синкается catalog_sync_1c_groups; правится обменом)."""
+    """Реестр групп номенклатуры 1С (синкается catalog_sync_1c_groups; правится обменом).
+
+    Иерархия 1С: колонка «Родитель» + отступ в имени по глубине вложенности.
+    """
 
     list_display = (
-        "name",
+        "indented_name",
         "code",
         "status",
         "product_count",
         "mapped_category",
-        "updated_at",
     )
     list_filter = ("status",)
     search_fields = ("name", "code")
-    autocomplete_fields = ["mapped_category"]
+    autocomplete_fields = ["mapped_category", "parent"]
     readonly_fields = ("product_count", "updated_at")
-    ordering = ("-product_count", "name")
+    # Сортировка по материализованному пути → дети идут сразу под родителем (pre-order,
+    # как дерево «Категории»). Заполняется синком (tree_path).
+    ordering = ("tree_path", "name")
+    list_select_related = ("parent", "mapped_category")
 
     def has_add_permission(self, request):
         # Группы заводятся синком из 1С/маппинга, не вручную.
         return False
+
+    @admin.display(description=_("Группа 1С (дерево)"), ordering="tree_path")
+    def indented_name(self, obj):
+        # Глубина = число разделителей в материализованном пути (быстро, без запросов).
+        from apps.catalog.models import ONEC_TREE_SEP
+
+        depth = (obj.tree_path or "").count(ONEC_TREE_SEP)
+        prefix = format_html("".join(["&nbsp;&nbsp;&nbsp;&nbsp;"] * depth))
+        return format_html("{}{}{}", prefix, "└ " if depth else "", obj.name)
 
 
 @admin.register(GroupCategoryMapping)
@@ -983,3 +1021,15 @@ class GroupCategoryMappingAdmin(admin.ModelAdmin):
             % {"m": moved, "s": skipped},
             level=messages.SUCCESS if moved else messages.WARNING,
         )
+
+
+@admin.register(SiteCategory)
+class SiteCategoryAdmin(CategoryAdmin):
+    """«Категории (сайт)» — только курируемое v2-дерево (узлы is_site_v2=True).
+
+    Признак is_site_v2 ставят build_skeleton/build_section; легаси-зеркала групп 1С
+    его не имеют, поэтому не попадают сюда (даже при совпадении slug).
+    """
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_site_v2=True)

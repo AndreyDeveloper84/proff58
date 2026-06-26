@@ -78,6 +78,16 @@ class Category(MP_Node):
             "с учётной системой (ADR-0002). Узлы-контейнеры остаются пустыми."
         ),
     )
+    is_site_v2 = models.BooleanField(
+        _("Узел витрины v2"),
+        default=False,
+        db_index=True,
+        help_text=_(
+            "True — узел курируемого v2-дерева сайта (создан build_skeleton/build_section). "
+            "Отличает витринное дерево от легаси-категорий, зеркалящих группы 1С. Раздел "
+            "«Категории (сайт)» показывает только такие узлы."
+        ),
+    )
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
     meta_title = models.CharField(_("Meta title"), max_length=255, blank=True)
     meta_description = models.CharField(_("Meta description"), max_length=512, blank=True)
@@ -274,6 +284,11 @@ class OneCGroupStatus(models.TextChoices):
     DISCOVERED = "discovered", _("Найдена в выгрузке (нет в маппинге)")
 
 
+# Разделитель материализованного пути групп 1С (unit separator — сортируется раньше
+# печатных символов, поэтому родитель идёт перед детьми в pre-order).
+ONEC_TREE_SEP = "\x1f"
+
+
 class OneCGroup(models.Model):
     """Группа номенклатуры 1С — отдельный реестр (НЕ часть дерева сайта).
 
@@ -289,6 +304,25 @@ class OneCGroup(models.Model):
 
     code = models.CharField(_("Код 1С (external_id)"), max_length=50, blank=True, db_index=True)
     name = models.CharField(_("Имя группы 1С"), max_length=255, unique=True)
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="children",
+        verbose_name=_("Родительская группа 1С"),
+    )
+    tree_path = models.CharField(
+        _("Путь в дереве 1С"),
+        max_length=1024,
+        blank=True,
+        db_index=True,
+        # db_collation="C" — побайтовая сортировка: разделитель \x1f (0x1f) меньше пробела
+        # и любых букв, поэтому родитель идёт строго перед детьми (pre-order). Локальная
+        # UTF-8-коллация игнорирует управляющие символы и ломала бы вложенность.
+        db_collation="C",
+        help_text=_("Материализованный путь имён (для древовидной сортировки админки)."),
+    )
     site_path = models.JSONField(_("Путь на сайте (из маппинга)"), default=list, blank=True)
     mapped_category = models.ForeignKey(
         "Category",
@@ -330,6 +364,20 @@ class GroupCategoryMapping(OneCGroup):
         proxy = True
         verbose_name = _("Сопоставление группы и категории")
         verbose_name_plural = _("Сопоставление групп и категорий")
+
+
+class SiteCategory(Category):
+    """Proxy-вид Category для раздела админки «Категории (сайт)».
+
+    Показывает ТОЛЬКО курируемое v2-дерево (поддеревья корней-разделов из
+    ``semantic.SECTION_RULES``), без легаси-категорий, зеркалящих группы 1С.
+    Та же таблица, что и «Категории»; фильтрация — в админке.
+    """
+
+    class Meta:
+        proxy = True
+        verbose_name = _("Категория (сайт)")
+        verbose_name_plural = _("Категории (сайт)")
 
 
 class ProductStatus(models.TextChoices):
