@@ -63,6 +63,11 @@ order_created = Signal()
 order_paid = Signal()
 order_status_changed = Signal()
 
+# --- leads ---
+# product_inquiry_created — издатель apps.leads.services.create_inquiry.
+# payload: inquiry_id, kind, product_id
+product_inquiry_created = Signal()
+
 # --- payments (контракт; издатель появится с #8) ---
 payment_succeeded = Signal()
 payment_failed = Signal()
