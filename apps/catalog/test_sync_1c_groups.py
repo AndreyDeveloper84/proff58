@@ -68,6 +68,9 @@ def test_hierarchy_parent_set():
     # у корневой группы родителя нет
     root = OneCGroup.objects.get(name="Буры, коронки, биты, пилки и полотна")
     assert root.parent is None
+    # tree_path: дочерний путь начинается с родительского (pre-order сортировка админки)
+    assert bity.tree_path.startswith(root.tree_path)
+    assert bity.tree_path.endswith("Биты")
 
 
 @pytest.mark.django_db
