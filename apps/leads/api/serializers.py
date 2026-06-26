@@ -24,5 +24,12 @@ class ProductInquirySerializer(serializers.ModelSerializer):
             return "+7" + digits
         raise serializers.ValidationError("Укажите корректный номер телефона.")
 
+    def to_representation(self, instance):
+        return {
+            "id": instance.id,
+            "kind": instance.kind,
+            "status": instance.status,
+        }
+
     def create(self, validated_data):
         return create_inquiry(**validated_data)
