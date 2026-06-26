@@ -28,24 +28,47 @@ export function InquiryDialog({
   const [phase, setPhase] = useState<Phase>("idle");
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  // Esc закрывает (кроме отправки); блокируем скролл фона, пока открыто.
+  // Esc закрывает (кроме отправки); Tab держим внутри модалки (фокус-трап);
+  // блокируем скролл фона, пока открыто.
   useEffect(() => {
     if (!open) return;
+    const node = dialogRef.current;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && phase !== "submitting") onClose();
+      if (e.key === "Escape" && phase !== "submitting") {
+        onClose();
+        return;
+      }
+      if (e.key === "Tab" && node) {
+        const focusable = node.querySelectorAll<HTMLElement>(
+          'a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevOverflow;
     };
   }, [open, phase, onClose]);
 
-  // Фокус на первое поле при открытии.
+  // Фокус на первое поле при открытии; возврат фокуса на инициатор при закрытии.
   useEffect(() => {
-    if (open) dialogRef.current?.querySelector("input")?.focus();
+    if (!open) return;
+    const prevActive = document.activeElement as HTMLElement | null;
+    dialogRef.current?.querySelector("input")?.focus();
+    return () => prevActive?.focus();
   }, [open]);
 
   if (!open) return null;
@@ -75,12 +98,17 @@ export function InquiryDialog({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-labelledby="inquiry-dialog-title"
         className="w-full max-w-sm rounded-lg border border-line bg-surface p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>
+          <h2
+            id="inquiry-dialog-title"
+            className="font-display text-lg font-semibold text-ink"
+          >
+            {title}
+          </h2>
           <button
             type="button"
             onClick={() => phase !== "submitting" && onClose()}
