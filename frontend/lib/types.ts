@@ -37,6 +37,7 @@ export type CompatibilitySections = {
 export type ProductDetail = Product & {
   images: ProductImageData[];
   description: string;
+  videoUrl?: string; // ссылка на видео о товаре (YouTube)
   breadcrumb: { name: string; slug: string }[]; // категории от корня (без «Главная/Каталог»)
   compatible?: CompatibilitySections;
 };

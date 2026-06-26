@@ -10,6 +10,7 @@ import { StickyBuyBar } from "@/components/product/StickyBuyBar";
 import { ProductJsonLd } from "@/components/product/ProductJsonLd";
 import { Collapsible } from "@/components/product/Collapsible";
 import { ShareButton } from "@/components/product/ShareButton";
+import { ProductVideo } from "@/components/product/ProductVideo";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -115,6 +116,15 @@ export default async function ProductPage({ params }: Props) {
           ) : (
             descriptionBlock
           )}
+        </section>
+      )}
+
+      {product.videoUrl && (
+        <section aria-label="Видео" className="mt-8">
+          <h2 className="mb-2 font-display text-lg font-semibold text-ink">Видео</h2>
+          <div className="max-w-2xl">
+            <ProductVideo url={product.videoUrl} />
+          </div>
         </section>
       )}
 
