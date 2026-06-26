@@ -73,6 +73,12 @@ type ApiCategoryBlock = {
   slug: string;
   description?: string;
   breadcrumb?: { name: string; slug: string }[];
+  hero?: {
+    image: string | null;
+    eyebrow?: string;
+    ctaLabel?: string;
+    ctaHref?: string;
+  };
 };
 type ApiFacetsResponse = {
   category?: ApiCategoryBlock;
@@ -438,6 +444,14 @@ export async function fetchListingFromApi(
         { label: "Каталог", href: "/catalog" },
         ...crumbs,
       ],
+      hero: categoryBlock?.hero
+        ? {
+            image: categoryBlock.hero.image ?? null,
+            eyebrow: categoryBlock.hero.eyebrow ?? "",
+            ctaLabel: categoryBlock.hero.ctaLabel ?? "",
+            ctaHref: categoryBlock.hero.ctaHref ?? "",
+          }
+        : undefined,
     },
     filterMode,
     subcategories,

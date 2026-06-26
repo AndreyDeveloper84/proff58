@@ -14,6 +14,7 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { FacetSidebar } from "@/components/filters/FacetSidebar";
 import { TypePanel } from "@/components/listing/TypePanel";
 import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
+import { CategoryHero } from "@/components/listing/CategoryHero";
 
 // Презентационный shell: данные уже разрешены на сервере (getListing(query)).
 // Никакой клиентской фильтрации — изменение фильтра меняет URL (router.replace),
@@ -197,27 +198,23 @@ export function ListingShell({
         ))}
       </nav>
 
-      <div className="mb-5 grid gap-4 lg:grid-cols-[1fr_320px]">
-        <div>
-          <h1 className="font-display text-3xl font-semibold uppercase tracking-wide text-ink">
-            {listing.category.title}
-          </h1>
-          {listing.category.intro && (
-            <p className="mt-2 max-w-2xl text-sm text-ink-2">{listing.category.intro}</p>
-          )}
-        </div>
-        {listing.promo && (
-          <a
-            href={listing.promo.href}
-            className="flex flex-col justify-center rounded-lg border border-line bg-raised p-4 transition hover:border-accent"
-          >
-            <span className="text-xs text-ink-3">{listing.promo.title}</span>
-            <span className="mt-1 font-display text-lg font-semibold text-accent">
-              {listing.promo.subtitle}
-            </span>
-          </a>
-        )}
-      </div>
+      <CategoryHero
+        title={listing.category.title}
+        intro={listing.category.intro}
+        hero={listing.category.hero}
+      />
+
+      {listing.promo && (
+        <a
+          href={listing.promo.href}
+          className="mb-5 flex flex-col justify-center rounded-lg border border-line bg-raised p-4 transition hover:border-accent lg:max-w-md"
+        >
+          <span className="text-xs text-ink-3">{listing.promo.title}</span>
+          <span className="mt-1 font-display text-lg font-semibold text-accent">
+            {listing.promo.subtitle}
+          </span>
+        </a>
+      )}
 
       {listing.subcategories.length > 0 && (
         <div className="mb-5 flex flex-wrap gap-2">
