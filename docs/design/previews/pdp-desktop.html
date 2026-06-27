@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDP — Профессионал (светлая тема A)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFFFFF; --surface:#F5F7F8; --surface-raised:#FFFFFF; --surface-inverse:#0D0F0E;
+  --border:#E2E7EA; --border-strong:#CBD2D7;
+  --text:#16191B; --text-secondary:#545C62; --text-muted:#8A9298; --text-inverse:#FFFFFF;
+  --green-500:#07B453; --green-600:#0B8A43; --green-700:#097A3C; --green-800:#085C2E;
+  --green-50:#E8F6EE; --lime-500:#6CB52F;
+  --danger:#D7322B; --danger-50:#FCEAE9; --warning:#C77A12; --warning-50:#FBF1E0; --rating:#E6A93A;
+  --green-tint:rgba(7,180,83,.10); --focus-ring:rgba(11,138,67,.45);
+  --action:var(--green-700); --action-hover:var(--green-800); --link:var(--green-700);
+  --instock:var(--green-700);
+  --e1:0 1px 2px rgba(13,15,14,.06); --e2:0 2px 10px rgba(13,15,14,.08);
+  --e3:0 10px 28px rgba(13,15,14,.12);
+  --display:"Oswald",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--body);color:var(--text);background:var(--bg);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.container{max-width:1320px;margin:0 auto;padding:0 32px}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+.tnum{font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.02em;font-weight:600;line-height:1.1}
+.topbar{background:var(--surface-inverse);color:var(--text-inverse);font-size:12px}
+.topbar .container{display:flex;gap:24px;align-items:center;height:34px;color:#AEB6BC}
+.topbar b{color:#fff}
+.topbar .spacer{flex:1}
+.header{position:sticky;top:0;z-index:20;background:var(--surface-inverse);color:#fff;border-bottom:1px solid #20262b}
+.header .container{display:flex;align-items:center;gap:20px;height:72px;position:relative}
+.rail{position:absolute;left:0;top:0;bottom:0;width:34px;background:linear-gradient(180deg,#0c8a44,#075f30);display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding:8px 0;color:#bdf0cf}
+.rail svg{width:18px;height:18px;opacity:.9}
+.logo{margin-left:30px;display:flex;flex-direction:column;line-height:1}
+.logo .l1{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.04em}
+.logo .l1 b{color:var(--green-500)}
+.logo .l2{font-size:10px;letter-spacing:.32em;color:var(--green-500);text-transform:uppercase;margin-top:3px}
+.catbtn{display:flex;align-items:center;gap:8px;background:var(--action);color:#fff;border:none;height:44px;padding:0 18px;border-radius:6px;font-weight:600;font-size:14px;cursor:pointer}
+.search{flex:1;display:flex;height:46px;background:#fff;border-radius:6px;overflow:hidden}
+.search input{flex:1;border:none;padding:0 16px;font-size:14px;font-family:var(--body)}
+.search input:focus{outline:none}
+.search button{border:none;background:var(--action);color:#fff;padding:0 20px;font-weight:600;cursor:pointer}
+.hicons{display:flex;gap:18px;color:#fff}
+.hicon{position:relative;display:flex;flex-direction:column;align-items:center;font-size:11px;color:#AEB6BC;cursor:pointer}
+.hicon svg{width:22px;height:22px;margin-bottom:2px}
+.badge-count{position:absolute;top:-6px;right:2px;background:var(--green-500);color:#06270f;font-size:10px;font-weight:700;border-radius:9px;padding:1px 5px}
+.crumbs{font-size:12px;color:var(--text-muted);padding:14px 0;display:flex;gap:8px;flex-wrap:wrap}
+.crumbs a{color:var(--text-muted)} .crumbs span:last-child{color:var(--text)}
+.pdp{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:32px;align-items:start}
+.gallery{display:grid;grid-template-columns:64px 1fr;gap:12px}
+.thumbs{display:flex;flex-direction:column;gap:8px}
+.thumb{width:64px;height:64px;border:1px solid var(--border);border-radius:6px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--text-muted);cursor:pointer}
+.thumb.active{border:2px solid var(--action)}
+.stage{aspect-ratio:1/1;background:var(--surface);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative}
+.stage .ph{color:var(--border-strong);font-family:var(--display);font-size:20px;letter-spacing:.1em}
+.flag{position:absolute;top:14px;left:14px;display:flex;gap:6px}
+.flag .b{font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.02em}
+.b-sale{background:#23292e;color:#fff}
+.b-hit{background:var(--lime-500);color:#1a2400}
+.title-wrap{margin-bottom:6px}
+.brandline{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+h1.pt{font-size:24px;color:var(--text);margin-bottom:10px}
+.meta{display:flex;gap:18px;align-items:center;font-size:13px;color:var(--text-secondary);margin-bottom:18px}
+.stars{color:var(--rating);letter-spacing:1px}
+.art{color:var(--text-muted)}
+.plate{background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;padding:14px 16px;margin-bottom:20px;position:relative}
+.plate:before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;background:var(--green-500);border-radius:2px}
+.plate h4{font-family:var(--display);text-transform:uppercase;font-size:11px;letter-spacing:.14em;color:var(--text-muted);margin-bottom:10px;font-weight:600}
+.plate-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px}
+.pl-item{display:flex;justify-content:space-between;gap:12px;font-size:13px;border-bottom:1px dashed var(--border);padding-bottom:6px}
+.pl-item .k{color:var(--text-secondary)}
+.pl-item .v{font-weight:600;font-variant-numeric:tabular-nums}
+.pl-item .v.hot{color:var(--green-700)}
+.buybox{background:var(--surface-raised);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--e1);position:sticky;top:92px}
+.avail{display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:14px;color:var(--instock);background:var(--green-50);padding:5px 10px;border-radius:6px;margin-bottom:6px}
+.avail .dot{width:8px;height:8px;border-radius:50%;background:var(--instock)}
+.pickup{font-size:12px;color:var(--text-secondary);margin-bottom:16px;display:flex;align-items:center;gap:6px}
+.price{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+.price .now{font-size:32px;font-weight:800;font-variant-numeric:tabular-nums}
+.price .old{font-size:14px;color:var(--text-muted);text-decoration:line-through;font-variant-numeric:tabular-nums}
+.price .disc{font-size:12px;font-weight:700;color:#fff;background:#23292e;padding:2px 7px;border-radius:4px}
+.perunit{font-size:12px;color:var(--text-muted);margin-bottom:8px}
+.b2b{font-size:13px;color:var(--link);background:var(--green-tint);border-radius:6px;padding:8px 10px;display:flex;align-items:center;gap:8px;margin-bottom:18px}
+.b2b b{font-variant-numeric:tabular-nums}
+.buyrow{display:flex;gap:10px;margin-bottom:12px}
+.stepper{display:flex;border:1px solid var(--border-strong);border-radius:6px;overflow:hidden;height:48px}
+.stepper button{width:44px;border:none;background:#fff;font-size:18px;color:var(--text-secondary);cursor:pointer}
+.stepper button:hover{background:var(--surface)}
+.stepper input{width:48px;border:none;text-align:center;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.cta{flex:1;background:var(--action);color:#fff;border:none;border-radius:6px;height:48px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:var(--e1);display:flex;align-items:center;justify-content:center;gap:8px}
+.cta:hover{background:var(--action-hover);box-shadow:var(--e2)}
+.cta2{width:100%;background:#fff;color:var(--action);border:1px solid var(--action);border-radius:6px;height:44px;font-weight:600;cursor:pointer;margin-bottom:16px}
+.cta2:hover{background:var(--green-tint)}
+.ai{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;margin-bottom:16px}
+.ai svg{width:22px;height:22px;color:var(--green-700);flex:none}
+.ai .t{font-size:13px}.ai .t b{display:block}.ai .t span{color:var(--text-muted);font-size:12px}
+.trust{border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:9px}
+.trust .tr{display:flex;gap:9px;font-size:12.5px;color:var(--text-secondary);align-items:center}
+.trust svg{width:16px;height:16px;color:var(--green-700);flex:none}
+.tabs{margin-top:40px;border-bottom:1px solid var(--border);display:flex;gap:28px}
+.tab{padding:12px 2px;font-weight:600;font-size:14px;color:var(--text-muted);border-bottom:2px solid transparent;cursor:pointer}
+.tab.active{color:var(--text);border-bottom-color:var(--action)}
+.spectable{margin-top:20px;max-width:720px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.spectable .row{display:grid;grid-template-columns:240px 1fr;font-size:14px}
+.spectable .row:nth-child(even){background:var(--surface)}
+.spectable .k{color:var(--text-secondary);padding:10px 16px}
+.spectable .v{padding:10px 16px;font-weight:500;font-variant-numeric:tabular-nums}
+footer{margin-top:56px;background:var(--surface-inverse);color:#AEB6BC;font-size:13px}
+footer .container{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding:36px 32px}
+footer h5{color:#fff;font-family:var(--display);text-transform:uppercase;font-size:13px;letter-spacing:.06em;margin-bottom:12px}
+footer a{color:#AEB6BC;display:block;margin-bottom:7px}
+.pay{display:flex;gap:8px;margin-top:10px}
+.pay span{background:#1b2126;border:1px solid #2a3137;border-radius:4px;padding:3px 8px;font-size:11px;color:#cfd6db}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="container">
+  <span>📍 Пенза, ул. Первый Онежский проезд, 12</span>
+  <span>🕘 Пн–Сб 9:00–19:00</span>
+  <span class="spacer"></span>
+  <span><b>8 (8412) 20-20-97</b></span>
+  <span>Войти · <b>Войти как юрлицо</b></span>
+</div></div>
+
+<header class="header"><div class="container">
+  <div class="rail" title="Инструментальный кант — signature">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3l7 7-3 3-7-7zM11 8L3 16v5h5l8-8"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h10v6H4zM14 9h3l3 3v1h-6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12l6-6 4 4-6 6H3zM13 6l5-3 3 3-3 5-4-4"/></svg>
+  </div>
+  <div class="logo">
+    <span class="l1">ПРОФЕССИО<b>НАЛ</b></span>
+    <span class="l2">территория инструмента</span>
+  </div>
+  <button class="catbtn">☰ Каталог</button>
+  <div class="search">
+    <input placeholder="Артикул, модель или бренд — например, GBH 2-26">
+    <button>Найти</button>
+  </div>
+  <div class="hicons">
+    <div class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18l-2 11H5L3 6zM3 6l-1-3H0"/><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>Корзина<span class="badge-count">3</span></div>
+  </div>
+</div></header>
+
+<div class="container">
+  <div class="crumbs"><a>Главная</a><span>/</span><a>Электроинструмент</a><span>/</span><a>Перфораторы</a><span>/</span><span>Bosch GBH 2-26 DRE</span></div>
+
+  <div class="pdp">
+    <div>
+      <div class="gallery">
+        <div class="thumbs">
+          <div class="thumb active">▣</div><div class="thumb">▢</div><div class="thumb">▢</div><div class="thumb">▢</div>
+        </div>
+        <div class="stage">
+          <div class="flag"><span class="b b-sale">−16%</span><span class="b b-hit">Хит</span></div>
+          <div class="ph">ФОТО ТОВАРА 1:1</div>
+        </div>
+      </div>
+
+      <div style="margin-top:24px" class="title-wrap">
+        <div class="brandline">Bosch · Профессиональная серия</div>
+        <h1 class="pt">Перфоратор Bosch GBH 2-26 DRE, SDS-Plus, 800 Вт</h1>
+        <div class="meta">
+          <span class="stars">★★★★☆ <span style="color:var(--text-secondary)">4.6</span></span>
+          <span>· 128 отзывов</span>
+          <span class="art tnum">Артикул: 0611253708</span>
+        </div>
+      </div>
+
+      <div class="plate">
+        <h4>Ключевые характеристики</h4>
+        <div class="plate-grid">
+          <div class="pl-item"><span class="k">Мощность</span><span class="v hot">800 Вт</span></div>
+          <div class="pl-item"><span class="k">Энергия удара</span><span class="v hot">2.7 Дж</span></div>
+          <div class="pl-item"><span class="k">Патрон</span><span class="v">SDS-Plus</span></div>
+          <div class="pl-item"><span class="k">Макс. Ø в бетоне</span><span class="v">26 мм</span></div>
+          <div class="pl-item"><span class="k">Реверс</span><span class="v">Есть</span></div>
+          <div class="pl-item"><span class="k">Вес</span><span class="v">2.7 кг</span></div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="buybox">
+      <div class="avail"><span class="dot"></span>В наличии · 12 шт</div>
+      <div class="pickup">⌂ Самовывоз сегодня из магазина на Онежском</div>
+
+      <div class="price">
+        <span class="now tnum">12 490 ₽</span>
+        <span class="old tnum">14 890 ₽</span>
+        <span class="disc">−16%</span>
+      </div>
+      <div class="perunit tnum">Гарантия 3 года · цена за 1 шт</div>
+      <div class="b2b">⊞ Цена для юрлиц: <b>11 200 ₽</b> · по запросу счёта</div>
+
+      <div class="buyrow">
+        <div class="stepper"><button>−</button><input value="1"><button>+</button></div>
+        <button class="cta"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18l-2 11H5L3 6z"/></svg>В корзину</button>
+      </div>
+      <button class="cta2">Купить в 1 клик</button>
+
+      <div class="ai">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3a9 9 0 00-9 9 9 9 0 001.5 5L3 21l4-1.5A9 9 0 1012 3z"/><circle cx="9" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="15" cy="12" r="1"/></svg>
+        <div class="t"><b>Спросить о товаре</b><span>AI-консультант подберёт по характеристикам</span></div>
+      </div>
+
+      <div class="trust">
+        <div class="tr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2l8 3v6c0 5-3.5 8-8 11-4.5-3-8-6-8-11V5l8-3z"/></svg>Гарантия 3 года · официальный дилер</div>
+        <div class="tr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7h13v8H3zM16 9h3l2 3v3h-5"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>Доставка по Пензе и области · СДЭК по РФ</div>
+        <div class="tr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Оплата: карта, СБП, наличными, счёт для юрлица</div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">Характеристики</div>
+    <div class="tab">Описание</div>
+    <div class="tab">Отзывы · 128</div>
+    <div class="tab">Доставка и оплата</div>
+  </div>
+
+  <div class="spectable">
+    <div class="row"><div class="k">Тип</div><div class="v">Перфоратор</div></div>
+    <div class="row"><div class="k">Потребляемая мощность</div><div class="v">800 Вт</div></div>
+    <div class="row"><div class="k">Энергия удара</div><div class="v">2.7 Дж</div></div>
+    <div class="row"><div class="k">Тип патрона</div><div class="v">SDS-Plus</div></div>
+    <div class="row"><div class="k">Макс. Ø сверления (бетон)</div><div class="v">26 мм</div></div>
+    <div class="row"><div class="k">Частота вращения</div><div class="v">0–900 об/мин</div></div>
+    <div class="row"><div class="k">Частота ударов</div><div class="v">0–4000 уд/мин</div></div>
+    <div class="row"><div class="k">Реверс</div><div class="v">Есть</div></div>
+    <div class="row"><div class="k">Вес</div><div class="v">2.7 кг</div></div>
+    <div class="row"><div class="k">Комплектация</div><div class="v">Кейс, доп. рукоятка, ограничитель глубины</div></div>
+  </div>
+</div>
+
+<footer><div class="container">
+  <div>
+    <h5>Профессионал</h5>
+    <a>О магазине</a><a>Гарантия и сервис</a><a>Контакты</a>
+    <div class="pay"><span>ЮKassa</span><span>СБП</span><span>Нал.</span><span>Счёт юр.</span></div>
+  </div>
+  <div><h5>Покупателям</h5><a>Доставка по Пензе</a><a>Самовывоз</a><a>Оплата</a><a>Возврат</a></div>
+  <div><h5>Юрлицам</h5><a>Безналичный расчёт</a><a>Счёт-PDF</a><a>Спецпредложения B2B</a></div>
+  <div><h5>Контакты</h5><a>8 (8412) 20-20-97</a><a>Онежский проезд, 12</a><a>Пн–Сб 9:00–19:00</a><a>Отслеживать заказ в MAX</a></div>
+</div></footer>
+
+</body>
+</html>

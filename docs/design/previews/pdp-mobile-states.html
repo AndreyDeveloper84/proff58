@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDP мобайл + состояния наличия — Профессионал</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFFFFF; --surface:#F5F7F8; --surface-inverse:#0D0F0E;
+  --border:#E2E7EA; --border-strong:#CBD2D7;
+  --text:#16191B; --text-secondary:#545C62; --text-muted:#8A9298;
+  --green-500:#07B453; --green-700:#097A3C; --green-800:#085C2E; --green-50:#E8F6EE;
+  --lime-500:#6CB52F;
+  --danger:#D7322B; --danger-50:#FCEAE9; --warning:#C77A12; --warning-50:#FBF1E0; --rating:#E6A93A;
+  --green-tint:rgba(7,180,83,.10);
+  --action:var(--green-700); --link:var(--green-700); --instock:var(--green-700);
+  --e1:0 1px 2px rgba(13,15,14,.06); --e2:0 2px 10px rgba(13,15,14,.08);
+  --display:"Oswald",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--body);background:#dfe4e8;color:var(--text);padding:28px;-webkit-font-smoothing:antialiased}
+.lab{font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;font-size:13px;color:#3a4248;margin:0 0 22px}
+.stage-row{display:flex;gap:28px;align-items:flex-start;flex-wrap:nowrap}
+.frame{width:360px;flex:none}
+.cap{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;font-size:12px;color:#39424a;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.cap .pill{font-size:10px;font-weight:700;color:#fff;border-radius:99px;padding:2px 8px}
+.phone{height:720px;background:var(--bg);border-radius:26px;border:8px solid #11161a;box-shadow:0 14px 40px rgba(13,15,14,.28);overflow:hidden;position:relative;display:flex;flex-direction:column}
+.tnum{font-variant-numeric:tabular-nums}
+.mh{background:var(--surface-inverse);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 12px;position:relative}
+.mh .rail{position:absolute;left:0;top:0;bottom:0;width:7px;background:linear-gradient(180deg,#0c8a44,#075f30)}
+.mh .burger{font-size:16px;margin-left:6px}
+.mh .lg{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.03em;flex:1}
+.mh .lg b{color:var(--green-500)}
+.mh svg{width:20px;height:20px;color:#cfd6db}
+.mh .cart{position:relative}
+.mh .cnt{position:absolute;top:-6px;right:-6px;background:var(--green-500);color:#06270f;font-size:9px;font-weight:700;border-radius:9px;padding:0 4px}
+.msearch{padding:8px 12px;background:var(--surface-inverse)}
+.msearch div{background:#fff;border-radius:6px;font-size:12px;color:var(--text-muted);padding:9px 12px;display:flex;align-items:center;gap:8px}
+.body{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.crumbs{font-size:11px;color:var(--text-muted);padding:9px 14px 4px}
+.mimg{margin:4px 14px 0;aspect-ratio:1/1;background:var(--surface);border:1px solid var(--border);border-radius:10px;position:relative;display:flex;align-items:center;justify-content:center;color:var(--border-strong);font-family:var(--display);font-size:14px;letter-spacing:.08em;max-height:188px}
+.flag{position:absolute;top:10px;left:10px;display:flex;gap:5px}
+.flag .b{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase}
+.b-sale{background:#23292e;color:#fff}.b-hit{background:var(--lime-500);color:#1a2400}
+.dots{display:flex;gap:4px;justify-content:center;padding:8px 0 2px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--border-strong)}
+.dots i.on{background:var(--action);width:16px;border-radius:3px}
+.minfo{padding:6px 14px}
+.brandline{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+.mtitle{font-size:16px;font-weight:600;line-height:1.25;margin:4px 0 6px}
+.mmeta{font-size:11px;color:var(--text-secondary);display:flex;gap:10px;align-items:center}
+.stars{color:var(--rating)}
+.state{margin:10px 14px;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.state .l1{display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:13px}
+.state .l2{font-size:11px;color:var(--text-secondary)}
+.dot{width:8px;height:8px;border-radius:50%}
+.s-in{background:var(--green-50)} .s-in .l1{color:var(--instock)} .s-in .dot{background:var(--instock)}
+.s-low{background:var(--warning-50)} .s-low .l1{color:var(--warning)} .s-low .dot{background:var(--warning)}
+.s-back{background:var(--warning-50)} .s-back .l1{color:var(--warning)} .s-back .dot{background:var(--warning);border-radius:1px}
+.s-out{background:var(--danger-50)} .s-out .l1{color:var(--danger)} .s-out .dot{border:2px solid var(--danger);background:transparent}
+.notice{margin:0 14px 4px;font-size:11px;color:#7a4d08;background:var(--warning-50);border:1px solid #f0dcb6;border-radius:6px;padding:7px 9px;display:flex;gap:7px}
+.notice.changed b{font-variant-numeric:tabular-nums}
+.bottombar{border-top:1px solid var(--border);background:var(--bg);padding:10px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 -4px 16px rgba(13,15,14,.06)}
+.bb-price{flex:1}
+.bb-price .now{font-size:20px;font-weight:800}
+.bb-price .old{font-size:11px;color:var(--text-muted);text-decoration:line-through;margin-left:6px}
+.bb-price .b2b{display:block;font-size:10px;color:var(--link);margin-top:1px}
+.bb-cta{height:46px;padding:0 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px}
+.cta-buy{background:var(--action);color:#fff}
+.cta-notify{background:#fff;color:var(--action);border:1px solid var(--action)}
+.cta-back{background:var(--warning);color:#fff}
+.bb-cta svg{width:16px;height:16px}
+</style>
+</head>
+<body>
+<p class="lab">PDP · мобильная версия (360px) · 4 состояния наличия</p>
+<div class="stage-row">
+
+  <div class="frame">
+    <div class="cap"><span class="pill" style="background:var(--instock)">В наличии</span> много на складе</div>
+    <div class="phone">
+      <div class="mh"><div class="rail"></div><span class="burger">☰</span><span class="lg">ПРОФЕССИО<b>НАЛ</b></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <span class="cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18l-2 11H5L3 6z"/></svg><span class="cnt">3</span></span>
+      </div>
+      <div class="body">
+        <div class="crumbs">Перфораторы / Bosch GBH 2-26</div>
+        <div class="mimg"><div class="flag"><span class="b b-sale">−16%</span><span class="b b-hit">Хит</span></div>ФОТО 1:1</div>
+        <div class="dots"><i class="on"></i><i></i><i></i><i></i></div>
+        <div class="minfo">
+          <div class="brandline">Bosch · проф. серия</div>
+          <div class="mtitle">Перфоратор Bosch GBH 2-26 DRE, SDS-Plus, 800 Вт</div>
+          <div class="mmeta"><span class="stars">★★★★☆</span><span>4.6 · 128</span><span class="tnum">арт. 0611253708</span></div>
+        </div>
+        <div class="state s-in"><span class="l1"><span class="dot"></span>В наличии · 12 шт</span><span class="l2">⌂ Самовывоз сегодня · доставка завтра</span></div>
+      </div>
+      <div class="bottombar">
+        <div class="bb-price"><span class="now tnum">12 490 ₽</span><span class="old tnum">14 890 ₽</span><span class="b2b tnum">B2B 11 200 ₽</span></div>
+        <button class="bb-cta cta-buy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18l-2 11H5L3 6z"/></svg>В корзину</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="cap"><span class="pill" style="background:var(--warning)">Мало</span> заканчивается</div>
+    <div class="phone">
+      <div class="mh"><div class="rail"></div><span class="burger">☰</span><span class="lg">ПРОФЕССИО<b>НАЛ</b></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <span class="cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18l-2 11H5L3 6z"/></svg><span class="cnt">3</span></span>
+      </div>
+      <div class="body">
+        <div class="crumbs">Шуруповёрты / Makita DF333D</div>
+        <div class="mimg"><div class="flag"><span class="b b-hit">Хит</span></div>ФОТО 1:1</div>
+        <div class="dots"><i class="on"></i><i></i><i></i></div>
+        <div class="minfo">
+          <div class="brandline">Makita</div>
+          <div class="mtitle">Дрель-шуруповёрт Makita DF333DWAE, 12В, 2×2Ач</div>
+          <div class="mmeta"><span class="stars">★★★★★</span><span>4.8 · 64</span><span class="tnum">арт. DF333DWAE</span></div>
+        </div>
+        <div class="state s-low"><span class="l1"><span class="dot"></span>Осталось 2 шт</span><span class="l2">⌂ Самовывоз сегодня · успейте заказать</span></div>
+      </div>
+      <div class="bottombar">
+        <div class="bb-price"><span class="now tnum">8 990 ₽</span><span class="b2b tnum">B2B 8 150 ₽</span></div>
+        <button class="bb-cta cta-buy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18l-2 11H5L3 6z"/></svg>В корзину</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="cap"><span class="pill" style="background:var(--warning)">Под заказ</span> привезём со склада</div>
+    <div class="phone">
+      <div class="mh"><div class="rail"></div><span class="burger">☰</span><span class="lg">ПРОФЕССИО<b>НАЛ</b></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <span class="cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18l-2 11H5L3 6z"/></svg><span class="cnt">3</span></span>
+      </div>
+      <div class="body">
+        <div class="crumbs">УШМ (болгарки) / DeWalt DWE4257</div>
+        <div class="mimg">ФОТО 1:1</div>
+        <div class="dots"><i class="on"></i><i></i><i></i></div>
+        <div class="minfo">
+          <div class="brandline">DeWalt</div>
+          <div class="mtitle">УШМ DeWalt DWE4257, 1500 Вт, 125 мм</div>
+          <div class="mmeta"><span class="stars">★★★★☆</span><span>4.5 · 39</span><span class="tnum">арт. DWE4257</span></div>
+        </div>
+        <div class="state s-back"><span class="l1"><span class="dot"></span>Под заказ · ~5–7 дней</span><span class="l2">Привезём со склада поставщика, сообщим в MAX</span></div>
+      </div>
+      <div class="bottombar">
+        <div class="bb-price"><span class="now tnum">11 350 ₽</span><span class="b2b tnum">B2B 10 400 ₽</span></div>
+        <button class="bb-cta cta-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>Под заказ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="cap"><span class="pill" style="background:var(--danger)">Нет в наличии</span> + цена изменилась</div>
+    <div class="phone">
+      <div class="mh"><div class="rail"></div><span class="burger">☰</span><span class="lg">ПРОФЕССИО<b>НАЛ</b></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <span class="cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18l-2 11H5L3 6z"/></svg><span class="cnt">3</span></span>
+      </div>
+      <div class="body">
+        <div class="crumbs">Аккумуляторы / Metabo 18В 5.2Ач</div>
+        <div class="mimg" style="opacity:.72">ФОТО 1:1</div>
+        <div class="dots"><i class="on"></i><i></i></div>
+        <div class="minfo">
+          <div class="brandline">Metabo</div>
+          <div class="mtitle">Аккумулятор Metabo LiHD 18В 5.2Ач</div>
+          <div class="mmeta"><span class="stars">★★★★★</span><span>4.9 · 21</span><span class="tnum">арт. 625592000</span></div>
+        </div>
+        <div class="state s-out"><span class="l1"><span class="dot"></span>Нет в наличии</span><span class="l2">Сообщим в MAX, когда поступит</span></div>
+        <div class="notice changed">⚠ Цена обновилась: было <b>9 990 ₽</b> → стало <b>10 490 ₽</b>. Подтвердите при заказе.</div>
+      </div>
+      <div class="bottombar">
+        <div class="bb-price"><span class="now tnum">10 490 ₽</span></div>
+        <button class="bb-cta cta-notify"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 1112 0c0 7 3 7 3 9H3c0-2 3-2 3-9z"/></svg>Уведомить</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
