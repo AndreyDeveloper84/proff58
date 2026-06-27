@@ -43,8 +43,6 @@ def test_consultation_valid_without_product():
 
 @pytest.mark.django_db
 def test_price_request_requires_product():
-    s = ProductInquirySerializer(
-        data={"kind": InquiryKind.PRICE_REQUEST, "phone": "89990001122"}
-    )
+    s = ProductInquirySerializer(data={"kind": InquiryKind.PRICE_REQUEST, "phone": "89990001122"})
     assert not s.is_valid()
     assert "product" in s.errors
