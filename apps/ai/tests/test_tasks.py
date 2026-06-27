@@ -8,10 +8,18 @@ from apps.catalog.models import Category, Product, ProductStatus
 
 def _p(slug, *, stock, **kw):
     cat = Category.objects.first() or Category.add_root(name="Перф", slug="perf")
-    return Product.objects.create(category=cat, name="", slug=slug, description="",
-                                  original_name="Перфоратор " + slug,
-                                  status=ProductStatus.IMPORTED, is_active=False,
-                                  price="1000", available_quantity=stock, **kw)
+    return Product.objects.create(
+        category=cat,
+        name="",
+        slug=slug,
+        description="",
+        original_name="Перфоратор " + slug,
+        status=ProductStatus.IMPORTED,
+        is_active=False,
+        price="1000",
+        available_quantity=stock,
+        **kw,
+    )
 
 
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)

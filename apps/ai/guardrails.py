@@ -60,14 +60,15 @@ def parse_enrich_output(text: str) -> EnrichResult | None:
             c = int(raw.get("confidence", 60))
         except (TypeError, ValueError):
             c = 60
-        attrs.append(EnrichedAttr(slug=str(raw["slug"]), value=raw["value"],
-                                  confidence=max(0, min(100, c))))
+        attrs.append(
+            EnrichedAttr(slug=str(raw["slug"]), value=raw["value"], confidence=max(0, min(100, c)))
+        )
     return EnrichResult(
         name=(str(data["name"]).strip() or None) if data["name"] else None,
-        short_description=(str(data["short_description"]).strip() or None)
-        if data["short_description"] else None,
-        description=(str(data["description"]).strip() or None)
-        if data["description"] else None,
+        short_description=(
+            (str(data["short_description"]).strip() or None) if data["short_description"] else None
+        ),
+        description=(str(data["description"]).strip() or None) if data["description"] else None,
         attributes=attrs,
         confidence=max(0.0, min(1.0, conf)),
         source="llm",

@@ -15,10 +15,10 @@ def enrich_product_task(self, product_id: int, force: bool = False):
 
 
 @shared_task
-def batch_enrich_task(category_slug: str | None = None, limit: int = 100,
-                      only_empty: bool = True) -> int:
-    ids = pending_for_enrichment(category_slug=category_slug, limit=limit,
-                                 only_empty=only_empty)
+def batch_enrich_task(
+    category_slug: str | None = None, limit: int = 100, only_empty: bool = True
+) -> int:
+    ids = pending_for_enrichment(category_slug=category_slug, limit=limit, only_empty=only_empty)
     for pid in ids:
         enrich_product_task.delay(pid)
     return len(ids)

@@ -8,9 +8,16 @@ from apps.catalog.models import Category, Product, ProductStatus
 
 def _product(**kw):
     cat = Category.objects.first() or Category.add_root(name="Перфораторы", slug="perf")
-    data = dict(category=cat, name="", slug="p1", description="",
-                original_name="Перфоратор HR2470 Makita 780Вт",
-                status=ProductStatus.IMPORTED, is_active=False, price="1000")
+    data = dict(
+        category=cat,
+        name="",
+        slug="p1",
+        description="",
+        original_name="Перфоратор HR2470 Makita 780Вт",
+        status=ProductStatus.IMPORTED,
+        is_active=False,
+        price="1000",
+    )
     data.update(kw)
     return Product.objects.create(**data)
 

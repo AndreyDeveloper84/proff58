@@ -18,8 +18,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from apps.catalog.enrichment import (AiAttr, apply_ai_enrichment,
-                                     get_enrichable_product)
+from apps.catalog.enrichment import AiAttr, apply_ai_enrichment, get_enrichable_product
 from apps.catalog.filters import visible_products
 
 from .guardrails import EnrichResult, parse_enrich_output
@@ -34,8 +33,14 @@ ENRICH_SYSTEM = (
 
 
 def _fallback() -> EnrichResult:
-    return EnrichResult(name=None, short_description=None, description=None,
-                        attributes=[], confidence=0.0, source="fallback")
+    return EnrichResult(
+        name=None,
+        short_description=None,
+        description=None,
+        attributes=[],
+        confidence=0.0,
+        source="fallback",
+    )
 
 
 def enrich(*, product_id: int, force: bool = False) -> EnrichResult:
@@ -45,15 +50,21 @@ def enrich(*, product_id: int, force: bool = False) -> EnrichResult:
     """
     product = get_enrichable_product(product_id)
     if product is None:
-        AiCallLog.objects.create(capability=AiCallLog.Capability.ENRICH,
-                                 status=AiCallLog.Status.ERROR, entity_ref=product_id,
-                                 reason="product_not_found")
+        AiCallLog.objects.create(
+            capability=AiCallLog.Capability.ENRICH,
+            status=AiCallLog.Status.ERROR,
+            entity_ref=product_id,
+            reason="product_not_found",
+        )
         return _fallback()
 
     if product.content_locked and not force:
-        AiCallLog.objects.create(capability=AiCallLog.Capability.ENRICH,
-                                 status=AiCallLog.Status.FALLBACK, entity_ref=product_id,
-                                 reason="content_locked")
+        AiCallLog.objects.create(
+            capability=AiCallLog.Capability.ENRICH,
+            status=AiCallLog.Status.FALLBACK,
+            entity_ref=product_id,
+            reason="content_locked",
+        )
         return _fallback()
 
     provider = get_provider()
@@ -62,43 +73,64 @@ def enrich(*, product_id: int, force: bool = False) -> EnrichResult:
     try:
         reply = provider.complete(call)
     except Exception as exc:  # noqa: BLE001 — деградация: любой сбой провайдера
-        AiCallLog.objects.create(capability=AiCallLog.Capability.ENRICH,
-                                 provider=getattr(provider, "name", ""),
-                                 status=AiCallLog.Status.ERROR, entity_ref=product_id,
-                                 reason=str(exc)[:255])
+        AiCallLog.objects.create(
+            capability=AiCallLog.Capability.ENRICH,
+            provider=getattr(provider, "name", ""),
+            status=AiCallLog.Status.ERROR,
+            entity_ref=product_id,
+            reason=str(exc)[:255],
+        )
         return _fallback()
 
     result = parse_enrich_output(reply.text)
     if result is None:
-        AiCallLog.objects.create(capability=AiCallLog.Capability.ENRICH,
-                                 provider=reply.provider, model=reply.model,
-                                 status=AiCallLog.Status.FALLBACK, entity_ref=product_id,
-                                 reason="invalid_output", tokens_in=reply.tokens_in,
-                                 tokens_out=reply.tokens_out)
+        AiCallLog.objects.create(
+            capability=AiCallLog.Capability.ENRICH,
+            provider=reply.provider,
+            model=reply.model,
+            status=AiCallLog.Status.FALLBACK,
+            entity_ref=product_id,
+            reason="invalid_output",
+            tokens_in=reply.tokens_in,
+            tokens_out=reply.tokens_out,
+        )
         return _fallback()
 
     try:
         apply_ai_enrichment(
-            product, name=result.name, short_description=result.short_description,
+            product,
+            name=result.name,
+            short_description=result.short_description,
             description=result.description,
-            attributes=[AiAttr(slug=a.slug, value=a.value, confidence=a.confidence)
-                        for a in result.attributes],
-            confidence=result.confidence, force=force,
+            attributes=[
+                AiAttr(slug=a.slug, value=a.value, confidence=a.confidence)
+                for a in result.attributes
+            ],
+            confidence=result.confidence,
+            force=force,
         )
     except Exception as exc:  # noqa: BLE001 — деградация: сбой записи в каталог
         AiCallLog.objects.create(
             capability=AiCallLog.Capability.ENRICH,
-            provider=reply.provider, model=reply.model,
-            status=AiCallLog.Status.ERROR, entity_ref=product_id,
+            provider=reply.provider,
+            model=reply.model,
+            status=AiCallLog.Status.ERROR,
+            entity_ref=product_id,
             reason=f"write_failed:{exc!s}"[:255],
         )
         return _fallback()
-    AiCallLog.objects.create(capability=AiCallLog.Capability.ENRICH,
-                             provider=reply.provider, model=reply.model,
-                             status=AiCallLog.Status.OK, entity_ref=product_id,
-                             output=reply.text[:2000], tokens_in=reply.tokens_in,
-                             tokens_out=reply.tokens_out)
+    AiCallLog.objects.create(
+        capability=AiCallLog.Capability.ENRICH,
+        provider=reply.provider,
+        model=reply.model,
+        status=AiCallLog.Status.OK,
+        entity_ref=product_id,
+        output=reply.text[:2000],
+        tokens_in=reply.tokens_in,
+        tokens_out=reply.tokens_out,
+    )
     return result
+
 
 DEFAULT_LIMIT = 8
 MAX_LIMIT = 24

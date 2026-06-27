@@ -477,12 +477,10 @@ class Product(TimeStampedModel):
         _("Источник карточного контента"),
         max_length=12,
         choices=ContentSource.choices,
-        null=True,
         blank=True,
+        default="",
     )
-    content_confidence = models.FloatField(
-        _("Уверенность контента"), null=True, blank=True
-    )
+    content_confidence = models.FloatField(_("Уверенность контента"), null=True, blank=True)
     matched_rule = models.ForeignKey(
         CategoryMappingRule,
         on_delete=models.SET_NULL,

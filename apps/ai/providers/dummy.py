@@ -45,6 +45,9 @@ class DummyProvider:
         }
         text = json.dumps(payload, ensure_ascii=False)
         return ModelReply(
-            text=text, tokens_in=len(raw.split()), tokens_out=len(text.split()),
-            model=self.model, provider=self.name,
+            text=text,
+            tokens_in=len(raw.split()),
+            tokens_out=len(text.split()),
+            model=self.model,
+            provider=self.name,
         )

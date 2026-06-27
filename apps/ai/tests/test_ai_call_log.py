@@ -1,4 +1,5 @@
 import pytest
+
 from apps.ai.models import AiCallLog
 
 
