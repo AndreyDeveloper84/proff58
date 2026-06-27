@@ -80,3 +80,27 @@ def test_pending_prioritizes_in_stock():
     _product(slug="nostock", available_quantity=0)
     ids = pending_for_enrichment(limit=1)
     assert Product.objects.get(slug="instock").id == ids[0]
+
+
+@pytest.mark.django_db
+def test_force_overwrites_existing_card_field():
+    p = _product(slug="p7", name="Старое имя", description="Старое описание")
+    res = apply_ai_enrichment(p, name="Новое имя Makita", description="Новое описание PRO",
+                              confidence=0.9, force=True)
+    p.refresh_from_db()
+    assert p.name == "Новое имя Makita"
+    assert p.description == "Новое описание PRO"
+    assert "name" in res["fields_updated"]
+    assert "description" in res["fields_updated"]
+    assert p.content_source == "llm"
+
+
+@pytest.mark.django_db
+def test_force_bypasses_content_locked():
+    p = _product(slug="p8", content_locked=True)
+    res = apply_ai_enrichment(p, name="Новый Перфоратор", confidence=0.9, force=True)
+    p.refresh_from_db()
+    assert res["locked"] is False
+    assert p.name == "Новый Перфоратор"
+    assert p.content_source == "llm"
+    assert p.enrich_status == EnrichStatus.DONE
