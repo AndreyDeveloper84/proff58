@@ -40,3 +40,5 @@ def test_enrich_respects_content_locked():
 def test_enrich_missing_product_returns_fallback():
     res = enrich(product_id=999999)
     assert res.source == "fallback"
+    log = AiCallLog.objects.get(entity_ref=999999)
+    assert log.status == AiCallLog.Status.ERROR and log.reason == "product_not_found"

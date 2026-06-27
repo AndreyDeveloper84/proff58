@@ -77,13 +77,22 @@ def enrich(*, product_id: int, force: bool = False) -> EnrichResult:
                                  tokens_out=reply.tokens_out)
         return _fallback()
 
-    apply_ai_enrichment(
-        product, name=result.name, short_description=result.short_description,
-        description=result.description,
-        attributes=[AiAttr(slug=a.slug, value=a.value, confidence=a.confidence)
-                    for a in result.attributes],
-        confidence=result.confidence, force=force,
-    )
+    try:
+        apply_ai_enrichment(
+            product, name=result.name, short_description=result.short_description,
+            description=result.description,
+            attributes=[AiAttr(slug=a.slug, value=a.value, confidence=a.confidence)
+                        for a in result.attributes],
+            confidence=result.confidence, force=force,
+        )
+    except Exception as exc:  # noqa: BLE001 — деградация: сбой записи в каталог
+        AiCallLog.objects.create(
+            capability=AiCallLog.Capability.ENRICH,
+            provider=reply.provider, model=reply.model,
+            status=AiCallLog.Status.ERROR, entity_ref=product_id,
+            reason=f"write_failed:{exc!s}"[:255],
+        )
+        return _fallback()
     AiCallLog.objects.create(capability=AiCallLog.Capability.ENRICH,
                              provider=reply.provider, model=reply.model,
                              status=AiCallLog.Status.OK, entity_ref=product_id,
