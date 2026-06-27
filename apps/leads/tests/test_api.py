@@ -26,3 +26,16 @@ def test_post_inquiry_invalid_phone_400(api, product):
     )
     assert resp.status_code == 400
     assert "phone" in resp.data
+
+
+@pytest.mark.django_db
+def test_post_consultation_inquiry(api):
+    resp = api.post(
+        "/api/leads/inquiries/",
+        {"kind": "consultation", "phone": "89990001122", "name": "Иван", "message": "подберите"},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.content
+    body = resp.json()
+    assert body["kind"] == "consultation"
+    assert set(body.keys()) == {"id", "kind", "status"}

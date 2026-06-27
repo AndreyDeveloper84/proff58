@@ -186,7 +186,7 @@
           ]
         },
         {
-          "slug": "impact_energy",
+          "slug": "energy_impact",
           "name": "Энергия удара",
           "kind": "number",
           "unit": "Дж",
@@ -198,7 +198,7 @@
           ]
         },
         {
-          "slug": "chuck_type",
+          "slug": "chuck",
           "name": "Тип патрона",
           "kind": "select",
           "source": "keyword",
@@ -1058,7 +1058,7 @@
           ]
         },
         {
-          "slug": "impact_energy",
+          "slug": "energy_impact",
           "name": "Энергия удара",
           "kind": "number",
           "unit": "Дж",

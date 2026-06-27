@@ -56,6 +56,7 @@ type ApiImage = { url: string; alt?: string | null; is_main?: boolean };
 // Detail-эндпоинт (/products/{slug}/) = ApiProduct + description/images/breadcrumb.
 type ApiProductDetail = ApiProduct & {
   description?: string | null;
+  video_url?: string | null;
   images?: ApiImage[];
   breadcrumb?: { name: string; slug: string }[];
 };
@@ -195,6 +196,7 @@ function apiProductToDetail(ap: ApiProductDetail): ProductDetail {
     ...base,
     images,
     description: ap.description ?? "",
+    videoUrl: ap.video_url ?? undefined,
     breadcrumb: ap.breadcrumb ?? [],
   };
 }
@@ -517,5 +519,72 @@ async function fetchProductCompatible(
     };
   } catch {
     return empty;
+  }
+}
+
+// --- Главная страница ---
+
+export type CategoryNode = {
+  id: number;
+  name: string;
+  slug: string;
+  sort_order: number;
+  children: CategoryNode[];
+};
+
+// Дерево категорий для блока «Категории» главной. Best-effort: сбой/невалид → пустой массив
+// (главная деградирует мягко, в отличие от PLP). Возвращаем как есть — корни возьмёт хелпер.
+export async function fetchCategoryTreeFromApi(base: string): Promise<CategoryNode[]> {
+  const root = base.replace(/\/$/, "");
+  try {
+    const res = await fetch(`${root}/api/catalog/categories/`, {
+      cache: "no-store",
+      headers: SSR_HEADERS,
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as CategoryNode[];
+    return Array.isArray(json) ? json : [];
+  } catch {
+    return [];
+  }
+}
+
+// «Хиты продаж»: курируемые slug'и (detail-эндпоинт, параллельно) → fallback ?sort=new.
+// Detail-ответ — надмножество list (ApiProduct), apiProductToProduct берёт нужное подмножество.
+export async function fetchBestsellersFromApi(
+  base: string,
+  slugs: string[],
+  limit: number,
+): Promise<Product[]> {
+  const root = base.replace(/\/$/, "");
+  if (slugs.length) {
+    const settled = await Promise.all(
+      slugs.map(async (slug) => {
+        try {
+          const res = await fetch(`${root}/api/catalog/products/${encodeURIComponent(slug)}/`, {
+            cache: "no-store",
+            headers: SSR_HEADERS,
+          });
+          if (!res.ok) return null;
+          return apiProductToProduct((await res.json()) as ApiProduct);
+        } catch {
+          return null;
+        }
+      }),
+    );
+    const found = settled.filter((p): p is Product => p != null);
+    if (found.length) return found;
+  }
+  // Fallback: свежие товары.
+  try {
+    const res = await fetch(`${root}/api/catalog/products/?sort=new&limit=${limit}`, {
+      cache: "no-store",
+      headers: SSR_HEADERS,
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { results?: ApiProduct[] };
+    return (json.results ?? []).map(apiProductToProduct);
+  } catch {
+    return [];
   }
 }

@@ -5,7 +5,15 @@
 // NEXT_PUBLIC_USE_FIXTURES=true (не тихий fallback на staging).
 
 import perforatory from "@/fixtures/listing.perforatory.json";
-import { fetchListingFromApi, fetchProductFromApi, fetchSearchFromApi } from "./adapters";
+import {
+  fetchListingFromApi,
+  fetchProductFromApi,
+  fetchSearchFromApi,
+  fetchCategoryTreeFromApi,
+  fetchBestsellersFromApi,
+  type CategoryNode,
+} from "./adapters";
+import { HOME_CONTENT } from "./home-content";
 import { applyListing } from "./filtering";
 import type { Listing, ListingQuery, Product, ProductDetail } from "./types";
 
@@ -53,4 +61,22 @@ export async function getProduct(slug: string): Promise<ProductDetail | null> {
     return await fetchProductFromApi(API_BASE, slug);
   }
   return null;
+}
+
+export type { CategoryNode };
+
+// Корневые категории (depth==1) для блока главной. Без API → пусто (блок скрыт).
+export async function getCategoryTree(): Promise<CategoryNode[]> {
+  if (API_BASE && !FORCE_FIXTURES) {
+    return await fetchCategoryTreeFromApi(API_BASE);
+  }
+  return [];
+}
+
+// «Хиты продаж» для главной. Без API → пусто (блок скрыт).
+export async function getBestsellers(limit = 8): Promise<Product[]> {
+  if (API_BASE && !FORCE_FIXTURES) {
+    return await fetchBestsellersFromApi(API_BASE, HOME_CONTENT.bestsellerSlugs, limit);
+  }
+  return [];
 }

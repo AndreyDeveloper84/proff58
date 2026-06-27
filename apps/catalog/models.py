@@ -496,6 +496,7 @@ class Product(TimeStampedModel):
     slug = models.SlugField(_("Slug"), max_length=512, unique=True, blank=True)
     description = models.TextField(_("Описание"), blank=True)
     short_description = models.CharField(_("Краткое описание"), max_length=512, blank=True)
+    video_url = models.URLField(_("Видео (URL)"), blank=True)
     meta_title = models.CharField(_("Meta title"), max_length=255, blank=True)
     meta_description = models.CharField(_("Meta description"), max_length=512, blank=True)
 

@@ -83,6 +83,55 @@ def test_commit_moves_by_name_preserving_manual(trees):
 
 
 @pytest.mark.django_db
+def test_explicit_map_moves_diverging_name(trees):
+    # Легаси «Крепёж, канат, верёвка» названо иначе, чем v2; через --map уводим в «Болты».
+    call_command(
+        "catalog_remap_legacy",
+        "--section",
+        "krepezh",
+        "--from",
+        "krepezh-i-metizy",
+        "--map",
+        "Крепёж, канат, верёвка=Болты",
+        "--commit",
+        stdout=StringIO(),
+    )
+    k1 = Product.objects.get(slug="k1")
+    assert k1.category_id == trees["v2_bolty"].id
+    assert k1.category_is_manual is True
+
+
+@pytest.mark.django_db
+def test_map_to_unknown_v2_node_errors(trees):
+    with pytest.raises(CommandError):
+        call_command(
+            "catalog_remap_legacy",
+            "--section",
+            "krepezh",
+            "--from",
+            "krepezh-i-metizy",
+            "--map",
+            "Канат=НесуществующийУзел",
+            stdout=StringIO(),
+        )
+
+
+@pytest.mark.django_db
+def test_map_without_equals_errors(trees):
+    with pytest.raises(CommandError):
+        call_command(
+            "catalog_remap_legacy",
+            "--section",
+            "krepezh",
+            "--from",
+            "krepezh-i-metizy",
+            "--map",
+            "безравно",
+            stdout=StringIO(),
+        )
+
+
+@pytest.mark.django_db
 def test_unmatched_product_gets_manual_on_match_only(trees):
     # Товар в сопоставленном узле, который был manual=False, после переноса становится manual=True.
     leg_bolty = Category.objects.get(slug="bolty")
