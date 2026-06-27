@@ -920,3 +920,12 @@ class EnrichmentLog(models.Model):
 
     def __str__(self) -> str:
         return f"{self.product_external_id} → {self.get_result_display()}"
+
+
+class ModerationProduct(Product):
+    """Proxy для очереди модерации обогащения в admin."""
+
+    class Meta:
+        proxy = True
+        verbose_name = _("Товар на модерации")
+        verbose_name_plural = _("Очередь модерации обогащения")
