@@ -1881,6 +1881,140 @@
       ]
     },
     {
+      "tool_type": "metchiki",
+      "category": "Метчики",
+      "attributes": [
+        {
+          "slug": "diameter",
+          "name": "Диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "regex": [
+            "(?:^|\\s)м\\s*(\\d{1,2})\\s*[хx]\\s*\\d",
+            "м[/.]р\\.?\\s*(\\d{1,2})\\s*[хx]\\s*\\d"
+          ]
+        },
+        {
+          "slug": "thread_pitch",
+          "name": "Шаг резьбы",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?:^|\\s)м\\s*\\d{1,2}\\s*[хx]\\s*(\\d(?:[.,]\\d+)?)",
+            "м[/.]р\\.?\\s*\\d{1,2}\\s*[хx]\\s*(\\d(?:[.,]\\d+)?)"
+          ]
+        },
+        {
+          "slug": "thread_type",
+          "name": "Тип резьбы",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {"value": "Дюймовая", "slug": "inch", "keywords": ["bsw", "bsf", "unf", "unc", "unef", "uns", "дюймов", "ниток", "уитворт"]},
+            {"value": "Трубная", "slug": "pipe", "keywords": ["g 1/", "g 3/", "g 1 ", "g1/", "g3/", "трубн", "bspt", "bspp"]},
+            {"value": "Метрическая", "slug": "metric", "keywords": ["din 352", "din352", "din 371", "din371", "din 376", "din376", "метрическ"]}
+          ],
+          "derive": {
+            "source": "inferred",
+            "set_option": "metric",
+            "requires_present": ["diameter"],
+            "requires_absent": []
+          }
+        },
+        {
+          "slug": "material",
+          "name": "Материал",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {"value": "Быстрорез (HSS)", "slug": "hss", "keywords": ["hss", "р6м5", "р18", "быстрорез"]},
+            {"value": "Легированная сталь", "slug": "alloy", "keywords": ["9хс", "хвг", "легированн"]},
+            {"value": "Твердосплав", "slug": "carbide", "keywords": ["твердоспл", "тв.спл", "карбид", "вк8"]}
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "plashki",
+      "category": "Плашки",
+      "attributes": [
+        {
+          "slug": "diameter",
+          "name": "Диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "regex": [
+            "(?:^|\\s)м\\s*(\\d{1,2})\\s*[хx]\\s*\\d",
+            "м[/.]р\\.?\\s*(\\d{1,2})\\s*[хx]\\s*\\d"
+          ]
+        },
+        {
+          "slug": "thread_pitch",
+          "name": "Шаг резьбы",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": [
+            "(?:^|\\s)м\\s*\\d{1,2}\\s*[хx]\\s*(\\d(?:[.,]\\d+)?)",
+            "м[/.]р\\.?\\s*\\d{1,2}\\s*[хx]\\s*(\\d(?:[.,]\\d+)?)"
+          ]
+        },
+        {
+          "slug": "thread_type",
+          "name": "Тип резьбы",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {"value": "Дюймовая", "slug": "inch", "keywords": ["bsw", "bsf", "unf", "unc", "unef", "uns", "дюймов", "ниток", "уитворт"]},
+            {"value": "Трубная", "slug": "pipe", "keywords": ["g 1/", "g 3/", "g 1 ", "g1/", "g3/", "трубн", "bspt", "bspp"]},
+            {"value": "Метрическая", "slug": "metric", "keywords": ["din 352", "din352", "din 371", "din371", "din 376", "din376", "метрическ"]}
+          ],
+          "derive": {
+            "source": "inferred",
+            "set_option": "metric",
+            "requires_present": ["diameter"],
+            "requires_absent": []
+          }
+        },
+        {
+          "slug": "material",
+          "name": "Материал",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {"value": "Быстрорез (HSS)", "slug": "hss", "keywords": ["hss", "р6м5", "р18", "быстрорез"]},
+            {"value": "Легированная сталь", "slug": "alloy", "keywords": ["9хс", "хвг", "легированн"]},
+            {"value": "Твердосплав", "slug": "carbide", "keywords": ["твердоспл", "тв.спл", "карбид", "вк8"]}
+          ]
+        }
+      ]
+    },
+    {
       "tool_type": "krugi-shlif",
       "category": "Отрезные и шлифовальные круги",
       "attributes": [

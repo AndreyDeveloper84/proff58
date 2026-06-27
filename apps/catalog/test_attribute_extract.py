@@ -594,6 +594,57 @@ def test_nabory_otvertok_piece_count_ignores_model_codes(rules):
     assert "piece_count" not in f
 
 
+# --- Метчики / Плашки (tool_type=metchiki/plashki): Ø + шаг + тип резьбы + материал ---
+
+
+def test_metchiki_metric_full(rules):
+    # Метрический винтовой: Ø + шаг из «М 6х1,0», материал HSS, тип резьбы выведен (derive).
+    f = {v.slug: v for v in rules.extract("metchiki", "Метчик винтовой М 6х1,0 HSS STV")}
+    assert f["diameter"].number == Decimal("6")
+    assert f["thread_pitch"].number == Decimal("1.0")
+    assert f["material"].option_slug == "hss"
+    # «Метрическая» выводится из наличия diameter, источник — inferred.
+    assert f["thread_type"].option_slug == "metric"
+    assert f["thread_type"].source == "inferred"
+
+
+def test_metchiki_metric_keyword_din(rules):
+    # DIN371 — keyword-метрическая (не derive); шаг с дробью; р6м5к5 → HSS.
+    f = {v.slug: v for v in rules.extract("metchiki", "Метчик М 8х1,25 DIN371 р6м5к5")}
+    assert f["diameter"].number == Decimal("8")
+    assert f["thread_pitch"].number == Decimal("1.25")
+    assert f["thread_type"].option_slug == "metric"
+    assert f["thread_type"].source == "keyword"
+    assert f["material"].option_slug == "hss"
+
+
+def test_metchiki_machine_hand_format(rules):
+    # Машинно-ручной «м/р 10х1,5» (без префикса М) — Ø/шаг ловятся вторым паттерном; 9ХС → легированная.
+    f = {v.slug: v for v in rules.extract("metchiki", "Метчик м/р 10х1,5 9ХС")}
+    assert f["diameter"].number == Decimal("10")
+    assert f["thread_pitch"].number == Decimal("1.5")
+    assert f["material"].option_slug == "alloy"
+
+
+def test_plashki_inch_thread(rules):
+    # Дюймовая резьба по ключам UNF/ниток; метрического Ø нет.
+    f = {v.slug: v for v in rules.extract("plashki", 'Плашка 9/16" UNF 18 ниток STV')}
+    assert f["thread_type"].option_slug == "inch"
+    assert "diameter" not in f
+
+
+def test_plashki_pipe_thread(rules):
+    f = {v.slug: v for v in rules.extract("plashki", "Плашка G 1/2 трубная")}
+    assert f["thread_type"].option_slug == "pipe"
+
+
+def test_metchiki_inch_has_no_metric_diameter(rules):
+    # Дюймовый BSW не должен получить ложный метрический Ø/шаг.
+    f = {v.slug: v for v in rules.extract("metchiki", "Метчик дюймовый BSW 1/2 12ниток к-т 2шт")}
+    assert "diameter" not in f
+    assert f["thread_type"].option_slug == "inch"
+
+
 def _attrs(rules, tt, name):
     return {v.slug: v for v in rules.extract(tt, name)}
 
