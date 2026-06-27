@@ -683,6 +683,39 @@ def test_izm_urovni_length(rules, name, expected):
     assert f["length"].number == Decimal(str(expected))
 
 
+# --- Измерительный: штангенциркули (диапазон + тип отсчёта) и дальномеры (дальность) ---
+
+
+def test_izm_shtangen_digital(rules):
+    # Диапазон — первый «мм» (150), точность «0,02мм» не утекает; «электронный» → digital.
+    f = {
+        v.slug: v for v in rules.extract("izm-shtangen", "Штангенциркуль 150 мм 0,02мм электронный")
+    }
+    assert f["measuring_range"].number == Decimal("150")
+    assert f["readout_type"].option_slug == "digital"
+
+
+def test_izm_shtangen_vernier_default(rules):
+    # Без «электронный/циферблат» механический штангенциркуль → нониусный (фолбэк по слову).
+    f = {
+        v.slug: v for v in rules.extract("izm-shtangen", "Штангенциркуль 125мм тип 1 металлический")
+    }
+    assert f["measuring_range"].number == Decimal("125")
+    assert f["readout_type"].option_slug == "vernier"
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Дальномер лаз. Bosch GLM 30; диап. изм.0,15-30м", 30),
+        ("Дальномер лазерный ADA до 100м", 100),
+    ],
+)
+def test_izm_dalnomery_max_distance(rules, name, expected):
+    f = {v.slug: v for v in rules.extract("izm-dalnomery", name)}
+    assert f["max_distance"].number == Decimal(str(expected))
+
+
 def _attrs(rules, tt, name):
     return {v.slug: v for v in rules.extract(tt, name)}
 

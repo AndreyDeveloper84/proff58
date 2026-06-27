@@ -2059,6 +2059,57 @@
       ]
     },
     {
+      "tool_type": "izm-shtangen",
+      "category": "Штангенциркули и микрометры",
+      "attributes": [
+        {
+          "slug": "measuring_range",
+          "name": "Диапазон измерения",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "regex": ["(?:^|\\s)(\\d{2,4})\\s*мм(?![а-яёa-z])"]
+        },
+        {
+          "slug": "readout_type",
+          "name": "Тип отсчёта",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {"value": "Электронный", "slug": "digital", "keywords": ["электронн", "цифров", "digital"]},
+            {"value": "Циферблатный", "slug": "dial", "keywords": ["циферблат", "стрелочн", "часов"]},
+            {"value": "Нониусный", "slug": "vernier", "keywords": ["нониус", "штангенциркуль"]}
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "izm-dalnomery",
+      "category": "Дальномеры",
+      "attributes": [
+        {
+          "slug": "max_distance",
+          "name": "Дальность",
+          "kind": "number",
+          "unit": "м",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "regex": [
+            "[-–]\\s*(\\d{1,3})\\s*м(?![а-яёa-z])",
+            "до\\s*(\\d{1,3})\\s*м(?![а-яёa-z])"
+          ]
+        }
+      ]
+    },
+    {
       "tool_type": "krugi-shlif",
       "category": "Отрезные и шлифовальные круги",
       "attributes": [
