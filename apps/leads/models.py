@@ -11,6 +11,7 @@ from apps.core.models import TimeStampedModel
 class InquiryKind(models.TextChoices):
     PRICE_REQUEST = "price_request", _("Запрос цены")
     RESTOCK_NOTIFY = "restock_notify", _("Уведомить о поступлении")
+    CONSULTATION = "consultation", _("Консультация")
 
 
 class InquiryStatus(models.TextChoices):
@@ -27,6 +28,8 @@ class ProductInquiry(TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="inquiries",
         verbose_name=_("Товар"),
+        null=True,
+        blank=True,
     )
     phone = models.CharField(_("Телефон"), max_length=20)
     name = models.CharField(_("Имя"), max_length=120, blank=True)
@@ -42,4 +45,4 @@ class ProductInquiry(TimeStampedModel):
         indexes = [models.Index(fields=["status", "kind"])]
 
     def __str__(self) -> str:
-        return f"{self.get_kind_display()} — {self.phone} ({self.product_id})"
+        return f"{self.get_kind_display()} — {self.phone} ({self.product_id or '—'})"
