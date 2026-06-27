@@ -645,6 +645,44 @@ def test_metchiki_inch_has_no_metric_diameter(rules):
     assert f["thread_type"].option_slug == "inch"
 
 
+# --- Измерительный: рулетки (длина/ширина ленты) и уровни (длина) -----------------
+
+
+def test_izm_ruletki_length_and_width(rules):
+    f = {
+        v.slug: v
+        for v in rules.extract("izm-ruletki", "Рулетка 10 м (25 мм) с тройным стопом Inforce")
+    }
+    assert f["tape_length"].number == Decimal("10")
+    assert f["tape_width"].number == Decimal("25")
+
+
+def test_izm_ruletki_width_not_taken_as_length(rules):
+    # Ширина «(19мм)» не должна попасть в длину; длина — «5м».
+    f = {v.slug: v for v in rules.extract("izm-ruletki", "Рулетка 5м (19мм) STAYER")}
+    assert f["tape_length"].number == Decimal("5")
+    assert f["tape_width"].number == Decimal("19")
+
+
+def test_izm_ruletki_length_only(rules):
+    f = {v.slug: v for v in rules.extract("izm-ruletki", "Рулетка 3 м Hitachi")}
+    assert f["tape_length"].number == Decimal("3")
+    assert "tape_width" not in f
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Уровень 600мм ЗУБР КОМПАКТ", 600),
+        ("Уровень 2000 мм PROFI", 2000),
+        ("Уровень 400 мм магнитный", 400),
+    ],
+)
+def test_izm_urovni_length(rules, name, expected):
+    f = {v.slug: v for v in rules.extract("izm-urovni", name)}
+    assert f["length"].number == Decimal(str(expected))
+
+
 def _attrs(rules, tt, name):
     return {v.slug: v for v in rules.extract(tt, name)}
 

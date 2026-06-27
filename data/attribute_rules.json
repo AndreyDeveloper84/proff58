@@ -2015,6 +2015,50 @@
       ]
     },
     {
+      "tool_type": "izm-ruletki",
+      "category": "Рулетки",
+      "attributes": [
+        {
+          "slug": "tape_length",
+          "name": "Длина ленты",
+          "kind": "number",
+          "unit": "м",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "regex": ["(?:^|\\s)(\\d{1,2}(?:[.,]\\d)?)\\s*м(?![а-яёa-z])"]
+        },
+        {
+          "slug": "tape_width",
+          "name": "Ширина ленты",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "regex": ["\\((\\d{1,2})\\s*мм\\)"]
+        }
+      ]
+    },
+    {
+      "tool_type": "izm-urovni",
+      "category": "Уровни",
+      "attributes": [
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "regex": ["(?:^|\\s)(\\d{2,4})\\s*мм(?![а-яёa-z])"]
+        }
+      ]
+    },
+    {
       "tool_type": "krugi-shlif",
       "category": "Отрезные и шлифовальные круги",
       "attributes": [
