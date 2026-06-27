@@ -2144,6 +2144,26 @@
       ]
     },
     {
+      "tool_type": "izm-niveliry",
+      "category": "Лазерные уровни и нивелиры",
+      "attributes": [
+        {
+          "slug": "level_type",
+          "name": "Тип",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {"value": "Лазерный", "slug": "laser", "keywords": ["лазерн", "лазер"]},
+            {"value": "Ротационный", "slug": "rotary", "keywords": ["ротацион"]},
+            {"value": "Оптический", "slug": "optical", "keywords": ["оптическ", "оптич"]}
+          ]
+        }
+      ]
+    },
+    {
       "tool_type": "krugi-shlif",
       "category": "Отрезные и шлифовальные круги",
       "attributes": [

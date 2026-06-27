@@ -746,6 +746,13 @@ def test_izm_mikrometry_range(rules, name, expected):
     assert f["measuring_range"].number == Decimal(str(expected))
 
 
+def test_izm_niveliry_type(rules):
+    laser = {v.slug: v for v in rules.extract("izm-niveliry", "Нивелир лазерный Bosch GLL 2-10")}
+    assert laser["level_type"].option_slug == "laser"
+    opt = {v.slug: v for v in rules.extract("izm-niveliry", "Нивелир оптический ADA RUNNER 24")}
+    assert opt["level_type"].option_slug == "optical"
+
+
 def _attrs(rules, tt, name):
     return {v.slug: v for v in rules.extract(tt, name)}
 
