@@ -716,6 +716,36 @@ def test_izm_dalnomery_max_distance(rules, name, expected):
     assert f["max_distance"].number == Decimal(str(expected))
 
 
+# --- Измерительный: угольники (размер) и микрометры (диапазон из пары A-B) ---------
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Угольник 250 мм Startul", 250),
+        ("Угольник 160х100 УП-1-160 Буревестник", 160),
+        ("Угольник кровельный 170мм высокоточный KRAFTOOL", 170),
+    ],
+)
+def test_izm_ugolniki_size(rules, name, expected):
+    f = {v.slug: v for v in rules.extract("izm-ugolniki", name)}
+    assert f["size"].number == Decimal(str(expected))
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Микрометр МК-100 75-100/0,01 мм", 100),
+        ("Микрометр МК-0-25 0,01", 25),
+        ("Микрометр МК-150-200 0,01мм индикаторный", 200),
+    ],
+)
+def test_izm_mikrometry_range(rules, name, expected):
+    # Диапазон — верхняя граница пары «A-B» (0-25 → 25, 75-100 → 100).
+    f = {v.slug: v for v in rules.extract("izm-mikrometry", name)}
+    assert f["measuring_range"].number == Decimal(str(expected))
+
+
 def _attrs(rules, tt, name):
     return {v.slug: v for v in rules.extract(tt, name)}
 

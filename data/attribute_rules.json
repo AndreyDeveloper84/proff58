@@ -2110,6 +2110,40 @@
       ]
     },
     {
+      "tool_type": "izm-ugolniki",
+      "category": "Угольники и линейки",
+      "attributes": [
+        {
+          "slug": "size",
+          "name": "Размер",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "regex": ["(?:^|\\s)(\\d{2,4})\\s*(?:мм|mm|[хx])"]
+        }
+      ]
+    },
+    {
+      "tool_type": "izm-mikrometry",
+      "category": "Штангенциркули и микрометры",
+      "attributes": [
+        {
+          "slug": "measuring_range",
+          "name": "Диапазон измерения",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "regex": ["\\d{1,3}\\s*-\\s*(\\d{1,3})(?:\\s*[/мм]|\\s|$)"]
+        }
+      ]
+    },
+    {
       "tool_type": "krugi-shlif",
       "category": "Отрезные и шлифовальные круги",
       "attributes": [
