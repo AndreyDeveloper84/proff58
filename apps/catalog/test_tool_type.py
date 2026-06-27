@@ -295,6 +295,20 @@ class RealRulesRegressionTests(TestCase):
         self.assertEqual(slug("Резец проходной 16х16 Т15К6", "Резцы"), "reztsy")
         self.assertEqual(slug("Набор резцов 12шт хвост 12мм", "Резцы"), "osnastka-reztsov")
 
+    def test_metchiki_plashki_split(self):
+        # «Метчики и плашки»: метчик→metchiki, плашка→plashki, держатели/наборы — в свои типы.
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+
+        def slug(name):
+            return rules.extract("Оснастка и расходники", name, "Метчики и плашки").slug
+
+        self.assertEqual(slug("Метчик винтовой М 6х1,0 HSS STV"), "metchiki")
+        self.assertEqual(slug("Плашка BSW 1/2 12ниток"), "plashki")
+        self.assertEqual(slug("Набор метчиков M10 DIN352 (3шт)"), "nabory-metchikov-plashek")
+        # важный негатив: «метчик» ⊂ «метчикодержатель» НЕ должен утаскивать держатель в metchiki
+        self.assertEqual(slug("Метчикодержатель ЗУБР №1 М1-М10"), "osnastka-rezbonarez")
+        self.assertEqual(slug("Плашкодержатель М 12-М 14 DIN225"), "osnastka-rezbonarez")
+
     def test_krugi_shlif_abrasive_subtypes_split(self):
         # «Отрезные и шлифовальные круги» — сборная подгруппа: круги остаются
         # krugi-shlif, а корщётки/наждачка/шарошки/ленты отделяются в свои типы.
