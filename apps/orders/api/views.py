@@ -144,7 +144,7 @@ class OrdersView(APIView):
         return [IsAuthenticated()]
 
     def post(self, request):
-        ser = CreateOrderSerializer(data=request.data)
+        ser = CreateOrderSerializer(data=request.data, context={"request": request})
         ser.is_valid(raise_exception=True)
         data = ser.validated_data
 

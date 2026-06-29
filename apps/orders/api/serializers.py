@@ -174,3 +174,52 @@ class CreateOrderSerializer(serializers.Serializer):
     delivery_address = serializers.CharField(required=False, allow_blank=True, default="")
     comment = serializers.CharField(required=False, allow_blank=True, default="")
     payment_method = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        is_authenticated = user is not None and getattr(user, "is_authenticated", False)
+
+        if not is_authenticated:
+            if not attrs.get("customer_name", "").strip():
+                raise serializers.ValidationError(
+                    {"customer_name": "Имя обязательно для гостевого заказа."}
+                )
+            phone = attrs.get("customer_phone", "").strip()
+            if not phone:
+                raise serializers.ValidationError(
+                    {"customer_phone": "Телефон обязателен для гостевого заказа."}
+                )
+
+        customer_type = attrs.get("customer_type", "")
+        if is_authenticated:
+            customer_type = getattr(user, "customer_type", "b2c")
+
+        if customer_type == "b2b":
+            from apps.orders.invoice import validate_b2b_requisites
+
+            inn = attrs.get("inn", "")
+            company = attrs.get("company_name", "")
+            if is_authenticated and user:
+                profile = getattr(user, "profile", None)
+                if not inn and profile:
+                    inn = getattr(profile, "inn", "")
+                if not company and profile:
+                    company = getattr(profile, "company_name", "")
+            errors = validate_b2b_requisites(inn, company)
+            if errors:
+                raise serializers.ValidationError({"b2b_requisites": errors})
+
+            if attrs.get("payment_method") and attrs["payment_method"] != "invoice":
+                raise serializers.ValidationError(
+                    {"payment_method": "B2B-заказ оплачивается только по счёту."}
+                )
+            attrs["payment_method"] = "invoice"
+
+        elif customer_type == "b2c" or not customer_type:
+            if attrs.get("payment_method") == "invoice":
+                raise serializers.ValidationError(
+                    {"payment_method": "Оплата по счёту доступна только для B2B."}
+                )
+
+        return attrs
