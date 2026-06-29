@@ -1,7 +1,7 @@
 # Capability `sourcing`: поиск внешнего контента для карточек товара
 
 **Дата:** 2026-06-29
-**Статус:** На ревью (6 раундов ревью)
+**Статус:** дизайн утверждён (7 раундов ревью), готов к плану реализации
 **Предшественник:** EPIC-ENRICH (`docs/superpowers/specs/2026-06-26-epic-enrich-design.md`) — §12 YAGNI прямо откладывал внешние источники «под отдельный ADR, когда появятся ключи/выгрузки». Этот документ закрывает ту отложенную часть.
 **Связанные:** `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE-AI.md`, `data/attribute_rules.json` (каноническая карта провенанса).
 
@@ -380,9 +380,9 @@ with transaction.atomic():               # владение попыткой + �
 - `batch_source_task(category_slug=None, limit=100)` — приоритет `available_quantity>0`;
   стоп по бюджету.
 - `mark_stale_sourcing_runs` — janitor зависших `running` → `ExternalCall.unknown`; зависшие
-  `FindingApplicationAttempt(claimed)` → `failed` (их резерв, как definite-failed, снимается).
-  **Резерв `unknown`-вызова НЕ освобождается автоматически** — только после ручной/provider
-  reconciliation (вызов мог быть оплачен).
+  `FindingApplicationAttempt(claimed)` → `failed` (attempt бюджет не резервирует — резерв
+  принадлежит `ExternalCall`). **Резерв `unknown`-вызова НЕ освобождается автоматически** —
+  только после ручной/provider reconciliation (вызов мог быть оплачен).
 - `purge_sourcing_excerpts` — retention: очистка `ExternalCall.raw_excerpt` старше N дней
   (структурные находки + url + метаданные остаются).
 
