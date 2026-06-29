@@ -190,6 +190,9 @@ Committed-claim попытки применения. Создаётся **отд
 | `status` | choices: `claimed/done/failed` | зависшие `claimed` добивает janitor (§6.5) |
 | `created_at` | | |
 
+Constraint: **partial `UniqueConstraint(finding) WHERE status='claimed'`** — не более одной
+активной попытки на находку (второй параллельный claim упрётся в constraint).
+
 ### 4.5 Типизированный конверт `value`
 JSON сохраняет тип EAV; decimal — строкой (без потери точности):
 ```json
@@ -336,32 +339,50 @@ confidence [0,1], лимиты длины. Выход адаптера = нед�
 `UniqueConstraint(run, adapter)` (одна строка на адаптер; retry переиспользует её,
 `attempt_count += 1`) + `running`-до-сети + provider idempotency key (передаётся в
 `find(..., idempotency_key=...)`, если внешний API поддерживает).
-Без поддержки idempotency внешним API **exactly-once гарантировать нельзя**: зависший
-`running` = возможная оплаченная-но-неподтверждённая попытка → janitor переводит в
-`unknown`, авто-ретрая нет; повтор — только после ручного решения/сверки с провайдером.
-Это зафиксированное ограничение, не баг.
+Без поддержки idempotency внешним API **exactly-once гарантировать нельзя**: read-timeout
+или разрыв после отправки запроса, а также зависший `running` (crash) = возможная
+оплаченная-но-неподтверждённая попытка → `unknown`, авто-ретрая нет; повтор — только после
+ручного решения/сверки с провайдером. **Definite-transient** (connection refused, DNS, 429)
+ретраится безопасно. При поддержке provider-idempotency оба класса повторяемы с тем же
+ключом. Это зафиксированное ограничение, не баг.
 
 ### 6.4 Бюджет (атомарная резервация)
 ```python
-with transaction.atomic():               # резерв И создание ExternalCall — атомарно
+with transaction.atomic():               # владение попыткой + резерв + ExternalCall — атомарно
     b = SourcingBudget.objects.select_for_update().get_or_create(day=today())[0]
-    if b.spent + b.reserved + max_call_cost > b.daily_cap:   # max_call_cost — РЕАЛЬНЫЙ потолок вызова
-        raise BudgetExceeded             # громко стопит батч ДО платного вызова
-    b.reserved += max_call_cost; b.save()                    # резервируем ВЕРХНЮЮ границу
-    call, _ = ExternalCall.objects.get_or_create(           # та же строка при retry
-        run=run, adapter=adapter,
-        defaults={"status": "running", "reserved_cost": max_call_cost})
-# после вызова, НОВОЙ транзакцией: reserved -= max_call_cost; spent += actual (reconciliation)
-# crash между резервом и подтверждением: резерв занят до janitor/reconciliation по unknown-вызову
+    call = ExternalCall.objects.select_for_update().filter(run=run, adapter=adapter).first()
+    if call and call.status in ("running", "ok", "unknown"):
+        owns_attempt = False             # владеет другой worker / уже сделано / неясно → сеть НЕ зовём
+    else:                                # call is None (первый) ИЛИ error (захват retry)
+        if b.spent + b.reserved + max_call_cost > b.daily_cap:   # max_call_cost — РЕАЛЬНЫЙ потолок
+            raise BudgetExceeded         # громко стопит ДО платного вызова
+        b.reserved += max_call_cost; b.save()
+        key = (call.provider_idempotency_key if call else "") or stable_key(run, adapter)
+        if call is None:
+            call = ExternalCall.objects.create(run=run, adapter=adapter, status="running",
+                       reserved_cost=max_call_cost, attempt_count=1, provider_idempotency_key=key)
+        else:                            # error → running: атомарный захват + обновление полей разом
+            call.status = "running"; call.attempt_count += 1
+            call.reserved_cost = max_call_cost; call.provider_idempotency_key = key
+            call.save()
+        owns_attempt = True
+# сеть вызываем ТОЛЬКО если owns_attempt; reconcile НОВОЙ транзакцией:
+#   ok    → spent += actual; reserved -= max_call_cost
+#   error → reserved -= max_call_cost (definite-transient) | unknown → резерв НЕ снимаем (§6.5)
 ```
 
 ### 6.5 Celery (`apps/ai/tasks.py`)
-- `source_product_task(product_id, idempotency_key)` — bind, backoff; ретраит только
-  transient (сеть/таймаут/429); `configuration_error` не ретраит. Флаги+бюджет — внутри.
+- `source_product_task(product_id, idempotency_key)` — bind, backoff. Классификация ошибки:
+  **definite-transient** (connection refused / DNS / 429) → авто-retry; **unknown**
+  (read-timeout / разрыв после отправки) → `ExternalCall.unknown`, **без авто-retry** (запрос
+  мог быть выполнен и оплачен); при provider-idempotency оба класса повторяемы с тем же
+  ключом. `configuration_error` не ретраит. Флаги+бюджет — внутри.
 - `batch_source_task(category_slug=None, limit=100)` — приоритет `available_quantity>0`;
   стоп по бюджету.
-- `mark_stale_sourcing_runs` — janitor зависших `running` (run и `ExternalCall`→`unknown`;
-  зависшие `FindingApplicationAttempt(claimed)` → `failed`; reconciliation бесхозных резервов бюджета).
+- `mark_stale_sourcing_runs` — janitor зависших `running` → `ExternalCall.unknown`; зависшие
+  `FindingApplicationAttempt(claimed)` → `failed` (их резерв, как definite-failed, снимается).
+  **Резерв `unknown`-вызова НЕ освобождается автоматически** — только после ручной/provider
+  reconciliation (вызов мог быть оплачен).
 - `purge_sourcing_excerpts` — retention: очистка `ExternalCall.raw_excerpt` старше N дней
   (структурные находки + url + метаданные остаются).
 
@@ -403,8 +424,11 @@ ToS/лицензии — только короткий `raw_excerpt` + атри�
 - повторное одобрение → no-op;
 - concurrent update двух модераторов на конкурирующие находки → первый applied+supersede, второй `conflict`;
 - порядок блокировок исключает дедлок (siblings по pk → Product);
-- Celery redelivery: повторная доставка не плодит находок и не вызывает повторную оплату (skip по `ExternalCall(ok)`);
-- transient error → retry → `ok`: та же строка `ExternalCall` (`attempt_count` растёт), без второй строки и повторной оплаты;
+- Celery redelivery: повторная доставка не плодит находок (skip по `ExternalCall(ok)`);
+- конкурентный redelivery: только один worker владеет попыткой (`select_for_update` по `ExternalCall`); `running/ok/unknown` → сеть не зовётся и бюджет повторно не резервируется;
+- definite-transient (connection refused/DNS/429) → retry → `ok`: та же строка `ExternalCall` (`attempt_count` растёт), без второй строки;
+- read-timeout/разрыв после отправки → `unknown`, без авто-retry; «без повторной оплаты» гарантируется **только** при provider-idempotency (тот же ключ);
+- partial-constraint: второй параллельный `FindingApplicationAttempt(claimed)` на ту же находку отклоняется;
 - crash между резервом и вызовом не оставляет бесхозный резерв (резерв + `ExternalCall(running)` атомарны);
 - `attempt` переживает rollback: `CatalogError` → `apply_failed` записан guarded-транзакцией (claim создан ДО основной);
 - evidence: повторный запуск дедуплицирует finding, добавляет `FindingEvidence`;
