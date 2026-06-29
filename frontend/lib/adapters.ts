@@ -33,6 +33,11 @@ const BASE_CODES: ReadonlySet<string> = new Set(BASE_FACET_CODES);
 // Django через SECURE_PROXY_SSL_HEADER, что запрос защищён → без редиректа. Из браузера НЕ слать.
 const SSR_HEADERS = { "X-Forwarded-Proto": "https" } as const;
 
+// Таймаут внутренних SSR-запросов главной. Без него зависший апстрим вешает
+// рендер `/` навечно (fetch без таймаута) и копит воркеры. С таймаутом запрос
+// прерывается, существующий catch → пустой блок (мягкая деградация).
+const SSR_TIMEOUT_MS = 4000;
+
 // Ошибка обращения к каталог-API (не 404 категории) — должна вести в error.tsx, а не маскироваться.
 export class CatalogFetchError extends Error {}
 
@@ -540,6 +545,7 @@ export async function fetchCategoryTreeFromApi(base: string): Promise<CategoryNo
     const res = await fetch(`${root}/api/catalog/categories/`, {
       cache: "no-store",
       headers: SSR_HEADERS,
+      signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
     });
     if (!res.ok) return [];
     const json = (await res.json()) as CategoryNode[];
@@ -564,6 +570,7 @@ export async function fetchBestsellersFromApi(
           const res = await fetch(`${root}/api/catalog/products/${encodeURIComponent(slug)}/`, {
             cache: "no-store",
             headers: SSR_HEADERS,
+            signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
           });
           if (!res.ok) return null;
           return apiProductToProduct((await res.json()) as ApiProduct);
@@ -580,6 +587,7 @@ export async function fetchBestsellersFromApi(
     const res = await fetch(`${root}/api/catalog/products/?sort=new&limit=${limit}`, {
       cache: "no-store",
       headers: SSR_HEADERS,
+      signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
     });
     if (!res.ok) return [];
     const json = (await res.json()) as { results?: ApiProduct[] };
