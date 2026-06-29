@@ -9,6 +9,11 @@ from .base import ALLOWED_HOSTS, env
 
 DEBUG = False
 
+# ВРЕМЕННО: оплата выключена на стенде/проде до закрытия #311 — webhook ЮKassa
+# без реальной аутентификации (открыт при пустом секрете) + нет сверки суммы.
+# Вернуть в env-управление (PAYMENTS_ENABLED), когда платёж будет исправлен.
+PAYMENTS_ENABLED = False
+
 # Межсервисные запросы внутри Docker (Next SSR → Django по http://web:8000) приходят с Host "web".
 # Добавляем внутренний хост точечно в prod (не глобально в base) — управляемо через env.
 ALLOWED_HOSTS += env.list("INTERNAL_ALLOWED_HOSTS", default=["web"])

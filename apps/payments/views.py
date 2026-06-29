@@ -3,6 +3,7 @@
 import json
 import logging
 
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -16,6 +17,11 @@ logger = logging.getLogger(__name__)
 @require_POST
 def yookassa_webhook(request):
     """Принимает уведомления от ЮKassa. Идемпотентно."""
+    # Kill-switch (#311): на стенде/проде оплата выключена, пока webhook не получит
+    # нормальную аутентификацию. Без этого endpoint открыт на подделку «оплачено».
+    if not getattr(settings, "PAYMENTS_ENABLED", True):
+        return JsonResponse({"error": "payments disabled"}, status=503)
+
     signature = request.headers.get("X-Yookassa-Signature", "")
 
     if not verify_webhook_signature(request.body, signature):
