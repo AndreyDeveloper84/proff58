@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "apps.crm_clients",
     "apps.crm_sales",
     "apps.crm_tasks",
+    "apps.analytics",
 ]
 
 MIDDLEWARE = [
@@ -205,6 +206,7 @@ FEATURES = {
     "crm": env.bool("FEATURE_CRM", default=False),
     "ai": env.bool("FEATURE_AI", default=False),
     "eventbus": env.bool("FEATURE_EVENTBUS", default=True),
+    "analytics": env.bool("FEATURE_ANALYTICS", default=False),
     "external_integrations": env.bool("FEATURE_EXTERNAL_INTEGRATIONS", default=True),
 }
 
