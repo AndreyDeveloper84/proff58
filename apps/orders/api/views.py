@@ -178,7 +178,10 @@ class OrdersView(APIView):
             )
         except DjangoValidationError as exc:
             return Response({"detail": exc.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+        resp_data = OrderSerializer(order).data
+        if order.access_token:
+            resp_data["access_token"] = order.access_token
+        return Response(resp_data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
         qs = (
@@ -204,6 +207,21 @@ class OrderDetailView(APIView):
             .prefetch_related("items")
             .first()
         )
+        if order is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(OrderSerializer(order).data)
+
+
+class GuestOrderView(APIView):
+    """Доступ к гостевому заказу по номеру + токену (без логина)."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, number):
+        token = request.query_params.get("t", "")
+        if not token:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        order = Order.objects.filter(order_number=number, access_token=token, user=None).first()
         if order is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(OrderSerializer(order).data)

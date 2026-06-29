@@ -257,9 +257,13 @@ def place_order(
 
     snapshot = _customer_snapshot(user, customer_type, customer_data)
 
+    is_guest = user is None or not getattr(user, "is_authenticated", False)
+    access_token = uuid.uuid4().hex if is_guest else ""
+
     order = Order(
         order_number=_generate_order_number(),
-        user=user if (user is not None and getattr(user, "is_authenticated", False)) else None,
+        user=None if is_guest else user,
+        access_token=access_token,
         fulfillment_status=FulfillmentStatus.NEW,
         payment_status=PaymentStatus.PENDING,
         sync_1c_status=Sync1CStatus.PENDING,
