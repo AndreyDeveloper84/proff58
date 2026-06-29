@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 
 from apps.accounts.models import CustomerType
@@ -121,7 +121,8 @@ def get_cart_view(cart: Cart, user=None) -> CartView:
     for item in items:
         product = item.product
         result = price_for(product, user, item.quantity)
-        currency = result.currency
+        if currency == "RUB" and result.currency:
+            currency = result.currency
         if result.final is not None:
             line_total = result.final * item.quantity
             total += line_total
@@ -240,9 +241,14 @@ def place_order(
     if cart.status != CartStatus.ACTIVE:
         raise ValidationError("Корзина уже оформлена в заказ.")
 
-    items = list(cart.items.select_related("product").all())
-    if not items:
+    product_ids = list(cart.items.values_list("product_id", flat=True))
+    if not product_ids:
         raise ValidationError("Корзина пуста.")
+
+    locked_products = {
+        p.pk: p for p in Product.objects.select_for_update().filter(pk__in=product_ids)
+    }
+    items = list(cart.items.all())
 
     # Тип покупателя: для аутентифицированного — из учётной записи.
     customer_type = customer_data.get("customer_type") or CustomerType.B2C
@@ -268,11 +274,10 @@ def place_order(
     order.save()
 
     total = _ZERO
-    currency = "RUB"
+    order_currency = None
     for item in items:
-        product = item.product
+        product = locked_products.get(item.product_id)
 
-        # Повторная валидация на момент оформления.
         if product is None or not product.is_visible:
             raise ValidationError(f"Товар «{getattr(product, 'name', '—')}» недоступен для заказа.")
 
@@ -287,9 +292,20 @@ def place_order(
         if result.final is None:
             raise ValidationError(f"У товара «{product.name}» не задана цена.")
 
-        currency = result.currency
+        if order_currency is None:
+            order_currency = result.currency
+        elif result.currency != order_currency:
+            raise ValidationError(
+                f"Смешение валют в корзине: {order_currency} и {result.currency}."
+            )
+
         line_total = result.final * qty
         total += line_total
+
+        Product.objects.filter(pk=product.pk).update(
+            available_quantity=models.F("available_quantity") - qty,
+            reserved_quantity=models.F("reserved_quantity") + qty,
+        )
 
         OrderItem.objects.create(
             order=order,
@@ -308,7 +324,7 @@ def place_order(
         )
 
     order.total = total
-    order.currency = currency
+    order.currency = order_currency or "RUB"
     order.save(update_fields=["total", "currency", "updated_at"])
 
     # Корзину не удаляем: фиксируем как оформленную (история + идемпотентность).
