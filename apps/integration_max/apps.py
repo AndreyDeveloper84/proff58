@@ -11,6 +11,6 @@ class IntegrationMaxConfig(AppConfig):
             from apps.core.features import is_enabled
 
             if is_enabled("max_chat"):
-                pass  # receivers подключаются из integration_max.receivers при наличии
+                from . import receivers  # noqa: F401
         except Exception:
             pass
