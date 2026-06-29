@@ -19,4 +19,6 @@ def _on_order_status_changed(sender, order_id, old_status, new_status, **kwargs)
     )
 
 
-events.order_status_changed.connect(_on_order_status_changed)
+events.order_status_changed.connect(
+    _on_order_status_changed, dispatch_uid="crm_tasks_order_status_changed"
+)
