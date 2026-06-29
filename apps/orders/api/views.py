@@ -225,3 +225,38 @@ class GuestOrderView(APIView):
         if order is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(OrderSerializer(order).data)
+
+
+class InvoiceView(APIView):
+    """HTML-счёт для B2B-заказа. Для гостя — по токену."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, number):
+        token = request.query_params.get("t", "")
+        user = request.user if request.user.is_authenticated else None
+
+        if user:
+            order = Order.objects.filter(order_number=number, user=user).first()
+        elif token:
+            order = Order.objects.filter(order_number=number, access_token=token, user=None).first()
+        else:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if order is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if order.customer_type != "b2b":
+            return Response(
+                {"detail": "Счёт доступен только для B2B-заказов."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from django.http import HttpResponse
+        from django.template.loader import render_to_string
+
+        from apps.orders.invoice import prepare_invoice
+
+        invoice = prepare_invoice(order)
+        html = render_to_string("orders/invoice.html", {"invoice": invoice})
+        return HttpResponse(html, content_type="text/html")
