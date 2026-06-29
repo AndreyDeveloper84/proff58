@@ -170,6 +170,13 @@ class Order(TimeStampedModel):
         blank=True,
         help_text=_("Момент первого подтверждения приёма заказа в 1С (sync_1c_status=exported)."),
     )
+    access_token = models.CharField(
+        _("Токен гостевого доступа"),
+        max_length=64,
+        blank=True,
+        db_index=True,
+        help_text=_("Для доступа к заказу без логина (гостевое оформление)."),
+    )
 
     class Meta:
         verbose_name = _("Заказ")
