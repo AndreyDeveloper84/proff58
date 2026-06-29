@@ -19,7 +19,7 @@ def is_available() -> bool:
 def send_message(chat_id: int, text: str, **kwargs) -> bool:
     """Отправить сообщение в MAX. Возвращает True при успехе."""
     token = getattr(settings, "MAX_BOT_TOKEN", "")
-    api_url = getattr(settings, "MAX_BOT_API_URL", "https://platform-api.max.ru")
+    api_url = getattr(settings, "MAX_BOT_API_URL", "https://platform-api2.max.ru")
     if not token:
         raise RuntimeError("MAX_BOT_TOKEN not configured")
 

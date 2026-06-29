@@ -183,7 +183,7 @@ SYNC_IMPORT_TIME_LIMIT = env.int("SYNC_IMPORT_TIME_LIMIT", default=15 * 60)  # �
 # MAX Bot (мессенджер) — уведомления и авторизация (docs/max-bot-setup.md).
 MAX_BOT_TOKEN = env("MAX_BOT_TOKEN", default="")
 MAX_WEBHOOK_SECRET = env("MAX_WEBHOOK_SECRET", default="")
-MAX_BOT_API_URL = env("MAX_BOT_API_URL", default="https://platform-api.max.ru")
+MAX_BOT_API_URL = env("MAX_BOT_API_URL", default="https://platform-api2.max.ru")
 
 # Feature-флаги. Инфраструктурные — здесь (через env, меняют разработчики).
 # Бизнес-флаги (reviews/b2b/...) живут в SiteSettings. Проверка — через
