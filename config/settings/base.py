@@ -190,6 +190,9 @@ MAX_WEBHOOK_SECRET = env("MAX_WEBHOOK_SECRET", default="")
 MAX_BOT_API_URL = env("MAX_BOT_API_URL", default="https://platform-api.max.ru")
 
 # ЮKassa
+# Kill-switch webhook'а оплаты. По умолчанию включён (локалка/тесты); на стенде
+# выключается в prod.py до закрытия #311 (webhook без аутентификации).
+PAYMENTS_ENABLED = env.bool("PAYMENTS_ENABLED", default=True)
 YOOKASSA_SHOP_ID = env("YOOKASSA_SHOP_ID", default="")
 YOOKASSA_SECRET_KEY = env("YOOKASSA_SECRET_KEY", default="")
 YOOKASSA_WEBHOOK_SECRET = env("YOOKASSA_WEBHOOK_SECRET", default="")
