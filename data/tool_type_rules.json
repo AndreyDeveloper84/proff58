@@ -945,6 +945,34 @@
           "source": "name_keywords"
         },
         {
+          "tool_type": "Оснастка для нарезания резьбы",
+          "slug": "osnastka-rezbonarez",
+          "subgroup": "Метчики и плашки",
+          "match_keywords": ["метчикодержатель", "плашкодержатель", "держатель", "державк", "вороток"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Наборы метчиков и плашек",
+          "slug": "nabory-metchikov-plashek",
+          "subgroup": "Метчики и плашки",
+          "match_keywords": ["набор"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Метчики",
+          "slug": "metchiki",
+          "subgroup": "Метчики и плашки",
+          "match_keywords": ["метчик"],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Плашки",
+          "slug": "plashki",
+          "subgroup": "Метчики и плашки",
+          "match_keywords": ["плашк"],
+          "source": "name_keywords"
+        },
+        {
           "tool_type": "Метчики и плашки",
           "slug": "metchiki-plashki",
           "source": "1c_subgroup"

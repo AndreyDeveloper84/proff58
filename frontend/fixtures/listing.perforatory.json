@@ -6,7 +6,13 @@
       { "label": "Главная", "href": "/" },
       { "label": "Электроинструмент", "href": "/catalog/elektroinstrument" },
       { "label": "Перфораторы", "href": "/catalog/perforatory" }
-    ]
+    ],
+    "hero": {
+      "image": null,
+      "eyebrow": "Надёжность · Результат",
+      "ctaLabel": "Подобрать модель",
+      "ctaHref": "#"
+    }
   },
   "promo": {
     "title": "Акция месяца",

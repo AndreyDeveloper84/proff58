@@ -114,21 +114,21 @@ def _perf(rules: AttributeRules, name: str):
 def test_perforatory_full_name_sds_plus(rules):
     found = _perf(rules, "Перфоратор SDS-plus 800Вт 2.7Дж")
     assert found["power"].number == Decimal("800")
-    assert found["impact_energy"].number == Decimal("2.7")
-    assert found["chuck_type"].option_slug == "sds-plus"
+    assert found["energy_impact"].number == Decimal("2.7")
+    assert found["chuck"].option_slug == "sds-plus"
 
 
 def test_perforatory_full_name_sds_max(rules):
     found = _perf(rules, "Перфоратор SDS-max 1500Вт 10Дж")
     assert found["power"].number == Decimal("1500")
-    assert found["impact_energy"].number == Decimal("10")
-    assert found["chuck_type"].option_slug == "sds-max"
+    assert found["energy_impact"].number == Decimal("10")
+    assert found["chuck"].option_slug == "sds-max"
 
 
-def test_perforatory_chuck_type_max_not_confused_with_plus(rules):
+def test_perforatory_chuck_max_not_confused_with_plus(rules):
     # «SDS-max» не должен классифицироваться как «sds-plus» (порядок вариантов).
-    assert _perf(rules, "Перфоратор SDS-max").get("chuck_type").option_slug == "sds-max"
-    assert _perf(rules, "Перфоратор SDS-plus").get("chuck_type").option_slug == "sds-plus"
+    assert _perf(rules, "Перфоратор SDS-max").get("chuck").option_slug == "sds-max"
+    assert _perf(rules, "Перфоратор SDS-plus").get("chuck").option_slug == "sds-plus"
 
 
 def test_perforatory_power_does_not_match_voltage(rules):
@@ -394,7 +394,7 @@ def test_almaz_adapter_ring_extracts_nothing(rules):
     assert "bore" not in _almaz(rules, "Кольцо переходное 30х22,2 для дисков")  # Ø-anchor
 
 
-# --- Новые типы Электроинструмента (переиспользуют power/voltage/impact_energy + saw_type) ---
+# --- Новые типы Электроинструмента (переиспользуют power/voltage/energy_impact + saw_type) ---
 
 
 def test_shlifmashiny_power_and_source(rules):
@@ -424,7 +424,7 @@ def test_otboynye_molotki_power_and_impact(rules):
         )
     }
     assert f["power"].number == Decimal("1500")
-    assert f["impact_energy"].number == Decimal("32")
+    assert f["energy_impact"].number == Decimal("32")
 
 
 def test_pily_saw_type(rules):
@@ -592,6 +592,233 @@ def test_nabory_otvertok_piece_count_ignores_model_codes(rules):
     # Модельный код без «шт/предметов» (латиница не транслитерируется) не даёт ложного piece_count.
     f = {x.slug: x for x in rules.extract("nabory-otvertok", "Набор отверток SD-9302 ProsKit")}
     assert "piece_count" not in f
+
+
+# --- Метчики / Плашки (tool_type=metchiki/plashki): Ø + шаг + тип резьбы + материал ---
+
+
+def test_metchiki_metric_full(rules):
+    # Метрический винтовой: Ø + шаг из «М 6х1,0», материал HSS, тип резьбы выведен (derive).
+    f = {v.slug: v for v in rules.extract("metchiki", "Метчик винтовой М 6х1,0 HSS STV")}
+    assert f["diameter"].number == Decimal("6")
+    assert f["thread_pitch"].number == Decimal("1.0")
+    assert f["material"].option_slug == "hss"
+    # «Метрическая» выводится из наличия diameter, источник — inferred.
+    assert f["thread_type"].option_slug == "metric"
+    assert f["thread_type"].source == "inferred"
+
+
+def test_metchiki_metric_keyword_din(rules):
+    # DIN371 — keyword-метрическая (не derive); шаг с дробью; р6м5к5 → HSS.
+    f = {v.slug: v for v in rules.extract("metchiki", "Метчик М 8х1,25 DIN371 р6м5к5")}
+    assert f["diameter"].number == Decimal("8")
+    assert f["thread_pitch"].number == Decimal("1.25")
+    assert f["thread_type"].option_slug == "metric"
+    assert f["thread_type"].source == "keyword"
+    assert f["material"].option_slug == "hss"
+
+
+def test_metchiki_machine_hand_format(rules):
+    # Машинно-ручной «м/р 10х1,5» (без префикса М) — Ø/шаг ловятся вторым паттерном; 9ХС → легированная.
+    f = {v.slug: v for v in rules.extract("metchiki", "Метчик м/р 10х1,5 9ХС")}
+    assert f["diameter"].number == Decimal("10")
+    assert f["thread_pitch"].number == Decimal("1.5")
+    assert f["material"].option_slug == "alloy"
+
+
+def test_plashki_inch_thread(rules):
+    # Дюймовая резьба по ключам UNF/ниток; метрического Ø нет.
+    f = {v.slug: v for v in rules.extract("plashki", 'Плашка 9/16" UNF 18 ниток STV')}
+    assert f["thread_type"].option_slug == "inch"
+    assert "diameter" not in f
+
+
+def test_plashki_pipe_thread(rules):
+    f = {v.slug: v for v in rules.extract("plashki", "Плашка G 1/2 трубная")}
+    assert f["thread_type"].option_slug == "pipe"
+
+
+def test_metchiki_inch_has_no_metric_diameter(rules):
+    # Дюймовый BSW не должен получить ложный метрический Ø/шаг.
+    f = {v.slug: v for v in rules.extract("metchiki", "Метчик дюймовый BSW 1/2 12ниток к-т 2шт")}
+    assert "diameter" not in f
+    assert f["thread_type"].option_slug == "inch"
+
+
+# --- Измерительный: рулетки (длина/ширина ленты) и уровни (длина) -----------------
+
+
+def test_izm_ruletki_length_and_width(rules):
+    f = {
+        v.slug: v
+        for v in rules.extract("izm-ruletki", "Рулетка 10 м (25 мм) с тройным стопом Inforce")
+    }
+    assert f["tape_length"].number == Decimal("10")
+    assert f["tape_width"].number == Decimal("25")
+
+
+def test_izm_ruletki_width_not_taken_as_length(rules):
+    # Ширина «(19мм)» не должна попасть в длину; длина — «5м».
+    f = {v.slug: v for v in rules.extract("izm-ruletki", "Рулетка 5м (19мм) STAYER")}
+    assert f["tape_length"].number == Decimal("5")
+    assert f["tape_width"].number == Decimal("19")
+
+
+def test_izm_ruletki_length_only(rules):
+    f = {v.slug: v for v in rules.extract("izm-ruletki", "Рулетка 3 м Hitachi")}
+    assert f["tape_length"].number == Decimal("3")
+    assert "tape_width" not in f
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Уровень 600мм ЗУБР КОМПАКТ", 600),
+        ("Уровень 2000 мм PROFI", 2000),
+        ("Уровень 400 мм магнитный", 400),
+    ],
+)
+def test_izm_urovni_length(rules, name, expected):
+    f = {v.slug: v for v in rules.extract("izm-urovni", name)}
+    assert f["length"].number == Decimal(str(expected))
+
+
+# --- Измерительный: штангенциркули (диапазон + тип отсчёта) и дальномеры (дальность) ---
+
+
+def test_izm_shtangen_digital(rules):
+    # Диапазон — первый «мм» (150), точность «0,02мм» не утекает; «электронный» → digital.
+    f = {
+        v.slug: v for v in rules.extract("izm-shtangen", "Штангенциркуль 150 мм 0,02мм электронный")
+    }
+    assert f["measuring_range"].number == Decimal("150")
+    assert f["readout_type"].option_slug == "digital"
+
+
+def test_izm_shtangen_vernier_default(rules):
+    # Без «электронный/циферблат» механический штангенциркуль → нониусный (фолбэк по слову).
+    f = {
+        v.slug: v for v in rules.extract("izm-shtangen", "Штангенциркуль 125мм тип 1 металлический")
+    }
+    assert f["measuring_range"].number == Decimal("125")
+    assert f["readout_type"].option_slug == "vernier"
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Дальномер лаз. Bosch GLM 30; диап. изм.0,15-30м", 30),
+        ("Дальномер лазерный ADA до 100м", 100),
+    ],
+)
+def test_izm_dalnomery_max_distance(rules, name, expected):
+    f = {v.slug: v for v in rules.extract("izm-dalnomery", name)}
+    assert f["max_distance"].number == Decimal(str(expected))
+
+
+# --- Измерительный: угольники (размер) и микрометры (диапазон из пары A-B) ---------
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Угольник 250 мм Startul", 250),
+        ("Угольник 160х100 УП-1-160 Буревестник", 160),
+        ("Угольник кровельный 170мм высокоточный KRAFTOOL", 170),
+    ],
+)
+def test_izm_ugolniki_size(rules, name, expected):
+    f = {v.slug: v for v in rules.extract("izm-ugolniki", name)}
+    assert f["size"].number == Decimal(str(expected))
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Микрометр МК-100 75-100/0,01 мм", 100),
+        ("Микрометр МК-0-25 0,01", 25),
+        ("Микрометр МК-150-200 0,01мм индикаторный", 200),
+    ],
+)
+def test_izm_mikrometry_range(rules, name, expected):
+    # Диапазон — верхняя граница пары «A-B» (0-25 → 25, 75-100 → 100).
+    f = {v.slug: v for v in rules.extract("izm-mikrometry", name)}
+    assert f["measuring_range"].number == Decimal(str(expected))
+
+
+def test_izm_niveliry_type(rules):
+    laser = {v.slug: v for v in rules.extract("izm-niveliry", "Нивелир лазерный Bosch GLL 2-10")}
+    assert laser["level_type"].option_slug == "laser"
+    opt = {v.slug: v for v in rules.extract("izm-niveliry", "Нивелир оптический ADA RUNNER 24")}
+    assert opt["level_type"].option_slug == "optical"
+
+
+def _attrs(rules, tt, name):
+    return {v.slug: v for v in rules.extract(tt, name)}
+
+
+@pytest.mark.parametrize(
+    "name,length,ptype",
+    [
+        ("Длинногубцы 160 мм прямые Matrix", 160, "dlinnogubtsy"),
+        ("Пассатижи 200мм ЗУБР", 200, "passatizhi-t"),
+        ("Утконосы 250 мм Matrix", 250, "utkonosy"),
+        ("Круглогубцы 140 мм", 140, "kruglogubtsy"),
+    ],
+)
+def test_passatizhi_length_and_type(rules, name, length, ptype):
+    f = _attrs(rules, "passatizhi", name)
+    assert f["length"].number == Decimal(str(length))
+    assert f["plier_type"].option_slug == ptype
+
+
+@pytest.mark.parametrize(
+    "name,length,btype",
+    [
+        ("Бокорезы 110 мм МИНИ Archimedes", 110, "bokorezy-t"),
+        ("Кусачки боковые 160мм KRAFTOOL", 160, "kusachki"),
+        ("Клещи переставные 250мм Hanskonner", 250, "kleshchi"),
+    ],
+)
+def test_bokorezy_length_and_type(rules, name, length, btype):
+    f = _attrs(rules, "bokorezy", name)
+    assert f["length"].number == Decimal(str(length))
+    assert f["bokorez_type"].option_slug == btype
+
+
+@pytest.mark.parametrize(
+    "name,cap,dtype",
+    [
+        ("Домкрат бутылочный 2т 150-310мм ЗУБР", "2", "butylochnyy"),
+        ("Домкрат 1,5т ромбовый 110-360мм Stels", "1.5", "rombovyy"),
+        ("Домкрат подкатной гидравлический 3т Inforce", "3", "gidravl"),
+        ("Домкрат реечный 5 т", "5", "reechnyy"),
+    ],
+)
+def test_domkraty_capacity_and_type(rules, name, cap, dtype):
+    f = _attrs(rules, "domkraty", name)
+    assert f["capacity"].number == Decimal(cap)
+    assert f["domkrat_type"].option_slug == dtype
+
+
+def test_domkraty_capacity_ignores_cyrillic_after_t(rules):
+    # «т» внутри слова (телескопический/тонна без цифры) не должно давать ложную тоннаж.
+    f = _attrs(rules, "domkraty", "Домкрат телескопический подкатной")
+    assert "capacity" not in f
+
+
+@pytest.mark.parametrize(
+    "name,length,saw_for",
+    [
+        ("Ножовка по дереву 450мм Бобер", 450, "po-derevu"),
+        ("Ножовка по металлу 300 мм STAYER", 300, "po-metallu"),
+        ("Ножовка для газобетона 700мм", 700, "po-gazobetonu"),
+    ],
+)
+def test_nozhovki_length_and_purpose(rules, name, length, saw_for):
+    f = _attrs(rules, "nozhovki", name)
+    assert f["length"].number == Decimal(str(length))
+    assert f["nozhovka_for"].option_slug == saw_for
 
 
 @pytest.mark.django_db

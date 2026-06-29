@@ -33,10 +33,11 @@ def make_attr(slug, name, atype, *, filterable=True, unit=""):
     )
 
 
-def link(category, attribute, sort_order=0):
-    return CategoryAttribute.objects.create(
-        category=category, attribute=attribute, sort_order=sort_order
-    )
+def link(category, attribute, sort_order=0, group=None):
+    kwargs = {"category": category, "attribute": attribute, "sort_order": sort_order}
+    if group is not None:
+        kwargs["group"] = group
+    return CategoryAttribute.objects.create(**kwargs)
 
 
 def make_product(
@@ -471,3 +472,166 @@ def test_facets_attr_range_drilldown(client, tree):
     # diameter-фасет НЕ схлопнут к [5,25] — показывает все значения (own-axis исключён),
     # иначе пользователь не смог бы расширить диапазон обратно
     assert set(values_count(get_facet(data, "diameter"))) == {10.0, 20.0, 30.0}
+
+
+@pytest.mark.django_db
+def test_facets_attr_range_ignores_nonnumeric_cache(client, tree):
+    """Нечисловая строка в attrs_cache под числовым атрибутом НЕ роняет фасеты (guarded cast,
+    P2-4): эндпоинт отдаёт 200, мусорный товар выпадает (как без значения), числовые считаются.
+    Без гарда был бы DataError в SQL-касте диапазона и ValueError в Python-касте значения фасета."""
+    _, leaf = tree
+    link(leaf, make_attr("diameter", "Диаметр", AttributeType.DECIMAL, unit="мм"))
+    make_product(leaf, "d10", {"diameter": 10})
+    make_product(leaf, "d20", {"diameter": 20})
+    make_product(leaf, "bad", {"diameter": "н/д"})  # нечисловой мусор под числовым атрибутом
+
+    qs = "attr_diameter_min=5&attr_diameter_max=25"
+    resp = client.get(f"/api/catalog/categories/dreli/facets/?{qs}")
+    assert resp.status_code == 200  # без guarded cast здесь был бы 500
+    data = resp.json()
+    # diameter∈[5,25] → d10,d20; "bad" исключён (нечисловое = как отсутствие значения)
+    assert data["total_products"] == 2
+    # список товаров согласован с фасетами тем же (защищённым) механизмом
+    list_count = client.get(f"/api/catalog/products/?category=dreli&{qs}").json()["count"]
+    assert list_count == 2
+    # diameter-фасет (own-axis, без диапазона) считает только валидные числа; "н/д" пропущен
+    assert set(values_count(get_facet(data, "diameter"))) == {10.0, 20.0}
+
+
+# --- B1 (#222, §10.2/§22.3): per-category CategoryAttribute.is_filter гейтит состав фасетов ---
+
+
+@pytest.mark.django_db
+def test_is_filter_false_excludes_facet(client, tree):
+    """Атрибут, привязанный к категории с is_filter=False, НЕ попадает в facets,
+    хотя глобально is_filterable=True и значения у товаров есть."""
+    _, leaf = tree
+    power = make_attr("power", "Мощность", AttributeType.INTEGER)
+    chuck = make_attr("chuck", "Патрон", AttributeType.SELECT)
+    # power выключен как фильтр для ЭТОЙ категории; chuck — оставлен
+    CategoryAttribute.objects.create(category=leaf, attribute=power, is_filter=False)
+    CategoryAttribute.objects.create(category=leaf, attribute=chuck, is_filter=True, sort_order=1)
+    make_product(leaf, "p1", {"power": 500, "chuck": "Быстрозажимной"})
+    make_product(leaf, "p2", {"power": 650, "chuck": "Ключевой"})
+
+    data = client.get("/api/catalog/categories/dreli/facets/").json()
+    slugs = {f["slug"] for f in data["facets"]}
+    assert "power" not in slugs  # отключён per-category
+    assert "chuck" in slugs  # остался
+    # total и прочие фасеты считаются как обычно (гейт только про состав)
+    assert data["total_products"] == 2
+
+
+@pytest.mark.django_db
+def test_is_filter_true_includes_facet(client, tree):
+    """Тот же атрибут с is_filter=True попадает в facets (контроль к предыдущему тесту)."""
+    _, leaf = tree
+    power = make_attr("power", "Мощность", AttributeType.INTEGER)
+    CategoryAttribute.objects.create(category=leaf, attribute=power, is_filter=True)
+    make_product(leaf, "p1", {"power": 500})
+    make_product(leaf, "p2", {"power": 650})
+
+    data = client.get("/api/catalog/categories/dreli/facets/").json()
+    assert "power" in {f["slug"] for f in data["facets"]}
+    assert values_count(get_facet(data, "power")) == {500: 1, 650: 1}
+
+
+@pytest.mark.django_db
+def test_is_filter_false_inherited_from_ancestor(client, tree):
+    """Гейт наследуется: атрибут привязан только к ПРЕДКУ с is_filter=False (у листа своей
+    привязки нет) → у листа он тоже не показывается. Двойной гейт применяется по всей цепочке."""
+    root, leaf = tree
+    power = make_attr("power", "Мощность", AttributeType.INTEGER)
+    chuck = make_attr("chuck", "Патрон", AttributeType.SELECT)
+    CategoryAttribute.objects.create(category=root, attribute=power, is_filter=False)
+    CategoryAttribute.objects.create(category=root, attribute=chuck, is_filter=True)
+    make_product(leaf, "p1", {"power": 500, "chuck": "A"})
+
+    data = client.get("/api/catalog/categories/dreli/facets/").json()
+    slugs = {f["slug"] for f in data["facets"]}
+    assert "power" not in slugs  # унаследованное исключение с предка
+    assert "chuck" in slugs  # унаследованный включённый фильтр
+
+
+# --- D1: группа фасета (§22.4) ---
+
+
+@pytest.mark.django_db
+def test_facet_group_default_main(client, tree):
+    """Без указания группы фасет отдаёт group=main (дефолт, поведение до D1 не меняется)."""
+    _, leaf = tree
+    link(leaf, make_attr("power", "Мощность", AttributeType.INTEGER))
+    make_product(leaf, "p1", {"power": 500})
+
+    data = client.get("/api/catalog/categories/dreli/facets/").json()
+    assert get_facet(data, "power")["group"] == "main"
+
+
+@pytest.mark.django_db
+def test_facet_group_extra_emitted(client, tree):
+    """CategoryAttribute.group=extra → фасет помечается group=extra (раздел «Дополнительные»)."""
+    _, leaf = tree
+    from apps.catalog.models import FacetGroup
+
+    link(leaf, make_attr("power", "Мощность", AttributeType.INTEGER), group=FacetGroup.MAIN)
+    link(leaf, make_attr("weight", "Вес", AttributeType.DECIMAL, unit="кг"), group=FacetGroup.EXTRA)
+    make_product(leaf, "p1", {"power": 500, "weight": 2.5})
+
+    data = client.get("/api/catalog/categories/dreli/facets/").json()
+    assert get_facet(data, "power")["group"] == "main"
+    assert get_facet(data, "weight")["group"] == "extra"
+
+
+@pytest.mark.django_db
+def test_facet_group_closest_wins(client, tree):
+    """Группа берётся из той же ближайшей строки CategoryAttribute, что выигрывает
+    closest-wins: у листа group=extra перекрывает group=main предка для того же атрибута."""
+    root, leaf = tree
+    from apps.catalog.models import FacetGroup
+
+    power = make_attr("power", "Мощность", AttributeType.INTEGER)
+    link(root, power, sort_order=5, group=FacetGroup.MAIN)
+    link(leaf, power, sort_order=1, group=FacetGroup.EXTRA)  # ближайшая категория
+    make_product(leaf, "p1", {"power": 500})
+
+    data = client.get("/api/catalog/categories/dreli/facets/").json()
+    assert get_facet(data, "power")["group"] == "extra"
+
+
+# --- D3: сортировка значений (§22.4) ---
+
+
+@pytest.mark.django_db
+def test_select_values_sorted_by_count_when_uncurated(client, tree):
+    """SELECT без ручного порядка опций (sort_order=0 у всех) → значения по убыванию count,
+    а не по алфавиту: популярные сверху."""
+    _, leaf = tree
+    chuck = make_attr("chuck", "Патрон", AttributeType.SELECT)
+    link(leaf, chuck)
+    # Опции с дефолтным sort_order=0 (порядок не курирован). «Ключевой» < «Я-патрон» по
+    # алфавиту, но реже по count — должен оказаться НИЖЕ.
+    AttributeOption.objects.create(attribute=chuck, value="Ключевой", sort_order=0)
+    AttributeOption.objects.create(attribute=chuck, value="Я-патрон", sort_order=0)
+    make_product(leaf, "p1", {"chuck": "Я-патрон"})
+    make_product(leaf, "p2", {"chuck": "Я-патрон"})
+    make_product(leaf, "p3", {"chuck": "Ключевой"})
+
+    facet = get_facet(client.get("/api/catalog/categories/dreli/facets/").json(), "chuck")
+    assert [v["value"] for v in facet["values"]] == ["Я-патрон", "Ключевой"]
+
+
+@pytest.mark.django_db
+def test_curated_sort_order_beats_count(client, tree):
+    """Кураторский sort_order — главный ключ: опция с меньшим sort_order выше, даже если её
+    count меньше (count лишь тайбрейк при равном sort_order)."""
+    _, leaf = tree
+    chuck = make_attr("chuck", "Патрон", AttributeType.SELECT)
+    link(leaf, chuck)
+    AttributeOption.objects.create(attribute=chuck, value="Первый", sort_order=0)  # реже
+    AttributeOption.objects.create(attribute=chuck, value="Второй", sort_order=1)  # чаще
+    make_product(leaf, "p1", {"chuck": "Первый"})
+    make_product(leaf, "p2", {"chuck": "Второй"})
+    make_product(leaf, "p3", {"chuck": "Второй"})
+
+    facet = get_facet(client.get("/api/catalog/categories/dreli/facets/").json(), "chuck")
+    assert [v["value"] for v in facet["values"]] == ["Первый", "Второй"]

@@ -133,6 +133,7 @@ class ProductDetailSerializer(ProductListSerializer):
         # attributes уже в базовом списке; detail отдаёт ПОЛНЫЙ набор (override get_attributes ниже).
         fields = ProductListSerializer.Meta.fields + (
             "description",
+            "video_url",
             "images",
             "breadcrumb",
         )

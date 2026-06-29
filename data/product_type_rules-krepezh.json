@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "section": "Крепёж и метизы",
+  "section_slug": "krepezh",
+  "note": "Плоские узлы. Размер/материал/покрытие — фасеты.",
+  "rules": [
+    {"subcat": "Саморезы", "subtype": null, "confidence": "high", "keywords": ["саморез"]},
+    {"subcat": "Шурупы и глухари", "subtype": null, "confidence": "high", "keywords": ["\\bшуруп", "глухарь", "\\bконфирмат"], "exclude": ["шуруповерт", "шуруп\\.", "шуруп аккум", "шурупов"]},
+    {"subcat": "Болты", "subtype": null, "confidence": "high", "keywords": ["\\bболт"], "exclude": ["болторез"]},
+    {"subcat": "Гайки", "subtype": null, "confidence": "high", "keywords": ["\\bгайка", "\\bгайки", "\\bгаек"], "exclude": ["гайковерт", "съемник"]},
+    {"subcat": "Шайбы", "subtype": null, "confidence": "high", "keywords": ["\\bшайб"]},
+    {"subcat": "Дюбели", "subtype": null, "confidence": "high", "keywords": ["дюбель", "дюбел", "\\bдюбель-гвозд"]},
+    {"subcat": "Анкеры", "subtype": null, "confidence": "high", "keywords": ["анкер"]},
+    {"subcat": "Заклёпки", "subtype": null, "confidence": "high", "keywords": ["заклепк"], "exclude": ["заклепочник", "заклепочн"]},
+    {"subcat": "Гвозди", "subtype": null, "confidence": "high", "keywords": ["\\bгвозд"], "exclude": ["дюбель-гвозд", "жидк.*гвозд", "гвоздодер"]},
+    {"subcat": "Хомуты и стяжки", "subtype": null, "confidence": "high", "keywords": ["\\bхомут", "стяжка нейлон", "стяжка кабельн", "стяжка-хомут"]},
+    {"subcat": "Шпильки и резьбовые штанги", "subtype": null, "confidence": "high", "keywords": ["шпилька резьбов", "шпилька м\\d", "резьбов штанг"]},
+    {"subcat": "Кольца и шплинты", "subtype": null, "confidence": "high", "keywords": ["кольцо стопорн", "шплинт", "кольцо пружинн"]},
+    {"subcat": "Уголки и пластины крепёжные", "subtype": null, "confidence": "high", "keywords": ["уголок крепеж", "уголок монтажн", "пластина крепеж", "крепеж монтажн", "перфолент"]}
+  ]
+}

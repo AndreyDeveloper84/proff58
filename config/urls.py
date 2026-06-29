@@ -13,6 +13,7 @@ urlpatterns = [
     path("api/1c/", include("apps.sync_1c.api.urls")),
     path("api/catalog/", include("apps.catalog.api.urls")),
     path("api/max/", include("apps.integration_max.urls")),
+    path("api/leads/", include("apps.leads.api.urls")),
     path("api/ai/", include("apps.ai.api.urls")),
     path("api/", include("apps.orders.api.urls")),
     path("catalog/", include("apps.catalog.storefront_urls")),
