@@ -37,6 +37,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         default=CustomerType.B2C,
     )
 
+    max_chat_id = models.BigIntegerField(
+        _("MAX chat ID"),
+        null=True,
+        blank=True,
+        unique=True,
+        db_index=True,
+    )
+
     is_staff = models.BooleanField(_("Доступ в админку"), default=False)
     is_active = models.BooleanField(_("Активен"), default=True)
     date_joined = models.DateTimeField(_("Дата регистрации"), default=timezone.now)
