@@ -47,6 +47,9 @@ INSTALLED_APPS = [
     "apps.ai",
     "apps.integration_max",
     "apps.notifications",
+    "apps.crm_clients",
+    "apps.crm_sales",
+    "apps.crm_tasks",
 ]
 
 MIDDLEWARE = [
