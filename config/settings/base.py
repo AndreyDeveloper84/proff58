@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "apps.orders",
     "apps.leads",
     "apps.ai",
+    "apps.integration_max",
     "apps.notifications",
 ]
 
