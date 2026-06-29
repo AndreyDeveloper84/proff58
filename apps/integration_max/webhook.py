@@ -50,8 +50,9 @@ def _send_reply(reply: dict | None) -> None:
         return
     import urllib.request
 
+    chat_id = reply.pop("chat_id", "")
     req = urllib.request.Request(
-        f"{api_url}/messages",
+        f"{api_url}/messages?chat_id={chat_id}",
         data=json.dumps(reply).encode("utf-8"),
         headers={"Authorization": token, "Content-Type": "application/json"},
         method="POST",
@@ -60,7 +61,7 @@ def _send_reply(reply: dict | None) -> None:
         with urllib.request.urlopen(req, timeout=10):
             pass
     except Exception:
-        logger.exception("Failed to send MAX reply to chat_id=%s", reply.get("chat_id"))
+        logger.exception("Failed to send MAX reply to chat_id=%s", chat_id)
 
 
 @csrf_exempt
@@ -112,6 +113,9 @@ def _dispatch(update_type: str, payload: dict) -> dict | None:
                 return auth.handle_contact(chat_id, att.get("payload", {}))
 
         text = (body.get("text") or "").strip()
+        if text.lower() in ("/start", "start", "начать"):
+            user_info = message.get("sender", {})
+            return auth.handle_bot_started(chat_id, user_info)
         if text and text.isdigit() and len(text) == auth.OTP_LENGTH:
             return auth.handle_otp_confirm(chat_id, text)
 
