@@ -341,3 +341,11 @@ def place_order(
     transaction.on_commit(lambda: order_created.send(sender=Order, order_id=order_id))
 
     return order
+
+
+def claim_guest_orders(user) -> int:
+    """Привязать гостевые заказы к аккаунту по телефону. Возвращает число привязанных."""
+    phone = getattr(user, "phone", "")
+    if not phone:
+        return 0
+    return Order.objects.filter(user__isnull=True, customer_phone=phone).update(user=user)
