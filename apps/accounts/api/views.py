@@ -35,7 +35,13 @@ class LoginView(APIView):
                 {"detail": "Неверный телефон или пароль."}, status=status.HTTP_400_BAD_REQUEST
             )
         login(request, user)
-        return Response(UserSerializer(user).data)
+        from apps.orders.services import claim_guest_orders
+
+        claimed = claim_guest_orders(user)
+        data = UserSerializer(user).data
+        if claimed:
+            data["claimed_orders"] = claimed
+        return Response(data)
 
 
 class LogoutView(APIView):
@@ -61,6 +67,9 @@ class RegisterView(APIView):
             customer_type=d.get("customer_type", "b2c"),
         )
         login(request, user)
+        from apps.orders.services import claim_guest_orders
+
+        claim_guest_orders(user)
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
@@ -175,3 +184,55 @@ class OTPLoginView(APIView):
         cache.delete(cache_key)
         login(request, user_obj)
         return Response(UserSerializer(user_obj).data)
+
+
+class DeleteAccountView(APIView):
+    """Удаление аккаунта — обезличивание ПДн (#344)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_obj = request.user
+        logout(request)
+
+        from apps.orders.models import Order
+
+        Order.objects.filter(user=user_obj).update(
+            customer_name="[удалён]",
+            customer_phone="",
+            customer_email="",
+            company_name="",
+            inn="",
+            kpp="",
+            legal_address="",
+        )
+
+        user_obj.phone = f"deleted-{user_obj.pk}"
+        user_obj.full_name = ""
+        user_obj.email = ""
+        user_obj.max_chat_id = None
+        user_obj.is_active = False
+        user_obj.save()
+
+        return Response({"ok": True, "detail": "Аккаунт удалён, данные обезличены."})
+
+
+class ChangePhoneView(APIView):
+    """Смена телефона с перепривязкой MAX (#343)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        new_phone = request.data.get("new_phone", "").strip()
+        if not new_phone:
+            return Response(
+                {"detail": "Новый телефон обязателен."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if User.objects.filter(phone=new_phone).exclude(pk=request.user.pk).exists():
+            return Response(
+                {"detail": "Этот телефон уже используется."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        request.user.phone = new_phone
+        request.user.max_chat_id = None
+        request.user.save(update_fields=["phone", "max_chat_id", "updated_at"])
+        return Response(UserSerializer(request.user).data)

@@ -183,3 +183,47 @@ def test_otp_login_no_max(client, user):
     )
     assert resp.status_code == 400
     assert "MAX" in resp.json()["detail"]
+
+
+# ═══════════ #341 Привязка гостевых заказов ═══════════
+
+
+@pytest.mark.django_db
+def test_claim_guest_orders_on_login(client):
+    from apps.orders.models import Order
+
+    User.objects.create_user(phone="+79005550001", password="pass")
+    Order.objects.create(order_number="П-GUEST-1", customer_phone="+79005550001")
+
+    resp = client.post(
+        "/api/account/login/", {"phone": "+79005550001", "password": "pass"}, format="json"
+    )
+    assert resp.status_code == 200
+    assert resp.json().get("claimed_orders", 0) == 1
+
+
+# ═══════════ #344 Удаление аккаунта ═══════════
+
+
+@pytest.mark.django_db
+def test_delete_account(client):
+    u = User.objects.create_user(phone="+79005550002", password="pass", full_name="Удаляемый")
+    client.force_authenticate(user=u)
+    resp = client.post("/api/account/delete/")
+    assert resp.status_code == 200
+    u.refresh_from_db()
+    assert u.is_active is False
+    assert u.full_name == ""
+
+
+# ═══════════ #343 Смена телефона ═══════════
+
+
+@pytest.mark.django_db
+def test_change_phone(client, user):
+    client.force_authenticate(user=user)
+    resp = client.post("/api/account/change-phone/", {"new_phone": "+79005550003"}, format="json")
+    assert resp.status_code == 200
+    user.refresh_from_db()
+    assert user.phone == "+79005550003"
+    assert user.max_chat_id is None

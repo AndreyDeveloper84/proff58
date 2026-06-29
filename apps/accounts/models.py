@@ -77,6 +77,9 @@ class Profile(TimeStampedModel):
     inn = models.CharField(_("ИНН"), max_length=12, blank=True)
     kpp = models.CharField(_("КПП"), max_length=9, blank=True)
     legal_address = models.CharField(_("Юридический адрес"), max_length=512, blank=True)
+    is_b2b_verified = models.BooleanField(_("B2B верифицирован"), default=False)
+    pd_consent_at = models.DateTimeField(_("Согласие ПДн"), null=True, blank=True)
+    pd_consent_version = models.CharField(_("Версия политики ПДн"), max_length=32, blank=True)
 
     class Meta:
         verbose_name = _("Профиль")
