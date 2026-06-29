@@ -34,5 +34,5 @@ def _on_order_created(sender, order_id, **kwargs):
     logger.info("CRM: order_created received, order_id=%s (handler stub)", order_id)
 
 
-events.user_registered.connect(_on_user_registered)
-events.order_created.connect(_on_order_created)
+events.user_registered.connect(_on_user_registered, dispatch_uid="crm_clients_user_registered")
+events.order_created.connect(_on_order_created, dispatch_uid="crm_clients_order_created")
