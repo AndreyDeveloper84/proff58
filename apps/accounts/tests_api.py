@@ -100,3 +100,37 @@ def test_me_update(client, user):
     )
     assert resp.status_code == 200
     assert resp.json()["full_name"] == "Новое Имя"
+
+
+# ═══════════ #329 Избранное ═══════════
+
+
+@pytest.mark.django_db
+def test_wishlist_add_and_list(client, user):
+    from apps.catalog.models import Product, ProductStatus
+
+    p = Product.objects.create(
+        name="Дрель", slug="wish-drel", price=1000, status=ProductStatus.PUBLISHED, is_active=True
+    )
+    client.force_authenticate(user=user)
+    resp = client.post("/api/account/wishlist/", {"product_id": p.id}, format="json")
+    assert resp.status_code == 201
+
+    resp = client.get("/api/account/wishlist/")
+    assert resp.status_code == 200
+    assert len(resp.json()) == 1
+    assert resp.json()[0]["product_slug"] == "wish-drel"
+
+
+@pytest.mark.django_db
+def test_wishlist_delete(client, user):
+    from apps.catalog.models import Product, ProductStatus
+
+    p = Product.objects.create(
+        name="Пила", slug="wish-pila", price=500, status=ProductStatus.PUBLISHED, is_active=True
+    )
+    client.force_authenticate(user=user)
+    client.post("/api/account/wishlist/", {"product_id": p.id}, format="json")
+    resp = client.delete("/api/account/wishlist/", {"product_id": p.id}, format="json")
+    assert resp.status_code == 200
+    assert client.get("/api/account/wishlist/").json() == []
