@@ -13,8 +13,19 @@ from django.db import transaction
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from .models import Category, Product, ProductAttributeValue
-from .services import invalidate_category_tree_cache, rebuild_attrs_cache
+from .models import (
+    Attribute,
+    AttributeOption,
+    Category,
+    CategoryAttribute,
+    Product,
+    ProductAttributeValue,
+)
+from .services import (
+    invalidate_category_tree_cache,
+    invalidate_facets_cache,
+    rebuild_attrs_cache,
+)
 
 
 def _schedule_rebuild(product: Product | None) -> None:
@@ -36,11 +47,26 @@ def rebuild_cache_on_delete(sender, instance: ProductAttributeValue, **kwargs) -
     _schedule_rebuild(product)
 
 
-# Счётчики дерева каталога зависят от товаров (категория, остаток) и от самих
-# категорий (состав, on_site, is_active, порядок) — сбрасываем кэш при их изменении.
+# Счётчики дерева каталога и фасеты зависят от товаров (категория, цена, остаток, бренд,
+# attrs_cache) и от самих категорий (состав, on_site, is_active, порядок) — сбрасываем оба
+# кэша при их изменении. Ловит и 1С-обновления цены/остатка (они делают product.save()).
 @receiver(post_save, sender=Product)
 @receiver(post_delete, sender=Product)
 @receiver(post_save, sender=Category)
 @receiver(post_delete, sender=Category)
-def invalidate_category_tree(sender, **kwargs) -> None:
+def invalidate_catalog_read_caches(sender, **kwargs) -> None:
     invalidate_category_tree_cache()
+    invalidate_facets_cache()
+
+
+# Состав/порядок фасетов зависит ещё и от привязок атрибутов к категориям (is_filter, group,
+# sort_order) и от опций (slug, sort_order) — их правки куратором инвалидируют кэш фасетов
+# (на дерево каталога не влияют, поэтому отдельный обработчик).
+@receiver(post_save, sender=CategoryAttribute)
+@receiver(post_delete, sender=CategoryAttribute)
+@receiver(post_save, sender=Attribute)
+@receiver(post_delete, sender=Attribute)
+@receiver(post_save, sender=AttributeOption)
+@receiver(post_delete, sender=AttributeOption)
+def invalidate_facets_on_attr_meta(sender, **kwargs) -> None:
+    invalidate_facets_cache()

@@ -57,6 +57,10 @@ class Category(MP_Node):
     slug = models.SlugField(_("Slug"), max_length=255, unique=True)
     description = models.TextField(_("Описание"), blank=True)
     image = models.ImageField(_("Изображение"), upload_to="categories/", blank=True)
+    hero_image = models.ImageField(_("Hero: фон"), upload_to="categories/hero/", blank=True)
+    hero_eyebrow = models.CharField(_("Hero: слоган"), max_length=120, blank=True)
+    hero_cta_label = models.CharField(_("Hero: текст кнопки"), max_length=60, blank=True)
+    hero_cta_href = models.CharField(_("Hero: ссылка кнопки"), max_length=512, blank=True)
     is_active = models.BooleanField(_("Активна"), default=True)
     on_site = models.BooleanField(
         _("Показывать на сайте"),
@@ -72,6 +76,16 @@ class Category(MP_Node):
         help_text=_(
             "external_id группы 1С для листа дерева. Единственная связь категории "
             "с учётной системой (ADR-0002). Узлы-контейнеры остаются пустыми."
+        ),
+    )
+    is_site_v2 = models.BooleanField(
+        _("Узел витрины v2"),
+        default=False,
+        db_index=True,
+        help_text=_(
+            "True — узел курируемого v2-дерева сайта (создан build_skeleton/build_section). "
+            "Отличает витринное дерево от легаси-категорий, зеркалящих группы 1С. Раздел "
+            "«Категории (сайт)» показывает только такие узлы."
         ),
     )
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
@@ -151,6 +165,15 @@ class AttributeOption(models.Model):
         return f"{self.attribute.name}: {self.value}"
 
 
+class FacetGroup(models.TextChoices):
+    """Раздел фильтра в сайдбаре витрины (§22.4). «Базовые» (бренд/наличие/цена/тип
+    питания) и навигация (tool_type) определяются отдельно, поэтому здесь только две
+    группы технических фильтров: основные и дополнительные (последние сворачиваются)."""
+
+    MAIN = "main", _("Основные")
+    EXTRA = "extra", _("Дополнительные")
+
+
 class CategoryAttribute(models.Model):
     """Привязка характеристики к категории с метаданными отображения."""
 
@@ -165,6 +188,16 @@ class CategoryAttribute(models.Model):
         _("Использовать в фильтре"),
         default=True,
         help_text=_("Характеристика участвует в фасетных фильтрах этой категории."),
+    )
+    group = models.CharField(
+        _("Группа фильтра"),
+        max_length=8,
+        choices=FacetGroup.choices,
+        default=FacetGroup.MAIN,
+        help_text=_(
+            "Раздел в сайдбаре: «Основные» или «Дополнительные» (свёрнуты по умолчанию). "
+            "Куратор переносит сюда второстепенные характеристики (вход — coverage-отчёт #225)."
+        ),
     )
     is_seo_facet = models.BooleanField(
         _("SEO-фасет"),
@@ -186,6 +219,7 @@ class CategoryAttribute(models.Model):
 class MappingRuleType(models.TextChoices):
     ARTICLE = "article", _("По артикулу (точное совпадение)")
     NAME_CONTAINS = "name_contains", _("По слову в названии")
+    REGEX = "regex", _("По регулярному выражению (имя)")
     BRAND_PREFIX = "brand_prefix", _("По бренду + серии модели")
     SOURCE_GROUP = "source_group", _("По исходной группе 1С")
 
@@ -205,6 +239,15 @@ class CategoryMappingRule(models.Model):
         help_text=_(
             "Артикул / слово в названии / серия модели / название группы 1С — "
             "в зависимости от типа правила."
+        ),
+    )
+    exclude_pattern = models.CharField(
+        _("Исключение (regex по имени)"),
+        max_length=255,
+        blank=True,
+        help_text=_(
+            "Негативный guard: если выражение найдено в названии — правило НЕ "
+            "срабатывает (напр. «бур», но исключить «бурения земл|мотобур»)."
         ),
     )
     brand = models.CharField(
@@ -235,6 +278,108 @@ class CategoryMappingRule(models.Model):
         return f"[{self.get_rule_type_display()}] {self.pattern} → {self.target_category}"
 
 
+class OneCGroupStatus(models.TextChoices):
+    ACTIVE = "active", _("Активна (есть товары)")
+    STALE = "stale", _("Пустая (нет товаров)")
+    DISCOVERED = "discovered", _("Найдена в выгрузке (нет в маппинге)")
+
+
+# Разделитель материализованного пути групп 1С (unit separator — сортируется раньше
+# печатных символов, поэтому родитель идёт перед детьми в pre-order).
+ONEC_TREE_SEP = "\x1f"
+
+
+class OneCGroup(models.Model):
+    """Группа номенклатуры 1С — отдельный реестр (НЕ часть дерева сайта).
+
+    Источник истины: ``data/group_mapping.json`` (код ``external_id`` + имя ``group_1c``
+    + ``site_path``); живость/счётчики — по ``Product.source_group`` (последняя выгрузка).
+    Синкается командой ``catalog_sync_1c_groups``. Связь с категорией сайта — через
+    ``mapped_category`` и правила сопоставления (см. ``GroupCategoryMap``).
+
+    Статусы: ``active`` — есть товары; ``stale`` — была в маппинге, но товаров нет;
+    ``discovered`` — встретилась в ``source_group``, но в маппинге её нет (надо сопоставить).
+    Принцип: 1С — источник, сайт — мастер структуры; пере-импорт дерево сайта не меняет.
+    """
+
+    code = models.CharField(_("Код 1С (external_id)"), max_length=50, blank=True, db_index=True)
+    name = models.CharField(_("Имя группы 1С"), max_length=255, unique=True)
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="children",
+        verbose_name=_("Родительская группа 1С"),
+    )
+    tree_path = models.CharField(
+        _("Путь в дереве 1С"),
+        max_length=1024,
+        blank=True,
+        db_index=True,
+        # db_collation="C" — побайтовая сортировка: разделитель \x1f (0x1f) меньше пробела
+        # и любых букв, поэтому родитель идёт строго перед детьми (pre-order). Локальная
+        # UTF-8-коллация игнорирует управляющие символы и ломала бы вложенность.
+        db_collation="C",
+        help_text=_("Материализованный путь имён (для древовидной сортировки админки)."),
+    )
+    site_path = models.JSONField(_("Путь на сайте (из маппинга)"), default=list, blank=True)
+    mapped_category = models.ForeignKey(
+        "Category",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="onec_groups",
+        verbose_name=_("Категория сайта"),
+    )
+    product_count = models.PositiveIntegerField(_("Товаров (по source_group)"), default=0)
+    status = models.CharField(
+        _("Статус"),
+        max_length=12,
+        choices=OneCGroupStatus.choices,
+        default=OneCGroupStatus.DISCOVERED,
+        db_index=True,
+    )
+    updated_at = models.DateTimeField(_("Обновлено"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("Группа 1С")
+        verbose_name_plural = _("Группы 1С")
+        ordering = ["name"]
+        indexes = [models.Index(fields=["status", "name"])]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code or '—'})"
+
+
+class GroupCategoryMapping(OneCGroup):
+    """Proxy-вид OneCGroup для отдельного раздела админки «Сопоставление групп и категорий».
+
+    Та же таблица, что и «Группы 1С», но админка сфокусирована на правке
+    ``mapped_category`` (группа → категория сайта) и действии «применить» (расставить
+    товары группы по ``source_group`` в выбранную категорию). Своей таблицы не создаёт.
+    """
+
+    class Meta:
+        proxy = True
+        verbose_name = _("Сопоставление группы и категории")
+        verbose_name_plural = _("Сопоставление групп и категорий")
+
+
+class SiteCategory(Category):
+    """Proxy-вид Category для раздела админки «Категории (сайт)».
+
+    Показывает ТОЛЬКО курируемое v2-дерево (поддеревья корней-разделов из
+    ``semantic.SECTION_RULES``), без легаси-категорий, зеркалящих группы 1С.
+    Та же таблица, что и «Категории»; фильтрация — в админке.
+    """
+
+    class Meta:
+        proxy = True
+        verbose_name = _("Категория (сайт)")
+        verbose_name_plural = _("Категории (сайт)")
+
+
 class ProductStatus(models.TextChoices):
     IMPORTED = "imported", _("Импортирован (не разобран)")
     NEEDS_REVIEW = "needs_review", _("Требует проверки")
@@ -246,6 +391,20 @@ class StockStatus(models.TextChoices):
     IN_STOCK = "in_stock", _("В наличии")
     OUT_OF_STOCK = "out_of_stock", _("Нет в наличии")
     ON_ORDER = "on_order", _("Под заказ")
+
+
+class EnrichStatus(models.TextChoices):
+    PENDING = "pending", _("Ожидает")
+    IN_QUEUE = "in_queue", _("В очереди")
+    DONE = "done", _("Готово")
+    MODERATION = "moderation", _("На модерации")
+    FAILED = "failed", _("Ошибка")
+
+
+class ContentSource(models.TextChoices):
+    MANUAL = "manual", _("Вручную")
+    IMPORT_1C = "import_1c", _("Импорт 1С")
+    LLM = "llm", _("AI-генерация")
 
 
 class Product(TimeStampedModel):
@@ -307,6 +466,21 @@ class Product(TimeStampedModel):
             "(витринное название, описание, SEO). ADR: 1С не затирает ручную работу."
         ),
     )
+    enrich_status = models.CharField(
+        _("Статус обогащения"),
+        max_length=12,
+        choices=EnrichStatus.choices,
+        default=EnrichStatus.PENDING,
+        db_index=True,
+    )
+    content_source = models.CharField(
+        _("Источник карточного контента"),
+        max_length=12,
+        choices=ContentSource.choices,
+        blank=True,
+        default="",
+    )
+    content_confidence = models.FloatField(_("Уверенность контента"), null=True, blank=True)
     matched_rule = models.ForeignKey(
         CategoryMappingRule,
         on_delete=models.SET_NULL,
@@ -320,6 +494,7 @@ class Product(TimeStampedModel):
     slug = models.SlugField(_("Slug"), max_length=512, unique=True, blank=True)
     description = models.TextField(_("Описание"), blank=True)
     short_description = models.CharField(_("Краткое описание"), max_length=512, blank=True)
+    video_url = models.URLField(_("Видео (URL)"), blank=True)
     meta_title = models.CharField(_("Meta title"), max_length=255, blank=True)
     meta_description = models.CharField(_("Meta description"), max_length=512, blank=True)
 
@@ -745,3 +920,12 @@ class EnrichmentLog(models.Model):
 
     def __str__(self) -> str:
         return f"{self.product_external_id} → {self.get_result_display()}"
+
+
+class ModerationProduct(Product):
+    """Proxy для очереди модерации обогащения в admin."""
+
+    class Meta:
+        proxy = True
+        verbose_name = _("Товар на модерации")
+        verbose_name_plural = _("Очередь модерации обогащения")

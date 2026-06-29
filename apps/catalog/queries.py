@@ -43,21 +43,46 @@ def _category_filter_attributes(category) -> list:
 
     Ближайшая категория переопределяет родителя; порядок вывода: текущая → выше
     по дереву, внутри — по sort_order.
+
+    Гейт состава (§10.2, §22.3): глобальный ``Attribute.is_filterable=True`` И per-category
+    ``CategoryAttribute.is_filter=True`` — куратор может выключить конкретный атрибут как
+    фильтр для конкретной категории. ``is_filter`` имеет default=True, поэтому существующее
+    поведение не меняется. Согласовано с ``range_filter_attributes`` (тот же двойной гейт).
+
+    Известное ограничение: гейт — это WHERE по всей цепочке, НЕ closest-wins по самому
+    флагу. Строки с is_filter=False выпадают из выборки ДО разрешения «ближайшая
+    переопределяет родителя», поэтому если у листа is_filter=False, но у предка для ТОГО
+    ЖЕ атрибута is_filter=True — атрибут всё равно попадёт (из строки предка). Override
+    уровня флага между уровнями намеренно не поддержан (§22.3, простой WHERE по ТЗ).
+
+    Замечание про tool_type: build_facets эмитит TypePanel (навигацию) из этого же
+    гейтнутого списка (``by_slug.get("tool_type")``). Значит is_filter=False на строке
+    CategoryAttribute для tool_type скроет нав-панель целиком. Под default (True) панель
+    цела; долгосрочно навигацию стоит эмитить независимо от is_filter (см. §10.1 ui_placement).
     """
     ancestors = list(category.get_ancestors())  # от корня к родителю
     chain_ids = [category.pk, *[c.pk for c in reversed(ancestors)]]  # ближайшая первой
     pos = {pk: i for i, pk in enumerate(chain_ids)}
 
-    best: dict[int, tuple] = {}  # attribute_id -> (pos, sort_order, attribute)
+    best: dict[int, tuple] = {}  # attribute_id -> (pos, sort_order, attribute, group)
     qs = CategoryAttribute.objects.filter(
-        category_id__in=chain_ids, attribute__is_filterable=True
+        category_id__in=chain_ids, is_filter=True, attribute__is_filterable=True
     ).select_related("attribute")
     for ca in qs:
         key = (pos[ca.category_id], ca.sort_order)
         if ca.attribute_id not in best or key < best[ca.attribute_id][:2]:
-            best[ca.attribute_id] = (pos[ca.category_id], ca.sort_order, ca.attribute)
+            best[ca.attribute_id] = (pos[ca.category_id], ca.sort_order, ca.attribute, ca.group)
 
-    return [t[2] for t in sorted(best.values(), key=lambda t: (t[0], t[1]))]
+    # Группу фасета (D1, §22.4) берём из той же ближайшей строки CategoryAttribute, что
+    # выиграла closest-wins по (pos, sort_order) — кладём транзиентно на Attribute, чтобы
+    # не менять тип возврата (список Attribute) и не плодить запросы. Потребители, которым
+    # группа не нужна (coverage_report, range_filter_attributes), её просто игнорируют.
+    ordered = sorted(best.values(), key=lambda t: (t[0], t[1]))
+    result = []
+    for _pos, _sort_order, attribute, group in ordered:
+        attribute._facet_group = group
+        result.append(attribute)
+    return result
 
 
 def products_in(

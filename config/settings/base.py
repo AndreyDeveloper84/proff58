@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "apps.sync_1c",
     "apps.pricing",
     "apps.orders",
+    "apps.leads",
     "apps.ai",
     "apps.notifications",
 ]
@@ -99,6 +100,11 @@ CACHES = {
         "LOCATION": "proff58-default",
     }
 }
+
+# Кэш фасетов каталога (#222, P1-2). 0 → выключен (dev/CI: тесты не зависят от кэша и его
+# межтестовой персистентности). В проде включается (см. config/settings/prod.py). Инвалидация —
+# версионная, по сигналам изменения товаров/категорий/привязок атрибутов (apps/catalog/signals.py).
+FACETS_CACHE_TTL = env.int("FACETS_CACHE_TTL", default=0)
 
 AUTH_USER_MODEL = "accounts.User"
 
@@ -157,6 +163,7 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 24,
+    "DEFAULT_THROTTLE_RATES": {"inquiry": "20/hour"},
 }
 
 # Ключ для интеграции с 1С (заголовок X-Api-Key). Пустой = API для 1С закрыт.

@@ -14,7 +14,13 @@
 from __future__ import annotations
 
 from .category_tree import get_category_tree, invalidate_category_tree_cache
-from .facets import FacetError, apply_product_attr_filters, build_facets
+from .facets import (
+    FacetError,
+    apply_product_attr_filters,
+    build_facets,
+    build_facets_cached,
+    invalidate_facets_cache,
+)
 from .models import CompatibilityKind, ProductCompatibility
 from .queries import (
     CompatibilityItem,
@@ -34,6 +40,8 @@ __all__ = [
     "attr_value_to_json",
     "rebuild_attrs_cache",
     "build_facets",
+    "build_facets_cached",
+    "invalidate_facets_cache",
     "apply_product_attr_filters",
     "get_category_tree",
     "invalidate_category_tree_cache",

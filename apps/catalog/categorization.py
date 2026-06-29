@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from .models import Category, CategoryMappingRule, MappingRuleType
@@ -30,10 +31,29 @@ def _norm(value: str | None) -> str:
     return (value or "").strip().lower()
 
 
+def _rxname(value: str | None) -> str:
+    """Нормализация имени под regex: lower + ё→е + паддинг (как в классификаторе)."""
+    return " " + re.sub(r"\s+", " ", (value or "").lower().replace("ё", "е")) + " "
+
+
+def _safe_search(pattern: str, text: str) -> bool:
+    try:
+        return re.search(pattern, text) is not None
+    except re.error:
+        return False  # битый regex в правиле не должен ронять импорт
+
+
 def _rule_matches(rule: CategoryMappingRule, hint: ProductHint) -> bool:
     pattern = _norm(rule.pattern)
     if not pattern:
         return False
+
+    # Негативный guard по имени (regex): правило НЕ срабатывает при совпадении.
+    if rule.exclude_pattern and _safe_search(rule.exclude_pattern, _rxname(hint.name)):
+        return False
+
+    if rule.rule_type == MappingRuleType.REGEX:
+        return _safe_search(rule.pattern, _rxname(hint.name))
 
     if rule.rule_type == MappingRuleType.ARTICLE:
         return pattern == _norm(hint.article)

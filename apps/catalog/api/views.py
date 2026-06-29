@@ -18,7 +18,7 @@ from ..models import Category, ProductAttributeValue, StockStatus
 from ..services import (
     FacetError,
     apply_product_attr_filters,
-    build_facets,
+    build_facets_cached,
     compatibility_sections,
 )
 from .serializers import (
@@ -312,7 +312,7 @@ class CategoryFacetsView(APIView):
                 return None  # мусор в цене игнорируем (фасеты не должны падать)
 
         try:
-            data = build_facets(
+            data = build_facets_cached(
                 category,
                 tool_type=params.get("tool_type") or None,
                 brands=params.getlist("brand") or None,
@@ -324,4 +324,16 @@ class CategoryFacetsView(APIView):
             )
         except FacetError as exc:
             return Response({"detail": str(exc)}, status=400)
+
+        hero_image = category.hero_image
+        try:
+            hero_url = request.build_absolute_uri(hero_image.url) if hero_image else None
+        except ValueError:
+            hero_url = None
+        data["category"]["hero"] = {
+            "image": hero_url,
+            "eyebrow": category.hero_eyebrow,
+            "ctaLabel": category.hero_cta_label,
+            "ctaHref": category.hero_cta_href,
+        }
         return Response(data)
