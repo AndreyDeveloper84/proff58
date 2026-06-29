@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Счёт {{ invoice.order_number }}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 14px; margin: 40px; }
+  h1 { font-size: 20px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #333; padding: 6px 10px; text-align: left; }
+  th { background: #f5f5f5; }
+  .total { font-weight: bold; font-size: 16px; margin-top: 15px; }
+  .section { margin-top: 20px; }
+  @media print { body { margin: 20px; } }
+</style>
+</head>
+<body>
+<h1>Счёт № {{ invoice.order_number }} от {{ invoice.date|date:"d.m.Y" }}</h1>
+
+<div class="section">
+  <strong>Продавец:</strong><br>
+  {% if invoice.seller.company_name %}{{ invoice.seller.company_name }}<br>{% endif %}
+  {% if invoice.seller.inn %}ИНН: {{ invoice.seller.inn }}<br>{% endif %}
+  {% if invoice.seller.address %}{{ invoice.seller.address }}<br>{% endif %}
+</div>
+
+<div class="section">
+  <strong>Покупатель:</strong><br>
+  {{ invoice.buyer.company_name }}<br>
+  ИНН: {{ invoice.buyer.inn }}
+  {% if invoice.buyer.kpp %} КПП: {{ invoice.buyer.kpp }}{% endif %}<br>
+  {% if invoice.buyer.legal_address %}{{ invoice.buyer.legal_address }}<br>{% endif %}
+</div>
+
+<table>
+  <thead>
+    <tr><th>№</th><th>Наименование</th><th>Артикул</th><th>Ед.</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr>
+  </thead>
+  <tbody>
+    {% for item in invoice.items %}
+    <tr>
+      <td>{{ forloop.counter }}</td>
+      <td>{{ item.name }}</td>
+      <td>{{ item.article }}</td>
+      <td>{{ item.unit|default:"шт" }}</td>
+      <td>{{ item.quantity }}</td>
+      <td>{{ item.price }}</td>
+      <td>{{ item.total }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="total">Итого: {{ invoice.total }} {{ invoice.currency }}</div>
+</body>
+</html>

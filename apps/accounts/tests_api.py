@@ -134,3 +134,52 @@ def test_wishlist_delete(client, user):
     resp = client.delete("/api/account/wishlist/", {"product_id": p.id}, format="json")
     assert resp.status_code == 200
     assert client.get("/api/account/wishlist/").json() == []
+
+
+# ═══════════ #326 OTP Login ═══════════
+
+
+@pytest.mark.django_db
+def test_otp_login(client, user):
+    from django.core.cache import cache
+
+    user.max_chat_id = 555
+    user.save()
+    cache.set("max_otp:555", {"otp": "1234", "user_id": user.pk, "attempts": 0}, timeout=300)
+
+    resp = client.post(
+        "/api/account/otp-login/",
+        {"phone": "+79001112233", "otp": "1234"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.json()["phone"] == "+79001112233"
+    cache.clear()
+
+
+@pytest.mark.django_db
+def test_otp_login_wrong_code(client, user):
+    from django.core.cache import cache
+
+    user.max_chat_id = 556
+    user.save()
+    cache.set("max_otp:556", {"otp": "1234", "user_id": user.pk, "attempts": 0}, timeout=300)
+
+    resp = client.post(
+        "/api/account/otp-login/",
+        {"phone": "+79001112233", "otp": "0000"},
+        format="json",
+    )
+    assert resp.status_code == 400
+    cache.clear()
+
+
+@pytest.mark.django_db
+def test_otp_login_no_max(client, user):
+    resp = client.post(
+        "/api/account/otp-login/",
+        {"phone": "+79001112233", "otp": "1234"},
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "MAX" in resp.json()["detail"]

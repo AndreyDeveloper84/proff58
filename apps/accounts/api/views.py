@@ -119,3 +119,59 @@ class WishlistView(APIView):
         product_id = request.data.get("product_id")
         WishlistItem.objects.filter(user=request.user, product_id=product_id).delete()
         return Response({"ok": True})
+
+
+class OTPLoginView(APIView):
+    """Вход по OTP-коду из MAX бота (#326).
+
+    Flow: сайт запрашивает OTP → бот шлёт код → пользователь вводит на сайте.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        phone = request.data.get("phone", "").strip()
+        otp = request.data.get("otp", "").strip()
+        if not phone or not otp:
+            return Response(
+                {"detail": "Телефон и код обязательны."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from django.core.cache import cache
+
+        try:
+            user_obj = User.objects.get(phone=phone)
+        except User.DoesNotExist:
+            return Response({"detail": "Пользователь не найден."}, status=status.HTTP_404_NOT_FOUND)
+
+        chat_id = getattr(user_obj, "max_chat_id", None)
+        if not chat_id:
+            return Response(
+                {"detail": "Аккаунт не привязан к MAX. Привяжите через бота."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        cache_key = f"max_otp:{chat_id}"
+        pending = cache.get(cache_key)
+        if not pending:
+            return Response(
+                {"detail": "Код не найден или истёк."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        import secrets
+
+        if not secrets.compare_digest(otp, pending.get("otp", "")):
+            attempts = pending.get("attempts", 0) + 1
+            pending["attempts"] = attempts
+            cache.set(cache_key, pending, timeout=300)
+            if attempts >= 5:
+                cache.delete(cache_key)
+                return Response(
+                    {"detail": "Превышено число попыток."}, status=status.HTTP_429_TOO_MANY_REQUESTS
+                )
+            return Response({"detail": "Неверный код."}, status=status.HTTP_400_BAD_REQUEST)
+
+        cache.delete(cache_key)
+        login(request, user_obj)
+        return Response(UserSerializer(user_obj).data)
