@@ -84,3 +84,38 @@ class MeView(APIView):
             profile_ser.save()
 
         return Response(UserProfileSerializer(user).data)
+
+
+class WishlistView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        items = request.user.wishlist.select_related("product").all()
+        data = [
+            {
+                "product_id": item.product_id,
+                "product_name": item.product.name,
+                "product_slug": item.product.slug,
+            }
+            for item in items
+        ]
+        return Response(data)
+
+    def post(self, request):
+        from apps.accounts.wishlist import WishlistItem
+        from apps.catalog.models import Product
+
+        product_id = request.data.get("product_id")
+        try:
+            product = Product.objects.get(pk=product_id)
+        except Product.DoesNotExist:
+            return Response({"detail": "Товар не найден."}, status=status.HTTP_404_NOT_FOUND)
+        WishlistItem.objects.get_or_create(user=request.user, product=product)
+        return Response({"ok": True}, status=status.HTTP_201_CREATED)
+
+    def delete(self, request):
+        from apps.accounts.wishlist import WishlistItem
+
+        product_id = request.data.get("product_id")
+        WishlistItem.objects.filter(user=request.user, product_id=product_id).delete()
+        return Response({"ok": True})
