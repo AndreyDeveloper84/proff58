@@ -22,7 +22,7 @@ import sys
 import urllib.error
 import urllib.request
 
-API_BASE = "https://platform-api2.max.ru"
+API_BASE = "https://platform-api.max.ru"
 
 PASS, FAIL, SKIP = "PASS", "FAIL", "SKIP"
 
