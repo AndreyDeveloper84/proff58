@@ -23,14 +23,14 @@ def send_message(chat_id: int, text: str, **kwargs) -> bool:
     if not token:
         raise RuntimeError("MAX_BOT_TOKEN not configured")
 
-    body: dict = {"chat_id": chat_id, "text": text}
+    body: dict = {"text": text}
     if kwargs.get("format"):
         body["format"] = kwargs["format"]
     if kwargs.get("attachments"):
         body["attachments"] = kwargs["attachments"]
 
     req = urllib.request.Request(
-        f"{api_url}/messages",
+        f"{api_url}/messages?chat_id={chat_id}",
         data=json.dumps(body).encode("utf-8"),
         headers={"Authorization": token, "Content-Type": "application/json"},
         method="POST",
