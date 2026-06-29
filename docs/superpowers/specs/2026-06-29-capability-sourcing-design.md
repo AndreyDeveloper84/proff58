@@ -1,7 +1,7 @@
 # Capability `sourcing`: поиск внешнего контента для карточек товара
 
 **Дата:** 2026-06-29
-**Статус:** дизайн утверждён (5 раундов ревью), готов к плану реализации
+**Статус:** На ревью (6 раундов ревью)
 **Предшественник:** EPIC-ENRICH (`docs/superpowers/specs/2026-06-26-epic-enrich-design.md`) — §12 YAGNI прямо откладывал внешние источники «под отдельный ADR, когда появятся ключи/выгрузки». Этот документ закрывает ту отложенную часть.
 **Связанные:** `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE-AI.md`, `data/attribute_rules.json` (каноническая карта провенанса).
 
@@ -92,7 +92,9 @@ SourcingRun                      — один логический запуск 
  ├── ExternalCall                — один вызов источника (web|marketplace)
  └── ContentFinding              — дедуп-канон значения для (product, target)
       └── FindingEvidence        — каждое подтверждение факта (вызов + url + baseline)
-              ↓ (модератор выбирает evidence)
+              ↓ (модератор выбирает evidence через review-форму)
+      FindingApplicationAttempt  — committed-claim попытки (создаётся ДО основной транзакции)
+              ↓
       catalog.apply_sourced_value(SourcedValueCommand)   — нейтральный DTO
 ```
 
@@ -115,6 +117,7 @@ SourcingRun                      — один логический запуск 
 | `adapter` | CharField (`web`/`marketplace`) | |
 | `provider` | CharField | конкретный провайдер/модель |
 | `status` | choices: `running/ok/error/unknown` | `running` создаётся **до сети** |
+| `attempt_count` | PositiveSmallInt, default 0 | retry переиспользует строку (не плодит вторую) |
 | `provider_idempotency_key` | CharField, blank | если внешний API поддерживает |
 | `tokens_in/out` | Int | |
 | `cost` | Decimal | фактическая стоимость (reconciliation) |
@@ -123,9 +126,12 @@ SourcingRun                      — один логический запуск 
 | `raw_excerpt` | TextField (лимит размера) | очищается retention-задачей |
 | `created_at`, `finished_at` | | |
 
-Constraint: `UniqueConstraint(run, adapter)` — один вызов адаптера на run (защита от
-повторной оплаты). Статус-машина: `running → ok | error`; зависший `running` (crash)
-janitor переводит в `unknown` (НЕ авто-ретрай).
+Constraint: `UniqueConstraint(run, adapter)` — одна логическая строка вызова адаптера на
+run (защита от повторной оплаты). **Retry переиспользует ту же строку** (не создаёт вторую,
+иначе упёрся бы в constraint): transient `error → running`, `attempt_count += 1`.
+Статус-машина: `running → ok | error → running … | ok`; зависший `running` (crash) janitor
+переводит в `unknown` (НЕ авто-ретрай). Создание `ExternalCall(running)` и резерв бюджета —
+**одна транзакция** (§6.4), бесхозного резерва нет.
 
 ### 4.3 `ContentFinding` (`apps/ai/models.py`)
 Канонический кандидат значения для `(product, target)`; агрегаты — **только для отображения**.
@@ -142,7 +148,7 @@ janitor переводит в `unknown` (НЕ авто-ретрай).
 | `confidence` | Float | агрегат (отображение) |
 | `status` | choices: `pending/applied/rejected/superseded` | терминальные: applied/rejected/superseded |
 | `last_outcome` | CharField, blank | `conflict/locked/priority_blocked/invalid/missing_product/missing_attribute/apply_failed` |
-| `attempt_token` | CharField, blank | защита guarded-записи `apply_failed` (§6) |
+| `selected_evidence` | FK→FindingEvidence, `SET_NULL`, null | выбран модератором (для bulk-approve, §6.7) |
 | `reviewed_by` | FK→User, `SET_NULL`, null | |
 | `reviewed_at`, `applied_at`, `rejection_reason`, `created_at` | | audit trail |
 
@@ -169,6 +175,20 @@ Constraints:
 | `observed_at` | | |
 
 Constraint: `UniqueConstraint(finding, external_call, canonical_url)`.
+
+### 4.4a `FindingApplicationAttempt` (`apps/ai/models.py`)
+Committed-claim попытки применения. Создаётся **отдельной committed-транзакцией ДО**
+основной транзакции `approve_and_apply_finding` → **переживает rollback** `apply_sourced_value`,
+поэтому guarded-запись `apply_failed` (§5.2) его находит (P0: `attempt_token` внутри
+транзакции откатился бы вместе с ней).
+
+| Поле | Тип | Назначение |
+|---|---|---|
+| `finding` | FK→ContentFinding (CASCADE) | |
+| `evidence` | FK→FindingEvidence (PROTECT) | какой evidence применялся |
+| `reviewer` | FK→User, SET_NULL, null | |
+| `status` | choices: `claimed/done/failed` | зависшие `claimed` добивает janitor (§6.5) |
+| `created_at` | | |
 
 ### 4.5 Типизированный конверт `value`
 JSON сохраняет тип EAV; decimal — строкой (без потери точности):
@@ -228,18 +248,20 @@ def apply_sourced_value(cmd: SourcedValueCommand) -> ApplyResult:
 ```python
 # apps/ai/services.py
 def approve_and_apply_finding(finding_id: int, evidence_id: int, reviewer_id: int) -> ApplyResult:
-    attempt = new_token()
+    # P0: committed-claim ДО основной транзакции — переживает rollback apply_sourced_value
+    attempt = FindingApplicationAttempt.objects.create(
+        finding_id=finding_id, evidence_id=evidence_id, reviewer_id=reviewer_id, status="claimed")
     try:
         with transaction.atomic():
-            # P0: фикс. порядок блокировок — все находки мишени по pk, ЗАТЕМ Product
+            # фикс. порядок блокировок — все находки мишени по pk, ЗАТЕМ Product (анти-дедлок)
             siblings = (ContentFinding.objects
                 .filter(product_ref=pr, target_kind=tk, attribute_slug=slug)
                 .select_for_update().order_by("pk"))
             findings = {f.pk: f for f in siblings}
             f = findings[finding_id]
             if f.status != PENDING:                       # идемпотентность повтора
+                attempt.status = "done"; attempt.save()
                 return ApplyResult("skipped", "already_processed")
-            f.attempt_token = attempt
             ev = FindingEvidence.objects.get(pk=evidence_id, finding=f)
             cmd = command_from_evidence(f, ev)            # value=канон finding; source/conf/baseline=evidence
             result = catalog.apply_sourced_value(cmd)     # внутри select_for_update(Product)
@@ -251,13 +273,15 @@ def approve_and_apply_finding(finding_id: int, evidence_id: int, reviewer_id: in
                 f.last_outcome = result.status            # conflict/locked/priority_blocked/invalid/...
                 f.reviewed_by, f.reviewed_at = reviewer_id, now()
             f.save()
+            attempt.status = "done"; attempt.save()       # фиксируется тем же commit
             return result
-    except CatalogError as exc:                           # ТЕХНИЧЕСКАЯ ошибка
-        # rollback всей транзакции уже произошёл; пишем apply_failed ОТДЕЛЬНОЙ транзакцией,
-        # guarded: только если finding всё ещё pending и тот же attempt (не затереть чужой результат)
-        ContentFinding.objects.filter(
-            pk=finding_id, status=PENDING, attempt_token=attempt
-        ).update(last_outcome="apply_failed", rejection_reason=str(exc)[:255])
+    except CatalogError as exc:                           # ТЕХНИЧЕСКАЯ ошибка → rollback всей txn
+        # отдельная committed-транзакция; attempt создан ДО txn и пережил rollback.
+        # guarded: только если finding всё ещё pending (не затереть чужой результат).
+        with transaction.atomic():
+            FindingApplicationAttempt.objects.filter(pk=attempt.pk).update(status="failed")
+            ContentFinding.objects.filter(pk=finding_id, status=PENDING).update(
+                last_outcome="apply_failed", rejection_reason=str(exc)[:255])
         raise
 ```
 
@@ -277,10 +301,12 @@ class SourceReply:                       # телеметрия → ExternalCall
     findings: list                       # list[Finding]
     provider: str
     tokens_in: int = 0; tokens_out: int = 0
-    cost: float = 0.0; http_status: int | None = None
+    cost: Decimal = Decimal("0")         # Decimal, не float (деньги)
+    http_status: int | None = None
+    raw_excerpt: str = ""                # → ExternalCall.raw_excerpt (retention)
 
 class ContentSourcePort(Protocol):
-    def find(self, query: SourceQuery) -> SourceReply: ...
+    def find(self, query: SourceQuery, *, idempotency_key: str) -> SourceReply: ...
 ```
 
 ---
@@ -294,9 +320,9 @@ class ContentSourcePort(Protocol):
 4. `content_locked` → не ищем, run `degraded`, причина в логе.
 5. Для каждого включённого адаптера:
    - если для run уже есть `ExternalCall(adapter, status=ok)` → **пропустить** (idempotency, без повторной оплаты);
-   - **бюджет** (§6.4): резерв верхней границы до сети;
-   - создать `ExternalCall(status=running)` до сети; вызвать `port.find()`; reconcile → `ok`/`error`;
-   - изоляция: исключение адаптера → `ExternalCall.error`, остальные адаптеры работают.
+   - **одна транзакция (§6.4):** `select_for_update` бюджета → проверка cap → `reserved += max_call_cost` → `get_or_create ExternalCall(adapter)` в `running` (retry: `error → running`, `attempt_count += 1`). Бесхозного резерва нет;
+   - вне транзакции: `port.find(query, idempotency_key=...)`; reconcile новой транзакцией → `ok` (`spent += actual`, `reserved -= max_call_cost`) или `error`;
+   - изоляция: исключение адаптера → `ExternalCall.error` (резерв снят), остальные адаптеры работают.
 6. guardrails по каждому `Finding`; сохранить `ContentFinding` (`get_or_create` по unique)
    + **всегда** `FindingEvidence` (с baseline-снимком целевого поля сейчас).
 7. Закрыть run (`ok`/`degraded`/`error`, `finished_at`). **Товар не изменяется.**
@@ -307,7 +333,9 @@ class ContentSourcePort(Protocol):
 confidence [0,1], лимиты длины. Выход адаптера = недоверенный ввод.
 
 ### 6.3 Целостность платного вызова (честный exactly-once)
-`UniqueConstraint(run, adapter)` + `running`-до-сети + provider idempotency key (если есть).
+`UniqueConstraint(run, adapter)` (одна строка на адаптер; retry переиспользует её,
+`attempt_count += 1`) + `running`-до-сети + provider idempotency key (передаётся в
+`find(..., idempotency_key=...)`, если внешний API поддерживает).
 Без поддержки idempotency внешним API **exactly-once гарантировать нельзя**: зависший
 `running` = возможная оплаченная-но-неподтверждённая попытка → janitor переводит в
 `unknown`, авто-ретрая нет; повтор — только после ручного решения/сверки с провайдером.
@@ -315,13 +343,16 @@ confidence [0,1], лимиты длины. Выход адаптера = нед�
 
 ### 6.4 Бюджет (атомарная резервация)
 ```python
-with transaction.atomic():
+with transaction.atomic():               # резерв И создание ExternalCall — атомарно
     b = SourcingBudget.objects.select_for_update().get_or_create(day=today())[0]
-    if b.spent + b.reserved + max_call_cost > b.daily_cap:
-        raise BudgetExceeded            # громко стопит батч ДО платного вызова
-    b.reserved += max_call_cost; b.save()    # резервируем ВЕРХНЮЮ границу
-# после вызова: reserved -= max_call_cost; spent += actual (reconciliation)
-# crash: резерв остаётся занятым до janitor/reconciliation по unknown-вызову
+    if b.spent + b.reserved + max_call_cost > b.daily_cap:   # max_call_cost — РЕАЛЬНЫЙ потолок вызова
+        raise BudgetExceeded             # громко стопит батч ДО платного вызова
+    b.reserved += max_call_cost; b.save()                    # резервируем ВЕРХНЮЮ границу
+    call, _ = ExternalCall.objects.get_or_create(           # та же строка при retry
+        run=run, adapter=adapter,
+        defaults={"status": "running", "reserved_cost": max_call_cost})
+# после вызова, НОВОЙ транзакцией: reserved -= max_call_cost; spent += actual (reconciliation)
+# crash между резервом и подтверждением: резерв занят до janitor/reconciliation по unknown-вызову
 ```
 
 ### 6.5 Celery (`apps/ai/tasks.py`)
@@ -329,7 +360,8 @@ with transaction.atomic():
   transient (сеть/таймаут/429); `configuration_error` не ретраит. Флаги+бюджет — внутри.
 - `batch_source_task(category_slug=None, limit=100)` — приоритет `available_quantity>0`;
   стоп по бюджету.
-- `mark_stale_sourcing_runs` — janitor зависших `running` (run и `ExternalCall`→`unknown`).
+- `mark_stale_sourcing_runs` — janitor зависших `running` (run и `ExternalCall`→`unknown`;
+  зависшие `FindingApplicationAttempt(claimed)` → `failed`; reconciliation бесхозных резервов бюджета).
 - `purge_sourcing_excerpts` — retention: очистка `ExternalCall.raw_excerpt` старше N дней
   (структурные находки + url + метаданные остаются).
 
@@ -347,16 +379,19 @@ ToS/лицензии — только короткий `raw_excerpt` + атри�
 
 ### 6.7 Admin (`apps/ai/admin.py`)
 `ContentFindingAdmin` — очередь по `status=pending`; конкурирующие находки одной мишени
-рядом + baseline vs текущее (конфликт виден до применения); inline `FindingEvidence`
-(выбор конкретного evidence). Действия **частично успешны**: отдельная транзакция и
-результат на каждую находку; одобрение моддером передаёт `allow_equal_override=True`.
-- `approve` → `approve_and_apply_finding(finding_id, evidence_id, reviewer_id)`;
-- `reject` → `status=rejected` + `rejection_reason`.
+рядом + baseline vs текущее (конфликт виден до применения); inline `FindingEvidence`.
+**Стандартный bulk-action не умеет выбрать конкретный inline-evidence**, поэтому применение
+идёт через **кастомную review-форму/view** на одну находку: модератор выбирает evidence →
+`approve_and_apply_finding(finding_id, evidence_id, reviewer_id)` (одобрение передаёт
+`allow_equal_override=True`). Bulk-`approve` допустим только для находок с уже сохранённым
+`selected_evidence` и выполняется **частично-успешно** (отдельная транзакция и результат на
+каждую находку). Bulk-`reject` → `status=rejected` + `rejection_reason`.
 
 ### 6.8 CLI (`apps/ai/management/commands/`)
-`source_product` (`--id/--article`, `--dry-run` — без платных вызовов; `--probe` —
-вызвать-но-не-сохранять, явно опасный), `source_catalog` (`--category/--all --limit
---commit`), `source_report` (находки по статусам/источникам/стоимости).
+`source_product` (`--id/--article`, `--dry-run` — **без платных вызовов**; `--probe` —
+явно опасный: **делает реальный вызов** (создаёт `ExternalCall`, резервирует/тратит бюджет,
+пишет аудит), но **не сохраняет** `ContentFinding`/`FindingEvidence`), `source_catalog`
+(`--category/--all --limit --commit`), `source_report` (находки по статусам/источникам/стоимости).
 
 ---
 
@@ -369,6 +404,9 @@ ToS/лицензии — только короткий `raw_excerpt` + атри�
 - concurrent update двух модераторов на конкурирующие находки → первый applied+supersede, второй `conflict`;
 - порядок блокировок исключает дедлок (siblings по pk → Product);
 - Celery redelivery: повторная доставка не плодит находок и не вызывает повторную оплату (skip по `ExternalCall(ok)`);
+- transient error → retry → `ok`: та же строка `ExternalCall` (`attempt_count` растёт), без второй строки и повторной оплаты;
+- crash между резервом и вызовом не оставляет бесхозный резерв (резерв + `ExternalCall(running)` атомарны);
+- `attempt` переживает rollback: `CatalogError` → `apply_failed` записан guarded-транзакцией (claim создан ДО основной);
 - evidence: повторный запуск дедуплицирует finding, добавляет `FindingEvidence`;
 - бюджет: параллельные резервации не превышают `daily_cap`; превышение громко стопит;
 - неизвестный source; удалённый товар (`SET_NULL`); удалённый атрибут (`missing_attribute`);
@@ -381,8 +419,8 @@ ToS/лицензии — только короткий `raw_excerpt` + атри�
 ---
 
 ## 8. Порядок реализации (малые PR, как в EPIC-ENRICH)
-1. `catalog.provenance` (карта-резолвер `can_overwrite` + DTO `SourcedValueCommand`/`ApplyResult` + `apply_sourced_value`) + миграция: `Source`/`ContentSource` (+`web`,`marketplace`), `Product.content_field_sources`, `web/marketplace` в `attribute_rules.json` + тесты.
-2. Модели `SourcingRun`/`ExternalCall`/`ContentFinding`/`FindingEvidence`/`SourcingBudget` + миграция + тесты constraints.
+1. `catalog.provenance` (карта-резолвер `can_overwrite` + DTO `SourcedValueCommand`/`ApplyResult` + `apply_sourced_value`) + миграция: `Source`/`ContentSource` (+`web`,`marketplace`), `Product.content_field_sources`, `web/marketplace` в `attribute_rules.json`, **data-migration backfill** `content_field_sources` для существующих непустых `name`/`short_description`/`description` (из текущего `content_source`/эвристики) + тесты.
+2. Модели `SourcingRun`/`ExternalCall`(+`attempt_count`)/`ContentFinding`(+`selected_evidence`)/`FindingEvidence`/`FindingApplicationAttempt`/`SourcingBudget` + миграция + тесты constraints.
 3. `sourcing/ports.py` + `guardrails.py` + `sources/dummy.py` + тесты.
 4. `services.source_content` + `approve_and_apply_finding` (транзакция/порядок локов/идемпотентность/конкурентность/guarded apply_failed) + тесты.
 5. `tasks.py` (retries/бюджет/идемпотентность) + `mark_stale_sourcing_runs` + `purge_sourcing_excerpts` + флаг `ai_sourcing` + тесты.
