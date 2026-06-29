@@ -33,7 +33,7 @@
 ### 2.1 Базовый URL
 
 ```
-https://platform-api.max.ru
+https://platform-api2.max.ru
 ```
 
 ### 2.2 Авторизация
@@ -46,7 +46,7 @@ Authorization: <BOT_TOKEN>
 
 ### 2.3 Лимиты
 
-- Максимум **30 запросов/сек** на `platform-api.max.ru`
+- Максимум **30 запросов/сек** на `platform-api2.max.ru`
 - Webhook: только **HTTPS** с сертификатом от доверенного CA
 
 ### 2.4 Основные методы
@@ -71,7 +71,7 @@ Authorization: <BOT_TOKEN>
 # MAX Bot
 MAX_BOT_TOKEN=<токен бота из dev.max.ru>
 MAX_WEBHOOK_SECRET=<случайный секрет для подписи, 32+ символов>
-MAX_BOT_API_URL=https://platform-api.max.ru
+MAX_BOT_API_URL=https://platform-api2.max.ru
 ```
 
 Переменные для staging и production **разные** (разные боты, разные токены).
@@ -92,7 +92,7 @@ https://dev.proff58.ru/api/max/webhook/      # staging
 Подписаться через API:
 
 ```bash
-curl -X POST https://platform-api.max.ru/subscriptions \
+curl -X POST https://platform-api2.max.ru/subscriptions \
   -H "Authorization: $MAX_BOT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -111,7 +111,7 @@ docker compose up -d
 ngrok http 8000
 
 # 3. Подписаться на webhook с ngrok URL
-curl -X POST https://platform-api.max.ru/subscriptions \
+curl -X POST https://platform-api2.max.ru/subscriptions \
   -H "Authorization: $MAX_BOT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -123,14 +123,14 @@ curl -X POST https://platform-api.max.ru/subscriptions \
 ### 4.3 Проверка подписки
 
 ```bash
-curl -s https://platform-api.max.ru/subscriptions \
+curl -s https://platform-api2.max.ru/subscriptions \
   -H "Authorization: $MAX_BOT_TOKEN" | python3 -m json.tool
 ```
 
 ### 4.4 Удаление подписки
 
 ```bash
-curl -X DELETE "https://platform-api.max.ru/subscriptions?url=https://proff58.ru/api/max/webhook/" \
+curl -X DELETE "https://platform-api2.max.ru/subscriptions?url=https://proff58.ru/api/max/webhook/" \
   -H "Authorization: $MAX_BOT_TOKEN"
 ```
 
@@ -260,7 +260,7 @@ def verify_contact(token: str, vcf_info: str, received_hash: str) -> bool:
 **Ответ на callback:**
 
 ```bash
-curl -X POST https://platform-api.max.ru/answers \
+curl -X POST https://platform-api2.max.ru/answers \
   -H "Authorization: $MAX_BOT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"callback_id": "cb_123", "notification": "Готово!"}'
@@ -273,7 +273,7 @@ curl -X POST https://platform-api.max.ru/answers \
 ### 6.1 Текстовое сообщение
 
 ```bash
-curl -X POST https://platform-api.max.ru/messages \
+curl -X POST https://platform-api2.max.ru/messages \
   -H "Authorization: $MAX_BOT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -285,7 +285,7 @@ curl -X POST https://platform-api.max.ru/messages \
 ### 6.2 Сообщение с inline-кнопками
 
 ```bash
-curl -X POST https://platform-api.max.ru/messages \
+curl -X POST https://platform-api2.max.ru/messages \
   -H "Authorization: $MAX_BOT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -306,7 +306,7 @@ curl -X POST https://platform-api.max.ru/messages \
 ### 6.3 OTP через кнопку clipboard
 
 ```bash
-curl -X POST https://platform-api.max.ru/messages \
+curl -X POST https://platform-api2.max.ru/messages \
   -H "Authorization: $MAX_BOT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
