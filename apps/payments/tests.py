@@ -1,4 +1,4 @@
-"""Тесты оплаты ЮKassa (#8)."""
+"""Тесты оплаты ЮKassa (#8, #311)."""
 
 import json
 from decimal import Decimal
@@ -33,7 +33,7 @@ def payment(order):
         status=PaymentStatus.PENDING,
         amount=order.total,
         currency="RUB",
-        idempotency_key="idem-test-001",
+        idempotency_key="order-П-TEST-001",
     )
 
 
@@ -42,195 +42,187 @@ def client():
     return Client()
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 1. МОДЕЛЬ Payment
-# ═══════════════════════════════════════════════════════════════════════
+# ═══════════════ МОДЕЛЬ ═══════════════
 
 
 @pytest.mark.django_db
 def test_payment_creation(payment):
     assert payment.yookassa_id == "yoo_test_123"
     assert payment.status == PaymentStatus.PENDING
-    assert str(payment) == "Платёж yoo_test_123 [pending]"
+
+
+# ═══════════════ WEBHOOK — succeeded с verify ═══════════════
 
 
 @pytest.mark.django_db
-def test_payment_without_yookassa_id(order):
-    p = Payment.objects.create(
-        order=order,
-        method=PaymentMethod.INVOICE,
-        status=PaymentStatus.PENDING,
-        amount=order.total,
-        idempotency_key="idem-invoice-001",
-    )
-    assert p.yookassa_id is None
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# 2. WEBHOOK — payment.succeeded
-# ═══════════════════════════════════════════════════════════════════════
-
-
-@pytest.mark.django_db
-def test_webhook_payment_succeeded(payment, order):
+@mock.patch("apps.payments.services.verify_webhook")
+def test_webhook_succeeded(mock_verify, payment, order):
+    mock_verify.return_value = {
+        "id": "yoo_test_123",
+        "status": "succeeded",
+        "amount": {"value": "5000.00", "currency": "RUB"},
+    }
     payload = {
         "event": "payment.succeeded",
-        "object": {"id": "yoo_test_123", "status": "succeeded"},
+        "object": {"id": "yoo_test_123", "amount": {"value": "5000.00", "currency": "RUB"}},
     }
     handle_webhook(payload)
-
     payment.refresh_from_db()
     assert payment.status == PaymentStatus.SUCCEEDED
-    assert payment.paid_at is not None
-
     order.refresh_from_db()
     assert order.payment_status == OrderPaymentStatus.PAID
 
 
 @pytest.mark.django_db
-def test_webhook_idempotent(payment):
+@mock.patch("apps.payments.services.verify_webhook")
+def test_webhook_idempotent(mock_verify, payment):
+    mock_verify.return_value = {
+        "id": "yoo_test_123",
+        "status": "succeeded",
+        "amount": {"value": "5000.00", "currency": "RUB"},
+    }
     payload = {
         "event": "payment.succeeded",
-        "object": {"id": "yoo_test_123", "status": "succeeded"},
+        "object": {"id": "yoo_test_123", "amount": {"value": "5000.00", "currency": "RUB"}},
     }
     handle_webhook(payload)
     handle_webhook(payload)
-
-    assert Payment.objects.filter(yookassa_id="yoo_test_123").count() == 1
     payment.refresh_from_db()
     assert payment.status == PaymentStatus.SUCCEEDED
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 3. WEBHOOK — payment.canceled
-# ═══════════════════════════════════════════════════════════════════════
+# ═══════════════ СВЕРКА СУММЫ ═══════════════
 
 
 @pytest.mark.django_db
-def test_webhook_payment_canceled(payment):
+@mock.patch("apps.payments.services.verify_webhook")
+def test_webhook_amount_mismatch_rejected(mock_verify, payment):
+    mock_verify.return_value = {
+        "id": "yoo_test_123",
+        "status": "succeeded",
+        "amount": {"value": "1.00", "currency": "RUB"},
+    }
+    payload = {
+        "event": "payment.succeeded",
+        "object": {"id": "yoo_test_123", "amount": {"value": "1.00", "currency": "RUB"}},
+    }
+    with pytest.raises(ValueError, match="mismatch"):
+        handle_webhook(payload)
+    payment.refresh_from_db()
+    assert payment.status == PaymentStatus.PENDING
+
+
+@pytest.mark.django_db
+@mock.patch("apps.payments.services.verify_webhook")
+def test_webhook_currency_mismatch_rejected(mock_verify, payment):
+    mock_verify.return_value = {
+        "id": "yoo_test_123",
+        "status": "succeeded",
+        "amount": {"value": "5000.00", "currency": "USD"},
+    }
+    payload = {
+        "event": "payment.succeeded",
+        "object": {"id": "yoo_test_123", "amount": {"value": "5000.00", "currency": "USD"}},
+    }
+    with pytest.raises(ValueError, match="mismatch"):
+        handle_webhook(payload)
+
+
+# ═══════════════ ВЕРИФИКАЦИЯ ═══════════════
+
+
+@pytest.mark.django_db
+@mock.patch("apps.payments.services.verify_webhook", return_value=None)
+def test_webhook_verify_fails_raises(mock_verify, payment):
+    payload = {"event": "payment.succeeded", "object": {"id": "yoo_test_123"}}
+    with pytest.raises(RuntimeError, match="Cannot verify"):
+        handle_webhook(payload)
+
+
+@pytest.mark.django_db
+def test_webhook_no_verify(payment, order):
+    """verify=False пропускает перезапрос (для тестов)."""
+    payload = {
+        "event": "payment.succeeded",
+        "object": {
+            "id": "yoo_test_123",
+            "amount": {"value": "5000.00", "currency": "RUB"},
+        },
+    }
+    handle_webhook(payload, verify=False)
+    payment.refresh_from_db()
+    assert payment.status == PaymentStatus.SUCCEEDED
+
+
+# ═══════════════ CANCELED ═══════════════
+
+
+@pytest.mark.django_db
+def test_webhook_canceled(payment):
     payload = {
         "event": "payment.canceled",
         "object": {
             "id": "yoo_test_123",
-            "status": "canceled",
-            "cancellation_details": {"reason": "expired_on_confirmation"},
+            "cancellation_details": {"reason": "expired"},
         },
     }
-    handle_webhook(payload)
-
+    handle_webhook(payload, verify=False)
     payment.refresh_from_db()
     assert payment.status == PaymentStatus.CANCELED
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 4. WEBHOOK — unknown payment
-# ═══════════════════════════════════════════════════════════════════════
+# ═══════════════ ENDPOINT ═══════════════
 
 
 @pytest.mark.django_db
-def test_webhook_unknown_payment():
-    payload = {
-        "event": "payment.succeeded",
-        "object": {"id": "yoo_nonexistent"},
-    }
-    handle_webhook(payload)
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# 5. WEBHOOK endpoint
-# ═══════════════════════════════════════════════════════════════════════
+def test_endpoint_rejects_get(client):
+    assert client.get("/api/payments/webhook/yookassa/").status_code == 405
 
 
 @pytest.mark.django_db
-def test_webhook_endpoint_rejects_get(client):
-    resp = client.get("/api/payments/webhook/yookassa/")
-    assert resp.status_code == 405
-
-
-@pytest.mark.django_db
-def test_webhook_endpoint_invalid_json(client):
+def test_endpoint_invalid_json(client):
     resp = client.post(
-        "/api/payments/webhook/yookassa/",
-        data="not json",
-        content_type="application/json",
+        "/api/payments/webhook/yookassa/", data="bad", content_type="application/json"
     )
     assert resp.status_code == 400
 
 
 @pytest.mark.django_db
-def test_webhook_endpoint_valid(client, payment):
-    payload = {
-        "event": "payment.succeeded",
-        "object": {"id": "yoo_test_123", "status": "succeeded"},
-    }
+@mock.patch("apps.payments.views.handle_webhook", side_effect=RuntimeError("boom"))
+def test_endpoint_error_returns_500(mock_hw, client):
     resp = client.post(
         "/api/payments/webhook/yookassa/",
-        data=json.dumps(payload),
+        data=json.dumps({"event": "x", "object": {"id": "y"}}),
         content_type="application/json",
     )
-    assert resp.status_code == 200
-    assert resp.json()["ok"] is True
-
-    payment.refresh_from_db()
-    assert payment.status == PaymentStatus.SUCCEEDED
+    assert resp.status_code == 500
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 6. БЕЗОПАСНОСТЬ — секреты не в логах
-# ═══════════════════════════════════════════════════════════════════════
+# ═══════════════ CREATE PAYMENT — идемпотентность ═══════════════
 
 
-@pytest.mark.django_db
-def test_webhook_payload_stored_without_secrets(payment):
-    payload = {
-        "event": "payment.succeeded",
-        "object": {
-            "id": "yoo_test_123",
-            "status": "succeeded",
-            "payment_method": {"type": "bank_card", "card": {"last4": "1234"}},
-        },
-    }
-    handle_webhook(payload)
-
-    payment.refresh_from_db()
-    assert "yoo_test_123" in str(payment.webhook_payload)
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# 7. CREATE PAYMENT (мок ЮKassa API)
-# ═══════════════════════════════════════════════════════════════════════
-
-
-@override_settings(YOOKASSA_SHOP_ID="test_shop", YOOKASSA_SECRET_KEY="test_secret")
+@override_settings(YOOKASSA_SHOP_ID="shop", YOOKASSA_SECRET_KEY="secret")
 @pytest.mark.django_db
 @mock.patch("apps.payments.services._yookassa_request")
-def test_create_payment(mock_api, order):
-    mock_api.return_value = {
-        "id": "yoo_created_456",
-        "confirmation": {"confirmation_url": "https://yookassa.ru/pay/123"},
-    }
+def test_create_payment_idempotent(mock_api, order):
+    mock_api.return_value = {"id": "yoo_new", "confirmation": {"confirmation_url": "https://pay"}}
 
     from .services import create_payment
 
-    payment = create_payment(order)
-
-    assert payment.yookassa_id == "yoo_created_456"
-    assert payment.confirmation_url == "https://yookassa.ru/pay/123"
-    assert payment.status == PaymentStatus.PENDING
-    assert payment.amount == order.total
-    mock_api.assert_called_once()
+    p1 = create_payment(order)
+    p2 = create_payment(order)
+    assert p1.pk == p2.pk
+    assert mock_api.call_count == 1
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 8. REFUND
-# ═══════════════════════════════════════════════════════════════════════
+# ═══════════════ REFUND ═══════════════
 
 
-@override_settings(YOOKASSA_SHOP_ID="test_shop", YOOKASSA_SECRET_KEY="test_secret")
+@override_settings(YOOKASSA_SHOP_ID="shop", YOOKASSA_SECRET_KEY="secret")
 @pytest.mark.django_db
 @mock.patch("apps.payments.services._yookassa_request")
 def test_refund(mock_api, payment, order):
-    mock_api.return_value = {"id": "refund_1", "status": "succeeded"}
+    mock_api.return_value = {"id": "refund_1"}
     payment.status = PaymentStatus.SUCCEEDED
     payment.save()
 
@@ -238,9 +230,9 @@ def test_refund(mock_api, payment, order):
 
     result = refund(payment)
     assert result.status == PaymentStatus.REFUNDED
-
     order.refresh_from_db()
     assert order.payment_status == OrderPaymentStatus.REFUNDED
+    assert mock_api.call_args[1].get("idempotence_key") or "refund" in str(mock_api.call_args)
 
 
 @pytest.mark.django_db

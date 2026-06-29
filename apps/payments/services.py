@@ -1,21 +1,23 @@
-"""Сервисный слой оплаты — создание платежа, обработка webhook (#8).
+"""Сервисный слой оплаты — создание платежа, обработка webhook (#8, #311).
 
 Контракт из ARCHITECTURE.md:
     create_payment(order) -> Payment  (с confirmation_url для редиректа)
     handle_webhook(payload) -> None   (идемпотентно)
     refund(payment) -> Payment
 
-Секреты не логируются. Повтор webhook не ломает состояние.
+Безопасность (#311):
+- Webhook верифицируется перезапросом GET /payments/{id} к API ЮKassa
+- Сумма/валюта сверяются перед пометкой PAID
+- Idempotence-Key детерминирован по order_number (без uuid-суффикса)
+- Ошибка обработки → 5xx (ЮKassa сделает retry)
 """
 
 from __future__ import annotations
 
-import hashlib
-import hmac
+import base64
 import json
 import logging
 import urllib.request
-import uuid
 from decimal import Decimal
 from urllib.error import HTTPError
 
@@ -34,20 +36,21 @@ logger = logging.getLogger(__name__)
 YOOKASSA_API = "https://api.yookassa.ru/v3"
 
 
-def _yookassa_request(method: str, path: str, body: dict | None = None) -> dict:
+def _yookassa_request(
+    method: str, path: str, body: dict | None = None, idempotence_key: str = ""
+) -> dict:
     shop_id = getattr(settings, "YOOKASSA_SHOP_ID", "")
     secret = getattr(settings, "YOOKASSA_SECRET_KEY", "")
     if not shop_id or not secret:
         raise RuntimeError("YOOKASSA_SHOP_ID/YOOKASSA_SECRET_KEY не настроены")
 
-    import base64
-
     auth = base64.b64encode(f"{shop_id}:{secret}".encode()).decode()
-
     headers = {
         "Authorization": f"Basic {auth}",
         "Content-Type": "application/json",
     }
+    if idempotence_key:
+        headers["Idempotence-Key"] = idempotence_key
 
     data = json.dumps(body).encode() if body else None
     req = urllib.request.Request(
@@ -58,17 +61,22 @@ def _yookassa_request(method: str, path: str, body: dict | None = None) -> dict:
         with urllib.request.urlopen(req, timeout=15) as resp:
             return json.loads(resp.read().decode())
     except HTTPError as exc:
-        exc.read().decode("utf-8", errors="replace")
+        exc.read()
         logger.error("YooKassa API error: %s %s -> %s", method, path, exc.code)
         raise RuntimeError(f"YooKassa API error {exc.code}") from exc
 
 
 def create_payment(order: Order, return_url: str = "") -> Payment:
-    """Создать платёж в ЮKassa и вернуть Payment с confirmation_url."""
-    idempotency_key = f"order-{order.order_number}-{uuid.uuid4().hex[:8]}"
+    """Создать платёж в ЮKassa. Idempotence-Key детерминирован по order_number."""
+    idempotency_key = f"order-{order.order_number}"
+
+    existing = Payment.objects.filter(idempotency_key=idempotency_key).first()
+    if existing:
+        return existing
 
     if not return_url:
-        return_url = f"{_site_url()}/order/{order.order_number}/thanks"
+        site_url = getattr(settings, "SITE_URL", _site_url())
+        return_url = f"{site_url}/order/{order.order_number}/thanks"
 
     body = {
         "amount": {"value": str(order.total), "currency": order.currency},
@@ -78,7 +86,7 @@ def create_payment(order: Order, return_url: str = "") -> Payment:
         "metadata": {"order_number": order.order_number, "order_id": order.id},
     }
 
-    result = _yookassa_request("POST", "payments", body)
+    result = _yookassa_request("POST", "payments", body, idempotence_key=idempotency_key)
 
     payment = Payment.objects.create(
         order=order,
@@ -95,9 +103,28 @@ def create_payment(order: Order, return_url: str = "") -> Payment:
     return payment
 
 
+def verify_webhook(payment_data: dict) -> dict | None:
+    """Верифицировать webhook перезапросом к API ЮKassa.
+
+    Возвращает данные платежа из API или None при ошибке.
+    """
+    yookassa_id = payment_data.get("id")
+    if not yookassa_id:
+        return None
+    try:
+        return _yookassa_request("GET", f"payments/{yookassa_id}")
+    except Exception:
+        logger.exception("Failed to verify payment %s via API", yookassa_id)
+        return None
+
+
 @transaction.atomic
-def handle_webhook(payload: dict) -> None:
-    """Обработать webhook от ЮKassa. Идемпотентно."""
+def handle_webhook(payload: dict, *, verify: bool = True) -> None:
+    """Обработать webhook от ЮKassa.
+
+    При verify=True (default) статус перезапрашивается из API ЮKassa.
+    Ошибка обработки пробрасывается (→ 5xx, ЮKassa сделает retry).
+    """
     event_type = payload.get("event")
     payment_data = payload.get("object", {})
     yookassa_id = payment_data.get("id")
@@ -112,11 +139,32 @@ def handle_webhook(payload: dict) -> None:
         logger.warning("YooKassa webhook: unknown payment %s", yookassa_id)
         return
 
+    if verify:
+        verified = verify_webhook(payment_data)
+        if verified:
+            payment_data = verified
+        else:
+            raise RuntimeError(f"Cannot verify payment {yookassa_id} via API")
+
     payment.webhook_payload = payment_data
 
     if event_type == "payment.succeeded":
         if payment.status == PaymentStatus.SUCCEEDED:
             return
+
+        webhook_amount = Decimal(str(payment_data.get("amount", {}).get("value", "0")))
+        webhook_currency = payment_data.get("amount", {}).get("currency", "")
+        if webhook_amount != payment.amount or webhook_currency != payment.currency:
+            logger.error(
+                "YooKassa amount mismatch: expected %s %s, got %s %s for %s",
+                payment.amount,
+                payment.currency,
+                webhook_amount,
+                webhook_currency,
+                yookassa_id,
+            )
+            raise ValueError("Payment amount/currency mismatch")
+
         payment.status = PaymentStatus.SUCCEEDED
         payment.paid_at = timezone.now()
         payment.save(update_fields=["status", "paid_at", "webhook_payload", "updated_at"])
@@ -154,16 +202,6 @@ def handle_webhook(payload: dict) -> None:
 
     else:
         payment.save(update_fields=["webhook_payload", "updated_at"])
-        logger.info("YooKassa webhook: unhandled event %s for %s", event_type, yookassa_id)
-
-
-def verify_webhook_signature(body: bytes, signature: str) -> bool:
-    """Проверить подпись webhook от ЮKassa (если настроен секрет)."""
-    secret = getattr(settings, "YOOKASSA_WEBHOOK_SECRET", "")
-    if not secret:
-        return True
-    expected = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected, signature)
 
 
 @transaction.atomic
@@ -173,12 +211,14 @@ def refund(payment: Payment, amount: Decimal | None = None) -> Payment:
         raise ValueError("Возврат возможен только для оплаченного платежа")
 
     refund_amount = amount or payment.amount
+    idempotence_key = f"refund-{payment.yookassa_id}"
+
     body = {
         "amount": {"value": str(refund_amount), "currency": payment.currency},
         "payment_id": payment.yookassa_id,
     }
 
-    _yookassa_request("POST", "refunds", body)
+    _yookassa_request("POST", "refunds", body, idempotence_key=idempotence_key)
 
     payment.status = PaymentStatus.REFUNDED
     payment.save(update_fields=["status", "updated_at"])
