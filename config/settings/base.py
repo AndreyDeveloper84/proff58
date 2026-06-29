@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "apps.sync_1c",
     "apps.pricing",
     "apps.orders",
+    "apps.payments",
     "apps.leads",
     "apps.ai",
     "apps.integration_max",
@@ -187,6 +188,11 @@ SYNC_IMPORT_TIME_LIMIT = env.int("SYNC_IMPORT_TIME_LIMIT", default=15 * 60)  # �
 MAX_BOT_TOKEN = env("MAX_BOT_TOKEN", default="")
 MAX_WEBHOOK_SECRET = env("MAX_WEBHOOK_SECRET", default="")
 MAX_BOT_API_URL = env("MAX_BOT_API_URL", default="https://platform-api2.max.ru")
+
+# ЮKassa
+YOOKASSA_SHOP_ID = env("YOOKASSA_SHOP_ID", default="")
+YOOKASSA_SECRET_KEY = env("YOOKASSA_SECRET_KEY", default="")
+YOOKASSA_WEBHOOK_SECRET = env("YOOKASSA_WEBHOOK_SECRET", default="")
 
 # Feature-флаги. Инфраструктурные — здесь (через env, меняют разработчики).
 # Бизнес-флаги (reviews/b2b/...) живут в SiteSettings. Проверка — через
