@@ -11,15 +11,36 @@ from functools import reduce
 
 import django_filters
 from django.contrib.postgres.search import TrigramSimilarity
-from django.db.models import Case, FloatField, Q, Value, When
+from django.db.models import Case, FloatField, Prefetch, Q, Value, When
 
 from .brand_slugs import resolve_brand_tokens
-from .models import Category, Product, ProductStatus
+from .models import Category, Product, ProductAttributeValue, ProductStatus
 
 
 def visible_products():
     """Товары, видимые на витрине (is_visible нельзя использовать в queryset)."""
     return Product.objects.filter(is_active=True, status=ProductStatus.PUBLISHED)
+
+
+def products_by_ids_for_cards(ids) -> dict[int, Product]:
+    """Карточные Product по списку id с prefetch без N+1 (для AI-рекомендаций и пр.).
+
+    Инкапсулирует доступ к таблицам каталога: вызывающие из других приложений
+    (apps/ai) не трогают Product.objects напрямую (ADR-0004). Возврат — словарь
+    {id: Product}; порядок выстраивает вызывающий по своему списку id.
+    """
+    return {
+        p.id: p
+        for p in Product.objects.filter(id__in=list(ids))
+        .select_related("category")
+        .prefetch_related(
+            "images",
+            Prefetch(
+                "attribute_values",
+                queryset=ProductAttributeValue.objects.select_related("attribute", "value_option"),
+            ),
+        )
+    }
 
 
 class ProductFilter(django_filters.FilterSet):
