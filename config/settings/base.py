@@ -209,6 +209,7 @@ YOOKASSA_WEBHOOK_SECRET = env("YOOKASSA_WEBHOOK_SECRET", default="")
 FEATURES = {
     "crm": env.bool("FEATURE_CRM", default=False),
     "ai": env.bool("FEATURE_AI", default=False),
+    "ai_sourcing": env.bool("FEATURE_AI_SOURCING", default=False),
     "eventbus": env.bool("FEATURE_EVENTBUS", default=True),
     "analytics": env.bool("FEATURE_ANALYTICS", default=False),
     "external_integrations": env.bool("FEATURE_EXTERNAL_INTEGRATIONS", default=True),
