@@ -20,10 +20,12 @@ from rest_framework.decorators import (
     parser_classes,
     permission_classes,
     renderer_classes,
+    throttle_classes,
 )
 from rest_framework.response import Response
 
 from apps.catalog.models import Product
+from apps.core.throttling import OneCRateThrottle
 
 from .. import tasks, use_cases
 from ..models import SyncLog
@@ -87,6 +89,7 @@ def _enqueue_import(request, *, source_file, create_missing):
 @permission_classes([HasOneCApiKey])
 @renderer_classes([OneCJSONRenderer])
 @parser_classes([OneCJSONParser])
+@throttle_classes([OneCRateThrottle])
 def products_import(request):
     """Создать/обновить товары (создание разрешено). Тяжёлая операция → в фон."""
     _items, error = _validate_items(request, ProductImportItemSerializer)
@@ -99,6 +102,7 @@ def products_import(request):
 @permission_classes([HasOneCApiKey])
 @renderer_classes([OneCJSONRenderer])
 @parser_classes([OneCJSONParser])
+@throttle_classes([OneCRateThrottle])
 def products_update(request):
     """Обновить базовые поля СУЩЕСТВУЮЩИХ товаров (новые не создаются). В фон."""
     _items, error = _validate_items(request, ProductImportItemSerializer)
@@ -135,6 +139,7 @@ def sync_status(request, batch_uid):
 @permission_classes([HasOneCApiKey])
 @renderer_classes([OneCJSONRenderer])
 @parser_classes([OneCJSONParser])
+@throttle_classes([OneCRateThrottle])
 def prices_update(request):
     items, error = _validate_items(request, PriceItemSerializer)
     if error:
@@ -147,6 +152,7 @@ def prices_update(request):
 @permission_classes([HasOneCApiKey])
 @renderer_classes([OneCJSONRenderer])
 @parser_classes([OneCJSONParser])
+@throttle_classes([OneCRateThrottle])
 def stocks_update(request):
     items, error = _validate_items(request, StockItemSerializer)
     if error:
@@ -175,6 +181,7 @@ def orders_new(_request):
 @permission_classes([HasOneCApiKey])
 @renderer_classes([OneCJSONRenderer])
 @parser_classes([OneCJSONParser])
+@throttle_classes([OneCRateThrottle])
 def orders_confirm(request):
     """Принять подтверждения 1С: sync-ack + движение оси обработки."""
     items, error = _validate_items(request, OrderConfirmItemSerializer)

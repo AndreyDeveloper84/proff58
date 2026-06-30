@@ -1,7 +1,18 @@
 """Настройки для локальной разработки."""
 
 from .base import *  # noqa: F401,F403
-from .base import INSTALLED_APPS, MIDDLEWARE, env
+from .base import INSTALLED_APPS, MIDDLEWARE, REST_FRAMEWORK, env
+
+# В dev/тестах не троттлим onec/orders: кэш троттла кумулятивен между запросами,
+# и реальные лимиты ломали бы прогон тестов. Прод берёт лимиты из base (#9).
+REST_FRAMEWORK = {
+    **REST_FRAMEWORK,
+    "DEFAULT_THROTTLE_RATES": {
+        **REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"],
+        "onec": None,
+        "orders": None,
+    },
+}
 
 DEBUG = env("DJANGO_DEBUG", default=True)
 ALLOWED_HOSTS = ["*"]
