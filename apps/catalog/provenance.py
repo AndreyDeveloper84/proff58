@@ -78,7 +78,7 @@ def _coerce(attr_type: str, envelope: dict):
 
 
 def _current_attr_value(pav):
-    for f in ("value_integer", "value_decimal", "value_boolean", "value_option"):
+    for f in ("value_integer", "value_decimal", "value_boolean", "value_option_id"):
         v = getattr(pav, f)
         if v is not None:
             return v

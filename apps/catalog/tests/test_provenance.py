@@ -14,7 +14,9 @@ from apps.catalog.models import (
 
 
 def _product(**kw):
-    cat = Category.add_root(name="Перф", slug="perf")
+    cat = Category.objects.filter(slug="perf").first() or Category.add_root(
+        name="Перф", slug="perf"
+    )
     defaults = dict(
         name="",
         slug="x",
