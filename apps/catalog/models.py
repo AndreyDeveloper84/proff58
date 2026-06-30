@@ -48,6 +48,8 @@ class Source(models.TextChoices):
     KEYWORD = "keyword", _("Ключевое слово")
     LLM = "llm", _("AI/LLM")
     INFERRED = "inferred", _("Инференс по атрибутам")
+    WEB = "web", _("Web-поиск")
+    MARKETPLACE = "marketplace", _("Маркетплейс")
 
 
 class Category(MP_Node):
@@ -405,6 +407,8 @@ class ContentSource(models.TextChoices):
     MANUAL = "manual", _("Вручную")
     IMPORT_1C = "import_1c", _("Импорт 1С")
     LLM = "llm", _("AI-генерация")
+    WEB = "web", _("Web-поиск")
+    MARKETPLACE = "marketplace", _("Маркетплейс")
 
 
 class Product(TimeStampedModel):
@@ -481,6 +485,12 @@ class Product(TimeStampedModel):
         default="",
     )
     content_confidence = models.FloatField(_("Уверенность контента"), null=True, blank=True)
+    content_field_sources = models.JSONField(
+        _("Провенанс карточных полей"),
+        default=dict,
+        blank=True,
+        help_text="{'name':'manual','description':'web'} — истинный источник по полю",
+    )
     matched_rule = models.ForeignKey(
         CategoryMappingRule,
         on_delete=models.SET_NULL,

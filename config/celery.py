@@ -7,6 +7,7 @@
 import os
 
 from celery import Celery
+from celery.schedules import crontab
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.dev")
 
@@ -20,5 +21,10 @@ app.conf.beat_schedule = {
     "mark-stale-syncs": {
         "task": "apps.sync_1c.tasks.mark_stale_syncs",
         "schedule": 5 * 60,  # каждые 5 минут
+    },
+    "source-catalog-nightly": {
+        "task": "apps.ai.tasks.batch_source_task",
+        "schedule": crontab(hour=3, minute=30),  # ночью, после обмена с 1С
+        "kwargs": {"limit": 200},
     },
 }
