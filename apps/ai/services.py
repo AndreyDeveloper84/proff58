@@ -16,14 +16,32 @@ EAV, который заполняет каталог). Контракт заф�
 
 from __future__ import annotations
 
+import datetime as _dt
+import hashlib
+import json as _json
 from dataclasses import dataclass
+from decimal import Decimal
 
+from django.db import transaction
+
+from apps.catalog import provenance
 from apps.catalog.enrichment import AiAttr, apply_ai_enrichment, get_enrichable_product
 from apps.catalog.filters import visible_products
 
 from .guardrails import EnrichResult, parse_enrich_output
-from .models import AiCallLog
+from .models import (
+    AiCallLog,
+    ContentFinding,
+    ExternalCall,
+    FindingApplicationAttempt,
+    FindingEvidence,
+    SourcingBudget,
+    SourcingRun,
+)
 from .ports import ModelCall, get_provider
+from .sourcing.guardrails import validate
+from .sourcing.ports import SourceQuery
+from .sourcing.sources import get_sources
 
 ENRICH_SYSTEM = (
     "Ты — ассистент интернет-магазина инструментов. По данным из учётной системы "
@@ -280,3 +298,255 @@ def _similar_by_eav(product, limit: int) -> list[Recommendation]:
 
     scored.sort(key=lambda r: (-r.score, r.product_id))
     return scored[:limit]
+
+
+# --- sourcing ---
+
+MAX_CALL_COST = Decimal("1.0")  # верхняя граница одного вызова (резерв бюджета)
+
+
+class BudgetExceeded(Exception):
+    pass
+
+
+def _today() -> _dt.date:
+    return _dt.date.today()
+
+
+def _norm_hash(value: dict) -> str:
+    return hashlib.sha256(
+        _json.dumps(value, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
+
+
+def _baseline_for(product, target_kind, attribute_slug):
+    """Снимок (hash, source) целевого поля сейчас — для evidence."""
+    if target_kind in provenance._TEXT_TARGETS:
+        cur = getattr(product, target_kind) or ""
+        src = (product.content_field_sources or {}).get(target_kind, "")
+        return provenance.value_hash(cur), src
+    return provenance.value_hash(None), ""  # атрибуты упрощённо «пусто» (детально — Task 8)
+
+
+def source_content(*, product_id, sources=None, idempotency_key) -> SourcingRun:
+    run, _ = SourcingRun.objects.get_or_create(
+        idempotency_key=idempotency_key,
+        defaults={"product_ref": product_id, "status": SourcingRun.Status.RUNNING},
+    )
+    product = get_enrichable_product(product_id)
+    if product is None:
+        run.status = SourcingRun.Status.ERROR
+        run.save()
+        return run
+    if product.content_locked:
+        run.status = SourcingRun.Status.DEGRADED
+        run.save()
+        return run
+
+    adapters = sources if sources is not None else get_sources()
+    if not adapters:
+        run.status = SourcingRun.Status.CONFIGURATION_ERROR
+        run.save()
+        return run
+
+    query = SourceQuery(
+        article=getattr(product, "article", "") or "",
+        name=product.original_name or product.name or "",
+        brand=getattr(product, "brand", "") or "",
+        category=product.category.slug if product.category_id else "",
+        needed_targets=["description"],
+    )
+    any_ok = False
+    for adapter in adapters:
+        name = getattr(adapter, "name", "src")
+        if ExternalCall.objects.filter(
+            run=run, adapter=name, status=ExternalCall.Status.OK
+        ).exists():
+            any_ok = True
+            continue
+        try:
+            call, owns = _reserve_and_open_call(run, name)
+        except BudgetExceeded:
+            run.status = SourcingRun.Status.DEGRADED
+            break
+        if not owns:  # вызовом владеет другой worker / уже сделано
+            any_ok = True
+            continue
+        try:
+            reply = adapter.find(query, idempotency_key=f"{idempotency_key}:{name}")
+        except Exception:  # noqa: BLE001 — изоляция источника
+            _close_call(call, ExternalCall.Status.ERROR)
+            continue
+        _close_call(call, ExternalCall.Status.OK, reply=reply)
+        any_ok = True
+        _persist_findings(call, product, reply)
+
+    if run.status == SourcingRun.Status.RUNNING:
+        run.status = SourcingRun.Status.OK if any_ok else SourcingRun.Status.ERROR
+    run.finished_at = _dt.datetime.now()
+    run.save()
+    return run
+
+
+def _reserve_and_open_call(run, adapter):
+    """Атомарно: владение попыткой + резерв бюджета + ExternalCall(running).
+    Возврат (call, owns_attempt): сеть вызывает только владелец попытки."""
+    with transaction.atomic():
+        b, _ = SourcingBudget.objects.select_for_update().get_or_create(
+            day=_today(), defaults={"daily_cap": Decimal("0")}
+        )
+        call = ExternalCall.objects.select_for_update().filter(run=run, adapter=adapter).first()
+        if call and call.status in (
+            ExternalCall.Status.RUNNING,
+            ExternalCall.Status.OK,
+            ExternalCall.Status.UNKNOWN,
+        ):
+            return call, False
+        if b.spent + b.reserved + MAX_CALL_COST > b.daily_cap:
+            raise BudgetExceeded
+        b.reserved += MAX_CALL_COST
+        b.save()
+        if call is None:
+            call = ExternalCall.objects.create(
+                run=run,
+                adapter=adapter,
+                status=ExternalCall.Status.RUNNING,
+                reserved_cost=MAX_CALL_COST,
+                attempt_count=1,
+            )
+        else:  # error → running (захват retry)
+            call.status = ExternalCall.Status.RUNNING
+            call.attempt_count += 1
+            call.reserved_cost = MAX_CALL_COST
+            call.save()
+        return call, True
+
+
+def _close_call(call, status, *, reply=None):
+    with transaction.atomic():
+        b = SourcingBudget.objects.select_for_update().get(day=_today())
+        call.status = status
+        call.finished_at = _dt.datetime.now()
+        if reply is not None:
+            call.provider = reply.provider
+            call.tokens_in = reply.tokens_in
+            call.tokens_out = reply.tokens_out
+            call.cost = reply.cost
+            call.http_status = reply.http_status
+            call.raw_excerpt = reply.raw_excerpt[:4000]
+        if status == ExternalCall.Status.OK:
+            b.spent += reply.cost if reply else Decimal("0")
+            b.reserved -= call.reserved_cost
+        elif status == ExternalCall.Status.ERROR:
+            b.reserved -= call.reserved_cost  # definite-failed: резерв снимаем
+        # unknown: резерв НЕ снимаем (§6.5 спеки)
+        b.save()
+        call.save()
+
+
+def _persist_findings(call, product, reply):
+    for raw in reply.findings:
+        f = validate(raw)
+        if f is None:
+            continue
+        nh = _norm_hash(f.value)
+        finding, _ = ContentFinding.objects.get_or_create(
+            product_ref=product.pk,
+            target_kind=f.target_kind,
+            attribute_slug=f.attribute_slug,
+            normalized_hash=nh,
+            defaults={
+                "product_id": product.pk,
+                "value": f.value,
+                "source_name": f.source_name,
+                "confidence": f.confidence,
+                "status": ContentFinding.Status.PENDING,
+            },
+        )
+        bh, bsrc = _baseline_for(product, f.target_kind, f.attribute_slug)
+        FindingEvidence.objects.get_or_create(
+            finding=finding,
+            external_call=call,
+            canonical_url=f.canonical_url,
+            defaults={
+                "source_name": f.source_name,
+                "confidence": f.confidence,
+                "observed_value_hash": bh,
+                "observed_source": bsrc,
+            },
+        )
+
+
+def approve_and_apply_finding(finding_id, evidence_id, reviewer_id):
+    pre = (
+        ContentFinding.objects.filter(pk=finding_id)
+        .values("product_ref", "target_kind", "attribute_slug")
+        .first()
+    )
+    if pre is None:
+        return provenance.ApplyResult("missing_product")
+    ev_obj = FindingEvidence.objects.filter(pk=evidence_id, finding_id=finding_id).first()
+    if ev_obj is None:
+        return provenance.ApplyResult("invalid", "evidence_not_found")
+    attempt = FindingApplicationAttempt.objects.create(
+        finding_id=finding_id,
+        evidence_id=evidence_id,
+        reviewer_id=reviewer_id,
+        status=FindingApplicationAttempt.Status.CLAIMED,
+    )
+    try:
+        with transaction.atomic():
+            siblings = list(
+                ContentFinding.objects.filter(
+                    product_ref=pre["product_ref"],
+                    target_kind=pre["target_kind"],
+                    attribute_slug=pre["attribute_slug"],
+                )
+                .select_for_update()
+                .order_by("pk")
+            )
+            by_id = {f.pk: f for f in siblings}
+            f = by_id[finding_id]
+            if f.status != ContentFinding.Status.PENDING:
+                attempt.status = FindingApplicationAttempt.Status.DONE
+                attempt.save()
+                return provenance.ApplyResult("skipped", "already_processed")
+            cmd = provenance.SourcedValueCommand(
+                product_id=pre["product_ref"],
+                target_kind=f.target_kind,
+                attribute_slug=f.attribute_slug,
+                value=f.value,
+                source=ev_obj.source_name,
+                confidence=ev_obj.confidence,
+                observed_value_hash=ev_obj.observed_value_hash,
+                observed_source=ev_obj.observed_source,
+                allow_equal_override=True,
+            )
+            result = provenance.apply_sourced_value(cmd)
+            if result.status == "applied":
+                f.status = ContentFinding.Status.APPLIED
+                f.applied_at = _dt.datetime.now()
+                f.reviewed_by_id = reviewer_id
+                f.reviewed_at = _dt.datetime.now()
+                f.save()
+                for other in siblings:
+                    if other.pk != f.pk and other.status == ContentFinding.Status.APPLIED:
+                        other.status = ContentFinding.Status.SUPERSEDED
+                        other.save()
+            else:
+                f.last_outcome = result.status
+                f.reviewed_by_id = reviewer_id
+                f.reviewed_at = _dt.datetime.now()
+                f.save()
+            attempt.status = FindingApplicationAttempt.Status.DONE
+            attempt.save()
+            return result
+    except Exception as exc:  # noqa: BLE001 — техническая ошибка → rollback всей txn
+        with transaction.atomic():
+            FindingApplicationAttempt.objects.filter(pk=attempt.pk).update(
+                status=FindingApplicationAttempt.Status.FAILED
+            )
+            ContentFinding.objects.filter(
+                pk=finding_id, status=ContentFinding.Status.PENDING
+            ).update(last_outcome="apply_failed", rejection_reason=str(exc)[:255])
+        raise
