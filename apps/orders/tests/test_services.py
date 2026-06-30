@@ -7,7 +7,7 @@ from decimal import Decimal
 import pytest
 from django.core.exceptions import ValidationError
 
-from apps.catalog.models import ProductStatus
+from apps.catalog.models import Product, ProductStatus
 from apps.core.events import order_created
 from apps.orders.models import (
     CartStatus,
@@ -54,6 +54,42 @@ def test_total_equals_sum_of_line_totals(cart, product, product2):
     order = place_order(cart, user=None, customer_data={"customer_name": "Гость"})
     line_sum = sum(i.line_total for i in order.items.all())
     assert order.total == line_sum == Decimal("3500.00")
+
+
+# ---------------------------------------------------------------------------
+# Разные валюты в корзине (#7)
+# ---------------------------------------------------------------------------
+def _usd_product():
+    return Product.objects.create(
+        name="Импортный товар",
+        code_1c="1c-usd-1",
+        article="USD-1",
+        slug="usd-1",
+        unit="шт",
+        price=Decimal("50.00"),
+        currency="USD",
+        status=ProductStatus.PUBLISHED,
+        is_active=True,
+        available_quantity=Decimal("10"),
+    )
+
+
+@pytest.mark.django_db
+def test_place_order_mixed_currency_raises(cart, product):
+    """Товары в разных валютах нельзя суммировать в один total (#7)."""
+    add_to_cart(cart, product, 1)  # RUB
+    add_to_cart(cart, _usd_product(), 1)  # USD
+    with pytest.raises(ValidationError):
+        place_order(cart, user=None, customer_data={"customer_name": "Гость"})
+
+
+@pytest.mark.django_db
+def test_get_cart_view_mixed_currency_raises(cart, product):
+    """get_cart_view тоже падает на расхождении валют, а не суммирует молча (#7)."""
+    add_to_cart(cart, product, 1)
+    add_to_cart(cart, _usd_product(), 1)
+    with pytest.raises(ValidationError):
+        get_cart_view(cart)
 
 
 # ---------------------------------------------------------------------------

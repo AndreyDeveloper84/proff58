@@ -107,22 +107,39 @@ class CartView:
     currency: str
 
 
+def _merge_currency(current: str | None, new: str) -> str:
+    """Единая валюта набора строк; расхождение — ошибка (#7).
+
+    Нельзя суммировать строки в разных валютах в один total (иначе
+    1000 RUB + 50 USD = 1050 с валютой последней строки — молчаливо неверно).
+    """
+    if current is None:
+        return new
+    if new != current:
+        raise ValidationError(
+            f"В корзине товары в разных валютах ({current} и {new}) — "
+            "расчёт итога/оформление невозможны."
+        )
+    return current
+
+
 def get_cart_view(cart: Cart, user=None) -> CartView:
     """Собрать представление корзины с АКТУАЛЬНОЙ ценой каждой строки.
 
     Цена считается на лету через price_for(product, user, qty) — никогда не
     берётся из хранилища. Строки без цены попадают в выдачу с line_total=None.
+    Расхождение валют среди оценённых строк → ValidationError (#7).
     """
     lines: list[CartLine] = []
     total = _ZERO
-    currency = "RUB"
+    currency: str | None = None
 
     items = cart.items.select_related("product").all()
     for item in items:
         product = item.product
         result = price_for(product, user, item.quantity)
-        currency = result.currency
         if result.final is not None:
+            currency = _merge_currency(currency, result.currency)
             line_total = result.final * item.quantity
             total += line_total
         else:
@@ -141,7 +158,7 @@ def get_cart_view(cart: Cart, user=None) -> CartView:
             )
         )
 
-    return CartView(cart=cart, lines=lines, total=total, currency=currency)
+    return CartView(cart=cart, lines=lines, total=total, currency=currency or "RUB")
 
 
 # ---------------------------------------------------------------------------
@@ -268,7 +285,7 @@ def place_order(
     order.save()
 
     total = _ZERO
-    currency = "RUB"
+    currency: str | None = None
     for item in items:
         product = item.product
 
@@ -287,7 +304,7 @@ def place_order(
         if result.final is None:
             raise ValidationError(f"У товара «{product.name}» не задана цена.")
 
-        currency = result.currency
+        currency = _merge_currency(currency, result.currency)
         line_total = result.final * qty
         total += line_total
 
@@ -308,7 +325,7 @@ def place_order(
         )
 
     order.total = total
-    order.currency = currency
+    order.currency = currency or "RUB"
     order.save(update_fields=["total", "currency", "updated_at"])
 
     # Корзину не удаляем: фиксируем как оформленную (история + идемпотентность).

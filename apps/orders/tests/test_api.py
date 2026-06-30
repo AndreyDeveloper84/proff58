@@ -24,6 +24,28 @@ def test_cart_add_and_get(api, product):
 
 
 @pytest.mark.django_db
+def test_cart_mixed_currency_returns_400(api, product):
+    """Корзина с товарами в разных валютах → 400, а не молчаливый неверный total (#7)."""
+    from apps.catalog.models import Product, ProductStatus
+
+    usd = Product.objects.create(
+        name="Импортный",
+        code_1c="1c-usd-api",
+        slug="usd-api",
+        price=Decimal("50.00"),
+        currency="USD",
+        status=ProductStatus.PUBLISHED,
+        is_active=True,
+        available_quantity=Decimal("10"),
+    )
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    # Добавление второго товара в другой валюте — ответ собирается через _cart_response.
+    resp = api.post("/api/cart/items/", {"product_id": usd.id, "quantity": 1}, format="json")
+    assert resp.status_code == 400
+    assert api.get("/api/cart/").status_code == 400
+
+
+@pytest.mark.django_db
 def test_cart_update_and_delete(api, product):
     api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
     cart = api.get("/api/cart/").json()

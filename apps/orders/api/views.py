@@ -69,9 +69,15 @@ def _get_active_cart(request) -> Cart | None:
 
 
 def _cart_response(request, cart: Cart) -> Response:
-    """Сериализовать корзину с актуальной серверной ценой."""
+    """Сериализовать корзину с актуальной серверной ценой.
+
+    get_cart_view падает при расхождении валют строк (#7) — отдаём 400, а не 500.
+    """
     user = request.user if request.user.is_authenticated else None
-    view = services.get_cart_view(cart, user)
+    try:
+        view = services.get_cart_view(cart, user)
+    except DjangoValidationError as exc:
+        return Response({"detail": exc.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
     return Response(CartViewSerializer(view).data)
 
 
