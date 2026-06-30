@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand
+from django.db import transaction
 from django.utils import timezone
 
 from apps.catalog.ingest import (
@@ -60,42 +61,46 @@ class Command(BaseCommand):
         to_update: list[Product] = []
 
         try:
-            for node, parent_gid in iter_products(tree):
-                ext = str(node.get("external_id")) if node.get("external_id") else None
-                if not ext:
-                    continue
-                row = gindex.get(str(parent_gid)) if parent_gid else None
-                category = cat_by_external.get(str(parent_gid)) if parent_gid else None
-                on_site = bool(row and row.get("on_site"))
-                stock = stock_value(node)
+            # Весь импорт — в одной транзакции: сбой на середине не должен
+            # оставлять полу-импортированный каталог (#4). ImportRun(FAILED)
+            # пишем В except ВНЕ этого блока — иначе аудит откатится вместе с данными.
+            with transaction.atomic():
+                for node, parent_gid in iter_products(tree):
+                    ext = str(node.get("external_id")) if node.get("external_id") else None
+                    if not ext:
+                        continue
+                    row = gindex.get(str(parent_gid)) if parent_gid else None
+                    category = cat_by_external.get(str(parent_gid)) if parent_gid else None
+                    on_site = bool(row and row.get("on_site"))
+                    stock = stock_value(node)
 
-                if row is None:
-                    stats["unmatched_group"] += 1
-                if on_site:
-                    stats["products_imported"] += 1
-                    if stock > 0:
-                        stats["in_stock_on_site"] += 1
-                else:
-                    stats["excluded"] += 1
-                    if stock > 0:
-                        stats["in_stock_excluded"] += 1
+                    if row is None:
+                        stats["unmatched_group"] += 1
+                    if on_site:
+                        stats["products_imported"] += 1
+                        if stock > 0:
+                            stats["in_stock_on_site"] += 1
+                    else:
+                        stats["excluded"] += 1
+                        if stock > 0:
+                            stats["in_stock_excluded"] += 1
 
-                obj = existing.get(ext)
-                if obj is None:
-                    to_create.append(self._build(node, ext, category, stock))
-                    if len(to_create) >= BATCH:
-                        Product.objects.bulk_create(to_create, batch_size=BATCH)
-                        to_create.clear()
-                else:
-                    if self._apply(obj, node, category, stock):
-                        to_update.append(obj)
-                    if len(to_update) >= BATCH:
-                        self._flush_update(to_update)
+                    obj = existing.get(ext)
+                    if obj is None:
+                        to_create.append(self._build(node, ext, category, stock))
+                        if len(to_create) >= BATCH:
+                            Product.objects.bulk_create(to_create, batch_size=BATCH)
+                            to_create.clear()
+                    else:
+                        if self._apply(obj, node, category, stock):
+                            to_update.append(obj)
+                        if len(to_update) >= BATCH:
+                            self._flush_update(to_update)
 
-            if to_create:
-                Product.objects.bulk_create(to_create, batch_size=BATCH)
-            if to_update:
-                self._flush_update(to_update)
+                if to_create:
+                    Product.objects.bulk_create(to_create, batch_size=BATCH)
+                if to_update:
+                    self._flush_update(to_update)
 
             run.status = ImportRunStatus.DONE
         except Exception as exc:  # noqa: BLE001 — лог и проброс
