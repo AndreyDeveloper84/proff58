@@ -124,3 +124,57 @@ def test_task_creation():
     task = Task.objects.create(title="Перезвонить клиенту")
     assert task.status == TaskStatus.OPEN
     assert str(task) == "Перезвонить клиенту"
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 6. Admin crm_* скрыт за флагом crm (#347)
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def test_admin_not_registered_when_crm_disabled():
+    from django.contrib import admin
+
+    from apps.crm_sales.models import Deal
+    from apps.crm_tasks.models import Task
+
+    assert not admin.site.is_registered(ClientProfile)
+    assert not admin.site.is_registered(Deal)
+    assert not admin.site.is_registered(Task)
+
+
+def test_admin_registers_when_crm_enabled():
+    from django.contrib import admin
+
+    from .admin import register
+
+    register()
+    try:
+        assert admin.site.is_registered(ClientProfile)
+    finally:
+        admin.site.unregister(ClientProfile)
+
+
+def test_deal_admin_registers_when_crm_enabled():
+    from django.contrib import admin
+
+    from apps.crm_sales.admin import register
+    from apps.crm_sales.models import Deal
+
+    register()
+    try:
+        assert admin.site.is_registered(Deal)
+    finally:
+        admin.site.unregister(Deal)
+
+
+def test_task_admin_registers_when_crm_enabled():
+    from django.contrib import admin
+
+    from apps.crm_tasks.admin import register
+    from apps.crm_tasks.models import Task
+
+    register()
+    try:
+        assert admin.site.is_registered(Task)
+    finally:
+        admin.site.unregister(Task)
