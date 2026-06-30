@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from django.db import transaction
+from django.utils import timezone
 
 from apps.catalog import provenance
 from apps.catalog.enrichment import AiAttr, apply_ai_enrichment, get_enrichable_product
@@ -383,7 +384,7 @@ def source_content(*, product_id, sources=None, idempotency_key) -> SourcingRun:
 
     if run.status == SourcingRun.Status.RUNNING:
         run.status = SourcingRun.Status.OK if any_ok else SourcingRun.Status.ERROR
-    run.finished_at = _dt.datetime.now()
+    run.finished_at = timezone.now()
     run.save()
     return run
 
@@ -428,7 +429,7 @@ def _close_call(call, status, *, reply=None):
             day=_today(), defaults={"daily_cap": Decimal("0")}
         )
         call.status = status
-        call.finished_at = _dt.datetime.now()
+        call.finished_at = timezone.now()
         if reply is not None:
             call.provider = reply.provider
             call.tokens_in = reply.tokens_in
@@ -527,9 +528,9 @@ def approve_and_apply_finding(finding_id, evidence_id, reviewer_id):
             result = provenance.apply_sourced_value(cmd)
             if result.status == "applied":
                 f.status = ContentFinding.Status.APPLIED
-                f.applied_at = _dt.datetime.now()
+                f.applied_at = timezone.now()
                 f.reviewed_by_id = reviewer_id
-                f.reviewed_at = _dt.datetime.now()
+                f.reviewed_at = timezone.now()
                 f.save()
                 for other in siblings:
                     if other.pk != f.pk and other.status == ContentFinding.Status.APPLIED:
@@ -538,7 +539,7 @@ def approve_and_apply_finding(finding_id, evidence_id, reviewer_id):
             else:
                 f.last_outcome = result.status
                 f.reviewed_by_id = reviewer_id
-                f.reviewed_at = _dt.datetime.now()
+                f.reviewed_at = timezone.now()
                 f.save()
             attempt.status = FindingApplicationAttempt.Status.DONE
             attempt.save()
