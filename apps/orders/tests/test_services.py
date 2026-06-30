@@ -6,6 +6,8 @@ from decimal import Decimal
 
 import pytest
 from django.core.exceptions import ValidationError
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from apps.catalog.models import ProductStatus
 from apps.core.events import order_created
@@ -54,6 +56,24 @@ def test_total_equals_sum_of_line_totals(cart, product, product2):
     order = place_order(cart, user=None, customer_data={"customer_name": "Гость"})
     line_sum = sum(i.line_total for i in order.items.all())
     assert order.total == line_sum == Decimal("3500.00")
+
+
+# ---------------------------------------------------------------------------
+# Остаток: блокировка строки товара (best-effort, #6)
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_place_order_locks_product_rows(cart_with_item):
+    """place_order перечитывает товары под select_for_update (#6).
+
+    Контроль остатка — best-effort UX (истинный резерв делает 1С), но проверка
+    available должна идти по строке товара, заблокированной на время оформления.
+    """
+    with CaptureQueriesContext(connection) as ctx:
+        place_order(cart_with_item, user=None, customer_data={"customer_name": "Гость"})
+    sqls = [q["sql"].lower() for q in ctx.captured_queries]
+    assert any(
+        "catalog_product" in s and "for update" in s for s in sqls
+    ), "ожидался SELECT ... FOR UPDATE по catalog_product при оформлении"
 
 
 # ---------------------------------------------------------------------------

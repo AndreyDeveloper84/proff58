@@ -244,6 +244,18 @@ def place_order(
     if not items:
         raise ValidationError("Корзина пуста.")
 
+    # Перечитываем товары под блокировкой строк. Контроль остатка здесь —
+    # best-effort UX-проверка: истинный резерв делает 1С (orders/confirm,
+    # см. docs/order-lifecycle.md), остаток на сайте мы НЕ списываем (владелец
+    # остатка — 1С). select_for_update снимает TOCTOU между чтением available и
+    # оформлением в рамках одного инстанса БД; order_by("id") — против дедлоков.
+    locked_products = {
+        p.id: p
+        for p in Product.objects.select_for_update()
+        .filter(id__in=[it.product_id for it in items if it.product_id])
+        .order_by("id")
+    }
+
     # Тип покупателя: для аутентифицированного — из учётной записи.
     customer_type = customer_data.get("customer_type") or CustomerType.B2C
     if user is not None and getattr(user, "is_authenticated", False):
@@ -270,7 +282,7 @@ def place_order(
     total = _ZERO
     currency = "RUB"
     for item in items:
-        product = item.product
+        product = locked_products.get(item.product_id) or item.product
 
         # Повторная валидация на момент оформления.
         if product is None or not product.is_visible:
