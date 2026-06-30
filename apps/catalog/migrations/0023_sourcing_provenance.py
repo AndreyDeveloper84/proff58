@@ -6,8 +6,11 @@ from django.db import migrations, models
 def backfill_field_sources(apps, schema_editor):
     Product = apps.get_model("catalog", "Product")
     for p in Product.objects.exclude(content_source="").iterator():
-        fields = {f: p.content_source for f in ("name", "short_description", "description")
-                  if getattr(p, f)}
+        fields = {
+            f: p.content_source
+            for f in ("name", "short_description", "description")
+            if getattr(p, f)
+        }
         if fields:
             p.content_field_sources = fields
             p.save(update_fields=["content_field_sources"])

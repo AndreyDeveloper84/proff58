@@ -19,10 +19,20 @@ def _fixed_today(monkeypatch):
 
 
 def _p(slug, **kw):
-    cat = Category.objects.filter(slug="perf").first() or Category.add_root(name="Перф", slug="perf")
-    return Product.objects.create(category=cat, name="", slug=slug, description="",
-        original_name="Перфоратор " + slug, status=ProductStatus.IMPORTED,
-        is_active=False, price="1000", **kw)
+    cat = Category.objects.filter(slug="perf").first() or Category.add_root(
+        name="Перф", slug="perf"
+    )
+    return Product.objects.create(
+        category=cat,
+        name="",
+        slug=slug,
+        description="",
+        original_name="Перфоратор " + slug,
+        status=ProductStatus.IMPORTED,
+        is_active=False,
+        price="1000",
+        **kw,
+    )
 
 
 @pytest.mark.django_db
