@@ -11,3 +11,6 @@ class CrmTasksConfig(AppConfig):
 
         if is_enabled("crm"):
             from . import receivers  # noqa: F401
+            from .admin import register
+
+            register()
