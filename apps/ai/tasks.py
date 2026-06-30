@@ -45,7 +45,7 @@ def source_product_task(self, product_id, idempotency_key):
     return idempotency_key
 
 
-@shared_task
+@shared_task(name="apps.ai.tasks.batch_source_task")
 def batch_source_task(category_slug=None, limit=100):
     if not _sourcing_enabled():
         return 0
