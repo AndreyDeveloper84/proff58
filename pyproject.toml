@@ -24,3 +24,4 @@ known-first-party = ["config", "apps"]
 DJANGO_SETTINGS_MODULE = "config.settings.dev"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 addopts = "--reuse-db"
+django_debug_mode = "keep"

@@ -1,11 +1,20 @@
 # apps/ai/sourcing/sources/__init__.py
-"""Реестр источников. Включённые — по наличию ключей (Task 8)."""
+"""Реестр источников. Включаются по наличию ключей; иначе список пуст → configuration_error."""
 from __future__ import annotations
 
+from django.conf import settings
+
 from .dummy import DummySource
+from .marketplace import MarketplaceSource
+from .web_search import WebSearchSource
 
 
-def get_sources() -> list:
-    """Сейчас только dummy (тест). Реальные адаптеры подключаются в Task 8 по ключам.
-    Включённый sourcing без реальных источников → вызывающий ставит configuration_error."""
-    return [DummySource()]
+def get_sources(*, include_dummy: bool = True) -> list:
+    out = []
+    if getattr(settings, "ANTHROPIC_API_KEY", ""):
+        out.append(WebSearchSource())
+    if getattr(settings, "YANDEX_MARKET_API_KEY", ""):
+        out.append(MarketplaceSource())
+    if not out and include_dummy and settings.DEBUG:  # dummy — только dev/тест
+        out.append(DummySource())
+    return out

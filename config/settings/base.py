@@ -202,6 +202,11 @@ YOOKASSA_SHOP_ID = env("YOOKASSA_SHOP_ID", default="")
 YOOKASSA_SECRET_KEY = env("YOOKASSA_SECRET_KEY", default="")
 YOOKASSA_WEBHOOK_SECRET = env("YOOKASSA_WEBHOOK_SECRET", default="")
 
+# AI-источники контента (capability sourcing).
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+YANDEX_MARKET_API_KEY = env("YANDEX_MARKET_API_KEY", default="")
+SOURCING_ALLOWLIST = set(env.list("SOURCING_ALLOWLIST", default=[]))
+
 # Feature-флаги. Инфраструктурные — здесь (через env, меняют разработчики).
 # Бизнес-флаги (reviews/b2b/...) живут в SiteSettings. Проверка — через
 # apps.core.features.is_enabled(); механизм поддерживает override любого флага
