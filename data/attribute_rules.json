@@ -6,6 +6,8 @@
     "import_1c": 60,
     "regex": 40,
     "keyword": 30,
+    "web": 25,
+    "marketplace": 25,
     "llm": 20,
     "inferred": 10
   },
