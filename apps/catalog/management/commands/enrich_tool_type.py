@@ -19,6 +19,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
+from apps.catalog.attrs_cache import flush_attrs_cache_merged
 from apps.catalog.ingest import data_dir
 from apps.catalog.management.commands.load_tool_types import TOOL_TYPE_SLUG
 from apps.catalog.models import (
@@ -142,8 +143,8 @@ class Command(BaseCommand):
                         )
                         pav_update.clear()
                     if len(cache_updates) >= BATCH:
-                        Product.objects.bulk_update(
-                            cache_updates, ["attrs_cache"], batch_size=BATCH
+                        flush_attrs_cache_merged(
+                            cache_updates, lambda _p: {TOOL_TYPE_SLUG}, batch_size=BATCH
                         )
                         cache_updates.clear()
                     if len(pav_delete_ids) >= BATCH:
@@ -159,7 +160,9 @@ class Command(BaseCommand):
                         pav_update, ["value_option"], batch_size=BATCH
                     )
                 if cache_updates:
-                    Product.objects.bulk_update(cache_updates, ["attrs_cache"], batch_size=BATCH)
+                    flush_attrs_cache_merged(
+                        cache_updates, lambda _p: {TOOL_TYPE_SLUG}, batch_size=BATCH
+                    )
                 if pav_delete_ids:
                     ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
 
