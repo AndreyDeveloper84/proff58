@@ -31,7 +31,7 @@ export default function ProfilePage() {
         <div><dt className="text-gray-500 text-sm">Тип</dt><dd>{user.customer_type === "b2b" ? "B2B" : "B2C"}</dd></div>
       </dl>
 
-      {user.profile && (
+      {Boolean(user.profile) && (
         <div className="mt-6 border-t pt-4">
           <h2 className="font-semibold mb-2">Реквизиты B2B</h2>
           <dl className="space-y-2 text-sm">
