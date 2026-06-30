@@ -37,6 +37,7 @@
 | `apps/ai/admin.py` | очередь находок + review-форма + bulk | 6 |
 | `apps/ai/management/commands/source_*.py` | CLI | 7 |
 | `apps/ai/sourcing/sources/{web_search,marketplace}.py` | реальные адаптеры (за ключами) | 8 |
+| `config/celery.py` | beat-расписание ночного `batch_source_task` (триггер 1С-импорта) | 9 |
 
 ---
 
@@ -1793,10 +1794,141 @@ git commit -m "feat(sourcing): адаптеры web_search/marketplace за кл
 
 ---
 
-## Финальный DoD (после Task 8)
+## Task 9: Ночной триггер sourcing для 1С-импорта (Celery-beat батч)
+
+**Files:**
+- Modify: `apps/ai/tasks.py` (стабильное `name` у `batch_source_task` для beat)
+- Modify: `config/celery.py` (запись в `beat_schedule` + импорт `crontab`)
+- Test: `apps/ai/tests/test_sourcing_schedule.py`
+
+**Interfaces:**
+- Consumes: `tasks.batch_source_task` (Task 5), `catalog.enrichment.pending_for_enrichment`, `services.source_content`.
+- Produces: beat-запись `source-catalog-nightly` → `apps.ai.tasks.batch_source_task`.
+
+**Почему батч, а не сигнал (грунт из кода):** импорт из 1С **намеренно не эмитит**
+`product_created` — `apps/ai/receivers.py`: *«Импортёр 1С эмит не шлёт — 1С-товары идут батчем;
+подписка обслуживает admin/API-создание товаров»*. Значит подписка на сигнал для 1С-товаров
+не сработает. 1С-товары без описания/характеристик попадают в `catalog.pending_for_enrichment`
+(уже используется в Task 5/7), и ночной `batch_source_task` их разгребает. Авто-публикации нет —
+находки идут в очередь модерации (Task 6).
+
+**Безопасность по умолчанию:** дневной `SourcingBudget` создаётся с `daily_cap=0` (Task 4,
+`_reserve_and_open_call`), поэтому пока админ не задаст лимит — каждый резерв упирается в бюджет,
+прогон `degraded`, трат нет. Sourcing «спит», пока бюджет не выставлен явно (это проверяет тест).
+
+**Ветка:** `feature/sourcing-schedule` (от свежего dev). Только она — никаких git merge/pull/rebase/checkout.
+
+- [ ] **Step 1: Падающий тест** — `apps/ai/tests/test_sourcing_schedule.py`
+
+```python
+import datetime as dt
+
+import pytest
+
+from apps.ai import services, tasks
+from apps.ai.models import ContentFinding, SourcingBudget
+from apps.catalog.models import Category, Product, ProductStatus
+
+
+@pytest.fixture(autouse=True)
+def _fixed_today(monkeypatch):
+    monkeypatch.setattr(services, "_today", lambda: dt.date(2026, 6, 29))
+
+
+def _flags(settings):
+    settings.FEATURES = {**getattr(settings, "FEATURES", {}),
+                         "ai": True, "ai_sourcing": True, "external_integrations": True}
+
+
+def _imported_product(slug="hr2470"):
+    cat = Category.objects.first() or Category.add_root(name="Перф", slug="perf")
+    return Product.objects.create(category=cat, name="", slug=slug, description="",
+        original_name="Перфоратор Makita " + slug, status=ProductStatus.IMPORTED,
+        is_active=False, price="1000", available_quantity=5)
+
+
+def test_beat_schedule_has_nightly_sourcing():
+    from config.celery import app
+    entry = app.conf.beat_schedule.get("source-catalog-nightly")
+    assert entry is not None
+    assert entry["task"] == "apps.ai.tasks.batch_source_task"
+
+
+@pytest.mark.django_db
+def test_nightly_batch_sources_pending_1c_product(settings):
+    _flags(settings)
+    SourcingBudget.objects.create(day=dt.date(2026, 6, 29), daily_cap=100)
+    _imported_product()
+    n = tasks.batch_source_task()       # EAGER → source_product_task выполняется инлайн
+    assert n >= 1
+    assert ContentFinding.objects.exists()
+
+
+@pytest.mark.django_db
+def test_nightly_batch_safe_without_budget(settings):
+    _flags(settings)                    # дневной лимит НЕ задан → daily_cap=0
+    _imported_product(slug="x")
+    tasks.batch_source_task()
+    assert not ContentFinding.objects.exists()   # резерв > 0 при cap=0 → degraded, трат нет
+```
+
+> ⚠️ Грунт для имплементера: `pending_for_enrichment(category_slug=None, limit=...)` уже
+> используется в Task 5/7 и возвращает товары, ждущие обогащения (`status=IMPORTED` /
+> `enrich_status=pending`). Если на этом наборе товара тест `n >= 1` пуст — **STOP, NEEDS_CONTEXT**
+> (уточнить фильтр `pending_for_enrichment`), не подменять реальный путь моками.
+
+- [ ] **Step 2: Прогнать — упадёт**
+
+Run: `docker compose exec -T web pytest apps/ai/tests/test_sourcing_schedule.py -v`
+Expected: FAIL (`source-catalog-nightly` ещё нет в `beat_schedule`).
+
+- [ ] **Step 3: Стабильное имя задачи** — в `apps/ai/tasks.py` заменить декоратор `batch_source_task`:
+
+```python
+# было:
+@shared_task
+def batch_source_task(category_slug=None, limit=100):
+# стало (тело без изменений — нужно стабильное имя, как у mark_stale_syncs):
+@shared_task(name="apps.ai.tasks.batch_source_task")
+def batch_source_task(category_slug=None, limit=100):
+```
+
+- [ ] **Step 4: Beat-запись** — в `config/celery.py`
+
+Добавить импорт рядом с `from celery import Celery`:
+```python
+from celery.schedules import crontab
+```
+В `app.conf.beat_schedule` добавить запись после `"mark-stale-syncs"`:
+```python
+    "source-catalog-nightly": {
+        "task": "apps.ai.tasks.batch_source_task",
+        "schedule": crontab(hour=3, minute=30),  # ночью, после обмена с 1С
+        "kwargs": {"limit": 200},
+    },
+```
+
+- [ ] **Step 5: Прогнать — зелёные**
+
+Run: `docker compose exec -T web pytest apps/ai/tests/test_sourcing_schedule.py -v`
+Expected: PASS (3 теста). Затем `docker compose exec -T web pytest apps/ai -q` — пакет зелёный.
+
+- [ ] **Step 6: Lint + commit**
+
+```bash
+docker compose exec -T web ruff check apps/ai/tasks.py config/celery.py apps/ai/tests/test_sourcing_schedule.py
+docker compose exec -T web black --check apps/ai/tasks.py config/celery.py apps/ai/tests/test_sourcing_schedule.py
+git add apps/ai/tasks.py config/celery.py apps/ai/tests/test_sourcing_schedule.py
+git commit -m "feat(sourcing): ночной beat-триггер batch_source_task для 1С-импорта"
+```
+
+---
+
+## Финальный DoD (после Task 9)
 - [ ] `docker compose exec -T web pytest apps/ai apps/catalog -x` — зелёные.
 - [ ] `ruff check` + `black --check` по `apps/ai apps/catalog` — чисто.
 - [ ] Тест границ `apps/ai/tests/test_boundaries.py` (из EPIC-ENRICH) — зелёный: ядро `apps/ai` не лезет в `Product.objects`; каталог не импортирует `ai`.
 - [ ] Полный цикл на dummy (dev): `source_product --id N` → находка+evidence → admin approve (по `selected_evidence`) → `apply_sourced_value` → `applied`; `content_field_sources` проставлен.
 - [ ] Флаги `ai`/`ai_sourcing`/`external_integrations` гасят capability; без ключей и без DEBUG → `configuration_error`.
 - [ ] Инварианты §7 спеки покрыты тестами (провенанс, baseline-конфликт, rollback+guarded apply_failed, идемпотентность, partial-claim, бюджет, allowlist).
+- [ ] beat-запись `source-catalog-nightly` зарегистрирована; ночной `batch_source_task` запускает sourcing для 1С-товаров (которые `product_created` не шлют) по `pending_for_enrichment`; при `daily_cap=0` трат и находок нет.

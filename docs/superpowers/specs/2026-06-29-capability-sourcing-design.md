@@ -48,6 +48,10 @@
 - **`content_locked=True` — абсолютная защита:** проверяется в `apply_sourced_value`.
 - `source_content()` **не изменяет** `Product` (читает через сервис, копит находки).
   Очередь модерации строится по `ContentFinding.status`, не по `Product.enrich_status`.
+- **Триггер из 1С-импорта — батч, не сигнал.** Импорт из 1С **намеренно не эмитит**
+  `product_created` (товары идут пачкой; существующий enrich-receiver обслуживает только
+  admin/API-создание — `apps/ai/receivers.py`). Sourcing для импортированных товаров запускает
+  **ночной `batch_source_task`** по `pending_for_enrichment` (§6.9), а не подписка на сигнал.
 
 ---
 
@@ -414,6 +418,20 @@ ToS/лицензии — только короткий `raw_excerpt` + атри�
 пишет аудит), но **не сохраняет** `ContentFinding`/`FindingEvidence`), `source_catalog`
 (`--category/--all --limit --commit`), `source_report` (находки по статусам/источникам/стоимости).
 
+### 6.9 Триггер из 1С-импорта (ночной батч, не сигнал)
+Импорт из 1С **намеренно не эмитит** `product_created` — товары идут пачкой, а существующий
+enrich-receiver (`apps/ai/receivers.py`) подписан на этот сигнал и обслуживает **только
+admin/API-создание** товаров. Поэтому подписка на сигнал для 1С-товаров не сработает, и sourcing
+для них запускается **не по событию, а ночным Celery-beat**: `batch_source_task` разгребает
+кандидатов из `catalog.pending_for_enrichment` (1С-товары без описания/характеристик туда
+попадают), приоритет `available_quantity>0`, стоп по дневному бюджету. Каждый кандидат →
+`source_product_task.delay(...)` (флаги `ai`/`ai_sourcing`/`external_integrations` и бюджет
+перепроверяются внутри). Находки идут в обычную очередь модерации (§6.7) — авто-публикации нет.
+**Безопасность по умолчанию:** дневной `SourcingBudget` создаётся с `daily_cap=0` (§6.4), пока
+админ не задаст лимит → любой резерв упирается в бюджет и прогон `degraded` без трат; sourcing
+«спит», пока бюджет не выставлен явно. Расписание — в `config/celery.py` (`beat_schedule`), рядом
+с `mark-stale-syncs`.
+
 ---
 
 ## 7. Тесты (`pytest apps/ai apps/catalog`)
@@ -451,6 +469,9 @@ ToS/лицензии — только короткий `raw_excerpt` + атри�
 6. `admin.py` (очередь + частично-успешные действия + inline evidence) + тесты.
 7. CLI `source_product`/`source_catalog`/`source_report` + тесты.
 8. Адаптеры `web_search`/`marketplace` (за ключами; allowlist по hostname/SSRF/rate-limit/ToS) + тесты.
+9. Ночной триггер 1С-импорта: beat-запись `source-catalog-nightly` → `batch_source_task` в
+   `config/celery.py` (1С-импорт сигналов не шлёт — запуск батчем по `pending_for_enrichment`,
+   не по `product_created`; безопасность — `daily_cap=0` по умолчанию) + тесты.
 
 ## 9. DoD
 - [ ] миграции применяются; `Source`/`ContentSource`/`attribute_rules.json` синхронны.
@@ -459,3 +480,4 @@ ToS/лицензии — только короткий `raw_excerpt` + атри�
 - [ ] все P0-инварианты покрыты тестами (§7).
 - [ ] `pytest apps/ai apps/catalog -x` зелёные; ruff+black чисто.
 - [ ] флаги `ai`/`ai_sourcing`/`external_integrations` гасят capability; без ключей → `configuration_error`.
+- [ ] beat-запись `source-catalog-nightly` запускает sourcing для 1С-товаров по `pending_for_enrichment` (не по `product_created`); при `daily_cap=0` трат и находок нет.
