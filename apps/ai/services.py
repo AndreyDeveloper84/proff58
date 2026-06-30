@@ -424,7 +424,9 @@ def _reserve_and_open_call(run, adapter):
 
 def _close_call(call, status, *, reply=None):
     with transaction.atomic():
-        b = SourcingBudget.objects.select_for_update().get(day=_today())
+        b, _ = SourcingBudget.objects.select_for_update().get_or_create(
+            day=_today(), defaults={"daily_cap": Decimal("0")}
+        )
         call.status = status
         call.finished_at = _dt.datetime.now()
         if reply is not None:
