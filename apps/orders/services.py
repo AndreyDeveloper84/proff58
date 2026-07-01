@@ -318,6 +318,14 @@ def place_order(
         raise ValidationError("Оплата по счёту доступна только для B2B-заказов.")
 
     is_guest = user is None or not getattr(user, "is_authenticated", False)
+
+    # Серверная валидация контакта гостя (#321).
+    if is_guest:
+        if not snapshot["customer_name"].strip():
+            raise ValidationError("Имя обязательно для гостевого заказа.")
+        if not snapshot["customer_phone"].strip():
+            raise ValidationError("Телефон обязателен для гостевого заказа.")
+
     access_token = uuid.uuid4().hex if is_guest else ""
 
     order = Order(

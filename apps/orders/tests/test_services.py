@@ -31,7 +31,11 @@ from .conftest import make_wholesale
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db
 def test_place_order_initial_statuses(cart_with_item):
-    order = place_order(cart_with_item, user=None, customer_data={"customer_name": "Гость"})
+    order = place_order(
+        cart_with_item,
+        user=None,
+        customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+    )
     assert order.fulfillment_status == FulfillmentStatus.NEW
     assert order.payment_status == PaymentStatus.PENDING
     assert order.sync_1c_status == Sync1CStatus.PENDING
@@ -39,7 +43,11 @@ def test_place_order_initial_statuses(cart_with_item):
 
 @pytest.mark.django_db
 def test_place_order_generates_unique_number(cart_with_item):
-    order = place_order(cart_with_item, user=None, customer_data={"customer_name": "Гость"})
+    order = place_order(
+        cart_with_item,
+        user=None,
+        customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+    )
     assert order.order_number
     assert order.display_status == "Ожидает оплаты"
 
@@ -51,7 +59,9 @@ def test_place_order_generates_unique_number(cart_with_item):
 def test_total_equals_sum_of_line_totals(cart, product, product2):
     add_to_cart(cart, product, 2)  # 1000 * 2 = 2000
     add_to_cart(cart, product2, 3)  # 500 * 3 = 1500
-    order = place_order(cart, user=None, customer_data={"customer_name": "Гость"})
+    order = place_order(
+        cart, user=None, customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"}
+    )
     line_sum = sum(i.line_total for i in order.items.all())
     assert order.total == line_sum == Decimal("3500.00")
 
@@ -61,7 +71,11 @@ def test_total_equals_sum_of_line_totals(cart, product, product2):
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db
 def test_cart_becomes_ordered(cart_with_item):
-    place_order(cart_with_item, user=None, customer_data={"customer_name": "Гость"})
+    place_order(
+        cart_with_item,
+        user=None,
+        customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+    )
     cart_with_item.refresh_from_db()
     assert cart_with_item.status == CartStatus.ORDERED
     assert cart_with_item.ordered_at is not None
@@ -71,15 +85,27 @@ def test_cart_becomes_ordered(cart_with_item):
 
 @pytest.mark.django_db
 def test_place_order_on_ordered_cart_raises(cart_with_item):
-    place_order(cart_with_item, user=None, customer_data={"customer_name": "Гость"})
+    place_order(
+        cart_with_item,
+        user=None,
+        customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+    )
     with pytest.raises(ValidationError):
-        place_order(cart_with_item, user=None, customer_data={"customer_name": "Гость"})
+        place_order(
+            cart_with_item,
+            user=None,
+            customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+        )
 
 
 @pytest.mark.django_db
 def test_place_order_empty_cart_raises(cart):
     with pytest.raises(ValidationError):
-        place_order(cart, user=None, customer_data={"customer_name": "Гость"})
+        place_order(
+            cart,
+            user=None,
+            customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +113,11 @@ def test_place_order_empty_cart_raises(cart):
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db
 def test_snapshot_invariant_price_change(cart_with_item, product):
-    order = place_order(cart_with_item, user=None, customer_data={"customer_name": "Гость"})
+    order = place_order(
+        cart_with_item,
+        user=None,
+        customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+    )
     item = order.items.first()
     assert item.price_final == Decimal("1000.00")
 
@@ -101,7 +131,11 @@ def test_snapshot_invariant_price_change(cart_with_item, product):
 
 @pytest.mark.django_db
 def test_snapshot_survives_product_delete(cart_with_item, product):
-    order = place_order(cart_with_item, user=None, customer_data={"customer_name": "Гость"})
+    order = place_order(
+        cart_with_item,
+        user=None,
+        customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+    )
     product.delete()
     item = order.items.first()
     item.refresh_from_db()
@@ -141,7 +175,11 @@ def test_checkout_hidden_product_raises(cart, product):
     product.status = ProductStatus.DRAFT
     product.save(update_fields=["status"])
     with pytest.raises(ValidationError):
-        place_order(cart, user=None, customer_data={"customer_name": "Гость"})
+        place_order(
+            cart,
+            user=None,
+            customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+        )
 
 
 @pytest.mark.django_db
@@ -150,7 +188,11 @@ def test_checkout_product_without_price_raises(cart, product):
     product.price = None
     product.save(update_fields=["price"])
     with pytest.raises(ValidationError):
-        place_order(cart, user=None, customer_data={"customer_name": "Гость"})
+        place_order(
+            cart,
+            user=None,
+            customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+        )
 
 
 @pytest.mark.django_db
@@ -159,7 +201,11 @@ def test_checkout_qty_over_available_raises(cart, product):
     product.available_quantity = Decimal("0")
     product.save(update_fields=["available_quantity"])
     with pytest.raises(ValidationError):
-        place_order(cart, user=None, customer_data={"customer_name": "Гость"})
+        place_order(
+            cart,
+            user=None,
+            customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +247,11 @@ def test_order_created_emitted_once(cart_with_item, django_capture_on_commit_cal
     order_created.connect(handler)
     try:
         with django_capture_on_commit_callbacks(execute=True):
-            order = place_order(cart_with_item, user=None, customer_data={"customer_name": "Гость"})
+            order = place_order(
+                cart_with_item,
+                user=None,
+                customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+            )
     finally:
         order_created.disconnect(handler)
 
