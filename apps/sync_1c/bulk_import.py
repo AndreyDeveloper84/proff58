@@ -23,6 +23,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.catalog import categorization
+from apps.catalog.facets import invalidate_facets_cache
 from apps.catalog.models import Product
 from apps.catalog.services import invalidate_category_tree_cache
 from apps.core.events import EventSource, price_changed, product_created, product_updated
@@ -159,6 +160,7 @@ def run_rows_bulk(
             _save_staging(plan.staging)
             _register_events(plan)
             transaction.on_commit(invalidate_category_tree_cache)
+            transaction.on_commit(invalidate_facets_cache)
     except Exception:  # noqa: BLE001
         return False  # bulk упал — вызывающий откатится на построчный путь
     return True

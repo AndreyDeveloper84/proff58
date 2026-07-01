@@ -24,6 +24,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.catalog import categorization
+from apps.catalog.facets import invalidate_facets_cache
 from apps.catalog.models import Product
 from apps.core.events import EventSource, order_status_changed, price_changed
 from apps.orders.models import (
@@ -538,6 +539,8 @@ def update_stocks_bulk(
         raise
 
     _finalize(sync_log, result, error_lines)
+    if result.updated:
+        invalidate_facets_cache()
     return sync_log, result
 
 
