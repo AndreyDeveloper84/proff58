@@ -166,6 +166,14 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_DEFAULT_QUEUE = "celery"
 CELERY_TASK_ROUTES = {"apps.sync_1c.tasks.*": {"queue": "onec"}}
 
+# Session/CSRF для SPA (#325): cookie читается JS (HTTPONLY=False), SameSite=Lax
+# позволяет браузеру слать cookies при навигации. CSRF_COOKIE_SECURE и
+# SESSION_COOKIE_SECURE переопределяются в prod.py на True.
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False  # JS должен читать csrftoken для X-CSRFToken заголовка
+CSRF_COOKIE_SAMESITE = "Lax"
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",

@@ -227,3 +227,42 @@ def test_change_phone(client, user):
     user.refresh_from_db()
     assert user.phone == "+79005550003"
     assert user.max_chat_id is None
+
+
+# ═══════════ #325 CSRF endpoint ═══════════
+
+
+@pytest.mark.django_db
+def test_csrf_endpoint_returns_token(client):
+    """GET /api/account/csrf/ возвращает csrfToken и устанавливает cookie."""
+    resp = client.get("/api/account/csrf/")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "csrfToken" in data
+    assert len(data["csrfToken"]) > 10
+
+
+@pytest.mark.django_db
+def test_login_sets_session(db):
+    """После логина сессия существует (браузер получает sessionid cookie)."""
+    from django.test import Client as DjangoClient
+
+    User.objects.create_user(phone="+79006660001", password="pass123")
+    c = DjangoClient()
+    resp = c.post(
+        "/api/account/login/",
+        data='{"phone":"+79006660001","password":"pass123"}',
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert "sessionid" in resp.cookies
+
+
+@pytest.mark.django_db
+def test_me_requires_session(db):
+    """GET /api/account/me/ без сессии → 403."""
+    from django.test import Client as DjangoClient
+
+    c = DjangoClient()
+    resp = c.get("/api/account/me/")
+    assert resp.status_code in (401, 403)
