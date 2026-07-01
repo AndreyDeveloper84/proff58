@@ -28,7 +28,9 @@ class DeliveryZonesView(APIView):
             if cart_total < 0:
                 raise InvalidOperation
         except InvalidOperation:
-            return Response({"detail": "cart_total должен быть неотрицательным числом."}, status=400)
+            return Response(
+                {"detail": "cart_total должен быть неотрицательным числом."}, status=400
+            )
 
         zone_slug = request.query_params.get("zone") or None
         zones = calculate(zone_slug=zone_slug, cart_total=cart_total)
