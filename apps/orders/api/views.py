@@ -20,6 +20,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.catalog.models import Product
+from apps.core.throttling import OrdersRateThrottle
 
 from .. import services
 from ..models import Cart, CartItem, CartStatus, Order
@@ -89,6 +90,7 @@ class CartItemsView(APIView):
     """POST /api/cart/items/ — добавить товар в корзину."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [OrdersRateThrottle]  # #9: лимит флуда корзины гостем
 
     def post(self, request):
         ser = AddCartItemSerializer(data=request.data)
@@ -137,6 +139,8 @@ class CartItemDetailView(APIView):
 
 class OrdersView(APIView):
     """POST /api/orders/ (любой), GET /api/orders/ (только аутентифицированный)."""
+
+    throttle_classes = [OrdersRateThrottle]  # #9: лимит флуда оформления заказов
 
     def get_permissions(self):
         if self.request.method == "POST":

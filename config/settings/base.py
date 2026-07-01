@@ -173,7 +173,14 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 24,
-    "DEFAULT_THROTTLE_RATES": {"inquiry": "20/hour"},
+    "DEFAULT_THROTTLE_RATES": {
+        "inquiry": "20/hour",
+        # #9: флуд чувствительных эндпоинтов. onec — поток валидным ключом 1С (по IP),
+        # orders — оформление/добавление в корзину гостем. Настраиваются через env;
+        # пусто/None отключает скоуп (в dev/тестах — выключено, см. dev.py).
+        "onec": env("ONEC_THROTTLE_RATE", default="300/min"),
+        "orders": env("ORDERS_THROTTLE_RATE", default="60/min"),
+    },
 }
 
 # Ключ для интеграции с 1С (заголовок X-Api-Key). Пустой = API для 1С закрыт.
