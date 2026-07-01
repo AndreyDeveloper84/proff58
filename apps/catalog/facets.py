@@ -19,7 +19,7 @@ from django.conf import settings
 from django.core.cache import cache as cache_store
 from django.db.models import Case, Count, FloatField, Max, Min, Q, Value, When
 from django.db.models.fields.json import KeyTextTransform
-from django.db.models.functions import Cast
+from django.db.models.functions import Cast, Lower
 
 from .brand_slugs import build_brand_slug_map
 from .filters import filtered_products
@@ -471,17 +471,21 @@ def build_facets(
     # brands: own-axis — без brand (category+stock+price+attrs+tool_type), один group-by.
     brand_base = drilldown(brands=None)
     selected_brands = {b.lower() for b in (resolved_brands or [])}
+    # Группируем по Lower(brand): иначе «Bosch»/«BOSCH» дают раздельные счётчики,
+    # тогда как фильтр товаров использует brand__iexact (объединяет) — сумма фасета
+    # рассинхронизировалась бы со списком (#11). label — представитель регистра.
     brands_out = [
         {
-            "value": brand_to_slug.get(r["brand"], r["brand"]),
-            "label": r["brand"],
+            "value": brand_to_slug.get(r["label"], r["label"]),
+            "label": r["label"],
             "count": r["c"],
-            "selected": r["brand"].lower() in selected_brands,
+            "selected": r["brand_lc"] in selected_brands,
         }
         for r in brand_base.exclude(brand="")
-        .values("brand")
-        .annotate(c=Count("id"))
-        .order_by("-c", "brand")[:MAX_BRAND_FACETS]
+        .annotate(brand_lc=Lower("brand"))
+        .values("brand_lc")
+        .annotate(c=Count("id"), label=Max("brand"))
+        .order_by("-c", "brand_lc")[:MAX_BRAND_FACETS]
     ]
     # stock: own-axis — без stock (category+brand+price+attrs+tool_type), один group-by.
     stock_base = drilldown(stock_status=None)
