@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -236,3 +239,19 @@ class ChangePhoneView(APIView):
         request.user.max_chat_id = None
         request.user.save(update_fields=["phone", "max_chat_id"])
         return Response(UserSerializer(request.user).data)
+
+
+@method_decorator(ensure_csrf_cookie, name="get")
+class CSRFView(APIView):
+    """Установить csrftoken cookie и вернуть токен.
+
+    SPA делает GET /api/account/csrf/ перед первым POST-запросом, чтобы
+    получить csrf-cookie. После этого JavaScript читает csrftoken и отправляет
+    его заголовком X-CSRFToken в POST/PUT/PATCH/DELETE запросах.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []  # GET не требует сессии
+
+    def get(self, request):
+        return Response({"csrfToken": get_token(request)})
