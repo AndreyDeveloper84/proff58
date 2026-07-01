@@ -47,3 +47,20 @@ def test_dummy_source_returns_reply():
     )
     assert reply.provider == "dummy" and reply.findings
     assert all(f.canonical_url for f in reply.findings)
+
+
+def test_all_forbidden_attribute_slugs_rejected():
+    # #369: цена/остаток/статус недостижимы для источника — покрываем ВСЕ слоты.
+    for slug in ("price", "stock_quantity", "available_quantity", "sync_1c_status"):
+        assert validate(_f(target_kind="attribute", attribute_slug=slug)) is None, slug
+
+
+def test_value_without_type_rejected():
+    assert validate(_f(value={"value": "нет ключа type"})) is None
+    assert validate(_f(value={})) is None
+
+
+def test_overlong_text_rejected():
+    assert validate(_f(value={"type": "text", "value": "a" * 8001})) is None
+    # граница MAX_TEXT=8000 включительно — проходит
+    assert validate(_f(value={"type": "text", "value": "a" * 8000})) is not None
