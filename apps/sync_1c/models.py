@@ -160,6 +160,15 @@ class SyncLog(models.Model):
         ERROR = "error", _("Ошибка")
 
     batch_uid = models.UUIDField(_("UID прогона"), default=uuid.uuid4, editable=False, unique=True)
+    external_batch_id = models.CharField(
+        _("Внешний ID партии"),
+        max_length=100,
+        blank=True,
+        db_index=True,
+        help_text=_(
+            "Trace-id из 1С (если передан). Только для аудита — не используется при matching."
+        ),
+    )
     sync_type = models.CharField(_("Тип"), max_length=10, choices=SyncType.choices)
     source_file = models.CharField(
         _("Файл-источник"), max_length=255, blank=True, help_text=_("Имя файла/период выгрузки.")

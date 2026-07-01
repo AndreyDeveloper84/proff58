@@ -71,7 +71,10 @@ def _enqueue_import(request, *, source_file, create_missing):
     уже не вернуть, поэтому сбой постановки фиксируем в самом прогоне (ERROR),
     а 1С узнаёт о нём через опрос sync/<batch_uid>.
     """
-    sync_log = use_cases.new_import_job(source_file=source_file)
+    external_batch_id = str(request.data.get("external_batch_id", "") or "")[:100]
+    sync_log = use_cases.new_import_job(
+        source_file=source_file, external_batch_id=external_batch_id
+    )
     raw_items = _raw_items_from_request(request)
 
     def _enqueue():
@@ -128,6 +131,7 @@ def sync_status(request, batch_uid):
     return Response(
         {
             "batch_uid": str(sync_log.batch_uid),
+            "external_batch_id": sync_log.external_batch_id,
             "status": sync_log.result,
             "finished": use_cases.is_finished(sync_log),
             "rows_total": sync_log.rows_total,
