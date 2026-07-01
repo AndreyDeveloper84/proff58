@@ -19,14 +19,22 @@ from django.db import transaction
 from .models import Attribute, AttributeType, Product, ProductAttributeValue
 from .read_models import rebuild_attrs_cache
 
-_TEXT_TARGETS = {"name", "short_description", "description"}
+TEXT_TARGETS: frozenset[str] = frozenset({"name", "short_description", "description"})
+
+
+def _load_priority_map() -> dict[str, int]:
+    path = Path(settings.BASE_DIR) / "data" / "attribute_rules.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return data.get("source_priority", {})
 
 
 @lru_cache(maxsize=1)
 def _priority_map() -> dict[str, int]:
-    path = Path(settings.BASE_DIR) / "data" / "attribute_rules.json"
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return data.get("source_priority", {})
+    """Карта приоритетов источников из attribute_rules.json.
+
+    В тестах: monkeypatch ``_load_priority_map`` + вызывайте ``_priority_map.cache_clear()``.
+    """
+    return _load_priority_map()
 
 
 def can_overwrite(new: str, existing: str, *, allow_equal: bool = False) -> bool:
@@ -93,7 +101,7 @@ def apply_sourced_value(cmd: SourcedValueCommand) -> ApplyResult:
     if product.content_locked:
         return ApplyResult("skipped_locked")
 
-    if cmd.target_kind in _TEXT_TARGETS:
+    if cmd.target_kind in TEXT_TARGETS:
         current = getattr(product, cmd.target_kind) or ""
         if value_hash(current) != cmd.observed_value_hash:
             return ApplyResult("conflict", "baseline_changed")
@@ -136,7 +144,7 @@ def apply_sourced_value(cmd: SourcedValueCommand) -> ApplyResult:
     pav = pav or ProductAttributeValue(product=product, attribute=attr)
     for f in ("value_text", "value_integer", "value_decimal", "value_boolean", "value_option"):
         setattr(pav, f, None)
-    pav.value_text = ""
+    pav.value_text = ""  # CharField NOT NULL — нельзя оставить None после сброса выше
     if attr.attribute_type == AttributeType.INTEGER:
         pav.value_integer = coerced
     elif attr.attribute_type == AttributeType.DECIMAL:

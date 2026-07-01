@@ -58,8 +58,6 @@ def source_product_task(self, product_id, idempotency_key):
 def batch_source_task(category_slug=None, limit=100):
     if not _sourcing_enabled():
         return 0
-    from apps.catalog.enrichment import pending_for_enrichment
-
     ids = pending_for_enrichment(category_slug=category_slug, limit=limit)
     for pid in ids:
         source_product_task.delay(pid, f"batch:{category_slug or 'all'}:{pid}")
