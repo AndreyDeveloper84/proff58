@@ -30,6 +30,10 @@ from apps.catalog.models import (
     ProductStatus,
     StockStatus,
 )
+from apps.catalog.services import (
+    invalidate_category_tree_cache,
+    invalidate_facets_cache,
+)
 
 BATCH = 1000
 
@@ -114,6 +118,13 @@ class Command(BaseCommand):
         run.finished_at = timezone.now()
         run.stats = stats
         run.save()
+
+        # bulk_create/bulk_update НЕ шлют post_save/post_delete, поэтому кэши дерева
+        # каталога и фасетов не сбрасываются сигналами (#10) — витрина держала бы
+        # старые счётчики in_stock/диапазон цен до истечения TTL. Сбрасываем явно
+        # после успешного импорта.
+        invalidate_category_tree_cache()
+        invalidate_facets_cache()
 
         self.stdout.write(
             self.style.SUCCESS(
