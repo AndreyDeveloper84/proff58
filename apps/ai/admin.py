@@ -104,14 +104,20 @@ class ContentFindingAdmin(admin.ModelAdmin):
     @admin.action(description="Одобрить (по выбранному evidence)")
     def approve_selected(self, request, queryset):
         rid = getattr(getattr(request, "user", None), "pk", None)
-        applied = skipped = 0
+        applied = skipped = failed = 0
         for f in queryset:
             if f.selected_evidence_id is None:
                 skipped += 1
                 continue
-            res = services.approve_and_apply_finding(f.pk, f.selected_evidence_id, rid)
+            try:
+                res = services.approve_and_apply_finding(f.pk, f.selected_evidence_id, rid)
+            except Exception:  # noqa: BLE001 — сбой одной находки не рвёт bulk (частичный успех)
+                failed += 1
+                continue
             applied += 1 if res.status == "applied" else 0
         if request is not None:
             self.message_user(
-                request, f"Применено: {applied}; без evidence: {skipped}", messages.INFO
+                request,
+                f"Применено: {applied}; без evidence: {skipped}; ошибок: {failed}",
+                messages.INFO,
             )
