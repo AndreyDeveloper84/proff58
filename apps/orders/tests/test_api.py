@@ -142,6 +142,51 @@ def test_cart_mixed_currencies_zeroes_total(api, product, db):
 
 
 # ---------------------------------------------------------------------------
+# Гостевая валидация контакта + идемпотентность (#321)
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_guest_order_without_name_rejected(api, product):
+    """Гость без customer_name → 400."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {"customer_phone": "+79990000001"}, format="json")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_guest_order_without_phone_rejected(api, product):
+    """Гость без customer_phone → 400."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {"customer_name": "Гость"}, format="json")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_guest_order_happy_path(api, product):
+    """Гостевой заказ с именем и телефоном → 201 + access_token."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post(
+        "/api/orders/",
+        {"customer_name": "Иван", "customer_phone": "+79990000002"},
+        format="json",
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["customer_name"] == "Иван"
+    assert "access_token" in body
+
+
+@pytest.mark.django_db
+def test_cart_idempotency_double_order_rejected(api, product):
+    """Повторное оформление уже оформленной корзины → 400."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    data = {"customer_name": "Иван", "customer_phone": "+79990000003"}
+    first = api.post("/api/orders/", data, format="json")
+    assert first.status_code == 201
+    second = api.post("/api/orders/", data, format="json")
+    assert second.status_code == 400
+
+
+# ---------------------------------------------------------------------------
 # Backend-цена: тело запроса игнорируется
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
