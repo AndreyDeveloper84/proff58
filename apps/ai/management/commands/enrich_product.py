@@ -18,7 +18,7 @@ class Command(BaseCommand):
     def handle(self, *args, **o):
         from apps.catalog.models import Product
 
-        if o.get("id"):
+        if o.get("id") is not None:
             product = get_enrichable_product(o["id"])
         elif o.get("article"):
             product = Product.objects.filter(article=o["article"]).first()

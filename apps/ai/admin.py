@@ -73,6 +73,9 @@ class FindingEvidenceInline(admin.TabularInline):
     )
     can_delete = False
 
+    def has_add_permission(self, request, obj=None):
+        return False
+
 
 @admin.register(ContentFinding)
 class ContentFindingAdmin(admin.ModelAdmin):
@@ -103,7 +106,7 @@ class ContentFindingAdmin(admin.ModelAdmin):
 
     @admin.action(description="Одобрить (по выбранному evidence)")
     def approve_selected(self, request, queryset):
-        rid = getattr(getattr(request, "user", None), "pk", None)
+        rid = request.user.pk if request and request.user.is_authenticated else None
         applied = skipped = errors = 0
         for f in queryset:
             if f.selected_evidence_id is None:

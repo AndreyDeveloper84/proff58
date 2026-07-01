@@ -322,7 +322,7 @@ def _norm_hash(value: dict) -> str:
 
 def _baseline_for(product, target_kind, attribute_slug):
     """Снимок (hash, source) целевого поля сейчас — для evidence."""
-    if target_kind in provenance._TEXT_TARGETS:
+    if target_kind in provenance.TEXT_TARGETS:
         cur = getattr(product, target_kind) or ""
         src = (product.content_field_sources or {}).get(target_kind, "")
         return provenance.value_hash(cur), src
@@ -385,6 +385,9 @@ def source_content(*, product_id, sources=None, idempotency_key) -> SourcingRun:
 
     if run.status == SourcingRun.Status.RUNNING:
         run.status = SourcingRun.Status.OK if any_ok else SourcingRun.Status.ERROR
+    elif run.status == SourcingRun.Status.DEGRADED and any_ok:
+        # Бюджет закончился после ≥1 успешного адаптера → апгрейд до OK.
+        run.status = SourcingRun.Status.OK
     run.finished_at = timezone.now()
     run.save()
     return run
