@@ -73,6 +73,8 @@ def _on_order_status_changed(sender, order_id, old_status, new_status, **kwargs)
     )
 
 
-events.order_created.connect(_on_order_created)
-events.order_paid.connect(_on_order_paid)
-events.order_status_changed.connect(_on_order_status_changed)
+events.order_created.connect(_on_order_created, dispatch_uid="integration_max_order_created")
+events.order_paid.connect(_on_order_paid, dispatch_uid="integration_max_order_paid")
+events.order_status_changed.connect(
+    _on_order_status_changed, dispatch_uid="integration_max_order_status_changed"
+)
