@@ -24,6 +24,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 
 from apps.catalog.category_tree import invalidate_category_tree_cache
+from apps.catalog.facets import invalidate_facets_cache
 from apps.catalog.ingest import iter_products
 from apps.catalog.models import Product, ProductStatus
 from apps.sync_1c import use_cases
@@ -75,6 +76,7 @@ def _publish_in_stock(codes: list[str]) -> int:
         published += qs.update(status=ProductStatus.PUBLISHED, is_active=True)
     if published:
         invalidate_category_tree_cache()
+        invalidate_facets_cache()
     return published
 
 

@@ -7,6 +7,7 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
+from apps.catalog.facets import invalidate_facets_cache
 from apps.catalog.models import Category, Product, ProductStatus, StockStatus
 
 FACETS_URL = "/api/catalog/categories/dreli/facets/"
@@ -71,6 +72,36 @@ def test_write_invalidates_cache(client, leaf, settings):
 
     _product(leaf, "p2", "200")  # версионная инвалидация
     assert client.get(FACETS_URL).json()["total_products"] == 2  # свежие данные
+
+
+@pytest.mark.django_db
+def test_bulk_create_stales_cache_until_explicit_invalidation(client, leaf, settings):
+    """bulk_create не шлёт post_save → кэш устаревает; явная invalidate_facets_cache исправляет (#280)."""
+    settings.FACETS_CACHE_TTL = 300
+    _product(leaf, "p1", "100")
+    assert client.get(FACETS_URL).json()["total_products"] == 1  # кэшируем
+
+    # bulk_create обходит post_save — кэш НЕ инвалидируется автоматически
+    Product.objects.bulk_create(
+        [
+            Product(
+                category=leaf,
+                name="p2",
+                slug="p2",
+                price="200",
+                attrs_cache={},
+                status=ProductStatus.PUBLISHED,
+                is_active=True,
+                stock_status=StockStatus.IN_STOCK,
+            )
+        ]
+    )
+    stale = client.get(FACETS_URL).json()
+    assert stale["total_products"] == 1  # кэш устарел — видим старое
+
+    invalidate_facets_cache()  # явная инвалидация (как в bulk_import после транзакции)
+    fresh = client.get(FACETS_URL).json()
+    assert fresh["total_products"] == 2  # теперь свежее
 
 
 @pytest.mark.django_db
