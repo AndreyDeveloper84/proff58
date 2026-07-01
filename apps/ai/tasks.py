@@ -17,7 +17,10 @@ from .services import enrich
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def enrich_product_task(self, product_id: int, force: bool = False):
-    enrich(product_id=product_id, force=force)
+    try:
+        enrich(product_id=product_id, force=force)
+    except Exception as exc:  # noqa: BLE001
+        raise self.retry(exc=exc) from exc
 
 
 @shared_task
