@@ -104,14 +104,20 @@ class ContentFindingAdmin(admin.ModelAdmin):
     @admin.action(description="Одобрить (по выбранному evidence)")
     def approve_selected(self, request, queryset):
         rid = getattr(getattr(request, "user", None), "pk", None)
-        applied = skipped = 0
+        applied = skipped = errors = 0
         for f in queryset:
             if f.selected_evidence_id is None:
                 skipped += 1
                 continue
-            res = services.approve_and_apply_finding(f.pk, f.selected_evidence_id, rid)
-            applied += 1 if res.status == "applied" else 0
+            try:
+                res = services.approve_and_apply_finding(f.pk, f.selected_evidence_id, rid)
+                applied += 1 if res.status == "applied" else 0
+            except Exception:  # noqa: BLE001 — частичный успех (#367)
+                errors += 1
         if request is not None:
-            self.message_user(
-                request, f"Применено: {applied}; без evidence: {skipped}", messages.INFO
-            )
+            msg = f"Применено: {applied}; без evidence: {skipped}"
+            if errors:
+                msg += f"; ошибок: {errors}"
+                self.message_user(request, msg, messages.WARNING)
+            else:
+                self.message_user(request, msg, messages.INFO)
