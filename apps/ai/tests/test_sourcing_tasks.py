@@ -56,6 +56,41 @@ def test_task_skipped_when_flag_off(budget, settings):
     assert not SourcingRun.objects.filter(idempotency_key="task-run-2").exists()
 
 
+class _RetryCalled(Exception):
+    """Маркер: source_product_task вызвал self.retry (подмена в тесте)."""
+
+
+@pytest.mark.django_db
+def test_source_product_task_retries_on_transient(settings, monkeypatch):
+    """#370: временный сбой source_content → self.retry, а не тихая потеря задачи."""
+    settings.FEATURES = {
+        **getattr(settings, "FEATURES", {}),
+        "ai": True,
+        "ai_sourcing": True,
+        "external_integrations": True,
+    }
+
+    def _boom(*, product_id, idempotency_key):
+        raise RuntimeError("временный сбой инфраструктуры")
+
+    monkeypatch.setattr(services, "source_content", _boom)
+
+    retried = {"n": 0}
+
+    def _fake_retry(*args, **kwargs):
+        retried["n"] += 1
+        raise _RetryCalled
+
+    monkeypatch.setattr(tasks.source_product_task, "retry", _fake_retry)
+
+    try:
+        tasks.source_product_task.apply(args=[1, "retry-key"])
+    except Exception:  # noqa: BLE001 — ловим и маркер retry, и «сырое» исключение (RED)
+        pass
+
+    assert retried["n"] == 1  # без фикса self.retry не вызывается → RED (retried=0)
+
+
 @pytest.mark.django_db
 def test_mark_stale_sourcing_runs(budget):
     run = SourcingRun.objects.create(
