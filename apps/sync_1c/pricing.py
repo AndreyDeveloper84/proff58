@@ -40,9 +40,12 @@ def set_current_price(product: Product, item: Item) -> bool:
     # Skip-unchanged: текущая актуальная цена этого типа/валюты совпадает, денормализация
     # Product совпадает, и old_price не меняется. old_price=None трактуем как «не менять»
     # (1С часто шлёт только price; контракт — в docs/1c-api-spec.md).
-    current_value = None
+    # Без code_1c история не пишется, но skip-unchanged всё равно работает по денормализованному
+    # полю Product (#282: без code_1c skip-unchanged не срабатывал → лишние writes).
     if product.code_1c:
         current_value = pricing_repo.current_price_value(product.code_1c, price_type, currency)
+    else:
+        current_value = product.price
     old_price_unchanged = item.old_price is None or product.old_price == item.old_price
     if (
         current_value is not None

@@ -32,9 +32,14 @@ class OneCJSONParser(BaseParser):
     """
 
     media_type = "*/*"
+    # Жёсткий лимит размера тела (~10 MB). Защита от дешёвого OOM-DoS:
+    # stream.read() буферизует весь запрос в памяти (#282).
+    MAX_BODY_BYTES = 10 * 1024 * 1024
 
     def parse(self, stream, media_type=None, parser_context=None):
-        raw = stream.read()
+        raw = stream.read(self.MAX_BODY_BYTES + 1)
+        if len(raw) > self.MAX_BODY_BYTES:
+            raise ParseError(f"Тело запроса превышает {self.MAX_BODY_BYTES // (1024 * 1024)} МБ.")
         if not raw:
             return {}
         text = self.decode(raw)
@@ -50,5 +55,5 @@ class OneCJSONParser(BaseParser):
                 return raw.decode(enc)
             except UnicodeDecodeError:
                 continue
-        # Последний шанс — не падать на одной битой строке.
-        return raw.decode("utf-8", errors="replace")
+        # Кодировка не определена — возвращаем 400 вместо тихой замены (#282).
+        raise ParseError("Не удалось декодировать тело запроса: неизвестная кодировка.")
