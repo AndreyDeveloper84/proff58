@@ -215,10 +215,18 @@ def result_counters(sync_log: SyncLog) -> dict:
     return {**_ZERO_COUNTERS, **(sync_log.counters or {})}
 
 
-def new_import_job(*, source_file: str, sync_type: str = SyncLog.SyncType.FULL) -> SyncLog:
+def new_import_job(
+    *,
+    source_file: str,
+    sync_type: str = SyncLog.SyncType.FULL,
+    external_batch_id: str = "",
+) -> SyncLog:
     """Создать прогон со статусом RUNNING (без обработки) — для async-постановки."""
     return SyncLog.objects.create(
-        sync_type=sync_type, source_file=source_file, result=SyncLog.SyncResult.RUNNING
+        sync_type=sync_type,
+        source_file=source_file,
+        result=SyncLog.SyncResult.RUNNING,
+        external_batch_id=external_batch_id,
     )
 
 

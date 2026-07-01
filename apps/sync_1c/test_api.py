@@ -470,3 +470,50 @@ def test_snapshot_currency_fallback_to_rub(auth_client):
     Product.objects.create(name="Пустая валюта", code_1c="1c-cur", slug="snap-cur", currency="")
     body = auth_client.get("/api/1c/snapshot/").json()
     assert body["results"][0]["currency"] == "RUB"
+
+
+# --- external_batch_id (#58) ---
+
+
+@override_settings(ONEC_API_KEY=API_KEY, **EAGER)
+@pytest.mark.django_db
+def test_products_import_stores_external_batch_id(auth_client, django_capture_on_commit_callbacks):
+    """external_batch_id из тела запроса сохраняется в SyncLog."""
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.post(
+            "/api/1c/products/import",
+            {
+                "items": [{"external_id": "eb-1", "name": "Товар", "price": "100"}],
+                "external_batch_id": "BATCH-XYZ-001",
+            },
+            format="json",
+        )
+    assert resp.status_code == 202
+    batch_uid = resp.json()["batch_uid"]
+    sl = SyncLog.objects.get(batch_uid=batch_uid)
+    assert sl.external_batch_id == "BATCH-XYZ-001"
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_sync_status_returns_external_batch_id(auth_client):
+    """GET /api/1c/sync/<uid>/ возвращает external_batch_id."""
+    sync_log = use_cases.new_import_job(source_file="test", external_batch_id="EXT-42")
+    st = auth_client.get(f"/api/1c/sync/{sync_log.batch_uid}").json()
+    assert st["external_batch_id"] == "EXT-42"
+
+
+@override_settings(ONEC_API_KEY=API_KEY, **EAGER)
+@pytest.mark.django_db
+def test_products_import_without_external_batch_id(auth_client, django_capture_on_commit_callbacks):
+    """Если external_batch_id не передан — поле пустое, не ошибка."""
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.post(
+            "/api/1c/products/import",
+            {"items": [{"external_id": "eb-2", "name": "Товар2", "price": "200"}]},
+            format="json",
+        )
+    assert resp.status_code == 202
+    batch_uid = resp.json()["batch_uid"]
+    sl = SyncLog.objects.get(batch_uid=batch_uid)
+    assert sl.external_batch_id == ""
