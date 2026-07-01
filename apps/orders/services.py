@@ -135,6 +135,7 @@ class CartView:
     lines: list[CartLine]
     total: Decimal
     currency: str
+    has_mixed_currencies: bool = False
 
 
 def get_cart_view(cart: Cart, user=None) -> CartView:
@@ -142,20 +143,27 @@ def get_cart_view(cart: Cart, user=None) -> CartView:
 
     Цена считается на лету через price_for(product, user, qty) — никогда не
     берётся из хранилища. Строки без цены попадают в выдачу с line_total=None.
+    При смешении валют: has_mixed_currencies=True, total=0 (#375).
     """
     lines: list[CartLine] = []
     total = _ZERO
-    currency = "RUB"
+    order_currency: str | None = None
+    has_mixed_currencies = False
 
     items = cart.items.filter(is_deleted=False).select_related("product")
     for item in items:
         product = item.product
         result = price_for(product, user, item.quantity)
-        if currency == "RUB" and result.currency:
-            currency = result.currency
-        if result.final is not None:
+        if order_currency is None:
+            order_currency = result.currency
+        elif result.currency != order_currency:
+            has_mixed_currencies = True
+
+        if result.final is not None and not has_mixed_currencies:
             line_total = result.final * item.quantity
             total += line_total
+        elif result.final is not None:
+            line_total = result.final * item.quantity
         else:
             line_total = None
         lines.append(
@@ -172,7 +180,16 @@ def get_cart_view(cart: Cart, user=None) -> CartView:
             )
         )
 
-    return CartView(cart=cart, lines=lines, total=total, currency=currency)
+    if has_mixed_currencies:
+        total = _ZERO
+
+    return CartView(
+        cart=cart,
+        lines=lines,
+        total=total,
+        currency=order_currency or "RUB",
+        has_mixed_currencies=has_mixed_currencies,
+    )
 
 
 # ---------------------------------------------------------------------------

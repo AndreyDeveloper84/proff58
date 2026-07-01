@@ -102,6 +102,46 @@ def test_cart_add_after_delete_restores(api, product):
 
 
 # ---------------------------------------------------------------------------
+# Смешение валют в корзине (#375)
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_cart_no_mixed_currencies_by_default(api, product):
+    """Однородная корзина: has_mixed_currencies=False, total корректен."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
+    body = api.get("/api/cart/").json()
+    assert body["has_mixed_currencies"] is False
+    assert body["total"] == "2000.00"
+
+
+@pytest.mark.django_db
+def test_cart_mixed_currencies_zeroes_total(api, product, db):
+    """Корзина с двумя валютами: has_mixed_currencies=True, total='0.00' (#375)."""
+    from apps.catalog.models import ProductStatus
+
+    # product уже стоит 1000 RUB (из conftest); добавляем USD-товар
+    product_usd = product.__class__.objects.create(
+        name="Зарубежный товар",
+        code_1c="1c-ord-usd",
+        article="ART-USD",
+        slug="foreign-product-usd",
+        unit="шт",
+        price=Decimal("50.00"),
+        currency="USD",
+        status=ProductStatus.PUBLISHED,
+        is_active=True,
+        available_quantity=Decimal("10"),
+    )
+
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    api.post("/api/cart/items/", {"product_id": product_usd.id, "quantity": 1}, format="json")
+
+    body = api.get("/api/cart/").json()
+    assert body["has_mixed_currencies"] is True
+    assert body["total"] == "0.00"
+    assert len(body["lines"]) == 2
+
+
+# ---------------------------------------------------------------------------
 # Backend-цена: тело запроса игнорируется
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db
