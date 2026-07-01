@@ -93,6 +93,20 @@ def _current_attr_value(pav):
     return pav.value_text or None
 
 
+def attribute_baseline(product_id: int, attribute_slug: str) -> tuple[str, str]:
+    """Снимок (hash, source) текущего значения атрибута — для evidence-проверки (#371).
+
+    Возвращает (value_hash(текущее_значение), source). Если атрибут не заполнен
+    или не существует — (value_hash(None), '').
+    """
+    pav = ProductAttributeValue.objects.filter(
+        product_id=product_id, attribute__slug=attribute_slug
+    ).first()
+    current_val = _current_attr_value(pav) if pav else None
+    src = pav.source if pav else ""
+    return value_hash(current_val), src
+
+
 @transaction.atomic
 def apply_sourced_value(cmd: SourcedValueCommand) -> ApplyResult:
     product = Product.objects.select_for_update().filter(pk=cmd.product_id).first()

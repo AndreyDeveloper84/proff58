@@ -326,7 +326,8 @@ def _baseline_for(product, target_kind, attribute_slug):
         cur = getattr(product, target_kind) or ""
         src = (product.content_field_sources or {}).get(target_kind, "")
         return provenance.value_hash(cur), src
-    return provenance.value_hash(None), ""  # атрибуты упрощённо «пусто» (детально — Task 8)
+    # attribute baseline (#371): провенанс читает из каталога через свой же хелпер.
+    return provenance.attribute_baseline(product.pk, attribute_slug)
 
 
 def source_content(*, product_id, sources=None, idempotency_key) -> SourcingRun:
