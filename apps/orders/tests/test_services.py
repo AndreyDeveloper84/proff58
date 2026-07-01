@@ -213,6 +213,15 @@ def test_checkout_qty_over_available_raises(cart, product):
 # Корзина: валидация qty
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db
+def test_add_to_cart_accumulates_qty(cart, product):
+    """add_to_cart дважды подряд: количество складывается (F()-инкремент, #282)."""
+    add_to_cart(cart, product, 2)
+    add_to_cart(cart, product, 3)
+    item = cart.items.filter(is_deleted=False).get(product=product)
+    assert item.quantity == 5
+
+
+@pytest.mark.django_db
 def test_add_to_cart_qty_below_one_raises(cart, product):
     with pytest.raises(ValidationError):
         add_to_cart(cart, product, 0)

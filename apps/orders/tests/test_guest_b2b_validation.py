@@ -95,10 +95,12 @@ def test_guest_happy_path(guest_client, product):
 
 
 # ═══════════ #323 — B2B без реквизитов ═══════════
+# Гость не может быть B2B (#282): customer_type из тела игнорируется.
 
 
 @pytest.mark.django_db
 def test_b2b_without_inn_rejected(guest_client, product):
+    """Гость с customer_type=b2b игнорируется → заказ создаётся как b2c (#282)."""
     guest_client.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
     resp = guest_client.post(
         "/api/orders/",
@@ -111,12 +113,14 @@ def test_b2b_without_inn_rejected(guest_client, product):
         },
         format="json",
     )
-    assert resp.status_code == 400
-    assert "b2b_requisites" in str(resp.json())
+    # Гость → b2c, заказ принят
+    assert resp.status_code in (200, 201)
+    assert resp.json()["customer_type"] == "b2c"
 
 
 @pytest.mark.django_db
 def test_b2b_card_payment_rejected(guest_client, product):
+    """Гость с customer_type=b2b и payment_method=card → b2c заказ с card (#282)."""
     guest_client.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
     resp = guest_client.post(
         "/api/orders/",
@@ -130,8 +134,9 @@ def test_b2b_card_payment_rejected(guest_client, product):
         },
         format="json",
     )
-    assert resp.status_code == 400
-    assert "payment_method" in str(resp.json())
+    # Гость → b2c, оплата картой для b2c допустима
+    assert resp.status_code in (200, 201)
+    assert resp.json()["customer_type"] == "b2c"
 
 
 @pytest.mark.django_db

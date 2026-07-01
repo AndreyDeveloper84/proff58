@@ -42,8 +42,18 @@ CACHES = {
 # инвалидации по сигналам изменения данных каталога (см. apps/catalog/facets.py).
 FACETS_CACHE_TTL = env.int("FACETS_CACHE_TTL", default=300)
 
-# Для входа в админку за nginx/HTTPS Django требует доверенные origin-ы.
-_public_hosts = [h for h in ALLOWED_HOSTS if h not in ("*", "localhost", "127.0.0.1")]
+# Fail-fast: без реального домена CSRF_TRUSTED_ORIGINS пуст → вход в админку сломан (#282).
+_internal = {"*", "localhost", "127.0.0.1", "web"}
+if "*" in ALLOWED_HOSTS:
+    raise ImproperlyConfigured(
+        "DJANGO_ALLOWED_HOSTS содержит '*' — в проде запрещено. Укажите явные домены."
+    )
+_public_hosts = [h for h in ALLOWED_HOSTS if h not in _internal]
+if not _public_hosts:
+    raise ImproperlyConfigured(
+        "DJANGO_ALLOWED_HOSTS не содержит публичного домена — задайте его в env "
+        "(напр. DJANGO_ALLOWED_HOSTS=proff58.ru)."
+    )
 CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in _public_hosts] + [
     f"http://{h}" for h in _public_hosts
 ]

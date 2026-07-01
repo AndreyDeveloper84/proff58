@@ -258,6 +258,20 @@ def test_b2c_order_invoice_payment_rejected(api, b2c_user, product):
 
 
 @pytest.mark.django_db
+def test_guest_cannot_declare_b2b(api, product):
+    """Гость не может объявить себя B2B через тело запроса (#282 B2B-guest exploit)."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post(
+        "/api/orders/",
+        {"customer_name": "Иван", "customer_phone": "+79990001234", "customer_type": "b2b"},
+        format="json",
+    )
+    # Заказ принят, но тип покупателя — b2c (гость не может быть B2B).
+    assert resp.status_code == 201
+    assert resp.json()["customer_type"] == "b2c"
+
+
+@pytest.mark.django_db
 def test_order_ignores_price_from_body(api, product):
     api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
     # Подкладываем фейковую цену в тело — должна быть проигнорирована.

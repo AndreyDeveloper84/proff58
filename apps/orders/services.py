@@ -77,8 +77,12 @@ def add_to_cart(cart: Cart, product: Product, qty: int = 1) -> CartItem:
         defaults={"quantity": qty},
     )
     if not created:
-        item.quantity += qty
-        item.save(update_fields=["quantity", "updated_at"])
+        # F() — атомарный инкремент на стороне БД, защита от lost-update (#282).
+        CartItem.objects.filter(pk=item.pk).update(
+            quantity=models.F("quantity") + qty,
+            updated_at=timezone.now(),
+        )
+        item.refresh_from_db()
     return item
 
 
@@ -297,10 +301,13 @@ def place_order(
     }
     items = list(cart.items.filter(is_deleted=False))
 
-    # Тип покупателя: для аутентифицированного — из учётной записи.
-    customer_type = customer_data.get("customer_type") or CustomerType.B2C
+    # Тип покупателя: только из учётной записи (для аутентифицированного пользователя).
+    # Гость не может объявить себя B2B через тело запроса — это бы дало оптовый тип
+    # при розничной цене (#282 B2B-guest exploit).
     if user is not None and getattr(user, "is_authenticated", False):
         customer_type = getattr(user, "customer_type", CustomerType.B2C)
+    else:
+        customer_type = CustomerType.B2C
 
     snapshot = _customer_snapshot(user, customer_type, customer_data)
 

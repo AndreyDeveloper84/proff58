@@ -192,9 +192,12 @@ class CreateOrderSerializer(serializers.Serializer):
                     {"customer_phone": "Телефон обязателен для гостевого заказа."}
                 )
 
-        customer_type = attrs.get("customer_type", "")
+        # Тип покупателя берётся только из учётной записи.
+        # Гость не может объявить себя B2B через тело запроса (#282).
         if is_authenticated:
             customer_type = getattr(user, "customer_type", "b2c")
+        else:
+            customer_type = "b2c"
 
         if customer_type == "b2b":
             from apps.orders.invoice import validate_b2b_requisites
