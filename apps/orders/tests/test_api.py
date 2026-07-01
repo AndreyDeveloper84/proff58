@@ -39,6 +39,69 @@ def test_cart_update_and_delete(api, product):
 
 
 # ---------------------------------------------------------------------------
+# Undo-удаление (#380)
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_cart_delete_is_soft(api, product):
+    """DELETE скрывает строку (soft-delete), физически не удаляет."""
+    from apps.orders.models import CartItem
+
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+
+    resp = api.delete(f"/api/cart/items/{item_id}/")
+    assert resp.status_code == 200
+    assert resp.json()["lines"] == []
+
+    # Строка в БД, но помечена как удалённая
+    item = CartItem.objects.get(pk=item_id)
+    assert item.is_deleted is True
+    assert item.deleted_at is not None
+
+
+@pytest.mark.django_db
+def test_cart_restore_after_delete(api, product):
+    """POST /restore/ возвращает строку в корзину."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 3}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+
+    api.delete(f"/api/cart/items/{item_id}/")
+    assert api.get("/api/cart/").json()["lines"] == []
+
+    resp = api.post(f"/api/cart/items/{item_id}/restore/")
+    assert resp.status_code == 200
+    lines = resp.json()["lines"]
+    assert len(lines) == 1
+    assert lines[0]["quantity"] == 3
+
+
+@pytest.mark.django_db
+def test_cart_restore_twice_is_404(api, product):
+    """Повторный /restore/ для уже восстановленной строки → 404."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+
+    api.delete(f"/api/cart/items/{item_id}/")
+    api.post(f"/api/cart/items/{item_id}/restore/")
+    resp = api.post(f"/api/cart/items/{item_id}/restore/")
+    assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+def test_cart_add_after_delete_restores(api, product):
+    """Добавление товара, у которого есть soft-deleted строка — восстанавливает её."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+
+    api.delete(f"/api/cart/items/{item_id}/")
+    resp = api.post("/api/cart/items/", {"product_id": product.id, "quantity": 5}, format="json")
+    assert resp.status_code == 200
+    lines = resp.json()["lines"]
+    assert len(lines) == 1
+    assert lines[0]["quantity"] == 5
+
+
+# ---------------------------------------------------------------------------
 # Backend-цена: тело запроса игнорируется
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db

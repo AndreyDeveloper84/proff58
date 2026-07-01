@@ -54,13 +54,26 @@ def _validate_qty(qty: int) -> int:
 
 
 def add_to_cart(cart: Cart, product: Product, qty: int = 1) -> CartItem:
-    """Добавить товар в корзину (или увеличить количество существующей строки)."""
+    """Добавить товар в корзину (или увеличить количество существующей строки).
+
+    Если для этого товара есть soft-deleted строка — восстанавливает её.
+    """
     qty = _validate_qty(qty)
     _ensure_active_product(product)
+
+    # Проверяем сначала мягко удалённую строку (чтобы не нарушить unique constraint).
+    deleted_item = CartItem.objects.filter(cart=cart, product=product, is_deleted=True).first()
+    if deleted_item:
+        deleted_item.is_deleted = False
+        deleted_item.deleted_at = None
+        deleted_item.quantity = qty
+        deleted_item.save(update_fields=["is_deleted", "deleted_at", "quantity", "updated_at"])
+        return deleted_item
 
     item, created = CartItem.objects.get_or_create(
         cart=cart,
         product=product,
+        is_deleted=False,
         defaults={"quantity": qty},
     )
     if not created:
@@ -78,8 +91,25 @@ def update_cart_item(item: CartItem, qty: int) -> CartItem:
 
 
 def remove_from_cart(item: CartItem) -> None:
-    """Удалить строку из корзины."""
+    """Физически удалить строку (для внутреннего использования)."""
     item.delete()
+
+
+def soft_delete_cart_item(item: CartItem) -> None:
+    """Мягко удалить строку — скрыть из корзины с возможностью восстановления (#380)."""
+    item.is_deleted = True
+    item.deleted_at = timezone.now()
+    item.save(update_fields=["is_deleted", "deleted_at", "updated_at"])
+
+
+def restore_cart_item(item: CartItem) -> CartItem:
+    """Восстановить мягко удалённую строку корзины (undo-действие, #380)."""
+    if not item.is_deleted:
+        return item
+    item.is_deleted = False
+    item.deleted_at = None
+    item.save(update_fields=["is_deleted", "deleted_at", "updated_at"])
+    return item
 
 
 @dataclass(frozen=True)
@@ -117,7 +147,7 @@ def get_cart_view(cart: Cart, user=None) -> CartView:
     total = _ZERO
     currency = "RUB"
 
-    items = cart.items.select_related("product").all()
+    items = cart.items.filter(is_deleted=False).select_related("product")
     for item in items:
         product = item.product
         result = price_for(product, user, item.quantity)
@@ -241,14 +271,14 @@ def place_order(
     if cart.status != CartStatus.ACTIVE:
         raise ValidationError("Корзина уже оформлена в заказ.")
 
-    product_ids = list(cart.items.values_list("product_id", flat=True))
+    product_ids = list(cart.items.filter(is_deleted=False).values_list("product_id", flat=True))
     if not product_ids:
         raise ValidationError("Корзина пуста.")
 
     locked_products = {
         p.pk: p for p in Product.objects.select_for_update().filter(pk__in=product_ids)
     }
-    items = list(cart.items.all())
+    items = list(cart.items.filter(is_deleted=False))
 
     # Тип покупателя: для аутентифицированного — из учётной записи.
     customer_type = customer_data.get("customer_type") or CustomerType.B2C

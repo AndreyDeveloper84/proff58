@@ -357,6 +357,11 @@ class CartItem(TimeStampedModel):
     )
     quantity = models.PositiveIntegerField(_("Количество"), default=1)
 
+    # Soft-delete для undo-удаления (#380): строка скрыта из корзины, но может
+    # быть восстановлена через POST /api/cart/items/{id}/restore/ пока открыт тост.
+    is_deleted = models.BooleanField(_("Удалена (soft)"), default=False, db_index=True)
+    deleted_at = models.DateTimeField(_("Дата мягкого удаления"), null=True, blank=True)
+
     class Meta:
         verbose_name = _("Строка корзины")
         verbose_name_plural = _("Строки корзины")
@@ -364,7 +369,8 @@ class CartItem(TimeStampedModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["cart", "product"],
-                name="uniq_cart_product",
+                condition=models.Q(is_deleted=False),
+                name="uniq_cart_product_active",
             ),
         ]
 

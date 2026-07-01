@@ -1,13 +1,14 @@
 """DRF-вьюхи заказов и корзины — тонкие, вся логика в services.
 
 Эндпоинты:
-  GET    /api/cart/              — текущая корзина с актуальной ценой
-  POST   /api/cart/items/        — добавить товар
-  PATCH  /api/cart/items/{id}/   — изменить количество
-  DELETE /api/cart/items/{id}/   — удалить строку
-  POST   /api/orders/            — оформить заказ (цена серверная)
-  GET    /api/orders/            — список своих заказов (только аутентифицированный)
-  GET    /api/orders/{number}/   — заказ по номеру (только владелец)
+  GET    /api/cart/                       — текущая корзина с актуальной ценой
+  POST   /api/cart/items/                 — добавить товар
+  PATCH  /api/cart/items/{id}/            — изменить количество
+  DELETE /api/cart/items/{id}/            — мягкое удаление (undo-window)
+  POST   /api/cart/items/{id}/restore/    — восстановить мягко удалённую строку (#380)
+  POST   /api/orders/                     — оформить заказ (цена серверная)
+  GET    /api/orders/                     — список своих заказов (только аутентифицированный)
+  GET    /api/orders/{number}/            — заказ по номеру (только владелец)
 """
 
 from __future__ import annotations
@@ -133,7 +134,30 @@ class CartItemDetailView(APIView):
         if item is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         cart = item.cart
-        services.remove_from_cart(item)
+        services.soft_delete_cart_item(item)
+        return _cart_response(request, cart)
+
+
+class CartItemRestoreView(APIView):
+    """POST /api/cart/items/{id}/restore/ — undo-восстановление строки (#380).
+
+    Фронт вызывает в течение undo-окна (~5 сек) после DELETE. Возвращает
+    корзину с восстановленной строкой.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request, pk):
+        cart = _get_active_cart(request)
+        if cart is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        item = CartItem.objects.filter(pk=pk, cart=cart, is_deleted=True).first()
+        if item is None:
+            return Response(
+                {"detail": "Строка не найдена или уже восстановлена."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        services.restore_cart_item(item)
         return _cart_response(request, cart)
 
 
