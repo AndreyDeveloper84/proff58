@@ -11,6 +11,7 @@ REST_FRAMEWORK = {
         **REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"],
         "onec": None,
         "orders": None,
+        "anon": None,  # #279: отключено в dev/тестах
     },
 }
 

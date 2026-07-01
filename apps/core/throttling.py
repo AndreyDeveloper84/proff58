@@ -39,3 +39,20 @@ class OrdersRateThrottle(_FixedScopeThrottle):
     """Лимит оформления/добавления в корзину по IP (scope `orders`)."""
 
     scope = "orders"
+
+
+class AnonRateThrottle(_FixedScopeThrottle):
+    """Глобальный лимит анонимных запросов по IP (scope `anon`, #279).
+
+    Защищает каталог и другие AllowAny-эндпоинты (фасеты, поиск) от дешёвого
+    DoS. Аутентифицированные пользователи не ограничиваются этим троттлом.
+    Задаётся в DEFAULT_THROTTLE_CLASSES; вьюхи с явным throttle_classes
+    (1С, корзина/заказы) используют свои классы и игнорируют этот.
+    """
+
+    scope = "anon"
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            return None  # аутентифицированные запросы не ограничиваем
+        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}

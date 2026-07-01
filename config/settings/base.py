@@ -173,6 +173,9 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 24,
+    # #279: глобальный анонимный лимит — защита каталога/фасетов от DoS.
+    # Вьюхи с явным throttle_classes (1С, корзина, заказы) его не наследуют.
+    "DEFAULT_THROTTLE_CLASSES": ["apps.core.throttling.AnonRateThrottle"],
     "DEFAULT_THROTTLE_RATES": {
         "inquiry": "20/hour",
         # #9: флуд чувствительных эндпоинтов. onec — поток валидным ключом 1С (по IP),
@@ -180,6 +183,8 @@ REST_FRAMEWORK = {
         # пусто/None отключает скоуп (в dev/тестах — выключено, см. dev.py).
         "onec": env("ONEC_THROTTLE_RATE", default="300/min"),
         "orders": env("ORDERS_THROTTLE_RATE", default="60/min"),
+        # #279: лимит анонимных запросов к публичному API (каталог, фасеты, поиск).
+        "anon": env("ANON_THROTTLE_RATE", default="200/min"),
     },
 }
 
