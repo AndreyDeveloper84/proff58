@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from apps.catalog.models import ProductStatus
 from apps.core.events import order_created
 from apps.orders.models import (
+    Cart,
     CartStatus,
     FulfillmentStatus,
     PaymentStatus,
@@ -259,3 +260,43 @@ def test_order_created_emitted_once(cart_with_item, django_capture_on_commit_cal
     assert received[0]["order_id"] == order.id
     # Контракт события не расширён — только order_id
     assert set(received[0].keys()) == {"order_id", "signal"}
+
+
+# ---------------------------------------------------------------------------
+# Защита от двойной продажи (#276): select_for_update + атомарное списание
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_place_order_deducts_available_quantity(cart, product):
+    """Оформление заказа атомарно списывает available_quantity и зачисляет в reserved."""
+    product.available_quantity = Decimal("5")
+    product.save(update_fields=["available_quantity"])
+    add_to_cart(cart, product, 3)
+
+    place_order(
+        cart,
+        user=None,
+        customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+    )
+    product.refresh_from_db()
+    assert product.available_quantity == Decimal("2")
+    assert product.reserved_quantity == Decimal("3")
+
+
+@pytest.mark.django_db
+def test_second_order_fails_after_stock_depleted(db, product, b2c_user):
+    """После первого заказа второй с теми же количеством → 400 (остаток исчерпан)."""
+    product.available_quantity = Decimal("1")
+    product.save(update_fields=["available_quantity"])
+
+    cart1 = Cart.objects.create(user=b2c_user, status=CartStatus.ACTIVE, session_key="")
+    add_to_cart(cart1, product, 1)
+    place_order(cart1, user=b2c_user, customer_data={})
+
+    cart2 = Cart.objects.create(session_key="sess-test-2nd")
+    add_to_cart(cart2, product, 1)
+    with pytest.raises(ValidationError, match="Недостаточно товара"):
+        place_order(
+            cart2,
+            user=None,
+            customer_data={"customer_name": "Покупатель2", "customer_phone": "+79990099098"},
+        )
