@@ -4,13 +4,16 @@ from __future__ import annotations
 
 import pytest
 from django.db import connection
+from django.db.utils import IntegrityError
 from django.test.utils import CaptureQueriesContext
+from unittest.mock import patch
 
 from apps.catalog.models import Product
 from apps.core.events import product_updated
 from apps.pricing.models import PriceRecord
-from apps.sync_1c import use_cases
-from apps.sync_1c.models import StockRecord
+from apps.sync_1c import bulk_import, use_cases
+from apps.sync_1c.models import NomenclatureStaging, StockRecord, StagingStatus
+from apps.sync_1c.use_cases import ImportResult, _tally_error
 
 
 @pytest.mark.django_db
@@ -69,3 +72,34 @@ def test_reimport_changed_price_flips_current_and_emits(django_capture_on_commit
     assert PriceRecord.objects.filter(code_1c="p1").count() == 2  # история сохранена
     assert len(received) == 1
     assert "price" in received[0]["changed_fields"]
+
+
+@pytest.mark.django_db
+def test_staging_saved_before_product_transaction():
+    """Инвариант #131: raw staging сохраняется ДО записи товаров.
+
+    Если product-транзакция падает (имитируем через patch), staging-записи уже в БД.
+    """
+    rows = [{"external_id": "s131", "name": "Тест инварианта #131", "price": "500"}]
+
+    # Имитируем падение bulk-транзакции записи товаров
+    with patch.object(bulk_import, "_update_staging", side_effect=IntegrityError("mock")):
+        ok = bulk_import.run_rows_bulk(
+            rows,
+            sync_log=None,
+            source_file="test",
+            create_missing=True,
+            allow_basic_fields=True,
+            error_lines=[],
+            result=ImportResult(),
+            tally_error=_tally_error,
+        )
+
+    # bulk упал → fallback-сигнал
+    assert ok is False
+    # Staging уже был сохранён ДО падения product-транзакции (инвариант #131)
+    assert NomenclatureStaging.objects.filter(source_file="test").exists()
+    staging = NomenclatureStaging.objects.get(source_file="test")
+    assert staging.raw_payload == rows[0]
+    # Статус остался PENDING (product-транзакция не дошла до bulk_update)
+    assert staging.status == StagingStatus.PENDING
