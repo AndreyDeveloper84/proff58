@@ -181,6 +181,33 @@ def test_otp_no_pending():
 
 @override_settings(MAX_BOT_TOKEN=TOKEN)
 @pytest.mark.django_db
+def test_otp_max_attempts_blocks(user):
+    """После OTP_MAX_ATTEMPTS неверных попыток — блок и очистка из кэша."""
+    payload = _make_vcf_payload("+79001234567", TOKEN)
+    auth.handle_contact(400, payload)
+
+    for _ in range(auth.OTP_MAX_ATTEMPTS):
+        reply = auth.handle_otp_confirm(400, "0000")
+    # Последняя попытка превышает лимит
+    reply = auth.handle_otp_confirm(400, "0000")
+    assert "Превышено" in reply["text"]
+    assert cache.get("max_otp:400") is None  # кэш очищен
+
+
+@override_settings(MAX_BOT_TOKEN=TOKEN)
+@pytest.mark.django_db
+def test_otp_expired_shows_no_pending(user):
+    """Истёкший OTP (кэш удалён по TTL) — «Нет ожидающей привязки»."""
+    payload = _make_vcf_payload("+79001234567", TOKEN)
+    auth.handle_contact(500, payload)
+    # Симулируем истечение TTL — удаляем ключ вручную
+    cache.delete("max_otp:500")
+    reply = auth.handle_otp_confirm(500, "9999")
+    assert "Нет ожидающей" in reply["text"]
+
+
+@override_settings(MAX_BOT_TOKEN=TOKEN)
+@pytest.mark.django_db
 def test_contact_already_linked(user):
     User.objects.filter(pk=user.pk).update(max_chat_id=100)
     payload = _make_vcf_payload("+79001234567", TOKEN)
