@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -42,18 +43,30 @@ def _get_session_key(request) -> str:
 
 
 def _get_or_create_active_cart(request) -> Cart:
-    """Активная корзина текущего покупателя (по пользователю или сессии)."""
+    """Активная корзина текущего покупателя (по пользователю или сессии).
+
+    Используем try/except IntegrityError чтобы пережить гонку на partial uniq-constraint
+    (два одновременных запроса — оба пытаются создать корзину, один проигрывает → #282).
+    """
     user = request.user if request.user.is_authenticated else None
     if user is not None:
-        cart, _ = Cart.objects.get_or_create(
-            user=user, status=CartStatus.ACTIVE, defaults={"session_key": ""}
-        )
+        try:
+            cart, _ = Cart.objects.get_or_create(
+                user=user, status=CartStatus.ACTIVE, defaults={"session_key": ""}
+            )
+        except IntegrityError:
+            cart = Cart.objects.get(user=user, status=CartStatus.ACTIVE)
         return cart
 
     session_key = _get_session_key(request)
-    cart, _ = Cart.objects.get_or_create(
-        session_key=session_key, user__isnull=True, status=CartStatus.ACTIVE
-    )
+    try:
+        cart, _ = Cart.objects.get_or_create(
+            session_key=session_key, user__isnull=True, status=CartStatus.ACTIVE
+        )
+    except IntegrityError:
+        cart = Cart.objects.get(
+            session_key=session_key, user__isnull=True, status=CartStatus.ACTIVE
+        )
     return cart
 
 
