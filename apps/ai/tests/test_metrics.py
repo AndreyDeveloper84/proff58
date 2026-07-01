@@ -8,7 +8,7 @@ import pytest
 from django.test import override_settings
 from django.utils import timezone
 
-from apps.ai.metrics import SourcingCollector, make_registry
+from apps.ai.metrics import make_registry
 from apps.ai.models import ExternalCall, SourcingBudget, SourcingRun
 
 # ---------------------------------------------------------------------------
