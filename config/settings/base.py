@@ -230,6 +230,10 @@ ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 YANDEX_MARKET_API_KEY = env("YANDEX_MARKET_API_KEY", default="")
 SOURCING_ALLOWLIST = {d.lower() for d in env.list("SOURCING_ALLOWLIST", default=[])}
 
+# Prometheus-метрики sourcing pipeline (#374). Пустой токен — эндпоинт открыт
+# (только для внутренних сетей). В проде задать непустой METRICS_TOKEN.
+METRICS_TOKEN = env("METRICS_TOKEN", default="")
+
 # Feature-флаги. Инфраструктурные — здесь (через env, меняют разработчики).
 # Бизнес-флаги (reviews/b2b/...) живут в SiteSettings. Проверка — через
 # apps.core.features.is_enabled(); механизм поддерживает override любого флага

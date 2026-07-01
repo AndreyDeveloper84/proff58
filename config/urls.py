@@ -5,11 +5,13 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.ai.metrics import metrics_view
 from apps.core import health
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("healthz/", health.healthz, name="healthcheck"),
+    path("metrics/", metrics_view, name="prometheus-metrics"),
     path("api/1c/", include("apps.sync_1c.api.urls")),
     path("api/catalog/", include("apps.catalog.api.urls")),
     path("api/payments/", include("apps.payments.urls")),
