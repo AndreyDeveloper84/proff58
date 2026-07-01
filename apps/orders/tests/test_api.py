@@ -151,6 +151,7 @@ def test_cart_mixed_currencies_zeroes_total(api, product, db):
 def test_b2b_order_invalid_inn_rejected(api, product, db):
     """B2B-заказ с пустым ИНН → 400."""
     from django.contrib.auth import get_user_model
+
     from apps.accounts.models import Profile
 
     User = get_user_model()
@@ -167,6 +168,7 @@ def test_b2b_order_invalid_inn_rejected(api, product, db):
 def test_b2b_order_empty_company_rejected(api, product, db):
     """B2B-заказ с пустым названием организации → 400."""
     from django.contrib.auth import get_user_model
+
     from apps.accounts.models import Profile
 
     User = get_user_model()
