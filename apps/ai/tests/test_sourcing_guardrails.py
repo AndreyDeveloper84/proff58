@@ -64,3 +64,13 @@ def test_overlong_text_rejected():
     assert validate(_f(value={"type": "text", "value": "a" * 8001})) is None
     # граница MAX_TEXT=8000 включительно — проходит
     assert validate(_f(value={"type": "text", "value": "a" * 8000})) is not None
+
+
+def test_untrusted_source_name_rejected():
+    # #9: находка не может объявить доверенный источник (manual/import_1c) и получить
+    # завышенный приоритет — source_name ограничен множеством адаптеров.
+    assert validate(_f(source_name="manual")) is None
+    assert validate(_f(source_name="import_1c")) is None
+    assert validate(_f(source_name="regex")) is None
+    assert validate(_f(source_name="web")) is not None
+    assert validate(_f(source_name="marketplace", canonical_url="")) is not None

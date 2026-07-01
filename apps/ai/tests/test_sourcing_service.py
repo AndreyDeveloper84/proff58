@@ -91,3 +91,66 @@ def test_reapprove_is_noop(budget):
     services.approve_and_apply_finding(f.pk, ev.pk, reviewer_id=None)
     again = services.approve_and_apply_finding(f.pk, ev.pk, reviewer_id=None)
     assert again.status == "skipped"
+
+
+@pytest.mark.django_db
+def test_budget_released_from_reservation_day(monkeypatch):
+    """#8: резерв снимается со строки дня резервирования, а не дня завершения."""
+    from decimal import Decimal
+
+    from apps.ai.sourcing.ports import SourceReply
+
+    d1, d2 = dt.date(2026, 6, 29), dt.date(2026, 6, 30)
+    SourcingBudget.objects.create(day=d1, daily_cap=100)
+    run = SourcingRun.objects.create(idempotency_key="cross-day", product_ref=1, status="running")
+
+    monkeypatch.setattr(services, "_today", lambda: d1)
+    call, owns = services._reserve_and_open_call(run, "web")
+    assert owns and SourcingBudget.objects.get(day=d1).reserved == services.MAX_CALL_COST
+
+    monkeypatch.setattr(services, "_today", lambda: d2)  # сутки сменились к закрытию
+    services._close_call(
+        call,
+        ExternalCall.Status.OK,
+        reply=SourceReply(findings=[], provider="web", cost=Decimal("0")),
+    )
+    assert SourcingBudget.objects.get(day=d1).reserved == 0  # резерв снят с d1
+    assert not SourcingBudget.objects.filter(day=d2).exists()  # d2 не тронут
+
+
+@pytest.mark.django_db
+def test_cost_capped_to_reserved(monkeypatch):
+    """#8: фактическая стоимость не превышает зарезервированный потолок."""
+    from decimal import Decimal
+
+    from apps.ai.sourcing.ports import SourceReply
+
+    d1 = dt.date(2026, 6, 29)
+    SourcingBudget.objects.create(day=d1, daily_cap=100)
+    run = SourcingRun.objects.create(idempotency_key="cap", product_ref=1, status="running")
+    monkeypatch.setattr(services, "_today", lambda: d1)
+    call, _ = services._reserve_and_open_call(run, "web")
+    services._close_call(
+        call,
+        ExternalCall.Status.OK,
+        reply=SourceReply(findings=[], provider="web", cost=Decimal("999")),
+    )
+    call.refresh_from_db()
+    assert call.cost == services.MAX_CALL_COST
+    assert SourcingBudget.objects.get(day=d1).spent == services.MAX_CALL_COST
+
+
+@pytest.mark.django_db
+def test_foreign_running_not_counted_as_ok(budget):
+    """#7: чужой RUNNING-вызов не должен финализировать run как ok."""
+    p = _product()
+    run = SourcingRun.objects.create(idempotency_key="foreign", product_ref=p.pk, status="running")
+    ExternalCall.objects.create(
+        run=run,
+        adapter="dummy",
+        status=ExternalCall.Status.RUNNING,
+        reserved_cost=services.MAX_CALL_COST,
+        reserved_day=dt.date(2026, 6, 29),
+    )
+    result = services.source_content(product_id=p.pk, idempotency_key="foreign")
+    assert result.status != SourcingRun.Status.OK
