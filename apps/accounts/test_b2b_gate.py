@@ -10,9 +10,9 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.test import RequestFactory, override_settings
+from django.test import override_settings
 
-from apps.accounts.models import CustomerType, Profile
+from apps.accounts.models import Profile
 from apps.catalog.models import Product, ProductStatus
 from apps.pricing.models import PriceRecord
 from apps.pricing.services import price_for

@@ -8,6 +8,7 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
+from apps.accounts.models import Profile
 from apps.catalog.models import (
     Attribute,
     AttributeType,
@@ -17,7 +18,6 @@ from apps.catalog.models import (
     ProductImage,
     ProductStatus,
 )
-from apps.accounts.models import Profile
 from apps.pricing.models import PriceRecord
 from apps.pricing.services import RETAIL, WHOLESALE, price_for, price_map_for_products
 
