@@ -62,11 +62,54 @@ _STRING_FIELDS = {
 
 
 def to_decimal(value) -> Decimal | None:
+    """Разобрать число из 1С (деньги/остаток), различая роль `,`/`.`/пробела.
+
+    1С 7.7 шлёт число строкой в разном формате. Слепой `.replace(",", ".")` либо
+    ронял строку в `None` (skipped), либо занижал цену в 1000× (#271). Правило:
+
+    * пробел — всегда разделитель тысяч (выкидываем);
+    * два разных разделителя — последний по позиции отделяет дробь, другой тысячи
+      (`"1.234,50"`→1234.50, `"1,234.50"`→1234.50);
+    * одиночный разделитель + ровно 3 цифры после — тысячи (`"1,234"`→1234), НО
+      ведущий 0 в целой части ⇒ дробь (`"0,500"`→0.5);
+    * одиночный разделитель + не 3 цифры — дробь (`"1234,50"`→1234.50);
+    * повтор одного разделителя — группировка тысяч (`"1,234,567"`→1234567).
+    """
     if value is None or value == "":
         return None
+    # Числовые типы — без строкового разбора разделителей (иначе float-repr врёт).
+    if isinstance(value, int | float | Decimal):
+        try:
+            return Decimal(str(value))
+        except (InvalidOperation, ValueError, TypeError):
+            return None
+
+    s = str(value).strip().replace(" ", "")  # пробел = тысячи
+    if not s:
+        return None
+    sign = ""
+    if s[:1] in "+-":
+        sign, s = s[0], s[1:]
+
+    has_comma = "," in s
+    has_dot = "." in s
+    if has_comma and has_dot:
+        # Последний по позиции разделитель — десятичный, другой — тысячи.
+        dec, tho = (",", ".") if s.rfind(",") > s.rfind(".") else (".", ",")
+        s = s.replace(tho, "").replace(dec, ".")
+    elif has_comma or has_dot:
+        sep = "," if has_comma else "."
+        if s.count(sep) > 1:
+            s = s.replace(sep, "")  # повтор ⇒ тысячи
+        else:
+            int_part, frac_part = s.split(sep)
+            if len(frac_part) == 3 and int_part and not int_part.startswith("0"):
+                s = s.replace(sep, "")  # 3 цифры + не ведущий 0 ⇒ тысячи
+            else:
+                s = s.replace(sep, ".")  # иначе ⇒ дробь
+
     try:
-        # 1С нередко присылает десятичную запятую и пробелы-разделители разрядов.
-        return Decimal(str(value).replace(" ", "").replace(",", "."))
+        return Decimal(sign + s)
     except (InvalidOperation, ValueError, TypeError):
         return None
 
