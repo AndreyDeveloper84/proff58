@@ -41,7 +41,13 @@ def _sourcing_enabled() -> bool:
 def source_product_task(self, product_id, idempotency_key):
     if not _sourcing_enabled():
         return "disabled"
-    services.source_content(product_id=product_id, idempotency_key=idempotency_key)
+    try:
+        services.source_content(product_id=product_id, idempotency_key=idempotency_key)
+    except Exception as exc:  # noqa: BLE001
+        # Прогон идемпотентен (get_or_create по idempotency_key, skip по ExternalCall(ok)),
+        # поэтому повтор инфра-сбоя безопасен. Ошибки конкретных источников гасятся внутри
+        # source_content (изоляция адаптера) и сюда не доходят — здесь только инфра/непредвиденное.
+        raise self.retry(exc=exc) from exc
     return idempotency_key
 
 
