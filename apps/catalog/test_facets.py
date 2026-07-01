@@ -635,3 +635,29 @@ def test_curated_sort_order_beats_count(client, tree):
 
     facet = get_facet(client.get("/api/catalog/categories/dreli/facets/").json(), "chuck")
     assert [v["value"] for v in facet["values"]] == ["Первый", "Второй"]
+
+
+@pytest.mark.django_db
+def test_brand_facet_case_insensitive_grouping(client, tree):
+    """«Bosch» и «BOSCH» должны объединяться в один пункт фасета (#281)."""
+    _, leaf = tree
+    make_product(leaf, "p1", {}, brand="Bosch")
+    make_product(leaf, "p2", {}, brand="BOSCH")
+    make_product(leaf, "p3", {}, brand="bosch")
+
+    data = client.get("/api/catalog/categories/dreli/facets/").json()
+    brands = data["brands"]
+    assert len(brands) == 1, f"Ожидался 1 пункт бренда, получено: {brands}"
+    assert brands[0]["count"] == 3
+
+
+@pytest.mark.django_db
+def test_brand_filter_case_insensitive(client, tree):
+    """Фильтр ?brand=bosch находит товары с brand='Bosch' и 'BOSCH' (#281)."""
+    _, leaf = tree
+    make_product(leaf, "p1", {}, brand="Bosch")
+    make_product(leaf, "p2", {}, brand="BOSCH")
+    make_product(leaf, "p3", {}, brand="Makita")
+
+    data = client.get("/api/catalog/categories/dreli/facets/?brand=bosch").json()
+    assert data["total_products"] == 2
