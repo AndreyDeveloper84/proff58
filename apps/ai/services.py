@@ -1,4 +1,4 @@
-"""Публичный контракт AI-возможностей: ``recommend()`` (capability-срез).
+"""Публичный контракт AI-возможностей: ``recommend()``, ``assist()`` (capability-срез).
 
 V1 ``recommend`` — это ДЕТЕРМИНИРОВАННЫЙ EAV-движок БЕЗ LLM: подбор «похожих по
 характеристикам» товаров по денормализованному ``Product.attrs_cache`` (источник —
@@ -19,7 +19,7 @@ from __future__ import annotations
 import datetime as _dt
 import hashlib
 import json as _json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 
 from django.db import transaction
@@ -561,3 +561,49 @@ def approve_and_apply_finding(finding_id, evidence_id, reviewer_id):
                 pk=finding_id, status=ContentFinding.Status.PENDING
             ).update(last_outcome="apply_failed", rejection_reason=str(exc)[:255])
         raise
+
+
+# ---------------------------------------------------------------------------
+# ai_assist — контракт AI-консультанта (#74, V2 placeholder)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class AssistReply:
+    """Ответ AI-консультанта. Контракт зафиксирован для V2-реализации.
+
+    Поля:
+    - text        — текст ответа (всегда заполнен, минимум заглушка)
+    - suggestions — опциональные slug'и рекомендованных товаров
+    - session_id  — идентификатор сессии для continuity
+    - is_stub     — True если это заглушка (LLM не подключён)
+    """
+
+    text: str
+    suggestions: list[str] = field(default_factory=list)
+    session_id: str = ""
+    is_stub: bool = False
+
+
+def assist(*, message: str, session: str = "") -> AssistReply:
+    """Ответить на вопрос покупателя (контракт AI-консультанта, #74).
+
+    V1 — заглушка: возвращает предсказуемый placeholder, не обращается к LLM.
+    V2 — LLM-реализация за портом (контракт остаётся неизменным).
+
+    Args:
+        message: сообщение покупателя
+        session: идентификатор сессии (для continuity между запросами)
+
+    Returns:
+        AssistReply с текстом и опциональными рекомендациями товаров
+    """
+    return AssistReply(
+        text=(
+            "Здравствуйте! Я пока работаю в тестовом режиме. "
+            "По вопросам подбора инструмента свяжитесь с нами по телефону."
+        ),
+        suggestions=[],
+        session_id=session or "",
+        is_stub=True,
+    )
