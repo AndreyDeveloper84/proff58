@@ -24,6 +24,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.catalog.attribute_extract import BOOLEAN, NUMBER, SELECT, AttributeRules
+from apps.catalog.attrs_cache import flush_attrs_cache_merged
 from apps.catalog.ingest import data_dir
 from apps.catalog.models import (
     Attribute,
@@ -125,6 +126,11 @@ class Command(BaseCommand):
         pav_delete_ids: list[int] = []
         cache_updates: list[Product] = []
 
+        # Ключи attrs_cache, которыми владеет команда для конкретного товара (его
+        # tool_type). Нужно для безопасной записи: чужие ключи не трогаем (#5).
+        def managed_for(product: Product) -> set[str]:
+            return set(managed_by_tt.get(product_tt.get(product.id, ""), ()))
+
         qs = Product.objects.filter(id__in=product_ids).iterator(chunk_size=2000)
         try:
             with transaction.atomic():
@@ -209,9 +215,7 @@ class Command(BaseCommand):
                         )
                         pav_update.clear()
                     if len(cache_updates) >= BATCH:
-                        Product.objects.bulk_update(
-                            cache_updates, ["attrs_cache"], batch_size=BATCH
-                        )
+                        flush_attrs_cache_merged(cache_updates, managed_for, batch_size=BATCH)
                         cache_updates.clear()
 
                 if pav_delete_ids:
@@ -223,7 +227,7 @@ class Command(BaseCommand):
                         pav_update, UPDATE_FIELDS, batch_size=BATCH
                     )
                 if cache_updates:
-                    Product.objects.bulk_update(cache_updates, ["attrs_cache"], batch_size=BATCH)
+                    flush_attrs_cache_merged(cache_updates, managed_for, batch_size=BATCH)
 
                 run.status = ImportRunStatus.DONE
         except Exception as exc:  # noqa: BLE001
