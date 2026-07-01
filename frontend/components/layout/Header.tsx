@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Heart, Menu, Scale, ShoppingCart, User } from "lucide-react";
@@ -14,7 +15,12 @@ const ACCOUNT_ICONS: Record<string, LucideIcon> = {
   Сравнение: Scale,
 };
 
-export function Header() {
+interface HeaderProps {
+  logoUrl?: string;
+  siteName?: string;
+}
+
+export function Header({ logoUrl, siteName = "Профессионал" }: HeaderProps) {
   const { count } = useCart();
   const [open, setOpen] = useState(false);
 
@@ -51,11 +57,21 @@ export function Header() {
         >
           <Menu className="h-5 w-5" aria-hidden />
         </button>
-        <Link
-          href="/"
-          className="shrink-0 font-display text-xl font-bold uppercase tracking-wide text-accent"
-        >
-          Профессионал
+        <Link href="/" className="shrink-0">
+          {logoUrl ? (
+            <Image
+              src={logoUrl}
+              alt={siteName}
+              width={140}
+              height={40}
+              className="h-10 w-auto object-contain"
+              priority
+            />
+          ) : (
+            <span className="font-display text-xl font-bold uppercase tracking-wide text-accent">
+              {siteName}
+            </span>
+          )}
         </Link>
         <div className="flex-1">
           <SearchBar />
