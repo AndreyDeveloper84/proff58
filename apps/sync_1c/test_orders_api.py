@@ -253,6 +253,33 @@ def test_confirm_primary_without_onec_id_errors(auth_client):
 
 @override_settings(ONEC_API_KEY=API_KEY)
 @pytest.mark.django_db
+@pytest.mark.parametrize("blank", ["", "   "])
+def test_confirm_primary_with_blank_onec_id_errors(auth_client, blank):
+    """Пустой/пробельный onec_order_id = «нет идентификатора» (#273).
+
+    Иначе ack пропускается, заказ остаётся pending и выгружается снова и снова,
+    либо в external_order_id записывается "" как «настоящий» документ 1С.
+    """
+    order = make_order()
+    payload = {
+        "items": [
+            {"site_order_id": order.id, "onec_order_id": blank, "fulfillment_status": "confirmed"}
+        ]
+    }
+    resp = auth_client.post("/api/1c/orders/confirm", payload, format="json")
+    assert resp.status_code == 200
+    item = resp.json()["items"][0]
+    assert item["status"] == "error"
+    assert "onec_order_id" in item["detail"]
+
+    order.refresh_from_db()
+    assert order.sync_1c_status == Sync1CStatus.PENDING  # остаётся pending, не exported
+    assert order.fulfillment_status == FulfillmentStatus.NEW
+    assert order.external_order_id in (None, "")  # "" не записан как документ 1С
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
 def test_confirm_reserve_failed_keeps_fulfillment(auth_client):
     """reserve.ok=false (с onec_order_id): fulfillment остаётся new, sync=exported,
     причина — в SyncLog.error_details."""

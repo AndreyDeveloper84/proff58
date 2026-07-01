@@ -680,11 +680,13 @@ def _find_order_for_confirm(site_order_id, order_number) -> Order | None:
     return None
 
 
-def _apply_sync_ack(order: Order, item: dict, reserve: dict | None) -> None:
+def _apply_sync_ack(order: Order, item: dict, reserve: dict | None, onec_order_id: str) -> None:
     """sync-ack: применяется ВСЕГДА при наличии onec_order_id, независимо от
     оси обработки. Сохраняет связку с документом 1С, резерв, трек, и однократно
-    проставляет exported/exported_at при первом подтверждении приёма."""
-    order.external_order_id = item["onec_order_id"]
+    проставляет exported/exported_at при первом подтверждении приёма.
+
+    onec_order_id передаётся уже нормализованным (непустым) из _confirm_one."""
+    order.external_order_id = onec_order_id
     if item.get("onec_order_number"):
         order.external_order_number = item["onec_order_number"]
     if reserve and reserve.get("ok") and reserve.get("reserved_until"):
@@ -706,7 +708,9 @@ def _confirm_one(item: dict, error_lines: list[str]) -> dict:
     """
     site_order_id = item.get("site_order_id")
     order_number = item.get("order_number")
-    onec_order_id = item.get("onec_order_id")
+    # Пустую/пробельную строку явно приводим к «нет идентификатора» (#273),
+    # чтобы не полагаться на truthy-проверки вперемешку и не писать "" в ack.
+    onec_order_id = (item.get("onec_order_id") or "").strip() or None
     reserve = item.get("reserve")
     target_fulfillment = item.get("fulfillment_status")
 
@@ -725,7 +729,7 @@ def _confirm_one(item: dict, error_lines: list[str]) -> dict:
 
         # 1) sync-ack — независимая ось, применяется первой и не откатывается ниже.
         if onec_order_id:
-            _apply_sync_ack(order, item, reserve)
+            _apply_sync_ack(order, item, reserve, onec_order_id)
 
         # 2) ось обработки (fulfillment) — отдельно от ack.
         fulfillment_error: str | None = None
