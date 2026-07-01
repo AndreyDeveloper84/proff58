@@ -1,13 +1,21 @@
 """Настройки для продакшн-окружения."""
 
-import sentry_sdk
-from sentry_sdk.integrations.celery import CeleryIntegration
-from sentry_sdk.integrations.django import DjangoIntegration
+from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F401,F403
 from .base import ALLOWED_HOSTS, env
 
 DEBUG = False
+
+# SECRET_KEY: fail-fast в проде (#8 код-ревью). Без дефолта — отсутствие env
+# бросит ImproperlyConfigured; публичный дефолт из base отвергаем явно, иначе
+# прод поднялся бы с общеизвестным ключом (подделка session-cookie и подписанных
+# токенов сброса пароля вплоть до входа за is_staff).
+SECRET_KEY = env("DJANGO_SECRET_KEY")
+if SECRET_KEY == "insecure-change-me-in-prod":
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY равен небезопасному дефолту — задайте уникальный ключ в проде."
+    )
 
 # ВРЕМЕННО: оплата выключена на стенде/проде до закрытия #311 — webhook ЮKassa
 # без реальной аутентификации (открыт при пустом секрете) + нет сверки суммы.
@@ -51,6 +59,12 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
+    # Импортируем лениво: sentry-sdk нужен только в проде с заданным DSN, без него
+    # модуль настроек импортируется и там, где пакет не установлен (dev/тесты).
+    import sentry_sdk
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.django import DjangoIntegration
+
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration(), CeleryIntegration()],
