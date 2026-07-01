@@ -55,6 +55,7 @@ class CartViewSerializer(serializers.Serializer):
     lines = CartLineSerializer(many=True)
     total = serializers.SerializerMethodField()
     currency = serializers.CharField()
+    has_mixed_currencies = serializers.BooleanField()
 
     def get_total(self, obj):
         return _money(obj.total)
