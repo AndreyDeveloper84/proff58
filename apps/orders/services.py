@@ -304,6 +304,19 @@ def place_order(
 
     snapshot = _customer_snapshot(user, customer_type, customer_data)
 
+    # Серверная валидация B2B-реквизитов и способа оплаты (#323).
+    if customer_type == CustomerType.B2B:
+        from .invoice import validate_b2b_requisites
+
+        errors = validate_b2b_requisites(snapshot["inn"], snapshot["company_name"])
+        if errors:
+            raise ValidationError(errors[0])
+        if payment_method and payment_method != "invoice":
+            raise ValidationError("B2B-заказ оплачивается только по счёту.")
+        payment_method = "invoice"
+    elif payment_method == "invoice":
+        raise ValidationError("Оплата по счёту доступна только для B2B-заказов.")
+
     is_guest = user is None or not getattr(user, "is_authenticated", False)
     access_token = uuid.uuid4().hex if is_guest else ""
 
