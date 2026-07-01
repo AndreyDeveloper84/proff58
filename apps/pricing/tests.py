@@ -32,7 +32,11 @@ def product(db):
 
 @pytest.fixture
 def b2b_user(db):
-    return User.objects.create_user(phone="+79990000002", customer_type="b2b")
+    from apps.accounts.models import Profile
+
+    user = User.objects.create_user(phone="+79990000002", customer_type="b2b")
+    Profile.objects.create(user=user, is_b2b_verified=True)
+    return user
 
 
 @pytest.fixture

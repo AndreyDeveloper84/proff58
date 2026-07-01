@@ -8,7 +8,7 @@ import pytest
 from django.test import override_settings
 from rest_framework.test import APIClient
 
-from apps.accounts.models import User
+from apps.accounts.models import Profile, User
 from apps.catalog.models import Category, Product, ProductStatus, StockStatus
 from apps.pricing.models import PriceRecord
 from apps.pricing.services import WHOLESALE, price_map_for_products
@@ -22,7 +22,9 @@ def leaf(db):
 
 @pytest.fixture
 def b2b_user(db):
-    return User.objects.create_user(phone="+79990000111", customer_type="b2b")
+    user = User.objects.create_user(phone="+79990000111", customer_type="b2b")
+    Profile.objects.create(user=user, is_b2b_verified=True)
+    return user
 
 
 def make_product(leaf, slug, *, code_1c, price, currency="RUB"):

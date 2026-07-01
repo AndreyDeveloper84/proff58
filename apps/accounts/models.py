@@ -65,6 +65,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     def is_b2b(self) -> bool:
         return self.customer_type == CustomerType.B2B
 
+    @property
+    def is_b2b_verified(self) -> bool:
+        """True только для B2B с подтверждённой верификацией менеджером."""
+        try:
+            return self.is_b2b and self.profile.is_b2b_verified
+        except Profile.DoesNotExist:
+            return False
+
 
 class Profile(TimeStampedModel):
     """Дополнительные данные покупателя.

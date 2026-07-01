@@ -84,7 +84,7 @@ class MeView(APIView):
         for field in ("full_name", "email"):
             if field in request.data:
                 setattr(user, field, request.data[field])
-        user.save(update_fields=["full_name", "email", "updated_at"])
+        user.save(update_fields=["full_name", "email"])
 
         if user.customer_type == "b2b" and request.data.get("profile"):
             profile, _ = Profile.objects.get_or_create(user=user)
@@ -234,5 +234,5 @@ class ChangePhoneView(APIView):
             )
         request.user.phone = new_phone
         request.user.max_chat_id = None
-        request.user.save(update_fields=["phone", "max_chat_id", "updated_at"])
+        request.user.save(update_fields=["phone", "max_chat_id"])
         return Response(UserSerializer(request.user).data)

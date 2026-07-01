@@ -8,6 +8,7 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
+from apps.accounts.models import Profile
 from apps.catalog.models import (
     Attribute,
     AttributeType,
@@ -141,6 +142,7 @@ def test_products_b2b_no_nplus1(client, tree, django_assert_max_num_queries):
     """
     _, _, leaf = tree
     b2b = User.objects.create_user(phone="+79991110000", customer_type="b2b")
+    Profile.objects.create(user=b2b, is_b2b_verified=True)
     for i in range(20):
         p = make_product(
             leaf, f"Опт {i}", f"w-{i}", code_1c=f"1c-w-{i}", currency="RUB", price="1000"
@@ -174,6 +176,7 @@ def test_price_map_equivalent_to_price_for_b2b(tree):
     """price_map_for_products[p.id] поэлементно == price_for(p, b2b) для смеси товаров."""
     _, _, leaf = tree
     b2b = User.objects.create_user(phone="+79991110001", customer_type="b2b")
+    Profile.objects.create(user=b2b, is_b2b_verified=True)
 
     # с опт-ценой
     with_wholesale = make_product(

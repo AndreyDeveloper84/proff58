@@ -74,6 +74,7 @@ def b2b_user(db):
         inn="7700000000",
         kpp="770001001",
         legal_address="г. Пенза, ул. Ленина, 1",
+        is_b2b_verified=True,
     )
     return user
 

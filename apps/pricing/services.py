@@ -96,9 +96,10 @@ def price_for(product, user=None, qty: int = 1) -> PriceResult:
     """
     currency = product.currency or "RUB"
 
-    # is_enabled('b2b') вызывается только для B2B-пользователя (short-circuit) —
-    # для B2C/анонима оверхеда нет.
-    if bool(user and getattr(user, "is_b2b", False)) and is_enabled("b2b"):
+    # Опт — только верифицированным B2B (#340): is_b2b_verified проверяет
+    # и customer_type, и profile.is_b2b_verified. is_enabled('b2b') вызывается
+    # после short-circuit, чтобы B2C/аноним не платил за feature-check.
+    if bool(user and getattr(user, "is_b2b_verified", False)) and is_enabled("b2b"):
         wholesale = _wholesale_price(product)
         if wholesale is not None:
             return _wholesale_result(product, wholesale, currency)
@@ -122,7 +123,7 @@ def price_map_for_products(products, user=None) -> dict[int, PriceResult]:
       розницу ``_retail_result``.
     """
     products = list(products)
-    is_b2b = bool(user and getattr(user, "is_b2b", False)) and is_enabled("b2b")
+    is_b2b = bool(user and getattr(user, "is_b2b_verified", False)) and is_enabled("b2b")
 
     if not is_b2b:
         return {p.pk: _retail_result(p, p.currency or "RUB") for p in products}
