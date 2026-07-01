@@ -25,6 +25,23 @@ from .normalizers import Item
 _PRICE_FIELDS = ["price", "old_price", "currency", "price_updated_at"]
 
 
+def _resolve_old_price(
+    item_old_price: Decimal | None, current_old_price: Decimal | None
+) -> Decimal | None:
+    """Преобразовать old_price из 1С в целевое значение для Product.old_price.
+
+    Контракт (#112):
+    - None  → «не менять» (1С не передала old_price); возвращаем current.
+    - 0     → «сбросить зачёркнутую цену»; возвращаем None.
+    - >0    → установить зачёркнутую цену; возвращаем значение.
+    """
+    if item_old_price is None:
+        return current_old_price
+    if item_old_price == 0:
+        return None
+    return item_old_price
+
+
 def set_current_price(product: Product, item: Item) -> bool:
     """Записать цену в Product и завести актуальную PriceRecord. Не сохраняет Product.
 
@@ -40,13 +57,16 @@ def set_current_price(product: Product, item: Item) -> bool:
     # Skip-unchanged: текущая актуальная цена этого типа/валюты совпадает, денормализация
     # Product совпадает, и old_price не меняется. old_price=None трактуем как «не менять»
     # (1С часто шлёт только price; контракт — в docs/1c-api-spec.md).
+    # old_price=0 трактуем как «сбросить зачёркнутую цену» (Product.old_price → None, #112).
     # Без code_1c история не пишется, но skip-unchanged всё равно работает по денормализованному
     # полю Product (#282: без code_1c skip-unchanged не срабатывал → лишние writes).
     if product.code_1c:
         current_value = pricing_repo.current_price_value(product.code_1c, price_type, currency)
     else:
         current_value = product.price
-    old_price_unchanged = item.old_price is None or product.old_price == item.old_price
+    # Вычисляем целевое old_price: None → не менять; 0 → сброс (None); >0 → зачёркнутая цена.
+    target_old_price = _resolve_old_price(item.old_price, product.old_price)
+    old_price_unchanged = item.old_price is None or product.old_price == target_old_price
     if (
         current_value is not None
         and current_value == item.price
@@ -58,7 +78,7 @@ def set_current_price(product: Product, item: Item) -> bool:
 
     product.price = item.price
     if item.old_price is not None:
-        product.old_price = item.old_price
+        product.old_price = target_old_price
     product.currency = currency
     product.price_updated_at = timezone.now()
 
@@ -122,7 +142,8 @@ def plan_price(
     if product.code_1c:
         found = current.get((product.code_1c, price_type, currency))
         current_value = found[1] if found else None
-    old_price_unchanged = item.old_price is None or product.old_price == item.old_price
+    target_old_price = _resolve_old_price(item.old_price, product.old_price)
+    old_price_unchanged = item.old_price is None or product.old_price == target_old_price
     if (
         current_value is not None
         and current_value == item.price
@@ -135,7 +156,7 @@ def plan_price(
     old_price_denorm = product.price
     product.price = item.price
     if item.old_price is not None:
-        product.old_price = item.old_price
+        product.old_price = target_old_price
     product.currency = currency
     product.price_updated_at = timezone.now()
     return PriceChange(

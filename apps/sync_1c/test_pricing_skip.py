@@ -96,3 +96,35 @@ def test_unchanged_price_does_not_emit_price_changed(django_capture_on_commit_ca
         price_changed.disconnect(handler)
 
     assert received == []
+
+
+# --- old_price=0 сброс зачёркнутой цены (#112) ---
+
+
+@pytest.mark.django_db
+def test_old_price_zero_clears_old_price():
+    """old_price=0 из 1С → Product.old_price сбрасывается в None (#112)."""
+    p = Product.objects.create(name="Т", code_1c="1c-clr", slug="clr", price=1000, old_price=1200)
+    use_cases.update_prices([{"external_id": "1c-clr", "price": "1000", "old_price": "0"}])
+    p.refresh_from_db()
+    assert p.old_price is None
+
+
+@pytest.mark.django_db
+def test_old_price_none_does_not_change_existing():
+    """Если old_price не передан — существующая зачёркнутая цена не трогается (#112)."""
+    p = Product.objects.create(name="Т", code_1c="1c-keep", slug="keep", price=1000, old_price=1200)
+    use_cases.update_prices([{"external_id": "1c-keep", "price": "900"}])
+    p.refresh_from_db()
+    assert p.price == 900
+    assert p.old_price == 1200
+
+
+@pytest.mark.django_db
+def test_old_price_positive_sets_strikethrough():
+    """old_price > 0 из 1С → устанавливает зачёркнутую цену."""
+    p = Product.objects.create(name="Т", code_1c="1c-st", slug="st", price=1000)
+    use_cases.update_prices([{"external_id": "1c-st", "price": "900", "old_price": "1100"}])
+    p.refresh_from_db()
+    assert p.price == Decimal("900")
+    assert p.old_price == Decimal("1100")
