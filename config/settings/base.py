@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apps.analytics",
     "apps.delivery",
     "apps.content",
+    "apps.reviews",
 ]
 
 MIDDLEWARE = [
