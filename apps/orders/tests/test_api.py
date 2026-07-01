@@ -144,6 +144,74 @@ def test_cart_mixed_currencies_zeroes_total(api, product, db):
 # ---------------------------------------------------------------------------
 # Backend-цена: тело запроса игнорируется
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# B2B-валидация реквизитов и способа оплаты (#323)
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_b2b_order_invalid_inn_rejected(api, product, db):
+    """B2B-заказ с пустым ИНН → 400."""
+    from django.contrib.auth import get_user_model
+
+    from apps.accounts.models import Profile
+
+    User = get_user_model()
+    user = User.objects.create_user(phone="+79990001111", customer_type="b2b")
+    Profile.objects.create(user=user, company_name="ООО Тест", inn="")
+
+    api.force_authenticate(user=user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {}, format="json")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_b2b_order_empty_company_rejected(api, product, db):
+    """B2B-заказ с пустым названием организации → 400."""
+    from django.contrib.auth import get_user_model
+
+    from apps.accounts.models import Profile
+
+    User = get_user_model()
+    user = User.objects.create_user(phone="+79990001112", customer_type="b2b")
+    Profile.objects.create(user=user, company_name="", inn="7700000000")
+
+    api.force_authenticate(user=user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {}, format="json")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_b2b_order_card_payment_rejected(api, b2b_user, product):
+    """B2B-заказ с оплатой картой → 400."""
+    api.force_authenticate(user=b2b_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {"payment_method": "card"}, format="json")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_b2b_order_forced_invoice(api, b2b_user, product):
+    """B2B без payment_method → автоматически ставится invoice."""
+    from .conftest import make_wholesale
+
+    make_wholesale(product, "800.00")
+    api.force_authenticate(user=b2b_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {}, format="json")
+    assert resp.status_code == 201
+    assert resp.json()["payment_method"] == "invoice"
+
+
+@pytest.mark.django_db
+def test_b2c_order_invoice_payment_rejected(api, b2c_user, product):
+    """B2C-заказ с оплатой по счёту → 400."""
+    api.force_authenticate(user=b2c_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {"payment_method": "invoice"}, format="json")
+    assert resp.status_code == 400
+
+
 @pytest.mark.django_db
 def test_order_ignores_price_from_body(api, product):
     api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
