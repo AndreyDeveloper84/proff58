@@ -2,9 +2,12 @@
 
 Зеркало построчного `use_cases.run_rows`, но запись идёт пачками:
 
+  Шаг 0 (отдельная транзакция): bulk_create NomenclatureStaging (raw + row_hash + PENDING) ДО
+    записи товаров — инвариант #131: raw-данные выживают даже при сбое product-транзакции.
   Фаза 1 (в памяти): по картам из #125A определяем new/update/conflict/skip, мутируем
-  Product/цены/остатки в памяти, копим объекты.
-  Фаза 2 (БД): bulk_create товаров → bulk_update товаров → bulk цены/остатки → bulk staging.
+    Product/цены/остатки в памяти, обновляем staging-объекты (status, code_1c, product...).
+  Фаза 2 (БД): bulk_create товаров → bulk_update товаров → bulk цены/остатки →
+    bulk_update staging (уже сохранён, только обновляем поля).
 
 Инварианты сохранены (см. тесты apps/sync_1c): conflict, partial-failure, skip-unchanged-price,
 идемпотентность, ручной контент, счётчики. На неожиданный сбой bulk-транзакции — fallback на
@@ -43,6 +46,21 @@ _PRODUCT_UPDATE_FIELDS = [
     "updated_at",
 ]
 
+# Поля NomenclatureStaging для bulk_update в фазе 2 (raw-запись уже в БД с Шага 0).
+_STAGING_UPDATE_FIELDS = [
+    "code_1c",
+    "article",
+    "name_1c",
+    "unit",
+    "price",
+    "stock",
+    "is_active_1c",
+    "status",
+    "error_message",
+    "product",
+    "processed_at",
+]
+
 
 @dataclass
 class _Plan:
@@ -78,38 +96,40 @@ def run_rows_bulk(
     plan = _Plan()
     src = source_file or (sync_log.source_file if sync_log else "")
 
-    # --- Фаза 1: классификация в памяти ---
-    items = []  # нормализованные (для карт)
-    parsed: list[tuple[dict, object]] = []
+    # --- Шаг 0: построить staging-объекты (только raw + PENDING) и сохранить ДО товаров ---
+    # Инвариант #131: raw_payload выживает даже при сбое product-транзакции.
     for raw in raw_items:
+        plan.staging.append(
+            NomenclatureStaging(
+                raw_payload=raw,
+                row_hash=normalizers.row_hash(raw),
+                sync_log=sync_log,
+                source_file=src,
+            )
+        )
+    with transaction.atomic():
+        NomenclatureStaging.objects.bulk_create(plan.staging, batch_size=BATCH)
+
+    # --- Фаза 1: нормализация + классификация в памяти ---
+    items = []  # только успешно нормализованные (для карт матчинга)
+    parsed: list[tuple[NomenclatureStaging, object]] = []
+    for staging, raw in zip(plan.staging, raw_items, strict=False):
         try:
             item = normalizers.normalize_item(raw)
-            parsed.append((raw, item))
+            parsed.append((staging, item))
             items.append(item)
         except Exception:  # noqa: BLE001
-            parsed.append((raw, None))
+            staging.status = StagingStatus.ERROR
+            staging.error_message = "Ошибка нормализации строки"
+            staging.processed_at = timezone.now()
+            tally_error(result, error_lines, "—", staging.error_message)
 
     maps = matching.build_match_maps(items)
     rules = categorization.load_active_rules()
     codes = {it.code_1c for it in items if it.code_1c}
     price_map = pricing.prefetch_current_prices(codes)
 
-    for raw, item in parsed:
-        staging = NomenclatureStaging(
-            raw_payload=raw,
-            row_hash=normalizers.row_hash(raw),
-            sync_log=sync_log,
-            source_file=src,
-        )
-        plan.staging.append(staging)
-
-        if item is None:
-            staging.status = StagingStatus.ERROR
-            staging.error_message = "Ошибка нормализации строки"
-            staging.processed_at = timezone.now()
-            tally_error(result, error_lines, "—", staging.error_message)
-            continue
-
+    for staging, item in parsed:
         staging.code_1c = item.code_1c
         staging.article = item.article
         staging.name_1c = item.name
@@ -146,6 +166,7 @@ def run_rows_bulk(
             )
 
     # --- Фаза 2: запись пачками (одна транзакция; при сбое — сигнал на fallback) ---
+    # Staging уже в БД (Шаг 0); здесь только bulk_update с финальными статусами и product FK.
     try:
         with transaction.atomic():
             _assign_slugs(plan.new_items)
@@ -157,7 +178,7 @@ def run_rows_bulk(
                 )
             pricing.apply_prices_bulk(plan.price_changes, price_map, batch_size=BATCH)
             stock.apply_stock_bulk(plan.stock_plans, batch_size=BATCH)
-            _save_staging(plan.staging)
+            _update_staging(plan.staging)
             _register_events(plan)
             transaction.on_commit(invalidate_category_tree_cache)
             transaction.on_commit(invalidate_facets_cache)
@@ -261,13 +282,19 @@ def _assign_slugs(new_items: list[tuple]) -> None:
         product.slug = product_writer.build_slug_for_import(item, taken)
 
 
-def _save_staging(staging_objs: list[NomenclatureStaging]) -> None:
-    """Привязать товар к staging (после bulk_create появился pk) и сохранить пачкой."""
+def _update_staging(staging_objs: list[NomenclatureStaging]) -> None:
+    """Привязать product к staging (pk появился после bulk_create товаров) и обновить пачкой.
+
+    Staging уже сохранён в БД (Шаг 0) — здесь только bulk_update финальных полей.
+    """
     for s in staging_objs:
         obj = getattr(s, "_product_obj", None)
         if obj is not None:
             s.product = obj
-    NomenclatureStaging.objects.bulk_create(staging_objs, batch_size=BATCH)
+    if staging_objs:
+        NomenclatureStaging.objects.bulk_update(
+            staging_objs, _STAGING_UPDATE_FIELDS, batch_size=BATCH
+        )
 
 
 def _register_events(plan: _Plan) -> None:
