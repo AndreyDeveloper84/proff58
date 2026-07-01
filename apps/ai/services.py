@@ -326,7 +326,15 @@ def _baseline_for(product, target_kind, attribute_slug):
         cur = getattr(product, target_kind) or ""
         src = (product.content_field_sources or {}).get(target_kind, "")
         return provenance.value_hash(cur), src
-    return provenance.value_hash(None), ""  # атрибуты упрощённо «пусто» (детально — Task 8)
+    # attribute baseline (#371): реальный снимок текущего значения атрибута.
+    from apps.catalog.models import ProductAttributeValue
+
+    pav = ProductAttributeValue.objects.filter(
+        product=product, attribute__slug=attribute_slug
+    ).first()
+    current_val = provenance._current_attr_value(pav) if pav else None
+    src = pav.source if pav else ""
+    return provenance.value_hash(current_val), src
 
 
 def source_content(*, product_id, sources=None, idempotency_key) -> SourcingRun:

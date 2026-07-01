@@ -154,3 +154,36 @@ def test_foreign_running_not_counted_as_ok(budget):
     )
     result = services.source_content(product_id=p.pk, idempotency_key="foreign")
     assert result.status != SourcingRun.Status.OK
+
+
+@pytest.mark.django_db
+def test_baseline_for_attribute_reflects_current_value(budget):
+    """#371: _baseline_for для attribute возвращает реальный снимок, не value_hash(None)."""
+    from apps.ai.services import _baseline_for
+    from apps.catalog.models import Attribute, AttributeType, ProductAttributeValue
+    from apps.catalog.provenance import value_hash
+
+    p = _product()
+    attr = Attribute.objects.create(
+        name="Мощность", slug="power", attribute_type=AttributeType.INTEGER
+    )
+    ProductAttributeValue.objects.create(product=p, attribute=attr, value_integer=780, source="web")
+
+    bh, bsrc = _baseline_for(p, "attribute", "power")
+
+    assert bh == value_hash(780)
+    assert bsrc == "web"
+
+
+@pytest.mark.django_db
+def test_baseline_for_attribute_empty_returns_none_hash(budget):
+    """#371: отсутствующий атрибут → value_hash(None), source ''."""
+    from apps.ai.services import _baseline_for
+    from apps.catalog.provenance import value_hash
+
+    p = _product()
+
+    bh, bsrc = _baseline_for(p, "attribute", "nonexistent-slug")
+
+    assert bh == value_hash(None)
+    assert bsrc == ""
