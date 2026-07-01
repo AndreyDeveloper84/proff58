@@ -408,7 +408,9 @@ def test_import_missing_items_key(auth_client):
 
 @override_settings(ONEC_API_KEY=API_KEY, **EAGER)
 @pytest.mark.django_db
-def test_e2e_import_publish_view(client, auth_client, category_tree):
+def test_e2e_import_publish_view(
+    client, auth_client, category_tree, django_capture_on_commit_callbacks
+):
     _, _, leaf = category_tree
     from apps.catalog.models import CategoryMappingRule, MappingRuleType
 
@@ -430,7 +432,8 @@ def test_e2e_import_publish_view(client, auth_client, category_tree):
             }
         ]
     }
-    resp = auth_client.post("/api/1c/products/import", payload, format="json")
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.post("/api/1c/products/import", payload, format="json")
     assert resp.status_code == 202
 
     p = Product.objects.get(code_1c="e2e-1")

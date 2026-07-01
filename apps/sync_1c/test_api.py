@@ -38,14 +38,15 @@ def test_products_import_requires_key(client):
 
 @override_settings(ONEC_API_KEY=API_KEY, **EAGER)
 @pytest.mark.django_db
-def test_products_import_creates(auth_client):
-    """Импорт асинхронный: 202 + batch_uid; в EAGER задача отрабатывает сразу."""
+def test_products_import_creates(auth_client, django_capture_on_commit_callbacks):
+    """Импорт асинхронный: 202 + batch_uid; задача ставится в on_commit (#272)."""
     payload = {
         "items": [
             {"external_id": "1c-100", "sku": "A-1", "name": "Дрель", "price": "1000", "stock": "3"}
         ]
     }
-    resp = auth_client.post("/api/1c/products/import", payload, format="json")
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.post("/api/1c/products/import", payload, format="json")
     assert resp.status_code == 202
     batch_uid = resp.json()["batch_uid"]
 
@@ -59,6 +60,29 @@ def test_products_import_creates(auth_client):
     assert st["created"] == 1
 
 
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_import_task_deferred_to_on_commit(auth_client, django_capture_on_commit_callbacks):
+    """Задача ставится в очередь только в transaction.on_commit (#272).
+
+    Иначе при ATOMIC_REQUESTS=True воркер onec делает SyncLog.objects.get(id) до
+    коммита прогона → DoesNotExist, импорт теряется (1С уже получила 202).
+    """
+    payload = {"items": [{"external_id": "1c-oc", "name": "X", "price": "1"}]}
+    with mock.patch("apps.sync_1c.api.views.tasks.import_products_task.delay") as delay:
+        with django_capture_on_commit_callbacks(execute=False) as callbacks:
+            resp = auth_client.post("/api/1c/products/import", payload, format="json")
+            assert resp.status_code == 202
+        # до коммита задача не поставлена, постановка отложена ровно одним колбэком
+        assert delay.call_count == 0
+        assert len(callbacks) == 1
+        # эмулируем коммит → задача ставится с id уже существующего прогона
+        callbacks[0]()
+        assert delay.call_count == 1
+        sync_log_id = delay.call_args.args[0]
+        assert SyncLog.objects.filter(id=sync_log_id).exists()
+
+
 def test_onec_parser_decodes_both_encodings():
     """Декодер 1С понимает и UTF-8, и Windows-1251 (1С 7.7 шлёт cp1251)."""
     assert OneCJSONParser.decode("Дрель".encode("cp1251")) == "Дрель"
@@ -67,7 +91,7 @@ def test_onec_parser_decodes_both_encodings():
 
 @override_settings(ONEC_API_KEY=API_KEY, **EAGER)
 @pytest.mark.django_db
-def test_products_import_accepts_cp1251_body(auth_client):
+def test_products_import_accepts_cp1251_body(auth_client, django_capture_on_commit_callbacks):
     """1С 7.7 выгружает тело в Windows-1251 — кириллица не должна биться в кракозябры."""
     name = "Дрель ударная ЗУБР ЗДУ-810"
     body = json.dumps(
@@ -75,11 +99,12 @@ def test_products_import_accepts_cp1251_body(auth_client):
         ensure_ascii=False,
     ).encode("cp1251")
 
-    resp = auth_client.post(
-        "/api/1c/products/import",
-        data=body,
-        content_type="application/json; charset=windows-1251",
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.post(
+            "/api/1c/products/import",
+            data=body,
+            content_type="application/json; charset=windows-1251",
+        )
     assert resp.status_code == 202
 
     p = Product.objects.get(code_1c="1c-cp1251")
@@ -88,7 +113,9 @@ def test_products_import_accepts_cp1251_body(auth_client):
 
 @override_settings(ONEC_API_KEY=API_KEY, **EAGER)
 @pytest.mark.django_db
-def test_products_import_cp1251_without_charset_header(auth_client):
+def test_products_import_cp1251_without_charset_header(
+    auth_client, django_capture_on_commit_callbacks
+):
     """1С может не проставить charset — кодировку определяем по содержимому."""
     name = "Шуруповёрт аккумуляторный"
     body = json.dumps(
@@ -96,7 +123,10 @@ def test_products_import_cp1251_without_charset_header(auth_client):
         ensure_ascii=False,
     ).encode("cp1251")
 
-    resp = auth_client.post("/api/1c/products/import", data=body, content_type="application/json")
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.post(
+            "/api/1c/products/import", data=body, content_type="application/json"
+        )
     assert resp.status_code == 202
     assert Product.objects.get(code_1c="1c-cp-noh").original_name == name
 
@@ -117,10 +147,11 @@ def test_response_encoded_in_cp1251(auth_client):
 
 @override_settings(ONEC_API_KEY=API_KEY, **EAGER)
 @pytest.mark.django_db
-def test_products_update_does_not_create(auth_client):
+def test_products_update_does_not_create(auth_client, django_capture_on_commit_callbacks):
     """products/update не создаёт новый товар — отсутствующий уходит в skipped."""
     payload = {"items": [{"external_id": "1c-upd", "name": "Новый", "price": "500"}]}
-    resp = auth_client.post("/api/1c/products/update", payload, format="json")
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.post("/api/1c/products/update", payload, format="json")
     assert resp.status_code == 202
     batch_uid = resp.json()["batch_uid"]
     assert Product.objects.filter(code_1c="1c-upd").count() == 0
@@ -266,8 +297,13 @@ def test_empty_server_key_denies(auth_client):
 
 @override_settings(ONEC_API_KEY=API_KEY)
 @pytest.mark.django_db
-def test_enqueue_failure_returns_503_and_marks_error(auth_client):
-    """Брокер недоступен → 503, безопасный detail, прогон ERROR (не RUNNING)."""
+def test_enqueue_failure_marks_error(auth_client, django_capture_on_commit_callbacks):
+    """Сбой брокера при постановке (в on_commit) → прогон ERROR (#272).
+
+    Ответ уходит до коммита (202 accepted), поэтому синхронный 503 на сбой
+    брокера уже не вернуть — сбой фиксируется в самом прогоне и виден 1С через
+    опрос sync/<batch_uid>.
+    """
     payload = {
         "items": [
             {"external_id": "e-1", "name": "X", "price": "1"},
@@ -278,18 +314,23 @@ def test_enqueue_failure_returns_503_and_marks_error(auth_client):
         "apps.sync_1c.api.views.tasks.import_products_task.delay",
         side_effect=Exception("broker down"),
     ):
-        resp = auth_client.post("/api/1c/products/import", payload, format="json")
+        with django_capture_on_commit_callbacks(execute=True):
+            resp = auth_client.post("/api/1c/products/import", payload, format="json")
 
-    assert resp.status_code == 503
+    assert resp.status_code == 202
     body = resp.json()
-    assert body["status"] == "error"
-    assert "broker" not in body["detail"]  # техдетали наружу не уходят
+    assert body["status"] == "accepted"
 
     sl = SyncLog.objects.get(batch_uid=body["batch_uid"])
     assert sl.result == SyncLog.SyncResult.ERROR
     assert sl.finished_at is not None
     assert sl.rows_total == 2 and sl.rows_error == 2
     assert sl.counters["errors"] == 2
+
+    # 1С узнаёт о сбое через опрос статуса
+    st = auth_client.get(f"/api/1c/sync/{body['batch_uid']}").json()
+    assert st["status"] == "error"
+    assert st["finished"] is True
 
 
 @override_settings(ONEC_API_KEY=API_KEY, ONEC_MAX_ITEMS=2)

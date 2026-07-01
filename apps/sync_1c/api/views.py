@@ -13,6 +13,7 @@
 """
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import (
@@ -59,24 +60,28 @@ def _import_response(sync_log, result):
 
 
 def _enqueue_import(request, *, source_file, create_missing):
-    """Поставить тяжёлый импорт товаров в фон. Вернуть 202 + batch_uid."""
+    """Поставить тяжёлый импорт товаров в фон. Вернуть 202 + batch_uid.
+
+    Задача ставится строго в transaction.on_commit (#272): воркер очереди onec
+    делает SyncLog.objects.get(id), поэтому при ATOMIC_REQUESTS=True он должен
+    увидеть УЖЕ закоммиченный прогон (иначе DoesNotExist и потеря импорта при
+    отданном 1С 202). Ответ уходит до коммита — синхронный 503 на сбой брокера
+    уже не вернуть, поэтому сбой постановки фиксируем в самом прогоне (ERROR),
+    а 1С узнаёт о нём через опрос sync/<batch_uid>.
+    """
     sync_log = use_cases.new_import_job(source_file=source_file)
     raw_items = _raw_items_from_request(request)
-    try:
-        tasks.import_products_task.delay(sync_log.id, raw_items, create_missing)
-    except Exception as exc:  # noqa: BLE001 — любой сбой брокера/сериализации
-        # Техпричину — в лог, наружу 1С — без деталей брокера.
-        use_cases.fail_import_job(
-            sync_log, f"Не удалось поставить задачу в очередь: {exc}", rows_total=len(raw_items)
-        )
-        return Response(
-            {
-                "batch_uid": str(sync_log.batch_uid),
-                "status": "error",
-                "detail": "Не удалось поставить задачу импорта в очередь. Повторите запрос позже.",
-            },
-            status=status.HTTP_503_SERVICE_UNAVAILABLE,
-        )
+
+    def _enqueue():
+        try:
+            tasks.import_products_task.delay(sync_log.id, raw_items, create_missing)
+        except Exception as exc:  # noqa: BLE001 — любой сбой брокера/сериализации
+            # После коммита 503 не вернуть: помечаем прогон ERROR (виден в опросе).
+            use_cases.fail_import_job(
+                sync_log, f"Не удалось поставить задачу в очередь: {exc}", rows_total=len(raw_items)
+            )
+
+    transaction.on_commit(_enqueue)
     return Response(
         {"batch_uid": str(sync_log.batch_uid), "status": "accepted", "accepted": len(raw_items)},
         status=status.HTTP_202_ACCEPTED,
