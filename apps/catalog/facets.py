@@ -332,11 +332,7 @@ def build_facets(
     # Опции SELECT одним запросом. MULTISELECT исключён (#282): unique_together(product, attribute)
     # делает хранение нескольких значений невозможным — GROUP BY по attrs_cache даёт неверные
     # счётчики (агрегируется JSON-массив целиком, а не отдельные элементы).
-    select_ids = [
-        a.id
-        for a in attributes
-        if a.attribute_type == AttributeType.SELECT
-    ]
+    select_ids = [a.id for a in attributes if a.attribute_type == AttributeType.SELECT]
     option_maps = _option_slug_maps(select_ids)
 
     # Приведение attr-фильтров: unknown → игнор, invalid known → FacetError.
