@@ -125,13 +125,15 @@ def metrics_view(request):
     """
     from django.conf import settings
     from django.http import HttpResponse
+    from django.utils.crypto import constant_time_compare
     from prometheus_client import generate_latest
     from prometheus_client.exposition import CONTENT_TYPE_LATEST
 
     token = getattr(settings, "METRICS_TOKEN", "")
     if token:
         auth = request.META.get("HTTP_AUTHORIZATION", "")
-        if auth != f"Bearer {token}":
+        # Сравнение за константное время — без timing side-channel для shared-secret.
+        if not constant_time_compare(auth, f"Bearer {token}"):
             return HttpResponse("Unauthorized", status=401)
 
     output = generate_latest(REGISTRY)
