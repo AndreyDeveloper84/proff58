@@ -329,11 +329,13 @@ def build_facets(
             continue
         ranges[slug] = (bounds[0], bounds[1])
 
-    # Опции select/multiselect ОДНИМ запросом: сортировка + slug→value резолв + эмиссия slug.
+    # Опции SELECT одним запросом. MULTISELECT исключён (#282): unique_together(product, attribute)
+    # делает хранение нескольких значений невозможным — GROUP BY по attrs_cache даёт неверные
+    # счётчики (агрегируется JSON-массив целиком, а не отдельные элементы).
     select_ids = [
         a.id
         for a in attributes
-        if a.attribute_type in (AttributeType.SELECT, AttributeType.MULTISELECT)
+        if a.attribute_type == AttributeType.SELECT
     ]
     option_maps = _option_slug_maps(select_ids)
 
@@ -398,6 +400,8 @@ def build_facets(
     for attr in attributes:
         if attr.slug == TOOL_TYPE_SLUG:
             continue  # tool_type — навигация: эмитим отдельной панелью, не attrs_cache-фасетом
+        if attr.attribute_type == AttributeType.MULTISELECT:
+            continue  # MULTISELECT не поддерживается фасетами (#282): unique_together не позволяет хранить несколько значений
         # GROUP BY по значению атрибута в выборке с активными фильтрами, КРОМЕ своего
         # (и checkbox-, и range-измерение своего фасета исключаем — drill-down).
         rows = (
