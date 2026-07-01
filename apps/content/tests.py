@@ -19,9 +19,7 @@ def draft_page(db):
 
 @pytest.fixture
 def article(db):
-    return Article.objects.create(
-        slug="news-1", title="Новость", status=PublishStatus.PUBLISHED
-    )
+    return Article.objects.create(slug="news-1", title="Новость", status=PublishStatus.PUBLISHED)
 
 
 @pytest.fixture
@@ -32,7 +30,10 @@ def promotion(db):
 @pytest.fixture
 def banner(db):
     return Banner.objects.create(
-        title="Главный баннер", image="banners/test.jpg", target=BannerTarget.HOME, status=PublishStatus.PUBLISHED
+        title="Главный баннер",
+        image="banners/test.jpg",
+        target=BannerTarget.HOME,
+        status=PublishStatus.PUBLISHED,
     )
 
 
@@ -119,16 +120,17 @@ def test_banner_str(banner):
 
 @pytest.mark.django_db
 def test_draft_banner_not_published(db):
-    b = Banner.objects.create(
-        title="Черновик", image="banners/x.jpg", status=PublishStatus.DRAFT
-    )
+    b = Banner.objects.create(title="Черновик", image="banners/x.jpg", status=PublishStatus.DRAFT)
     assert b.is_published is False
 
 
 @pytest.mark.django_db
 def test_banners_filter_by_target(banner, db):
     catalog_banner = Banner.objects.create(
-        title="Каталог", image="banners/cat.jpg", target=BannerTarget.CATALOG, status=PublishStatus.PUBLISHED
+        title="Каталог",
+        image="banners/cat.jpg",
+        target=BannerTarget.CATALOG,
+        status=PublishStatus.PUBLISHED,
     )
     home_banners = Banner.objects.filter(target=BannerTarget.HOME, status=PublishStatus.PUBLISHED)
     assert banner in home_banners
