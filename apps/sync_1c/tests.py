@@ -15,13 +15,32 @@ from apps.catalog.models import (
     StockStatus,
 )
 from apps.pricing.models import PriceRecord
-from apps.sync_1c import importer, normalizers, parsers, product_writer, use_cases
+from apps.sync_1c import normalizers, parsers, pricing, product_writer, stock, use_cases
 from apps.sync_1c.models import (
     NomenclatureStaging,
     StagingStatus,
     StockRecord,
     SyncLog,
 )
+
+
+def _import_item(
+    item: dict,
+    *,
+    allow_basic_fields: bool = True,
+    sync_log=None,
+    source_file: str = "",
+    create_missing: bool = True,
+):
+    """Замена importer.import_item для тестов: прямой вызов use_cases.process_row."""
+    product, action, _ = use_cases.process_row(
+        item,
+        sync_log=sync_log,
+        source_file=source_file,
+        create_missing=create_missing,
+        allow_basic_fields=allow_basic_fields,
+    )
+    return product, action
 
 
 @pytest.mark.django_db
@@ -76,7 +95,7 @@ def drills_category(db):
 @pytest.mark.django_db
 def test_import_new_uncategorized_goes_to_review():
     """Новый товар без подходящего правила → «Неразобранные» + needs_review."""
-    product, action = importer.import_item(
+    product, action = _import_item(
         {"external_id": "1c-001", "sku": "X-1", "name": "Нечто", "price": "100", "stock": "5"}
     )
     assert action == "created"
@@ -91,7 +110,7 @@ def test_import_new_categorized_becomes_draft(drills_category):
     CategoryMappingRule.objects.create(
         rule_type=MappingRuleType.NAME_CONTAINS, pattern="дрель", target_category=drills_category
     )
-    product, _ = importer.import_item(
+    product, _ = _import_item(
         {"external_id": "1c-002", "sku": "D-1", "name": "Дрель Bosch", "price": "4500"}
     )
     assert product.category == drills_category
@@ -102,7 +121,7 @@ def test_import_new_categorized_becomes_draft(drills_category):
 @pytest.mark.django_db
 def test_reimport_does_not_overwrite_manual_content(drills_category):
     """Главное правило: повторный импорт не трогает ручную работу."""
-    product, _ = importer.import_item(
+    product, _ = _import_item(
         {
             "external_id": "1c-003",
             "sku": "D-2",
@@ -121,7 +140,7 @@ def test_reimport_does_not_overwrite_manual_content(drills_category):
     product.save()
 
     # Повторная выгрузка из 1С с новой ценой/остатком и другим названием:
-    importer.import_item(
+    _import_item(
         {
             "external_id": "1c-003",
             "sku": "D-2",
@@ -147,7 +166,7 @@ def test_reimport_does_not_overwrite_manual_content(drills_category):
 @pytest.mark.django_db
 def test_import_matches_existing_by_article():
     Product.objects.create(name="Существующий", article="SKU-9", slug="exist-9")
-    product, action = importer.import_item({"sku": "SKU-9", "price": "500"})
+    product, action = _import_item({"sku": "SKU-9", "price": "500"})
     assert action == "updated"
     assert product.price == 500
 
@@ -155,14 +174,16 @@ def test_import_matches_existing_by_article():
 @pytest.mark.django_db
 def test_update_price_and_stock_helpers():
     Product.objects.create(name="Т", code_1c="1c-010", slug="t-010")
-    assert importer.update_price({"external_id": "1c-010", "price": "999", "old_price": "1200"})
-    assert importer.update_stock({"external_id": "1c-010", "stock": "0"})
+    assert pricing.update_price(
+        normalizers.normalize_item({"external_id": "1c-010", "price": "999", "old_price": "1200"})
+    )
+    assert stock.update_stock(normalizers.normalize_item({"external_id": "1c-010", "stock": "0"}))
     p = Product.objects.get(code_1c="1c-010")
     assert p.price == 999
     assert p.old_price == 1200
     assert p.stock_status == StockStatus.OUT_OF_STOCK
     # несуществующий товар:
-    assert importer.update_price({"sku": "НЕТ", "price": "1"}) is False
+    assert pricing.update_price(normalizers.normalize_item({"sku": "НЕТ", "price": "1"})) is False
 
 
 @pytest.mark.django_db
@@ -170,7 +191,7 @@ def test_import_items_batch_counts(drills_category):
     CategoryMappingRule.objects.create(
         rule_type=MappingRuleType.NAME_CONTAINS, pattern="дрель", target_category=drills_category
     )
-    result = importer.import_items(
+    result = use_cases.run_rows(
         [
             {"external_id": "b-1", "name": "Дрель А", "price": "100"},
             {"external_id": "b-2", "name": "Загадка Б", "price": "200"},
@@ -202,8 +223,8 @@ def test_only_one_current_price_constraint():
 @pytest.mark.django_db
 def test_reimport_is_idempotent_no_duplicate_products():
     item = {"external_id": "idem-1", "sku": "S-1", "name": "Товар", "price": "100"}
-    importer.import_item(item)
-    _, action = importer.import_item(item)
+    _import_item(item)
+    _, action = _import_item(item)
     assert action == "updated"
     assert Product.objects.filter(code_1c="idem-1").count() == 1
 
@@ -212,8 +233,8 @@ def test_reimport_is_idempotent_no_duplicate_products():
 def test_price_history_keeps_single_current():
     """Повторное обновление цены: история растёт, актуальная одна."""
     Product.objects.create(name="Т", code_1c="ph-1", slug="ph-1")
-    importer.update_price({"external_id": "ph-1", "price": "100"})
-    importer.update_price({"external_id": "ph-1", "price": "150"})
+    pricing.update_price(normalizers.normalize_item({"external_id": "ph-1", "price": "100"}))
+    pricing.update_price(normalizers.normalize_item({"external_id": "ph-1", "price": "150"}))
     records = PriceRecord.objects.filter(code_1c="ph-1", price_type="retail")
     assert records.count() == 2
     current = records.filter(is_current=True)
@@ -223,7 +244,7 @@ def test_price_history_keeps_single_current():
 
 @pytest.mark.django_db
 def test_run_import_links_rows_to_sync_log():
-    sync_log, result = importer.run_import(
+    sync_log, result = use_cases.import_products(
         [
             {"external_id": "r-1", "name": "Раз", "price": "10"},
             {"external_id": "r-2", "name": "Два", "price": "20"},
@@ -276,7 +297,7 @@ def test_ambiguous_article_goes_to_conflict():
     Product.objects.create(name="Товар 1", article="DUP-ART", slug="t1-dup", price=10)
     Product.objects.create(name="Товар 2", article="DUP-ART", slug="t2-dup", price=20)
     # импорт без code_1c, только по артикулу
-    product, action = importer.import_item({"sku": "DUP-ART", "price": "999"})
+    product, action = _import_item({"sku": "DUP-ART", "price": "999"})
     assert action == "conflict"
     assert product is None
     # ни один товар не изменён
