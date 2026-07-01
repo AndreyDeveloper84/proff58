@@ -148,3 +148,60 @@ def test_courier_no_pickup_points(zones):
 def test_below_threshold(zones):
     city = next(o for o in calculate(cart_total=Decimal("4999.99")) if o["zone"] == "test-city")
     assert city["cost"] == Decimal("300.00")
+
+
+# ═══════════ API ═══════════
+
+
+@pytest.fixture
+def api_client():
+    from django.test import Client
+
+    return Client()
+
+
+@pytest.mark.django_db
+def test_api_zones_returns_all(api_client, zones):
+    resp = api_client.get("/api/delivery/zones/")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "zones" in data
+    assert len(data["zones"]) == 3
+
+
+@pytest.mark.django_db
+def test_api_zones_cart_total(api_client, zones):
+    resp = api_client.get("/api/delivery/zones/?cart_total=5000")
+    assert resp.status_code == 200
+    city = next(z for z in resp.json()["zones"] if z["zone"] == "test-city")
+    assert city["free_delivery"] is True
+    assert city["cost"] == 0
+
+
+@pytest.mark.django_db
+def test_api_zones_filter_by_zone(api_client, zones):
+    resp = api_client.get("/api/delivery/zones/?zone=test-city")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["zones"]) == 1
+    assert data["zones"][0]["zone"] == "test-city"
+
+
+@pytest.mark.django_db
+def test_api_zones_invalid_cart_total(api_client, zones):
+    resp = api_client.get("/api/delivery/zones/?cart_total=abc")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_api_zones_negative_cart_total(api_client, zones):
+    resp = api_client.get("/api/delivery/zones/?cart_total=-100")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_api_zones_pickup_points_included(api_client, zones):
+    PickupPoint.objects.create(name="Склад", address="ул. Мира, 1", working_hours="9-18")
+    resp = api_client.get("/api/delivery/zones/")
+    pickup = next(z for z in resp.json()["zones"] if z["zone"] == "test-pickup")
+    assert len(pickup["pickup_points"]) == 1
