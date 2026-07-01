@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "apps.leads",
     "apps.ai",
     "apps.integration_max",
+    "apps.integration_ship",
     "apps.notifications",
     "apps.crm_clients",
     "apps.crm_sales",
@@ -240,6 +241,7 @@ FEATURES = {
     "eventbus": env.bool("FEATURE_EVENTBUS", default=True),
     "analytics": env.bool("FEATURE_ANALYTICS", default=False),
     "external_integrations": env.bool("FEATURE_EXTERNAL_INTEGRATIONS", default=True),
+    "external_ship": env.bool("FEATURE_EXTERNAL_SHIP", default=False),
 }
 
 
