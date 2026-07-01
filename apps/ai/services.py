@@ -370,17 +370,18 @@ def source_content(*, product_id, sources=None, idempotency_key) -> SourcingRun:
         except BudgetExceeded:
             run.status = SourcingRun.Status.DEGRADED
             break
-        if not owns:  # вызовом владеет другой worker / уже сделано
-            any_ok = True
+        if not owns:  # #7: чужой running/unknown НЕ успех — только реально ok
+            if call.status == ExternalCall.Status.OK:
+                any_ok = True
             continue
         try:
             reply = adapter.find(query, idempotency_key=f"{idempotency_key}:{name}")
         except Exception:  # noqa: BLE001 — изоляция источника
             _close_call(call, ExternalCall.Status.ERROR)
             continue
+        _persist_findings(call, product, reply)  # #7: находки ДО пометки ok
         _close_call(call, ExternalCall.Status.OK, reply=reply)
         any_ok = True
-        _persist_findings(call, product, reply)
 
     if run.status == SourcingRun.Status.RUNNING:
         run.status = SourcingRun.Status.OK if any_ok else SourcingRun.Status.ERROR
@@ -413,20 +414,25 @@ def _reserve_and_open_call(run, adapter):
                 adapter=adapter,
                 status=ExternalCall.Status.RUNNING,
                 reserved_cost=MAX_CALL_COST,
+                reserved_day=_today(),
+                provider_idempotency_key=f"{run.idempotency_key}:{adapter}",
                 attempt_count=1,
             )
         else:  # error → running (захват retry)
             call.status = ExternalCall.Status.RUNNING
             call.attempt_count += 1
             call.reserved_cost = MAX_CALL_COST
+            call.reserved_day = _today()
+            call.provider_idempotency_key = f"{run.idempotency_key}:{adapter}"
             call.save()
         return call, True
 
 
 def _close_call(call, status, *, reply=None):
     with transaction.atomic():
+        day = call.reserved_day or _today()  # #8: резерв снимаем со строки дня резервирования
         b, _ = SourcingBudget.objects.select_for_update().get_or_create(
-            day=_today(), defaults={"daily_cap": Decimal("0")}
+            day=day, defaults={"daily_cap": Decimal("0")}
         )
         call.status = status
         call.finished_at = timezone.now()
@@ -438,7 +444,9 @@ def _close_call(call, status, *, reply=None):
             call.http_status = reply.http_status
             call.raw_excerpt = reply.raw_excerpt[:4000]
         if status == ExternalCall.Status.OK:
-            b.spent += reply.cost if reply else Decimal("0")
+            actual = min(reply.cost, call.reserved_cost) if reply else Decimal("0")  # #8: cap
+            call.cost = actual
+            b.spent += actual
             b.reserved -= call.reserved_cost
         elif status == ExternalCall.Status.ERROR:
             b.reserved -= call.reserved_cost  # definite-failed: резерв снимаем

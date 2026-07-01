@@ -82,6 +82,7 @@ class ExternalCall(models.Model):
     tokens_out = models.PositiveIntegerField(default=0)
     cost = models.DecimalField(max_digits=10, decimal_places=4, default=0)
     reserved_cost = models.DecimalField(max_digits=10, decimal_places=4, default=0)
+    reserved_day = models.DateField(null=True, blank=True)  # #8: день резерва бюджета
     latency_ms = models.PositiveIntegerField(default=0)
     http_status = models.PositiveSmallIntegerField(null=True, blank=True)
     raw_excerpt = models.TextField(blank=True)
