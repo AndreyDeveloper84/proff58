@@ -113,7 +113,7 @@ def run_rows_bulk(
     # --- Фаза 1: нормализация + классификация в памяти ---
     items = []  # только успешно нормализованные (для карт матчинга)
     parsed: list[tuple[NomenclatureStaging, object]] = []
-    for staging, raw in zip(plan.staging, raw_items):
+    for staging, raw in zip(plan.staging, raw_items, strict=False):
         try:
             item = normalizers.normalize_item(raw)
             parsed.append((staging, item))

@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 from django.db import connection
 from django.db.utils import IntegrityError
 from django.test.utils import CaptureQueriesContext
-from unittest.mock import patch
 
 from apps.catalog.models import Product
 from apps.core.events import product_updated
 from apps.pricing.models import PriceRecord
 from apps.sync_1c import bulk_import, use_cases
-from apps.sync_1c.models import NomenclatureStaging, StockRecord, StagingStatus
+from apps.sync_1c.models import NomenclatureStaging, StagingStatus, StockRecord
 from apps.sync_1c.use_cases import ImportResult, _tally_error
 
 
