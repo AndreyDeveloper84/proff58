@@ -1,3 +1,4 @@
+import { serializeJsonLd } from "@/lib/jsonld";
 import type { ProductDetail } from "@/lib/types";
 
 // Серверная микроразметка для поисковиков: Product + Offer + BreadcrumbList.
@@ -45,7 +46,7 @@ export function ProductJsonLd({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify([productLd, breadcrumbLd]) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd([productLd, breadcrumbLd]) }}
     />
   );
 }
