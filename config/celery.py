@@ -27,4 +27,9 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=3, minute=30),  # ночью, после обмена с 1С
         "kwargs": {"limit": 200},
     },
+    # #423 (B-03): освобождение просроченного резерва неоплаченных заказов.
+    "release-expired-reservations": {
+        "task": "apps.orders.tasks.release_expired_reservations",
+        "schedule": 10 * 60,  # каждые 10 минут
+    },
 }

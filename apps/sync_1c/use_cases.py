@@ -755,6 +755,11 @@ def _confirm_one(item: dict, error_lines: list[str]) -> dict:
         elif target_fulfillment and target_fulfillment != old_status:
             if can_transition(old_status, target_fulfillment):
                 order.fulfillment_status = target_fulfillment
+                # #423 (B-03): отмена заказа возвращает резерв в свободный остаток.
+                if target_fulfillment == FulfillmentStatus.CANCELLED:
+                    from apps.orders.reservation import release_reservation
+
+                    transaction.on_commit(lambda oid=order.id: release_reservation(oid))
                 transaction.on_commit(
                     lambda oid=order.id, o=old_status, n=target_fulfillment: (
                         order_status_changed.send(

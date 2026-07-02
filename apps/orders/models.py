@@ -55,6 +55,19 @@ class Sync1CStatus(models.TextChoices):
     EXPORTED = "exported", _("Выгружен в 1С")
 
 
+class ReservationStatus(models.TextChoices):
+    """Состояние резерва склада под заказ (#423, B-03).
+
+    Жизненный цикл: NONE → HELD → (RELEASED | CONFIRMED). RELEASED/CONFIRMED —
+    терминальные: переходы идемпотентны (повторный release/confirm — no-op).
+    """
+
+    NONE = "none", _("Без резерва")
+    HELD = "held", _("Удержан")
+    RELEASED = "released", _("Возвращён")
+    CONFIRMED = "confirmed", _("Списан")
+
+
 # ---------------------------------------------------------------------------
 # Заказ
 # ---------------------------------------------------------------------------
@@ -157,12 +170,23 @@ class Order(TimeStampedModel):
     )
     currency = models.CharField(_("Валюта"), max_length=3, default="RUB")
 
-    # --- Резерв (задел под #8; в #26 не выставляется автоматически) ---
+    # --- Резерв склада (#423, B-03) ---
     reserved_until = models.DateTimeField(
         _("Резерв до"),
         null=True,
         blank=True,
-        help_text=_("Задел под механику резерва (#8). В #26 всегда пуст."),
+        help_text=_("TTL резерва: после этого момента janitor освобождает неоплаченный резерв."),
+    )
+    reservation_status = models.CharField(
+        _("Статус резерва"),
+        max_length=12,
+        choices=ReservationStatus.choices,
+        default=ReservationStatus.NONE,
+        db_index=True,
+        help_text=_(
+            "NONE — резерв не создавался; HELD — удержан; RELEASED — возвращён в "
+            "свободный остаток; CONFIRMED — списан (оплата/подтверждение 1С)."
+        ),
     )
     exported_at = models.DateTimeField(
         _("Дата выгрузки в 1С"),
