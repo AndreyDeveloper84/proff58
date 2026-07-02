@@ -94,6 +94,39 @@
 
 Для M-06/TD-03 ответственность разделяется по типу результата: продуктовые решения и утверждение ADR по НДС/доставке остаются за `AndreyDeveloper84`, техническая реализация после решения — за `Shiro-Py`.
 
+### Созданный GitHub backlog
+
+На основе findings созданы новые follow-up issues. Исторические закрытые задачи не переоткрывались: они используются только как источник ownership и контекста.
+
+| Задача | Finding / результат | Ответственный | Приоритет |
+|---|---|---|---|
+| [#421](https://github.com/AndreyDeveloper84/proff58/issues/421) | B-01 · verified phone перед claim гостевых заказов | `Shiro-Py` | P0 |
+| [#422](https://github.com/AndreyDeveloper84/proff58/issues/422) | B-02 · YooKassa webhook state machine | `Shiro-Py` | P0 |
+| [#423](https://github.com/AndreyDeveloper84/proff58/issues/423) | B-03 / TD-02 · lifecycle резервов и order state machine | `Shiro-Py` | P0 |
+| [#424](https://github.com/AndreyDeveloper84/proff58/issues/424) | B-04 · production CSP Nginx | `AndreyDeveloper84` | P0 |
+| [#425](https://github.com/AndreyDeveloper84/proff58/issues/425) | M-01 · безопасная Product JSON-LD | `Shiro-Py` | P1 |
+| [#426](https://github.com/AndreyDeveloper84/proff58/issues/426) | M-02 · полное обезличивание Profile | `Shiro-Py` | P1 |
+| [#427](https://github.com/AndreyDeveloper84/proff58/issues/427) | M-03 · auth/phone/password hardening | `Shiro-Py` | P1 |
+| [#428](https://github.com/AndreyDeveloper84/proff58/issues/428) | M-04 · fail-closed MAX webhook | `Shiro-Py` | P1 |
+| [#429](https://github.com/AndreyDeveloper84/proff58/issues/429) | M-05 · delivery quote в checkout | `Shiro-Py` | P1 · blocked by #444 |
+| [#430](https://github.com/AndreyDeveloper84/proff58/issues/430) | M-06 / TD-03 · B2B/VAT implementation | `Shiro-Py` | P1 · blocked by #444 |
+| [#431](https://github.com/AndreyDeveloper84/proff58/issues/431) | M-07 / M-08 / TD-01 · events + notification outbox | `Shiro-Py` | P1 |
+| [#432](https://github.com/AndreyDeveloper84/proff58/issues/432) | M-09 / TD-04 · production-ready AI sourcing | `AndreyDeveloper84` | P1 |
+| [#433](https://github.com/AndreyDeveloper84/proff58/issues/433) | M-10 · регистрация WishlistItem | `Shiro-Py` | P1 |
+| [#434](https://github.com/AndreyDeveloper84/proff58/issues/434) | M-11 · CSRF-aware frontend client | `Shiro-Py` | P1 |
+| [#435](https://github.com/AndreyDeveloper84/proff58/issues/435) | M-12 / TD-08 · frontend quality gate | `Shiro-Py` | P1 |
+| [#436](https://github.com/AndreyDeveloper84/proff58/issues/436) | M-13 · SSRF-safe image pipeline | `AndreyDeveloper84` | P1 |
+| [#437](https://github.com/AndreyDeveloper84/proff58/issues/437) | m-01 / m-02 · refund ledger | `Shiro-Py` | P2 |
+| [#438](https://github.com/AndreyDeveloper84/proff58/issues/438) | m-03 / m-05 · guest access + order pagination | `Shiro-Py` | P2 |
+| [#439](https://github.com/AndreyDeveloper84/proff58/issues/439) | m-04 · edge limits API 1С | `AndreyDeveloper84` | P2 |
+| [#440](https://github.com/AndreyDeveloper84/proff58/issues/440) | m-06 · безопасный upload service | `AndreyDeveloper84` | P2 |
+| [#441](https://github.com/AndreyDeveloper84/proff58/issues/441) | m-07 · migrations как release job | `AndreyDeveloper84` | P2 |
+| [#442](https://github.com/AndreyDeveloper84/proff58/issues/442) | TD-05 / TD-06 · Git/Docker context hygiene | `AndreyDeveloper84` | P2 |
+| [#443](https://github.com/AndreyDeveloper84/proff58/issues/443) | TD-07 · invariant-oriented regression tests | `AndreyDeveloper84` | P2 |
+| [#444](https://github.com/AndreyDeveloper84/proff58/issues/444) | ADR · B2B/VAT и delivery contract | `AndreyDeveloper84` | P1 |
+
+Каждый issue содержит scope/non-scope через границы задачи, acceptance criteria, обязательные тесты, зависимости/риски и Definition of Done. Метки `P0-blocker`/`P1-high`/`P2-normal`, area, type и size выставлены при создании.
+
 ## Blocker
 
 ### B-01. Регистрация с чужим телефоном захватывает гостевые заказы
