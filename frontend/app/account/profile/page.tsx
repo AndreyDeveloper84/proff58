@@ -44,7 +44,7 @@ export default function ProfilePage() {
       <div className="mt-8 space-x-4">
         <a href="/account/orders" className="text-green-600 underline">Мои заказы</a>
         <a href="/account/wishlist" className="text-green-600 underline">Избранное</a>
-        <button onClick={() => { logout(); router.push("/"); }} className="text-red-600 underline">Выйти</button>
+        <button onClick={async () => { try { await logout(); } finally { router.push("/"); } }} className="text-red-600 underline">Выйти</button>
       </div>
     </div>
   );
