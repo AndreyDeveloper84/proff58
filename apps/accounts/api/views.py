@@ -202,32 +202,60 @@ class OTPLoginView(APIView):
 
 
 class DeleteAccountView(APIView):
-    """Удаление аккаунта — обезличивание ПДн (#344)."""
+    """Удаление аккаунта — обезличивание ПДн (#344, #426/M-02).
+
+    Data map user-owned ПДн (всё чистится в одной транзакции):
+    - User: phone → deleted-<pk>, full_name/email очищаются, max_chat_id снят,
+      is_active=False;
+    - Profile: company_name, ИНН, КПП, юр. адрес и данные согласия ПДн очищаются;
+    - Order (снимок): контактные и B2B-реквизиты обезличиваются. Сами записи
+      заказов сохраняются как бухгалтерские документы (обязательный срок хранения),
+      но без ПДн;
+    - WishlistItem: удаляется (user-owned, хранить не требуется).
+    """
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        from django.db import transaction
+
+        from apps.accounts.models import Profile
+        from apps.accounts.wishlist import WishlistItem
+        from apps.orders.models import Order
+
         user_obj = request.user
         logout(request)
 
-        from apps.orders.models import Order
+        with transaction.atomic():
+            Order.objects.filter(user=user_obj).update(
+                customer_name="[удалён]",
+                customer_phone="",
+                customer_email="",
+                company_name="",
+                inn="",
+                kpp="",
+                legal_address="",
+            )
 
-        Order.objects.filter(user=user_obj).update(
-            customer_name="[удалён]",
-            customer_phone="",
-            customer_email="",
-            company_name="",
-            inn="",
-            kpp="",
-            legal_address="",
-        )
+            # #426 (M-02): обезличиваем Profile — иначе ПДн (ИНН/КПП/юр.адрес/
+            # согласие) оставались после «удаления», хотя API отвечал об обезличивании.
+            Profile.objects.filter(user=user_obj).update(
+                company_name="",
+                inn="",
+                kpp="",
+                legal_address="",
+                pd_consent_at=None,
+                pd_consent_version="",
+            )
 
-        user_obj.phone = f"deleted-{user_obj.pk}"
-        user_obj.full_name = ""
-        user_obj.email = ""
-        user_obj.max_chat_id = None
-        user_obj.is_active = False
-        user_obj.save()
+            WishlistItem.objects.filter(user=user_obj).delete()
+
+            user_obj.phone = f"deleted-{user_obj.pk}"
+            user_obj.full_name = ""
+            user_obj.email = ""
+            user_obj.max_chat_id = None
+            user_obj.is_active = False
+            user_obj.save(update_fields=["phone", "full_name", "email", "max_chat_id", "is_active"])
 
         return Response({"ok": True, "detail": "Аккаунт удалён, данные обезличены."})
 
