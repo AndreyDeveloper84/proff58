@@ -45,6 +45,7 @@ class PaymentStatus(models.TextChoices):
     PENDING = "pending", _("Ожидает оплаты")
     PAID = "paid", _("Оплачен")
     EXPIRED = "expired", _("Просрочена оплата")
+    PARTIALLY_REFUNDED = "partially_refunded", _("Частичный возврат")
     REFUNDED = "refunded", _("Возврат")
 
 
@@ -133,7 +134,7 @@ class Order(TimeStampedModel):
     )
     payment_status = models.CharField(
         _("Статус оплаты"),
-        max_length=12,
+        max_length=20,
         choices=PaymentStatus.choices,
         default=PaymentStatus.PENDING,
         db_index=True,
