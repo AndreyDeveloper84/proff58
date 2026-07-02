@@ -106,7 +106,7 @@ def test_register_does_not_claim_guest_orders(client):
     Order.objects.create(order_number="VICTIM-1", customer_phone="+79001112233")
     resp = client.post(
         "/api/account/register/",
-        {"phone": "+79001112233", "password": "pass123", "full_name": "Злоумышленник"},
+        {"phone": "+79001112233", "password": "StrongPass2026", "full_name": "Злоумышленник"},
         format="json",
     )
     assert resp.status_code == 201
@@ -120,7 +120,7 @@ def test_register_does_not_claim_guest_orders(client):
 def test_register_normalizes_phone(client):
     resp = client.post(
         "/api/account/register/",
-        {"phone": "8 (900) 111-22-33", "password": "pass123"},
+        {"phone": "8 (900) 111-22-33", "password": "StrongPass2026"},
         format="json",
     )
     assert resp.status_code == 201
@@ -132,7 +132,7 @@ def test_register_duplicate_normalized_phone_rejected(client):
     User.objects.create_user(phone="+79001112233", password="p")
     resp = client.post(
         "/api/account/register/",
-        {"phone": "89001112233", "password": "pass123"},
+        {"phone": "89001112233", "password": "StrongPass2026"},
         format="json",
     )
     assert resp.status_code == 400

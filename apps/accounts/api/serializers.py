@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from apps.accounts.models import Profile
@@ -23,7 +25,7 @@ class LoginSerializer(serializers.Serializer):
 
 class RegisterSerializer(serializers.Serializer):
     phone = serializers.CharField()
-    password = serializers.CharField(min_length=6)
+    password = serializers.CharField()
     full_name = serializers.CharField(required=False, default="")
     email = serializers.EmailField(required=False, default="")
     customer_type = serializers.ChoiceField(choices=["b2c", "b2b"], default="b2c")
@@ -36,6 +38,20 @@ class RegisterSerializer(serializers.Serializer):
         if User.objects.filter(phone=phone).exists():
             raise serializers.ValidationError("Пользователь с таким телефоном уже существует.")
         return phone
+
+    def validate(self, attrs):
+        # #427 (M-03): полноценная проверка пароля Django-валидаторами (сложность,
+        # длина, распространённость, похожесть на телефон/имя), а не только длина.
+        candidate = User(
+            phone=attrs.get("phone", ""),
+            email=attrs.get("email", ""),
+            full_name=attrs.get("full_name", ""),
+        )
+        try:
+            validate_password(attrs["password"], user=candidate)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({"password": list(exc.messages)}) from exc
+        return attrs
 
 
 class UserSerializer(serializers.ModelSerializer):
