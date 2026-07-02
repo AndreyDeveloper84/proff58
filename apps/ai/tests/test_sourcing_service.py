@@ -187,3 +187,49 @@ def test_baseline_for_attribute_empty_returns_none_hash(budget):
 
     assert bh == value_hash(None)
     assert bsrc == ""
+
+
+class _RaisingSource:
+    name = "web"
+
+    def __init__(self, exc):
+        self._exc = exc
+
+    def find(self, query, *, idempotency_key):
+        raise self._exc
+
+
+@pytest.mark.django_db
+def test_uncertain_outcome_keeps_reserve(budget):
+    """M-09: неопределённый исход → ExternalCall.unknown, резерв бюджета НЕ снимается."""
+    from apps.ai.sourcing.ports import SourceUncertain
+
+    p = _product()
+    services.source_content(
+        product_id=p.pk, idempotency_key="unc", sources=[_RaisingSource(SourceUncertain())]
+    )
+    call = ExternalCall.objects.get(run__idempotency_key="unc", adapter="web")
+    assert call.status == ExternalCall.Status.UNKNOWN
+    assert SourcingBudget.objects.get(day=dt.date(2026, 6, 29)).reserved == services.MAX_CALL_COST
+
+
+@pytest.mark.django_db
+def test_definite_error_releases_reserve(budget):
+    """M-09: определённый сбой → error, резерв снимается."""
+    p = _product()
+    services.source_content(
+        product_id=p.pk, idempotency_key="err", sources=[_RaisingSource(RuntimeError("refused"))]
+    )
+    call = ExternalCall.objects.get(run__idempotency_key="err", adapter="web")
+    assert call.status == ExternalCall.Status.ERROR
+    assert SourcingBudget.objects.get(day=dt.date(2026, 6, 29)).reserved == 0
+
+
+@pytest.mark.django_db
+def test_stub_adapter_configuration_error(budget):
+    """M-09: незавершённый адаптер (NotImplementedError) → run.configuration_error."""
+    p = _product()
+    run = services.source_content(
+        product_id=p.pk, idempotency_key="stub", sources=[_RaisingSource(NotImplementedError())]
+    )
+    assert run.status == SourcingRun.Status.CONFIGURATION_ERROR
