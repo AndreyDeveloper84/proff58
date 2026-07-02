@@ -26,6 +26,74 @@
 
 Вендорные инструкции в `.claude/agent-library` и `.claude/skills-library` не рецензировались построчно как продуктовый код, но оценено их влияние на репозиторий и Docker context.
 
+## Распределение ответственности
+
+Правило распределения:
+
+- владелец конкретной GitHub-задачи имеет приоритет над владельцем эпика;
+- если отдельной задачи нет, используется владелец ближайшего доменного эпика;
+- закрытая задача всё ещё считается источником ownership для найденной в её реализации регрессии;
+- если однозначной связи с задачей/эпиком или assignee нет, ответственный — `AndreyDeveloper84`;
+- GitHub-аккаунт ShiroPy в репозитории — `Shiro-Py`.
+
+Матрица основана на assignee GitHub на 2026-07-02. Она распределяет исправления, но сама по себе не переоткрывает закрытые issues и не создаёт новые.
+
+### Blocker и Major
+
+| Finding | Ответственный | Основание владения |
+|---|---|---|
+| B-01 · Захват гостевых заказов | `Shiro-Py` | ACCOUNT #5; регистрация #327; claim гостевых заказов #341 |
+| B-02 · YooKassa webhook state machine | `Shiro-Py` | PAYMENTS #8; security follow-up #311 |
+| B-03 · Жизненный цикл резервов | `Shiro-Py` | CHECKOUT #7; конкурентное списание #276 |
+| B-04 · CSP production Nginx | `AndreyDeveloper84` | отдельной задачи и однозначного infra-owner нет — fallback |
+| M-01 · XSS в Product JSON-LD | `Shiro-Py` | STOREFRONT #6; PDP #189/#242 |
+| M-02 · ПДн остаются в Profile | `Shiro-Py` | ACCOUNT #5; удаление аккаунта/152-ФЗ #344 |
+| M-03 · Смена телефона/пароли/throttling | `Shiro-Py` | ACCOUNT #5; auth #325/#327; recovery #343 |
+| M-04 · MAX webhook fail-open | `Shiro-Py` | INTEGRATIONS #9 и BOT #45; MAX webhook #47; текущий follow-up/PR #399 |
+| M-05 · Delivery не связано с checkout | `Shiro-Py` | INTEGRATIONS #9; доставка #54; follow-up #314 |
+| M-06 · B2B-контракт расходится с реализацией | `Shiro-Py` | ACCOUNT/CHECKOUT #5/#7; B2B #53/#323/#340 |
+| M-07 · Событие оплаты не доходит до подписчиков | `Shiro-Py` | INTEGRATIONS #9; MAX/analytics #48/#55/#310/#316 |
+| M-08 · Неидемпотентные уведомления | `Shiro-Py` | notifications #61; follow-up #310 |
+| M-09 · AI sourcing failure semantics | `AndreyDeveloper84` | ENRICH #4 закреплён за Andrey; sourcing issues #367–#374 без assignee — fallback |
+| M-10 · Первый GET wishlist | `Shiro-Py` | ACCOUNT #5; wishlist #329 |
+| M-11 · CSRF account frontend | `Shiro-Py` | auth #325; frontend account #330; BFF contract #246 |
+| M-12 · Frontend quality gate | `Shiro-Py` | branch protection/required CI #13; regression/release checks #41/#43 |
+| M-13 · SSRF/memory DoS image pipeline | `AndreyDeveloper84` | CATALOG #2 закреплён за Andrey; отдельной security-задачи нет |
+
+### Minor
+
+| Finding | Ответственный | Основание владения |
+|---|---|---|
+| m-01 · Некорректный partial refund | `Shiro-Py` | PAYMENTS #8/#311 |
+| m-02 · Refund внутри DB transaction | `Shiro-Py` | PAYMENTS #8/#311 |
+| m-03 · Guest token в query string | `Shiro-Py` | guest order access #322 |
+| m-04 · Invalid-key трафик 1С без edge-limit | `AndreyDeveloper84` | 1C #3 закреплён за Andrey; #279 без assignee |
+| m-05 · Непагинированный список заказов | `Shiro-Py` | ACCOUNT #5; frontend account/orders #330 |
+| m-06 · Upload validators | `AndreyDeveloper84` | отдельного owner у общего upload/security-контура нет — fallback |
+| m-07 · Автоматический migrate в web startup | `AndreyDeveloper84` | отдельной deploy-задачи на изменение lifecycle нет — fallback |
+
+### Технический долг
+
+| Пункт | Ответственный | Основание владения |
+|---|---|---|
+| TD-01 · Реестр и end-to-end контракты событий | `Shiro-Py` | INTEGRATIONS #9; notifications/analytics #55/#61 |
+| TD-02 · Единая state machine заказа | `Shiro-Py` | CHECKOUT/PAYMENTS #7/#8 |
+| TD-03 · Финализация B2B и delivery contract | `Shiro-Py` | B2B/delivery #53/#54 |
+| TD-04 · Production-ready AI sourcing | `AndreyDeveloper84` | ENRICH #4; sourcing-задачи без assignee |
+| TD-05 · Vendored agent tooling в product repo/image context | `AndreyDeveloper84` | отдельной задачи/эпика нет — fallback |
+| TD-06 · Крупные data snapshots в Git | `AndreyDeveloper84` | CATALOG/ENRICH #2/#4 |
+| TD-07 · Тесты подтверждают реализацию вместо инвариантов | `AndreyDeveloper84` | сквозного test-owner нет — fallback |
+| TD-08 · Неполный release gate CI | `Shiro-Py` | required CI/branch protection #13; regression/release #41/#43 |
+
+### Сводная загрузка
+
+| Ответственный | Blocker | Major | Minor | Техдолг |
+|---|---:|---:|---:|---:|
+| `Shiro-Py` | 3 | 11 | 4 | 4 |
+| `AndreyDeveloper84` | 1 | 2 | 3 | 4 |
+
+Для M-06/TD-03 ответственность разделяется по типу результата: продуктовые решения и утверждение ADR по НДС/доставке остаются за `AndreyDeveloper84`, техническая реализация после решения — за `Shiro-Py`.
+
 ## Blocker
 
 ### B-01. Регистрация с чужим телефоном захватывает гостевые заказы
@@ -227,37 +295,40 @@ CI запускает только Python checks. На проверенном к
 
 ### Этап 0 — остановить критические риски (до production)
 
-1. Исправить B-01: verified phone перед claim; провести аудит уже привязанных guest orders.
-2. Исправить B-02: verified provider state machine; оставить payments disabled до security regression tests.
-3. Исправить B-03: reserve lifecycle + janitor + reconciliation с 1С.
-4. Исправить B-04 и M-01; добавить Nginx/browser security smoke tests.
+1. **`Shiro-Py`:** B-01 — verified phone перед claim; провести аудит уже привязанных guest orders.
+2. **`Shiro-Py`:** B-02 — verified provider state machine; оставить payments disabled до security regression tests.
+3. **`Shiro-Py`:** B-03 — reserve lifecycle + janitor + reconciliation с 1С.
+4. **`AndreyDeveloper84`:** B-04 — исправить CSP production Nginx.
+5. **`Shiro-Py`:** M-01 — безопасная сериализация JSON-LD; совместно с B-04 добавить browser security smoke tests.
 
 **Exit criteria:** четыре Blocker закрыты тестами; storefront работает за production Nginx; security review платежей пройден; двойной release/claim невозможен.
 
 ### Этап 1 — identity, privacy и интеграции
 
-1. M-02/M-03/M-04: data deletion map, OTP/re-auth, fail-closed MAX.
-2. M-07/M-08: единое payment/order event и transactional notification outbox.
-3. M-13 и m-03/m-04: SSRF-safe image fetch, guest-token hardening, edge limits 1С.
+1. **`Shiro-Py`:** M-02/M-03/M-04 — data deletion map, OTP/re-auth, fail-closed MAX.
+2. **`Shiro-Py`:** M-07/M-08 — единое payment/order event и transactional notification outbox.
+3. **`AndreyDeveloper84`:** M-13 — SSRF-safe image fetch.
+4. **`Shiro-Py`:** m-03 — guest-token hardening.
+5. **`AndreyDeveloper84`:** m-04 — edge limits для invalid-key трафика 1С.
 
 ### Этап 2 — согласовать commerce contract
 
-1. ADR по B2B/VAT: единая цена, юридическая модель «с/без НДС», guest invoice flow.
-2. ADR по delivery: Пенза от 7 000 бесплатно, область через CDEK, snapshot quote.
-3. После ADR — миграции, API contract, checkout UI и end-to-end tests.
+1. **`AndreyDeveloper84`:** утвердить ADR по B2B/VAT — единая цена, юридическая модель «с/без НДС», guest invoice flow.
+2. **`AndreyDeveloper84`:** утвердить ADR по delivery — Пенза от 7 000 бесплатно, область через CDEK, snapshot quote.
+3. **`Shiro-Py`:** после ADR реализовать миграции, API contract, checkout UI и end-to-end tests.
 
 ### Этап 3 — AI и надёжность платежей
 
-1. Typed definite/unknown failures, atomic persistence и EAV baseline sourcing.
-2. Provider contract tests и staged enablement каждого adapter.
-3. Payment/refund ledger, claim/reconciliation и partial refund semantics.
+1. **`AndreyDeveloper84`:** typed definite/unknown failures, atomic persistence и EAV baseline sourcing.
+2. **`AndreyDeveloper84`:** provider contract tests и staged enablement каждого adapter.
+3. **`Shiro-Py`:** payment/refund ledger, claim/reconciliation и partial refund semantics.
 
 ### Этап 4 — quality gate и долг
 
-1. Required frontend CI, migration drift, backend/frontend build matrix.
-2. Integration suites: checkout/payment/reserve, MAX status, guest B2B invoice, delivery.
-3. Исключить `.claude` и большие data snapshots из production context/repo history strategy.
-4. Вынести production migrations в release job и оформить rollback runbook.
+1. **`Shiro-Py`:** required frontend CI, migration drift, backend/frontend build matrix.
+2. **`Shiro-Py`:** integration suites — checkout/payment/reserve, MAX status, guest B2B invoice, delivery.
+3. **`AndreyDeveloper84`:** исключить `.claude` и большие data snapshots из production context/repo history strategy.
+4. **`AndreyDeveloper84`:** вынести production migrations в release job и оформить rollback runbook.
 
 ## Проверки и ограничения
 
