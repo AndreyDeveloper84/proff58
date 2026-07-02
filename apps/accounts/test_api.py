@@ -127,6 +127,23 @@ def test_me_update(client, user):
 
 
 @pytest.mark.django_db
+def test_wishlist_get_clean_after_login(client, user):
+    """#433 (M-10): чистый GET /wishlist/ (без предшествующего POST) не падает 500."""
+    client.force_authenticate(user=user)
+    resp = client.get("/api/account/wishlist/")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+@pytest.mark.django_db
+def test_wishlist_model_registered_in_app():
+    """#433 (M-10): WishlistItem зарегистрирована в app registry при старте."""
+    from django.apps import apps as django_apps
+
+    assert django_apps.get_model("accounts", "WishlistItem") is not None
+
+
+@pytest.mark.django_db
 def test_wishlist_add_and_list(client, user):
     from apps.catalog.models import Product, ProductStatus
 

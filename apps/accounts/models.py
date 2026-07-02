@@ -99,3 +99,10 @@ class Profile(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"Профиль {self.user}"
+
+
+# #433 (M-10): WishlistItem вынесен в отдельный модуль. Импортируем его здесь,
+# чтобы модель регистрировалась при загрузке app (иначе reverse-аксессор
+# ``user.wishlist`` и makemigrations «не видят» модель до первого lazy-import,
+# и чистый GET /wishlist/ после логина падал 500).
+from apps.accounts.wishlist import WishlistItem  # noqa: E402,F401
