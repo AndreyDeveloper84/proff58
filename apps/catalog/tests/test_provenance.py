@@ -139,3 +139,41 @@ def test_apply_missing_product():
         observed_source="",
     )
     assert prov.apply_sourced_value(cmd).status == "missing_product"
+
+
+@pytest.mark.django_db
+def test_apply_select_writes_value_option():
+    from apps.catalog.models import AttributeOption
+
+    p = _product()
+    attr = Attribute.objects.create(
+        name="Патрон", slug="chuck", attribute_type=AttributeType.SELECT
+    )
+    opt = AttributeOption.objects.create(attribute=attr, value="SDS-plus", slug="sds-plus")
+    cmd = _cmd(
+        p,
+        target_kind="attribute",
+        attribute_slug="chuck",
+        value={"type": "option", "value": "sds-plus"},
+        observed_value_hash=prov.value_hash(None),
+        observed_source="",
+    )
+    r = prov.apply_sourced_value(cmd)
+    pav = ProductAttributeValue.objects.get(product=p, attribute=attr)
+    assert r.status == "applied"
+    assert pav.value_option_id == opt.id and pav.value_text == ""
+
+
+@pytest.mark.django_db
+def test_apply_unknown_option_invalid():
+    p = _product()
+    Attribute.objects.create(name="Патрон", slug="chuck", attribute_type=AttributeType.SELECT)
+    cmd = _cmd(
+        p,
+        target_kind="attribute",
+        attribute_slug="chuck",
+        value={"type": "option", "value": "нет-такого"},
+        observed_value_hash=prov.value_hash(None),
+        observed_source="",
+    )
+    assert prov.apply_sourced_value(cmd).status == "invalid"

@@ -16,7 +16,7 @@ from pathlib import Path
 from django.conf import settings
 from django.db import transaction
 
-from .models import Attribute, AttributeType, Product, ProductAttributeValue
+from .models import Attribute, AttributeOption, AttributeType, Product, ProductAttributeValue
 from .read_models import rebuild_attrs_cache
 
 TEXT_TARGETS: frozenset[str] = frozenset({"name", "short_description", "description"})
@@ -151,15 +151,27 @@ def apply_sourced_value(cmd: SourcedValueCommand) -> ApplyResult:
         return ApplyResult("conflict", "baseline_changed")
     if not can_overwrite(cmd.source, current_source, allow_equal=cmd.allow_equal_override):
         return ApplyResult("priority_blocked")
-    try:
-        coerced = _coerce(attr.attribute_type, cmd.value)
-    except (TypeError, ValueError, InvalidOperation):
-        return ApplyResult("invalid", "type mismatch")
+    is_option = attr.attribute_type in (AttributeType.SELECT, AttributeType.MULTISELECT)
+    if is_option:  # #371/#9b: select/multiselect читаются из value_option, не value_text
+        raw = cmd.value.get("value")
+        option = (
+            AttributeOption.objects.filter(attribute=attr, slug=raw).first()
+            or AttributeOption.objects.filter(attribute=attr, value=raw).first()
+        )
+        if option is None:
+            return ApplyResult("invalid", "unknown option")
+    else:
+        try:
+            coerced = _coerce(attr.attribute_type, cmd.value)
+        except (TypeError, ValueError, InvalidOperation):
+            return ApplyResult("invalid", "type mismatch")
     pav = pav or ProductAttributeValue(product=product, attribute=attr)
     for f in ("value_text", "value_integer", "value_decimal", "value_boolean", "value_option"):
         setattr(pav, f, None)
     pav.value_text = ""  # CharField NOT NULL — нельзя оставить None после сброса выше
-    if attr.attribute_type == AttributeType.INTEGER:
+    if is_option:
+        pav.value_option = option
+    elif attr.attribute_type == AttributeType.INTEGER:
         pav.value_integer = coerced
     elif attr.attribute_type == AttributeType.DECIMAL:
         pav.value_decimal = coerced

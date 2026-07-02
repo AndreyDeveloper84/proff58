@@ -16,3 +16,9 @@ def test_get_sources_empty_without_keys(settings):
     settings.ANTHROPIC_API_KEY = ""
     settings.YANDEX_MARKET_API_KEY = ""
     assert get_sources(include_dummy=False) == []
+
+
+def test_allowlist_case_insensitive():
+    # #368: смешанный регистр в allowlist не должен ломать проверку
+    assert host_allowed("https://makita.ru/x", {"Makita.RU"}) is True
+    assert host_allowed("https://www.makita.ru/x", {"MAKITA.ru"}) is True
