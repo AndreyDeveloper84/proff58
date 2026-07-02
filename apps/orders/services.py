@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from datetime import timedelta
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -28,10 +29,14 @@ from .models import (
     Order,
     OrderItem,
     PaymentStatus,
+    ReservationStatus,
     Sync1CStatus,
 )
 
 _ZERO = Decimal("0.00")
+
+# TTL резерва (#423, B-03): по истечении janitor освобождает неоплаченный резерв.
+RESERVATION_TTL_SECONDS = 24 * 3600
 
 
 # ---------------------------------------------------------------------------
@@ -407,7 +412,19 @@ def place_order(
 
     order.total = total
     order.currency = order_currency or "RUB"
-    order.save(update_fields=["total", "currency", "updated_at"])
+    # #423 (B-03): резерв удержан выше (available -= qty, reserved += qty по строкам).
+    # Фиксируем статус и TTL — janitor освободит его, если заказ не оплатят вовремя.
+    order.reservation_status = ReservationStatus.HELD
+    order.reserved_until = timezone.now() + timedelta(seconds=RESERVATION_TTL_SECONDS)
+    order.save(
+        update_fields=[
+            "total",
+            "currency",
+            "reservation_status",
+            "reserved_until",
+            "updated_at",
+        ]
+    )
 
     # Корзину не удаляем: фиксируем как оформленную (история + идемпотентность).
     cart.status = CartStatus.ORDERED
