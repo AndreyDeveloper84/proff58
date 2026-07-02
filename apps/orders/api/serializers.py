@@ -139,6 +139,9 @@ class OrderSerializer(serializers.ModelSerializer):
             "legal_address",
             "delivery_method",
             "delivery_address",
+            "delivery_zone",
+            "delivery_cost",
+            "delivery_calc_status",
             "comment",
             "payment_method",
             "total",
@@ -176,6 +179,7 @@ class CreateOrderSerializer(serializers.Serializer):
     # Доставка / оплата
     delivery_method = serializers.CharField(required=False, allow_blank=True, default="")
     delivery_address = serializers.CharField(required=False, allow_blank=True, default="")
+    delivery_zone = serializers.CharField(required=False, allow_blank=True, default="")
     comment = serializers.CharField(required=False, allow_blank=True, default="")
     payment_method = serializers.CharField(required=False, allow_blank=True, default="")
 

@@ -72,3 +72,8 @@ var/
 docs/reports/*.csv
 
 .claude/worktrees/
+
+# local test settings / artifacts
+config/settings/test.py
+celerybeat-schedule
+test.db

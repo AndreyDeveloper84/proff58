@@ -59,6 +59,15 @@ class DeliveryZone(TimeStampedModel):
         help_text=_("Сумма заказа, начиная с которой доставка бесплатна. Пусто = нет порога."),
         validators=[MinValueValidator(Decimal("0.01"))],
     )
+    # #429 (M-05, ADR #444): внешняя зона (СДЭК) — стоимость всегда через API
+    # перевозчика (integration_ship), порог бесплатной доставки НЕ применяется.
+    # Авторасчёт возможен только при заполненных весе/габаритах у всех товаров;
+    # иначе — ручной расчёт менеджером (manual_required).
+    is_external = models.BooleanField(
+        _("Внешний перевозчик (СДЭК)"),
+        default=False,
+        help_text=_("Стоимость по API перевозчика; порог бесплатной доставки не применяется."),
+    )
     sort_order = models.PositiveIntegerField(_("Порядок сортировки"), default=0)
     is_active = models.BooleanField(_("Активна"), default=True)
 

@@ -68,6 +68,20 @@ class ReservationStatus(models.TextChoices):
     CONFIRMED = "confirmed", _("Списан")
 
 
+class DeliveryCalcStatus(models.TextChoices):
+    """Статус расчёта стоимости доставки (#429, M-05, ADR #444).
+
+    NOT_REQUIRED — доставка не выбрана/не требует расчёта; CALCULATED — стоимость
+    посчитана сервером; MANUAL_REQUIRED — авторасчёт невозможен (нет весогабаритов
+    для СДЭК): стоимость определит менеджер, итог предварительный, финальный счёт
+    не выпускается до ввода стоимости.
+    """
+
+    NOT_REQUIRED = "not_required", _("Не требуется")
+    CALCULATED = "calculated", _("Рассчитана")
+    MANUAL_REQUIRED = "manual_required", _("Ручной расчёт")
+
+
 # ---------------------------------------------------------------------------
 # Заказ
 # ---------------------------------------------------------------------------
@@ -160,13 +174,34 @@ class Order(TimeStampedModel):
         help_text=_("Заглушка-выбор (без онлайн-оплаты в #26)."),
     )
 
+    # --- Снимок доставки (#429, M-05, ADR #444) ---
+    delivery_zone = models.CharField(_("Зона доставки (slug)"), max_length=100, blank=True)
+    delivery_cost = models.DecimalField(
+        _("Стоимость доставки"),
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text=_("null = стоимость ещё не определена (ручной расчёт менеджером)."),
+    )
+    delivery_calc_status = models.CharField(
+        _("Статус расчёта доставки"),
+        max_length=16,
+        choices=DeliveryCalcStatus.choices,
+        default=DeliveryCalcStatus.NOT_REQUIRED,
+        db_index=True,
+    )
+    delivery_snapshot = models.JSONField(_("Снимок тарифа доставки"), default=dict, blank=True)
+
     # --- Итоги ---
     total = models.DecimalField(
         _("Сумма заказа"),
         max_digits=14,
         decimal_places=2,
         default=Decimal("0.00"),
-        help_text=_("Сумма line_total всех строк (с НДС)."),
+        help_text=_(
+            "Товары + доставка, с НДС. При manual_required — предварительный (только товары)."
+        ),
     )
     currency = models.CharField(_("Валюта"), max_length=3, default="RUB")
 
