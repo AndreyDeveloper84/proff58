@@ -237,6 +237,10 @@ SOURCING_ALLOWLIST = {d.lower() for d in env.list("SOURCING_ALLOWLIST", default=
 # фиксируется её значение на момент оформления (snapshot).
 VAT_RATE_PERCENT = env.int("VAT_RATE_PERCENT", default=22)
 
+# TTL гостевого токена доступа к заказу/счёту (#438, m-03). Дней; 0 = без TTL.
+# Ограничивает срок жизни URL с токеном (ПДн) на случай утечки через логи/историю.
+GUEST_ORDER_TOKEN_TTL_DAYS = env.int("GUEST_ORDER_TOKEN_TTL_DAYS", default=90)
+
 # Prometheus-метрики sourcing pipeline (#374). Пустой токен — эндпоинт открыт
 # (только для внутренних сетей). В проде задать непустой METRICS_TOKEN.
 METRICS_TOKEN = env("METRICS_TOKEN", default="")

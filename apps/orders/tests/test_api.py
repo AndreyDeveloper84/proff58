@@ -339,7 +339,27 @@ def test_orders_list_only_own(api, b2c_user, product):
 
     resp = api.get("/api/orders/")
     assert resp.status_code == 200
-    assert len(resp.json()) == 1
+    # #438 (m-05): пагинированный ответ (count/results).
+    body = resp.json()
+    assert body["count"] == 1
+    assert len(body["results"]) == 1
+
+
+@pytest.mark.django_db
+def test_orders_list_paginated(api, b2c_user, product):
+    """#438 (m-05): история заказов пагинируется (limit/offset)."""
+    from apps.orders.models import Order
+
+    api.force_authenticate(user=b2c_user)
+    for i in range(3):
+        Order.objects.create(order_number=f"P-{i}", user=b2c_user, customer_phone="+79001112233")
+
+    resp = api.get("/api/orders/?limit=2")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["count"] == 3
+    assert len(body["results"]) == 2
+    assert body["next"] is not None
 
 
 @pytest.mark.django_db

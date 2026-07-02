@@ -49,8 +49,14 @@ export async function otpLogin(phone: string, otp: string) {
 }
 
 export async function getOrders() {
+  // #438 (m-05): /api/orders/ теперь пагинирован ({count, results}); разворачиваем
+  // results. Массив на входе тоже поддерживаем (обратная совместимость).
   try {
-    return await apiFetch<Record<string, unknown>[]>("/api/orders/", { method: "GET" });
+    const data = await apiFetch<{ results?: Record<string, unknown>[] } | Record<string, unknown>[]>(
+      "/api/orders/",
+      { method: "GET" },
+    );
+    return Array.isArray(data) ? data : (data.results ?? []);
   } catch (e) {
     if (e instanceof ApiError) return [];
     throw e;
