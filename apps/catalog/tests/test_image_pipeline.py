@@ -54,3 +54,27 @@ def test_process_url_idempotent(monkeypatch):
     a = pipe.process_url(p, "http://x/y.png")
     b = pipe.process_url(p, "http://x/y.png")
     assert a.pk == b.pk and p.images.count() == 1
+
+
+def test_download_rejects_non_https():
+    # M-13: только https
+    assert ImagePipeline()._download("http://example.test/x.png") is None
+
+
+def test_download_rejects_private_host():
+    # M-13: SSRF — loopback/private хост отклоняется ДО сетевого запроса
+    assert ImagePipeline()._download("https://127.0.0.1/x.png") is None
+    assert ImagePipeline()._download("https://localhost/x.png") is None
+
+
+def test_host_is_public_rejects_private():
+    p = ImagePipeline()
+    assert p._host_is_public("127.0.0.1") is False
+    assert p._host_is_public("localhost") is False
+
+
+def test_process_bytes_rejects_decompression_bomb():
+    # M-13: изображение сверх лимита пикселей отбраковывается
+    pipe = ImagePipeline()
+    pipe.MAX_PIXELS = 1000
+    assert pipe._process_bytes(_png_bytes(1500, 1500)) is None

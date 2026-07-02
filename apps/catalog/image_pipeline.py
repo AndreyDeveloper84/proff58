@@ -3,11 +3,18 @@
 
 Вызывается вручную (admin/CLI). Enrich-поток фото не тянет. Идемпотентность —
 по URL (хранится в alt-маркере). content_locked уважается.
+
+Безопасность (M-13): только https; хост обязан резолвиться в публичный IP
+(защита от SSRF во внутреннюю сеть); redirects запрещены; тело качается стримом
+с жёстким лимитом MAX_BYTES; Pillow ограничен по числу пикселей (decompression bomb).
 """
 from __future__ import annotations
 
 import io
+import ipaddress
 import logging
+import socket
+from urllib.parse import urlparse
 
 import requests
 from django.core.files.base import ContentFile
@@ -25,21 +32,71 @@ class ImagePipeline:
     TIMEOUT = 10
     MIN_SIDE = 100
     MAX_BYTES = 10 * 1024 * 1024
+    MAX_PIXELS = 40_000_000  # ~40 Мп — потолок против decompression bomb
+    _CHUNK = 64 * 1024
+
+    def _host_is_public(self, host: str) -> bool:
+        """True только если ВСЕ адреса хоста публичные (не private/loopback/link-local/…)."""
+        try:
+            infos = socket.getaddrinfo(host, None)
+        except socket.gaierror:
+            return False
+        if not infos:
+            return False
+        for info in infos:
+            ip = ipaddress.ip_address(info[4][0])
+            if (
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_reserved
+                or ip.is_multicast
+                or ip.is_unspecified
+            ):
+                return False
+        return True
 
     def _download(self, url: str) -> bytes | None:
+        parsed = urlparse(url)
+        if parsed.scheme != "https" or not parsed.hostname:
+            log.warning("image url отклонён (не https/без host): %s", url)
+            return None
+        if not self._host_is_public(parsed.hostname):
+            log.warning("image url отклонён (private/непубличный host): %s", url)
+            return None
         try:
-            r = requests.get(url, timeout=self.TIMEOUT)
-            r.raise_for_status()
+            resp = requests.get(url, timeout=self.TIMEOUT, stream=True, allow_redirects=False)
+            try:
+                if resp.status_code != 200:  # redirects запрещены → 3xx трактуем как отказ
+                    return None
+                clen = resp.headers.get("Content-Length")
+                if clen is not None:
+                    try:
+                        if int(clen) > self.MAX_BYTES:
+                            return None
+                    except ValueError:
+                        pass
+                buf = bytearray()
+                for chunk in resp.iter_content(self._CHUNK):
+                    buf += chunk
+                    if (
+                        len(buf) > self.MAX_BYTES
+                    ):  # hard cap: Content-Length может врать/отсутствовать
+                        return None
+                return bytes(buf)
+            finally:
+                resp.close()
         except requests.RequestException as exc:
             log.warning("image download failed %s: %s", url, exc)
             return None
-        return r.content if len(r.content) <= self.MAX_BYTES else None
 
     def _process_bytes(self, raw: bytes):
         try:
             img = Image.open(io.BytesIO(raw))
+            if img.size[0] * img.size[1] > self.MAX_PIXELS:  # decompression bomb
+                return None
             img.load()
-        except (OSError, ValueError):
+        except (OSError, ValueError, Image.DecompressionBombError):
             return None
         if min(img.size) < self.MIN_SIDE:
             return None
