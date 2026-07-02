@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getMe, getWishlist } from "@/lib/auth";
 
@@ -23,7 +24,7 @@ export default function WishlistPage() {
       <h1 className="text-2xl font-bold mb-6">Избранное</h1>
 
       {items.length === 0 ? (
-        <p className="text-gray-500">Список пуст. <a href="/catalog" className="text-green-600 underline">Перейти в каталог</a></p>
+        <p className="text-gray-500">Список пуст. <Link href="/catalog" className="text-green-600 underline">Перейти в каталог</Link></p>
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
