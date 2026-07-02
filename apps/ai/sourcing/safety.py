@@ -17,4 +17,4 @@ def host_allowed(url: str, allowlist: Collection[str]) -> bool:
     host = _host(url)
     if not host:
         return False
-    return any(host == d or host.endswith("." + d) for d in allowlist)
+    return any(host == d.lower() or host.endswith("." + d.lower()) for d in allowlist)
