@@ -73,8 +73,14 @@ def test_webhook_rejects_get(client):
 
 
 @pytest.mark.django_db
+@override_settings(MAX_WEBHOOK_SECRET="my-secret")
 def test_webhook_rejects_invalid_json(client):
-    resp = client.post("/api/max/webhook/", data="bad", content_type="application/json")
+    resp = client.post(
+        "/api/max/webhook/",
+        data="bad",
+        content_type="application/json",
+        HTTP_X_MAX_WEBHOOK_SECRET="my-secret",
+    )
     assert resp.status_code == 400
 
 
@@ -105,6 +111,32 @@ def test_webhook_accepts_correct_secret(mock_send, client):
 
 
 @pytest.mark.django_db
+@override_settings(MAX_WEBHOOK_SECRET="my-secret")
+def test_webhook_fail_closed_without_secret_header(client):
+    """#428 (M-04): без корректного секрета webhook отклоняет запрос (fail-closed)."""
+    resp = client.post(
+        "/api/max/webhook/",
+        data=json.dumps({"update_type": "bot_started", "timestamp": 9, "chat_id": 1}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.django_db
+@override_settings(MAX_WEBHOOK_SECRET="")
+def test_webhook_fail_closed_when_secret_unset(client):
+    """#428 (M-04): пустой MAX_WEBHOOK_SECRET → webhook закрыт, а не открыт."""
+    resp = client.post(
+        "/api/max/webhook/",
+        data=json.dumps({"update_type": "bot_started", "timestamp": 10, "chat_id": 1}),
+        content_type="application/json",
+        HTTP_X_MAX_WEBHOOK_SECRET="anything",
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.django_db
+@override_settings(MAX_WEBHOOK_SECRET="my-secret")
 @mock.patch("apps.integration_max.webhook._send_reply")
 def test_webhook_bot_started(mock_send, client):
     resp = client.post(
@@ -113,6 +145,7 @@ def test_webhook_bot_started(mock_send, client):
             {"update_type": "bot_started", "timestamp": 3, "chat_id": 12345, "user": {}}
         ),
         content_type="application/json",
+        HTTP_X_MAX_WEBHOOK_SECRET="my-secret",
     )
     assert resp.status_code == 200
     reply = mock_send.call_args[0][0]
@@ -121,6 +154,7 @@ def test_webhook_bot_started(mock_send, client):
 
 
 @pytest.mark.django_db
+@override_settings(MAX_WEBHOOK_SECRET="my-secret")
 @mock.patch("apps.integration_max.webhook._send_reply")
 def test_webhook_duplicate_ignored(mock_send, client):
     payload = json.dumps(
@@ -132,9 +166,40 @@ def test_webhook_duplicate_ignored(mock_send, client):
             "message": {"body": {"mid": "dup-1"}},
         }
     )
-    client.post("/api/max/webhook/", data=payload, content_type="application/json")
-    client.post("/api/max/webhook/", data=payload, content_type="application/json")
+    headers = {"HTTP_X_MAX_WEBHOOK_SECRET": "my-secret"}
+    client.post("/api/max/webhook/", data=payload, content_type="application/json", **headers)
+    client.post("/api/max/webhook/", data=payload, content_type="application/json", **headers)
     assert mock_send.call_count == 1
+
+
+@pytest.mark.django_db
+@override_settings(MAX_WEBHOOK_SECRET="my-secret")
+def test_webhook_rejects_oversized_body(client):
+    """#428 (M-04): слишком большое тело отвергается (413)."""
+    big = json.dumps({"update_type": "bot_started", "x": "A" * (70 * 1024)})
+    resp = client.post(
+        "/api/max/webhook/",
+        data=big,
+        content_type="application/json",
+        HTTP_X_MAX_WEBHOOK_SECRET="my-secret",
+    )
+    assert resp.status_code == 413
+
+
+@override_settings(MAX_BOT_TOKEN="tok", MAX_WEBHOOK_SECRET="")
+def test_config_check_requires_secret_when_max_active():
+    """#428 (M-04): системная проверка ловит активный MAX без секрета."""
+    from apps.integration_max.apps import _check_max_webhook_secret
+
+    errors = _check_max_webhook_secret(None)
+    assert any(e.id == "integration_max.E001" for e in errors)
+
+
+@override_settings(MAX_BOT_TOKEN="tok", MAX_WEBHOOK_SECRET="s")
+def test_config_check_passes_with_secret():
+    from apps.integration_max.apps import _check_max_webhook_secret
+
+    assert _check_max_webhook_secret(None) == []
 
 
 # ═══════════ AUTH FLOW ═══════════
@@ -218,10 +283,11 @@ def test_contact_already_linked(user):
 # ═══════════ E2E ═══════════
 
 
-@override_settings(MAX_BOT_TOKEN=TOKEN)
+@override_settings(MAX_BOT_TOKEN=TOKEN, MAX_WEBHOOK_SECRET="my-secret")
 @pytest.mark.django_db
 @mock.patch("apps.integration_max.webhook._send_reply")
 def test_e2e_auth_flow(mock_send, client, user):
+    hdr = {"HTTP_X_MAX_WEBHOOK_SECRET": "my-secret"}
     # 1. bot_started
     client.post(
         "/api/max/webhook/",
@@ -229,6 +295,7 @@ def test_e2e_auth_flow(mock_send, client, user):
             {"update_type": "bot_started", "timestamp": 5001, "chat_id": 500, "user": {}}
         ),
         content_type="application/json",
+        **hdr,
     )
 
     # 2. contact
@@ -250,6 +317,7 @@ def test_e2e_auth_flow(mock_send, client, user):
             }
         ),
         content_type="application/json",
+        **hdr,
     )
     otp = cache.get("max_otp:500")["otp"]
 
@@ -268,6 +336,7 @@ def test_e2e_auth_flow(mock_send, client, user):
             }
         ),
         content_type="application/json",
+        **hdr,
     )
 
     assert mock_send.call_count == 3
