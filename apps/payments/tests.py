@@ -438,8 +438,8 @@ def test_refund_nonpositive_rejected(mock_api, payment):
 @mock.patch("apps.payments.services._yookassa_request", side_effect=RuntimeError("api down"))
 def test_refund_api_failure_marks_failed(mock_api, payment):
     """#437 (m-02): сбой внешнего вызова → Refund failed, платёж не тронут."""
-    from .services import refund
     from .models import Refund, RefundStatus
+    from .services import refund
 
     payment.status = PaymentStatus.SUCCEEDED
     payment.save()
