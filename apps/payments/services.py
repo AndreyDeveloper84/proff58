@@ -118,11 +118,43 @@ def verify_webhook(payment_data: dict) -> dict | None:
         return None
 
 
+# #422 (B-02): статус ЮKassa (проверенный объект) → локальный статус платежа.
+# Переход строится ТОЛЬКО по этому объекту, не по event из тела webhook.
+_PROVIDER_STATUS_MAP = {
+    "succeeded": PaymentStatus.SUCCEEDED,
+    "canceled": PaymentStatus.CANCELED,
+    "waiting_for_capture": PaymentStatus.WAITING_CAPTURE,
+    "pending": PaymentStatus.PENDING,
+}
+
+# Допустимые переходы статуса по webhook. Терминальные succeeded/canceled/refunded
+# не откатываются (защита от downgrade succeeded->canceled и повторов).
+_WEBHOOK_TRANSITIONS = {
+    PaymentStatus.PENDING: {
+        PaymentStatus.WAITING_CAPTURE,
+        PaymentStatus.SUCCEEDED,
+        PaymentStatus.CANCELED,
+    },
+    PaymentStatus.WAITING_CAPTURE: {
+        PaymentStatus.SUCCEEDED,
+        PaymentStatus.CANCELED,
+    },
+    PaymentStatus.SUCCEEDED: set(),  # терминальный (refund — отдельный путь)
+    PaymentStatus.CANCELED: set(),  # терминальный
+    PaymentStatus.REFUNDED: set(),
+}
+
+
 @transaction.atomic
 def handle_webhook(payload: dict, *, verify: bool = True) -> None:
     """Обработать webhook от ЮKassa.
 
-    При verify=True (default) статус перезапрашивается из API ЮKassa.
+    #422 (B-02): переход состояния строится ИСКЛЮЧИТЕЛЬНО по проверенному объекту
+    провайдера (``status``/``paid``/``amount``/``metadata``), а не по ``event`` из
+    тела webhook — иначе поддельный ``payment.succeeded`` мог бы пометить заказ
+    оплаченным. Входящий ``event`` используется только для аудита. Дополнительно
+    проверяются принадлежность платежа заказу (metadata.order_id) и допустимость
+    перехода. При verify=True (default) объект перезапрашивается из API ЮKassa.
     Ошибка обработки пробрасывается (→ 5xx, ЮKassa сделает retry).
     """
     event_type = payload.get("event")
@@ -148,9 +180,53 @@ def handle_webhook(payload: dict, *, verify: bool = True) -> None:
 
     payment.webhook_payload = payment_data
 
-    if event_type == "payment.succeeded":
-        if payment.status == PaymentStatus.SUCCEEDED:
-            return
+    # Переход определяется проверенным статусом провайдера, event — только аудит.
+    verified_status = payment_data.get("status", "")
+    target = _PROVIDER_STATUS_MAP.get(verified_status)
+    if target is None:
+        logger.info(
+            "YooKassa webhook: unhandled status %r (event=%r) for %s",
+            verified_status,
+            event_type,
+            yookassa_id,
+        )
+        payment.save(update_fields=["webhook_payload", "updated_at"])
+        return
+
+    # Идемпотентность: целевой статус уже установлен.
+    if payment.status == target:
+        payment.save(update_fields=["webhook_payload", "updated_at"])
+        return
+
+    # Принадлежность: metadata.order_id проверенного объекта должен совпадать с заказом.
+    meta_order_id = (payment_data.get("metadata") or {}).get("order_id")
+    if meta_order_id is not None and str(meta_order_id) != str(payment.order_id):
+        logger.error(
+            "YooKassa webhook: metadata order_id %s != payment.order_id %s for %s",
+            meta_order_id,
+            payment.order_id,
+            yookassa_id,
+        )
+        raise ValueError("Payment metadata order mismatch")
+
+    # Допустимость перехода (никакого downgrade терминальных статусов).
+    if target not in _WEBHOOK_TRANSITIONS.get(payment.status, set()):
+        logger.warning(
+            "YooKassa webhook: forbidden transition %s -> %s for %s (ignored)",
+            payment.status,
+            target,
+            yookassa_id,
+        )
+        payment.save(update_fields=["webhook_payload", "updated_at"])
+        return
+
+    if target == PaymentStatus.SUCCEEDED:
+        # Проверенный объект действительно оплачен.
+        if not payment_data.get("paid", False):
+            logger.error(
+                "YooKassa webhook: status succeeded but paid is not true for %s", yookassa_id
+            )
+            raise ValueError("Payment not paid")
 
         webhook_amount = Decimal(str(payment_data.get("amount", {}).get("value", "0")))
         webhook_currency = payment_data.get("amount", {}).get("currency", "")
@@ -180,9 +256,7 @@ def handle_webhook(payload: dict, *, verify: bool = True) -> None:
         )
         logger.info("Payment %s succeeded for order #%s", yookassa_id, payment.order.order_number)
 
-    elif event_type == "payment.canceled":
-        if payment.status == PaymentStatus.CANCELED:
-            return
+    elif target == PaymentStatus.CANCELED:
         payment.status = PaymentStatus.CANCELED
         payment.save(update_fields=["status", "webhook_payload", "updated_at"])
 
@@ -196,12 +270,9 @@ def handle_webhook(payload: dict, *, verify: bool = True) -> None:
         )
         logger.info("Payment %s canceled: %s", yookassa_id, reason)
 
-    elif event_type == "payment.waiting_for_capture":
+    elif target == PaymentStatus.WAITING_CAPTURE:
         payment.status = PaymentStatus.WAITING_CAPTURE
         payment.save(update_fields=["status", "webhook_payload", "updated_at"])
-
-    else:
-        payment.save(update_fields=["webhook_payload", "updated_at"])
 
 
 @transaction.atomic
