@@ -220,3 +220,77 @@ def test_error_log_no_secrets(mock_max, user):
 def test_all_templates_have_placeholders():
     for event, tmpl in EVENT_TEMPLATES.items():
         assert "{" in tmpl, f"Template for {event} has no placeholders"
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 11. M-08 — outbox идемпотентность / crash-safety
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.django_db
+def test_partial_unique_constraint_on_idempotency_key():
+    """Непустой ключ уникален; пустой — можно много раз."""
+    from django.db import IntegrityError, transaction
+
+    NotificationLog.objects.create(
+        channel=NotificationChannel.MAX,
+        event="e",
+        status=NotificationStatus.QUEUED,
+        idempotency_key="k1",
+    )
+    with pytest.raises(IntegrityError), transaction.atomic():
+        NotificationLog.objects.create(
+            channel=NotificationChannel.MAX,
+            event="e",
+            status=NotificationStatus.QUEUED,
+            idempotency_key="k1",
+        )
+    # Пустые ключи не конфликтуют.
+    NotificationLog.objects.create(
+        channel=NotificationChannel.MAX, event="e", status=NotificationStatus.SKIPPED
+    )
+    NotificationLog.objects.create(
+        channel=NotificationChannel.MAX, event="e", status=NotificationStatus.SKIPPED
+    )
+
+
+@pytest.mark.django_db
+@mock.patch("apps.notifications.channels.max.send_message", return_value=True)
+def test_task_does_not_resend_when_already_sending(mock_max):
+    """crash-after-send / конкуренция: строка в SENDING не переотправляется."""
+    from .tasks import send_notification_task
+
+    log = NotificationLog.objects.create(
+        channel=NotificationChannel.MAX,
+        event="order_paid",
+        status=NotificationStatus.SENDING,
+        chat_id=123,
+        text="x",
+    )
+    send_notification_task(log.id)
+    mock_max.assert_not_called()
+    log.refresh_from_db()
+    assert log.status == NotificationStatus.SENDING
+
+
+@pytest.mark.django_db
+def test_reconcile_marks_stale_sending_as_unknown():
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from .models import NotificationLog, NotificationStatus
+    from .tasks import reconcile_stuck_notifications
+
+    log = NotificationLog.objects.create(
+        channel=NotificationChannel.MAX,
+        event="order_paid",
+        status=NotificationStatus.SENDING,
+        chat_id=1,
+        text="x",
+    )
+    # Состарить updated_at за порог.
+    NotificationLog.objects.filter(pk=log.pk).update(updated_at=timezone.now() - timedelta(hours=1))
+    assert reconcile_stuck_notifications() == 1
+    log.refresh_from_db()
+    assert log.status == NotificationStatus.UNKNOWN

@@ -32,4 +32,9 @@ app.conf.beat_schedule = {
         "task": "apps.orders.tasks.release_expired_reservations",
         "schedule": 10 * 60,  # каждые 10 минут
     },
+    # #431 (M-08): сверка «зависших» в SENDING уведомлений (crash-after-send).
+    "reconcile-stuck-notifications": {
+        "task": "apps.notifications.tasks.reconcile_stuck_notifications",
+        "schedule": 10 * 60,  # каждые 10 минут
+    },
 }

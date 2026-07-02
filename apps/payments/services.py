@@ -249,10 +249,19 @@ def handle_webhook(payload: dict, *, verify: bool = True) -> None:
 
         order_id = payment.order_id
         payment_id = payment.id
+        # #431 (M-07): публикуем ОБА события после commit.
+        # payment_succeeded — платёжный слой (orders confirm резерва);
+        # order_paid — доменное событие оплаты заказа, на которое подписаны
+        # MAX/analytics/CRM. Раньше они слушали order_paid без издателя и не
+        # срабатывали. Идемпотентность — гейт перехода: код доходит сюда только
+        # на реальном переходе pending/waiting → succeeded (не на повторах).
         transaction.on_commit(
             lambda: events.payment_succeeded.send(
                 sender=Payment, payment_id=payment_id, order_id=order_id
             )
+        )
+        transaction.on_commit(
+            lambda: events.order_paid.send(sender=Payment, order_id=order_id, payment_id=payment_id)
         )
         logger.info("Payment %s succeeded for order #%s", yookassa_id, payment.order.order_number)
 
