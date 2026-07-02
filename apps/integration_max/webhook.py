@@ -12,6 +12,7 @@ import logging
 from django.conf import settings
 from django.core.cache import cache
 from django.http import JsonResponse
+from django.utils.crypto import constant_time_compare
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
@@ -20,6 +21,8 @@ from .handlers import auth
 logger = logging.getLogger(__name__)
 
 _SEEN_TTL = 60
+# #428 (M-04): верхняя граница тела webhook — защита от oversized payload.
+_MAX_BODY_BYTES = 64 * 1024
 
 
 def _is_duplicate(event_id: str) -> bool:
@@ -33,11 +36,14 @@ def _is_duplicate(event_id: str) -> bool:
 
 
 def _verify_webhook_secret(request) -> bool:
+    # #428 (M-04): fail-closed. Пустой секрет → webhook закрыт (а не «всё подлинно»).
+    # Сравнение за константное время — без timing side-channel.
     secret = getattr(settings, "MAX_WEBHOOK_SECRET", "")
     if not secret:
-        return True
+        logger.error("MAX_WEBHOOK_SECRET не задан — webhook отклонён (fail-closed)")
+        return False
     provided = request.headers.get("X-Max-Webhook-Secret", "")
-    return provided == secret
+    return constant_time_compare(provided, secret)
 
 
 def _send_reply(reply: dict | None) -> None:
@@ -69,6 +75,11 @@ def _send_reply(reply: dict | None) -> None:
 def webhook(request):
     if not _verify_webhook_secret(request):
         return JsonResponse({"ok": False}, status=403)
+
+    # #428 (M-04): отсекаем oversized payload до разбора JSON.
+    if len(request.body) > _MAX_BODY_BYTES:
+        logger.warning("MAX webhook: payload too large (%d bytes)", len(request.body))
+        return JsonResponse({"ok": False}, status=413)
 
     try:
         payload = json.loads(request.body)
