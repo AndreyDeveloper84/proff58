@@ -24,12 +24,33 @@ def user(db):
 def test_register(client):
     resp = client.post(
         "/api/account/register/",
-        {"phone": "+79009999999", "password": "pass123", "full_name": "Новый"},
+        {"phone": "+79009999999", "password": "StrongPass2026", "full_name": "Новый"},
         format="json",
     )
     assert resp.status_code == 201
     assert resp.json()["phone"] == "+79009999999"
     assert User.objects.filter(phone="+79009999999").exists()
+
+
+@pytest.mark.django_db
+def test_register_weak_password_rejected(client):
+    """#427 (M-03): пароль проходит валидаторы Django (не только длину)."""
+    # Слишком короткий.
+    resp = client.post(
+        "/api/account/register/",
+        {"phone": "+79009999998", "password": "abc12"},
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "password" in resp.json()
+    # Полностью числовой.
+    resp = client.post(
+        "/api/account/register/",
+        {"phone": "+79009999997", "password": "39481726354"},
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "password" in resp.json()
 
 
 @pytest.mark.django_db
@@ -298,10 +319,52 @@ def test_delete_account_removes_wishlist(client):
 @pytest.mark.django_db
 def test_change_phone(client, user):
     client.force_authenticate(user=user)
-    resp = client.post("/api/account/change-phone/", {"new_phone": "+79005550003"}, format="json")
+    resp = client.post(
+        "/api/account/change-phone/",
+        {"new_phone": "+79005550003", "password": "pass123"},
+        format="json",
+    )
     assert resp.status_code == 200
     user.refresh_from_db()
     assert user.phone == "+79005550003"
+    assert user.max_chat_id is None
+
+
+@pytest.mark.django_db
+def test_change_phone_requires_password(client, user):
+    """#427 (M-03): смена телефона требует re-auth текущим паролем."""
+    client.force_authenticate(user=user)
+    # Без пароля.
+    resp = client.post("/api/account/change-phone/", {"new_phone": "+79005550003"}, format="json")
+    assert resp.status_code == 400
+    # Неверный пароль.
+    resp = client.post(
+        "/api/account/change-phone/",
+        {"new_phone": "+79005550003", "password": "wrong"},
+        format="json",
+    )
+    assert resp.status_code == 400
+    user.refresh_from_db()
+    assert user.phone == "+79001112233"  # не изменился
+
+
+@pytest.mark.django_db
+def test_change_phone_normalizes_and_resets_verification(client, user):
+    """#427 (M-03): новый номер приводится к канону и помечается неподтверждённым."""
+    user.phone_verified = True
+    user.max_chat_id = 12345
+    user.save(update_fields=["phone_verified", "max_chat_id"])
+    client.force_authenticate(user=user)
+
+    resp = client.post(
+        "/api/account/change-phone/",
+        {"new_phone": "8 (900) 555-00-03", "password": "pass123"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    user.refresh_from_db()
+    assert user.phone == "+79005550003"  # нормализован
+    assert user.phone_verified is False  # заново подтверждать через MAX
     assert user.max_chat_id is None
 
 
@@ -316,6 +379,32 @@ def test_csrf_endpoint_returns_token(client):
     data = resp.json()
     assert "csrfToken" in data
     assert len(data["csrfToken"]) > 10
+
+
+# ═══════════ #427 (M-03) Троттлинг auth-эндпоинтов ═══════════
+
+
+@pytest.mark.django_db
+def test_login_throttled():
+    """#427 (M-03): login ограничен низким scope `auth` (брутфорс/enumeration)."""
+    from django.conf import settings
+    from django.core.cache import cache
+    from django.test import override_settings
+
+    cache.clear()
+    rf = {
+        **settings.REST_FRAMEWORK,
+        "DEFAULT_THROTTLE_RATES": {
+            **settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"],
+            "auth": "2/min",
+        },
+    }
+    with override_settings(REST_FRAMEWORK=rf):
+        c = APIClient()
+        body = {"phone": "+70000000000", "password": "x"}
+        assert c.post("/api/account/login/", body, format="json").status_code != 429
+        assert c.post("/api/account/login/", body, format="json").status_code != 429
+        assert c.post("/api/account/login/", body, format="json").status_code == 429
 
 
 @pytest.mark.django_db

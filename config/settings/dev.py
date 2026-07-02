@@ -12,6 +12,7 @@ REST_FRAMEWORK = {
         "onec": None,
         "orders": None,
         "anon": None,  # #279: отключено в dev/тестах
+        "auth": None,  # #427/M-03: отключено в dev/тестах (кумулятивный кэш ломал бы прогон)
     },
 }
 

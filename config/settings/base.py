@@ -196,6 +196,9 @@ REST_FRAMEWORK = {
         "orders": env("ORDERS_THROTTLE_RATE", default="60/min"),
         # #279: лимит анонимных запросов к публичному API (каталог, фасеты, поиск).
         "anon": env("ANON_THROTTLE_RATE", default="200/min"),
+        # #427 (M-03): чувствительные auth-эндпоинты (login/register/OTP/смена
+        # телефона) — низкий лимит против брутфорса пароля и enumeration телефонов.
+        "auth": env("AUTH_THROTTLE_RATE", default="10/min"),
     },
 }
 

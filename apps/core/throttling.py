@@ -41,6 +41,16 @@ class OrdersRateThrottle(_FixedScopeThrottle):
     scope = "orders"
 
 
+class AuthRateThrottle(_FixedScopeThrottle):
+    """Лимит чувствительных auth-эндпоинтов по IP (scope `auth`, #427/M-03).
+
+    Логин/регистрация/OTP/смена телефона — низкий лимит против брутфорса пароля
+    и enumeration телефонов. Ключ по IP.
+    """
+
+    scope = "auth"
+
+
 class AnonRateThrottle(_FixedScopeThrottle):
     """Глобальный лимит анонимных запросов по IP (scope `anon`, #279).
 

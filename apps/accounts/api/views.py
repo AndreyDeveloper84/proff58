@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import Profile
+from apps.core.throttling import AuthRateThrottle
 
 from .serializers import (
     LoginSerializer,
@@ -26,6 +27,7 @@ User = get_user_model()
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
 
     def post(self, request):
         ser = LoginSerializer(data=request.data)
@@ -57,6 +59,7 @@ class LogoutView(APIView):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
 
     def post(self, request):
         ser = RegisterSerializer(data=request.data)
@@ -140,6 +143,7 @@ class OTPLoginView(APIView):
     """
 
     permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
 
     def post(self, request):
         from apps.accounts.phone import normalize_phone
@@ -261,12 +265,26 @@ class DeleteAccountView(APIView):
 
 
 class ChangePhoneView(APIView):
-    """Смена телефона с перепривязкой MAX (#343)."""
+    """Смена телефона (#343, #427/M-03).
+
+    Чувствительное действие: требует re-auth текущим паролем. Новый номер
+    приводится к канону (E.164) и помечается НЕподтверждённым — владение им
+    нужно заново подтвердить через MAX (OTP), только после этого он снова
+    сможет использоваться для OTP-входа и claim гостевых заказов.
+    """
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [AuthRateThrottle]
 
     def post(self, request):
-        new_phone = request.data.get("new_phone", "").strip()
+        from apps.accounts.phone import normalize_phone
+
+        # #427 (M-03): re-auth — подтверждение текущим паролем.
+        password = request.data.get("password", "")
+        if not password or not request.user.check_password(password):
+            return Response({"detail": "Неверный пароль."}, status=status.HTTP_400_BAD_REQUEST)
+
+        new_phone = normalize_phone(request.data.get("new_phone", ""))
         if not new_phone:
             return Response(
                 {"detail": "Новый телефон обязателен."}, status=status.HTTP_400_BAD_REQUEST
@@ -277,7 +295,8 @@ class ChangePhoneView(APIView):
             )
         request.user.phone = new_phone
         request.user.max_chat_id = None
-        request.user.save(update_fields=["phone", "max_chat_id"])
+        request.user.phone_verified = False  # новый номер — заново через MAX
+        request.user.save(update_fields=["phone", "max_chat_id", "phone_verified"])
         return Response(UserSerializer(request.user).data)
 
 
