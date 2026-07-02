@@ -17,6 +17,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -33,6 +34,34 @@ from .serializers import (
     OrderSerializer,
     UpdateCartItemSerializer,
 )
+
+
+def _no_store(response):
+    """#438 (m-03): не кешировать и не утекать URL с гостевым токеном.
+
+    Токен заказа с ПДн приходит в query string — запрещаем кеш (browser/proxy) и
+    отправку URL как Referer на сторонние ресурсы.
+    """
+    response["Cache-Control"] = "no-store"
+    response["Referrer-Policy"] = "no-referrer"
+    return response
+
+
+def _guest_token_expired(order) -> bool:
+    """#438 (m-03): TTL гостевого токена. По истечении доступ по токену закрыт.
+
+    Окно задаётся ``GUEST_ORDER_TOKEN_TTL_DAYS`` (0/None → без ограничения).
+    Ограничивает срок, в течение которого утёкший URL остаётся валидным.
+    """
+    from datetime import timedelta
+
+    from django.conf import settings
+    from django.utils import timezone
+
+    ttl_days = getattr(settings, "GUEST_ORDER_TOKEN_TTL_DAYS", 0)
+    if not ttl_days:
+        return False
+    return timezone.now() - order.created_at > timedelta(days=int(ttl_days))
 
 
 def _get_session_key(request) -> str:
@@ -226,12 +255,16 @@ class OrdersView(APIView):
         return Response(resp_data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
+        # #438 (m-05): пагинация истории заказов — иначе для B2B-аккаунта ответ
+        # растёт неограниченно (все заказы + строки).
         qs = (
             Order.objects.filter(user=request.user)
             .prefetch_related("items")
             .order_by("-created_at")
         )
-        return Response(OrderSerializer(qs, many=True).data)
+        paginator = LimitOffsetPagination()
+        page = paginator.paginate_queryset(qs, request, view=self)
+        return paginator.get_paginated_response(OrderSerializer(page, many=True).data)
 
 
 class OrderDetailView(APIView):
@@ -262,11 +295,11 @@ class GuestOrderView(APIView):
     def get(self, request, number):
         token = request.query_params.get("t", "")
         if not token:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return _no_store(Response(status=status.HTTP_404_NOT_FOUND))
         order = Order.objects.filter(order_number=number, access_token=token, user=None).first()
-        if order is None:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        return Response(OrderSerializer(order).data)
+        if order is None or _guest_token_expired(order):
+            return _no_store(Response(status=status.HTTP_404_NOT_FOUND))
+        return _no_store(Response(OrderSerializer(order).data))
 
 
 class InvoiceView(APIView):
@@ -282,11 +315,13 @@ class InvoiceView(APIView):
             order = Order.objects.filter(order_number=number, user=user).first()
         elif token:
             order = Order.objects.filter(order_number=number, access_token=token, user=None).first()
+            if order is not None and _guest_token_expired(order):
+                order = None
         else:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return _no_store(Response(status=status.HTTP_404_NOT_FOUND))
 
         if order is None:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return _no_store(Response(status=status.HTTP_404_NOT_FOUND))
 
         if order.customer_type != "b2b":
             return Response(
@@ -301,4 +336,5 @@ class InvoiceView(APIView):
 
         invoice = prepare_invoice(order)
         html = render_to_string("orders/invoice.html", {"invoice": invoice})
-        return HttpResponse(html, content_type="text/html")
+        # Счёт содержит ПДн; при гостевом токене в URL — запрещаем кеш/referrer.
+        return _no_store(HttpResponse(html, content_type="text/html"))

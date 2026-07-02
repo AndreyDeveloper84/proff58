@@ -63,3 +63,43 @@ def test_guest_order_denied_without_token(guest_client, product):
     anon = APIClient()
     assert anon.get(f"/api/orders/{number}/guest/").status_code == 404
     assert anon.get(f"/api/orders/{number}/guest/?t=wrong").status_code == 404
+
+
+@pytest.mark.django_db
+def test_guest_response_has_no_store_headers(guest_client, product):
+    """#438 (m-03): ответ с гостевым токеном не кешируется и не утекает referer."""
+    guest_client.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    create = guest_client.post(
+        "/api/orders/", {"customer_name": "Гость", "customer_phone": "+79007777777"}, format="json"
+    )
+    number = create.json()["order_number"]
+    token = create.json()["access_token"]
+
+    resp = APIClient().get(f"/api/orders/{number}/guest/?t={token}")
+    assert resp.status_code == 200
+    assert resp["Cache-Control"] == "no-store"
+    assert resp["Referrer-Policy"] == "no-referrer"
+
+
+@pytest.mark.django_db
+def test_guest_token_expires(guest_client, product):
+    """#438 (m-03): по истечении TTL доступ по токену закрыт."""
+    from datetime import timedelta
+
+    from django.test import override_settings
+    from django.utils import timezone
+
+    from apps.orders.models import Order
+
+    guest_client.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    create = guest_client.post(
+        "/api/orders/", {"customer_name": "Гость", "customer_phone": "+79008888888"}, format="json"
+    )
+    number = create.json()["order_number"]
+    token = create.json()["access_token"]
+
+    # Состарить заказ за пределы TTL (90 дней).
+    Order.objects.filter(order_number=number).update(created_at=timezone.now() - timedelta(days=91))
+    with override_settings(GUEST_ORDER_TOKEN_TTL_DAYS=90):
+        resp = APIClient().get(f"/api/orders/{number}/guest/?t={token}")
+    assert resp.status_code == 404
