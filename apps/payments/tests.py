@@ -60,6 +60,7 @@ def test_webhook_succeeded(mock_verify, payment, order):
     mock_verify.return_value = {
         "id": "yoo_test_123",
         "status": "succeeded",
+        "paid": True,
         "amount": {"value": "5000.00", "currency": "RUB"},
     }
     payload = {
@@ -79,6 +80,7 @@ def test_webhook_idempotent(mock_verify, payment):
     mock_verify.return_value = {
         "id": "yoo_test_123",
         "status": "succeeded",
+        "paid": True,
         "amount": {"value": "5000.00", "currency": "RUB"},
     }
     payload = {
@@ -100,6 +102,7 @@ def test_webhook_amount_mismatch_rejected(mock_verify, payment):
     mock_verify.return_value = {
         "id": "yoo_test_123",
         "status": "succeeded",
+        "paid": True,
         "amount": {"value": "1.00", "currency": "RUB"},
     }
     payload = {
@@ -118,6 +121,7 @@ def test_webhook_currency_mismatch_rejected(mock_verify, payment):
     mock_verify.return_value = {
         "id": "yoo_test_123",
         "status": "succeeded",
+        "paid": True,
         "amount": {"value": "5000.00", "currency": "USD"},
     }
     payload = {
@@ -126,6 +130,86 @@ def test_webhook_currency_mismatch_rejected(mock_verify, payment):
     }
     with pytest.raises(ValueError, match="mismatch"):
         handle_webhook(payload)
+
+
+# ═══════════════ B-02: переход по проверенному объекту, не по event ═══════════════
+
+
+@pytest.mark.django_db
+@mock.patch("apps.payments.services.verify_webhook")
+def test_webhook_fake_succeeded_event_but_verified_pending(mock_verify, payment, order):
+    """event=succeeded, но проверенный объект ещё pending → заказ НЕ оплачен."""
+    mock_verify.return_value = {
+        "id": "yoo_test_123",
+        "status": "pending",
+        "paid": False,
+        "amount": {"value": "5000.00", "currency": "RUB"},
+    }
+    payload = {
+        "event": "payment.succeeded",
+        "object": {"id": "yoo_test_123", "amount": {"value": "5000.00", "currency": "RUB"}},
+    }
+    handle_webhook(payload)
+    payment.refresh_from_db()
+    assert payment.status == PaymentStatus.PENDING
+    order.refresh_from_db()
+    assert order.payment_status != OrderPaymentStatus.PAID
+
+
+@pytest.mark.django_db
+@mock.patch("apps.payments.services.verify_webhook")
+def test_webhook_succeeded_but_paid_false_rejected(mock_verify, payment):
+    """status=succeeded, но paid=false → отвергаем (5xx, retry)."""
+    mock_verify.return_value = {
+        "id": "yoo_test_123",
+        "status": "succeeded",
+        "paid": False,
+        "amount": {"value": "5000.00", "currency": "RUB"},
+    }
+    payload = {"event": "payment.succeeded", "object": {"id": "yoo_test_123"}}
+    with pytest.raises(ValueError, match="not paid"):
+        handle_webhook(payload)
+    payment.refresh_from_db()
+    assert payment.status == PaymentStatus.PENDING
+
+
+@pytest.mark.django_db
+@mock.patch("apps.payments.services.verify_webhook")
+def test_webhook_no_downgrade_succeeded_to_canceled(mock_verify, payment, order):
+    """Уже succeeded нельзя откатить в canceled поддельным webhook."""
+    payment.status = PaymentStatus.SUCCEEDED
+    payment.save(update_fields=["status"])
+    Order.objects.filter(pk=order.pk).update(payment_status=OrderPaymentStatus.PAID)
+
+    mock_verify.return_value = {
+        "id": "yoo_test_123",
+        "status": "canceled",
+        "amount": {"value": "5000.00", "currency": "RUB"},
+    }
+    payload = {"event": "payment.canceled", "object": {"id": "yoo_test_123"}}
+    handle_webhook(payload)
+    payment.refresh_from_db()
+    assert payment.status == PaymentStatus.SUCCEEDED
+    order.refresh_from_db()
+    assert order.payment_status == OrderPaymentStatus.PAID
+
+
+@pytest.mark.django_db
+@mock.patch("apps.payments.services.verify_webhook")
+def test_webhook_metadata_order_mismatch_rejected(mock_verify, payment):
+    """metadata.order_id проверенного объекта не совпадает с заказом → отказ."""
+    mock_verify.return_value = {
+        "id": "yoo_test_123",
+        "status": "succeeded",
+        "paid": True,
+        "amount": {"value": "5000.00", "currency": "RUB"},
+        "metadata": {"order_id": 999999},
+    }
+    payload = {"event": "payment.succeeded", "object": {"id": "yoo_test_123"}}
+    with pytest.raises(ValueError, match="metadata order mismatch"):
+        handle_webhook(payload)
+    payment.refresh_from_db()
+    assert payment.status == PaymentStatus.PENDING
 
 
 # ═══════════════ ВЕРИФИКАЦИЯ ═══════════════
@@ -146,6 +230,8 @@ def test_webhook_no_verify(payment, order):
         "event": "payment.succeeded",
         "object": {
             "id": "yoo_test_123",
+            "status": "succeeded",
+            "paid": True,
             "amount": {"value": "5000.00", "currency": "RUB"},
         },
     }
@@ -163,6 +249,7 @@ def test_webhook_canceled(payment):
         "event": "payment.canceled",
         "object": {
             "id": "yoo_test_123",
+            "status": "canceled",
             "cancellation_details": {"reason": "expired"},
         },
     }
