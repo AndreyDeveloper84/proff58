@@ -207,6 +207,7 @@ class OrdersView(APIView):
         delivery = {
             "delivery_method": data["delivery_method"],
             "delivery_address": data["delivery_address"],
+            "delivery_zone": data["delivery_zone"],
             "comment": data["comment"],
         }
         try:

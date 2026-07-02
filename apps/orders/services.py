@@ -421,15 +421,33 @@ def place_order(
             line_total=line_total,
         )
 
-    order.total = total
+    # #429 (M-05, ADR #444): стоимость доставки считается СЕРВЕРОМ по серверной
+    # корзине (единый источник правды), включается в итог и облагается НДС вместе
+    # с товарами. При manual_required (нет весогабаритов для СДЭК) стоимость
+    # неизвестна → delivery_cost=null, итог предварительный (только товары).
+    from apps.delivery.services import quote_for_order
+
+    quote = quote_for_order(
+        zone_slug=delivery.get("delivery_zone", "") or "",
+        goods_total=total,
+        items=items,
+    )
+    order.delivery_zone = quote.zone_slug
+    order.delivery_cost = quote.cost
+    # Значения статусов delivery.services совпадают с Order.DeliveryCalcStatus.
+    order.delivery_calc_status = quote.status
+    order.delivery_snapshot = quote.snapshot
+    grand_total = total + (quote.cost or _ZERO)
+
+    order.total = grand_total
     order.currency = order_currency or "RUB"
     # #430 (M-06): снимок НДС для B2B (цена включает НДС; ставка фиксируется на
-    # момент заказа). Для B2C поля остаются нулевыми — розничный чек без выделения.
+    # момент заказа). База НДС — итог (товары + доставка). Для B2C поля нулевые.
     if customer_type == CustomerType.B2B:
         from apps.pricing.vat import vat_breakdown
 
         rate = int(getattr(settings, "VAT_RATE_PERCENT", 0))
-        net, vat = vat_breakdown(total, rate)
+        net, vat = vat_breakdown(grand_total, rate)
         order.vat_rate = rate
         order.amount_without_vat = net
         order.vat_amount = vat
@@ -441,6 +459,10 @@ def place_order(
         update_fields=[
             "total",
             "currency",
+            "delivery_zone",
+            "delivery_cost",
+            "delivery_calc_status",
+            "delivery_snapshot",
             "vat_rate",
             "amount_without_vat",
             "vat_amount",

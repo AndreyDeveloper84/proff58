@@ -37,6 +37,15 @@ class InvoiceData:
     vat_rate: int = 0
     vat_amount: Decimal = Decimal("0.00")
     amount_without_vat: Decimal = Decimal("0.00")
+    # #429 (M-05): доставка отдельной строкой. delivery_cost=None + delivery_pending
+    # → стоимость определяется менеджером; счёт предварительный (pending_delivery_quote),
+    # финальный счёт не выпускается до ввода стоимости.
+    delivery_cost: Decimal | None = None
+    delivery_pending: bool = False
+
+    @property
+    def status(self) -> str:
+        return "pending_delivery_quote" if self.delivery_pending else "issued"
 
 
 _INN_RE = re.compile(r"^\d{10}$|^\d{12}$")
@@ -123,6 +132,8 @@ def prepare_invoice(order) -> InvoiceData:
         vat_rate=order.vat_rate,
         vat_amount=order.vat_amount,
         amount_without_vat=order.amount_without_vat,
+        delivery_cost=order.delivery_cost,
+        delivery_pending=order.delivery_calc_status == "manual_required",
     )
 
 
