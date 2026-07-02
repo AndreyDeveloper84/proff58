@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from apps.accounts.models import Profile
+from apps.accounts.phone import normalize_phone
 
 User = get_user_model()
 
@@ -13,6 +14,11 @@ User = get_user_model()
 class LoginSerializer(serializers.Serializer):
     phone = serializers.CharField()
     password = serializers.CharField()
+
+    def validate_phone(self, value):
+        # #421 (B-01): вход по нормализованному номеру — совпадает с тем, как
+        # телефон сохранён при регистрации, независимо от формата ввода.
+        return normalize_phone(value)
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -23,9 +29,13 @@ class RegisterSerializer(serializers.Serializer):
     customer_type = serializers.ChoiceField(choices=["b2c", "b2b"], default="b2c")
 
     def validate_phone(self, value):
-        if User.objects.filter(phone=value).exists():
+        # #421 (B-01): храним номер в каноне; уникальность проверяем по нему же.
+        phone = normalize_phone(value)
+        if not phone:
+            raise serializers.ValidationError("Некорректный телефон.")
+        if User.objects.filter(phone=phone).exists():
             raise serializers.ValidationError("Пользователь с таким телефоном уже существует.")
-        return value
+        return phone
 
 
 class UserSerializer(serializers.ModelSerializer):

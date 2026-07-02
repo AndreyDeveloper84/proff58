@@ -15,6 +15,7 @@ from django.db import models, transaction
 from django.utils import timezone
 
 from apps.accounts.models import CustomerType
+from apps.accounts.phone import normalize_phone
 from apps.catalog.models import Product
 from apps.core.events import order_created
 from apps.pricing.services import price_for
@@ -226,7 +227,9 @@ def _customer_snapshot(user, customer_type: str, customer_data: dict) -> dict:
     snapshot = {
         "customer_type": customer_type,
         "customer_name": customer_data.get("customer_name") or "",
-        "customer_phone": customer_data.get("customer_phone") or "",
+        # #421 (B-01): храним нормализованный номер, чтобы claim по verified-телефону
+        # находил заказ независимо от исходного формата ввода.
+        "customer_phone": normalize_phone(customer_data.get("customer_phone") or ""),
         "customer_email": customer_data.get("customer_email") or "",
         "company_name": "",
         "inn": "",
@@ -239,7 +242,7 @@ def _customer_snapshot(user, customer_type: str, customer_data: dict) -> dict:
         if not snapshot["customer_name"]:
             snapshot["customer_name"] = getattr(user, "full_name", "") or ""
         if not snapshot["customer_phone"]:
-            snapshot["customer_phone"] = getattr(user, "phone", "") or ""
+            snapshot["customer_phone"] = normalize_phone(getattr(user, "phone", "") or "")
         if not snapshot["customer_email"]:
             snapshot["customer_email"] = getattr(user, "email", "") or ""
 
@@ -419,8 +422,28 @@ def place_order(
 
 
 def claim_guest_orders(user) -> int:
-    """Привязать гостевые заказы к аккаунту по телефону. Возвращает число привязанных."""
-    phone = getattr(user, "phone", "")
+    """Привязать гостевые заказы к аккаунту по телефону. Возвращает число привязанных.
+
+    #421 (B-01): claim разрешён ТОЛЬКО для подтверждённого номера
+    (``user.phone_verified``). Иначе регистрация чужого ещё не занятого номера
+    захватила бы историю заказов, адрес и B2B-реквизиты жертвы. Владение
+    подтверждается через OTP в MAX (см. integration_max.handlers.auth).
+
+    Матчинг — по нормализованному номеру (customer_phone заказов и телефоны
+    пользователей приведены к канону), чтобы разные форматы одного номера не
+    расходились. select_for_update защищает от гонки параллельного claim.
+    """
+    if not getattr(user, "phone_verified", False):
+        return 0
+    phone = normalize_phone(getattr(user, "phone", ""))
     if not phone:
         return 0
-    return Order.objects.filter(user__isnull=True, customer_phone=phone).update(user=user)
+    with transaction.atomic():
+        ids = list(
+            Order.objects.select_for_update()
+            .filter(user__isnull=True, customer_phone=phone)
+            .values_list("pk", flat=True)
+        )
+        if not ids:
+            return 0
+        return Order.objects.filter(pk__in=ids).update(user=user)

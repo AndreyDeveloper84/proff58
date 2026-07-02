@@ -70,9 +70,9 @@ class RegisterView(APIView):
             customer_type=d.get("customer_type", "b2c"),
         )
         login(request, user)
-        from apps.orders.services import claim_guest_orders
-
-        claim_guest_orders(user)
+        # #421 (B-01): claim гостевых заказов НЕ делаем при регистрации — телефон
+        # ещё не подтверждён. Иначе регистрация чужого номера захватила бы заказы
+        # жертвы. Привязка произойдёт после подтверждения номера через MAX (OTP).
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
@@ -142,7 +142,9 @@ class OTPLoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        phone = request.data.get("phone", "").strip()
+        from apps.accounts.phone import normalize_phone
+
+        phone = normalize_phone(request.data.get("phone", ""))
         otp = request.data.get("otp", "").strip()
         if not phone or not otp:
             return Response(
@@ -185,8 +187,18 @@ class OTPLoginView(APIView):
             return Response({"detail": "Неверный код."}, status=status.HTTP_400_BAD_REQUEST)
 
         cache.delete(cache_key)
+        # #421 (B-01): вход по OTP подтверждает владение номером → verified + claim.
+        if not user_obj.phone_verified:
+            user_obj.phone_verified = True
+            user_obj.save(update_fields=["phone_verified"])
         login(request, user_obj)
-        return Response(UserSerializer(user_obj).data)
+        from apps.orders.services import claim_guest_orders
+
+        claimed = claim_guest_orders(user_obj)
+        data = UserSerializer(user_obj).data
+        if claimed:
+            data["claimed_orders"] = claimed
+        return Response(data)
 
 
 class DeleteAccountView(APIView):

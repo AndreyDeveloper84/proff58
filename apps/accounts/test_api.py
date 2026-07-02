@@ -189,7 +189,8 @@ def test_otp_login_no_max(client, user):
 
 
 @pytest.mark.django_db
-def test_claim_guest_orders_on_login(client):
+def test_claim_guest_orders_on_login_requires_verified_phone(client):
+    """#421 (B-01): вход с НЕподтверждённым телефоном НЕ привязывает заказы."""
     from apps.orders.models import Order
 
     User.objects.create_user(phone="+79005550001", password="pass")
@@ -199,7 +200,27 @@ def test_claim_guest_orders_on_login(client):
         "/api/account/login/", {"phone": "+79005550001", "password": "pass"}, format="json"
     )
     assert resp.status_code == 200
+    assert resp.json().get("claimed_orders", 0) == 0
+    Order.objects.get(order_number="П-GUEST-1").refresh_from_db()
+    assert Order.objects.get(order_number="П-GUEST-1").user_id is None
+
+
+@pytest.mark.django_db
+def test_claim_guest_orders_on_login_with_verified_phone(client):
+    """#421 (B-01): подтверждённый номер привязывает свои гостевые заказы."""
+    from apps.orders.models import Order
+
+    u = User.objects.create_user(phone="+79005550001", password="pass")
+    u.phone_verified = True
+    u.save(update_fields=["phone_verified"])
+    Order.objects.create(order_number="П-GUEST-1", customer_phone="+79005550001")
+
+    resp = client.post(
+        "/api/account/login/", {"phone": "+79005550001", "password": "pass"}, format="json"
+    )
+    assert resp.status_code == 200
     assert resp.json().get("claimed_orders", 0) == 1
+    assert Order.objects.get(order_number="П-GUEST-1").user_id == u.pk
 
 
 # ═══════════ #344 Удаление аккаунта ═══════════
