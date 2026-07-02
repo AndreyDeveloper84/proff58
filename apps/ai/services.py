@@ -41,7 +41,7 @@ from .models import (
 )
 from .ports import ModelCall, get_provider
 from .sourcing.guardrails import validate
-from .sourcing.ports import SourceQuery
+from .sourcing.ports import SourceQuery, SourceUncertain
 from .sourcing.sources import get_sources
 
 ENRICH_SYSTEM = (
@@ -311,7 +311,7 @@ class BudgetExceeded(Exception):
 
 
 def _today() -> _dt.date:
-    return _dt.date.today()
+    return timezone.localdate()
 
 
 def _norm_hash(value: dict) -> str:
@@ -328,6 +328,13 @@ def _baseline_for(product, target_kind, attribute_slug):
         return provenance.value_hash(cur), src
     # attribute baseline (#371): провенанс читает из каталога через свой же хелпер.
     return provenance.attribute_baseline(product.pk, attribute_slug)
+
+
+def _finalize_ok(call, product, reply):
+    # M-09: сохранение находок и перевод вызова в ok — одна транзакция (согласованный протокол).
+    with transaction.atomic():
+        _persist_findings(call, product, reply)
+        _close_call(call, ExternalCall.Status.OK, reply=reply)
 
 
 def source_content(*, product_id, sources=None, idempotency_key) -> SourcingRun:
@@ -377,11 +384,17 @@ def source_content(*, product_id, sources=None, idempotency_key) -> SourcingRun:
             continue
         try:
             reply = adapter.find(query, idempotency_key=f"{idempotency_key}:{name}")
-        except Exception:  # noqa: BLE001 — изоляция источника
+        except NotImplementedError:  # M-09: незавершённый адаптер → явная ошибка конфигурации
+            _close_call(call, ExternalCall.Status.ERROR)
+            run.status = SourcingRun.Status.CONFIGURATION_ERROR
+            continue
+        except SourceUncertain:  # M-09: неопределённый исход — резерв НЕ снимаем, без авто-retry
+            _close_call(call, ExternalCall.Status.UNKNOWN)
+            continue
+        except Exception:  # noqa: BLE001 — определённо-транзиентный/прочий сбой источника
             _close_call(call, ExternalCall.Status.ERROR)
             continue
-        _persist_findings(call, product, reply)  # #7: находки ДО пометки ok
-        _close_call(call, ExternalCall.Status.OK, reply=reply)
+        _finalize_ok(call, product, reply)  # M-09: reply+findings+status=ok атомарно
         any_ok = True
 
     if run.status == SourcingRun.Status.RUNNING:

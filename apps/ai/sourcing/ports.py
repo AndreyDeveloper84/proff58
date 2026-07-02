@@ -39,3 +39,16 @@ class SourceReply:
 
 class ContentSourcePort(Protocol):
     def find(self, query: SourceQuery, *, idempotency_key: str) -> SourceReply: ...
+
+
+class SourceError(Exception):
+    """Базовая ошибка внешнего источника."""
+
+
+class SourceUnavailable(SourceError):
+    """Определённо-транзиентный сбой (connection refused / DNS / 429) — безопасно ретраить."""
+
+
+class SourceUncertain(SourceError):
+    """Неопределённый исход (read-timeout / разрыв после отправки): вызов мог пройти и оплатиться.
+    Резерв бюджета НЕ снимаем, авто-retry запрещён (ExternalCall → unknown)."""
