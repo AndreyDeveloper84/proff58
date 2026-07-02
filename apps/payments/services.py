@@ -3,7 +3,7 @@
 Контракт из ARCHITECTURE.md:
     create_payment(order) -> Payment  (с confirmation_url для редиректа)
     handle_webhook(payload) -> None   (идемпотентно)
-    refund(payment) -> Payment
+    refund(payment, amount=None) -> Refund  (частичные возвраты, ledger)
 
 Безопасность (#311):
 - Webhook верифицируется перезапросом GET /payments/{id} к API ЮKassa
@@ -18,18 +18,20 @@ import base64
 import json
 import logging
 import urllib.request
+import uuid
 from decimal import Decimal
 from urllib.error import HTTPError
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 
 from apps.core import events
 from apps.orders.models import Order
 from apps.orders.models import PaymentStatus as OrderPaymentStatus
 
-from .models import Payment, PaymentMethod, PaymentStatus
+from .models import Payment, PaymentMethod, PaymentStatus, Refund, RefundStatus
 
 logger = logging.getLogger(__name__)
 
@@ -284,29 +286,78 @@ def handle_webhook(payload: dict, *, verify: bool = True) -> None:
         payment.save(update_fields=["status", "webhook_payload", "updated_at"])
 
 
-@transaction.atomic
-def refund(payment: Payment, amount: Decimal | None = None) -> Payment:
-    """Создать возврат в ЮKassa."""
-    if payment.status != PaymentStatus.SUCCEEDED:
+def _refunded_total(payment_id: int) -> Decimal:
+    """Сумма успешных возвратов по платежу."""
+    agg = Refund.objects.filter(payment_id=payment_id, status=RefundStatus.SUCCEEDED).aggregate(
+        s=Sum("amount")
+    )
+    return agg["s"] or Decimal("0")
+
+
+def refund(payment: Payment, amount: Decimal | None = None) -> Refund:
+    """Создать (частичный) возврат в ЮKassa. Возвращает строку ledger Refund.
+
+    #437 (m-01/m-02):
+    - поддержка нескольких частичных возвратов; статус платежа/заказа —
+      производное от суммы успешных возвратов (partial vs full);
+    - валидация ``0 < amount <= remaining`` (оплачено − уже возвращено);
+    - сетевой вызов ЮKassa выполняется ВНЕ DB-транзакции (claim строки Refund в
+      короткой транзакции, затем внешний вызов, затем финализация) — сеть не
+      держит блокировку строки платежа.
+    """
+    if payment.status not in (PaymentStatus.SUCCEEDED, PaymentStatus.PARTIALLY_REFUNDED):
         raise ValueError("Возврат возможен только для оплаченного платежа")
 
-    refund_amount = amount or payment.amount
-    idempotence_key = f"refund-{payment.yookassa_id}"
+    remaining = payment.amount - _refunded_total(payment.pk)
+    refund_amount = payment.amount if amount is None else Decimal(amount)
+    if refund_amount <= 0:
+        raise ValueError("Сумма возврата должна быть положительной")
+    if refund_amount > remaining:
+        raise ValueError(f"Сумма возврата {refund_amount} превышает остаток {remaining}")
+
+    # Claim: строка Refund (pending) в короткой транзакции; уникальный ключ на строку.
+    with transaction.atomic():
+        rec = Refund.objects.create(
+            payment=payment,
+            amount=refund_amount,
+            currency=payment.currency,
+            status=RefundStatus.PENDING,
+            idempotency_key=f"refund-{payment.yookassa_id}-{uuid.uuid4().hex[:12]}",
+        )
 
     body = {
         "amount": {"value": str(refund_amount), "currency": payment.currency},
         "payment_id": payment.yookassa_id,
     }
+    # Внешний вызов — ВНЕ транзакции.
+    try:
+        result = _yookassa_request("POST", "refunds", body, idempotence_key=rec.idempotency_key)
+    except Exception as exc:
+        Refund.objects.filter(pk=rec.pk).update(
+            status=RefundStatus.FAILED, error_message=str(exc)[:500]
+        )
+        logger.exception("Refund failed for payment %s", payment.yookassa_id)
+        raise
 
-    _yookassa_request("POST", "refunds", body, idempotence_key=idempotence_key)
+    # Финализация: успех возврата + производный статус платежа/заказа.
+    with transaction.atomic():
+        Refund.objects.filter(pk=rec.pk).update(
+            status=RefundStatus.SUCCEEDED, yookassa_refund_id=result.get("id", "")
+        )
+        locked = Payment.objects.select_for_update().get(pk=payment.pk)
+        total_refunded = _refunded_total(locked.pk)
+        if total_refunded >= locked.amount:
+            locked.status = PaymentStatus.REFUNDED
+            order_status = OrderPaymentStatus.REFUNDED
+        else:
+            locked.status = PaymentStatus.PARTIALLY_REFUNDED
+            order_status = OrderPaymentStatus.PARTIALLY_REFUNDED
+        locked.save(update_fields=["status", "updated_at"])
+        Order.objects.filter(pk=locked.order_id).update(payment_status=order_status)
 
-    payment.status = PaymentStatus.REFUNDED
-    payment.save(update_fields=["status", "updated_at"])
-
-    Order.objects.filter(pk=payment.order_id).update(payment_status=OrderPaymentStatus.REFUNDED)
-
-    logger.info("Refund for payment %s, amount %s", payment.yookassa_id, refund_amount)
-    return payment
+    rec.refresh_from_db()
+    logger.info("Refund %s for payment %s, amount %s", rec.pk, payment.yookassa_id, refund_amount)
+    return rec
 
 
 def _site_url() -> str:

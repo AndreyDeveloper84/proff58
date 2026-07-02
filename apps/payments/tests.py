@@ -339,18 +339,116 @@ def test_create_payment_idempotent(mock_api, order):
 @override_settings(YOOKASSA_SHOP_ID="shop", YOOKASSA_SECRET_KEY="secret")
 @pytest.mark.django_db
 @mock.patch("apps.payments.services._yookassa_request")
-def test_refund(mock_api, payment, order):
+def test_refund_full(mock_api, payment, order):
     mock_api.return_value = {"id": "refund_1"}
     payment.status = PaymentStatus.SUCCEEDED
     payment.save()
 
     from .services import refund
 
-    result = refund(payment)
-    assert result.status == PaymentStatus.REFUNDED
+    rec = refund(payment)  # #437: возвращает строку ledger Refund
+    assert rec.status == "succeeded"
+    assert rec.amount == payment.amount
+    assert rec.yookassa_refund_id == "refund_1"
+    payment.refresh_from_db()
+    assert payment.status == PaymentStatus.REFUNDED
     order.refresh_from_db()
     assert order.payment_status == OrderPaymentStatus.REFUNDED
-    assert mock_api.call_args[1].get("idempotence_key") or "refund" in str(mock_api.call_args)
+
+
+@override_settings(YOOKASSA_SHOP_ID="shop", YOOKASSA_SECRET_KEY="secret")
+@pytest.mark.django_db
+@mock.patch("apps.payments.services._yookassa_request")
+def test_partial_refund_marks_partially_refunded(mock_api, payment, order):
+    """#437 (m-01): частичный возврат не помечает весь платёж/заказ refunded."""
+    from decimal import Decimal
+
+    mock_api.return_value = {"id": "refund_1"}
+    payment.status = PaymentStatus.SUCCEEDED
+    payment.save()
+
+    from .services import refund
+
+    rec = refund(payment, Decimal("2000.00"))  # payment.amount = 5000
+    assert rec.status == "succeeded"
+    payment.refresh_from_db()
+    assert payment.status == PaymentStatus.PARTIALLY_REFUNDED
+    order.refresh_from_db()
+    assert order.payment_status == OrderPaymentStatus.PARTIALLY_REFUNDED
+
+
+@override_settings(YOOKASSA_SHOP_ID="shop", YOOKASSA_SECRET_KEY="secret")
+@pytest.mark.django_db
+@mock.patch("apps.payments.services._yookassa_request")
+def test_multiple_partials_sum_to_full(mock_api, payment, order):
+    """#437: несколько частичных возвратов, в сумме = оплата → REFUNDED."""
+    from decimal import Decimal
+
+    mock_api.side_effect = [{"id": "r1"}, {"id": "r2"}]
+    payment.status = PaymentStatus.SUCCEEDED
+    payment.save()
+
+    from .services import refund
+
+    refund(payment, Decimal("2000.00"))
+    payment.refresh_from_db()
+    assert payment.status == PaymentStatus.PARTIALLY_REFUNDED
+    refund(payment, Decimal("3000.00"))  # 2000 + 3000 = 5000 = amount
+    payment.refresh_from_db()
+    assert payment.status == PaymentStatus.REFUNDED
+    order.refresh_from_db()
+    assert order.payment_status == OrderPaymentStatus.REFUNDED
+
+
+@override_settings(YOOKASSA_SHOP_ID="shop", YOOKASSA_SECRET_KEY="secret")
+@pytest.mark.django_db
+@mock.patch("apps.payments.services._yookassa_request")
+def test_over_refund_rejected(mock_api, payment):
+    """#437: сумма возврата больше остатка → ошибка, без вызова ЮKassa."""
+    from decimal import Decimal
+
+    payment.status = PaymentStatus.SUCCEEDED
+    payment.save()
+
+    from .services import refund
+
+    with pytest.raises(ValueError, match="превышает остаток"):
+        refund(payment, Decimal("5000.01"))
+    mock_api.assert_not_called()
+
+
+@override_settings(YOOKASSA_SHOP_ID="shop", YOOKASSA_SECRET_KEY="secret")
+@pytest.mark.django_db
+@mock.patch("apps.payments.services._yookassa_request")
+def test_refund_nonpositive_rejected(mock_api, payment):
+    from decimal import Decimal
+
+    payment.status = PaymentStatus.SUCCEEDED
+    payment.save()
+
+    from .services import refund
+
+    with pytest.raises(ValueError, match="положительной"):
+        refund(payment, Decimal("0"))
+    mock_api.assert_not_called()
+
+
+@override_settings(YOOKASSA_SHOP_ID="shop", YOOKASSA_SECRET_KEY="secret")
+@pytest.mark.django_db
+@mock.patch("apps.payments.services._yookassa_request", side_effect=RuntimeError("api down"))
+def test_refund_api_failure_marks_failed(mock_api, payment):
+    """#437 (m-02): сбой внешнего вызова → Refund failed, платёж не тронут."""
+    from .models import Refund, RefundStatus
+    from .services import refund
+
+    payment.status = PaymentStatus.SUCCEEDED
+    payment.save()
+
+    with pytest.raises(RuntimeError):
+        refund(payment)
+    payment.refresh_from_db()
+    assert payment.status == PaymentStatus.SUCCEEDED  # не помечен refunded
+    assert Refund.objects.filter(payment=payment, status=RefundStatus.FAILED).count() == 1
 
 
 @pytest.mark.django_db

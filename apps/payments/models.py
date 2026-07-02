@@ -17,6 +17,7 @@ class PaymentStatus(models.TextChoices):
     WAITING_CAPTURE = "waiting_for_capture", _("Ожидает подтверждения")
     SUCCEEDED = "succeeded", _("Оплачен")
     CANCELED = "canceled", _("Отменён")
+    PARTIALLY_REFUNDED = "partially_refunded", _("Частично возвращён")
     REFUNDED = "refunded", _("Возвращён")
 
 
@@ -70,3 +71,37 @@ class Payment(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"Платёж {self.yookassa_id or self.pk} [{self.status}]"
+
+
+class RefundStatus(models.TextChoices):
+    PENDING = "pending", _("В обработке")
+    SUCCEEDED = "succeeded", _("Выполнен")
+    FAILED = "failed", _("Ошибка")
+
+
+class Refund(TimeStampedModel):
+    """Ledger возвратов (#437, m-01/m-02).
+
+    Каждый частичный возврат — отдельная строка. Статус платежа/заказа —
+    производное от суммы успешных возвратов (см. payments.services.refund).
+    """
+
+    payment = models.ForeignKey(
+        Payment, on_delete=models.CASCADE, related_name="refunds", verbose_name=_("Платёж")
+    )
+    amount = models.DecimalField(_("Сумма возврата"), max_digits=14, decimal_places=2)
+    currency = models.CharField(_("Валюта"), max_length=3, default="RUB")
+    status = models.CharField(
+        _("Статус"), max_length=12, choices=RefundStatus.choices, default=RefundStatus.PENDING
+    )
+    yookassa_refund_id = models.CharField(_("ID возврата ЮKassa"), max_length=64, blank=True)
+    idempotency_key = models.CharField(_("Ключ идемпотентности"), max_length=80, unique=True)
+    error_message = models.TextField(_("Ошибка"), blank=True)
+
+    class Meta:
+        verbose_name = _("Возврат")
+        verbose_name_plural = _("Возвраты")
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Возврат {self.amount} по платежу {self.payment_id} [{self.status}]"
