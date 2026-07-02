@@ -33,24 +33,58 @@ class InvoiceData:
     items: list[InvoiceItem] = field(default_factory=list)
     total: Decimal = Decimal("0.00")
     currency: str = "RUB"
+    # #430 (M-06): выделенный НДС из снимка заказа.
+    vat_rate: int = 0
+    vat_amount: Decimal = Decimal("0.00")
+    amount_without_vat: Decimal = Decimal("0.00")
 
 
 _INN_RE = re.compile(r"^\d{10}$|^\d{12}$")
+_KPP_RE = re.compile(r"^\d{9}$")
 
 
-def validate_b2b_requisites(inn: str, company_name: str) -> list[str]:
-    """Проверить реквизиты B2B. Вернуть список ошибок (пустой = ок)."""
+def validate_b2b_requisites(
+    inn: str,
+    company_name: str,
+    kpp: str = "",
+    legal_address: str = "",
+    email: str = "",
+) -> list[str]:
+    """Проверить реквизиты B2B (ADR #444). Вернуть список ошибок (пустой = ок).
+
+    ИНН 10 цифр → юрлицо: КПП обязателен (9 цифр). ИНН 12 цифр → ИП: КПП
+    необязателен, но при наличии проверяется формат. Юр.адрес и email (для
+    отправки счёта) обязательны.
+    """
     errors = []
     inn = (inn or "").strip()
     company_name = (company_name or "").strip()
+    kpp = (kpp or "").strip()
+    legal_address = (legal_address or "").strip()
+    email = (email or "").strip()
 
+    is_legal_entity = False
     if not inn:
         errors.append("ИНН обязателен для B2B-заказа.")
     elif not _INN_RE.match(inn):
         errors.append("ИНН должен содержать 10 или 12 цифр.")
+    else:
+        is_legal_entity = len(inn) == 10
 
     if not company_name:
         errors.append("Название организации обязательно для B2B-заказа.")
+
+    # КПП обязателен для юрлица (ИНН 10); для ИП (ИНН 12) — опционален.
+    if is_legal_entity and not kpp:
+        errors.append("КПП обязателен для юридического лица.")
+    elif kpp and not _KPP_RE.match(kpp):
+        errors.append("КПП должен содержать 9 цифр.")
+
+    if not legal_address:
+        errors.append("Юридический адрес обязателен для B2B-заказа.")
+
+    if not email:
+        errors.append("Email обязателен для отправки счёта.")
 
     return errors
 
@@ -86,6 +120,9 @@ def prepare_invoice(order) -> InvoiceData:
         items=items,
         total=order.total,
         currency=order.currency,
+        vat_rate=order.vat_rate,
+        vat_amount=order.vat_amount,
+        amount_without_vat=order.amount_without_vat,
     )
 
 

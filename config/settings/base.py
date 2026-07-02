@@ -233,6 +233,10 @@ ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 YANDEX_MARKET_API_KEY = env("YANDEX_MARKET_API_KEY", default="")
 SOURCING_ALLOWLIST = {d.lower() for d in env.list("SOURCING_ALLOWLIST", default=[])}
 
+# НДС (#430, M-06). Цена включает НДС; ставка настраиваемая, но в заказе/счёте
+# фиксируется её значение на момент оформления (snapshot).
+VAT_RATE_PERCENT = env.int("VAT_RATE_PERCENT", default=22)
+
 # Prometheus-метрики sourcing pipeline (#374). Пустой токен — эндпоинт открыт
 # (только для внутренних сетей). В проде задать непустой METRICS_TOKEN.
 METRICS_TOKEN = env("METRICS_TOKEN", default="")

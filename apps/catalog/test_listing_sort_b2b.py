@@ -61,12 +61,13 @@ def setup_three(leaf):
 
 
 @pytest.mark.django_db
-def test_b2b_sorts_by_effective_wholesale(leaf, b2b_user):
+def test_b2b_sorts_by_single_retail_price(leaf, b2b_user):
+    # #430 (M-06, ADR #444): единый ценник — B2B сортируется по розничной цене
+    # (опт больше не учитывается): a=100, c=250, b=400.
     setup_three(leaf)
     client = APIClient()
     client.force_authenticate(b2b_user)
-    # эффективные: b=200, c=250 (без опта→retail), a=300
-    assert order(client) == ["b", "c", "a"]
+    assert order(client) == ["a", "c", "b"]
 
 
 @pytest.mark.django_db
@@ -86,13 +87,14 @@ def test_b2b_feature_off_sorts_by_retail(leaf, b2b_user):
 
 
 @pytest.mark.django_db
-def test_b2b_without_wholesale_falls_back_to_retail(leaf, b2b_user):
-    make_product(leaf, "cheap", code_1c="X", price=50)  # без опта → effective 50
+def test_b2b_ignores_wholesale_uses_retail(leaf, b2b_user):
+    # #430 (M-06): опт-запись из 1С не влияет на сортировку — только Product.price.
+    make_product(leaf, "cheap", code_1c="X", price=50)
     make_product(leaf, "pricey", code_1c="Y", price=900)
-    add_wholesale("Y", 700)  # effective 700
+    add_wholesale("Y", 700)  # игнорируется
     client = APIClient()
     client.force_authenticate(b2b_user)
-    assert order(client) == ["cheap", "pricey"]  # 50 < 700
+    assert order(client) == ["cheap", "pricey"]  # 50 < 900 по рознице
 
 
 @pytest.mark.django_db

@@ -71,12 +71,16 @@ def test_retail_for_b2c_user(product, b2c_user):
 
 
 @pytest.mark.django_db
-def test_wholesale_for_b2b_when_record_exists(product, b2b_user):
+def test_b2b_gets_same_single_price_as_retail(product, b2b_user):
+    """#430 (M-06, ADR #444): единый ценник — B2B получает ту же цену, что B2C.
+
+    Даже при наличии wholesale-PriceRecord (история из 1С) customer-facing цена
+    — розничная; отдельной оптовой цены нет.
+    """
     _wholesale(product, "800.00")
     r = price_for(product, b2b_user)
-    assert r.final == Decimal("800.00")
-    assert r.price_type == WHOLESALE
-    assert r.discount is None  # опт-скидку от розничного old_price не считаем
+    assert r.final == Decimal("1000.00")
+    assert r.price_type == RETAIL
 
 
 @pytest.mark.django_db
@@ -124,15 +128,16 @@ def test_price_for_id_matches_instance(product, b2b_user):
 
 @override_settings(ONEC_API_KEY="t-key")
 @pytest.mark.django_db
-def test_catalog_api_returns_wholesale_for_b2b(product, b2b_user):
+def test_catalog_api_returns_single_price_for_b2b(product, b2b_user):
+    """#430 (M-06): B2B видит ту же розничную цену (единый ценник)."""
     _wholesale(product, "800.00")
     client = APIClient()
     client.force_authenticate(user=b2b_user)
     resp = client.get(f"/api/catalog/products/{product.slug}/")
     assert resp.status_code == 200
     body = resp.json()
-    assert body["price"] == "800.00"
-    assert body["price_type"] == WHOLESALE
+    assert body["price"] == "1000.00"
+    assert body["price_type"] == RETAIL
 
 
 @pytest.mark.django_db
@@ -143,3 +148,33 @@ def test_catalog_api_returns_retail_for_anonymous(product):
     assert body["price"] == "1000.00"
     assert body["old_price"] == "1200.00"
     assert body["price_type"] == RETAIL
+
+
+# ═══════════ #430 (M-06) НДС ═══════════
+
+
+def test_vat_breakdown_22_percent():
+    from apps.pricing.vat import vat_breakdown
+
+    net, vat = vat_breakdown(Decimal("1220.00"), 22)
+    assert vat == Decimal("220.00")
+    assert net == Decimal("1000.00")
+    assert net + vat == Decimal("1220.00")
+
+
+def test_vat_breakdown_rounds_to_kopecks():
+    from apps.pricing.vat import vat_breakdown
+
+    net, vat = vat_breakdown(Decimal("1000.00"), 22)
+    # 1000*22/122 = 180.3278... → 180.33; net = 819.67
+    assert vat == Decimal("180.33")
+    assert net == Decimal("819.67")
+    assert net + vat == Decimal("1000.00")
+
+
+def test_vat_breakdown_zero_rate():
+    from apps.pricing.vat import vat_breakdown
+
+    net, vat = vat_breakdown(Decimal("500.00"), 0)
+    assert vat == Decimal("0.00")
+    assert net == Decimal("500.00")

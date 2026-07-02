@@ -22,7 +22,7 @@ from apps.orders.services import (
     place_order,
     update_cart_item,
 )
-from apps.pricing.services import WHOLESALE
+from apps.pricing.services import RETAIL
 
 from .conftest import make_wholesale
 
@@ -149,15 +149,21 @@ def test_snapshot_survives_product_delete(cart_with_item, product):
 # B2B путь
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db
-def test_b2b_uses_wholesale_and_snapshots_requisites(cart, product, b2b_user):
-    make_wholesale(product, "800.00")
+def test_b2b_single_price_and_snapshots_requisites(cart, product, b2b_user):
+    """#430 (M-06): единый ценник (розница) для B2B + снимок реквизитов и НДС."""
+    make_wholesale(product, "800.00")  # история из 1С не влияет на customer-цену
     add_to_cart(cart, product, 2)
     order = place_order(cart, user=b2b_user, customer_data={})
 
     item = order.items.first()
-    assert item.price_type == WHOLESALE
-    assert item.price_final == Decimal("800.00")
-    assert order.total == Decimal("1600.00")
+    assert item.price_type == RETAIL
+    assert item.price_final == Decimal("1000.00")
+    assert order.total == Decimal("2000.00")
+
+    # Снимок НДС 22%: 2000*22/122 = 360.66; без НДС = 1639.34.
+    assert order.vat_rate == 22
+    assert order.vat_amount == Decimal("360.66")
+    assert order.amount_without_vat == Decimal("1639.34")
 
     # Снимок реквизитов из профиля
     assert order.customer_type == "b2b"
@@ -236,12 +242,12 @@ def test_update_cart_item_qty_below_one_raises(cart_with_item):
 
 @pytest.mark.django_db
 def test_get_cart_view_uses_live_price(cart, product, b2b_user):
-    """Цена в корзине — серверная и актуальная (B2B видит опт)."""
-    make_wholesale(product, "800.00")
+    """#430 (M-06): цена в корзине — серверная, единый ценник (B2B = розница)."""
+    make_wholesale(product, "800.00")  # история из 1С не влияет на customer-цену
     add_to_cart(cart, product, 2)
     view = get_cart_view(cart, b2b_user)
-    assert view.lines[0].price_final == Decimal("800.00")
-    assert view.total == Decimal("1600.00")
+    assert view.lines[0].price_final == Decimal("1000.00")
+    assert view.total == Decimal("2000.00")
 
 
 # ---------------------------------------------------------------------------

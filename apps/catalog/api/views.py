@@ -1,17 +1,14 @@
 """Публичный read-only API каталога: дерево категорий, список, карточка, фасеты."""
 
 from django.contrib.postgres.search import TrigramSimilarity
-from django.db.models import Case, F, FloatField, OuterRef, Prefetch, Q, Subquery, Value, When
-from django.db.models.functions import Coalesce
+from django.db.models import Case, F, FloatField, Prefetch, Q, Value, When
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.features import is_enabled
-from apps.pricing.models import PriceRecord
-from apps.pricing.services import WHOLESALE, price_map_for_products
+from apps.pricing.services import price_map_for_products
 
 from ..filters import ProductFilter, visible_products
 from ..models import Category, ProductAttributeValue, StockStatus
@@ -139,40 +136,17 @@ class ProductListView(generics.ListAPIView):
     def _annotate_effective_price(self, qs):
         """Аннотировать ``effective_price`` для SQL-сортировки по цене.
 
-        Логика 1:1 с ``pricing.services.price_for``: для B2B (+фича ``b2b``) — текущая опт-цена
-        из ``PriceRecord`` по ``(code_1c, currency, wholesale, is_current)``; при отсутствии —
-        розница ``Product.price`` (Coalesce). Для B2C/анонима — сразу ``Product.price``.
+        #430 (M-06, ADR #444): единый ценник — сортировка по ``Product.price`` для
+        всех (B2C и B2B); отдельной оптовой цены нет. Логика 1:1 с
+        ``pricing.services.price_for``.
         """
-        user = self.request.user
-        is_b2b = bool(user and getattr(user, "is_b2b", False)) and is_enabled("b2b")
-        if not is_b2b:
-            return qs.annotate(effective_price=F("price"))
-        wholesale = (
-            PriceRecord.objects.filter(
-                code_1c=OuterRef("code_1c"),
-                price_type=WHOLESALE,
-                currency=OuterRef("currency"),
-                is_current=True,
-            )
-            .order_by("-valid_from", "-id")  # детерминизм (unique по is_current; order_by — защита)
-            .values("value")[:1]
-        )
-        return qs.annotate(
-            effective_price=Coalesce(
-                Subquery(wholesale, output_field=PriceRecord._meta.get_field("value")),
-                F("price"),
-            )
-        )
+        return qs.annotate(effective_price=F("price"))
 
     def _apply_sort(self, qs):
         """Серверная сортировка (whitelist) ДО пагинации. Дефолт — алфавит.
 
-        ``price_asc/desc`` — по ЭФФЕКТИВНОЙ цене пользователя (B2B-опт через
-        ``_annotate_effective_price``; для B2C/анонима = ``Product.price``). Товары без цены —
-        в конец (nulls_last). Неизвестное/popular/rating → дефолт.
-
-        Known limitation: price-ФИЛЬТР (``price_min/max``) и price-ФАСЕТ пока на ``Product.price``
-        (retail) даже для B2B — полная консистентность price-контракта с B2B-ценой — отдельная задача.
+        ``price_asc/desc`` — по ``Product.price`` (#430/M-06: единый ценник для всех).
+        Товары без цены — в конец (nulls_last). Неизвестное/popular/rating → дефолт.
         """
         sort = self.request.query_params.get("sort")
         if sort in ("price_asc", "price_desc"):

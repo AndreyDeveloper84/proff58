@@ -9,10 +9,43 @@ from apps.orders.invoice import prepare_b2b_order, prepare_invoice, validate_b2b
 
 class TestValidateB2BRequisites:
     def test_valid_inn_10(self):
-        assert validate_b2b_requisites("7701234567", "ООО Тест") == []
+        # #430: юрлицо (ИНН 10) — нужен КПП + юр.адрес + email.
+        assert (
+            validate_b2b_requisites(
+                "7701234567",
+                "ООО Тест",
+                kpp="770101001",
+                legal_address="г. Пенза, ул. Мира, 1",
+                email="buh@test.ru",
+            )
+            == []
+        )
 
     def test_valid_inn_12(self):
-        assert validate_b2b_requisites("770123456789", "ИП Иванов") == []
+        # #430: ИП (ИНН 12) — КПП необязателен.
+        assert (
+            validate_b2b_requisites(
+                "770123456789",
+                "ИП Иванов",
+                legal_address="г. Пенза, ул. Мира, 2",
+                email="ip@test.ru",
+            )
+            == []
+        )
+
+    def test_legal_entity_requires_kpp(self):
+        errors = validate_b2b_requisites(
+            "7701234567", "ООО Тест", legal_address="адрес", email="a@b.ru"
+        )
+        assert any("КПП" in e for e in errors)
+
+    def test_missing_legal_address(self):
+        errors = validate_b2b_requisites("770123456789", "ИП Иванов", email="a@b.ru")
+        assert any("адрес" in e for e in errors)
+
+    def test_missing_email(self):
+        errors = validate_b2b_requisites("770123456789", "ИП Иванов", legal_address="адрес")
+        assert any("Email" in e for e in errors)
 
     def test_empty_inn(self):
         errors = validate_b2b_requisites("", "ООО Тест")
@@ -40,7 +73,10 @@ class TestValidateB2BRequisites:
 
     def test_both_invalid(self):
         errors = validate_b2b_requisites("", "")
-        assert len(errors) == 2
+        # #430: пустые реквизиты → ошибки по ИНН, названию, юр.адресу и email.
+        assert any("ИНН" in e for e in errors)
+        assert any("Название" in e for e in errors)
+        assert len(errors) >= 2
 
 
 @pytest.mark.django_db
@@ -60,6 +96,7 @@ class TestPrepareInvoice:
             password="pass",
             customer_type=CustomerType.B2B,
             full_name="Директор",
+            email="buh@stroy.ru",
         )
         Profile.objects.create(
             user=user,
@@ -99,6 +136,14 @@ class TestPrepareInvoice:
     def test_prepare_b2b_order_ok(self, b2b_order):
         data = prepare_b2b_order(b2b_order)
         assert data.order_number == b2b_order.order_number
+
+    def test_invoice_carries_vat_snapshot(self, b2b_order):
+        # #430 (M-06): 2×5000 = 10000 с НДС 22% → НДС 1803.28, без НДС 8196.72.
+        data = prepare_invoice(b2b_order)
+        assert data.vat_rate == 22
+        assert data.vat_amount == Decimal("1803.28")
+        assert data.amount_without_vat == Decimal("8196.72")
+        assert data.amount_without_vat + data.vat_amount == data.total
 
     def test_prepare_b2b_rejects_b2c(self, b2b_order):
         b2b_order.customer_type = "b2c"
