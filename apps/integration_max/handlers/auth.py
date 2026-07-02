@@ -111,7 +111,9 @@ def handle_otp_confirm(chat_id: int, otp: str) -> dict | None:
         cache.delete(cache_key)
         return {"chat_id": chat_id, "text": "Пользователь не найден."}
 
-    User.objects.filter(pk=user.pk).update(max_chat_id=chat_id)
+    # #421 (B-01): успешный OTP через MAX подтверждает владение номером —
+    # ставим phone_verified, что разблокирует claim гостевых заказов.
+    User.objects.filter(pk=user.pk).update(max_chat_id=chat_id, phone_verified=True)
     cache.delete(cache_key)
 
     logger.info("MAX auth: linked chat_id=%s to user=%s", chat_id, user.pk)

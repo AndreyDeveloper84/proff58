@@ -44,6 +44,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         unique=True,
         db_index=True,
     )
+    # #421 (B-01): владение номером подтверждено (OTP через MAX). Только для
+    # verified-номера разрешён claim гостевых заказов — иначе регистрация чужого
+    # незанятого номера захватила бы историю заказов жертвы.
+    phone_verified = models.BooleanField(_("Телефон подтверждён"), default=False)
 
     is_staff = models.BooleanField(_("Доступ в админку"), default=False)
     is_active = models.BooleanField(_("Активен"), default=True)
