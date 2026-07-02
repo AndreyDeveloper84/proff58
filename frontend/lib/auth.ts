@@ -1,16 +1,17 @@
-// API клиент аутентификации (#330)
-
-const API = process.env.NEXT_PUBLIC_API_BASE || "";
+// API клиент аутентификации (#330, #434/M-11).
+//
+// Все вызовы идут через same-origin BFF (/api/account/**, /api/orders/), а не
+// напрямую в Django. BFF (lib/bff.ts) добавляет самосогласованный CSRF
+// (cookie + X-CSRFToken) для мутаций аутентифицированного пользователя — без
+// этого logout/PATCH получали бы 403. Единый apiFetch даёт единообразную
+// обработку ошибок (ApiError с detail из Django).
+import { ApiError, apiFetch } from "@/lib/api";
 
 export async function login(phone: string, password: string) {
-  const res = await fetch(`${API}/api/account/login/`, {
+  return apiFetch<Record<string, unknown>>("/api/account/login/", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify({ phone, password }),
   });
-  if (!res.ok) throw new Error((await res.json()).detail || "Ошибка входа");
-  return res.json();
 }
 
 export async function register(data: {
@@ -19,50 +20,48 @@ export async function register(data: {
   full_name?: string;
   email?: string;
 }) {
-  const res = await fetch(`${API}/api/account/register/`, {
+  return apiFetch<Record<string, unknown>>("/api/account/register/", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error((await res.json()).detail || "Ошибка регистрации");
-  return res.json();
 }
 
 export async function logout() {
-  await fetch(`${API}/api/account/logout/`, {
-    method: "POST",
-    credentials: "include",
-  });
+  // Ждём ответ (CSRF-защищённый POST) ДО редиректа — иначе 403 маскируется и
+  // сессия остаётся активной.
+  await apiFetch<void>("/api/account/logout/", { method: "POST" });
 }
 
 export async function getMe() {
-  const res = await fetch(`${API}/api/account/me/`, { credentials: "include" });
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    return await apiFetch<Record<string, unknown>>("/api/account/me/", { method: "GET" });
+  } catch (e) {
+    if (e instanceof ApiError) return null;
+    throw e;
+  }
 }
 
 export async function otpLogin(phone: string, otp: string) {
-  const res = await fetch(`${API}/api/account/otp-login/`, {
+  return apiFetch<Record<string, unknown>>("/api/account/otp-login/", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify({ phone, otp }),
   });
-  if (!res.ok) throw new Error((await res.json()).detail || "Ошибка");
-  return res.json();
 }
 
 export async function getOrders() {
-  const res = await fetch(`${API}/api/orders/`, { credentials: "include" });
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    return await apiFetch<Record<string, unknown>[]>("/api/orders/", { method: "GET" });
+  } catch (e) {
+    if (e instanceof ApiError) return [];
+    throw e;
+  }
 }
 
 export async function getWishlist() {
-  const res = await fetch(`${API}/api/account/wishlist/`, {
-    credentials: "include",
-  });
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    return await apiFetch<Record<string, unknown>[]>("/api/account/wishlist/", { method: "GET" });
+  } catch (e) {
+    if (e instanceof ApiError) return [];
+    throw e;
+  }
 }
