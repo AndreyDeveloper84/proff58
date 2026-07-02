@@ -237,6 +237,61 @@ def test_delete_account(client):
     assert u.full_name == ""
 
 
+@pytest.mark.django_db
+def test_delete_account_anonymizes_profile(client):
+    """#426 (M-02): Profile ПДн (ИНН/КПП/юр.адрес/согласие) очищается при удалении."""
+    from django.utils import timezone
+
+    from apps.accounts.models import Profile
+
+    u = User.objects.create_user(
+        phone="+79005550020", password="pass", full_name="ООО Тест", customer_type="b2b"
+    )
+    Profile.objects.create(
+        user=u,
+        company_name="ООО Профи",
+        inn="7700000000",
+        kpp="770001001",
+        legal_address="г. Пенза, ул. Ленина, 1",
+        pd_consent_at=timezone.now(),
+        pd_consent_version="v1",
+    )
+    client.force_authenticate(user=u)
+    resp = client.post("/api/account/delete/")
+    assert resp.status_code == 200
+
+    profile = Profile.objects.get(user=u)
+    assert profile.company_name == ""
+    assert profile.inn == ""
+    assert profile.kpp == ""
+    assert profile.legal_address == ""
+    assert profile.pd_consent_at is None
+    assert profile.pd_consent_version == ""
+
+
+@pytest.mark.django_db
+def test_delete_account_removes_wishlist(client):
+    """#426 (M-02): избранное (user-owned) удаляется при удалении аккаунта."""
+    from apps.accounts.wishlist import WishlistItem
+    from apps.catalog.models import Product, ProductStatus
+
+    u = User.objects.create_user(phone="+79005550021", password="pass")
+    product = Product.objects.create(
+        name="Дрель",
+        slug="drel-del",
+        unit="шт",
+        price=1000,
+        status=ProductStatus.PUBLISHED,
+        is_active=True,
+    )
+    WishlistItem.objects.create(user=u, product=product)
+    client.force_authenticate(user=u)
+
+    resp = client.post("/api/account/delete/")
+    assert resp.status_code == 200
+    assert WishlistItem.objects.filter(user=u).count() == 0
+
+
 # ═══════════ #343 Смена телефона ═══════════
 
 
