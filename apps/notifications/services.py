@@ -41,45 +41,56 @@ def send(
     пробрасывается — вызывающий код (checkout, status update) не блокируется.
     """
     payload = payload or {}
-
-    if idempotency_key and _is_duplicate(idempotency_key):
-        return
-
     resolved_chat_id = chat_id or _resolve_chat_id(user)
 
-    if resolved_chat_id and is_enabled("max_chat") and max_channel.is_available():
-        _send_via_max(
+    if not (resolved_chat_id and is_enabled("max_chat") and max_channel.is_available()):
+        _log(
             user=user,
-            chat_id=resolved_chat_id,
+            channel=NotificationChannel.MAX,
             event=event,
-            payload=payload,
+            status=NotificationStatus.SKIPPED,
+            error="MAX канал недоступен или отключён",
             idempotency_key=idempotency_key,
         )
         return
 
-    _log(
-        user=user,
-        channel=NotificationChannel.MAX,
-        event=event,
-        status=NotificationStatus.SKIPPED,
-        error="MAX канал недоступен или отключён",
-        idempotency_key=idempotency_key,
-    )
-
-
-def _send_via_max(*, user, chat_id: int, event: str, payload: dict, idempotency_key: str) -> None:
-    from .tasks import send_notification_task
-
+    # #431 (M-08): claim строки outbox. Дедуп по непустому idempotency_key на уровне
+    # БД (partial unique). Если строка уже есть — не ставим задачу повторно.
     text = _render_text(event, payload)
     user_id = getattr(user, "pk", None) if user else None
-    send_notification_task.delay(
-        channel=NotificationChannel.MAX,
-        chat_id=chat_id,
-        text=text,
+    log, created = _claim_outbox(
         user_id=user_id,
+        chat_id=resolved_chat_id,
         event=event,
+        text=text,
         idempotency_key=idempotency_key,
     )
+    if not created:
+        return
+
+    from .tasks import send_notification_task
+
+    send_notification_task.delay(log.id)
+
+
+def _claim_outbox(*, user_id, chat_id, event, text, idempotency_key):
+    """Создать строку outbox в статусе QUEUED. Дедуп по непустому ключу.
+
+    Возвращает (log, created). created=False → такой ключ уже поставлен/отправлен.
+    """
+    defaults = {
+        "channel": NotificationChannel.MAX,
+        "event": event,
+        "status": NotificationStatus.QUEUED,
+        "chat_id": chat_id,
+        "text": text,
+        "user_id": user_id,
+    }
+    if idempotency_key:
+        return NotificationLog.objects.get_or_create(
+            idempotency_key=idempotency_key, defaults=defaults
+        )
+    return NotificationLog.objects.create(idempotency_key="", **defaults), True
 
 
 def _render_text(event: str, payload: dict) -> str:
@@ -99,12 +110,6 @@ def _resolve_chat_id(user) -> int | None:
     if user is None:
         return None
     return getattr(user, "max_chat_id", None)
-
-
-def _is_duplicate(key: str) -> bool:
-    return NotificationLog.objects.filter(
-        idempotency_key=key, status=NotificationStatus.SENT
-    ).exists()
 
 
 def _log(

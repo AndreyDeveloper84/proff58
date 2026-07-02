@@ -196,6 +196,37 @@ def test_webhook_no_downgrade_succeeded_to_canceled(mock_verify, payment, order)
 
 @pytest.mark.django_db
 @mock.patch("apps.payments.services.verify_webhook")
+def test_webhook_success_emits_order_paid(
+    mock_verify, payment, order, django_capture_on_commit_callbacks
+):
+    """#431 (M-07): успешный webhook публикует order_paid для подписчиков заказа."""
+    from apps.core import events
+
+    mock_verify.return_value = {
+        "id": "yoo_test_123",
+        "status": "succeeded",
+        "paid": True,
+        "amount": {"value": "5000.00", "currency": "RUB"},
+    }
+    payload = {"event": "payment.succeeded", "object": {"id": "yoo_test_123"}}
+
+    received = []
+    events.order_paid.connect(
+        lambda sender, **kw: received.append(kw), dispatch_uid="test_m07_probe"
+    )
+    try:
+        with django_capture_on_commit_callbacks(execute=True):
+            handle_webhook(payload)
+    finally:
+        events.order_paid.disconnect(dispatch_uid="test_m07_probe")
+
+    assert len(received) == 1
+    assert received[0]["order_id"] == order.pk
+    assert received[0]["payment_id"] == payment.pk
+
+
+@pytest.mark.django_db
+@mock.patch("apps.payments.services.verify_webhook")
 def test_webhook_metadata_order_mismatch_rejected(mock_verify, payment):
     """metadata.order_id проверенного объекта не совпадает с заказом → отказ."""
     mock_verify.return_value = {
