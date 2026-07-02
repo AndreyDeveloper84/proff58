@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
@@ -309,21 +310,31 @@ def place_order(
     }
     items = list(cart.items.filter(is_deleted=False))
 
-    # Тип покупателя: только из учётной записи (для аутентифицированного пользователя).
-    # Гость не может объявить себя B2B через тело запроса — это бы дало оптовый тип
-    # при розничной цене (#282 B2B-guest exploit).
+    # Тип покупателя. Для аутентифицированного — из учётной записи. Для гостя —
+    # #430 (M-06, ADR #444): разрешён гостевой B2B invoice-заказ (запрос счёта без
+    # регистрации). Прежний запрет (#282) снят: единого ценника больше нет опта,
+    # поэтому «объявить себя B2B» не даёт ценового преимущества; B2B-реквизиты
+    # валидируются ниже, цена та же розничная.
     if user is not None and getattr(user, "is_authenticated", False):
         customer_type = getattr(user, "customer_type", CustomerType.B2C)
+    elif (customer_data.get("customer_type") or "").lower() == CustomerType.B2B:
+        customer_type = CustomerType.B2B
     else:
         customer_type = CustomerType.B2C
 
     snapshot = _customer_snapshot(user, customer_type, customer_data)
 
-    # Серверная валидация B2B-реквизитов и способа оплаты (#323).
+    # Серверная валидация B2B-реквизитов и способа оплаты (#323, #430/M-06).
     if customer_type == CustomerType.B2B:
         from .invoice import validate_b2b_requisites
 
-        errors = validate_b2b_requisites(snapshot["inn"], snapshot["company_name"])
+        errors = validate_b2b_requisites(
+            inn=snapshot["inn"],
+            company_name=snapshot["company_name"],
+            kpp=snapshot["kpp"],
+            legal_address=snapshot["legal_address"],
+            email=snapshot["customer_email"],
+        )
         if errors:
             raise ValidationError(errors[0])
         if payment_method and payment_method != "invoice":
@@ -412,6 +423,16 @@ def place_order(
 
     order.total = total
     order.currency = order_currency or "RUB"
+    # #430 (M-06): снимок НДС для B2B (цена включает НДС; ставка фиксируется на
+    # момент заказа). Для B2C поля остаются нулевыми — розничный чек без выделения.
+    if customer_type == CustomerType.B2B:
+        from apps.pricing.vat import vat_breakdown
+
+        rate = int(getattr(settings, "VAT_RATE_PERCENT", 0))
+        net, vat = vat_breakdown(total, rate)
+        order.vat_rate = rate
+        order.amount_without_vat = net
+        order.vat_amount = vat
     # #423 (B-03): резерв удержан выше (available -= qty, reserved += qty по строкам).
     # Фиксируем статус и TTL — janitor освободит его, если заказ не оплатят вовремя.
     order.reservation_status = ReservationStatus.HELD
@@ -420,6 +441,9 @@ def place_order(
         update_fields=[
             "total",
             "currency",
+            "vat_rate",
+            "amount_without_vat",
+            "vat_amount",
             "reservation_status",
             "reserved_until",
             "updated_at",

@@ -15,9 +15,19 @@ User = get_user_model()
 @pytest.mark.django_db
 def test_b2b_invoice_html():
     user = User.objects.create_user(
-        phone="+79007777777", password="pass", customer_type=CustomerType.B2B, full_name="Директор"
+        phone="+79007777777",
+        password="pass",
+        customer_type=CustomerType.B2B,
+        full_name="Директор",
+        email="buh@test.ru",
     )
-    Profile.objects.create(user=user, company_name='ООО "Тест"', inn="7701234567")
+    Profile.objects.create(
+        user=user,
+        company_name='ООО "Тест"',
+        inn="7701234567",
+        kpp="770101001",
+        legal_address="г. Пенза, ул. Мира, 1",
+    )
     product = Product.objects.create(
         name="Дрель",
         slug="inv-drel",

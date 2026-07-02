@@ -164,11 +164,10 @@ def test_products_b2b_no_nplus1(client, tree, django_assert_max_num_queries):
     assert resp.status_code == 200
     results = resp.json()["results"]
     assert len(results) == 20
-    # B2B действительно видит оптовые цены в выдаче.
+    # #430 (M-06): единый ценник — B2B видит ту же розничную цену (без опта).
     for r in results:
-        assert r["price"] == "800.00"
-        assert r["price_type"] == WHOLESALE
-        assert r["old_price"] is None
+        assert r["price"] == "1000.00"
+        assert r["price_type"] == RETAIL
 
 
 @pytest.mark.django_db

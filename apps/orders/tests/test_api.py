@@ -258,17 +258,41 @@ def test_b2c_order_invoice_payment_rejected(api, b2c_user, product):
 
 
 @pytest.mark.django_db
-def test_guest_cannot_declare_b2b(api, product):
-    """Гость не может объявить себя B2B через тело запроса (#282 B2B-guest exploit)."""
+def test_guest_b2b_without_requisites_rejected(api, product):
+    """#430 (M-06): гостевой B2B без валидных реквизитов → 400."""
     api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
     resp = api.post(
         "/api/orders/",
         {"customer_name": "Иван", "customer_phone": "+79990001234", "customer_type": "b2b"},
         format="json",
     )
-    # Заказ принят, но тип покупателя — b2c (гость не может быть B2B).
-    assert resp.status_code == 201
-    assert resp.json()["customer_type"] == "b2c"
+    assert resp.status_code == 400
+    assert "b2b_requisites" in str(resp.json())
+
+
+@pytest.mark.django_db
+def test_guest_b2b_invoice_allowed_with_requisites(api, product):
+    """#430 (M-06, ADR #444): гость оформляет B2B invoice с валидными реквизитами."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post(
+        "/api/orders/",
+        {
+            "customer_name": "Директор",
+            "customer_phone": "+79990001234",
+            "customer_email": "buh@guest.ru",
+            "customer_type": "b2b",
+            "company_name": 'ООО "Гость"',
+            "inn": "7701234567",
+            "kpp": "770101001",
+            "legal_address": "г. Пенза, ул. Мира, 1",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201, resp.json()
+    body = resp.json()
+    assert body["customer_type"] == "b2b"
+    assert body["payment_method"] == "invoice"
+    assert int(body["vat_rate"]) == 22
 
 
 @pytest.mark.django_db
@@ -349,9 +373,7 @@ def test_order_detail_anonymous_closed(api, b2c_user, product):
 
 @pytest.mark.django_db
 def test_b2b_order_via_api_snapshots_requisites(api, b2b_user, product):
-    from .conftest import make_wholesale
-
-    make_wholesale(product, "800.00")
+    """#430 (M-06): единый ценник (розница) для B2B + снимок реквизитов и НДС."""
     api.force_authenticate(user=b2b_user)
     api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
     resp = api.post("/api/orders/", {}, format="json")
@@ -359,8 +381,13 @@ def test_b2b_order_via_api_snapshots_requisites(api, b2b_user, product):
     body = resp.json()
     assert body["customer_type"] == "b2b"
     assert body["inn"] == "7700000000"
-    assert body["items"][0]["price_final"] == "800.00"
-    assert body["total"] == "1600.00"
+    # Единый ценник: та же розничная цена, что и для B2C.
+    assert body["items"][0]["price_final"] == "1000.00"
+    assert body["total"] == "2000.00"
+    # Снимок НДС 22% (2000 включает НДС): 2000*22/122 = 360.66; без НДС = 1639.34.
+    assert int(body["vat_rate"]) == 22
+    assert body["vat_amount"] == "360.66"
+    assert body["amount_without_vat"] == "1639.34"
 
 
 @pytest.mark.django_db

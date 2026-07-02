@@ -166,9 +166,20 @@ class Order(TimeStampedModel):
         max_digits=14,
         decimal_places=2,
         default=Decimal("0.00"),
-        help_text=_("Сумма line_total всех строк."),
+        help_text=_("Сумма line_total всех строк (с НДС)."),
     )
     currency = models.CharField(_("Валюта"), max_length=3, default="RUB")
+
+    # --- Снимок НДС (#430, M-06). Цена включает НДС; ставка фиксируется на момент
+    # заказа. Для B2B заполняется; для B2C остаётся нулевой (розничный чек без
+    # выделения налога). amount_with_vat == total. ---
+    vat_rate = models.PositiveSmallIntegerField(_("Ставка НДС, %"), default=0)
+    vat_amount = models.DecimalField(
+        _("Сумма НДС"), max_digits=14, decimal_places=2, default=Decimal("0.00")
+    )
+    amount_without_vat = models.DecimalField(
+        _("Сумма без НДС"), max_digits=14, decimal_places=2, default=Decimal("0.00")
+    )
 
     # --- Резерв склада (#423, B-03) ---
     reserved_until = models.DateTimeField(

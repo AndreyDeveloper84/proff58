@@ -66,7 +66,10 @@ def b2c_user(db):
 @pytest.fixture
 def b2b_user(db):
     user = User.objects.create_user(
-        phone="+79990000011", customer_type="b2b", full_name="ООО Контакт"
+        phone="+79990000011",
+        customer_type="b2b",
+        full_name="ООО Контакт",
+        email="buh@profi.ru",
     )
     Profile.objects.create(
         user=user,

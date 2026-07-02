@@ -142,6 +142,9 @@ class OrderSerializer(serializers.ModelSerializer):
             "comment",
             "payment_method",
             "total",
+            "vat_rate",
+            "vat_amount",
+            "amount_without_vat",
             "currency",
             "created_at",
             "items",
@@ -192,25 +195,38 @@ class CreateOrderSerializer(serializers.Serializer):
                     {"customer_phone": "Телефон обязателен для гостевого заказа."}
                 )
 
-        # Тип покупателя берётся только из учётной записи.
-        # Гость не может объявить себя B2B через тело запроса (#282).
+        # Тип покупателя. Аутентифицированный — из учётной записи. #430 (M-06,
+        # ADR #444): гость может запросить B2B invoice-заказ (запрос счёта без
+        # регистрации) через тело — единого ценника это не ломает (опта нет),
+        # реквизиты валидируются ниже.
         if is_authenticated:
             customer_type = getattr(user, "customer_type", "b2c")
         else:
-            customer_type = "b2c"
+            customer_type = (attrs.get("customer_type") or "b2c").lower()
 
         if customer_type == "b2b":
             from apps.orders.invoice import validate_b2b_requisites
 
             inn = attrs.get("inn", "")
             company = attrs.get("company_name", "")
+            kpp = attrs.get("kpp", "")
+            legal_address = attrs.get("legal_address", "")
+            email = attrs.get("customer_email", "")
             if is_authenticated and user:
                 profile = getattr(user, "profile", None)
-                if not inn and profile:
-                    inn = getattr(profile, "inn", "")
-                if not company and profile:
-                    company = getattr(profile, "company_name", "")
-            errors = validate_b2b_requisites(inn, company)
+                if profile:
+                    inn = inn or getattr(profile, "inn", "")
+                    company = company or getattr(profile, "company_name", "")
+                    kpp = kpp or getattr(profile, "kpp", "")
+                    legal_address = legal_address or getattr(profile, "legal_address", "")
+                email = email or getattr(user, "email", "")
+            errors = validate_b2b_requisites(
+                inn=inn,
+                company_name=company,
+                kpp=kpp,
+                legal_address=legal_address,
+                email=email,
+            )
             if errors:
                 raise serializers.ValidationError({"b2b_requisites": errors})
 
@@ -220,10 +236,9 @@ class CreateOrderSerializer(serializers.Serializer):
                 )
             attrs["payment_method"] = "invoice"
 
-        elif customer_type == "b2c" or not customer_type:
-            if attrs.get("payment_method") == "invoice":
-                raise serializers.ValidationError(
-                    {"payment_method": "Оплата по счёту доступна только для B2B."}
-                )
+        elif attrs.get("payment_method") == "invoice":
+            raise serializers.ValidationError(
+                {"payment_method": "Оплата по счёту доступна только для B2B."}
+            )
 
         return attrs

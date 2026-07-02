@@ -1,6 +1,7 @@
-"""Тесты гейта B2B-верификации (#340).
+"""Тесты гейта B2B-верификации (#340, #430/M-06).
 
-Неверифицированный B2B видит розничные цены, верифицированный — опт.
+#430 (ADR #444): единый ценник — B2B и B2C видят одну (розничную) цену,
+отдельной оптовой нет. Флаг is_b2b_verified сохраняется для прочего B2B-гейтинга.
 Верификация через admin-action эмитит событие b2b_verified.
 """
 
@@ -65,9 +66,11 @@ def test_unverified_b2b_sees_retail(product, unverified_b2b, wholesale_record):
 
 
 @override_settings(FEATURES={"b2b": True})
-def test_verified_b2b_sees_wholesale(product, verified_b2b, wholesale_record):
+def test_verified_b2b_sees_single_price(product, verified_b2b, wholesale_record):
+    # #430 (M-06, ADR #444): единый ценник — даже верифицированный B2B видит
+    # ту же розничную цену; отдельной оптовой больше нет.
     result = price_for(product, verified_b2b)
-    assert result.final == Decimal("350.00"), "Верифицированный B2B должен видеть оптовую цену"
+    assert result.final == Decimal("500.00"), "B2B должен видеть единую (розничную) цену"
 
 
 def test_user_is_b2b_verified_property(db):
