@@ -820,6 +820,14 @@
             "набор экстрактор"
           ],
           "source": "name_keywords"
+        },
+        {
+          "tool_type": "Стеклорезы",
+          "slug": "steklorezy",
+          "match_keywords": [
+            "стеклорез"
+          ],
+          "source": "name_keywords"
         }
       ]
     },
@@ -1279,6 +1287,8 @@
         { "tool_type": "Тросы, канаты, такелаж", "slug": "krep-takelazh", "match_keywords": ["канат", "веревка", "шнур", "трос", "шпагат", "коуш", "талреп", "зажим", "цепь", "вертлюг", "кольцо такелаж"], "source": "name_keywords" },
         { "tool_type": "Системы выравнивания плитки", "slug": "krep-svp", "match_keywords": ["крестик", "клинья", "система выравнив", "свп", "зажим для плитки"], "source": "name_keywords" },
         { "tool_type": "Скобы", "slug": "krep-skoby", "match_keywords": ["скоба", "скобы"], "source": "name_keywords" },
+        { "tool_type": "Замки и скобянка", "slug": "krep-zamki", "match_keywords": ["замок", "замки ", "задвижк", "защёлк", "защелк", "скобян", "шпингалет", "петл", "цилиндровый механизм"], "source": "name_keywords" },
+        { "tool_type": "Проволока", "slug": "krep-provoloka", "match_keywords": ["проволок"], "source": "name_keywords" },
         { "tool_type": "Болты и винты", "slug": "krep-bolty", "match_keywords": ["болт", "винт"], "source": "name_keywords" }
       ]
     },
@@ -1329,7 +1339,8 @@
         { "tool_type": "Клейма и шаблоны", "slug": "izm-kleyma", "match_keywords": ["клеймо", "клейма", "шаблон", "набор шаблон"], "source": "name_keywords" },
         { "tool_type": "Штативы, отражатели, держатели", "slug": "izm-shtativy", "match_keywords": ["штатив", "отражатель", "веха", "нивелирная рейка", "третья рука"], "source": "name_keywords" },
         { "tool_type": "Влагомеры, анализаторы, приборы", "slug": "izm-analizatory", "match_keywords": ["влагомер", "газоанализатор", "анемометр", "анеометр", "анализатор", "рн-метр", "рн метр", "ph-метр", "люксметр", "шумомер", "толщиномер", "барометр", "видеоскоп", "эндоскоп", "дефектоскоп", "алкотест", "алкометр", "виброметр", "тахометр", "стробоскоп"], "source": "name_keywords" },
-        { "tool_type": "Измерительные колёса (курвиметры)", "slug": "izm-kolesa", "match_keywords": ["курвиметр", "измерительное колесо", "колесо измерит"], "source": "name_keywords" }
+        { "tool_type": "Измерительные колёса (курвиметры)", "slug": "izm-kolesa", "match_keywords": ["курвиметр", "измерительное колесо", "колесо измерит"], "source": "name_keywords" },
+        { "tool_type": "Лупы", "slug": "izm-lupy", "match_keywords": ["лупа", "лупы "], "source": "name_keywords" }
       ]
     },
     {
