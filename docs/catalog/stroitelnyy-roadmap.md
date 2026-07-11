@@ -66,11 +66,19 @@
 
 ## 4. Roadmap (4 независимых раунда)
 
-### Round 1 — Строительные леса (самый чистый)
-new option «Строительные леса и вышки-туры» → leaf-scoped dry-run → enrich (≈85, −2 винта в Крепёж). Риск минимальный (leaf-scope).
+**Прогресс:** ✅ Round 1 — Applied · ✅ Round 2 — Applied · ⬜ Round 3 — Preflight required · ⬜ Round 4 — Deferred.
 
-### Round 2 — Reuse
-Leaf-scoped привязка к существующим типам: ЛКМ, Клеи, Сухие смеси, Малярный, Шпатели/Кельмы, Маркеры, Валики, Пистолеты, Плиткорезы, Ленты/Плёнка (≈180). Опции уже есть.
+### Round 1 — Строительные леса — ✅ APPLIED on staging (2026-07-10)
+new option «Строительные леса и вышки-туры» → leaf-scoped dry-run → enrich.
+- **AttributeOption:** `id=418 · slug=stroitelnye-lesa-vyshki`. **Scope:** leaf `id=404`.
+- **83 PAV** (17 pub); attrs_cache 83/83, cache_bad=0; вне leaf=0; category/category_is_manual не менялись; повторный dry-run PLAN_CREATE=0.
+- Исключения: `product 4945, 4946` (Винты ГОСТ) — untyped → Round 3 (recat → Крепёж). Backup: `db-2026-07-10-2119.sql.gz`.
+
+### Round 2 — Reuse — ✅ APPLIED on staging (2026-07-11)
+Leaf-scoped привязка к **14 существующим** option values (ЛКМ/Клеи/Смеси/Малярный/Шпатели/Маркеры/Валики/Пистолеты/Плиткорезы/Ленты/Плёнка/Герметики/Пена/Растворители).
+- **121 новых PAV** (43 published); attrs_cache synced 121/121, cache_bad=0; FP included=0; вне root 191=0; category/category_is_manual не менялись; повторный dry-run PLAN_CREATE=0.
+- Overlap «Пистолет для герметиков» разрешён в пользу **Пистолеты монтажные** (5), Герметики=3.
+- Backup: `db-2026-07-11-0938.sql.gz`.
 
 ### Round 3 — Recategorize (маршрутизация)
 Бытовая химия→Хозтовары, Автохимия→Авто, Топоры/Гвоздодёры→Ручной, Вибраторы→Электро/Оборудование, Винты ГОСТ→Крепёж (≈185). Отдельный механизм (recategorize, не enrich).
