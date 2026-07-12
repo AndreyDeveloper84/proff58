@@ -4,51 +4,88 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
-  Бренд-токены «Профессионал» — ровно из ТЗ (раздел 2).
-  --accent / --primary приходят из SiteSettings.accent_color / primary_color:
-  перекраска экземпляра магазина = смена ЭТИХ переменных, без правки компонентов.
-  В компонентах цвета берём только через var(--…) / соответствующие утилиты ниже.
+  Бренд-токены «Профессионал» (#39/#474). Стратегия темы (ADR SP2.1):
+  light-first для рабочих e-commerce поверхностей (каталог/PDP/checkout/ЛК),
+  header/footer/маркетинг могут быть тёмными через data-theme="dark".
+
+  Дефолт токенов — СВЕТЛАЯ тема (:root / [data-theme="light"]); тёмная —
+  [data-theme="dark"]. Тему можно переключать на любом поддереве (nearest
+  data-theme выигрывает при резолве var). Компоненты используют ТОЛЬКО
+  семантические токены — переключение темы их не трогает.
+
+  --accent / --primary приходят из SiteSettings.accent_color / primary_color
+  (inline style на <html>): перекраска экземпляра магазина = смена ЭТИХ переменных.
 */
+
+/* Общие (не зависят от темы): радиусы, шкала. */
 :root {
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+}
+
+/* Светлая тема — дефолт для товарных поверхностей. */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f5f6f7;
+  --surface: #ffffff;
+  --surface-raised: #eef0f2;
+  --border: #dfe3e7;
+
+  --text: #14181b;
+  --text-secondary: #4a5157;
+  --text-muted: #869099;
+
+  --accent: #b5e61d; /* CTA (тёмный текст --accent-ink поверх) */
+  --accent-ink: #1a2400;
+  --primary: #0a8043; /* ссылки/«в наличии» — затемнён для контраста на белом */
+
+  --danger: #d02c2c;
+  --rating: #b7791f;
+
+  --photo: #eef1f3;
+  --photo-ink: #8b939a;
+
+  --st-wait: #b7791f;
+  --st-confirm: #2f6fb0;
+  --st-assemble: #7a5fc0;
+  --st-ship: #2f6fb0;
+  --st-done: #157a5b;
+  --st-cancel: #c0453f;
+}
+
+/* Тёмная тема — header/footer/маркетинг и текущая витрина (html.dark). */
+[data-theme="dark"] {
   color-scheme: dark;
 
-  /* поверхности (тёмная тема) */
   --bg: #0e1113;
   --surface: #16191c;
   --surface-raised: #1e2226;
   --border: #2a2f34;
 
-  /* текст */
   --text: #f2f4f5;
   --text-secondary: #aeb6bc;
   --text-muted: #6e767c;
 
-  /* бренд — дефолты, перекрываются из SiteSettings */
-  --accent: #b5e61d; /* CTA, активные состояния */
-  --accent-ink: #1a2400; /* текст на --accent */
-  --primary: #00a14b; /* ссылки, «в наличии», иконки */
+  --accent: #b5e61d;
+  --accent-ink: #1a2400;
+  --primary: #00a14b;
 
-  /* семантика */
-  --danger: #e5484d; /* скидка, нет в наличии */
-  --rating: #e6b45a; /* звёзды (намеренно не зелёные) */
+  --danger: #e5484d;
+  --rating: #e6b45a;
 
-  /* фото-зона карточки — светлая, чтобы товар читался на тёмном каталоге */
   --photo: #eef1f3;
   --photo-ink: #8b939a;
 
-  /* статусы заказа (бейджи ЛК/опс) */
   --st-wait: #e6b45a;
   --st-confirm: #74b6ee;
   --st-assemble: #c2acf2;
   --st-ship: #74b6ee;
   --st-done: #7fd9bc;
   --st-cancel: #ec8c88;
-
-  /* радиусы */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
-  --radius-pill: 999px;
 }
 
 /*

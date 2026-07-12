@@ -1,10 +1,12 @@
+import { AlertTriangle, CheckCircle2, PackageOpen } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
 import { Spinner } from "./spinner";
 
-// SP2 (#39): стандартные состояния экрана — empty / error / loading / success.
-// Единый вид для каталога, карточки, корзины, checkout — фронт не изобретает
-// заглушки заново. Все принимают optional action (кнопка/ссылка) и children.
+// SP2 (#39) / SP2.1 (#474): стандартные состояния экрана — empty / error / loading /
+// success. Единый вид для каталога, карточки, корзины, checkout. У каждого — понятный
+// визуальный маркер (иконка/спиннер); все принимают optional action.
 
 function StateShell({
   icon,
@@ -23,6 +25,8 @@ function StateShell({
 }) {
   const titleColor =
     tone === "danger" ? "text-danger" : tone === "success" ? "text-brand" : "text-ink";
+  const iconColor =
+    tone === "danger" ? "text-danger" : tone === "success" ? "text-brand" : "text-ink-3";
   return (
     <div
       className={cn(
@@ -30,7 +34,7 @@ function StateShell({
         className,
       )}
     >
-      {icon && <div className="text-ink-3">{icon}</div>}
+      {icon && <div className={iconColor}>{icon}</div>}
       <div className="space-y-1">
         <p className={cn("text-base font-semibold", titleColor)}>{title}</p>
         {description && <p className="text-sm text-ink-2">{description}</p>}
@@ -40,14 +44,23 @@ function StateShell({
   );
 }
 
-export function EmptyState(props: {
+export function EmptyState({
+  icon,
+  ...props
+}: {
   title: string;
   description?: string;
   icon?: React.ReactNode;
   action?: React.ReactNode;
   className?: string;
 }) {
-  return <StateShell tone="muted" {...props} />;
+  return (
+    <StateShell
+      tone="muted"
+      icon={icon ?? <PackageOpen className="h-10 w-10" aria-hidden />}
+      {...props}
+    />
+  );
 }
 
 export function ErrorState({
@@ -60,7 +73,15 @@ export function ErrorState({
   action?: React.ReactNode;
   className?: string;
 }) {
-  return <StateShell tone="danger" title={title} description={description} {...props} />;
+  return (
+    <StateShell
+      tone="danger"
+      icon={<AlertTriangle className="h-10 w-10" aria-hidden />}
+      title={title}
+      description={description}
+      {...props}
+    />
+  );
 }
 
 export function SuccessState(props: {
@@ -69,7 +90,13 @@ export function SuccessState(props: {
   action?: React.ReactNode;
   className?: string;
 }) {
-  return <StateShell tone="success" {...props} />;
+  return (
+    <StateShell
+      tone="success"
+      icon={<CheckCircle2 className="h-10 w-10" aria-hidden />}
+      {...props}
+    />
+  );
 }
 
 export function LoadingState({
@@ -81,6 +108,8 @@ export function LoadingState({
 }) {
   return (
     <div
+      role="status"
+      aria-busy="true"
       className={cn(
         "flex flex-col items-center justify-center gap-3 px-6 py-12 text-center text-ink-2",
         className,

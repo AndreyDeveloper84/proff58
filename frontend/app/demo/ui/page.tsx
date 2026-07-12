@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { EmptyState, ErrorState, LoadingState, SuccessState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
 
+import { ThemeFrame } from "../_components/ThemeFrame";
+
 // SP2 kitchen-sink (#39): визуальная проверка базовых токенов и компонентов.
 // Не входит в продакшн-навигацию — служит согласованным эталоном дизайн-системы.
 
@@ -29,11 +31,14 @@ const TOKENS = [
 
 export default function UiKitPage() {
   return (
-    <div className="mx-auto max-w-4xl space-y-12 p-8">
-      <header className="space-y-1">
-        <h1 className="font-display text-2xl text-ink">SP2 · Дизайн-система</h1>
-        <p className="text-sm text-ink-2">Базовые токены и компоненты витрины «Профессионал».</p>
-      </header>
+    <ThemeFrame>
+      <div className="mx-auto max-w-4xl space-y-12 p-8">
+        <header className="space-y-1">
+          <h1 className="font-display text-2xl text-ink">SP2 · Дизайн-система</h1>
+          <p className="text-sm text-ink-2">
+            Базовые токены и компоненты витрины «Профессионал».
+          </p>
+        </header>
 
       <Section title="Цветовые токены">
         <div className="flex flex-wrap gap-3">
@@ -69,13 +74,13 @@ export default function UiKitPage() {
       <Section title="Поля формы">
         <Card className="max-w-md space-y-4">
           <Field label="Телефон" required hint="Для связи по заказу">
-            {(id) => <Input id={id} placeholder="+7 900 000-00-00" />}
+            {(p) => <Input {...p} placeholder="+7 900 000-00-00" />}
           </Field>
           <Field label="E-mail" error="Некорректный e-mail">
-            {(id) => <Input id={id} defaultValue="bad@" invalid />}
+            {(p) => <Input {...p} defaultValue="bad@" />}
           </Field>
           <Field label="Комментарий">
-            {(id) => <Textarea id={id} placeholder="Пожелания к заказу" />}
+            {(p) => <Textarea {...p} placeholder="Пожелания к заказу" />}
           </Field>
         </Card>
       </Section>
@@ -104,6 +109,7 @@ export default function UiKitPage() {
           </Card>
         </div>
       </Section>
-    </div>
+      </div>
+    </ThemeFrame>
   );
 }
