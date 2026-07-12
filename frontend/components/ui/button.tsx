@@ -10,10 +10,11 @@ const buttonVariants = cva(
         outline: "border border-line bg-surface text-ink hover:bg-raised",
         ghost: "text-ink-2 hover:bg-raised hover:text-ink",
       },
+      // SP2.1 (#474): на мобиле высота 44px (touch-target), на desktop компактнее.
       size: {
-        default: "h-9 px-4",
-        sm: "h-8 px-3",
-        icon: "h-9 w-9",
+        default: "h-11 px-4 sm:h-9",
+        sm: "h-9 px-3 sm:h-8",
+        icon: "h-11 w-11 sm:h-9 sm:w-9",
       },
     },
     defaultVariants: { variant: "accent", size: "default" },

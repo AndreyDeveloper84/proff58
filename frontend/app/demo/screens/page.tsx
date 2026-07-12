@@ -1,12 +1,16 @@
+import { Search } from "lucide-react";
+
+import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { EmptyState, ErrorState, LoadingState, SuccessState } from "@/components/ui/states";
+import { EmptyState, ErrorState, SuccessState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
 
+import { ThemeFrame } from "../_components/ThemeFrame";
 import { MOCK_CATEGORIES, MOCK_FACETS, MOCK_PRODUCTS } from "./mocks";
 
 // Галерея макетов ключевых экранов MVP (#40). Статичные шаблоны из SP2-кита —
@@ -37,7 +41,11 @@ function MiniHeader() {
     <div className="flex items-center gap-4 border-b border-line bg-surface px-4 py-3">
       <span className="font-display text-lg text-ink">Профессионал</span>
       <div className="hidden flex-1 sm:block">
-        <div className="h-9 rounded-md border border-line bg-canvas" />
+        {/* Поиск (mock): иконка + placeholder — читается как поле поиска. */}
+        <div className="flex h-9 items-center gap-2 rounded-md border border-line bg-canvas px-3 text-ink-3">
+          <Search className="h-4 w-4" aria-hidden />
+          <span className="text-sm">Поиск по каталогу…</span>
+        </div>
       </div>
       <Button size="sm" variant="ghost" className="ml-auto">
         Каталог
@@ -53,7 +61,8 @@ export default function ScreensPage() {
   const [hit, order, out] = MOCK_PRODUCTS;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-12 p-6">
+    <ThemeFrame>
+      <div className="mx-auto max-w-5xl space-y-12 p-6">
       <header className="space-y-1">
         <h1 className="font-display text-2xl text-ink">MVP · Макеты экранов</h1>
         <p className="text-sm text-ink-2">
@@ -121,21 +130,25 @@ export default function ScreensPage() {
       </Screen>
 
       {/* 2b. Состояния PLP */}
-      <Screen title="2б. Состояния списка" note="loading / пусто / ошибка">
-        <div className="grid gap-4 p-4 sm:grid-cols-3">
-          <Card pad="none">
-            <LoadingState label="Загружаем товары…" />
-          </Card>
-          <Card pad="none">
-            <EmptyState
-              title="Ничего не найдено"
-              description="Сбросьте часть фильтров."
-              action={<Button variant="outline">Сбросить</Button>}
-            />
-          </Card>
-          <Card pad="none">
-            <ErrorState action={<Button variant="outline">Повторить</Button>} />
-          </Card>
+      <Screen
+        title="2б. Состояния списка"
+        note="loading контентной зоны — skeleton (не спиннер); пусто / ошибка"
+      >
+        <div className="space-y-4 p-4">
+          {/* Загрузка контентной зоны PLP — через skeleton карточек. */}
+          <ProductGridSkeleton count={4} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card pad="none">
+              <EmptyState
+                title="Ничего не найдено"
+                description="Сбросьте часть фильтров."
+                action={<Button variant="outline">Сбросить</Button>}
+              />
+            </Card>
+            <Card pad="none">
+              <ErrorState action={<Button variant="outline">Повторить</Button>} />
+            </Card>
+          </div>
         </div>
       </Screen>
 
@@ -196,13 +209,13 @@ export default function ScreensPage() {
             <Card surface="raised" pad="md" className="space-y-3">
               <p className="font-semibold text-ink">Контактные данные</p>
               <Field label="Имя" required>
-                {(id) => <Input id={id} placeholder="Иван Иванов" />}
+                {(p) => <Input {...p} placeholder="Иван Иванов" />}
               </Field>
               <Field label="Телефон" required>
-                {(id) => <Input id={id} placeholder="+7 900 000-00-00" />}
+                {(p) => <Input {...p} placeholder="+7 900 000-00-00" />}
               </Field>
               <Field label="Комментарий">
-                {(id) => <Textarea id={id} placeholder="Пожелания к заказу" />}
+                {(p) => <Textarea {...p} placeholder="Пожелания к заказу" />}
               </Field>
             </Card>
           </div>
@@ -268,6 +281,7 @@ export default function ScreensPage() {
           </div>
         </div>
       </Screen>
-    </div>
+      </div>
+    </ThemeFrame>
   );
 }
