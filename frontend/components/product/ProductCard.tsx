@@ -33,7 +33,8 @@ export function ProductCard({
         data-event="favorite_toggle"
         data-product-id={product.id}
         className={cn(
-          "absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-surface/70 backdrop-blur transition-colors",
+          // #478: touch hit-area ≥44px на мобиле (иконка 16px, зона нажатия крупнее).
+          "absolute right-2 top-2 z-10 grid h-11 w-11 place-items-center rounded-full bg-surface/70 backdrop-blur transition-colors sm:h-8 sm:w-8",
           fav ? "text-brand" : "text-ink-3 hover:text-ink",
         )}
       >

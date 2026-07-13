@@ -10,10 +10,12 @@ const buttonVariants = cva(
         outline: "border border-line bg-surface text-ink hover:bg-raised",
         ghost: "text-ink-2 hover:bg-raised hover:text-ink",
       },
-      // SP2.1 (#474): на мобиле высота 44px (touch-target), на desktop компактнее.
+      // #474/#478: mobile touch-target. default 44px; primary CTA (lg) 48px;
+      // sm визуально компактнее, но hit-area ≥44px на мобиле (min-h-11); desktop 36–40px.
       size: {
         default: "h-11 px-4 sm:h-9",
-        sm: "h-9 px-3 sm:h-8",
+        lg: "h-12 px-6 text-base sm:h-11",
+        sm: "min-h-11 px-3 sm:min-h-0 sm:h-8",
         icon: "h-11 w-11 sm:h-9 sm:w-9",
       },
     },
