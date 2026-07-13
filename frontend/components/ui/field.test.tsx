@@ -42,10 +42,11 @@ describe("Field a11y", () => {
     );
   });
 
-  it("required пробрасывается на контрол", () => {
+  it("required и aria-required пробрасываются на контрол (#476)", () => {
     render(<Field label="Имя" required>{(p) => <Input {...p} />}</Field>);
     const input = screen.getByLabelText(/Имя/);
     expect(input).toBeRequired();
+    expect(input).toHaveAttribute("aria-required", "true");
   });
 
   it("без error/hint нет aria-describedby и aria-invalid", () => {
