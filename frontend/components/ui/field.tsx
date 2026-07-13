@@ -13,6 +13,7 @@ export type FieldControlProps = {
   "aria-describedby"?: string;
   "aria-invalid"?: true;
   required?: boolean;
+  "aria-required"?: true;
 };
 
 export function Field({
@@ -38,7 +39,10 @@ export function Field({
     id,
     "aria-describedby": hasMsg ? msgId : undefined,
     "aria-invalid": error ? true : undefined,
+    // required — нативный атрибут (валидация формы); aria-required — явная
+    // подсказка скринридеру (#476), на случай кастомных контролов без required.
     required: required || undefined,
+    "aria-required": required || undefined,
   };
 
   return (
