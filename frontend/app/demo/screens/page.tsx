@@ -158,19 +158,40 @@ export default function ScreensPage() {
       </Screen>
 
       {/* 3. Карточка товара (PDP) */}
-      <Screen title="3. Карточка товара" note="Галерея + характеристики + покупка (mobile: стек, desktop: 2 колонки)">
+      <Screen title="3. Карточка товара" note="Крошки + галерея + характеристики + покупка (mobile: стек, desktop: 2 колонки)">
         <MiniHeader />
+        {/* #479: хлебные крошки — иерархия категорий + текущий товар. На реальной
+            PDP уровни — ссылки (next/link) на категории. */}
+        <nav aria-label="Хлебные крошки" className="flex flex-wrap items-center gap-1.5 px-4 pt-4 text-xs text-ink-3">
+          {["Главная", "Каталог", "Электроинструмент", "Перфораторы"].map((c) => (
+            <span key={c} className="flex items-center gap-1.5">
+              <span className="cursor-pointer hover:text-ink">{c}</span>
+              <span aria-hidden>/</span>
+            </span>
+          ))}
+          <span aria-current="page" className="text-ink">
+            {hit.name}
+          </span>
+        </nav>
         <div className="grid gap-6 p-4 lg:grid-cols-2">
           <div className="aspect-square rounded-lg bg-photo" />
           <div className="space-y-4">
             <div className="flex flex-wrap gap-1.5">
-              <Badge variant="hit">Хит</Badge>
-              <Badge variant="sale">−16%</Badge>
+              {hit.badges.includes("hit") && <Badge variant="hit">Хит</Badge>}
+              {hit.price.discountPct != null && (
+                <Badge variant="sale">−{hit.price.discountPct}%</Badge>
+              )}
             </div>
             <h3 className="font-display text-xl text-ink">{hit.name}</h3>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-ink">12 990 ₽</span>
-              <span className="text-sm text-ink-3 line-through">15 490 ₽</span>
+              <span className="text-2xl font-bold text-ink">
+                {hit.price.final?.toLocaleString("ru-RU")} ₽
+              </span>
+              {hit.price.old != null && (
+                <span className="text-sm text-ink-3 line-through">
+                  {hit.price.old.toLocaleString("ru-RU")} ₽
+                </span>
+              )}
             </div>
             <p className="text-sm text-brand">В наличии · {hit.stockQty} шт</p>
             <Card surface="raised" pad="sm">
@@ -233,13 +254,15 @@ export default function ScreensPage() {
               <span>Доставка</span>
               <span>0 ₽</span>
             </div>
-            <div className="flex justify-between text-sm text-ink-3">
-              <span>в т.ч. НДС 22%</span>
-              <span>3 332 ₽</span>
-            </div>
             <div className="mt-2 flex justify-between border-t border-line pt-2 text-base font-bold text-ink">
               <span>Итого</span>
               <span>18 480 ₽</span>
+            </div>
+            {/* #479: НДС — не отдельное начисление, а разбивка итога: под «Итого»,
+                приглушённо и с отступом. Сумма уже включена в 18 480 ₽. */}
+            <div className="flex justify-between pl-3 text-xs text-ink-3">
+              <span>в т.ч. НДС 22%</span>
+              <span>3 332 ₽</span>
             </div>
             <Button size="lg" className="mt-2 w-full">Оформить заказ</Button>
           </Card>
