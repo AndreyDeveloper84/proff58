@@ -80,7 +80,7 @@ export default function ScreensPage() {
           <Card surface="raised" pad="lg" className="text-center">
             <p className="font-display text-2xl text-ink">Инструмент для профессионалов</p>
             <p className="mt-1 text-sm text-ink-2">Доставка по Пензе и области</p>
-            <Button className="mt-4">В каталог</Button>
+            <Button size="lg" className="mt-4">В каталог</Button>
           </Card>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {MOCK_CATEGORIES.map((c) => (
@@ -103,12 +103,15 @@ export default function ScreensPage() {
           <aside className="hidden space-y-4 lg:block">
             {MOCK_FACETS.map((f) => (
               <Card key={f.title} pad="sm">
-                <p className="mb-2 text-sm font-semibold text-ink">{f.title}</p>
-                <ul className="space-y-1">
+                <p className="mb-1 text-sm font-semibold text-ink">{f.title}</p>
+                {/* #478: клик по всей строке (label), tap-area ≥44px на мобиле. */}
+                <ul>
                   {f.options.map((o) => (
-                    <li key={o} className="flex items-center gap-2 text-sm text-ink-2">
-                      <span className="h-3.5 w-3.5 rounded-sm border border-line" />
-                      {o}
+                    <li key={o}>
+                      <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-1 text-sm text-ink-2 hover:bg-raised sm:min-h-9">
+                        <input type="checkbox" className="h-4 w-4 accent-accent" />
+                        <span>{o}</span>
+                      </label>
                     </li>
                   ))}
                 </ul>
@@ -181,7 +184,7 @@ export default function ScreensPage() {
               </dl>
             </Card>
             <div className="flex gap-3">
-              <Button className="flex-1">В корзину</Button>
+              <Button size="lg" className="flex-1">В корзину</Button>
               <Button variant="outline">Купить в 1 клик</Button>
             </div>
             <p className="text-xs text-ink-3">
@@ -238,7 +241,7 @@ export default function ScreensPage() {
               <span>Итого</span>
               <span>18 480 ₽</span>
             </div>
-            <Button className="mt-2 w-full">Оформить заказ</Button>
+            <Button size="lg" className="mt-2 w-full">Оформить заказ</Button>
           </Card>
         </div>
       </Screen>
