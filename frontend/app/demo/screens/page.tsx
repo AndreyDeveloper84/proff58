@@ -37,12 +37,14 @@ function Screen({
 }
 
 function MiniHeader() {
+  // #477: тёмная брендовая рамка через выделенные токены шапки (bg-header/…).
+  // Класс dark — чтобы вложенные компоненты (кнопки/поиск) взяли dark-токены.
   return (
-    <div className="flex items-center gap-4 border-b border-line bg-surface px-4 py-3">
-      <span className="font-display text-lg text-ink">Профессионал</span>
+    <div className="dark flex items-center gap-4 border-b border-header-line bg-header px-4 py-3 text-header-ink">
+      <span className="font-display text-lg">Профессионал</span>
       <div className="hidden flex-1 sm:block">
         {/* Поиск (mock): иконка + placeholder — читается как поле поиска. */}
-        <div className="flex h-9 items-center gap-2 rounded-md border border-line bg-canvas px-3 text-ink-3">
+        <div className="flex h-9 items-center gap-2 rounded-md border border-line bg-raised px-3 text-ink-3">
           <Search className="h-4 w-4" aria-hidden />
           <span className="text-sm">Поиск по каталогу…</span>
         </div>

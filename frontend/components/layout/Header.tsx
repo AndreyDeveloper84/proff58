@@ -24,8 +24,9 @@ export function Header({ logoUrl, siteName = "Профессионал" }: Heade
   const { count } = useCart();
   const [open, setOpen] = useState(false);
 
+  // #477: шапка — тёмная брендовая рамка (класс dark → dark-токены в поддереве).
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-canvas/95 backdrop-blur">
+    <header className="dark sticky top-0 z-40 border-b border-line bg-canvas/95 backdrop-blur">
       {/* Топ-бар: промо + телефон + аккаунт-ссылки (скрыт на мобиле) */}
       <div className="hidden border-b border-line/60 lg:block">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-1.5 text-xs text-ink-3 sm:px-6 lg:px-8">

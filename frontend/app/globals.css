@@ -4,50 +4,59 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
-  Бренд-токены «Профессионал» (#39/#474). Стратегия темы (ADR SP2.1):
-  light-first для рабочих e-commerce поверхностей (каталог/PDP/checkout/ЛК),
-  header/footer/маркетинг могут быть тёмными через data-theme="dark".
+  Бренд-токены «Профессионал» (#39/#474/#477). Стратегия темы (утверждено, #477):
+  СВЕТЛАЯ тема — основная для товарных поверхностей (каталог/PDP/checkout/ЛК);
+  тёмные — шапка и подвал (брендовая рамка) и допустимые тёмные акцент-зоны.
 
-  Дефолт токенов — СВЕТЛАЯ тема (:root / [data-theme="light"]); тёмная —
-  [data-theme="dark"]. Тему можно переключать на любом поддереве (nearest
-  data-theme выигрывает при резолве var). Компоненты используют ТОЛЬКО
-  семантические токены — переключение темы их не трогает.
+  Дефолт токенов — СВЕТЛАЯ (:root / [data-theme="light"]). Тёмная — под классом
+  `.dark` (совместимо с @custom-variant dark) ИЛИ [data-theme="dark"] (демо-острова
+  с переключателем). Ближайший предок с темой выигрывает при резолве var, поэтому
+  светлый каталог и тёмная шапка сосуществуют на одной странице. Отдельные токены
+  тёмной хром-рамки (--header-… и --footer-…) тема-независимы (шапка/подвал тёмные).
 
-  --accent / --primary приходят из SiteSettings.accent_color / primary_color
-  (inline style на <html>): перекраска экземпляра магазина = смена ЭТИХ переменных.
+  Компоненты используют ТОЛЬКО семантические токены (никакого raw-hex) — смена темы
+  их не трогает. --accent / --primary приходят из SiteSettings (inline style на <html>).
 */
 
-/* Общие (не зависят от темы): радиусы, шкала. */
+/* Общие (не зависят от темы): радиусы + тёмная хром-рамка шапки/подвала. */
 :root {
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 12px;
   --radius-pill: 999px;
+
+  /* Тёмная брендовая рамка — всегда тёмная, в обеих темах. */
+  --header-bg: #12161a;
+  --header-ink: #eef1f3;
+  --header-line: #2a2f34;
+  --footer-bg: #0e1113;
+  --footer-ink: #aeb6bc;
+  --footer-line: #2a2f34;
 }
 
-/* Светлая тема — дефолт для товарных поверхностей. */
+/* Светлая тема — ДЕФОЛТ для товарных поверхностей (#477). */
 :root,
 [data-theme="light"] {
   color-scheme: light;
 
-  --bg: #f5f6f7;
+  --bg: #f4f5f7;
   --surface: #ffffff;
-  --surface-raised: #eef0f2;
-  --border: #dfe3e7;
+  --surface-raised: #eef1f4;
+  --border: #cfd4da;
 
   --text: #14181b;
-  --text-secondary: #4a5157;
-  --text-muted: #869099;
+  --text-secondary: #495057;
+  --text-muted: #616a72; /* AA-контраст на белом (~4.6:1) */
 
   --accent: #b5e61d; /* CTA (тёмный текст --accent-ink поверх) */
   --accent-ink: #1a2400;
-  --primary: #0a8043; /* ссылки/«в наличии» — затемнён для контраста на белом */
+  --primary: #0a8043; /* ссылки/«в наличии»/зелёные CTA — контраст на белом */
 
-  --danger: #d02c2c;
+  --danger: #cf2e2e;
   --rating: #b7791f;
 
   --photo: #eef1f3;
-  --photo-ink: #8b939a;
+  --photo-ink: #6b747c;
 
   --st-wait: #b7791f;
   --st-confirm: #2f6fb0;
@@ -57,7 +66,8 @@
   --st-cancel: #c0453f;
 }
 
-/* Тёмная тема — header/footer/маркетинг и текущая витрина (html.dark). */
+/* Тёмная тема — secondary/dark-mode: класс .dark или [data-theme="dark"]. */
+.dark,
 [data-theme="dark"] {
   color-scheme: dark;
 
@@ -120,6 +130,14 @@
   --color-st-ship: var(--st-ship);
   --color-st-done: var(--st-done);
   --color-st-cancel: var(--st-cancel);
+
+  /* Тёмная хром-рамка (#477): bg-header, text-header-ink, border-header-line, bg-footer, … */
+  --color-header: var(--header-bg);
+  --color-header-ink: var(--header-ink);
+  --color-header-line: var(--header-line);
+  --color-footer: var(--footer-bg);
+  --color-footer-ink: var(--footer-ink);
+  --color-footer-line: var(--footer-line);
 
   --font-sans: var(--font-inter);
   --font-display: var(--font-oswald);
