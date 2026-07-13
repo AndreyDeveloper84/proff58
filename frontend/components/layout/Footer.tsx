@@ -30,8 +30,9 @@ const SOCIAL_ICONS: Record<string, LucideIcon> = {
 };
 
 export function Footer() {
+  // #477: подвал — тёмная брендовая рамка (класс dark → dark-токены в поддереве).
   return (
-    <footer className="mt-12 border-t border-line bg-surface">
+    <footer className="dark mt-12 border-t border-line bg-surface">
       {/* Trust-бейджи */}
       <div className="mx-auto grid max-w-7xl grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 px-4 py-6 sm:px-6 lg:px-8">
         {SITE.trustBadges.map((b) => {

@@ -35,15 +35,13 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const theme = await getSiteTheme();
 
-  // #474: токены темы — по data-theme (light-first база в :root, dark — островами).
-  // Текущая витрина остаётся тёмной: data-theme="dark" на корне (класс dark сохранён
-  // для существующих dark:-вариантов). Светлые товарные поверхности задаются
-  // data-theme="light" на своём поддереве.
+  // #477: светлая тема — по умолчанию (токены в :root). Тёмная — под классом .dark
+  // (secondary/dark-mode). Шапка/подвал остаются тёмными: класс dark на их корне
+  // (см. Header/Footer). Витрина товарных поверхностей — светлая.
   return (
     <html
       lang="ru"
-      data-theme="dark"
-      className={`dark ${inter.variable} ${oswald.variable} h-full`}
+      className={`${inter.variable} ${oswald.variable} h-full`}
       style={
         {
           "--primary": theme.primary_color,
