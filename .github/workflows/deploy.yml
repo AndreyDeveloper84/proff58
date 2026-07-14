@@ -81,4 +81,10 @@ jobs:
             # mount) → принудительно проверяем и перечитываем конфиг, иначе изменения маршрутов
             # (напр. headless: / → Next) не применяются и staging выглядит «без изменений».
             $compose exec -T nginx nginx -t && $compose restart nginx
+
+            # Smoke развёрнутого nginx (#424/B-04): строгий default-src 'none' — только для
+            # /api|/healthz, витрина/_next/* — рабочая storefront-политика. Гоняем из контейнера
+            # web против сервиса nginx внутри compose-сети (curl не нужен, скрипт на stdlib).
+            # Проваленная проверка (витрина под 'none' → сломанный рендер) валит деплой.
+            retry $compose exec -T web python scripts/smoke_csp.py --base http://nginx
             docker image prune -f
