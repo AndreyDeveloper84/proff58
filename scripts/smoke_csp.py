@@ -97,7 +97,9 @@ def main() -> int:
     # 2. Ассеты Next.js: /_next/* не блокируются 'none' (статус может быть 404 —
     #    важна политика, а не наличие конкретного файла).
     _, csp_next = fetch(args.base, "/_next/static/smoke-check.css", ctx)
-    r.check(STRICT not in csp_next, "GET /_next/* → не заблокировано 'none'", csp_next or "(нет CSP)")
+    r.check(
+        STRICT not in csp_next, "GET /_next/* → не заблокировано 'none'", csp_next or "(нет CSP)"
+    )
 
     # 3. JSON API: строгий 'none' обязателен (браузер не исполняет как HTML/JS).
     st_api, csp_api = fetch(args.base, "/api/catalog/categories/", ctx)
