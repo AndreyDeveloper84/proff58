@@ -4,6 +4,10 @@ export const PER_PAGE_OPTIONS = [12, 24, 48] as const;
 export const DEFAULT_PER_PAGE = 24;
 export const DEFAULT_SORT: SortOption = "popular";
 
+// Порог остатка для состояния «Мало осталось» (in-stock + stockQty ≤ порога).
+// Активируется, когда 1С начнёт передавать остаток в API каталога (см. ProductAvailability).
+export const LOW_STOCK_THRESHOLD = 5;
+
 export const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "popular", label: "По умолчанию" },
   { value: "price_asc", label: "Сначала дешёвые" },

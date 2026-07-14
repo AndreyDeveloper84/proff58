@@ -12,6 +12,19 @@ export function formatRu(n: number): string {
   return String(n).replace(".", ",");
 }
 
+/**
+ * Русская множественная форма по числу: pluralize(1,"товар","товара","товаров") → «товар»,
+ * (2)→«товара», (5)→«товаров». one — 1/21/31…, few — 2–4/22–24…, many — 0/5–20/…
+ */
+export function pluralize(n: number, one: string, few: string, many: string): string {
+  const abs = Math.abs(n) % 100;
+  const tail = abs % 10;
+  if (abs > 10 && abs < 20) return many;
+  if (tail > 1 && tail < 5) return few;
+  if (tail === 1) return one;
+  return many;
+}
+
 /** slug/токен → человекочитаемая подпись: «cordless-drill» → «Cordless drill». */
 export function humanizeToken(token: string): string {
   const s = token.replace(/[-_]/g, " ").trim();

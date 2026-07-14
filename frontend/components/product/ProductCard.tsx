@@ -94,7 +94,7 @@ export function ProductCard({
         </div>
         {title}
         <ProductSpecs specs={product.specs} />
-        <ProductAvailability stock={product.stock} />
+        <ProductAvailability stock={product.stock} stockQty={product.stockQty} />
         <div className="mt-auto flex items-center justify-between gap-2 pt-1">
           <ProductPrice price={product.price} />
           <AddToCartButton
