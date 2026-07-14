@@ -15,6 +15,7 @@ import { FacetSidebar } from "@/components/filters/FacetSidebar";
 import { TypePanel } from "@/components/listing/TypePanel";
 import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
 import { CategoryHero } from "@/components/listing/CategoryHero";
+import { ConsultBanner } from "@/components/listing/ConsultBanner";
 
 // Презентационный shell: данные уже разрешены на сервере (getListing(query)).
 // Никакой клиентской фильтрации — изменение фильтра меняет URL (router.replace),
@@ -202,7 +203,10 @@ export function ListingShell({
         title={listing.category.title}
         intro={listing.category.intro}
         hero={listing.category.hero}
+        total={listing.total}
       />
+
+      <ConsultBanner />
 
       {listing.promo && (
         <a

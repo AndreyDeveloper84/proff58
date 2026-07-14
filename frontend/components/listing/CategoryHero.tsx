@@ -1,6 +1,11 @@
+import { Wrench } from "lucide-react";
+import { pluralize } from "@/lib/format";
+
 // Hero-баннер категории (PLP). Презентационный: данные приходят из Listing.category.
 // Фон-фото опционально — без него фирменный градиент на токенах темы. Единственный <h1>
 // страницы (старый удалён из ListingShell). CTA рендерится только при наличии label+href.
+// total (опц.) — счётчик найденных товаров рядом с заголовком; blueprint-контур инструмента
+// и вертикальная тех-линия — фирменный акцент из утверждённого макета.
 
 type Hero = {
   image: string | null;
@@ -13,10 +18,12 @@ export function CategoryHero({
   title,
   intro,
   hero,
+  total,
 }: {
   title: string;
   intro?: string;
   hero?: Hero;
+  total?: number;
 }) {
   const hasCta = Boolean(hero?.ctaLabel && hero?.ctaHref);
   return (
@@ -38,15 +45,37 @@ export function CategoryHero({
       {/* Затемняющий оверлей для контраста текста (≥ WCAG AA на тёмной теме). */}
       <div className="absolute inset-0 bg-gradient-to-r from-canvas/95 via-canvas/80 to-canvas/40" />
 
+      {/* Blueprint-контур инструмента справа (только без фото-фона, чтобы не спорить). */}
+      {!hero?.image && (
+        <Wrench
+          aria-hidden
+          strokeWidth={0.75}
+          className="pointer-events-none absolute -right-8 top-1/2 hidden h-72 w-72 -translate-y-1/2 text-ink/[0.05] lg:block"
+        />
+      )}
+
       <div className="relative z-10 max-w-2xl px-6 py-12 md:px-10 md:py-16">
+        {/* Вертикальная тех-линия слева от заголовка (blueprint-акцент). */}
+        <div className="absolute left-0 top-12 hidden h-24 w-px bg-accent/40 md:block" aria-hidden>
+          <span className="absolute -left-[3px] top-0 h-1.5 w-1.5 rounded-full bg-accent" />
+          <span className="absolute -left-[3px] bottom-0 h-1.5 w-1.5 rounded-full bg-accent" />
+        </div>
+
         {hero?.eyebrow && (
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
             {hero.eyebrow}
           </p>
         )}
-        <h1 className="font-display text-3xl font-semibold uppercase tracking-wide text-ink md:text-4xl">
-          {title}
-        </h1>
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
+          <h1 className="font-display text-3xl font-semibold uppercase tracking-wide text-ink md:text-4xl">
+            {title}
+          </h1>
+          {total != null && total > 0 && (
+            <span className="pb-1 text-sm font-semibold text-accent">
+              {total} {pluralize(total, "товар", "товара", "товаров")}
+            </span>
+          )}
+        </div>
         {intro && <p className="mt-3 text-sm text-ink-2 md:text-base">{intro}</p>}
         {hasCta && (
           <a

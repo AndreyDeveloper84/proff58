@@ -8,6 +8,17 @@ export const SITE = {
   email: "info@proff58.ru", // TODO: SiteSettings
   address: "г. Пенза, ул. Складская, 10", // TODO: SiteSettings
 
+  // Консультация в мессенджере MAX — блок помощи с выбором на страницах каталога.
+  // TODO: SiteSettings — вынести ссылку/тексты в настройки сайта (сейчас статично).
+  support: {
+    max: {
+      title: "Нужна помощь с выбором?",
+      text: "Подберём инструмент под вашу задачу — ответит живой специалист в MAX.",
+      ctaLabel: "Спросить в MAX",
+      href: "https://max.ru/", // TODO: реальный deeplink магазина в MAX
+    },
+  },
+
   // Верхнее меню инфо-панели.
   topNav: [
     { label: "Акции", href: "/promo" }, // TODO: маршруты-заглушки

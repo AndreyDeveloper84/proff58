@@ -82,7 +82,7 @@ export default async function ProductPage({ params }: Props) {
             <ProductBadges badges={product.badges} discountPct={product.price.discountPct} />
             <ShareButton title={product.name} />
           </div>
-          <ProductAvailability stock={product.stock} />
+          <ProductAvailability stock={product.stock} stockQty={product.stockQty} />
           <div
             id="buybox-anchor"
             className="flex flex-wrap items-center gap-4 rounded-lg border border-line bg-surface p-4"
