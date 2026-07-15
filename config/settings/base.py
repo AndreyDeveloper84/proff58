@@ -219,6 +219,10 @@ SYNC_IMPORT_TIME_LIMIT = env.int("SYNC_IMPORT_TIME_LIMIT", default=15 * 60)  # �
 MAX_BOT_TOKEN = env("MAX_BOT_TOKEN", default="")
 MAX_WEBHOOK_SECRET = env("MAX_WEBHOOK_SECRET", default="")
 MAX_BOT_API_URL = env("MAX_BOT_API_URL", default="https://platform-api.max.ru")
+# Имя бота для диплинка авторизации (https://max.ru/<username>?start=<token>).
+MAX_BOT_USERNAME = env("MAX_BOT_USERNAME", default="")
+# TTL одноразовой попытки авторизации через MAX, минут (#492, §11.3).
+MAX_AUTH_ATTEMPT_TTL_MINUTES = env.int("MAX_AUTH_ATTEMPT_TTL_MINUTES", default=5)
 
 # ЮKassa
 # Kill-switch webhook'а оплаты. По умолчанию включён (локалка/тесты); на стенде
