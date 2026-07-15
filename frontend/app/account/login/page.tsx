@@ -3,6 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login, otpLogin, register } from "@/lib/auth";
+import { MaxAuthFlow } from "@/components/account/MaxAuthFlow";
+
+// Куда вернуть после входа (§16.7): ?next=<path> из URL, иначе профиль.
+function nextTarget(): string {
+  if (typeof window === "undefined") return "/account/profile";
+  const n = new URLSearchParams(window.location.search).get("next");
+  return n && n.startsWith("/") ? n : "/account/profile";
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,7 +34,7 @@ export default function LoginPage() {
       } else {
         await otpLogin(phone, otp);
       }
-      router.push("/account/profile");
+      router.push(nextTarget());
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Ошибка");
     } finally {
@@ -39,6 +47,16 @@ export default function LoginPage() {
       <h1 className="text-2xl font-bold mb-6">
         {mode === "login" ? "Вход" : mode === "register" ? "Регистрация" : "Вход по коду MAX"}
       </h1>
+
+      {/* Вход/регистрация через MAX — заметный, но не единственный способ (§6). */}
+      <div className="mb-5">
+        <MaxAuthFlow mode="login" onCompleted={() => router.push(nextTarget())} />
+        <div className="my-4 flex items-center gap-3 text-xs text-gray-400">
+          <span className="h-px flex-1 bg-gray-200" />
+          или
+          <span className="h-px flex-1 bg-gray-200" />
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <input

@@ -48,6 +48,53 @@ export async function otpLogin(phone: string, otp: string) {
   });
 }
 
+// --- Авторизация через MAX (deeplink + one-time attempt, #492) ---
+
+export type MaxAttempt = {
+  attempt_id: string;
+  deeplink: string;
+  expires_at: string;
+  status: string;
+};
+
+export type MaxAttemptStatus = { status: string; failure_reason: string | null };
+
+// Старт попытки входа/регистрации через MAX.
+export async function maxStart() {
+  return apiFetch<MaxAttempt>("/api/auth/max/start/", { method: "POST" });
+}
+
+// Старт привязки MAX к текущему аккаунту (из ЛК).
+export async function maxLinkStart() {
+  return apiFetch<MaxAttempt>("/api/account/max/link/", { method: "POST" });
+}
+
+export async function maxStatus(attemptId: string) {
+  return apiFetch<MaxAttemptStatus>(`/api/auth/max/${attemptId}/status/`, { method: "GET" });
+}
+
+export async function maxCancel(attemptId: string) {
+  return apiFetch<MaxAttemptStatus>(`/api/auth/max/${attemptId}/cancel/`, { method: "POST" });
+}
+
+export async function maxUnlink() {
+  return apiFetch<{ linked: boolean; removed: boolean }>("/api/account/max/unlink/", {
+    method: "POST",
+  });
+}
+
+export async function maxAccountStatus() {
+  try {
+    return await apiFetch<{ linked: boolean; max_user_id: number | null; linked_at: string | null }>(
+      "/api/account/max/status/",
+      { method: "GET" },
+    );
+  } catch (e) {
+    if (e instanceof ApiError) return { linked: false, max_user_id: null, linked_at: null };
+    throw e;
+  }
+}
+
 export async function getOrders() {
   // #438 (m-05): /api/orders/ теперь пагинирован ({count, results}); разворачиваем
   // results. Массив на входе тоже поддерживаем (обратная совместимость).
