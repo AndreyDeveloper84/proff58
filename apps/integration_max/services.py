@@ -33,9 +33,17 @@ def _hash_secret(secret: str) -> str:
     return hashlib.sha256(secret.encode("utf-8")).hexdigest()
 
 
-def _emit(event: str, **params) -> None:
-    """Аналитическое событие (§15). Пока — структурный лог; полноценная отправка — Ф3."""
-    logger.info("max_auth_event=%s %s", event, {k: v for k, v in params.items() if v is not None})
+def _emit(event: str, *, user=None, session_id: str = "", **params) -> None:
+    """Аналитическое событие MAX-авторизации (§15): структурный лог + запись в
+    apps.analytics (за фиче-флагом, PII фильтруется в track())."""
+    payload = {k: v for k, v in params.items() if v is not None}
+    logger.info("max_auth_event=%s %s", event, payload)
+    try:
+        from apps.analytics.services import track
+
+        track(event, user=user, session_id=session_id, payload=payload)
+    except Exception:  # аналитика не должна влиять на поток авторизации
+        logger.debug("analytics track skipped for %s", event, exc_info=True)
 
 
 @dataclass
@@ -132,7 +140,13 @@ def _fail(attempt: MaxAuthAttempt, reason: str) -> MaxAuthAttempt:
     attempt.failure_reason = reason
     attempt.completed_at = timezone.now()
     attempt.save(update_fields=["status", "failure_reason", "completed_at"])
-    _emit("max_auth_failed", attempt=str(attempt.public_id), failure_reason=reason)
+    _emit(
+        "max_auth_failed",
+        user=attempt.user,
+        attempt=str(attempt.public_id),
+        operation_type=attempt.operation_type,
+        failure_reason=reason,
+    )
     return attempt
 
 
@@ -145,6 +159,7 @@ def _complete(attempt: MaxAuthAttempt, user, *, max_user_id: int, chat_id, is_ne
     attempt.save(update_fields=["status", "user", "max_user_id", "chat_id", "completed_at"])
     _emit(
         "max_auth_completed",
+        user=user,
         attempt=str(attempt.public_id),
         operation_type=attempt.operation_type,
         is_new_user=is_new,
