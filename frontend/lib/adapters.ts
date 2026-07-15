@@ -82,8 +82,6 @@ type ApiCategoryBlock = {
   hero?: {
     image: string | null;
     eyebrow?: string;
-    ctaLabel?: string;
-    ctaHref?: string;
   };
 };
 type ApiFacetsResponse = {
@@ -455,8 +453,6 @@ export async function fetchListingFromApi(
         ? {
             image: categoryBlock.hero.image ?? null,
             eyebrow: categoryBlock.hero.eyebrow ?? "",
-            ctaLabel: categoryBlock.hero.ctaLabel ?? "",
-            ctaHref: categoryBlock.hero.ctaHref ?? "",
           }
         : undefined,
     },

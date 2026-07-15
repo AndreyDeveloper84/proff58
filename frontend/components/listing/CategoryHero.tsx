@@ -3,15 +3,14 @@ import { pluralize } from "@/lib/format";
 
 // Hero-баннер категории (PLP). Презентационный: данные приходят из Listing.category.
 // Фон-фото опционально — без него фирменный градиент на токенах темы. Единственный <h1>
-// страницы (старый удалён из ListingShell). CTA рендерится только при наличии label+href.
+// страницы (старый удалён из ListingShell). CTA в hero убран — консультацию закрывает
+// блок MAX (ConsultBanner) сразу под hero, отдельная кнопка «Подобрать модель» избыточна.
 // total (опц.) — счётчик найденных товаров рядом с заголовком; blueprint-контур инструмента
 // и вертикальная тех-линия — фирменный акцент из утверждённого макета.
 
 type Hero = {
   image: string | null;
   eyebrow: string;
-  ctaLabel: string;
-  ctaHref: string;
 };
 
 export function CategoryHero({
@@ -25,7 +24,6 @@ export function CategoryHero({
   hero?: Hero;
   total?: number;
 }) {
-  const hasCta = Boolean(hero?.ctaLabel && hero?.ctaHref);
   return (
     <section className="relative mb-6 overflow-hidden rounded-xl border border-line bg-canvas">
       {hero?.image ? (
@@ -77,14 +75,6 @@ export function CategoryHero({
           )}
         </div>
         {intro && <p className="mt-3 text-sm text-ink-2 md:text-base">{intro}</p>}
-        {hasCta && (
-          <a
-            href={hero!.ctaHref}
-            className="mt-5 inline-flex items-center rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-ink transition hover:opacity-90 motion-reduce:transition-none"
-          >
-            {hero!.ctaLabel}
-          </a>
-        )}
       </div>
     </section>
   );
