@@ -104,8 +104,6 @@ export type Listing = {
     hero?: {
       image: string | null;
       eyebrow: string;
-      ctaLabel: string;
-      ctaHref: string;
     };
   };
   promo?: { title: string; subtitle: string; href: string };
