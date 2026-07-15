@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutGrid, List, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ import { TypePanel } from "@/components/listing/TypePanel";
 import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
 import { CategoryHero } from "@/components/listing/CategoryHero";
 import { ConsultBanner } from "@/components/listing/ConsultBanner";
+import { MobileFilterDrawer } from "@/components/listing/MobileFilterDrawer";
 
 // Презентационный shell: данные уже разрешены на сервере (getListing(query)).
 // Никакой клиентской фильтрации — изменение фильтра меняет URL (router.replace),
@@ -32,6 +33,10 @@ export function ListingShell({
   // useTransition: навигация (router.replace) внутри startTransition даёт isPending на время
   // серверного раунд-трипа → показываем skeleton карточек вместо full-page spinner (§15).
   const [isPending, startTransition] = useTransition();
+  // Мобильный drawer фильтров (§4).
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const filterBtnRef = useRef<HTMLButtonElement>(null);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   const totalPages = Math.max(1, Math.ceil(listing.total / query.perPage));
   const page = Math.min(Math.max(1, query.page), totalPages);
@@ -234,7 +239,9 @@ export function ListingShell({
       )}
 
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-        <aside className="hidden lg:block">{sidebar}</aside>
+        <aside className="hidden lg:block">
+          <div className="sticky top-4">{sidebar}</div>
+        </aside>
 
         <div className="min-w-0">
           {/* TypePanel — навигация по типу над выдачей (§3.1). Скрыта, если nav-фасета нет. */}
@@ -242,19 +249,23 @@ export function ListingShell({
 
           {/* Панель фильтров (§9.1): триггер сайдбара + сброс + активные чипы (зелёные). */}
           <div className="mb-4 flex flex-wrap items-center gap-3">
-            {/* Мобильный триггер сайдбара */}
-            <details className="lg:hidden">
-              <summary className="inline-flex h-11 cursor-pointer list-none items-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold text-ink">
-                <SlidersHorizontal className="h-4 w-4" aria-hidden />
-                Фильтры
-                {chips.length > 0 && (
-                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-ink">
-                    {chips.length}
-                  </span>
-                )}
-              </summary>
-              <div className="mt-3">{sidebar}</div>
-            </details>
+            {/* Мобильный триггер drawer'а фильтров (§4) */}
+            <button
+              ref={filterBtnRef}
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={drawerOpen}
+              className="inline-flex h-11 items-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold text-ink lg:hidden"
+            >
+              <SlidersHorizontal className="h-4 w-4" aria-hidden />
+              Фильтры
+              {chips.length > 0 && (
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-ink">
+                  {chips.length}
+                </span>
+              )}
+            </button>
             {/* Десктоп-индикатор активных фильтров */}
             <span className="hidden h-11 items-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold text-ink lg:inline-flex">
               <SlidersHorizontal className="h-4 w-4" aria-hidden />
@@ -403,7 +414,7 @@ export function ListingShell({
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {listing.products.map((p) => (
                 <ProductCard key={p.id} product={p} view="grid" />
               ))}
@@ -453,6 +464,17 @@ export function ListingShell({
           )}
         </div>
       </div>
+
+      <MobileFilterDrawer
+        open={drawerOpen}
+        onClose={closeDrawer}
+        total={listing.total}
+        onReset={resetAll}
+        triggerRef={filterBtnRef}
+        chips={chips}
+      >
+        {sidebar}
+      </MobileFilterDrawer>
     </div>
   );
 }
