@@ -22,7 +22,7 @@
 :root {
   --radius-sm: 6px;
   --radius-md: 10px;
-  --radius-lg: 12px;
+  --radius-lg: 16px;
   --radius-pill: 999px;
 
   /* Тёмная брендовая рамка — всегда тёмная, в обеих темах. */
@@ -48,8 +48,11 @@
   --text-secondary: #495057;
   --text-muted: #616a72; /* AA-контраст на белом (~4.6:1) */
 
-  --accent: #b5e61d; /* CTA (тёмный текст --accent-ink поверх) */
-  --accent-ink: #1a2400;
+  /* Акцент/CTA — фирменный зелёный (утверждённый дизайн PLP — одноцветный зелёный,
+     не лайм). Белый текст поверх. Значение фиксировано в дизайн-системе и НЕ берётся
+     из SiteSettings (см. layout.tsx). */
+  --accent: #0b8a43;
+  --accent-ink: #ffffff;
   --primary: #0a8043; /* ссылки/«в наличии»/зелёные CTA — контраст на белом */
 
   --danger: #cf2e2e;
@@ -80,8 +83,8 @@
   --text-secondary: #aeb6bc;
   --text-muted: #6e767c;
 
-  --accent: #b5e61d;
-  --accent-ink: #1a2400;
+  --accent: #12a656;
+  --accent-ink: #ffffff;
   --primary: #00a14b;
 
   --danger: #e5484d;

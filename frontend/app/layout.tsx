@@ -44,8 +44,10 @@ export default async function RootLayout({
       className={`${inter.variable} ${oswald.variable} h-full`}
       style={
         {
+          // Основной бренд-цвет темизируется через SiteSettings; акцент/CTA —
+          // фиксированный зелёный из дизайн-системы (globals.css), не из настроек
+          // (утверждённый макет — одноцветный зелёный, без лайма).
           "--primary": theme.primary_color,
-          "--accent": theme.accent_color,
         } as React.CSSProperties
       }
     >
