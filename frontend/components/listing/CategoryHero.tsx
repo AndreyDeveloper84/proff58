@@ -30,12 +30,26 @@ export function CategoryHero({
         <img src={hero.image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-15" />
       )}
 
-      {/* Blueprint-контур инструмента справа (фирменный технический акцент). */}
-      <Wrench
+      {/* Технический blueprint-чертёж справа (фирменный акцент, как в макете photo_9). */}
+      <svg
         aria-hidden
-        strokeWidth={0.6}
-        className="pointer-events-none absolute -right-6 top-1/2 hidden h-72 w-72 -translate-y-1/2 text-ink/[0.06] lg:block"
-      />
+        viewBox="0 0 600 260"
+        className="pointer-events-none absolute right-0 top-0 hidden h-full w-1/2 text-ink-3/30 lg:block"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1"
+      >
+        {/* оси/размерные линии */}
+        <path d="M60 130 H540 M150 50 H470 M150 210 H470" />
+        {/* корпус инструмента */}
+        <rect x="180" y="80" width="240" height="100" rx="14" />
+        <circle cx="150" cy="130" r="30" />
+        <circle cx="150" cy="130" r="10" />
+        {/* патрон/насадка */}
+        <path d="M420 108 h70 l26 22 -26 22 h-70 z" />
+        {/* засечки размеров */}
+        <path d="M150 44 v12 M470 44 v12 M150 204 v12 M470 204 v12" />
+      </svg>
 
       <div className="relative z-10 flex gap-5 p-6 md:p-8">
         {/* Вертикальная зелёная тех-линия слева с засечками. */}
