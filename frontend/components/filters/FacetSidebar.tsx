@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Search } from "lucide-react";
 import type { Facet, ListingQuery, RangeFilterValue } from "@/lib/types";
 import { groupSidebarFacets } from "@/lib/listing";
 
@@ -12,71 +13,60 @@ type Props = {
   filters: ListingQuery["filters"];
   onToggle: (code: string, value: string) => void;
   onRange: (code: string, val: { min?: number; max?: number }) => void;
-  onReset: () => void;
 };
 
-export function FacetSidebar({ facets, filters, onToggle, onRange, onReset }: Props) {
-  // tool_type (isNav) — навигация, рендерится TypePanel над выдачей, а НЕ в сайдбаре (§3.1, §23.5).
-  // Defensive-слой: гейтинг состава (base/tech) уже сделан в lib/listing.sidebarFacets выше.
-  const visibleFacets = facets.filter((f) => !f.isNav);
-
-  // Разбиение на секции Базовые/Основные/Дополнительные (D2, §22.4) — единый источник для
-  // обоих путей рендера. Одна секция → рендерим плоско, без заголовка (как до D2): на широкой
-  // категории без типа это лишь базовые фильтры.
-  const sections = groupSidebarFacets(visibleFacets);
-  const grouped = sections.length > 1;
-
-  // Рендер одного фасета: ключ диапазона включает границы и текущее значение, чтобы при их
-  // смене RangeFacet перемонтировался (draft-состояние слайдера переинициализировалось).
-  const renderFacet = (f: Facet) =>
-    f.type === "checkbox" ? (
-      <CheckboxFacet key={f.code} facet={f} onToggle={onToggle} />
-    ) : (
-      <RangeFacet
-        key={`${f.code}-${f.min ?? ""}-${f.max ?? ""}-${(filters[f.code] as RangeFilterValue | undefined)?.min ?? ""}-${(filters[f.code] as RangeFilterValue | undefined)?.max ?? ""}`}
-        facet={f}
-        value={(filters[f.code] as RangeFilterValue) ?? {}}
-        onRange={onRange}
-      />
-    );
-
+// Сворачиваемый блок фасета с заголовком и шевроном (по макету). По умолчанию открыт;
+// «дополнительные»/второстепенные группы приходят с defaultOpen=false.
+function FacetBlock({
+  title,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-5 rounded-lg border border-line bg-surface p-4">
-      <div className="flex items-center justify-between">
-        <span className="font-display text-sm font-semibold uppercase tracking-wide text-ink">
-          Фильтры
-        </span>
-        <button type="button" onClick={onReset} className="text-xs text-ink-3 hover:text-accent">
-          Сбросить все
-        </button>
-      </div>
+    <details open={defaultOpen} className="group border-t border-line py-4 first:border-t-0 first:pt-0">
+      <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-ink">
+        {title}
+        <ChevronDown className="h-4 w-4 text-ink-3 transition group-open:rotate-180" aria-hidden />
+      </summary>
+      <div className="mt-3">{children}</div>
+    </details>
+  );
+}
 
-      {!grouped
-        ? (sections[0]?.facets ?? []).map(renderFacet)
-        : sections.map((section) =>
-            section.key === "extra" ? (
-              // «Дополнительные» — свёрнуты по умолчанию (§7.2): редкие/второстепенные фильтры
-              // не загромождают сайдбар, но доступны раскрытием.
-              <details key={section.key} className="border-t border-line pt-4">
-                <summary className="-mt-1 mb-1 cursor-pointer list-none text-xs font-semibold uppercase tracking-wide text-ink-3 hover:text-accent">
-                  {section.label} ({section.facets.length})
-                </summary>
-                <div className="mt-3 flex flex-col gap-5">
-                  {section.facets.map(renderFacet)}
-                </div>
-              </details>
-            ) : (
-              <div key={section.key} className="flex flex-col gap-5">
-                {/* «Базовые» — без заголовка (первая секция, очевидна); прочие — с заголовком. */}
-                {section.key !== "base" && (
-                  <span className="text-xs font-semibold uppercase tracking-wide text-ink-3">
-                    {section.label}
-                  </span>
-                )}
-                {section.facets.map(renderFacet)}
-              </div>
-            ),
-          )}
+export function FacetSidebar({ facets, filters, onToggle, onRange }: Props) {
+  // tool_type (isNav) — навигация, рендерится TypePanel над выдачей, а НЕ в сайдбаре (§3.1, §23.5).
+  const visibleFacets = facets.filter((f) => !f.isNav);
+  const sections = groupSidebarFacets(visibleFacets);
+
+  const renderFacet = (f: Facet, open = true) => {
+    const unit = f.type !== "checkbox" && f.unit ? `, ${f.unit}` : "";
+    return f.type === "checkbox" ? (
+      <FacetBlock key={f.code} title={f.label} defaultOpen={open}>
+        <CheckboxFacet facet={f} onToggle={onToggle} />
+      </FacetBlock>
+    ) : (
+      <FacetBlock key={f.code} title={`${f.label}${unit}`} defaultOpen={open}>
+        <RangeFacet
+          key={`${f.code}-${f.min ?? ""}-${f.max ?? ""}-${(filters[f.code] as RangeFilterValue | undefined)?.min ?? ""}-${(filters[f.code] as RangeFilterValue | undefined)?.max ?? ""}`}
+          facet={f}
+          value={(filters[f.code] as RangeFilterValue) ?? {}}
+          onRange={onRange}
+        />
+      </FacetBlock>
+    );
+  };
+
+  // «Фильтры/Сбросить все» вынесены в тулбар над выдачей — в сайдбаре только сами фасеты.
+  // Секция «extra» (§7.2) — свёрнута по умолчанию.
+  return (
+    <div className="rounded-lg border border-line bg-surface p-4">
+      {sections.map((section) =>
+        section.facets.map((f) => renderFacet(f, section.key !== "extra")),
+      )}
     </div>
   );
 }
@@ -98,32 +88,46 @@ function CheckboxFacet({
 
   return (
     <fieldset className="border-0 p-0" aria-label={facet.label}>
-      <legend className="mb-2 text-sm font-medium text-ink">{facet.label}</legend>
-
       {searchable && (
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Поиск бренда"
-          className="mb-2 w-full rounded-md border border-line bg-canvas px-2 py-1 text-sm text-ink placeholder:text-ink-3"
-        />
+        <div className="relative mb-2">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" aria-hidden />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Поиск бренда"
+            className="h-9 w-full rounded-md border border-line bg-surface pl-9 pr-3 text-sm text-ink placeholder:text-ink-3"
+          />
+        </div>
       )}
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col">
         {visible.map((o) => (
           <label
             key={o.value}
-            className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-md px-1.5 text-sm text-ink-2 hover:bg-raised md:min-h-9"
+            className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm text-ink-2 hover:text-ink md:min-h-9"
           >
-            <span className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={o.selected}
-                onChange={() => onToggle(facet.code, o.value)}
-                className="h-4 w-4 accent-[var(--accent)]"
-              />
-              {o.label}
+            <input
+              type="checkbox"
+              checked={o.selected}
+              onChange={() => onToggle(facet.code, o.value)}
+              className="peer sr-only"
+            />
+            {/* Кастомный зелёный чекбокс (по макету). */}
+            <span
+              aria-hidden
+              className="grid h-5 w-5 shrink-0 place-items-center rounded border border-line text-transparent transition peer-checked:border-brand peer-checked:bg-brand peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-accent"
+            >
+              <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" aria-hidden>
+                <path
+                  d="M2 6.5 4.5 9 10 3"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </span>
+            <span className="flex-1">{o.label}</span>
             <span className="text-xs text-ink-3">{o.count}</span>
           </label>
         ))}
@@ -133,9 +137,9 @@ function CheckboxFacet({
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="mt-2 text-xs text-accent"
+          className="mt-2 text-sm font-medium text-accent hover:underline"
         >
-          {expanded ? "Свернуть" : "Показать ещё"}
+          {expanded ? "Свернуть" : `Показать ещё (${opts.length - 6})`}
         </button>
       )}
     </fieldset>
@@ -155,12 +159,8 @@ function RangeFacet({
   const hi = facet.max;
   const disabled = lo == null || hi == null || lo >= hi;
 
-  // draft — локальное состояние слайдера/полей; коммит в URL отдельно (debounce + flush).
-  // Синхронизация с внешним value/bounds — через `key` на компоненте (родитель перемонтирует
-  // RangeFacet при сбросе фильтров/смене диапазона), поэтому useState-инициализации достаточно.
   const [draft, setDraft] = useState({ min: value.min ?? lo ?? 0, max: value.max ?? hi ?? 0 });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // cleanup pending debounce при размонтировании (без внешних зависимостей).
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
@@ -176,20 +176,16 @@ function RangeFacet({
   }
 
   if (disabled) {
-    return (
-      <fieldset className="border-0 p-0" aria-label={facet.label}>
-        <legend className="mb-2 text-sm font-medium text-ink">{facet.label}</legend>
-        <p className="text-xs text-ink-3">Диапазон недоступен</p>
-      </fieldset>
-    );
+    return <p className="text-xs text-ink-3">Диапазон недоступен</p>;
   }
 
   const step = RANGE_STEP[facet.code] ?? 1;
-  const unit = facet.unit ? `, ${facet.unit}` : "";
 
-  // Граница на краю диапазона = «нет ограничения» (undefined) → фильтр снимается.
   const commit = (d: { min: number; max: number }) => {
-    onRange(facet.code, { min: d.min <= lo ? undefined : d.min, max: d.max >= hi ? undefined : d.max });
+    onRange(facet.code, {
+      min: d.min <= lo ? undefined : d.min,
+      max: d.max >= hi ? undefined : d.max,
+    });
   };
   const debounced = (d: { min: number; max: number }) => {
     clearTimer();
@@ -200,7 +196,6 @@ function RangeFacet({
     commit(d);
   };
 
-  // immediate=false → debounce (drag/стрелки сыплют события); true → сразу (pointerup/blur/Enter).
   const setMin = (raw: number, immediate: boolean) => {
     const min = Math.min(Math.max(Number.isFinite(raw) ? raw : lo, lo), draft.max);
     const next = { min, max: draft.max };
@@ -215,46 +210,32 @@ function RangeFacet({
   };
   const fieldNum = (s: string, fallback: number) => (s === "" ? fallback : Number(s));
   const fieldCls =
-    "w-full rounded-md border border-line bg-canvas px-2 py-1 text-sm text-ink placeholder:text-ink-3";
+    "h-9 w-full rounded-md border border-line bg-surface px-2 text-sm text-ink placeholder:text-ink-3";
 
-  // Позиции бегунков/заливки в % — ОДНА дорожка, два наложенных range на ней (CSS .range-dual).
   const span = hi - lo || 1;
   const minPct = ((draft.min - lo) / span) * 100;
   const maxPct = ((draft.max - lo) / span) * 100;
 
+  // Пресеты цены (по макету): применяют готовый диапазон одним кликом.
+  const presets =
+    facet.code === "price"
+      ? ([
+          { label: "до 5 000", min: lo, max: 5000 },
+          { label: "5 000 – 10 000", min: 5000, max: 10000 },
+          { label: "10 000 – 20 000", min: 10000, max: 20000 },
+          { label: "от 20 000", min: 20000, max: hi },
+        ].filter((p) => p.min < hi && p.max > lo) as { label: string; min: number; max: number }[])
+      : [];
+
+  const applyPreset = (min: number, max: number) => {
+    const d = { min: Math.max(min, lo), max: Math.min(max, hi) };
+    setDraft(d);
+    flush(d);
+  };
+
   return (
     <fieldset className="border-0 p-0" aria-label={facet.label}>
-      <legend className="mb-2 text-sm font-medium text-ink">{`${facet.label}${unit}`}</legend>
-      <div className="range-dual mb-3">
-        <div className="range-track" />
-        <div className="range-fill" style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }} />
-        <input
-          type="range"
-          min={lo}
-          max={hi}
-          step={step}
-          value={draft.min}
-          aria-label={`${facet.label} — минимум`}
-          onChange={(e) => setMin(Number(e.target.value), false)}
-          onPointerUp={(e) => setMin(Number((e.target as HTMLInputElement).value), true)}
-          onKeyUp={(e) => setMin(Number((e.target as HTMLInputElement).value), true)}
-          // когда бегунки сошлись — min поверх, чтобы оставался захватываемым
-          style={{ zIndex: draft.min >= draft.max ? 5 : 3 }}
-        />
-        <input
-          type="range"
-          min={lo}
-          max={hi}
-          step={step}
-          value={draft.max}
-          aria-label={`${facet.label} — максимум`}
-          onChange={(e) => setMax(Number(e.target.value), false)}
-          onPointerUp={(e) => setMax(Number((e.target as HTMLInputElement).value), true)}
-          onKeyUp={(e) => setMax(Number((e.target as HTMLInputElement).value), true)}
-          style={{ zIndex: 4 }}
-        />
-      </div>
-      <div className="flex items-center gap-2">
+      <div className="mb-3 flex items-center gap-2">
         <input
           type="number"
           inputMode="numeric"
@@ -287,6 +268,50 @@ function RangeFacet({
           className={fieldCls}
         />
       </div>
+
+      <div className="range-dual mb-3">
+        <div className="range-track" />
+        <div className="range-fill" style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }} />
+        <input
+          type="range"
+          min={lo}
+          max={hi}
+          step={step}
+          value={draft.min}
+          aria-label={`${facet.label} — минимум`}
+          onChange={(e) => setMin(Number(e.target.value), false)}
+          onPointerUp={(e) => setMin(Number((e.target as HTMLInputElement).value), true)}
+          onKeyUp={(e) => setMin(Number((e.target as HTMLInputElement).value), true)}
+          style={{ zIndex: draft.min >= draft.max ? 5 : 3 }}
+        />
+        <input
+          type="range"
+          min={lo}
+          max={hi}
+          step={step}
+          value={draft.max}
+          aria-label={`${facet.label} — максимум`}
+          onChange={(e) => setMax(Number(e.target.value), false)}
+          onPointerUp={(e) => setMax(Number((e.target as HTMLInputElement).value), true)}
+          onKeyUp={(e) => setMax(Number((e.target as HTMLInputElement).value), true)}
+          style={{ zIndex: 4 }}
+        />
+      </div>
+
+      {presets.length > 0 && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
+          {presets.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => applyPreset(p.min, p.max)}
+              className="text-ink-3 hover:text-accent"
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
     </fieldset>
   );
 }

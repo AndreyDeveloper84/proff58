@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, List, X } from "lucide-react";
+import { LayoutGrid, List, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Listing, ListingQuery, RangeFilterValue, SortOption } from "@/lib/types";
 import { serializeQuery } from "@/lib/url-state";
@@ -182,7 +182,6 @@ export function ListingShell({
       filters={query.filters}
       onToggle={toggleCheckbox}
       onRange={setRange}
-      onReset={resetAll}
     />
   );
 
@@ -241,45 +240,84 @@ export function ListingShell({
           {/* TypePanel — навигация по типу над выдачей (§3.1). Скрыта, если nav-фасета нет. */}
           <TypePanel facet={navFacet} active={query.toolType} onSelect={onSelectType} />
 
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface px-3 py-2">
-            <span
-              aria-live="polite"
-              className={cn(
-                "text-sm transition-opacity",
-                isPending ? "text-ink-3 opacity-60" : "text-ink-2",
+          {/* Панель фильтров (§9.1): триггер сайдбара + сброс + активные чипы (зелёные). */}
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            {/* Мобильный триггер сайдбара */}
+            <details className="lg:hidden">
+              <summary className="inline-flex h-11 cursor-pointer list-none items-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold text-ink">
+                <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                Фильтры
+                {chips.length > 0 && (
+                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-ink">
+                    {chips.length}
+                  </span>
+                )}
+              </summary>
+              <div className="mt-3">{sidebar}</div>
+            </details>
+            {/* Десктоп-индикатор активных фильтров */}
+            <span className="hidden h-11 items-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold text-ink lg:inline-flex">
+              <SlidersHorizontal className="h-4 w-4" aria-hidden />
+              Фильтры
+              {chips.length > 0 && (
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-ink">
+                  {chips.length}
+                </span>
               )}
-            >
-              Найдено {listing.total}
             </span>
+            {chips.length > 0 && (
+              <button
+                type="button"
+                onClick={resetAll}
+                className="text-sm font-medium text-accent hover:underline"
+              >
+                Сбросить все
+              </button>
+            )}
+            {chips.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                onClick={c.onRemove}
+                className="inline-flex items-center gap-2 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 text-sm text-accent hover:border-accent"
+              >
+                {c.label}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ))}
+          </div>
+
+          {/* Строка результатов: сортировка + счётчик показанных + вид списка. */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <select
+              value={query.sort}
+              onChange={(e) => setSort(e.target.value as SortOption)}
+              aria-label="Сортировка"
+              className="h-11 rounded-md border border-line bg-surface px-3 text-sm text-ink"
+            >
+              {sortOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+
             <div className="flex flex-wrap items-center gap-3">
-              <details className="lg:hidden">
-                <summary className="cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm text-ink-2">
-                  Фильтры
-                </summary>
-                <div className="mt-3">{sidebar}</div>
-              </details>
-
-              <label className="flex items-center gap-2 text-sm text-ink-3">
-                Сортировка
-                <select
-                  value={query.sort}
-                  onChange={(e) => setSort(e.target.value as SortOption)}
-                  className="rounded-md border border-line bg-canvas px-2 py-1 text-sm text-ink"
-                >
-                  {sortOptions.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
+              <span
+                aria-live="polite"
+                className={cn(
+                  "text-sm transition-opacity",
+                  isPending ? "text-ink-3 opacity-60" : "text-ink-3",
+                )}
+              >
+                Показано {listing.products.length} из {listing.total}
+              </span>
               <label className="flex items-center gap-2 text-sm text-ink-3">
                 На странице
                 <select
                   value={query.perPage}
                   onChange={(e) => setPerPage(Number(e.target.value))}
-                  className="rounded-md border border-line bg-canvas px-2 py-1 text-sm text-ink"
+                  className="h-9 rounded-md border border-line bg-surface px-2 text-sm text-ink"
                 >
                   {PER_PAGE_OPTIONS.map((n) => (
                     <option key={n} value={n}>
@@ -289,15 +327,19 @@ export function ListingShell({
                 </select>
               </label>
 
-              <div className="flex items-center gap-1" role="group" aria-label="Вид списка">
+              <div
+                className="flex items-center overflow-hidden rounded-md border border-line"
+                role="group"
+                aria-label="Вид списка"
+              >
                 <button
                   type="button"
                   aria-label="Сеткой"
                   aria-pressed={query.view === "grid"}
                   onClick={() => setView("grid")}
                   className={cn(
-                    "grid h-8 w-8 place-items-center rounded-md border border-line",
-                    query.view === "grid" ? "border-accent text-accent" : "text-ink-3",
+                    "grid h-9 w-9 place-items-center",
+                    query.view === "grid" ? "bg-accent text-accent-ink" : "text-ink-3",
                   )}
                 >
                   <LayoutGrid className="h-4 w-4" />
@@ -308,8 +350,8 @@ export function ListingShell({
                   aria-pressed={query.view === "list"}
                   onClick={() => setView("list")}
                   className={cn(
-                    "grid h-8 w-8 place-items-center rounded-md border border-line",
-                    query.view === "list" ? "border-accent text-accent" : "text-ink-3",
+                    "grid h-9 w-9 place-items-center",
+                    query.view === "list" ? "bg-accent text-accent-ink" : "text-ink-3",
                   )}
                 >
                   <List className="h-4 w-4" />
@@ -317,29 +359,6 @@ export function ListingShell({
               </div>
             </div>
           </div>
-
-          {chips.length > 0 && (
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              {chips.map((c) => (
-                <button
-                  key={c.key}
-                  type="button"
-                  onClick={c.onRemove}
-                  className="inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-ink-2 hover:border-accent"
-                >
-                  {c.label}
-                  <X className="h-3 w-3" />
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={resetAll}
-                className="text-xs text-ink-3 underline hover:text-accent"
-              >
-                Сбросить всё
-              </button>
-            </div>
-          )}
 
           <div aria-busy={isPending}>
           {isPending ? (
