@@ -16,33 +16,41 @@ export function AddToCartButton({
   productId,
   stock = "in",
   hasPrice = true,
+  fullWidth = false,
 }: {
   productId: number;
   stock?: StockState;
   hasPrice?: boolean;
+  // fullWidth — растянуть заявочные кнопки (нет в наличии / нет цены) на всю ширину карточки.
+  fullWidth?: boolean;
 }) {
+  const wide = fullWidth ? "w-full" : "";
   if (!hasPrice) {
     return (
-      <Button variant="outline" size="sm" data-event="request_price" data-product-id={productId}>
-        Запросить цену
+      <Button
+        variant="outline"
+        className={wide}
+        data-event="request_price"
+        data-product-id={productId}
+      >
+        Уточнить цену
       </Button>
     );
   }
   if (stock === "out") {
     return (
-      <Button variant="outline" size="sm" data-event="notify_restock" data-product-id={productId}>
-        <Bell className="h-3.5 w-3.5" aria-hidden />
-        Сообщить
+      <Button
+        variant="outline"
+        className={wide}
+        data-event="notify_restock"
+        data-product-id={productId}
+      >
+        <Bell className="h-4 w-4" aria-hidden />
+        Сообщить о поступлении
       </Button>
     );
   }
-  if (stock === "order") {
-    return (
-      <Button variant="outline" size="sm" data-event="preorder" data-product-id={productId}>
-        Под заказ
-      </Button>
-    );
-  }
+  // in / order / низкий остаток → добавление в корзину (под заказ — предзаказ в корзину).
   return <AddInStockButton productId={productId} />;
 }
 

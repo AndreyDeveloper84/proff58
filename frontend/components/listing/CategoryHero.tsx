@@ -1,12 +1,10 @@
 import { Wrench } from "lucide-react";
 import { pluralize } from "@/lib/format";
 
-// Hero-баннер категории (PLP). Презентационный: данные приходят из Listing.category.
-// Фон-фото опционально — без него фирменный градиент на токенах темы. Единственный <h1>
-// страницы (старый удалён из ListingShell). CTA в hero убран — консультацию закрывает
-// блок MAX (ConsultBanner) сразу под hero, отдельная кнопка «Подобрать модель» избыточна.
-// total (опц.) — счётчик найденных товаров рядом с заголовком; blueprint-контур инструмента
-// и вертикальная тех-линия — фирменный акцент из утверждённого макета.
+// Hero-баннер категории (PLP) — по утверждённому макету (photo_9): светлая карточка
+// с рамкой, слева вертикальная зелёная тех-линия, крупный заголовок + зелёный счётчик
+// товаров + описание, справа — крупный blueprint-контур инструмента (фирменный акцент).
+// Единственный <h1> страницы. total (опц.) — счётчик найденных товаров.
 
 type Hero = {
   image: string | null;
@@ -25,56 +23,56 @@ export function CategoryHero({
   total?: number;
 }) {
   return (
-    <section className="relative mb-6 overflow-hidden rounded-xl border border-line bg-canvas">
-      {hero?.image ? (
-        // Декоративный фон → пустой alt.
+    <section className="relative mb-6 overflow-hidden rounded-xl border border-line bg-surface">
+      {hero?.image && (
+        // Опциональный фон-фото (если задан в категории) поверх светлой карточки.
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={hero.image}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      ) : (
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-[radial-gradient(120%_120%_at_15%_20%,color-mix(in_srgb,var(--accent)_18%,transparent),transparent_55%)]"
-        />
-      )}
-      {/* Затемняющий оверлей для контраста текста (≥ WCAG AA на тёмной теме). */}
-      <div className="absolute inset-0 bg-gradient-to-r from-canvas/95 via-canvas/80 to-canvas/40" />
-
-      {/* Blueprint-контур инструмента справа (только без фото-фона, чтобы не спорить). */}
-      {!hero?.image && (
-        <Wrench
-          aria-hidden
-          strokeWidth={0.75}
-          className="pointer-events-none absolute -right-8 top-1/2 hidden h-72 w-72 -translate-y-1/2 text-ink/[0.05] lg:block"
-        />
+        <img src={hero.image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-15" />
       )}
 
-      <div className="relative z-10 max-w-2xl px-6 py-12 md:px-10 md:py-16">
-        {/* Вертикальная тех-линия слева от заголовка (blueprint-акцент). */}
-        <div className="absolute left-0 top-12 hidden h-24 w-px bg-accent/40 md:block" aria-hidden>
-          <span className="absolute -left-[3px] top-0 h-1.5 w-1.5 rounded-full bg-accent" />
-          <span className="absolute -left-[3px] bottom-0 h-1.5 w-1.5 rounded-full bg-accent" />
+      {/* Blueprint-контур инструмента справа (фирменный технический акцент). */}
+      <Wrench
+        aria-hidden
+        strokeWidth={0.6}
+        className="pointer-events-none absolute -right-6 top-1/2 hidden h-72 w-72 -translate-y-1/2 text-ink/[0.06] lg:block"
+      />
+
+      <div className="relative z-10 flex gap-5 p-6 md:p-8">
+        {/* Вертикальная зелёная тех-линия слева с засечками. */}
+        <div className="relative hidden w-4 shrink-0 md:block" aria-hidden>
+          <span className="absolute left-1.5 top-1 bottom-1 w-px bg-accent/50" />
+          <span className="absolute left-1 top-0 h-2 w-2 rounded-full border-2 border-accent bg-surface" />
+          <span className="absolute left-0.5 bottom-0 flex flex-col gap-0.5">
+            <span className="h-px w-2.5 bg-accent/60" />
+            <span className="h-px w-2 bg-accent/60" />
+            <span className="h-px w-2.5 bg-accent/60" />
+          </span>
         </div>
 
-        {hero?.eyebrow && (
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-            {hero.eyebrow}
-          </p>
-        )}
-        <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
-          <h1 className="font-display text-3xl font-semibold uppercase tracking-wide text-ink md:text-4xl">
-            {title}
-          </h1>
-          {total != null && total > 0 && (
-            <span className="pb-1 text-sm font-semibold text-accent">
-              {total} {pluralize(total, "товар", "товара", "товаров")}
-            </span>
-          )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-4">
+            <Wrench
+              aria-hidden
+              strokeWidth={1.25}
+              className="mt-1 hidden h-12 w-12 shrink-0 text-ink-2 sm:block"
+            />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+                <h1 className="font-display text-3xl font-bold text-ink md:text-4xl">{title}</h1>
+                {total != null && total > 0 && (
+                  <span className="pb-1 text-sm font-semibold text-accent">
+                    {total} {pluralize(total, "товар", "товара", "товаров")}
+                  </span>
+                )}
+              </div>
+              {intro && (
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-2 md:text-base">
+                  {intro}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
-        {intro && <p className="mt-3 text-sm text-ink-2 md:text-base">{intro}</p>}
       </div>
     </section>
   );
