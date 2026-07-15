@@ -258,3 +258,14 @@ def test_link_and_unlink_from_account(api):
     # отвязка
     assert api.post("/api/account/max/unlink/").json()["linked"] is False
     assert not MaxAccount.objects.filter(user=user).exists()
+
+
+@mock.patch("apps.analytics.services.track")
+@pytest.mark.django_db
+def test_analytics_events_emitted(mock_track):
+    """§15: ключевые события авторизации пишутся в аналитику."""
+    attempt = _attempt()
+    services.complete_from_contact(attempt, max_user_id=6001, phone=PHONE)
+    events = [c.args[0] for c in mock_track.call_args_list]
+    assert "max_auth_completed" in events
+    assert "max_account_linked" in events
