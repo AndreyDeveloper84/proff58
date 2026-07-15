@@ -16,7 +16,8 @@ from django.utils.crypto import constant_time_compare
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .handlers import auth
+from . import services
+from .handlers import auth, auth_flow
 
 logger = logging.getLogger(__name__)
 
@@ -108,8 +109,15 @@ def _dispatch(update_type: str, payload: dict) -> dict | None:
     if update_type == "bot_started":
         chat_id = payload.get("chat_id")
         user_info = payload.get("user", {})
-        if chat_id:
-            return auth.handle_bot_started(chat_id, user_info)
+        if not chat_id:
+            return None
+        # #492: старт по диплинку авторизации несёт one-time token в payload/start_payload.
+        token = payload.get("payload") or payload.get("start_payload") or ""
+        if token:
+            attempt = services.load_valid_attempt(token)
+            if attempt is not None:
+                return auth_flow.handle_deeplink_start(chat_id, user_info.get("user_id"), attempt)
+        return auth.handle_bot_started(chat_id, user_info)
 
     elif update_type == "message_created":
         message = payload.get("message", {})
@@ -121,6 +129,13 @@ def _dispatch(update_type: str, payload: dict) -> dict | None:
         attachments = body.get("attachments", [])
         for att in attachments:
             if att.get("type") == "contact":
+                # #492: сначала пробуем завершить активную попытку авторизации;
+                # если её нет — старый поток привязки по коду.
+                res = auth_flow.handle_attempt_contact(
+                    chat_id, att.get("payload", {}), message.get("sender", {})
+                )
+                if res is not None:
+                    return res
                 return auth.handle_contact(chat_id, att.get("payload", {}))
 
         text = (body.get("text") or "").strip()
