@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { MessageSquareText } from "lucide-react";
 
 import { SITE } from "@/lib/site";
@@ -31,12 +32,18 @@ export function ConsultBanner({ className }: { className?: string }) {
         <p className="mt-0.5 line-clamp-2 text-xs leading-4 text-ink-2">{text}</p>
       </div>
 
-      {/* Фирменный зелёный квадрат MAX — визуальный акцент/аффорданс. */}
+      {/* Чёрная кнопка с официальным цветным логотипом MAX. */}
       <span
         aria-hidden
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-accent font-display text-xs font-bold tracking-tight text-accent-ink"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-header"
       >
-        MAX
+        <Image
+          src="/brands/max-colored.png"
+          alt="MAX"
+          width={28}
+          height={28}
+          className="h-7 w-7 object-contain"
+        />
       </span>
     </a>
   );
