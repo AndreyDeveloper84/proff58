@@ -3,16 +3,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Heart, Menu, Scale, ShoppingCart, User } from "lucide-react";
+import { Heart, List, Menu, Search, ShoppingCart, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
 import { HOME_CONTENT } from "@/lib/home-content";
+import { SITE } from "@/lib/site";
 import { SearchBar } from "./SearchBar";
 
 const ACCOUNT_ICONS: Record<string, LucideIcon> = {
   "Личный кабинет": User,
   Избранное: Heart,
-  Сравнение: Scale,
 };
 
 interface HeaderProps {
@@ -24,95 +24,117 @@ export function Header({ logoUrl, siteName = "Профессионал" }: Heade
   const { count } = useCart();
   const [open, setOpen] = useState(false);
 
-  // #477: шапка — тёмная брендовая рамка (класс dark → dark-токены в поддереве).
-  return (
-    <header className="dark sticky top-0 z-40 border-b border-line bg-canvas/95 backdrop-blur">
-      {/* Топ-бар: промо + телефон + аккаунт-ссылки (скрыт на мобиле) */}
-      <div className="hidden border-b border-line/60 lg:block">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-1.5 text-xs text-ink-3 sm:px-6 lg:px-8">
-          <span>{HOME_CONTENT.topbar.promo}</span>
-          <div className="flex items-center gap-5">
-            <a
-              href={HOME_CONTENT.topbar.phoneHref}
-              className="font-medium text-ink-2 hover:text-ink"
-            >
-              {HOME_CONTENT.topbar.phone}
-            </a>
-            {HOME_CONTENT.account.map((l) => (
-              <Link key={l.label} href={l.href} className="transition hover:text-ink">
-                {l.label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
+  const logo = logoUrl ? (
+    <Image
+      src={logoUrl}
+      alt={siteName}
+      width={180}
+      height={44}
+      className="h-9 w-auto object-contain lg:h-11"
+      priority
+    />
+  ) : (
+    <span className="flex flex-col leading-none">
+      <span className="font-display text-base font-bold uppercase tracking-wide text-header-ink lg:text-xl">
+        {siteName}
+      </span>
+      <span className="mt-1 text-[8px] font-semibold text-accent lg:text-[9px]">
+        {SITE.brand.tagline}
+      </span>
+    </span>
+  );
 
-      {/* Основная строка: бургер + лого + поиск + иконки */}
-      <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
+  return (
+    <header className="dark sticky top-0 z-40 border-b border-header-line bg-header">
+      {/* PLP-01: одна компактная строка. На mobile остаются только основные действия. */}
+      <div className="mx-auto flex h-16 w-full max-w-[1400px] items-center gap-3 px-4 lg:h-[72px] lg:gap-5">
         <button
           type="button"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-md text-ink-2 hover:bg-raised lg:hidden"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-md text-header-ink hover:bg-header-ink/10 lg:hidden"
           aria-label="Меню"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
           <Menu className="h-5 w-5" aria-hidden />
         </button>
-        <Link href="/" className="shrink-0">
-          {logoUrl ? (
-            <Image
-              src={logoUrl}
-              alt={siteName}
-              width={140}
-              height={40}
-              className="h-10 w-auto object-contain"
-              priority
-            />
-          ) : (
-            <span className="font-display text-xl font-bold uppercase tracking-wide text-accent">
-              {siteName}
-            </span>
-          )}
+
+        <Link href="/" className="min-w-0 shrink-0" aria-label="На главную">
+          {logo}
         </Link>
-        <div className="flex-1">
-          <SearchBar />
+
+        <Link
+          href="/catalog"
+          className="hidden h-11 shrink-0 items-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink transition hover:brightness-95 lg:inline-flex"
+        >
+          <List className="h-4 w-4" aria-hidden />
+          Каталог
+        </Link>
+
+        <div data-theme="light" className="hidden min-w-0 flex-1 lg:block">
+          <SearchBar
+            className="max-w-none"
+            placeholder="Поиск по товарам, брендам, категориям…"
+          />
         </div>
+
+        <a
+          href={SITE.phone.href}
+          className="hidden shrink-0 flex-col text-header-ink transition hover:text-accent xl:flex"
+        >
+          <span className="text-sm font-bold">{SITE.phone.display}</span>
+          <span className="mt-1 text-[11px] font-normal text-footer-ink">{SITE.schedule}</span>
+        </a>
+
+        <Link
+          href="/account/login"
+          className="hidden h-11 shrink-0 items-center gap-2 px-1 text-sm font-medium text-header-ink transition hover:text-accent lg:inline-flex"
+        >
+          <User className="h-5 w-5" aria-hidden />
+          Войти
+        </Link>
+
+        <Link
+          href="/search"
+          className="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-md text-header-ink transition hover:bg-header-ink/10 lg:hidden"
+          aria-label="Поиск"
+        >
+          <Search className="h-5 w-5" aria-hidden />
+        </Link>
+
         <Link
           href="/cart"
-          className="relative grid h-9 w-9 shrink-0 place-items-center rounded-md text-ink-2 transition hover:bg-raised hover:text-ink"
+          className="relative flex h-11 shrink-0 items-center justify-center gap-2 rounded-md px-2 text-header-ink transition hover:bg-header-ink/10"
           aria-label={count > 0 ? `Корзина, товаров: ${count}` : "Корзина"}
         >
           <ShoppingCart className="h-5 w-5" aria-hidden />
+          <span className="hidden text-sm font-medium lg:inline">Корзина</span>
           {count > 0 && (
-            <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-ink">
+            <span className="absolute right-0 top-0 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-ink lg:-right-1 lg:-top-1">
               {count > 99 ? "99+" : count}
             </span>
           )}
         </Link>
       </div>
 
-      {/* Нав-меню (десктоп) */}
-      <nav className="hidden border-t border-line/60 lg:block">
-        <div className="mx-auto flex max-w-7xl items-center gap-6 px-4 py-2 text-sm sm:px-6 lg:px-8">
-          {HOME_CONTENT.nav.map((l) => (
-            <Link key={l.label} href={l.href} className="text-ink-2 transition hover:text-accent">
-              {l.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
-
       {/* Мобильное меню */}
       {open && (
-        <div className="border-t border-line bg-surface lg:hidden">
-          <nav className="mx-auto flex max-w-7xl flex-col px-4 py-2 sm:px-6">
+        <div className="border-t border-header-line bg-header lg:hidden">
+          <nav className="mx-auto flex max-w-[1400px] flex-col px-4 py-2">
+            <Link
+              href="/catalog"
+              className="flex min-h-11 items-center gap-2 border-b border-header-line py-2.5 text-sm font-semibold text-header-ink hover:text-accent"
+              onClick={() => setOpen(false)}
+            >
+              <List className="h-4 w-4" aria-hidden />
+              Каталог
+            </Link>
             {[...HOME_CONTENT.nav, ...HOME_CONTENT.account].map((l) => {
               const Icon = ACCOUNT_ICONS[l.label];
               return (
                 <Link
                   key={l.label}
                   href={l.href}
-                  className="flex items-center gap-2 border-b border-line/40 py-2.5 text-sm text-ink-2 last:border-0 hover:text-accent"
+                  className="flex min-h-11 items-center gap-2 border-b border-header-line py-2.5 text-sm text-footer-ink last:border-0 hover:text-accent"
                   onClick={() => setOpen(false)}
                 >
                   {Icon && <Icon className="h-4 w-4" aria-hidden />}
@@ -121,11 +143,11 @@ export function Header({ logoUrl, siteName = "Профессионал" }: Heade
               );
             })}
             <a
-              href={HOME_CONTENT.topbar.phoneHref}
-              className="py-2.5 text-sm font-medium text-ink"
+              href={SITE.phone.href}
+              className="min-h-11 py-2.5 text-sm font-medium text-header-ink"
               onClick={() => setOpen(false)}
             >
-              {HOME_CONTENT.topbar.phone}
+              {SITE.phone.display}
             </a>
           </nav>
         </div>

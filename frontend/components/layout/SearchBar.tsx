@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // Подсказки из ProductSuggestView (#52) через same-origin BFF: GET /api/search/suggest?q=
 // → [{id,name,slug}]. Браузер ходит только в Next route handler, тот проксирует в Django.
@@ -10,7 +11,13 @@ type Suggestion = { id: number; name: string; slug: string };
 
 const MIN_QUERY = 2;
 
-export function SearchBar() {
+export function SearchBar({
+  className,
+  placeholder = "Поиск товаров…",
+}: {
+  className?: string;
+  placeholder?: string;
+}) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -95,7 +102,7 @@ export function SearchBar() {
   );
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-xl">
+    <div ref={containerRef} className={cn("relative w-full max-w-xl", className)}>
       <form onSubmit={handleSubmit} className="relative" role="search">
         <Search
           className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3"
@@ -109,8 +116,8 @@ export function SearchBar() {
           onFocus={() => {
             if (suggestions.length > 0) setOpen(true);
           }}
-          placeholder="Поиск товаров…"
-          className="w-full rounded-md border border-line bg-canvas py-2 pl-9 pr-8 text-sm text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
+          placeholder={placeholder}
+          className="h-11 w-full rounded-md border border-line bg-surface py-2 pl-9 pr-8 text-sm text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
           aria-label="Поиск товаров"
           autoComplete="off"
         />
