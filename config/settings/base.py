@@ -116,6 +116,11 @@ CACHES = {
 # версионная, по сигналам изменения товаров/категорий/привязок атрибутов (apps/catalog/signals.py).
 FACETS_CACHE_TTL = env.int("FACETS_CACHE_TTL", default=0)
 
+# Порог «мало осталось» для витрины (#488): stock_qty в каталог-API отдаётся, только
+# когда доступный остаток 0 < qty ≤ порога (сигнал «мало», без утечки точных больших
+# остатков). Фронт по нему показывает состояние «Мало осталось».
+CATALOG_LOW_STOCK_THRESHOLD = env.int("CATALOG_LOW_STOCK_THRESHOLD", default=5)
+
 AUTH_USER_MODEL = "accounts.User"
 
 AUTH_PASSWORD_VALIDATORS = [

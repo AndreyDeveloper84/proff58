@@ -52,6 +52,7 @@ type ApiProduct = {
   old_price?: string | null;
   currency?: string | null;
   stock_status?: string | null;
+  stock_qty?: number | null;
   main_image?: string | null;
   short_description?: string | null;
   attributes?: ApiAttr[];
@@ -179,6 +180,7 @@ export function apiProductToProduct(ap: ApiProduct): Product {
       currency: (ap.currency as "RUB") || "RUB",
     },
     stock: mapStock(ap.stock_status),
+    stockQty: ap.stock_qty ?? undefined,
     // sale — из скидки (данные есть). new/hit — вне scope (нет надёжного признака новизны).
     badges: hasDiscount ? ["sale"] : [],
   };
