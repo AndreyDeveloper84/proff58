@@ -4,24 +4,23 @@ import { describe, expect, it } from "vitest";
 import { ConsultBanner } from "./ConsultBanner";
 import { SITE } from "@/lib/site";
 
-// PLP-04: компактная карточка = одна доступная ссылка (иконка→текст→квадрат MAX),
-// без отдельной CTA-кнопки; аналитика consult_max_click сохранена.
+// PLP-04: карточка не кликабельна целиком; единственная ссылка — квадрат MAX.
 describe("ConsultBanner", () => {
-  it("вся карточка — одна ссылка на MAX с аналитикой", () => {
+  it("только квадрат MAX является ссылкой с аналитикой", () => {
     render(<ConsultBanner />);
     const links = screen.getAllByRole("link");
     expect(links).toHaveLength(1);
-    const card = links[0];
-    expect(card).toHaveAttribute("href", SITE.support.max.href);
-    expect(card).toHaveAttribute("data-event", "consult_max_click");
-    expect(card).toHaveAttribute("target", "_blank");
-    expect(card).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    const maxLink = screen.getByRole("link", { name: "Открыть MAX" });
+    expect(maxLink).toHaveAttribute("href", SITE.support.max.href);
+    expect(maxLink).toHaveAttribute("data-event", "consult_max_click");
+    expect(maxLink).toHaveAttribute("target", "_blank");
+    expect(maxLink).toHaveAttribute("rel", expect.stringContaining("noopener"));
   });
 
   it("показывает заголовок и логотип MAX", () => {
-    render(<ConsultBanner />);
+    const { container } = render(<ConsultBanner />);
     expect(screen.getByText(SITE.support.max.title)).toBeInTheDocument();
-    expect(screen.getByAltText("MAX")).toHaveAttribute(
+    expect(container.querySelector('a[aria-label="Открыть MAX"] img')).toHaveAttribute(
       "src",
       expect.stringContaining("max-colored.png"),
     );
