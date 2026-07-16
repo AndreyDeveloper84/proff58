@@ -34,12 +34,22 @@ export function Header({ logoUrl, siteName = "Профессионал" }: Heade
       priority
     />
   ) : (
-    <span className="flex flex-col leading-none">
-      <span className="font-display text-base font-bold uppercase tracking-wide text-header-ink lg:text-xl">
-        {siteName}
-      </span>
-      <span className="mt-1 text-[8px] font-semibold text-accent lg:text-[9px]">
-        {SITE.brand.tagline}
+    <span className="flex items-center gap-1.5 lg:gap-2">
+      <Image
+        src="/brands/professional-mark.png"
+        alt=""
+        width={44}
+        height={44}
+        className="h-7 w-auto shrink-0 object-contain sm:h-8 lg:h-11"
+        aria-hidden
+      />
+      <span className="flex flex-col leading-none">
+        <span className="font-display text-xs font-bold uppercase tracking-wide text-header-ink sm:text-sm lg:text-xl">
+          {siteName}
+        </span>
+        <span className="mt-1 text-[6px] font-semibold text-accent sm:text-[7px] lg:text-[9px]">
+          {SITE.brand.tagline}
+        </span>
       </span>
     </span>
   );
@@ -47,7 +57,7 @@ export function Header({ logoUrl, siteName = "Профессионал" }: Heade
   return (
     <header className="dark sticky top-0 z-40 border-b border-header-line bg-header">
       {/* PLP-01: одна компактная строка. На mobile остаются только основные действия. */}
-      <div className="mx-auto flex h-16 w-full max-w-[1400px] items-center gap-3 px-4 lg:h-[72px] lg:gap-5">
+      <div className="mx-auto flex h-16 w-full max-w-[1400px] items-center gap-2 px-4 lg:h-[72px] lg:gap-5">
         <button
           type="button"
           className="grid h-11 w-11 shrink-0 place-items-center rounded-md text-header-ink hover:bg-header-ink/10 lg:hidden"
