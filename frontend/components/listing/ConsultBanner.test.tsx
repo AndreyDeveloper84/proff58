@@ -4,22 +4,23 @@ import { describe, expect, it } from "vitest";
 import { ConsultBanner } from "./ConsultBanner";
 import { SITE } from "@/lib/site";
 
-// Task 5: одна CTA-ссылка с текстом из SITE, отдельного квадрата «MAX» нет,
-// аналитика consult_max_click сохранена, ссылка открывается в новой вкладке.
+// PLP-04: компактная карточка = одна доступная ссылка (иконка→текст→квадрат MAX),
+// без отдельной CTA-кнопки; аналитика consult_max_click сохранена.
 describe("ConsultBanner", () => {
-  it("рендерит одну ссылку-CTA с текстом из SITE и сохраняет аналитику", () => {
+  it("вся карточка — одна ссылка на MAX с аналитикой", () => {
     render(<ConsultBanner />);
     const links = screen.getAllByRole("link");
     expect(links).toHaveLength(1);
-    const cta = links[0];
-    expect(cta).toHaveTextContent(SITE.support.max.ctaLabel);
-    expect(cta).toHaveAttribute("data-event", "consult_max_click");
-    expect(cta).toHaveAttribute("target", "_blank");
-    expect(cta).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    const card = links[0];
+    expect(card).toHaveAttribute("href", SITE.support.max.href);
+    expect(card).toHaveAttribute("data-event", "consult_max_click");
+    expect(card).toHaveAttribute("target", "_blank");
+    expect(card).toHaveAttribute("rel", expect.stringContaining("noopener"));
   });
 
-  it("не содержит отдельного элемента-квадрата «MAX»", () => {
+  it("показывает заголовок и квадрат MAX", () => {
     render(<ConsultBanner />);
-    expect(screen.queryByText("MAX")).toBeNull();
+    expect(screen.getByText(SITE.support.max.title)).toBeInTheDocument();
+    expect(screen.getByText("MAX")).toBeInTheDocument();
   });
 });
