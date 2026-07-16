@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { humanizeToken } from "@/lib/format";
 import type { Facet, FacetOption } from "@/lib/types";
@@ -15,7 +16,10 @@ type Props = {
   onSelect: (slug: string, label: string) => void; // клик по плитке (toggle решает родитель)
 };
 
+const INITIAL_VISIBLE_TYPES = 12;
+
 export function TypePanel({ facet, active, onSelect }: Props) {
+  const [expanded, setExpanded] = useState(false);
   if (!facet) return null;
   const options = facet.options ?? [];
 
@@ -29,10 +33,21 @@ export function TypePanel({ facet, active, onSelect }: Props) {
   }
   if (tiles.length === 0) return null;
 
+  const visibleTiles = expanded ? tiles : tiles.slice(0, INITIAL_VISIBLE_TYPES);
+  if (
+    !expanded &&
+    active != null &&
+    !visibleTiles.some((o) => o.value === active)
+  ) {
+    const activeTile = tiles.find((o) => o.value === active);
+    if (activeTile) visibleTiles.push(activeTile);
+  }
+  const hiddenCount = Math.max(0, tiles.length - INITIAL_VISIBLE_TYPES);
+
   return (
     <nav aria-label="Тип инструмента" className="mb-4">
       <div className="flex flex-wrap gap-2">
-        {tiles.map((o) => {
+        {visibleTiles.map((o) => {
           const isActive = o.value === active;
           return (
             <button
@@ -60,6 +75,17 @@ export function TypePanel({ facet, active, onSelect }: Props) {
           );
         })}
       </div>
+
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          aria-expanded={expanded}
+          className="mt-3 min-h-11 text-sm font-semibold text-accent hover:underline sm:min-h-0"
+        >
+          {expanded ? "Свернуть типы" : `Показать ещё (${hiddenCount})`}
+        </button>
+      )}
     </nav>
   );
 }

@@ -18,6 +18,11 @@ import { CategoryHero } from "@/components/listing/CategoryHero";
 import { ConsultBanner } from "@/components/listing/ConsultBanner";
 import { MobileFilterDrawer } from "@/components/listing/MobileFilterDrawer";
 
+// Каноническая таксономия v2: верхний «Электроинструмент» навигируется второй осью
+// tool_type. Остальные разделы с реальными дочерними узлами используют дерево каталога
+// и не должны одновременно показывать дублирующий TypePanel.
+const TYPE_PANEL_ROOT_CATEGORIES = new Set(["elektroinstrument"]);
+
 // Презентационный shell: данные уже разрешены на сервере (getListing(query)).
 // Никакой клиентской фильтрации — изменение фильтра меняет URL (router.replace),
 // сервер пересобирает сегмент и отдаёт новый listing. Подходит для тысяч товаров.
@@ -81,6 +86,9 @@ export function ListingShell({
 
   // --- Навигация по типу (tool_type) ---
   const navFacet = listing.facets.find((f) => f.isNav);
+  const showSubcategoryNavigation =
+    listing.subcategories.length > 0 && !TYPE_PANEL_ROOT_CATEGORIES.has(query.category);
+  const visibleNavFacet = showSubcategoryNavigation ? undefined : navFacet;
   const activeFiltersCount = Object.keys(query.filters).length;
   // Подпись активного типа: из nav-фасета, иначе (тип «вымылся» прочими фильтрами, §14)
   // humanizeToken(slug) — тот же фолбэк, что и в синтетической плитке TypePanel (N3).
@@ -219,40 +227,42 @@ export function ListingShell({
         />
       </div>
 
-      {listing.promo && (
-        <a
-          href={listing.promo.href}
-          className="mb-5 flex flex-col justify-center rounded-lg border border-line bg-raised p-4 transition hover:border-accent lg:max-w-md"
-        >
-          <span className="text-xs text-ink-3">{listing.promo.title}</span>
-          <span className="mt-1 font-display text-lg font-semibold text-accent">
-            {listing.promo.subtitle}
-          </span>
-        </a>
-      )}
-
-      {listing.subcategories.length > 0 && (
-        <div className="mb-5 flex flex-wrap gap-2">
-          {listing.subcategories.map((s) => (
-            <a
-              key={s.label}
-              href={s.href}
-              className="rounded-full border border-line bg-surface px-3 py-1 text-sm text-ink-2 transition hover:border-accent hover:text-accent"
-            >
-              {s.label}
-            </a>
-          ))}
-        </div>
-      )}
-
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
         <aside className="hidden lg:block">
           <div className="sticky top-4">{sidebar}</div>
         </aside>
 
         <div className="min-w-0">
+          {listing.promo && (
+            <a
+              href={listing.promo.href}
+              className="mb-4 flex flex-col justify-center rounded-lg border border-line bg-raised p-4 transition hover:border-accent lg:max-w-md"
+            >
+              <span className="text-xs text-ink-3">{listing.promo.title}</span>
+              <span className="mt-1 font-display text-lg font-semibold text-accent">
+                {listing.promo.subtitle}
+              </span>
+            </a>
+          )}
+
+          {showSubcategoryNavigation && (
+            <nav aria-label="Подкатегории" className="mb-4">
+              <div className="flex flex-wrap gap-2">
+                {listing.subcategories.map((s) => (
+                  <a
+                    key={s.label}
+                    href={s.href}
+                    className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink-2 transition hover:border-accent hover:text-accent"
+                  >
+                    {s.label}
+                  </a>
+                ))}
+              </div>
+            </nav>
+          )}
+
           {/* TypePanel — навигация по типу над выдачей (§3.1). Скрыта, если nav-фасета нет. */}
-          <TypePanel facet={navFacet} active={query.toolType} onSelect={onSelectType} />
+          <TypePanel facet={visibleNavFacet} active={query.toolType} onSelect={onSelectType} />
 
           {/* Панель фильтров (§9.1): триггер сайдбара + сброс + активные чипы (зелёные). */}
           <div className="mb-4 flex flex-wrap items-center gap-3">
