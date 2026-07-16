@@ -18,9 +18,12 @@ describe("ConsultBanner", () => {
     expect(card).toHaveAttribute("rel", expect.stringContaining("noopener"));
   });
 
-  it("показывает заголовок и квадрат MAX", () => {
+  it("показывает заголовок и логотип MAX", () => {
     render(<ConsultBanner />);
     expect(screen.getByText(SITE.support.max.title)).toBeInTheDocument();
-    expect(screen.getByText("MAX")).toBeInTheDocument();
+    expect(screen.getByAltText("MAX")).toHaveAttribute(
+      "src",
+      expect.stringContaining("max-colored.png"),
+    );
   });
 });
