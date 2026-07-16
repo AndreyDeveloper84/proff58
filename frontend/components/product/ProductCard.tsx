@@ -43,9 +43,12 @@ function StatusLabel({ product }: { product: Product }) {
 export function ProductCard({
   product,
   view = "grid",
+  showFavorite = false,
 }: {
   product: Product;
   view?: "grid" | "list";
+  // Избранное — Wave 2: по умолчанию скрыто, пока нет полного сценария.
+  showFavorite?: boolean;
 }) {
   const [fav, setFav] = useState(false);
   const href = `/product/${product.slug}`;
@@ -141,7 +144,7 @@ export function ProductCard({
     >
       <div className="mb-2 flex items-start justify-between gap-2">
         <StatusLabel product={product} />
-        {heart}
+        {showFavorite ? heart : null}
       </div>
       <div className="mb-3">{media}</div>
       <p className="text-xs text-ink-3">{product.brand}</p>

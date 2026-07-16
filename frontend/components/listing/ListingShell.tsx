@@ -203,14 +203,21 @@ export function ListingShell({
         ))}
       </nav>
 
-      <CategoryHero
-        title={listing.category.title}
-        intro={listing.category.intro}
-        hero={listing.category.hero}
-        total={listing.total}
-      />
+      {/* Верхняя композиция (§P0): консультация — в левой колонке (260px, над
+          фасетами), CategoryHero inline — в правой, выровнен по левому краю с тулбаром.
+          На мобильном grid схлопывается в последовательность: консультация → H1 → описание. */}
+      <div className="mb-5 grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6">
+        <ConsultBanner className="w-full max-w-full lg:col-start-1 lg:row-start-1" />
 
-      <ConsultBanner />
+        <CategoryHero
+          title={listing.category.title}
+          intro={listing.category.intro}
+          hero={listing.category.hero}
+          total={listing.total}
+          variant="inline"
+          className="w-full min-w-0 lg:col-start-2 lg:row-start-1"
+        />
+      </div>
 
       {listing.promo && (
         <a
