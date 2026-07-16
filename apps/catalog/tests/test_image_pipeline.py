@@ -78,3 +78,30 @@ def test_process_bytes_rejects_decompression_bomb():
     pipe = ImagePipeline()
     pipe.MAX_PIXELS = 1000
     assert pipe._process_bytes(_png_bytes(1500, 1500)) is None
+
+
+def test_download_rejects_nonstandard_port():
+    # M-13: только стандартный https-порт 443 (публичный IP на 8080 не пробиваем)
+    assert ImagePipeline()._download("https://8.8.8.8:8080/x.png") is None
+
+
+def test_download_rejects_metadata_ip():
+    # M-13: cloud metadata (link-local) — классическая цель SSRF
+    assert ImagePipeline()._download("https://169.254.169.254/latest/meta-data/") is None
+
+
+def test_resolve_public_ips_returns_validated(monkeypatch):
+    def fake_getaddrinfo(host, *a, **k):
+        return [(2, 1, 6, "", ("8.8.8.8", 0))]
+
+    monkeypatch.setattr("apps.catalog.image_pipeline.socket.getaddrinfo", fake_getaddrinfo)
+    assert ImagePipeline()._resolve_public_ips("cdn.example") == ["8.8.8.8"]
+
+
+def test_resolve_rejects_when_any_ip_private(monkeypatch):
+    # M-13/DNS-rebinding: если хоть один адрес приватный — отказ (не только по первому)
+    def fake_getaddrinfo(host, *a, **k):
+        return [(2, 1, 6, "", ("8.8.8.8", 0)), (2, 1, 6, "", ("10.0.0.5", 0))]
+
+    monkeypatch.setattr("apps.catalog.image_pipeline.socket.getaddrinfo", fake_getaddrinfo)
+    assert ImagePipeline()._resolve_public_ips("rebind.example") is None
