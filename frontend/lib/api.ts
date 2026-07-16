@@ -13,8 +13,28 @@ export class ApiError extends Error {
 }
 
 /**
+ * Человекочитаемое сообщение из тела ошибки Django/DRF. Поддерживает и общий
+ * `{detail}`, и пофайлдовые ошибки сериализатора `{field: ["msg", ...] | "msg"}`
+ * (например, при регистрации — правила пароля), иначе — «Ошибка <status>.».
+ */
+export function extractErrorMessage(body: unknown, status: number): string {
+  if (body && typeof body === "object") {
+    const b = body as Record<string, unknown>;
+    if (typeof b.detail === "string") return b.detail;
+    const parts: string[] = [];
+    for (const v of Object.values(b)) {
+      if (typeof v === "string") parts.push(v);
+      else if (Array.isArray(v))
+        parts.push(...v.filter((x): x is string => typeof x === "string"));
+    }
+    if (parts.length) return parts.join(" ");
+  }
+  return `Ошибка ${status}.`;
+}
+
+/**
  * Запрос в same-origin BFF. Возвращает разобранный JSON (или undefined для 204).
- * Бросает {@link ApiError} с detail из тела Django при не-2xx.
+ * Бросает {@link ApiError} с сообщением из тела Django при не-2xx.
  */
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   // Content-Type ставим только когда есть тело (GET/DELETE его не несут).
@@ -36,11 +56,8 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   }
 
   if (!res.ok) {
-    const detail = await res
-      .json()
-      .then((b: { detail?: string }) => b?.detail)
-      .catch(() => undefined);
-    throw new ApiError(detail ?? `Ошибка ${res.status}.`, res.status);
+    const body: unknown = await res.json().catch(() => undefined);
+    throw new ApiError(extractErrorMessage(body, res.status), res.status);
   }
 
   if (res.status === 204) return undefined as T;
