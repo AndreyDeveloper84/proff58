@@ -22,9 +22,9 @@ export const HOME_CONTENT = {
     { label: "Контакты", href: "#" },
   ] as NavLink[],
   account: [
-    { label: "Личный кабинет", href: "#" },
-    { label: "Избранное", href: "#" },
-    { label: "Сравнение", href: "#" },
+    { label: "Личный кабинет", href: "/account/profile" },
+    { label: "Избранное", href: "/account/wishlist" },
+    // «Сравнение» — Wave 2, страницы пока нет (не даём мёртвую ссылку).
   ] as NavLink[],
   hero: {
     titleLine1: "ПРОФЕССИОНАЛЬНЫЙ ИНСТРУМЕНТ",
