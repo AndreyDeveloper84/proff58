@@ -1,10 +1,11 @@
 """Сериализаторы публичного API каталога (read-only)."""
 
+from django.conf import settings
 from rest_framework import serializers
 
 from apps.pricing.services import RETAIL, price_for
 
-from ..models import Product
+from ..models import Product, StockStatus
 from ..services import attr_value_to_json
 
 # Сколько характеристик отдаём в листинге (карточке хватает 3-5; не раздуваем PLP).
@@ -57,6 +58,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     main_image = serializers.SerializerMethodField()
     price_type = serializers.SerializerMethodField()
     attributes = serializers.SerializerMethodField()
+    stock_qty = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -71,10 +73,24 @@ class ProductListSerializer(serializers.ModelSerializer):
             "currency",
             "price_type",
             "stock_status",
+            "stock_qty",
             "main_image",
             "short_description",
             "attributes",
         )
+
+    def get_stock_qty(self, obj):
+        """Остаток для сигнала «мало осталось» (#488).
+
+        Отдаём число ТОЛЬКО когда товар в наличии и остаток невелик
+        (0 < qty ≤ CATALOG_LOW_STOCK_THRESHOLD) — иначе null (не раскрываем точные
+        большие остатки). Фронт по наличию числа показывает «Мало осталось».
+        """
+        if obj.stock_status != StockStatus.IN_STOCK:
+            return None
+        threshold = getattr(settings, "CATALOG_LOW_STOCK_THRESHOLD", 5)
+        qty = obj.available_quantity or 0
+        return int(qty) if 0 < qty <= threshold else None
 
     def get_attributes(self, obj):
         """Ключевые характеристики для строки спеков карточки (ограничено и упорядочено).
