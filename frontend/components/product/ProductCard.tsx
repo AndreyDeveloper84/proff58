@@ -43,11 +43,12 @@ function StatusLabel({ product }: { product: Product }) {
 export function ProductCard({
   product,
   view = "grid",
-  showFavorite = false,
+  showFavorite = true,
 }: {
   product: Product;
   view?: "grid" | "list";
-  // Избранное — Wave 2: по умолчанию скрыто, пока нет полного сценария.
+  // Избранное — Wave 2: сердце присутствует в шаблоне по референсу, но это ещё не
+  // завершённая функция (локальное визуальное состояние, без бэкенда/персистентности).
   showFavorite?: boolean;
 }) {
   const [fav, setFav] = useState(false);
