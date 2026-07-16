@@ -328,7 +328,7 @@ export function ListingShell({
                   isPending ? "text-ink-3 opacity-60" : "text-ink-3",
                 )}
               >
-                Показано {listing.products.length} из {listing.total}
+                Показано {listing.products.length} из {listing.total.toLocaleString("ru-RU")}
               </span>
               <label className="flex items-center gap-2 text-sm text-ink-3">
                 На странице

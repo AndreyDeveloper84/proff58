@@ -89,7 +89,7 @@ export function CategoryHero({
 
                 {total != null && total > 0 && (
                   <span className="pb-1 text-sm font-semibold text-accent">
-                    {total} {pluralize(total, "товар", "товара", "товаров")}
+                    {total.toLocaleString("ru-RU")} {pluralize(total, "товар", "товара", "товаров")}
                   </span>
                 )}
               </div>
