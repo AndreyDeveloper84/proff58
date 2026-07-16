@@ -4,9 +4,11 @@
 Вызывается вручную (admin/CLI). Enrich-поток фото не тянет. Идемпотентность —
 по URL (хранится в alt-маркере). content_locked уважается.
 
-Безопасность (M-13): только https; хост обязан резолвиться в публичный IP
-(защита от SSRF во внутреннюю сеть); redirects запрещены; тело качается стримом
-с жёстким лимитом MAX_BYTES; Pillow ограничен по числу пикселей (decompression bomb).
+Безопасность (M-13): только https и порт 443; хост обязан резолвиться в публичный
+IP (защита от SSRF во внутреннюю сеть); соединение пиннится к уже проверенному IP
+(без повторного DNS — защита от DNS-rebinding/TOCTOU), с проверкой TLS по имени
+хоста; redirects запрещены; тело качается с жёстким лимитом MAX_BYTES; Pillow
+ограничен по числу пикселей (decompression bomb).
 """
 from __future__ import annotations
 
@@ -16,7 +18,8 @@ import logging
 import socket
 from urllib.parse import urlparse
 
-import requests
+import certifi
+import urllib3
 from django.core.files.base import ContentFile
 from PIL import Image, ImageOps
 
@@ -33,41 +36,76 @@ class ImagePipeline:
     MIN_SIDE = 100
     MAX_BYTES = 10 * 1024 * 1024
     MAX_PIXELS = 40_000_000  # ~40 Мп — потолок против decompression bomb
-    _CHUNK = 64 * 1024
 
-    def _host_is_public(self, host: str) -> bool:
-        """True только если ВСЕ адреса хоста публичные (не private/loopback/link-local/…)."""
+    @staticmethod
+    def _ip_is_public(ip_str: str) -> bool:
+        ip = ipaddress.ip_address(ip_str)
+        return not (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        )
+
+    def _resolve_public_ips(self, host: str) -> list[str] | None:
+        """Все адреса хоста; None — если резолв не удался или ЛЮБОЙ адрес непубличный.
+
+        Возвращаем именно проверенный список, чтобы соединяться с одним из этих IP
+        (без повторного DNS-резолва requests) — иначе возможен DNS-rebinding: проверка
+        видит публичный адрес, а connect уходит на приватный (169.254.169.254 и т.п.).
+        """
         try:
             infos = socket.getaddrinfo(host, None)
         except socket.gaierror:
-            return False
-        if not infos:
-            return False
-        for info in infos:
-            ip = ipaddress.ip_address(info[4][0])
-            if (
-                ip.is_private
-                or ip.is_loopback
-                or ip.is_link_local
-                or ip.is_reserved
-                or ip.is_multicast
-                or ip.is_unspecified
-            ):
-                return False
-        return True
+            return None
+        ips = [info[4][0] for info in infos]
+        if not ips or any(not self._ip_is_public(ip) for ip in ips):
+            return None
+        return ips
+
+    def _host_is_public(self, host: str) -> bool:
+        return self._resolve_public_ips(host) is not None
 
     def _download(self, url: str) -> bytes | None:
         parsed = urlparse(url)
         if parsed.scheme != "https" or not parsed.hostname:
             log.warning("image url отклонён (не https/без host): %s", url)
             return None
-        if not self._host_is_public(parsed.hostname):
+        if parsed.port not in (None, 443):  # M-13: только стандартный https-порт
+            log.warning("image url отклонён (нестандартный порт): %s", url)
+            return None
+        ips = self._resolve_public_ips(parsed.hostname)
+        if not ips:
             log.warning("image url отклонён (private/непубличный host): %s", url)
             return None
+
+        # Пиннимся к проверенному IP (без повторного DNS), TLS проверяем по имени хоста.
+        pool = urllib3.HTTPSConnectionPool(
+            ips[0],
+            port=443,
+            timeout=urllib3.Timeout(connect=self.TIMEOUT, read=self.TIMEOUT),
+            retries=False,
+            cert_reqs="CERT_REQUIRED",
+            ca_certs=certifi.where(),
+            server_hostname=parsed.hostname,
+            assert_hostname=parsed.hostname,
+        )
+        target = parsed.path or "/"
+        if parsed.query:
+            target += "?" + parsed.query
         try:
-            resp = requests.get(url, timeout=self.TIMEOUT, stream=True, allow_redirects=False)
+            resp = pool.urlopen(
+                "GET",
+                target,
+                headers={"Host": parsed.hostname},
+                redirect=False,  # redirects запрещены
+                preload_content=False,
+                decode_content=False,
+            )
             try:
-                if resp.status_code != 200:  # redirects запрещены → 3xx трактуем как отказ
+                if resp.status != 200:  # 3xx (redirect) и прочее → отказ
                     return None
                 clen = resp.headers.get("Content-Length")
                 if clen is not None:
@@ -76,24 +114,26 @@ class ImagePipeline:
                             return None
                     except ValueError:
                         pass
-                buf = bytearray()
-                for chunk in resp.iter_content(self._CHUNK):
-                    buf += chunk
-                    if (
-                        len(buf) > self.MAX_BYTES
-                    ):  # hard cap: Content-Length может врать/отсутствовать
-                        return None
-                return bytes(buf)
+                # hard cap: читаем не больше MAX_BYTES+1, чтобы поймать враньё/отсутствие Content-Length
+                data = resp.read(self.MAX_BYTES + 1)
+                if len(data) > self.MAX_BYTES:
+                    return None
+                return data
             finally:
-                resp.close()
-        except requests.RequestException as exc:
+                resp.release_conn()
+        except (urllib3.exceptions.HTTPError, OSError) as exc:
             log.warning("image download failed %s: %s", url, exc)
             return None
+        finally:
+            pool.close()
 
     def _process_bytes(self, raw: bytes):
+        # Backstop против decompression bomb: Pillow сам бросит DecompressionBombError
+        # при декодировании сверх лимита (не только по заявленному размеру в заголовке).
+        Image.MAX_IMAGE_PIXELS = self.MAX_PIXELS
         try:
             img = Image.open(io.BytesIO(raw))
-            if img.size[0] * img.size[1] > self.MAX_PIXELS:  # decompression bomb
+            if img.size[0] * img.size[1] > self.MAX_PIXELS:  # decompression bomb (по заголовку)
                 return None
             img.load()
         except (OSError, ValueError, Image.DecompressionBombError):
