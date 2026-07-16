@@ -11,15 +11,9 @@ export function ConsultBanner({ className }: { className?: string }) {
   const { title, text, href } = SITE.support.max;
 
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      data-event="consult_max_click"
-      data-surface="plp"
-      aria-label={title}
+    <section
       className={cn(
-        "flex min-w-0 items-center gap-3 rounded-lg border border-line bg-raised p-3 transition hover:border-accent motion-reduce:transition-none",
+        "flex min-w-0 items-center gap-3 rounded-lg border border-line bg-raised p-3",
         className,
       )}
     >
@@ -32,19 +26,24 @@ export function ConsultBanner({ className }: { className?: string }) {
         <p className="mt-0.5 line-clamp-2 text-xs leading-4 text-ink-2">{text}</p>
       </div>
 
-      {/* Чёрная кнопка с официальным цветным логотипом MAX. */}
-      <span
-        aria-hidden
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-header"
+      {/* Только этот квадрат открывает MAX; текстовая часть карточки не кликабельна. */}
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-event="consult_max_click"
+        data-surface="plp"
+        aria-label="Открыть MAX"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-header transition hover:brightness-125 motion-reduce:transition-none"
       >
         <Image
           src="/brands/max-colored.png"
-          alt="MAX"
+          alt=""
           width={28}
           height={28}
           className="h-7 w-7 object-contain"
         />
-      </span>
-    </a>
+      </a>
+    </section>
   );
 }
