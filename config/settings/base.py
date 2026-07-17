@@ -266,6 +266,7 @@ FEATURES = {
     "analytics": env.bool("FEATURE_ANALYTICS", default=False),
     "external_integrations": env.bool("FEATURE_EXTERNAL_INTEGRATIONS", default=True),
     "external_ship": env.bool("FEATURE_EXTERNAL_SHIP", default=False),
+    "catalog_processing": env.bool("FEATURE_CATALOG_PROCESSING", default=False),
 }
 
 
