@@ -37,6 +37,15 @@ def _priority_map() -> dict[str, int]:
     return _load_priority_map()
 
 
+def is_known_source(source: str) -> bool:
+    """Источник есть и в Source.choices, и в карте приоритетов."""
+    if not source:
+        return False
+    from .models import Source
+
+    return source in Source.values and source in _priority_map()
+
+
 def can_overwrite(new: str, existing: str, *, allow_equal: bool = False) -> bool:
     """Авто: строго priority(new) > priority(existing). Пустой existing → True.
     allow_equal=True (явное решение модератора) разрешает равный приоритет."""

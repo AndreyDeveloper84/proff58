@@ -29,9 +29,13 @@
    - `CatalogChange` — append-only запись предложения и результата.
 
 2. **Сервис применения живёт в `apps.catalog.processing`**:
-   - публичный метод `apply_catalog_decision()`;
-   - единственный новый write-path первого шага;
-   - внутри вызывает существующий `provenance.apply_sourced_value()`;
+   - три фазы: `create_catalog_change()`, `review_catalog_change()`,
+     `apply_catalog_change()`;
+   - `create` только создаёт `CatalogChange(status=proposed)`, не меняя каталог;
+   - `review` переводит `proposed -> approved/rejected` и фиксирует
+     `reviewed_by/reviewed_at/comment`;
+   - `apply` атомарно применяет только `approved`-решение через
+     `provenance.apply_sourced_value()`;
    - `apps.catalog` не импортирует `apps.ai`.
 
 3. **Первый target — только `tool_type`**:
@@ -42,9 +46,11 @@
 4. **Operational baseline**:
    - snapshot `tool_type` включает `attribute_slug`, `option_id`, `option_slug`,
      `option_value`, `source`, `confidence`;
-   - conflict hash строится по каноническому JSON без `option_id` и
-     `option_value` (переименование отображаемого значения не даёт ложный
-     конфликт);
+   - conflict hash (operational baseline) строится по каноническому JSON без
+     `option_id` и `option_value` (переименование отображаемого значения не даёт
+     ложный конфликт);
+   - provenance value_hash вычисляется от `option_id` непосредственно перед
+     apply и не входит в operational baseline;
    - пустое значение имеет стабильный envelope.
 
 5. **Идемпотентность**:
@@ -55,8 +61,13 @@
 6. **Безопасность**:
    - `content_locked` блокирует изменение;
    - source priority из `data/attribute_rules.json` не обходится;
+   - равный приоритет (`allow_equal_override`) разрешается только для
+     `approved`-решений;
    - применение PAV и синхронизация `attrs_cache` атомарны;
-   - исключение откатывает PAV/cache, но оставляет `CatalogChange(status=failed)`.
+   - исключение откатывает PAV/cache, но оставляет `CatalogChange(status=failed)`;
+   - DB-ограничения: `approved`/`rejected` требуют reviewer, `applied` требует
+     `after_value`/`applied_at`;
+   - удаление Run/Item защищено `PROTECT` для сохранения audit trail.
 
 7. **Feature flag**:
    - инфраструктурный флаг `catalog_processing` в `config/settings/base.py`;

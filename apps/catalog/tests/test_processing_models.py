@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -16,7 +18,9 @@ from apps.catalog.models import (
 
 
 def _category():
-    return Category.add_root(name="Перф", slug="perf")
+    return Category.add_root(
+        name=f"Перф-{uuid.uuid4().hex[:8]}", slug=f"perf-{uuid.uuid4().hex[:8]}"
+    )
 
 
 def _product(**kw):
@@ -131,3 +135,83 @@ def test_change_confidence_negative_blocked_by_validator():
     )
     with pytest.raises(ValidationError):
         change.full_clean()
+
+
+@pytest.mark.django_db
+def test_approved_requires_reviewed_by_and_at():
+    run = _run()
+    p = _product(slug="p4")
+    item = _item(run, p)
+    with pytest.raises(IntegrityError), transaction.atomic():
+        CatalogChange.objects.create(
+            item=item,
+            product_ref=p.pk,
+            target_kind="tool_type",
+            status=CatalogChangeStatus.APPROVED,
+            idempotency_key="c4",
+            source="manual",
+            confidence=100,
+        )
+
+
+@pytest.mark.django_db
+def test_rejected_requires_reviewed_by_and_at():
+    run = _run()
+    p = _product(slug="p5")
+    item = _item(run, p)
+    with pytest.raises(IntegrityError), transaction.atomic():
+        CatalogChange.objects.create(
+            item=item,
+            product_ref=p.pk,
+            target_kind="tool_type",
+            status=CatalogChangeStatus.REJECTED,
+            idempotency_key="c5",
+            source="manual",
+            confidence=100,
+        )
+
+
+@pytest.mark.django_db
+def test_applied_requires_after_value_and_applied_at():
+    run = _run()
+    p = _product(slug="p6")
+    item = _item(run, p)
+    with pytest.raises(IntegrityError), transaction.atomic():
+        CatalogChange.objects.create(
+            item=item,
+            product_ref=p.pk,
+            target_kind="tool_type",
+            status=CatalogChangeStatus.APPLIED,
+            idempotency_key="c6",
+            source="manual",
+            confidence=100,
+            reviewed_by_id=1,
+            reviewed_at="2026-01-01T00:00:00Z",
+        )
+
+
+@pytest.mark.django_db
+def test_run_protect_deletion_when_items_exist():
+    run = _run()
+    p = _product(slug="p7")
+    _item(run, p)
+    with pytest.raises(IntegrityError), transaction.atomic():
+        run.delete()
+
+
+@pytest.mark.django_db
+def test_item_protect_deletion_when_changes_exist():
+    run = _run()
+    p = _product(slug="p8")
+    item = _item(run, p)
+    CatalogChange.objects.create(
+        item=item,
+        product_ref=p.pk,
+        target_kind="tool_type",
+        status=CatalogChangeStatus.PROPOSED,
+        idempotency_key="c7",
+        source="manual",
+        confidence=100,
+    )
+    with pytest.raises(IntegrityError), transaction.atomic():
+        item.delete()
