@@ -107,9 +107,11 @@ def _render_text(event: str, payload: dict) -> str:
 
 
 def _resolve_chat_id(user) -> int | None:
-    if user is None:
-        return None
-    return getattr(user, "max_chat_id", None)
+    # #514: единственный источник истины — apps.integration_max.services (владеет
+    # MaxAccount) — notifications не читает чужую таблицу напрямую.
+    from apps.integration_max.services import resolve_active_chat_id
+
+    return resolve_active_chat_id(user)
 
 
 def _log(

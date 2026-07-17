@@ -1,6 +1,17 @@
 """Обработчик авторизации через MAX: запрос контакта, привязка chat_id, OTP.
 
 OTP и pending links хранятся в Django cache (Redis в проде, LocMem в dev).
+
+DEPRECATED (#514): заменён потоком одноразовой попытки (диплинк, `auth_flow.py`,
+#492), который пишет каноническое состояние в `MaxAccount`. Этот модуль остаётся
+только как fallback для пользователей, которые пишут боту напрямую без диплинка
+(см. `webhook._dispatch`: сначала пробуем `auth_flow.handle_attempt_contact`,
+этот модуль — если активной попытки нет). Он не создаёт `MaxAccount` — у OTP-флоу
+нет `max_user_id`, только `chat_id` — и пишет исключительно legacy
+`User.max_chat_id`, который `apps.integration_max.services.resolve_active_chat_id()`
+читает как fallback-источник (без нового второго write-path в MaxAccount).
+Новых пользователей на этот флоу сознательно не заводим; удалить, когда трафик
+(лог `MAX legacy OTP flow used`) обнулится.
 """
 
 from __future__ import annotations
@@ -117,6 +128,12 @@ def handle_otp_confirm(chat_id: int, otp: str) -> dict | None:
     cache.delete(cache_key)
 
     logger.info("MAX auth: linked chat_id=%s to user=%s", chat_id, user.pk)
+    logger.warning(
+        "MAX legacy OTP flow used: chat_id=%s, user=%s — deprecated by #514, "
+        "see apps/integration_max/handlers/auth_flow.py",
+        chat_id,
+        user.pk,
+    )
     return {
         "chat_id": chat_id,
         "text": f"Аккаунт {user.phone} успешно привязан!\n"

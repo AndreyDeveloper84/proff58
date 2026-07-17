@@ -7,6 +7,7 @@ from unittest import mock
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import override_settings
+from django.utils import timezone
 
 from apps.core.models import SiteSettings
 
@@ -88,6 +89,26 @@ def test_render_missing_payload_key():
 # ═══════════════════════════════════════════════════════════════════════
 # 3. SEND — успех
 # ═══════════════════════════════════════════════════════════════════════
+
+
+@override_settings(**MAX_SETTINGS)
+@pytest.mark.django_db
+@pytest.mark.usefixtures("_enable_max")
+@mock.patch("apps.notifications.channels.max.send_message", return_value=True)
+def test_send_resolves_canonical_max_account(mock_max):
+    """#514: резолв идёт через apps.integration_max.services.resolve_active_chat_id
+    — MaxAccount.chat_id есть, User.max_chat_id пуст → всё равно sent."""
+    from apps.integration_max.models import MaxAccount
+
+    u = User.objects.create_user(phone="+79007654321", password="pass")
+    MaxAccount.objects.create(
+        user=u, max_user_id=42, chat_id=54321, phone=u.phone, phone_verified_at=timezone.now()
+    )
+    send(user=u, event="order_paid", payload={"order_id": 1})
+    mock_max.assert_called_once_with(54321, mock.ANY)
+    log = NotificationLog.objects.latest("created_at")
+    assert log.status == NotificationStatus.SENT
+    assert log.chat_id == 54321
 
 
 @override_settings(**MAX_SETTINGS)

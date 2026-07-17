@@ -1,7 +1,10 @@
 """Подписчики доменных событий заказов → уведомления в MAX через notifications.send().
 
-Подключаются в AppConfig.ready() только при is_enabled("max_chat").
-Отправка идёт через единый сервис apps.notifications — не напрямую в MAX.
+Тонкий адаптер (#514): подключаются в AppConfig.ready() детерминированно, без
+проверки бизнес-флага (та проверяется в notifications.send() при постановке в
+outbox — единственном месте, отвечающем за resolve получателя и флаг). Здесь
+НЕ решаем, есть ли у пользователя MAX-получатель — это владение notifications/
+integration_max.services.resolve_active_chat_id().
 """
 
 from __future__ import annotations
@@ -28,7 +31,7 @@ def _get_order_user(order_id: int):
 
 def _on_order_created(sender, order_id, **kwargs):
     order, user = _get_order_user(order_id)
-    if not order or not user or not getattr(user, "max_chat_id", None):
+    if not order or not user:
         return
     from apps.notifications.services import send
 
@@ -42,7 +45,7 @@ def _on_order_created(sender, order_id, **kwargs):
 
 def _on_order_paid(sender, order_id, **kwargs):
     order, user = _get_order_user(order_id)
-    if not order or not user or not getattr(user, "max_chat_id", None):
+    if not order or not user:
         return
     from apps.notifications.services import send
 
@@ -56,7 +59,7 @@ def _on_order_paid(sender, order_id, **kwargs):
 
 def _on_order_status_changed(sender, order_id, old_status, new_status, **kwargs):
     order, user = _get_order_user(order_id)
-    if not order or not user or not getattr(user, "max_chat_id", None):
+    if not order or not user:
         return
     from apps.notifications.services import send
 
