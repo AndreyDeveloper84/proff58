@@ -4,11 +4,12 @@
 (rule/AI/research). Сервис не изменяет каталог напрямую: каждое решение
 фиксируется в ``CatalogChange`` и применяется через ``provenance.apply_sourced_value``.
 
-API разделён на три фазы:
+API разделён на фазы:
 
 1. ``create_catalog_change`` — валидация + создание ``CatalogChange(status=proposed)``.
-2. ``review_catalog_change`` — модерация ``proposed -> approved/rejected``.
-3. ``apply_catalog_change`` — атомарное применение ``approved``-решения к каталогу.
+2. ``validate_catalog_change`` — повторная доменная проверка без изменений.
+3. ``review_catalog_change`` — модерация ``proposed -> approved/rejected``.
+4. ``apply_catalog_change`` — атомарное применение ``approved``-решения к каталогу.
 
 В v1 все источники (``web``, ``llm``, ``manual``, ``rules``) проходят модерацию
 перед apply. Auto-apply не допускается.
@@ -34,6 +35,9 @@ if TYPE_CHECKING:
 
 TOOL_TYPE_SLUG = "tool_type"
 
+# Разрешённые источники для processing-контура (V2 §9).
+_PROCESSING_SOURCES = frozenset({"manual", "rules", "web", "llm"})
+
 _EMPTY_TOOL_TYPE_SNAPSHOT = {
     "attribute_slug": TOOL_TYPE_SLUG,
     "option_id": None,
@@ -56,6 +60,9 @@ _FINAL_CHANGE_STATUSES = {
     "rejected",
     "reversed",
 }
+
+# Финальные статусы item, которые нельзя понижать при ошибках.
+_FINAL_ITEM_STATUSES = {"completed", "failed"}
 
 
 def _feature_enabled() -> bool:
@@ -132,6 +139,12 @@ class CatalogChangeResult:
 
 
 @dataclass(frozen=True)
+class CatalogValidationResult:
+    valid: bool
+    reason: str = ""
+
+
+@dataclass(frozen=True)
 class CatalogDecisionResult:
     status: str
     change_id: uuid.UUID
@@ -155,6 +168,36 @@ def _invalid_result(reason: str) -> CatalogChangeResult:
     return CatalogChangeResult("invalid", uuid.UUID(int=0), reason)
 
 
+def _validate_command(cmd: CatalogChangeCommand) -> CatalogValidationResult:
+    """Быстрая валидация DTO без обращения к БД."""
+    if cmd.target_kind != TOOL_TYPE_SLUG:
+        return CatalogValidationResult(False, "unsupported_target_kind")
+    option_slug = (cmd.proposed_value or {}).get("option_slug")
+    if not option_slug or not isinstance(option_slug, str):
+        return CatalogValidationResult(False, "missing_option_slug")
+    if not (0 <= cmd.confidence <= 100):
+        return CatalogValidationResult(False, "confidence_out_of_range")
+    if cmd.source not in _PROCESSING_SOURCES:
+        return CatalogValidationResult(False, "invalid_source")
+    return CatalogValidationResult(True, "")
+
+
+def _resolve_product_for_item(item) -> tuple[Product | None, str]:
+    """Возвращает (product, error_reason) с проверкой identity item.product/product_ref."""
+    from .models import Product
+
+    # Identity: product_ref должен совпадать с реальным товаром item.product.
+    product_id = item.product_id or item.product_ref
+    product = Product.objects.filter(pk=product_id).first()
+    if product is None:
+        return None, "product_not_found"
+    if item.product_ref != product.pk:
+        return None, "product_identity_mismatch"
+    if item.product_id is not None and item.product_id != product.pk:
+        return None, "product_identity_mismatch"
+    return product, ""
+
+
 def create_catalog_change(cmd: CatalogChangeCommand) -> CatalogChangeResult:
     """Создать предложение изменения каталога без его применения.
 
@@ -162,77 +205,131 @@ def create_catalog_change(cmd: CatalogChangeCommand) -> CatalogChangeResult:
     1. Проверка feature flag.
     2. Валидация DTO (target, option, confidence, source).
     3. Идемпотентность по ``idempotency_key``.
-    4. Проверка run/item/target.
-    5. Создание ``CatalogChange(status=proposed)``.
+    4. Блокировка run + item и повторная проверка состояния.
+    5. Проверка identity товара и создание ``CatalogChange(status=proposed)``.
     """
     from .models import (
         CatalogChange,
         CatalogChangeStatus,
         CatalogProcessingItem,
+        CatalogProcessingRun,
         CatalogProcessingRunStatus,
-        Product,
     )
 
     if not _feature_enabled():
         return _invalid_result("feature_disabled")
 
-    # --- DTO validation ---
-    if cmd.target_kind != TOOL_TYPE_SLUG:
-        return _invalid_result("unsupported_target_kind")
-    option_slug = (cmd.proposed_value or {}).get("option_slug")
-    if not option_slug or not isinstance(option_slug, str):
-        return _invalid_result("missing_option_slug")
-    if not (0 <= cmd.confidence <= 100):
-        return _invalid_result("confidence_out_of_range")
-    if not provenance.is_known_source(cmd.source):
-        return _invalid_result("invalid_source")
+    validation = _validate_command(cmd)
+    if not validation.valid:
+        return _invalid_result(validation.reason)
 
-    # --- Idempotency ---
+    # --- Idempotency (cheap check outside transaction) ---
     existing = CatalogChange.objects.filter(idempotency_key=cmd.idempotency_key).first()
     if existing is not None:
         return CatalogChangeResult(existing.status, existing.id, existing.reason_detail)
 
-    # --- Load item and product ---
-    item = CatalogProcessingItem.objects.filter(pk=cmd.item_id).select_related("run").first()
-    if item is None:
-        return _invalid_result("item_not_found")
-    if item.run.status != CatalogProcessingRunStatus.RUNNING:
-        return _invalid_result("run_not_running")
-    if item.status not in _WORKABLE_ITEM_STATUSES:
-        return _invalid_result("item_not_workable")
-    if cmd.target_kind not in (item.needed_targets or []):
-        return _invalid_result("target_not_needed")
-    product = Product.objects.filter(pk=item.product_ref).first()
-    if product is None:
-        return _invalid_result("product_not_found")
-
-    # --- Create proposed change ---
-    before = tool_type_snapshot(product)
-    before_baseline = _operational_baseline(before)
-    before_hash = canonical_hash(before_baseline)
+    # --- Load and lock item + run, re-check state, create change atomically ---
     try:
-        change = CatalogChange.objects.create(
-            item=item,
-            product_ref=item.product_ref,
-            target_kind=cmd.target_kind,
-            target_key=cmd.target_kind,
-            status=CatalogChangeStatus.PROPOSED,
-            idempotency_key=cmd.idempotency_key,
-            before_value=before,
-            proposed_value=cmd.proposed_value,
-            baseline_hash=before_hash,
-            source=cmd.source,
-            confidence=cmd.confidence,
-            rule_ref=cmd.rule_ref or "",
-            evidence=cmd.evidence or {},
-        )
+        with transaction.atomic():
+            item = CatalogProcessingItem.objects.select_for_update().filter(pk=cmd.item_id).first()
+            if item is None:
+                return _invalid_result("item_not_found")
+
+            run = CatalogProcessingRun.objects.select_for_update().filter(pk=item.run_id).first()
+            if run is None:
+                return _invalid_result("run_not_found")
+            if run.status != CatalogProcessingRunStatus.RUNNING:
+                return _invalid_result("run_not_running")
+            if item.status not in _WORKABLE_ITEM_STATUSES:
+                return _invalid_result("item_not_workable")
+            if cmd.target_kind not in (item.needed_targets or []):
+                return _invalid_result("target_not_needed")
+
+            product, error_reason = _resolve_product_for_item(item)
+            if product is None:
+                return _invalid_result(error_reason)
+
+            before = tool_type_snapshot(product)
+            before_baseline = _operational_baseline(before)
+            before_hash = canonical_hash(before_baseline)
+            change = CatalogChange.objects.create(
+                item=item,
+                product_ref=item.product_ref,
+                target_kind=cmd.target_kind,
+                target_key=cmd.target_kind,
+                status=CatalogChangeStatus.PROPOSED,
+                idempotency_key=cmd.idempotency_key,
+                before_value=before,
+                proposed_value=cmd.proposed_value,
+                baseline_hash=before_hash,
+                source=cmd.source,
+                confidence=cmd.confidence,
+                rule_ref=cmd.rule_ref or "",
+                evidence=cmd.evidence or {},
+            )
+            return CatalogChangeResult("proposed", change.id, "")
     except IntegrityError:
         existing = CatalogChange.objects.filter(idempotency_key=cmd.idempotency_key).first()
         if existing is None:
             return CatalogChangeResult("failed", uuid.UUID(int=0), "idempotency_lookup_failed")
         return CatalogChangeResult(existing.status, existing.id, existing.reason_detail)
 
-    return CatalogChangeResult("proposed", change.id, "")
+
+def validate_catalog_change(change_id: uuid.UUID) -> CatalogValidationResult:
+    """Доменная валидация предложения без его изменения.
+
+    Проверяет: run в работе, item workable, target нужен, продукт существует,
+    option существует, baseline не изменился. Не применяет решение.
+    """
+    from .models import (
+        Attribute,
+        AttributeOption,
+        CatalogChange,
+        CatalogChangeStatus,
+        CatalogProcessingRunStatus,
+    )
+
+    if not _feature_enabled():
+        return CatalogValidationResult(False, "feature_disabled")
+
+    change = CatalogChange.objects.filter(pk=change_id).select_related("item__run").first()
+    if change is None:
+        return CatalogValidationResult(False, "change_not_found")
+    if change.status in _FINAL_CHANGE_STATUSES:
+        return CatalogValidationResult(False, "change_final")
+    if change.status not in {CatalogChangeStatus.PROPOSED, CatalogChangeStatus.APPROVED}:
+        return CatalogValidationResult(False, "change_not_reviewable")
+
+    item = change.item
+    if item is None:
+        return CatalogValidationResult(False, "item_missing")
+    if item.run.status != CatalogProcessingRunStatus.RUNNING:
+        return CatalogValidationResult(False, "run_not_running")
+    if item.status not in _WORKABLE_ITEM_STATUSES:
+        return CatalogValidationResult(False, "item_not_workable")
+    if change.target_kind not in (item.needed_targets or []):
+        return CatalogValidationResult(False, "target_not_needed")
+
+    product, error_reason = _resolve_product_for_item(item)
+    if product is None:
+        return CatalogValidationResult(False, error_reason)
+
+    current_snapshot = tool_type_snapshot(product)
+    current_baseline = _operational_baseline(current_snapshot)
+    current_hash = canonical_hash(current_baseline)
+    stored_baseline_hash = item.baseline_hashes.get(TOOL_TYPE_SLUG, "")
+    if current_hash != stored_baseline_hash:
+        return CatalogValidationResult(False, "baseline_changed")
+
+    attr = Attribute.objects.filter(slug=TOOL_TYPE_SLUG).first()
+    if attr is None:
+        return CatalogValidationResult(False, "missing_attribute")
+    option_slug = change.proposed_value.get("option_slug")
+    option = AttributeOption.objects.filter(attribute=attr, slug=option_slug).first()
+    if option is None:
+        return CatalogValidationResult(False, "unknown_option")
+
+    return CatalogValidationResult(True, "")
 
 
 def review_catalog_change(
@@ -245,6 +342,7 @@ def review_catalog_change(
 
     Записывает ``reviewed_by``, ``reviewed_at`` и ``comment``. Только
     ``approved``-решения могут быть применены ``apply_catalog_change``.
+    Блокирует change и повторно проверяет статус под блокировкой.
     """
     from .models import CatalogChange, CatalogChangeStatus
 
@@ -256,18 +354,35 @@ def review_catalog_change(
     if not reviewer_id:
         return _invalid_result("missing_reviewer")
 
-    change = CatalogChange.objects.filter(pk=change_id).first()
-    if change is None:
-        return _invalid_result("change_not_found")
-    if change.status != CatalogChangeStatus.PROPOSED:
-        return _invalid_result("change_not_proposed")
+    try:
+        with transaction.atomic():
+            change = CatalogChange.objects.select_for_update().filter(pk=change_id).first()
+            if change is None:
+                return _invalid_result("change_not_found")
+            if change.status in _FINAL_CHANGE_STATUSES:
+                return CatalogChangeResult(change.status, change.id, change.reason_detail)
+            if change.status != CatalogChangeStatus.PROPOSED:
+                return _invalid_result("change_not_proposed")
 
-    change.status = decision
-    change.reviewed_by_id = reviewer_id
-    change.reviewed_at = timezone.now()
-    change.comment = comment or ""
-    change.save(update_fields=["status", "reviewed_by_id", "reviewed_at", "comment"])
-    return CatalogChangeResult(decision, change.id, "")
+            change.status = decision
+            change.reviewed_by_id = reviewer_id
+            change.reviewed_at = timezone.now()
+            change.comment = comment or ""
+            change.save(update_fields=["status", "reviewed_by_id", "reviewed_at", "comment"])
+            return CatalogChangeResult(decision, change.id, "")
+    except Exception as exc:  # noqa: BLE001
+        return CatalogChangeResult("failed", uuid.UUID(int=0), str(exc)[:255])
+
+
+def _mark_item_needs_review(item, error_code: str, error_detail: str) -> None:
+    """Переводит item в needs_review и фиксирует error_code/detail."""
+    from .models import CatalogProcessingItemStatus
+
+    if item.status not in _FINAL_ITEM_STATUSES:
+        item.status = CatalogProcessingItemStatus.NEEDS_REVIEW
+        item.error_code = error_code
+        item.error_detail = error_detail[:255]
+        item.save(update_fields=["status", "error_code", "error_detail"])
 
 
 def apply_catalog_change(
@@ -278,8 +393,8 @@ def apply_catalog_change(
 
     Flow:
     1. Проверка feature flag.
-    2. Загрузка ``CatalogChange(status=approved)``.
-    3. Транзакция с блокировкой change/item/product/run.
+    2. Транзакция с блокировкой change/item/product/run.
+    3. Проверка статуса change (idempotent: финальный статус возвращается как есть).
     4. Повторная проверка run/item/target и identity товара.
     5. Проверка operational baseline.
     6. Поиск option строго по slug.
@@ -287,7 +402,7 @@ def apply_catalog_change(
        ``allow_equal_override=True`` разрешается, потому что change уже approved.
     8. Пересборка attrs_cache и верификация.
     9. Фиксация результата в change.
-    10. При исключении — rollback каталога, change -> failed.
+    10. При исключении — rollback каталога и failed audit только если change всё ещё approved.
     """
     from .models import (
         Attribute,
@@ -369,6 +484,9 @@ def apply_catalog_change(
                 locked_change.reason_code = "item_not_workable"
                 locked_change.reason_detail = f"item status is {locked_item.status}"
                 locked_change.save(update_fields=["status", "reason_code", "reason_detail"])
+                _mark_item_needs_review(
+                    locked_item, "item_not_workable", locked_change.reason_detail
+                )
                 return CatalogDecisionResult("invalid", locked_change.id, "item_not_workable")
 
             if locked_item.product_ref != locked_product.pk:
@@ -419,6 +537,9 @@ def apply_catalog_change(
                 locked_change.reason_code = "missing_attribute"
                 locked_change.reason_detail = "tool_type attribute not found"
                 locked_change.save(update_fields=["status", "reason_code", "reason_detail"])
+                _mark_item_needs_review(
+                    locked_item, "missing_attribute", locked_change.reason_detail
+                )
                 return CatalogDecisionResult("invalid", locked_change.id, "missing_attribute")
             option_slug = locked_change.proposed_value.get("option_slug")
             option = AttributeOption.objects.filter(attribute=attr, slug=option_slug).first()
@@ -427,6 +548,7 @@ def apply_catalog_change(
                 locked_change.reason_code = "unknown_option"
                 locked_change.reason_detail = f"unknown tool_type option: {option_slug}"
                 locked_change.save(update_fields=["status", "reason_code", "reason_detail"])
+                _mark_item_needs_review(locked_item, "unknown_option", locked_change.reason_detail)
                 return CatalogDecisionResult("invalid", locked_change.id, "unknown_option")
 
             # Apply through provenance.
@@ -479,24 +601,42 @@ def apply_catalog_change(
             return CatalogDecisionResult(status, locked_change.id, reason)
 
     except Exception as exc:  # noqa: BLE001 — техническая ошибка, каталог откатывается
-        with transaction.atomic():
-            failed_change = CatalogChange.objects.filter(pk=change_id).first()
-            if failed_change is not None:
+        # Race-safe recovery: lock change and item, fail only if change is still approved.
+        # If another apply already succeeded, return its final status.
+        try:
+            with transaction.atomic():
+                failed_change = (
+                    CatalogChange.objects.select_for_update().filter(pk=change_id).first()
+                )
+                if failed_change is None:
+                    return CatalogDecisionResult("failed", change_id, str(exc)[:255])
+                if failed_change.status in _FINAL_CHANGE_STATUSES:
+                    return CatalogDecisionResult(
+                        failed_change.status, failed_change.id, failed_change.reason_detail
+                    )
+                if failed_change.status != CatalogChangeStatus.APPROVED:
+                    return CatalogDecisionResult(
+                        "invalid", failed_change.id, f"change status is {failed_change.status}"
+                    )
+
                 failed_change.status = CatalogChangeStatus.FAILED
                 failed_change.reason_code = "apply_exception"
                 failed_change.reason_detail = str(exc)[:255]
                 failed_change.save(update_fields=["status", "reason_code", "reason_detail"])
-            failed_item = (
-                CatalogProcessingItem.objects.filter(pk=item_id).first()
-                if item_id is not None
-                else None
-            )
-            if failed_item is not None:
-                failed_item.status = CatalogProcessingItemStatus.FAILED
-                failed_item.error_code = "apply_exception"
-                failed_item.error_detail = str(exc)[:255]
-                failed_item.finished_at = timezone.now()
-                failed_item.save(
-                    update_fields=["status", "error_code", "error_detail", "finished_at"]
+
+                failed_item = (
+                    CatalogProcessingItem.objects.select_for_update().filter(pk=item_id).first()
+                    if item_id is not None
+                    else None
                 )
-        return CatalogDecisionResult("failed", change_id, str(exc)[:255])
+                if failed_item is not None and failed_item.status not in _FINAL_ITEM_STATUSES:
+                    failed_item.status = CatalogProcessingItemStatus.FAILED
+                    failed_item.error_code = "apply_exception"
+                    failed_item.error_detail = str(exc)[:255]
+                    failed_item.finished_at = timezone.now()
+                    failed_item.save(
+                        update_fields=["status", "error_code", "error_detail", "finished_at"]
+                    )
+                return CatalogDecisionResult("failed", change_id, str(exc)[:255])
+        except Exception as inner_exc:  # noqa: BLE001
+            return CatalogDecisionResult("failed", change_id, str(inner_exc)[:255])

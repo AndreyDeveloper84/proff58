@@ -442,10 +442,8 @@ def test_target_not_needed_rejected(feature_enabled, attr, drill_option):
 
 
 @pytest.mark.django_db
-def test_apply_uses_locked_item_product_not_product_ref(
-    feature_enabled, reviewer, attr, drill_option
-):
-    """Если item.product_ref и item.product расходятся, apply отклоняет изменение."""
+def test_create_rejects_item_product_identity_mismatch(feature_enabled, attr, drill_option):
+    """Identity mismatch должен отклоняться до создания change и snapshot."""
     p = _product(slug="p17")
     other = _product(slug="p17-other")
     run = _run()
@@ -453,11 +451,69 @@ def test_apply_uses_locked_item_product_not_product_ref(
     item.product_ref = other.pk
     item.save(update_fields=["product_ref"])
 
-    proposed = _propose(_cmd(item, drill_option.slug))
-    _approve(proposed.change_id, reviewer)
-    result = processing.apply_catalog_change(proposed.change_id)
+    result = _propose(_cmd(item, drill_option.slug))
 
     assert result.status == "invalid"
     assert result.reason == "product_identity_mismatch"
+    assert result.change_id == uuid.UUID(int=0)
+    assert CatalogChange.objects.filter(item=item).count() == 0
     assert not ProductAttributeValue.objects.filter(product=p).exists()
     assert not ProductAttributeValue.objects.filter(product=other).exists()
+
+
+@pytest.mark.django_db
+def test_validate_catalog_change(feature_enabled, reviewer, attr, drill_option):
+    p = _product(slug="p17-validate")
+    run = _run()
+    item = _item(run, p)
+    proposed = _propose(_cmd(item, drill_option.slug))
+
+    assert processing.validate_catalog_change(proposed.change_id).valid is True
+
+    _approve(proposed.change_id, reviewer)
+    assert processing.validate_catalog_change(proposed.change_id).valid is True
+
+    result = processing.apply_catalog_change(proposed.change_id)
+    assert result.status == "applied"
+    validated = processing.validate_catalog_change(proposed.change_id)
+    assert validated.valid is False
+    assert validated.reason == "change_final"
+
+
+@pytest.mark.django_db
+def test_validate_detects_baseline_change(
+    feature_enabled, reviewer, attr, drill_option, perforator_option
+):
+    p = _product(slug="p17-validate-base")
+    run = _run()
+    item = _item(run, p)
+    proposed = _propose(_cmd(item, drill_option.slug))
+    _set_tool_type(p, perforator_option, source=Source.MANUAL, confidence=100)
+
+    validated = processing.validate_catalog_change(proposed.change_id)
+    assert validated.valid is False
+    assert validated.reason == "baseline_changed"
+
+
+@pytest.mark.django_db
+def test_validate_detects_unknown_option(feature_enabled, attr):
+    p = _product(slug="p17-validate-opt")
+    run = _run()
+    item = _item(run, p)
+    proposed = _propose(_cmd(item, "no-such-option"))
+
+    validated = processing.validate_catalog_change(proposed.change_id)
+    assert validated.valid is False
+    assert validated.reason == "unknown_option"
+
+
+@pytest.mark.parametrize("bad_source", ["import_1c", "regex", "keyword", "inferred", "marketplace"])
+@pytest.mark.django_db
+def test_source_allowlist_rejects_global_sources(feature_enabled, attr, drill_option, bad_source):
+    p = _product(slug=f"p17-source-{bad_source}")
+    run = _run()
+    item = _item(run, p)
+    result = _propose(_cmd(item, drill_option.slug, source=bad_source))
+
+    assert result.status == "invalid"
+    assert result.reason == "invalid_source"
