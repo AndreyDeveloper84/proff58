@@ -1,7 +1,10 @@
 import threading
 import time
+import uuid
 
 import pytest
+from django.conf import settings
+from django.contrib.auth import get_user_model
 
 from apps.catalog import processing
 from apps.catalog.models import (
@@ -9,6 +12,7 @@ from apps.catalog.models import (
     AttributeOption,
     AttributeType,
     CatalogChange,
+    CatalogChangeStatus,
     CatalogProcessingItem,
     CatalogProcessingItemStatus,
     CatalogProcessingRun,
@@ -18,11 +22,13 @@ from apps.catalog.models import (
     ProductAttributeValue,
     ProductStatus,
 )
-from apps.catalog.processing import apply_catalog_decision, canonical_hash, tool_type_snapshot
+from apps.catalog.processing import canonical_hash, tool_type_snapshot
 
 
 def _category():
-    return Category.add_root(name="Перф", slug="perf")
+    return Category.add_root(
+        name=f"Перф-{uuid.uuid4().hex[:8]}", slug=f"perf-{uuid.uuid4().hex[:8]}"
+    )
 
 
 def _product(**kw):
@@ -78,8 +84,22 @@ def _item(run, product):
     )
 
 
+@pytest.fixture
+def feature_enabled():
+    old = settings.FEATURES.get("catalog_processing")
+    settings.FEATURES["catalog_processing"] = True
+    yield
+    settings.FEATURES["catalog_processing"] = old
+
+
+@pytest.fixture
+def reviewer():
+    User = get_user_model()
+    return User.objects.create(phone="+79990000002")
+
+
 @pytest.mark.django_db(transaction=True)
-def test_two_parallel_decisions_at_most_one_applied():
+def test_two_parallel_decisions_at_most_one_applied(feature_enabled, reviewer):
     attr = _tool_type_attr()
     drill = _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
     perforator = _option(attr, "Перфораторы", "perforatory")
@@ -92,7 +112,7 @@ def test_two_parallel_decisions_at_most_one_applied():
 
     def worker(option_slug, key):
         try:
-            cmd = processing.CatalogDecisionCommand(
+            cmd = processing.CatalogChangeCommand(
                 item_id=item.pk,
                 target_kind="tool_type",
                 proposed_value={"option_slug": option_slug},
@@ -100,7 +120,12 @@ def test_two_parallel_decisions_at_most_one_applied():
                 confidence=100,
                 idempotency_key=key,
             )
-            results.append(apply_catalog_decision(cmd))
+            proposed = processing.create_catalog_change(cmd)
+            reviewed = processing.review_catalog_change(
+                proposed.change_id, CatalogChangeStatus.APPROVED, reviewer.pk
+            )
+            assert reviewed.status == "approved"
+            results.append(processing.apply_catalog_change(proposed.change_id))
         except Exception as exc:  # noqa: BLE001
             errors.append(str(exc))
 
@@ -117,13 +142,15 @@ def test_two_parallel_decisions_at_most_one_applied():
 
     p.refresh_from_db()
     pav = ProductAttributeValue.objects.get(product=p, attribute=attr)
-    applied_slug = applied[0].change_id
-    change = CatalogChange.objects.get(pk=applied_slug)
+    change = CatalogChange.objects.get(pk=applied[0].change_id)
     assert pav.value_option.slug == change.proposed_value["option_slug"]
+
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.COMPLETED
 
 
 @pytest.mark.django_db(transaction=True)
-def test_idempotency_under_concurrency():
+def test_idempotency_under_concurrency(feature_enabled):
     attr = _tool_type_attr()
     drill = _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
     p = _product(slug="concurrent-idem")
@@ -133,7 +160,7 @@ def test_idempotency_under_concurrency():
     results = []
 
     def worker():
-        cmd = processing.CatalogDecisionCommand(
+        cmd = processing.CatalogChangeCommand(
             item_id=item.pk,
             target_kind="tool_type",
             proposed_value={"option_slug": drill.slug},
@@ -141,7 +168,7 @@ def test_idempotency_under_concurrency():
             confidence=100,
             idempotency_key="same-key",
         )
-        results.append(apply_catalog_decision(cmd))
+        results.append(processing.create_catalog_change(cmd))
 
     t1 = threading.Thread(target=worker)
     t2 = threading.Thread(target=worker)
@@ -154,3 +181,48 @@ def test_idempotency_under_concurrency():
     assert len(results) == 2
     assert results[0].change_id == results[1].change_id
     assert CatalogChange.objects.filter(idempotency_key="same-key").count() == 1
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_apply_same_change_is_idempotent(feature_enabled, reviewer):
+    attr = _tool_type_attr()
+    drill = _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
+    p = _product(slug="concurrent-apply")
+    run = _run()
+    item = _item(run, p)
+    proposed = processing.create_catalog_change(
+        processing.CatalogChangeCommand(
+            item_id=item.pk,
+            target_kind="tool_type",
+            proposed_value={"option_slug": drill.slug},
+            source="manual",
+            confidence=100,
+            idempotency_key="concurrent-apply-key",
+        )
+    )
+    processing.review_catalog_change(proposed.change_id, CatalogChangeStatus.APPROVED, reviewer.pk)
+
+    barrier = threading.Barrier(2)
+    results = []
+    errors = []
+
+    def worker():
+        try:
+            barrier.wait()
+            results.append(processing.apply_catalog_change(proposed.change_id))
+        except Exception as exc:  # noqa: BLE001
+            errors.append(str(exc))
+
+    t1 = threading.Thread(target=worker)
+    t2 = threading.Thread(target=worker)
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+
+    assert not errors
+    assert [result.status for result in results] == ["applied", "applied"]
+    change = CatalogChange.objects.get(pk=proposed.change_id)
+    assert change.status == CatalogChangeStatus.APPLIED
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.COMPLETED

@@ -48,6 +48,7 @@ class Source(models.TextChoices):
     IMPORT_1C = "import_1c", _("Импорт 1С")
     REGEX = "regex", _("Regex по названию")
     KEYWORD = "keyword", _("Ключевое слово")
+    RULES = "rules", _("Правила каталога")
     LLM = "llm", _("AI/LLM")
     INFERRED = "inferred", _("Инференс по атрибутам")
     WEB = "web", _("Web-поиск")
@@ -1041,7 +1042,7 @@ class CatalogProcessingItem(models.Model):
 
     run = models.ForeignKey(
         CatalogProcessingRun,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="items",
         verbose_name=_("Запуск"),
     )
@@ -1086,7 +1087,7 @@ class CatalogChange(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     item = models.ForeignKey(
         CatalogProcessingItem,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="changes",
         verbose_name=_("Элемент"),
     )
@@ -1103,7 +1104,7 @@ class CatalogChange(models.Model):
     idempotency_key = models.CharField(_("Ключ идемпотентности"), max_length=128, unique=True)
     before_value = models.JSONField(_("Старое значение"), default=dict, blank=True)
     proposed_value = models.JSONField(_("Предложенное значение"), default=dict, blank=True)
-    after_value = models.JSONField(_("Итоговое значение"), default=dict, blank=True)
+    after_value = models.JSONField(_("Итоговое значение"), null=True, blank=True)
     baseline_hash = models.CharField(_("Базовый хеш"), max_length=64, blank=True)
     source = models.CharField(_("Источник"), max_length=16, choices=Source.choices)
     confidence = models.SmallIntegerField(
@@ -1115,6 +1116,7 @@ class CatalogChange(models.Model):
     ruleset_hash = models.CharField(_("Хеш набора правил"), max_length=64, blank=True)
     reason_code = models.CharField(_("Код причины"), max_length=32, blank=True)
     reason_detail = models.CharField(_("Детали причины"), max_length=255, blank=True)
+    comment = models.CharField(_("Комментарий модератора"), max_length=512, blank=True)
     evidence = models.JSONField(_("Доказательства"), default=dict, blank=True)
     reviewed_by = models.ForeignKey(
         "accounts.User",
@@ -1126,6 +1128,14 @@ class CatalogChange(models.Model):
     )
     reviewed_at = models.DateTimeField(_("Время проверки"), null=True, blank=True)
     applied_at = models.DateTimeField(_("Время применения"), null=True, blank=True)
+    applied_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Применил"),
+    )
     reversal_of = models.ForeignKey(
         "self",
         on_delete=models.SET_NULL,
@@ -1148,6 +1158,21 @@ class CatalogChange(models.Model):
             models.CheckConstraint(
                 name="catalog_change_confidence_range",
                 check=models.Q(confidence__gte=0, confidence__lte=100),
+            ),
+            models.CheckConstraint(
+                name="catalog_change_approved_requires_review",
+                check=~models.Q(status=CatalogChangeStatus.APPROVED)
+                | (models.Q(reviewed_by__isnull=False) & models.Q(reviewed_at__isnull=False)),
+            ),
+            models.CheckConstraint(
+                name="catalog_change_rejected_requires_review",
+                check=~models.Q(status=CatalogChangeStatus.REJECTED)
+                | (models.Q(reviewed_by__isnull=False) & models.Q(reviewed_at__isnull=False)),
+            ),
+            models.CheckConstraint(
+                name="catalog_change_applied_requires_after_value",
+                check=~models.Q(status=CatalogChangeStatus.APPLIED)
+                | (models.Q(after_value__isnull=False) & models.Q(applied_at__isnull=False)),
             ),
         ]
 
