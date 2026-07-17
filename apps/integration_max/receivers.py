@@ -121,6 +121,23 @@ def _on_payment_refunded(sender, payment_id, order_id, refund_id, amount, is_ful
     )
 
 
+def _on_product_stock_became_available(
+    sender, product_id, old_available, new_available, source, transition_id, **kwargs
+):
+    """#518 (ADR-0010): только ставит fan-out в очередь — сам обработчик
+    выполняется синхронно после commit импорта/HTTP-запроса 1С, поэтому здесь
+    нельзя итерировать подписчиков (AC: "не внутри HTTP request/sync transaction")."""
+    from .tasks import notify_product_available
+
+    notify_product_available.delay(
+        product_id=product_id,
+        transition_id=transition_id,
+        old_available=old_available,
+        new_available=new_available,
+        source=source,
+    )
+
+
 events.order_created.connect(_on_order_created, dispatch_uid="integration_max_order_created")
 events.order_paid.connect(_on_order_paid, dispatch_uid="integration_max_order_paid")
 events.order_status_changed.connect(
@@ -128,4 +145,7 @@ events.order_status_changed.connect(
 )
 events.payment_refunded.connect(
     _on_payment_refunded, dispatch_uid="integration_max_payment_refunded"
+)
+events.product_stock_became_available.connect(
+    _on_product_stock_became_available, dispatch_uid="integration_max_product_stock_available"
 )

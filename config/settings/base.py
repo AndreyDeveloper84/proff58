@@ -204,6 +204,8 @@ REST_FRAMEWORK = {
         # #427 (M-03): чувствительные auth-эндпоинты (login/register/OTP/смена
         # телефона) — низкий лимит против брутфорса пароля и enumeration телефонов.
         "auth": env("AUTH_THROTTLE_RATE", default="10/min"),
+        # #517: подписка/отписка «Сообщить о поступлении» (только authenticated).
+        "subscription": env("SUBSCRIPTION_THROTTLE_RATE", default="30/min"),
     },
 }
 

@@ -16,8 +16,10 @@ product_writer/pricing/stock.
 from __future__ import annotations
 
 import traceback
+import uuid
 from dataclasses import dataclass
 from datetime import timedelta
+from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
@@ -26,7 +28,12 @@ from django.utils import timezone
 from apps.catalog import categorization
 from apps.catalog.facets import invalidate_facets_cache
 from apps.catalog.models import Product
-from apps.core.events import EventSource, order_status_changed, price_changed
+from apps.core.events import (
+    EventSource,
+    order_status_changed,
+    price_changed,
+    product_stock_became_available,
+)
 from apps.orders.models import (
     FulfillmentStatus,
     Order,
@@ -477,10 +484,45 @@ def update_prices(raw_items: list[dict], *, source_file: str = "") -> tuple[Sync
     )
 
 
+def _emit_stock_became_available(
+    product_id: int, old_available, new_available, *, source: str
+) -> None:
+    """ADR-0010 (#518): эмит ТОЛЬКО на реальный переход 0→positive, через
+    on_commit — подписчик (apps.integration_max.receivers) не должен увидеть
+    незакоммиченный остаток. transition_id — uuid, зафиксированный один раз
+    здесь и переданный неизменным в fan-out задачу (идемпотентность retry).
+    old/new_available — str: Celery (JSON-сериализация) не понимает Decimal
+    напрямую, тот же приём, что amount в payment_refunded (ADR-0009)."""
+    transition_id = uuid.uuid4().hex[:12]
+    transaction.on_commit(
+        lambda: product_stock_became_available.send(
+            sender=Product,
+            product_id=product_id,
+            old_available=str(old_available),
+            new_available=str(new_available),
+            source=source,
+            transition_id=transition_id,
+        )
+    )
+
+
+def _apply_stock(product: Product, item) -> bool:
+    """set_current_stock + издатель product_stock_became_available при переходе
+    `available_quantity` 0→positive (#518, ADR-0010). Зеркало `_apply_price`."""
+    old_available = product.available_quantity or Decimal("0")
+    applied = stock.set_current_stock(product, item)
+    new_available = product.available_quantity or Decimal("0")
+    if applied and old_available <= 0 and new_available > 0:
+        _emit_stock_became_available(
+            product.pk, old_available, new_available, source=EventSource.ONE_C
+        )
+    return applied
+
+
 def update_stocks(raw_items: list[dict], *, source_file: str = "") -> tuple[SyncLog, ImportResult]:
     return _update_values(
         raw_items,
-        apply=stock.set_current_stock,
+        apply=_apply_stock,
         sync_type=SyncLog.SyncType.STOCK,
         source_file=source_file,
     )
@@ -528,11 +570,19 @@ def update_stocks_bulk(
             products = list(Product.objects.filter(code_1c__in=part))
             result.skipped += len(part) - len(products)  # не найдены по code_1c
             plans, to_update = [], []
+            # #518 (ADR-0010): та же детекция 0→positive, что в _apply_stock
+            # (row-wise) — здесь отдельно, т.к. bulk-путь мутирует Product без
+            # save() per-row (см. докстринг функции про разницу путей).
+            became_available: list[tuple[int, Decimal, Decimal]] = []
             for product in products:
+                old_available = product.available_quantity or Decimal("0")
                 plan = stock.plan_stock(product, by_code[product.code_1c])
                 if plan is None:
                     result.skipped += 1  # нет полей остатка в строке
                     continue
+                new_available = product.available_quantity or Decimal("0")
+                if old_available <= 0 and new_available > 0:
+                    became_available.append((product.pk, old_available, new_available))
                 plans.append(plan)
                 to_update.append(product)
                 result.updated += 1
@@ -540,6 +590,10 @@ def update_stocks_bulk(
                 if to_update:
                     Product.objects.bulk_update(to_update, stock._STOCK_FIELDS, batch_size=1000)
                 stock.apply_stock_bulk(plans)
+                for product_id, old_available, new_available in became_available:
+                    _emit_stock_became_available(
+                        product_id, old_available, new_available, source=EventSource.ONE_C
+                    )
     except Exception:  # noqa: BLE001
         result.errors += 1
         _append_error_detail(error_lines, "—", _short_traceback())

@@ -27,6 +27,8 @@ Payload каждого сигнала (kwargs у `.send()`) — стабильн
   payment_failed        — payment_id, order_id, reason
   payment_refunded      — payment_id, order_id, refund_id, amount: str, is_full: bool
   price_changed         — product_id, old_price, new_price, currency, source
+  product_stock_became_available
+                        — product_id, old_available: str, new_available: str, source, transition_id
 
 `order_created` уже имеет издателя — `apps.orders.services.place_order` (#26).
 `order_status_changed` — издатель `apps.sync_1c.use_cases.confirm_orders` (#50):
@@ -35,6 +37,9 @@ Payload каждого сигнала (kwargs у `.send()`) — стабильн
 (`apps.payments.services.handle_webhook`, #431/M-07). `payment_refunded` —
 издатель `apps.payments.services.refund()` (ADR-0009, #516). `price_changed`
 пока без издателя — контракт под будущий модуль pricing (#60).
+`product_stock_became_available` — издатель `apps.sync_1c.use_cases` (row-wise
+`_apply_stock` и bulk `update_stocks_bulk`), только при реальном переходе
+`old_available <= 0 → new_available > 0` (ADR-0010, #518).
 """
 
 from django.dispatch import Signal
@@ -57,6 +62,8 @@ b2b_verified = Signal()
 # --- catalog ---
 product_created = Signal()
 product_updated = Signal()
+# product_stock_became_available — издатель apps.sync_1c.use_cases (ADR-0010, #518).
+product_stock_became_available = Signal()
 
 # --- orders ---
 # order_created — издатель `apps.orders.services.place_order` (#26);

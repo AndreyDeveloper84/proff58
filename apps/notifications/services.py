@@ -37,6 +37,9 @@ EVENT_TEMPLATES: dict[str, str] = {
     "order_paid": "Оплата заказа №{order_number} получена. Мы начали сборку.",
     "order_refunded": "Возврат по заказу №{order_number} выполнен.",
     "order_partially_refunded": "Оформлен частичный возврат по заказу №{order_number}.",
+    # #518: price_note — receiver/task обязан передавать всегда (пустой строкой,
+    # если цены нет), как ready_note/tracking_note выше.
+    "product_available": "«{product_name}» снова в наличии!{price_note}",
 }
 
 # #515: versioned template registry для user-facing intent (заголовок/категория).
@@ -91,6 +94,11 @@ NOTIFICATION_META: dict[str, dict] = {
     "max_connected": {
         "category": NotificationCategory.ACCOUNT,
         "title": "MAX подключён",
+        "version": 1,
+    },
+    "product_available": {
+        "category": NotificationCategory.PRODUCT_AVAILABILITY,
+        "title": "Товар в наличии",
         "version": 1,
     },
 }
