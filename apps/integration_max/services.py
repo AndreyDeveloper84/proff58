@@ -169,7 +169,7 @@ def _complete(attempt: MaxAuthAttempt, user, *, max_user_id: int, chat_id, is_ne
 
 def _upsert_account(user, *, max_user_id, phone, chat_id, profile: dict) -> MaxAccount:
     now = timezone.now()
-    acct, _created = MaxAccount.objects.update_or_create(
+    acct, created = MaxAccount.objects.update_or_create(
         max_user_id=max_user_id,
         defaults={
             "user": user,
@@ -184,7 +184,18 @@ def _upsert_account(user, *, max_user_id, phone, chat_id, profile: dict) -> MaxA
         },
     )
     _emit("max_account_linked", max_user_id=max_user_id)
+    if created:
+        # #515: приветственное сервисное сообщение — только на реально новую
+        # привязку (created=True), не на re-link/re-login существующей записи;
+        # только после commit — до него resolve_active_chat_id() ничего не найдёт.
+        transaction.on_commit(lambda: _notify_max_connected(user))
     return acct
+
+
+def _notify_max_connected(user) -> None:
+    from apps.notifications.services import create_notification
+
+    create_notification(user=user, event="max_connected")
 
 
 @transaction.atomic
