@@ -91,7 +91,7 @@ def test_create_notification_enabled_category_sends(mock_max, user):
     """Категория включена (default) → intent создан, есть delivery, статус SENT."""
     _link_max(user, chat_id=777)
     intent = create_notification(
-        user=user, event="order_paid", payload={"order_id": 1}, idempotency_key="np-1"
+        user=user, event="order_paid", payload={"order_number": 1}, idempotency_key="np-1"
     )
     assert intent is not None
     assert intent.category == NotificationCategory.ORDER_UPDATES
@@ -114,7 +114,7 @@ def test_create_notification_category_disabled_skips_without_send(user):
     _link_max(user)
 
     with mock.patch("apps.notifications.services.send") as mock_send:
-        intent = create_notification(user=user, event="order_paid", payload={"order_id": 2})
+        intent = create_notification(user=user, event="order_paid", payload={"order_number": 2})
 
     mock_send.assert_not_called()
     assert intent.policy_skip_reason == "category_disabled:order_updates"

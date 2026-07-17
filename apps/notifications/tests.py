@@ -70,9 +70,9 @@ def test_notification_log_without_user():
 
 
 def test_render_known_event():
-    text = _render_text("order_paid", {"order_id": 42})
+    text = _render_text("order_paid", {"order_number": 42})
     assert "42" in text
-    assert "оплачен" in text
+    assert "Оплата" in text
 
 
 def test_render_unknown_event():
@@ -104,7 +104,7 @@ def test_send_resolves_canonical_max_account(mock_max):
     MaxAccount.objects.create(
         user=u, max_user_id=42, chat_id=54321, phone=u.phone, phone_verified_at=timezone.now()
     )
-    send(user=u, event="order_paid", payload={"order_id": 1})
+    send(user=u, event="order_paid", payload={"order_number": 1})
     mock_max.assert_called_once_with(54321, mock.ANY)
     log = NotificationLog.objects.latest("created_at")
     assert log.status == NotificationStatus.SENT
@@ -116,7 +116,7 @@ def test_send_resolves_canonical_max_account(mock_max):
 @pytest.mark.usefixtures("_enable_max")
 @mock.patch("apps.notifications.channels.max.send_message", return_value=True)
 def test_send_success(mock_max, user):
-    send(user=user, event="order_paid", payload={"order_id": 1})
+    send(user=user, event="order_paid", payload={"order_number": 1})
     mock_max.assert_called_once_with(12345, mock.ANY)
     log = NotificationLog.objects.latest("created_at")
     assert log.status == NotificationStatus.SENT
@@ -138,7 +138,7 @@ def test_send_channel_disabled(mock_max, user):
     s = SiteSettings.get_solo()
     s.max_chat_enabled = False
     s.save()
-    send(user=user, event="order_created", payload={"order_id": 2})
+    send(user=user, event="order_created", payload={"order_number": 2})
     mock_max.assert_not_called()
     log = NotificationLog.objects.latest("created_at")
     assert log.status == NotificationStatus.SKIPPED
@@ -157,7 +157,7 @@ def test_send_channel_disabled(mock_max, user):
     side_effect=RuntimeError("MAX API down"),
 )
 def test_send_failure_does_not_raise(mock_max, user):
-    send(user=user, event="order_shipped", payload={"order_id": 3})
+    send(user=user, event="order_shipped", payload={"order_number": 3})
     log = NotificationLog.objects.latest("created_at")
     assert log.status == NotificationStatus.FAILED
     assert "MAX API down" in log.error_message
@@ -173,8 +173,8 @@ def test_send_failure_does_not_raise(mock_max, user):
 @pytest.mark.usefixtures("_enable_max")
 @mock.patch("apps.notifications.channels.max.send_message", return_value=True)
 def test_send_idempotent(mock_max, user):
-    send(user=user, event="order_paid", payload={"order_id": 4}, idempotency_key="pay-4")
-    send(user=user, event="order_paid", payload={"order_id": 4}, idempotency_key="pay-4")
+    send(user=user, event="order_paid", payload={"order_number": 4}, idempotency_key="pay-4")
+    send(user=user, event="order_paid", payload={"order_number": 4}, idempotency_key="pay-4")
     assert mock_max.call_count == 1
     assert NotificationLog.objects.filter(idempotency_key="pay-4").count() == 1
 
@@ -207,7 +207,7 @@ def test_send_with_direct_chat_id(mock_max):
 @mock.patch("apps.notifications.channels.max.send_message")
 def test_send_no_chat_id_skips(mock_max):
     user_no_max = User.objects.create_user(phone="+79009999999", password="pass")
-    send(user=user_no_max, event="order_paid", payload={"order_id": 5})
+    send(user=user_no_max, event="order_paid", payload={"order_number": 5})
     mock_max.assert_not_called()
     log = NotificationLog.objects.latest("created_at")
     assert log.status == NotificationStatus.SKIPPED

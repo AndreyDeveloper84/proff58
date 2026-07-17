@@ -346,7 +346,8 @@ def refund(payment: Payment, amount: Decimal | None = None) -> Refund:
         )
         locked = Payment.objects.select_for_update().get(pk=payment.pk)
         total_refunded = _refunded_total(locked.pk)
-        if total_refunded >= locked.amount:
+        is_full = total_refunded >= locked.amount
+        if is_full:
             locked.status = PaymentStatus.REFUNDED
             order_status = OrderPaymentStatus.REFUNDED
         else:
@@ -354,6 +355,22 @@ def refund(payment: Payment, amount: Decimal | None = None) -> Refund:
             order_status = OrderPaymentStatus.PARTIALLY_REFUNDED
         locked.save(update_fields=["status", "updated_at"])
         Order.objects.filter(pk=locked.order_id).update(payment_status=order_status)
+
+        # ADR-0009 (#516): раньше refund() не публиковал ничего — MAX/аналитика
+        # не могли узнать о возврате без прямой связки payments → notifications.
+        refund_id = rec.pk
+        order_id = locked.order_id
+        payment_id = locked.pk
+        transaction.on_commit(
+            lambda: events.payment_refunded.send(
+                sender=Refund,
+                payment_id=payment_id,
+                order_id=order_id,
+                refund_id=refund_id,
+                amount=str(refund_amount),
+                is_full=is_full,
+            )
+        )
 
     rec.refresh_from_db()
     logger.info("Refund %s for payment %s, amount %s", rec.pk, payment.yookassa_id, refund_amount)

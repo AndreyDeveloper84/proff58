@@ -25,13 +25,16 @@ Payload каждого сигнала (kwargs у `.send()`) — стабильн
   order_status_changed  — order_id, old_status, new_status
   payment_succeeded     — payment_id, order_id
   payment_failed        — payment_id, order_id, reason
+  payment_refunded      — payment_id, order_id, refund_id, amount: str, is_full: bool
   price_changed         — product_id, old_price, new_price, currency, source
 
 `order_created` уже имеет издателя — `apps.orders.services.place_order` (#26).
 `order_status_changed` — издатель `apps.sync_1c.use_cases.confirm_orders` (#50):
 эмитится при реальной смене `fulfillment_status` по подтверждению из 1С.
-`order_paid`, `payment_*`, `price_changed` пока без издателей — это контракт под
-будущие модули orders/payments/pricing (#8/#60).
+`order_paid`/`payment_succeeded`/`payment_failed` — издатель ЮKassa-webhook
+(`apps.payments.services.handle_webhook`, #431/M-07). `payment_refunded` —
+издатель `apps.payments.services.refund()` (ADR-0009, #516). `price_changed`
+пока без издателя — контракт под будущий модуль pricing (#60).
 """
 
 from django.dispatch import Signal
@@ -68,9 +71,12 @@ order_status_changed = Signal()
 # payload: inquiry_id, kind, product_id
 product_inquiry_created = Signal()
 
-# --- payments (контракт; издатель появится с #8) ---
+# --- payments ---
+# payment_succeeded/payment_failed — издатель apps.payments.services.handle_webhook;
+# payment_refunded — издатель apps.payments.services.refund() (ADR-0009, #516).
 payment_succeeded = Signal()
 payment_failed = Signal()
+payment_refunded = Signal()
 
 # --- pricing (контракт; издатель появится с #60) ---
 price_changed = Signal()
