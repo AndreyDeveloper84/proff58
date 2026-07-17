@@ -87,9 +87,11 @@ proff58/
 │   │   └── receivers.py         # слушает order_paid/order_status_changed и т.п.
 │   │
 │   ├── catalog/                 # СЛОЙ 1 — МАГАЗИН
-│   │   ├── models.py            # Category, Product, Attribute, CategoryAttribute,
-│   │   │                        #   AttributeOption, ProductAttributeValue
+│   │   ├── models.py            # Category, Product, Attribute, AttributeOption,
+│   │   │                        #   ProductAttributeValue, CatalogProcessingRun/Item/Change
 │   │   ├── services.py          # get_product, search, build_facets
+│   │   ├── provenance.py        # единый резолвер приоритета source для EAV и текста
+│   │   ├── processing.py        # audit/apply foundation: apply_catalog_decision
 │   │   ├── signals.py           # технические сигналы (attrs_cache)
 │   │   └── api/                 # DRF: serializers, views, urls
 │   ├── pricing/
@@ -259,6 +261,13 @@ def sync_prices_stock() -> SyncReport:
   `confidence=100` (`ProductAttributeValueAdmin.save_model`) — поэтому повторный
   `enrich_attributes` её не перезаписывает. Это бизнес-правило (важно для AI-обогащения #62);
   `source`/`confidence` в админке только для чтения, меняются автоматически.
+* **Catalog processing foundation** (`CatalogProcessingRun`, `CatalogProcessingItem`,
+  `CatalogChange`, `apps/catalog/processing.py`). Единый контур для rule/AI/research:
+  snapshot товара + baseline-хеш → предложенное значение → применение через
+  `provenance.apply_sourced_value` → запись результата в `CatalogChange`.
+  `apply_catalog_decision` не пишет в каталог напрямую, использует `idempotency_key`,
+  проверяет `content_locked` и откатывается при изменении baseline после snapshot.
+  Подробнее — [`docs/catalog/operations/README.md`](catalog/operations/README.md).
 
 ---
 

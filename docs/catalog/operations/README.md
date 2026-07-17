@@ -38,6 +38,30 @@
    (repeat-preview = 0 после write).
 8. **Сначала leaf, потом keywords** — v2-лист даёт контекст; широкие подстроки запрещены.
 
+## Catalog processing foundation (rule/AI/research)
+
+Для воспроизводимого применения любых массовых решений (rule-based, AI, Codex research)
+используется единый механизм в `apps/catalog/processing.py`:
+
+- `CatalogProcessingRun` — запуск со scope и версионностью.
+- `CatalogProcessingItem` — snapshot одного товара на момент запуска
+  (`input_snapshot`, `input_hash`, `baseline_hashes`, `needed_targets`).
+- `CatalogChange` — append-only запись предложенного и применённого значения.
+- `apply_catalog_decision(...)` — атомарно применяет решение через
+  `provenance.apply_sourced_value`, пересобирает `attrs_cache` и фиксирует результат.
+
+Инварианты foundation:
+
+1. БД — источник истины; JSON/SQL-файлы — только транспорт/бэкап.
+2. Snapshot фиксирует baseline; изменение baseline после snapshot → `conflict`.
+3. `idempotency_key` гарантирует, что повторный вызов не создаёт дубликатов.
+4. `content_locked=True` блокирует write.
+5. Source priority единый — `data/attribute_rules.json` + `provenance.py`.
+6. `apply_catalog_decision` не создаёт новые taxonomy entities, не меняет цены/остатков.
+
+Текущий scope foundation — `tool_type`; категория и атрибуты добавляются последовательно
+(см. ADR-0010).
+
 ## Приоритеты развития (проект целиком)
 
 1. **Архитектура дерева** — v2 «Хозтовары», раздел «Стройматериалы», leaf гвоздодёров.
