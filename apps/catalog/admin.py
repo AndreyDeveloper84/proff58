@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
 from django.db import transaction
@@ -38,6 +39,7 @@ from .models import (
     SiteCategory,
     Source,
 )
+from . import processing
 from .read_models import rebuild_attrs_cache
 
 
@@ -1193,6 +1195,52 @@ class CatalogChangeAdmin(admin.ModelAdmin):
         "reversal_of",
         "created_at",
     )
+    actions = ["approve_changes", "reject_changes", "apply_changes"]
+
+    @admin.action(description=_("Одобрить выбранные предложения"))
+    def approve_changes(self, request, queryset):
+        if not settings.FEATURES.get("catalog_processing", False):
+            self.message_user(request, "Feature catalog_processing выключен", messages.ERROR)
+            return
+        reviewer_id = request.user.pk if request.user.is_authenticated else None
+        if not reviewer_id:
+            self.message_user(request, "Не удалось определить модератора", messages.ERROR)
+            return
+        count = 0
+        for change in queryset.filter(status="proposed"):
+            result = processing.review_catalog_change(change.pk, "approved", reviewer_id)
+            if result.status == "approved":
+                count += 1
+        self.message_user(request, f"Одобрено: {count}", messages.SUCCESS)
+
+    @admin.action(description=_("Отклонить выбранные предложения"))
+    def reject_changes(self, request, queryset):
+        if not settings.FEATURES.get("catalog_processing", False):
+            self.message_user(request, "Feature catalog_processing выключен", messages.ERROR)
+            return
+        reviewer_id = request.user.pk if request.user.is_authenticated else None
+        if not reviewer_id:
+            self.message_user(request, "Не удалось определить модератора", messages.ERROR)
+            return
+        count = 0
+        for change in queryset.filter(status="proposed"):
+            result = processing.review_catalog_change(change.pk, "rejected", reviewer_id)
+            if result.status == "rejected":
+                count += 1
+        self.message_user(request, f"Отклонено: {count}", messages.SUCCESS)
+
+    @admin.action(description=_("Применить одобренные изменения"))
+    def apply_changes(self, request, queryset):
+        if not settings.FEATURES.get("catalog_processing", False):
+            self.message_user(request, "Feature catalog_processing выключен", messages.ERROR)
+            return
+        actor_id = request.user.pk if request.user.is_authenticated else None
+        count = 0
+        for change in queryset.filter(status="approved"):
+            result = processing.apply_catalog_change(change.pk, actor_id=actor_id)
+            if result.status == "applied":
+                count += 1
+        self.message_user(request, f"Применено: {count}", messages.SUCCESS)
 
     def has_add_permission(self, request):
         return False

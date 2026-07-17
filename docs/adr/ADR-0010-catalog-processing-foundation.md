@@ -29,9 +29,11 @@
    - `CatalogChange` — append-only запись предложения и результата.
 
 2. **Сервис применения живёт в `apps.catalog.processing`**:
-   - три фазы: `create_catalog_change()`, `review_catalog_change()`,
-     `apply_catalog_change()`;
+   - четыре фазы: `create_catalog_change()`, `validate_catalog_change()`,
+     `review_catalog_change()`, `apply_catalog_change()`;
    - `create` только создаёт `CatalogChange(status=proposed)`, не меняя каталог;
+   - `validate` повторно проверяет доменные условия без изменений
+     (run, item, baseline, option);
    - `review` переводит `proposed -> approved/rejected` и фиксирует
      `reviewed_by/reviewed_at/comment`;
    - `apply` атомарно применяет только `approved`-решение через
