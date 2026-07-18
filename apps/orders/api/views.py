@@ -47,23 +47,6 @@ def _no_store(response):
     return response
 
 
-def _guest_token_expired(order) -> bool:
-    """#438 (m-03): TTL гостевого токена. По истечении доступ по токену закрыт.
-
-    Окно задаётся ``GUEST_ORDER_TOKEN_TTL_DAYS`` (0/None → без ограничения).
-    Ограничивает срок, в течение которого утёкший URL остаётся валидным.
-    """
-    from datetime import timedelta
-
-    from django.conf import settings
-    from django.utils import timezone
-
-    ttl_days = getattr(settings, "GUEST_ORDER_TOKEN_TTL_DAYS", 0)
-    if not ttl_days:
-        return False
-    return timezone.now() - order.created_at > timedelta(days=int(ttl_days))
-
-
 def _get_session_key(request) -> str:
     """Гарантированно вернуть ключ сессии (создав сессию при необходимости)."""
     if not request.session.session_key:
@@ -294,10 +277,8 @@ class GuestOrderView(APIView):
 
     def get(self, request, number):
         token = request.query_params.get("t", "")
-        if not token:
-            return _no_store(Response(status=status.HTTP_404_NOT_FOUND))
-        order = Order.objects.filter(order_number=number, access_token=token, user=None).first()
-        if order is None or _guest_token_expired(order):
+        order = services.get_guest_order_by_token(number, token)
+        if order is None:
             return _no_store(Response(status=status.HTTP_404_NOT_FOUND))
         return _no_store(Response(OrderSerializer(order).data))
 
@@ -314,9 +295,7 @@ class InvoiceView(APIView):
         if user:
             order = Order.objects.filter(order_number=number, user=user).first()
         elif token:
-            order = Order.objects.filter(order_number=number, access_token=token, user=None).first()
-            if order is not None and _guest_token_expired(order):
-                order = None
+            order = services.get_guest_order_by_token(number, token)
         else:
             return _no_store(Response(status=status.HTTP_404_NOT_FOUND))
 

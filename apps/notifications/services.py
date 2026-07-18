@@ -92,6 +92,14 @@ NOTIFICATION_EVENTS: dict[str, dict] = {
         "title": "Частичный возврат",
         "version": 1,
     },
+    "order_tracking_connected": {
+        # #520: разовое сообщение гостю сразу после выдачи OrderTrackingGrant —
+        # текущий статус, без preferences/Notification-истории (гость без аккаунта).
+        "template": "Отслеживание заказа №{order_number} подключено. Текущий статус: {status_note}.",
+        "category": NotificationCategory.ORDER_UPDATES,
+        "title": "Отслеживание подключено",
+        "version": 1,
+    },
     "max_connected": {
         "template": "Вы будете получать уведомления о заказах и поступлении товара в этом чате.",
         "category": NotificationCategory.ACCOUNT,
@@ -138,9 +146,12 @@ def send(
     возврат игнорируют, не затронуты.
     """
     payload = payload or {}
-    resolved_chat_id = chat_id or _resolve_chat_id(user)
+    # chat_id=0 — валидный MAX id (см. resolve_active_chat_id в integration_max,
+    # #521): is not None, не truthy-проверка, иначе такой чат никогда не получал
+    # бы уведомлений ни явным chat_id, ни через резолв по user.
+    resolved_chat_id = chat_id if chat_id is not None else _resolve_chat_id(user)
 
-    if not (resolved_chat_id and is_enabled("max_chat") and max_channel.is_available()):
+    if not (resolved_chat_id is not None and is_enabled("max_chat") and max_channel.is_available()):
         return _log(
             user=user,
             channel=NotificationChannel.MAX,

@@ -17,4 +17,14 @@ urlpatterns = [
     path("account/max/link/", views.MaxLinkStartView.as_view(), name="account-link"),
     path("account/max/unlink/", views.MaxUnlinkView.as_view(), name="account-unlink"),
     path("account/max/status/", views.MaxStatusMeView.as_view(), name="account-status"),
+    path(
+        "orders/<str:number>/max-track/start/",
+        views.MaxTrackOrderStartView.as_view(),
+        name="track-order-start",
+    ),
+    path(
+        "orders/max-track/<uuid:public_id>/status/",
+        views.MaxTrackOrderStatusView.as_view(),
+        name="track-order-status",
+    ),
 ]

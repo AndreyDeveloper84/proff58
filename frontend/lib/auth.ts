@@ -77,6 +77,24 @@ export async function maxCancel(attemptId: string) {
   return apiFetch<MaxAttemptStatus>(`/api/auth/max/${attemptId}/cancel/`, { method: "POST" });
 }
 
+// --- Отслеживание гостевого заказа в MAX (#520) — свой start/status, тот же
+// формат попытки (MaxAttempt/MaxAttemptStatus). cancel — общий maxCancel() выше
+// (эндпоинт отмены общий для всех типов попыток). Статус НЕ логинит гостя —
+// это не вход, только подписка конкретного заказа на уведомления.
+
+export async function startOrderTracking(orderNumber: string, accessToken: string) {
+  return apiFetch<MaxAttempt>(
+    `/api/orders/${encodeURIComponent(orderNumber)}/max-track/start`,
+    { method: "POST", body: JSON.stringify({ access_token: accessToken }) },
+  );
+}
+
+export async function getOrderTrackingStatus(attemptId: string) {
+  return apiFetch<MaxAttemptStatus>(`/api/orders/max-track/${attemptId}/status`, {
+    method: "GET",
+  });
+}
+
 export async function maxUnlink() {
   return apiFetch<{ linked: boolean; removed: boolean }>("/api/account/max/unlink/", {
     method: "POST",

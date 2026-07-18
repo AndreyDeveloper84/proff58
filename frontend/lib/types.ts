@@ -185,6 +185,10 @@ export type Order = {
   currency: string;
   created_at: string;
   items: OrderItem[];
+  // Только для гостевых заказов (#322/#520) — сервер отдаёт при создании, если
+  // user=None; для зарегистрированных отсутствует. Используется на /thanks для
+  // CTA «Отслеживать заказ в MAX» (#520), НЕ пробрасывается дальше на клиент.
+  access_token?: string;
 };
 
 // Тело POST /api/orders/ (см. CreateOrderSerializer). Цена считается на сервере —

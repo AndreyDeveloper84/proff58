@@ -20,7 +20,7 @@ from django.utils import timezone
 
 from apps.accounts.phone import normalize_phone
 
-from .models import MaxAccount, MaxAuthAttempt
+from .models import MaxAccount, MaxAuthAttempt, OrderTrackingGrant
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -60,15 +60,20 @@ def build_deeplink(token: str) -> str:
 
 
 def create_attempt(
-    *, session_key: str, operation_type: str = Operation.LOGIN, user=None
+    *, session_key: str, operation_type: str = Operation.LOGIN, user=None, order=None
 ) -> StartedAttempt:
-    """Создать одноразовую попытку (§7.1). token = public_id.secret — уходит в диплинк."""
+    """Создать одноразовую попытку (§7.1). token = public_id.secret — уходит в диплинк.
+
+    ``order`` — только для ``Operation.TRACK_ORDER`` (#520): привязка попытки к
+    конкретному гостевому заказу, против телефона которого сверяется контакт из MAX.
+    """
     secret = secrets.token_urlsafe(24)
     attempt = MaxAuthAttempt.objects.create(
         secret_hash=_hash_secret(secret),
         browser_session_key=session_key or "",
         operation_type=operation_type,
         user=user,
+        order=order,
         expires_at=timezone.now() + MaxAuthAttempt.default_ttl(),
     )
     token = f"{attempt.public_id.hex}.{secret}"
@@ -198,6 +203,74 @@ def _notify_max_connected(user) -> None:
     create_notification(user=user, event="max_connected")
 
 
+def _complete_track_order(
+    attempt: MaxAuthAttempt, *, max_user_id: int, phone: str, chat_id: int | None
+) -> MaxAuthAttempt:
+    """Завершить track_order-попытку (#520): один грант — один заказ.
+
+    Телефон, который MAX подтвердил HMAC-подписанным контактом, ДОЛЖЕН совпасть
+    с ``customer_phone`` заказа — иначе жёсткий отказ без auto-claim и без
+    раскрытия заказа (Security constraints тикета: phone mismatch не связывает
+    заказ и не раскрывает его данные). Идемпотентно: повтор с тем же
+    max_user_id обновляет тот же грант (``update_or_create``), не плодит дубли.
+    """
+    order = attempt.order
+    if order is None:
+        return _fail(attempt, "no_target_order")
+    # TOCTOU-защита: заказ мог перестать быть гостевым между стартом попытки
+    # (проверка в MaxTrackOrderStartView) и её завершением через webhook —
+    # напр. владелец успел войти и claim_guest_orders() уже привязал заказ.
+    if order.user_id is not None:
+        return _fail(attempt, "order_already_claimed")
+    if normalize_phone(order.customer_phone) != phone:
+        return _fail(attempt, "phone_mismatch")
+
+    _, created = OrderTrackingGrant.objects.update_or_create(
+        order=order, defaults={"max_user_id": max_user_id, "chat_id": chat_id}
+    )
+    completed = _complete(attempt, None, max_user_id=max_user_id, chat_id=chat_id, is_new=created)
+    # chat_id=0 — валидный id (см. resolve_active_chat_id ниже, #521): is not None,
+    # не truthy-проверка.
+    if chat_id is not None:
+        transaction.on_commit(lambda: _send_order_tracking_snapshot(order, chat_id))
+    return completed
+
+
+def _send_order_tracking_snapshot(order, chat_id: int) -> None:
+    """Разовое сообщение с текущим статусом сразу после выдачи гранта (Scope тикета
+    #520: «отправить текущее состояние заказа один раз, будущие transitions — #516»).
+
+    Через ``notifications.services.send()`` (не ``create_notification()`` — той
+    нужен ``user`` для intent/preference-слоя, гостю без аккаунта он неприменим):
+    получаем тот же outbox + Celery-доставку + retry/backoff/классификацию
+    ошибок (#521) без дублирования этой инфраструктуры здесь.
+
+    idempotency_key включает chat_id: если гость позже переподключит другой
+    MAX-аккаунт к тому же заказу (грант перевыдан), новый чат должен получить
+    своё «подключено» — ключ, завязанный только на order.pk, заблокировал бы
+    это как «уже отправлено» первому чату.
+    """
+    from apps.notifications.services import send
+
+    send(
+        user=None,
+        chat_id=chat_id,
+        event="order_tracking_connected",
+        payload={"order_number": order.order_number, "status_note": order.display_status},
+        idempotency_key=f"track-order-connected-{order.pk}-{chat_id}",
+    )
+
+
+def resolve_tracking_grant_chat_id(order) -> int | None:
+    """chat_id активного гранта отслеживания для гостевого заказа (#520), либо None.
+
+    Аналог ``resolve_active_chat_id(user)`` для гостевой ветки — используется
+    ресиверами заказов (#516), когда ``order.user is None``. ``values_list`` —
+    не тянем лишние колонки/инстанс ради одного поля.
+    """
+    return OrderTrackingGrant.objects.filter(order=order).values_list("chat_id", flat=True).first()
+
+
 @transaction.atomic
 def complete_from_contact(
     attempt: MaxAuthAttempt,
@@ -226,6 +299,12 @@ def complete_from_contact(
     phone = normalize_phone(phone)
     if not phone:
         return _fail(attempt, "bad_phone")
+
+    # --- Отслеживание гостевого заказа (#520) ---
+    # Полностью независимо от MaxAccount/User: гость не проходит регистрацию, грант
+    # не захватывает историю заказов и не связывается ни с каким аккаунтом сайта.
+    if attempt.operation_type == Operation.TRACK_ORDER:
+        return _complete_track_order(attempt, max_user_id=max_user_id, phone=phone, chat_id=chat_id)
 
     existing = (
         MaxAccount.objects.select_related("user")
