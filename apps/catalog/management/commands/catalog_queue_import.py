@@ -365,7 +365,18 @@ class Command(BaseCommand):
             return {"error": f"product_ref {product_ref}: baseline изменился"}
 
         status = item_data.get("status")
-        if status in {"unknown", "identity_failed"}:
+        changes = item_data.get("changes") or []
+        identity_status = (item_data.get("identity") or {}).get("status")
+
+        if changes and identity_status != "matched":
+            return {
+                "error": f"product_ref {product_ref}: changes при identity.status={identity_status!r}"
+            }
+        if status == "researched" and not changes:
+            return {"error": f"product_ref {product_ref}: researched без changes"}
+        if status in {"unknown", "identity_failed"} and changes:
+            return {"error": f"product_ref {product_ref}: {status} с changes"}
+        if status in {"unknown", "identity_failed", "review"} and not changes:
             if commit:
                 item.status = CatalogProcessingItemStatus.NEEDS_REVIEW
                 item.error_code = status
@@ -373,7 +384,6 @@ class Command(BaseCommand):
                 item.save(update_fields=["status", "error_code", "error_detail"])
             return {"skipped": True, "created": 0, "would_create": 0, "existing": 0}
 
-        changes = item_data.get("changes") or []
         if not changes:
             return {"skipped": True, "created": 0, "would_create": 0, "existing": 0}
 
