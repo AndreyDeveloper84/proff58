@@ -257,6 +257,66 @@ def test_fanout_query_count_does_not_scale_per_subscriber(product):
 
     assert mock_cn.call_count == 5
     # product fetch (1) + claim select_for_update (1) + claim bulk update (1) +
-    # 5×mark_notified (по одному update на подписчика — единственный НЕ-константный
-    # кусок, допустимо: не запрос НА КАЖДОГО ради chat_id/preferences/user).
+    # mark_notified_bulk одним чанком (1) — всё константно, не растёт с числом
+    # подписчиков (select_related на claim, bulk update вместо update на каждого).
     assert len(ctx.captured_queries) <= 10
+
+
+@pytest.mark.usefixtures("_enable_max")
+@pytest.mark.django_db
+@mock.patch("apps.notifications.tasks.send_notification_task.delay")
+def test_fanout_query_growth_is_bounded_per_subscriber(mock_delay, product, settings):
+    """AC #518 сквозь настоящий create_notification() (не мокнутый, в отличие от
+    теста выше, который изолирует только СОБСТВЕННУЮ логику fan-out) — доказывает,
+    что рост запросов на подписчика ограничен небольшой константой (Notification-
+    claim + preference get_or_create + chat-резолв + outbox-claim), а не скрытым
+    повторным фетчем Product/MaxAccount на каждого.
+
+    Мокаем ``send_notification_task.delay`` (не ``channels.max.send_message``):
+    в проде доставка — отдельная асинхронная Celery-задача, её собственная
+    стоимость не часть footprint'а fan-out-задачи; при CELERY_TASK_ALWAYS_EAGER
+    (дев/тест) `.delay()` иначе исполнился бы синхронно ПРЯМО ЗДЕСЬ и раздул бы
+    счётчик чужими для fan-out запросами, исказив измерение.
+    """
+    settings.MAX_BOT_TOKEN = "test-token"
+    from .tasks import notify_product_available
+
+    def _make_subscribers(n: int, offset: int) -> None:
+        for i in range(n):
+            user = User.objects.create_user(phone=f"+7900777{offset + i:04d}", password="pass")
+            _link_max(user, chat_id=3000 + offset + i)
+            subscribe(user, product)
+
+    _make_subscribers(5, 0)
+    with CaptureQueriesContext(connection) as ctx_5:
+        notify_product_available(
+            product_id=product.pk, transition_id="tr-lin-5", old_available="0", new_available="5"
+        )
+    queries_5 = len(ctx_5.captured_queries)
+
+    # Первые 5 подписок уже NOTIFIED (терминальны) — claim_active_subscriptions
+    # их не увидит; 20 новых подписчиков подписываются свежо, все ACTIVE.
+    _make_subscribers(20, 100)
+    with CaptureQueriesContext(connection) as ctx_20:
+        notify_product_available(
+            product_id=product.pk, transition_id="tr-lin-20", old_available="0", new_available="5"
+        )
+    queries_20 = len(ctx_20.captured_queries)
+
+    extra_subscribers = 20
+    extra_queries = queries_20 - queries_5
+    per_subscriber = extra_queries / extra_subscribers
+    assert mock_delay.call_count == 25
+    # ~11 запросов/подписчика для НОВОГО user — это 2×get_or_create (Notification,
+    # UserNotificationPreference — у каждого SELECT+SAVEPOINT+INSERT+RELEASE) +
+    # резолв chat_id + outbox-claim: легитимная, не избыточная работа за
+    # РАЗНЫЕ данные разных подписчиков (унаследовано от #514/#515, не привнесено
+    # fan-out'ом #517/#518) — не паттерн N+1 (не скан/повторный фетч Product или
+    # ВСЕЙ таблицы MaxAccount на каждого). Порог — с запасом над наблюдаемым
+    # ~11.2, чтобы ловить реальный регресс (напр. Product.objects.get() внутри
+    # цикла добавил бы кратно больше).
+    assert per_subscriber <= 15, (
+        f"{extra_queries} доп. запросов на {extra_subscribers} доп. подписчиков "
+        f"({per_subscriber:.1f}/подписчика) — похоже на N+1 сверх ожидаемой "
+        f"per-subscriber стоимости (Notification+preference+chat+outbox)"
+    )
