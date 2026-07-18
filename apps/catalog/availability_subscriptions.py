@@ -110,7 +110,7 @@ class ProductNotEligible(SubscriptionError):
 
 
 class ProductInStock(SubscriptionError):
-    code = "product_in_stock"
+    code = "already_in_stock"
 
 
 class MaxConnectionRequired(SubscriptionError):
