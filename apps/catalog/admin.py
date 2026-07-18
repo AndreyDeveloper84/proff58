@@ -16,6 +16,7 @@ from apps.core.events import EventSource, product_created, product_updated
 from apps.pricing.models import PriceRecord
 from apps.pricing.services import WHOLESALE, price_for
 
+from . import processing
 from .availability_subscriptions import ProductAvailabilitySubscription
 from .models import (
     Attribute,
@@ -39,7 +40,6 @@ from .models import (
     SiteCategory,
     Source,
 )
-from . import processing
 from .read_models import rebuild_attrs_cache
 
 

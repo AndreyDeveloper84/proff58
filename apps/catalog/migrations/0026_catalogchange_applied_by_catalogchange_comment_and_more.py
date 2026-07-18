@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("catalog", "0024_catalogprocessingrun_catalogprocessingitem_and_more"),
+        ("catalog", "0025_catalogprocessingrun_catalogprocessingitem_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

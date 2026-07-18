@@ -10,7 +10,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("catalog", "0023_sourcing_provenance"),
+        ("catalog", "0024_productavailabilitysubscription_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
