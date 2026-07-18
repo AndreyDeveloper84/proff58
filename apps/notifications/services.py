@@ -4,7 +4,7 @@
 только эту функцию. Ошибка отправки не блокирует вызывающий код.
 
     from apps.notifications.services import send
-    send(user=user, event="order_paid", payload={"order_id": 42})
+    send(user=user, event="order_paid", payload={"order_number": "П-42"})
 """
 
 from __future__ import annotations
@@ -26,11 +26,17 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 EVENT_TEMPLATES: dict[str, str] = {
-    "order_created": "Заказ #{order_id} оформлен. Ожидайте подтверждения.",
-    "order_paid": "Заказ #{order_id} оплачен! Мы начали сборку.",
-    "order_status_changed": "Статус заказа #{order_id}: {new_status}.",
-    "order_shipped": "Заказ #{order_id} передан в доставку.",
-    "order_delivered": "Заказ #{order_id} доставлен. Спасибо за покупку!",
+    "order_created": "Заказ №{order_number} оформлен. Ожидайте подтверждения.",
+    "order_confirmed": "Заказ №{order_number} подтверждён.",
+    # #516: ready_note/tracking_note — receiver обязан передавать их всегда (пустой
+    # строкой, если нечего добавить) — иначе .format() упадёт на KeyError-фолбэк.
+    "order_ready": "Заказ №{order_number} собран.{ready_note}",
+    "order_shipped": "Заказ №{order_number} передан в доставку.{tracking_note}",
+    "order_delivered": "Заказ №{order_number} доставлен. Спасибо за покупку!",
+    "order_cancelled": "Заказ №{order_number} отменён.",
+    "order_paid": "Оплата заказа №{order_number} получена. Мы начали сборку.",
+    "order_refunded": "Возврат по заказу №{order_number} выполнен.",
+    "order_partially_refunded": "Оформлен частичный возврат по заказу №{order_number}.",
 }
 
 # #515: versioned template registry для user-facing intent (заголовок/категория).
@@ -42,14 +48,14 @@ NOTIFICATION_META: dict[str, dict] = {
         "title": "Заказ оформлен",
         "version": 1,
     },
-    "order_paid": {
+    "order_confirmed": {
         "category": NotificationCategory.ORDER_UPDATES,
-        "title": "Заказ оплачен",
+        "title": "Заказ подтверждён",
         "version": 1,
     },
-    "order_status_changed": {
+    "order_ready": {
         "category": NotificationCategory.ORDER_UPDATES,
-        "title": "Статус заказа изменён",
+        "title": "Заказ готов",
         "version": 1,
     },
     "order_shipped": {
@@ -60,6 +66,26 @@ NOTIFICATION_META: dict[str, dict] = {
     "order_delivered": {
         "category": NotificationCategory.ORDER_UPDATES,
         "title": "Заказ доставлен",
+        "version": 1,
+    },
+    "order_cancelled": {
+        "category": NotificationCategory.ORDER_UPDATES,
+        "title": "Заказ отменён",
+        "version": 1,
+    },
+    "order_paid": {
+        "category": NotificationCategory.ORDER_UPDATES,
+        "title": "Заказ оплачен",
+        "version": 1,
+    },
+    "order_refunded": {
+        "category": NotificationCategory.ORDER_UPDATES,
+        "title": "Возврат выполнен",
+        "version": 1,
+    },
+    "order_partially_refunded": {
+        "category": NotificationCategory.ORDER_UPDATES,
+        "title": "Частичный возврат",
         "version": 1,
     },
     "max_connected": {
