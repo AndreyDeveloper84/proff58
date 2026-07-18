@@ -31,9 +31,11 @@ _FAIL_TEXT = {
 _TRACK_ORDER_FAIL_TEXT = {
     "phone_mismatch": "Номер MAX не совпадает с номером заказа.",
     "no_target_order": "Заказ не найден. Откройте ссылку «Отслеживать в MAX» на странице заказа заново.",
+    "order_already_claimed": "Заказ уже привязан к аккаунту — отслеживание через MAX недоступно.",
     "attempt_not_pending": "Ссылка недействительна или истекла. Начните заново со страницы заказа.",
     "bad_phone": "Не удалось определить номер телефона.",
 }
+_TRACK_ORDER_FAIL_FALLBACK = "Не удалось подключить отслеживание заказа."
 _SHARE_BUTTON = {
     "type": "inline_keyboard",
     "payload": {"buttons": [[{"type": "request_contact", "text": "Поделиться номером"}]]},
@@ -118,8 +120,8 @@ def handle_attempt_contact(chat_id: int, contact_payload: dict, sender: dict | N
             else "Вход подтверждён. Вернитесь на сайт."
         )
         return {"chat_id": chat_id, "text": text}
-    fail_texts = _TRACK_ORDER_FAIL_TEXT if is_track_order else _FAIL_TEXT
-    return {
-        "chat_id": chat_id,
-        "text": fail_texts.get(attempt.failure_reason, "Не удалось подтвердить вход."),
-    }
+    if is_track_order:
+        text = _TRACK_ORDER_FAIL_TEXT.get(attempt.failure_reason, _TRACK_ORDER_FAIL_FALLBACK)
+    else:
+        text = _FAIL_TEXT.get(attempt.failure_reason, "Не удалось подтвердить вход.")
+    return {"chat_id": chat_id, "text": text}

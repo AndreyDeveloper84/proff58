@@ -9,7 +9,7 @@ export async function GET(
   ctx: RouteContext<"/api/orders/max-track/[public_id]/status">,
 ): Promise<Response> {
   const { public_id } = await ctx.params;
-  return proxyToDjango(request, `/api/orders/max-track/${public_id}/status/`, {
+  return proxyToDjango(request, `/api/orders/max-track/${encodeURIComponent(public_id)}/status/`, {
     method: "GET",
   });
 }

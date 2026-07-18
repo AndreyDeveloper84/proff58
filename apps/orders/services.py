@@ -524,3 +524,20 @@ def is_guest_token_expired(order: Order) -> bool:
     if not ttl_days:
         return False
     return timezone.now() - order.created_at > timedelta(days=int(ttl_days))
+
+
+def get_guest_order_by_token(order_number: str, access_token: str) -> Order | None:
+    """Гостевой заказ по номеру+токену, если он ещё не просрочен (#438). Единая
+    точка для всех модулей, проверяющих владение гостевым заказом (сайт —
+    GuestOrderView/InvoiceView, integration_max — MaxTrackOrderStartView, #520):
+    граница «Запрещено лазить в чужие таблицы» (CLAUDE.md §4) — вызывающие не
+    строят Order.objects.filter(...) сами.
+    """
+    if not access_token:
+        return None
+    order = Order.objects.filter(
+        order_number=order_number, access_token=access_token, user=None
+    ).first()
+    if order is None or is_guest_token_expired(order):
+        return None
+    return order

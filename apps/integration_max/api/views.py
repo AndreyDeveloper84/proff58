@@ -70,7 +70,14 @@ class MaxAuthStatusView(APIView):
         if attempt.browser_session_key != (request.session.session_key or ""):
             return Response({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)
 
-        if attempt.status == MaxAuthAttempt.Status.COMPLETED and not request.user.is_authenticated:
+        # attempt.user is None для завершённых track_order-попыток (#520, гость без
+        # аккаунта) — раньше у любой COMPLETED попытки user был гарантирован, этот
+        # инвариант больше не всегда верен, здесь его нельзя молча предполагать.
+        if (
+            attempt.status == MaxAuthAttempt.Status.COMPLETED
+            and not request.user.is_authenticated
+            and attempt.user is not None
+        ):
             user = attempt.user
             user.backend = _AUTH_BACKEND
             login(request, user)
@@ -151,15 +158,12 @@ class MaxTrackOrderStartView(APIView):
     throttle_classes = [AuthRateThrottle]
 
     def post(self, request, number):
-        from apps.orders.models import Order
-        from apps.orders.services import is_guest_token_expired
+        from apps.orders.services import get_guest_order_by_token
 
         token = request.data.get("access_token", "")
-        if not token:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        order = Order.objects.filter(order_number=number, access_token=token, user=None).first()
-        if order is None or is_guest_token_expired(order):
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        order = get_guest_order_by_token(number, token)
+        if order is None:
+            return Response({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)
 
         session_key = _ensure_session_key(request)
         started = services.create_attempt(

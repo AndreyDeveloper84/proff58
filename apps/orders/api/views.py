@@ -47,9 +47,6 @@ def _no_store(response):
     return response
 
 
-_guest_token_expired = services.is_guest_token_expired
-
-
 def _get_session_key(request) -> str:
     """Гарантированно вернуть ключ сессии (создав сессию при необходимости)."""
     if not request.session.session_key:
@@ -280,10 +277,8 @@ class GuestOrderView(APIView):
 
     def get(self, request, number):
         token = request.query_params.get("t", "")
-        if not token:
-            return _no_store(Response(status=status.HTTP_404_NOT_FOUND))
-        order = Order.objects.filter(order_number=number, access_token=token, user=None).first()
-        if order is None or _guest_token_expired(order):
+        order = services.get_guest_order_by_token(number, token)
+        if order is None:
             return _no_store(Response(status=status.HTTP_404_NOT_FOUND))
         return _no_store(Response(OrderSerializer(order).data))
 
@@ -300,9 +295,7 @@ class InvoiceView(APIView):
         if user:
             order = Order.objects.filter(order_number=number, user=user).first()
         elif token:
-            order = Order.objects.filter(order_number=number, access_token=token, user=None).first()
-            if order is not None and _guest_token_expired(order):
-                order = None
+            order = services.get_guest_order_by_token(number, token)
         else:
             return _no_store(Response(status=status.HTTP_404_NOT_FOUND))
 

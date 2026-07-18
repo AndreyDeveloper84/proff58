@@ -67,7 +67,9 @@ def _notify_guest_tracking(order, event: str, payload: dict, idempotency_key: st
     from .services import resolve_tracking_grant_chat_id
 
     chat_id = resolve_tracking_grant_chat_id(order)
-    if not chat_id:
+    # chat_id=0 — валидный id (см. resolve_active_chat_id, #521): is not None,
+    # не truthy-проверка — иначе такой грант молча никогда не уведомлялся бы.
+    if chat_id is None:
         return
 
     from apps.notifications.services import send
@@ -75,21 +77,28 @@ def _notify_guest_tracking(order, event: str, payload: dict, idempotency_key: st
     send(user=None, chat_id=chat_id, event=event, payload=payload, idempotency_key=idempotency_key)
 
 
+def _notify(order, user, event: str, payload: dict, idempotency_key: str) -> None:
+    """Маршрутизация уведомления по заказу: гость (OrderTrackingGrant, #520) vs
+    зарегистрированный пользователь (create_notification, #514/#515). Общая
+    точка для всех receiver'ов ниже — без копипасты этой развилки 4 раза."""
+    if user is None:
+        _notify_guest_tracking(order, event, payload, idempotency_key)
+        return
+    from apps.notifications.services import create_notification
+
+    create_notification(user=user, event=event, payload=payload, idempotency_key=idempotency_key)
+
+
 def _on_order_created(sender, order_id, **kwargs):
     order, user = _get_order_user(order_id)
     if not order:
         return
-    payload = {"order_number": order.order_number}
-    if user is None:
-        _notify_guest_tracking(order, "order_created", payload, f"order-created-{order_id}")
-        return
-    from apps.notifications.services import create_notification
-
-    create_notification(
-        user=user,
-        event="order_created",
-        payload=payload,
-        idempotency_key=f"order-created-{order_id}",
+    _notify(
+        order,
+        user,
+        "order_created",
+        {"order_number": order.order_number},
+        f"order-created-{order_id}",
     )
 
 
@@ -97,17 +106,8 @@ def _on_order_paid(sender, order_id, **kwargs):
     order, user = _get_order_user(order_id)
     if not order:
         return
-    payload = {"order_number": order.order_number}
-    if user is None:
-        _notify_guest_tracking(order, "order_paid", payload, f"order-paid-{order_id}")
-        return
-    from apps.notifications.services import create_notification
-
-    create_notification(
-        user=user,
-        event="order_paid",
-        payload=payload,
-        idempotency_key=f"order-paid-{order_id}",
+    _notify(
+        order, user, "order_paid", {"order_number": order.order_number}, f"order-paid-{order_id}"
     )
 
 
@@ -141,17 +141,7 @@ def _on_order_status_changed(sender, order_id, old_status, new_status, **kwargs)
             f" Трек-номер: {order.tracking_number}." if order.tracking_number else ""
         )
 
-    if user is None:
-        _notify_guest_tracking(order, event, payload, f"order-status-{order_id}-{new_status}")
-        return
-    from apps.notifications.services import create_notification
-
-    create_notification(
-        user=user,
-        event=event,
-        payload=payload,
-        idempotency_key=f"order-status-{order_id}-{new_status}",
-    )
+    _notify(order, user, event, payload, f"order-status-{order_id}-{new_status}")
 
 
 def _on_payment_refunded(sender, payment_id, order_id, refund_id, amount, is_full, **kwargs):
@@ -159,20 +149,14 @@ def _on_payment_refunded(sender, payment_id, order_id, refund_id, amount, is_ful
     if not order:
         return
     event = "order_refunded" if is_full else "order_partially_refunded"
-    payload = {"order_number": order.order_number}
     # ADR-0009: refund_id — конкретная операция возврата, а не order_id — несколько
     # частичных возвратов по заказу это разные реальные события.
-    idempotency_key = f"order-refunded-{order_id}-{refund_id}"
-    if user is None:
-        _notify_guest_tracking(order, event, payload, idempotency_key)
-        return
-    from apps.notifications.services import create_notification
-
-    create_notification(
-        user=user,
-        event=event,
-        payload=payload,
-        idempotency_key=idempotency_key,
+    _notify(
+        order,
+        user,
+        event,
+        {"order_number": order.order_number},
+        f"order-refunded-{order_id}-{refund_id}",
     )
 
 

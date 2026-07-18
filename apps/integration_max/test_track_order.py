@@ -178,11 +178,106 @@ def test_snapshot_notification_sent_once_after_grant(
     attempt = _track_attempt(order)
     with django_capture_on_commit_callbacks(execute=True):
         services.complete_from_contact(attempt, max_user_id=6007, phone=ORDER_PHONE, chat_id=781)
-    logs = NotificationLog.objects.filter(idempotency_key=f"track-order-connected-{order.pk}")
+    logs = NotificationLog.objects.filter(idempotency_key=f"track-order-connected-{order.pk}-781")
     assert logs.count() == 1
     log = logs.first()
     assert log.chat_id == 781 and log.user is None
     mock_send_message.assert_called_once_with(781, mock.ANY)
+
+
+@override_settings(**MAX_SETTINGS)
+@pytest.mark.django_db
+@pytest.mark.usefixtures("_enable_max")
+@mock.patch("apps.notifications.channels.max.send_message", return_value=True)
+def test_reverify_with_different_chat_gets_own_snapshot(
+    mock_send_message, guest_order, django_capture_on_commit_callbacks
+):
+    """Regression: idempotency_key снимка раньше был завязан только на order.pk —
+    повторная верификация другим MAX-аккаунтом молча теряла бы «подключено»."""
+    from apps.notifications.models import NotificationLog
+
+    order, _token = guest_order
+    attempt1 = _track_attempt(order, session="sess-a")
+    with django_capture_on_commit_callbacks(execute=True):
+        services.complete_from_contact(attempt1, max_user_id=7001, phone=ORDER_PHONE, chat_id=900)
+
+    attempt2 = _track_attempt(order, session="sess-b")
+    with django_capture_on_commit_callbacks(execute=True):
+        services.complete_from_contact(attempt2, max_user_id=7002, phone=ORDER_PHONE, chat_id=901)
+
+    assert NotificationLog.objects.filter(chat_id=900).count() == 1
+    assert NotificationLog.objects.filter(chat_id=901).count() == 1
+    grant = OrderTrackingGrant.objects.get(order=order)
+    assert grant.chat_id == 901  # последняя верификация перевыдаёт грант
+
+
+@pytest.mark.django_db
+def test_already_claimed_order_denies_track_completion(guest_order):
+    """Regression (TOCTOU): заказ мог перестать быть гостевым между стартом
+    попытки и её завершением (напр. владелец вошёл и claim_guest_orders уже
+    отработал) — завершение не должно молча создавать грант на чужом заказе."""
+    from django.contrib.auth import get_user_model
+
+    order, _token = guest_order
+    attempt = _track_attempt(order)
+    User = get_user_model()
+    owner = User.objects.create_user(phone=ORDER_PHONE, password="pass12345")
+    order.user = owner
+    order.save(update_fields=["user"])
+
+    res = services.complete_from_contact(attempt, max_user_id=6020, phone=ORDER_PHONE, chat_id=784)
+    assert res.status == Status.FAILED
+    assert res.failure_reason == "order_already_claimed"
+    assert not OrderTrackingGrant.objects.filter(order=order).exists()
+
+
+@override_settings(**MAX_SETTINGS)
+@pytest.mark.django_db
+@pytest.mark.usefixtures("_enable_max")
+@mock.patch("apps.notifications.channels.max.send_message", return_value=True)
+def test_chat_id_zero_is_not_treated_as_missing(
+    mock_send_message, guest_order, django_capture_on_commit_callbacks
+):
+    """Regression (falsy-zero): chat_id=0 — валидный MAX id (см. resolve_active_chat_id,
+    #521), не «нет получателя». Проверяет и разовый снимок, и последующие события."""
+    from apps.notifications.models import NotificationLog
+
+    order, _token = guest_order
+    attempt = _track_attempt(order)
+    with django_capture_on_commit_callbacks(execute=True):
+        services.complete_from_contact(attempt, max_user_id=6021, phone=ORDER_PHONE, chat_id=0)
+
+    grant = OrderTrackingGrant.objects.get(order=order)
+    assert grant.chat_id == 0
+    assert NotificationLog.objects.filter(chat_id=0, event="order_tracking_connected").exists()
+
+    from .receivers import _notify_guest_tracking
+
+    with django_capture_on_commit_callbacks(execute=True):
+        _notify_guest_tracking(
+            order, "order_paid", {"order_number": order.order_number}, "test-key-0"
+        )
+    assert NotificationLog.objects.filter(chat_id=0, event="order_paid").exists()
+
+
+@pytest.mark.django_db
+def test_completed_track_order_attempt_does_not_crash_login_status_endpoint(api, guest_order):
+    """Regression: до #520 у любой COMPLETED попытки был гарантирован user — старый
+    /api/auth/max/<id>/status/ безусловно делал attempt.user.backend = ...
+    Track_order-попытки первыми завели attempt.user=None на COMPLETED."""
+    order, token = guest_order
+    start = api.post(
+        f"/api/orders/{order.order_number}/max-track/start/",
+        {"access_token": token},
+        format="json",
+    ).json()
+    attempt = MaxAuthAttempt.objects.get(public_id=start["attempt_id"])
+    services.complete_from_contact(attempt, max_user_id=6022, phone=ORDER_PHONE, chat_id=785)
+
+    resp = api.get(f"/api/auth/max/{start['attempt_id']}/status/")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "completed"
+    assert api.get("/api/account/me/").status_code in (401, 403)
 
 
 # ═══════════ API: старт/статус, cross-order/cross-session security ═══════════

@@ -217,14 +217,21 @@ def _complete_track_order(
     order = attempt.order
     if order is None:
         return _fail(attempt, "no_target_order")
+    # TOCTOU-защита: заказ мог перестать быть гостевым между стартом попытки
+    # (проверка в MaxTrackOrderStartView) и её завершением через webhook —
+    # напр. владелец успел войти и claim_guest_orders() уже привязал заказ.
+    if order.user_id is not None:
+        return _fail(attempt, "order_already_claimed")
     if normalize_phone(order.customer_phone) != phone:
         return _fail(attempt, "phone_mismatch")
 
-    OrderTrackingGrant.objects.update_or_create(
+    _, created = OrderTrackingGrant.objects.update_or_create(
         order=order, defaults={"max_user_id": max_user_id, "chat_id": chat_id}
     )
-    completed = _complete(attempt, None, max_user_id=max_user_id, chat_id=chat_id, is_new=True)
-    if chat_id:
+    completed = _complete(attempt, None, max_user_id=max_user_id, chat_id=chat_id, is_new=created)
+    # chat_id=0 — валидный id (см. resolve_active_chat_id ниже, #521): is not None,
+    # не truthy-проверка.
+    if chat_id is not None:
         transaction.on_commit(lambda: _send_order_tracking_snapshot(order, chat_id))
     return completed
 
@@ -237,6 +244,11 @@ def _send_order_tracking_snapshot(order, chat_id: int) -> None:
     нужен ``user`` для intent/preference-слоя, гостю без аккаунта он неприменим):
     получаем тот же outbox + Celery-доставку + retry/backoff/классификацию
     ошибок (#521) без дублирования этой инфраструктуры здесь.
+
+    idempotency_key включает chat_id: если гость позже переподключит другой
+    MAX-аккаунт к тому же заказу (грант перевыдан), новый чат должен получить
+    своё «подключено» — ключ, завязанный только на order.pk, заблокировал бы
+    это как «уже отправлено» первому чату.
     """
     from apps.notifications.services import send
 
@@ -245,7 +257,7 @@ def _send_order_tracking_snapshot(order, chat_id: int) -> None:
         chat_id=chat_id,
         event="order_tracking_connected",
         payload={"order_number": order.order_number, "status_note": order.display_status},
-        idempotency_key=f"track-order-connected-{order.pk}",
+        idempotency_key=f"track-order-connected-{order.pk}-{chat_id}",
     )
 
 
@@ -253,10 +265,10 @@ def resolve_tracking_grant_chat_id(order) -> int | None:
     """chat_id активного гранта отслеживания для гостевого заказа (#520), либо None.
 
     Аналог ``resolve_active_chat_id(user)`` для гостевой ветки — используется
-    ресиверами заказов (#516), когда ``order.user is None``.
+    ресиверами заказов (#516), когда ``order.user is None``. ``values_list`` —
+    не тянем лишние колонки/инстанс ради одного поля.
     """
-    grant = OrderTrackingGrant.objects.filter(order=order).first()
-    return grant.chat_id if grant else None
+    return OrderTrackingGrant.objects.filter(order=order).values_list("chat_id", flat=True).first()
 
 
 @transaction.atomic
