@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 
 type Phase = "idle" | "submitting" | "success" | "error";
 
-// Модалка заявки по товару: «Запросить цену» / «Уточнить поступление».
+// Модалка заявки по товару: «Запросить цену». («Уточнить поступление» — старый
+// restock_notify-флоу — заменена самообслуживаемой MAX-подпиской, #517/#519;
+// бэкенд ещё принимает restock_notify для истории старых заявок, но фронт
+// больше не создаёт таких — kind сужен до единственного реального сценария.)
 // Отправляет в BFF /api/inquiry (далее Django /api/leads/inquiries/). Валидация
 // телефона — на бэке; здесь только обязательность поля и UX-состояния.
 export function InquiryDialog({
@@ -19,7 +22,7 @@ export function InquiryDialog({
   open: boolean;
   onClose: () => void;
   productId: number;
-  kind: "price_request" | "restock_notify";
+  kind: "price_request";
   title: string;
 }) {
   const [phone, setPhone] = useState("");
