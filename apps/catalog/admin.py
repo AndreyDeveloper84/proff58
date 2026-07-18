@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
 from django.db import transaction
@@ -15,11 +16,15 @@ from apps.core.events import EventSource, product_created, product_updated
 from apps.pricing.models import PriceRecord
 from apps.pricing.services import WHOLESALE, price_for
 
+from . import processing
 from .availability_subscriptions import ProductAvailabilitySubscription
 from .models import (
     Attribute,
     AttributeOption,
     AttributeType,
+    CatalogChange,
+    CatalogProcessingItem,
+    CatalogProcessingRun,
     Category,
     CategoryAttribute,
     CategoryMappingRule,
@@ -1060,4 +1065,188 @@ class ProductAvailabilitySubscriptionAdmin(admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Catalog processing audit admin
+# ---------------------------------------------------------------------------
+
+
+class CatalogProcessingItemInline(admin.TabularInline):
+    model = CatalogProcessingItem
+    extra = 0
+    readonly_fields = (
+        "product",
+        "product_ref",
+        "status",
+        "input_hash",
+        "baseline_hashes",
+        "needed_targets",
+        "error_code",
+        "error_detail",
+        "created_at",
+        "finished_at",
+    )
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CatalogProcessingRun)
+class CatalogProcessingRunAdmin(admin.ModelAdmin):
+    list_display = ("id", "kind", "mode", "status", "idempotency_key", "created_at", "finished_at")
+    list_filter = ("kind", "mode", "status")
+    search_fields = ("idempotency_key",)
+    readonly_fields = (
+        "id",
+        "kind",
+        "mode",
+        "status",
+        "idempotency_key",
+        "scope",
+        "ruleset_version",
+        "ruleset_hash",
+        "taxonomy_hash",
+        "stats",
+        "created_by",
+        "created_at",
+        "finished_at",
+    )
+    inlines = [CatalogProcessingItemInline]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CatalogProcessingItem)
+class CatalogProcessingItemAdmin(admin.ModelAdmin):
+    list_display = ("run", "product_ref", "status", "input_hash", "created_at", "finished_at")
+    list_filter = ("status", "run__kind", "run__mode")
+    search_fields = ("product_ref", "run__idempotency_key")
+    readonly_fields = (
+        "run",
+        "product",
+        "product_ref",
+        "status",
+        "input_snapshot",
+        "input_hash",
+        "baseline_hashes",
+        "needed_targets",
+        "error_code",
+        "error_detail",
+        "created_at",
+        "finished_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CatalogChange)
+class CatalogChangeAdmin(admin.ModelAdmin):
+    list_display = (
+        "item",
+        "target_kind",
+        "status",
+        "source",
+        "confidence",
+        "reason_code",
+        "created_at",
+        "applied_at",
+    )
+    list_filter = ("status", "source", "target_kind")
+    search_fields = ("idempotency_key", "product_ref")
+    readonly_fields = (
+        "id",
+        "item",
+        "product_ref",
+        "target_kind",
+        "target_key",
+        "status",
+        "idempotency_key",
+        "before_value",
+        "proposed_value",
+        "after_value",
+        "baseline_hash",
+        "source",
+        "confidence",
+        "rule_ref",
+        "ruleset_hash",
+        "reason_code",
+        "reason_detail",
+        "evidence",
+        "reviewed_by",
+        "reviewed_at",
+        "applied_at",
+        "reversal_of",
+        "created_at",
+    )
+    actions = ["approve_changes", "reject_changes", "apply_changes"]
+
+    @admin.action(description=_("Одобрить выбранные предложения"))
+    def approve_changes(self, request, queryset):
+        if not settings.FEATURES.get("catalog_processing", False):
+            self.message_user(request, "Feature catalog_processing выключен", messages.ERROR)
+            return
+        reviewer_id = request.user.pk if request.user.is_authenticated else None
+        if not reviewer_id:
+            self.message_user(request, "Не удалось определить модератора", messages.ERROR)
+            return
+        count = 0
+        for change in queryset.filter(status="proposed"):
+            result = processing.review_catalog_change(change.pk, "approved", reviewer_id)
+            if result.status == "approved":
+                count += 1
+        self.message_user(request, f"Одобрено: {count}", messages.SUCCESS)
+
+    @admin.action(description=_("Отклонить выбранные предложения"))
+    def reject_changes(self, request, queryset):
+        if not settings.FEATURES.get("catalog_processing", False):
+            self.message_user(request, "Feature catalog_processing выключен", messages.ERROR)
+            return
+        reviewer_id = request.user.pk if request.user.is_authenticated else None
+        if not reviewer_id:
+            self.message_user(request, "Не удалось определить модератора", messages.ERROR)
+            return
+        count = 0
+        for change in queryset.filter(status="proposed"):
+            result = processing.review_catalog_change(change.pk, "rejected", reviewer_id)
+            if result.status == "rejected":
+                count += 1
+        self.message_user(request, f"Отклонено: {count}", messages.SUCCESS)
+
+    @admin.action(description=_("Применить одобренные изменения"))
+    def apply_changes(self, request, queryset):
+        if not settings.FEATURES.get("catalog_processing", False):
+            self.message_user(request, "Feature catalog_processing выключен", messages.ERROR)
+            return
+        actor_id = request.user.pk if request.user.is_authenticated else None
+        count = 0
+        for change in queryset.filter(status="approved"):
+            result = processing.apply_catalog_change(change.pk, actor_id=actor_id)
+            if result.status == "applied":
+                count += 1
+        self.message_user(request, f"Применено: {count}", messages.SUCCESS)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         return False

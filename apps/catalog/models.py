@@ -18,6 +18,8 @@
 потомков/предков без рекурсивных JOIN-ов.
 """
 
+import uuid
+
 from django.contrib.postgres.indexes import GinIndex
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -46,6 +48,7 @@ class Source(models.TextChoices):
     IMPORT_1C = "import_1c", _("Импорт 1С")
     REGEX = "regex", _("Regex по названию")
     KEYWORD = "keyword", _("Ключевое слово")
+    RULES = "rules", _("Правила каталога")
     LLM = "llm", _("AI/LLM")
     INFERRED = "inferred", _("Инференс по атрибутам")
     WEB = "web", _("Web-поиск")
@@ -948,3 +951,230 @@ class ModerationProduct(Product):
 from apps.catalog import availability_subscriptions as _availability_subscriptions  # noqa: E402
 
 ProductAvailabilitySubscription = _availability_subscriptions.ProductAvailabilitySubscription
+# ---------------------------------------------------------------------------
+# Catalog processing: audit/apply foundation
+# ---------------------------------------------------------------------------
+
+
+class CatalogProcessingRunKind(models.TextChoices):
+    MANUAL = "manual", _("Вручную")
+    RULES = "rules", _("Правила")
+    RESEARCH = "research", _("Исследование")
+    AI = "ai", _("AI")
+    IMPORT = "import", _("Импорт")
+
+
+class CatalogProcessingMode(models.TextChoices):
+    TOOL_TYPE = "tool_type", _("Тип инструмента")
+
+
+class CatalogProcessingRunStatus(models.TextChoices):
+    DRAFT = "draft", _("Черновик")
+    RUNNING = "running", _("В работе")
+    COMPLETED = "completed", _("Завершён")
+    FAILED = "failed", _("Ошибка")
+    CANCELLED = "cancelled", _("Отменён")
+
+
+class CatalogProcessingItemStatus(models.TextChoices):
+    PENDING = "pending", _("Ожидает")
+    PROCESSING = "processing", _("В обработке")
+    NEEDS_REVIEW = "needs_review", _("Требует проверки")
+    COMPLETED = "completed", _("Завершён")
+    FAILED = "failed", _("Ошибка")
+
+
+class CatalogChangeStatus(models.TextChoices):
+    PROPOSED = "proposed", _("Предложено")
+    APPROVED = "approved", _("Одобрено")
+    REJECTED = "rejected", _("Отклонено")
+    APPLIED = "applied", _("Применено")
+    SKIPPED = "skipped", _("Пропущено")
+    CONFLICT = "conflict", _("Конфликт")
+    INVALID = "invalid", _("Невалидно")
+    FAILED = "failed", _("Ошибка")
+    REVERSED = "reversed", _("Отменено")
+
+
+class CatalogProcessingRun(models.Model):
+    """Один логический запуск обработки каталога."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    kind = models.CharField(
+        _("Тип запуска"), max_length=16, choices=CatalogProcessingRunKind.choices
+    )
+    mode = models.CharField(_("Режим"), max_length=16, choices=CatalogProcessingMode.choices)
+    status = models.CharField(
+        _("Статус"),
+        max_length=16,
+        choices=CatalogProcessingRunStatus.choices,
+        default=CatalogProcessingRunStatus.DRAFT,
+        db_index=True,
+    )
+    idempotency_key = models.CharField(_("Ключ идемпотентности"), max_length=128, unique=True)
+    scope = models.JSONField(_("Скоуп"), default=dict, blank=True)
+    ruleset_version = models.CharField(_("Версия правил"), max_length=64, blank=True)
+    ruleset_hash = models.CharField(_("Хеш правил"), max_length=64, blank=True)
+    taxonomy_hash = models.CharField(_("Хеш таксономии"), max_length=64, blank=True)
+    stats = models.JSONField(_("Статистика"), default=dict, blank=True)
+    created_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Инициатор"),
+    )
+    created_at = models.DateTimeField(_("Создан"), auto_now_add=True)
+    finished_at = models.DateTimeField(_("Завершён"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("Запуск обработки каталога")
+        verbose_name_plural = _("Запуски обработки каталога")
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.kind}/{self.mode} [{self.status}]"
+
+
+class CatalogProcessingItem(models.Model):
+    """Snapshot одного товара внутри запуска обработки каталога."""
+
+    run = models.ForeignKey(
+        CatalogProcessingRun,
+        on_delete=models.PROTECT,
+        related_name="items",
+        verbose_name=_("Запуск"),
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Товар"),
+    )
+    product_ref = models.PositiveBigIntegerField(_("ID товара для аудита"), db_index=True)
+    status = models.CharField(
+        _("Статус"),
+        max_length=16,
+        choices=CatalogProcessingItemStatus.choices,
+        default=CatalogProcessingItemStatus.PENDING,
+        db_index=True,
+    )
+    input_snapshot = models.JSONField(_("Входной снапшот"), default=dict, blank=True)
+    input_hash = models.CharField(_("Хеш входа"), max_length=64)
+    baseline_hashes = models.JSONField(_("Базовые хеши"), default=dict, blank=True)
+    needed_targets = models.JSONField(_("Целевые поля"), default=list, blank=True)
+    error_code = models.CharField(_("Код ошибки"), max_length=32, blank=True)
+    error_detail = models.CharField(_("Детали ошибки"), max_length=255, blank=True)
+    created_at = models.DateTimeField(_("Создан"), auto_now_add=True)
+    finished_at = models.DateTimeField(_("Завершён"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("Элемент обработки")
+        verbose_name_plural = _("Элементы обработки")
+        ordering = ["created_at"]
+        unique_together = [("run", "product_ref")]
+
+    def __str__(self) -> str:
+        return f"Item#{self.product_ref} [{self.status}]"
+
+
+class CatalogChange(models.Model):
+    """Append-only запись предложения и результата изменения каталога."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    item = models.ForeignKey(
+        CatalogProcessingItem,
+        on_delete=models.PROTECT,
+        related_name="changes",
+        verbose_name=_("Элемент"),
+    )
+    product_ref = models.PositiveBigIntegerField(_("ID товара для аудита"), db_index=True)
+    target_kind = models.CharField(_("Тип цели"), max_length=32)
+    target_key = models.CharField(_("Ключ цели"), max_length=64, blank=True)
+    status = models.CharField(
+        _("Статус"),
+        max_length=16,
+        choices=CatalogChangeStatus.choices,
+        default=CatalogChangeStatus.PROPOSED,
+        db_index=True,
+    )
+    idempotency_key = models.CharField(_("Ключ идемпотентности"), max_length=128, unique=True)
+    before_value = models.JSONField(_("Старое значение"), default=dict, blank=True)
+    proposed_value = models.JSONField(_("Предложенное значение"), default=dict, blank=True)
+    after_value = models.JSONField(_("Итоговое значение"), null=True, blank=True)
+    baseline_hash = models.CharField(_("Базовый хеш"), max_length=64, blank=True)
+    source = models.CharField(_("Источник"), max_length=16, choices=Source.choices)
+    confidence = models.SmallIntegerField(
+        _("Уверенность"),
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    rule_ref = models.CharField(_("Ссылка на правило"), max_length=64, blank=True)
+    ruleset_hash = models.CharField(_("Хеш набора правил"), max_length=64, blank=True)
+    reason_code = models.CharField(_("Код причины"), max_length=32, blank=True)
+    reason_detail = models.CharField(_("Детали причины"), max_length=255, blank=True)
+    comment = models.CharField(_("Комментарий модератора"), max_length=512, blank=True)
+    evidence = models.JSONField(_("Доказательства"), default=dict, blank=True)
+    reviewed_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Проверил"),
+    )
+    reviewed_at = models.DateTimeField(_("Время проверки"), null=True, blank=True)
+    applied_at = models.DateTimeField(_("Время применения"), null=True, blank=True)
+    applied_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Применил"),
+    )
+    reversal_of = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Отмена изменения"),
+    )
+    created_at = models.DateTimeField(_("Создан"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Изменение каталога")
+        verbose_name_plural = _("Изменения каталога")
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["product_ref", "target_kind", "created_at"]),
+            models.Index(fields=["status", "created_at"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                name="catalog_change_confidence_range",
+                check=models.Q(confidence__gte=0, confidence__lte=100),
+            ),
+            models.CheckConstraint(
+                name="catalog_change_approved_requires_review",
+                check=~models.Q(status=CatalogChangeStatus.APPROVED)
+                | (models.Q(reviewed_by__isnull=False) & models.Q(reviewed_at__isnull=False)),
+            ),
+            models.CheckConstraint(
+                name="catalog_change_rejected_requires_review",
+                check=~models.Q(status=CatalogChangeStatus.REJECTED)
+                | (models.Q(reviewed_by__isnull=False) & models.Q(reviewed_at__isnull=False)),
+            ),
+            models.CheckConstraint(
+                name="catalog_change_applied_requires_after_value",
+                check=~models.Q(status=CatalogChangeStatus.APPLIED)
+                | (models.Q(after_value__isnull=False) & models.Q(applied_at__isnull=False)),
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Change {self.target_kind} [{self.status}]"
