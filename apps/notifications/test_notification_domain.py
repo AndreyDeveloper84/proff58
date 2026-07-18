@@ -156,6 +156,20 @@ def test_create_notification_account_category_not_gated_by_order_toggle(user):
 
 
 @pytest.mark.django_db
+def test_max_connected_renders_real_text_not_debug_fallback(user):
+    """Регрессия: EVENT_TEMPLATES/NOTIFICATION_META раньше велись раздельно и
+    разошлись — max_connected был в одном словаре, но не в другом, и реальное
+    MAX-сообщение уходило как debug-фолбэк "Событие: max_connected". Здесь НЕ
+    мокаем send() целиком — проверяем реальный текст, который родился бы в
+    NotificationLog.text."""
+    from .services import _render_text
+
+    text = _render_text("max_connected", {})
+    assert text != "Событие: max_connected"
+    assert "уведомлен" in text.lower()
+
+
+@pytest.mark.django_db
 def test_create_notification_idempotent(user):
     """Повтор idempotency_key не создаёт второй intent (AC #515)."""
     _link_max(user)

@@ -12,7 +12,7 @@ from django.utils import timezone
 from apps.core.models import SiteSettings
 
 from .models import NotificationChannel, NotificationLog, NotificationStatus
-from .services import EVENT_TEMPLATES, _render_text, send
+from .services import NOTIFICATION_EVENTS, _render_text, send
 
 User = get_user_model()
 
@@ -239,8 +239,20 @@ def test_error_log_no_secrets(mock_max, user):
 
 
 def test_all_templates_have_placeholders():
-    for event, tmpl in EVENT_TEMPLATES.items():
-        assert "{" in tmpl, f"Template for {event} has no placeholders"
+    # max_connected — статическое приветствие без динамических данных, плейсхолдер не нужен.
+    static_events = {"max_connected"}
+    for event, meta in NOTIFICATION_EVENTS.items():
+        if event in static_events:
+            continue
+        assert "{" in meta["template"], f"Template for {event} has no placeholders"
+
+
+def test_every_event_has_a_real_template():
+    """Регрессия: раньше EVENT_TEMPLATES/NOTIFICATION_META велись раздельно и
+    расходились (max_connected попадал в один, но не в другой) — теперь один
+    реестр, разойтись физически нельзя, но проверяем явно."""
+    for event, meta in NOTIFICATION_EVENTS.items():
+        assert meta["template"], f"Event {event} has no template text"
 
 
 # ═══════════════════════════════════════════════════════════════════════

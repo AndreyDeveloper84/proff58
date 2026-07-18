@@ -219,6 +219,30 @@ def test_unknown_status_does_not_notify(mock_create, order):
 @pytest.mark.usefixtures("_enable_max")
 @pytest.mark.django_db
 @mock.patch("apps.notifications.services.create_notification")
+def test_unknown_status_logs_warning_but_known_ones_do_not(mock_create, order, caplog):
+    """#521: действительно неожиданный статус (не assembling/new) должен быть
+    заметен — иначе будущий FulfillmentStatus молча выпадет из уведомлений."""
+    import logging
+
+    from apps.integration_max import receivers  # noqa: F401
+
+    with caplog.at_level(logging.WARNING, logger="apps.integration_max.receivers"):
+        events.order_status_changed.send(
+            sender=Order, order_id=order.id, old_status="x", new_status="totally_new_status"
+        )
+    assert any("totally_new_status" in r.getMessage() for r in caplog.records)
+
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger="apps.integration_max.receivers"):
+        events.order_status_changed.send(
+            sender=Order, order_id=order.id, old_status="confirmed", new_status="assembling"
+        )
+    assert caplog.records == []
+
+
+@pytest.mark.usefixtures("_enable_max")
+@pytest.mark.django_db
+@mock.patch("apps.notifications.services.create_notification")
 def test_ready_pickup_note(mock_create, user_with_max):
     """AC #516: ready учитывает способ получения в тексте — самовывоз."""
     from apps.delivery.models import DeliveryType

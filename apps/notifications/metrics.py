@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import datetime
 
-from django.db.models import Avg, Count, F
+from django.db.models import Avg, Count, F, Min
 from django.utils import timezone
 from prometheus_client import CollectorRegistry
 from prometheus_client.core import GaugeMetricFamily
@@ -47,15 +47,18 @@ class NotificationCollector(Collector):
             failed_gauge.add_metric([kind or "unclassified"], failed_counts.get(kind, 0))
         yield failed_gauge
 
-        # Queue lag: сколько сейчас "висит" в QUEUED и как давно самая старая строка.
-        queued_qs = NotificationLog.objects.filter(status=NotificationStatus.QUEUED)
+        # Queue lag: сколько сейчас "висит" в QUEUED и как давно самая старая строка
+        # — одним aggregate (COUNT+MIN), а не двумя отдельными запросами.
+        queue_stats = NotificationLog.objects.filter(status=NotificationStatus.QUEUED).aggregate(
+            cnt=Count("pk"), oldest=Min("created_at")
+        )
         queue_size_gauge = GaugeMetricFamily(
             "notification_queue_size", "Строк outbox в статусе queued прямо сейчас"
         )
-        queue_size_gauge.add_metric([], queued_qs.count())
+        queue_size_gauge.add_metric([], queue_stats["cnt"])
         yield queue_size_gauge
 
-        oldest = queued_qs.order_by("created_at").values_list("created_at", flat=True).first()
+        oldest = queue_stats["oldest"]
         lag_gauge = GaugeMetricFamily(
             "notification_queue_lag_seconds",
             "Возраст самой старой queued-строки outbox (секунды)",

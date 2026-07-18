@@ -34,14 +34,22 @@ class NotificationLogAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         return False
 
-    @admin.action(description="Повторить отправку (только retryable failed) — #521")
+    @admin.action(description="Повторить отправку (retryable/неклассиф. failed) — #521")
     def retry_failed(self, request, queryset):
-        """Ручной retry только retryable FAILED (#521 AC) — permanent игнорируем
-        молча тут, отчитываемся отдельно: ретраить их бессмысленно."""
+        """Ручной retry FAILED (#521 AC) — permanent игнорируем молча: ретраить
+        их бессмысленно (4xx кроме 429 — сам запрос некорректен).
+
+        Неклассифицированные (error_kind="", попали в generic except в
+        tasks.py — баг channels/max.py, а не провайдерская ошибка) ТОЖЕ
+        retryable здесь: автоматический retry Celery уже обходится с ними как
+        с retryable (bounded backoff), человек, нажавший «повторить» в
+        админке, тем более принял осознанное решение — не должно быть тупика,
+        когда Celery исчерпал попытки, а админка такую строку не видит вообще.
+        """
         from .tasks import send_notification_task
 
-        retryable = queryset.filter(
-            status=NotificationStatus.FAILED, error_kind=NotificationErrorKind.RETRYABLE
+        retryable = queryset.filter(status=NotificationStatus.FAILED).exclude(
+            error_kind=NotificationErrorKind.PERMANENT
         )
         ignored = queryset.exclude(pk__in=retryable.values_list("pk", flat=True)).count()
         requeued_ids = list(retryable.values_list("pk", flat=True))
@@ -52,7 +60,7 @@ class NotificationLogAdmin(admin.ModelAdmin):
         self.message_user(
             request,
             f"Поставлено на повтор: {len(requeued_ids)}. "
-            f"Пропущено (не retryable failed): {ignored}.",
+            f"Пропущено (permanent/не failed): {ignored}.",
         )
 
 

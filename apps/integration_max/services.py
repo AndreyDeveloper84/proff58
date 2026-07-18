@@ -309,19 +309,25 @@ def complete_confirm(attempt: MaxAuthAttempt, *, max_user_id: int, chat_id: int 
 
 
 def unlink_max(user) -> bool:
-    """Отключить привязку MAX в ЛК (§5.4). True — если была и удалена."""
-    acct = MaxAccount.objects.filter(user=user).first()
-    if not acct:
-        return False
-    max_user_id = acct.max_user_id
-    acct.delete()
-    _emit("max_account_unlinked", max_user_id=max_user_id)
-    # #517 AC: unlink не удаляет audit history подписок «сообщить о поступлении»,
-    # но активные без привязки MAX бессмысленны (тихо не уведомят на fan-out) —
-    # переводим явно в cancelled, а не оставляем зависший active.
-    from apps.catalog.availability_subscriptions import cancel_active_for_user
+    """Отключить привязку MAX в ЛК (§5.4). True — если была и удалена.
 
-    cancel_active_for_user(user)
+    #521: атомарно — delete() + cancel_active_for_user() либо оба, либо ничего;
+    иначе сбой между ними оставил бы активные подписки «сообщить о поступлении»
+    без привязки MAX (тихо не уведомят на fan-out, а должны были быть cancelled).
+    """
+    with transaction.atomic():
+        acct = MaxAccount.objects.filter(user=user).first()
+        if not acct:
+            return False
+        max_user_id = acct.max_user_id
+        acct.delete()
+        _emit("max_account_unlinked", max_user_id=max_user_id)
+        # #517 AC: unlink не удаляет audit history подписок «сообщить о
+        # поступлении», но активные без привязки MAX бессмысленны — переводим
+        # явно в cancelled, а не оставляем зависший active.
+        from apps.catalog.availability_subscriptions import cancel_active_for_user
+
+        cancel_active_for_user(user)
     return True
 
 
@@ -353,6 +359,8 @@ def resolve_active_chat_id(user) -> int | None:
         .values_list("chat_id", flat=True)
         .first()
     )
-    if chat_id:
+    # #521: is not None, не truthy-проверка — chat_id=0 валиден и не должен
+    # трактоваться как «нет привязки» с падением на legacy-fallback.
+    if chat_id is not None:
         return chat_id
     return getattr(user, "max_chat_id", None)
