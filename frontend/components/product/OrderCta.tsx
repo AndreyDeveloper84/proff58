@@ -1,48 +1,51 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, Check, FileText, Loader2, ShoppingCart } from "lucide-react";
+import { Check, FileText, Loader2, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
+import { AvailabilitySubscribeCta } from "@/components/product/AvailabilitySubscribeCta";
 import { ApiError } from "@/lib/api";
 import type { StockState } from "@/lib/types";
 import { QuantityStepper } from "./QuantityStepper";
 import { InquiryDialog } from "./InquiryDialog";
 
 // CTA карточки товара (PDP). Сценарии:
-//   нет цены        → «Запросить цену»     → модалка заявки (price_request)
-//   нет в наличии   → «Уточнить поступление» → модалка заявки (restock_notify)
-//   in / order      → выбор количества + добавление в корзину (под заказ — тот же поток)
+//   нет цены        → «Запросить цену»          → модалка заявки менеджеру (price_request)
+//   нет в наличии   → «Сообщить о поступлении»  → самообслуживаемая MAX-подписка (#517/#519)
+//   in / order      → выбор количества и добавление в корзину (под заказ — тот же поток)
 export function OrderCta({
   productId,
+  productSlug,
   stock = "in",
   hasPrice = true,
 }: {
   productId: number;
+  productSlug: string;
   stock?: StockState;
   hasPrice?: boolean;
 }) {
-  const [dialog, setDialog] = useState<null | "price_request" | "restock_notify">(null);
+  const [priceDialogOpen, setPriceDialogOpen] = useState(false);
 
   if (!hasPrice) {
     return (
       <>
         <Button
           variant="accent"
-          onClick={() => setDialog("price_request")}
+          onClick={() => setPriceDialogOpen(true)}
           data-event="request_price"
           data-product-id={productId}
         >
           <FileText className="h-4 w-4" aria-hidden />
           Запросить цену
         </Button>
-        {dialog && (
+        {priceDialogOpen && (
           <InquiryDialog
             open
-            onClose={() => setDialog(null)}
+            onClose={() => setPriceDialogOpen(false)}
             productId={productId}
-            kind={dialog}
-            title={dialog === "price_request" ? "Запросить цену" : "Уточнить поступление"}
+            kind="price_request"
+            title="Запросить цену"
           />
         )}
       </>
@@ -50,28 +53,7 @@ export function OrderCta({
   }
 
   if (stock === "out") {
-    return (
-      <>
-        <Button
-          variant="outline"
-          onClick={() => setDialog("restock_notify")}
-          data-event="notify_restock"
-          data-product-id={productId}
-        >
-          <Bell className="h-4 w-4" aria-hidden />
-          Уточнить поступление
-        </Button>
-        {dialog && (
-          <InquiryDialog
-            open
-            onClose={() => setDialog(null)}
-            productId={productId}
-            kind={dialog}
-            title={dialog === "price_request" ? "Запросить цену" : "Уточнить поступление"}
-          />
-        )}
-      </>
-    );
+    return <AvailabilitySubscribeCta productSlug={productSlug} />;
   }
 
   return <AddToCartCta productId={productId} isOrder={stock === "order"} />;

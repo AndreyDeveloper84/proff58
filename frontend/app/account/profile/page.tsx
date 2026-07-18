@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getMe, logout } from "@/lib/auth";
 import { MaxLinkCard } from "@/components/account/MaxLinkCard";
+import { NotificationPreferencesCard } from "@/components/account/NotificationPreferencesCard";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -43,6 +44,7 @@ export default function ProfilePage() {
       )}
 
       <MaxLinkCard />
+      <NotificationPreferencesCard />
 
       <div className="mt-8 space-x-4">
         <a href="/account/orders" className="text-green-600 underline">Мои заказы</a>

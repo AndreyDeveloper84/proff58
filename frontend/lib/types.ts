@@ -203,3 +203,28 @@ export type PlaceOrderData = {
   comment?: string;
   payment_method: string;
 };
+
+// Настройки уведомлений (#519, Django apps.notifications.api). max_enabled —
+// мастер-переключатель канала MAX; остальные — по категориям. consent_version
+// (write-only на бэке) обязателен только при включении marketing_enabled.
+export type NotificationPreferences = {
+  max_enabled: boolean;
+  order_updates_enabled: boolean;
+  product_availability_enabled: boolean;
+  marketing_enabled: boolean;
+  marketing_consent_at: string | null;
+  marketing_consent_version: string;
+};
+
+export type NotificationPreferencesPatch = Partial<
+  Pick<
+    NotificationPreferences,
+    "max_enabled" | "order_updates_enabled" | "product_availability_enabled" | "marketing_enabled"
+  >
+> & { consent_version?: string };
+
+// Статус подписки «Сообщить о поступлении» (#517/#519) на конкретный товар.
+// null — подписки нет вовсе (ни активной, ни отработанной).
+export type AvailabilitySubscriptionStatus = {
+  status: "active" | "queued" | "notified" | "cancelled" | null;
+};
