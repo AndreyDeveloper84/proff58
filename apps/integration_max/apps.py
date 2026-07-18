@@ -9,13 +9,12 @@ class IntegrationMaxConfig(AppConfig):
 
     def ready(self):
         register(_check_max_webhook_secret)
-        try:
-            from apps.core.features import is_enabled
-
-            if is_enabled("max_chat"):
-                from . import receivers  # noqa: F401
-        except Exception:
-            pass
+        # #514: подключаем receivers детерминированно и безусловно — сама
+        # подписка (events.*.connect) не трогает БД, а бизнес-флаг max_chat
+        # проверяется в notifications.send() при постановке delivery в outbox.
+        # Раньше гейт по is_enabled() здесь означал, что более позднее включение
+        # флага в рантайме не подключало обработчики без рестарта процесса.
+        from . import receivers  # noqa: F401
 
 
 def _check_max_webhook_secret(app_configs, **kwargs):

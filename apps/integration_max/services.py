@@ -306,3 +306,24 @@ def unlink_max(user) -> bool:
     acct.delete()
     _emit("max_account_unlinked", max_user_id=max_user_id)
     return True
+
+
+def resolve_active_chat_id(user) -> int | None:
+    """Единственный canonical resolver MAX-получателя пользователя (#514).
+
+    Источник истины — `MaxAccount(is_active=True, chat_id задан)`: так его
+    поддерживают link/login/confirm/unlink. Если привязки через новый flow нет,
+    временно падаем на legacy `User.max_chat_id` (старый OTP-бот-флоу,
+    `handlers/auth.py`, задепрекейчен) — только на чтение, новый код туда не
+    пишет (без двух независимых write-path).
+    """
+    if user is None or not getattr(user, "pk", None):
+        return None
+    chat_id = (
+        MaxAccount.objects.filter(user=user, is_active=True, chat_id__isnull=False)
+        .values_list("chat_id", flat=True)
+        .first()
+    )
+    if chat_id:
+        return chat_id
+    return getattr(user, "max_chat_id", None)
