@@ -607,3 +607,158 @@ def test_reexport_rejects_changed_taxonomy(feature_enabled, tmp_path):
             "--output",
             str(tmp_path / "changed.json"),
         )
+
+
+def _abstain_item(item, status="review", reason="нет точного slug в allowed_options"):
+    return {
+        "product_ref": item.product_ref,
+        "input_hash": item.input_hash,
+        "identity": {"status": "matched", "brand": "Test", "model": "Model"},
+        "status": status,
+        "reason_code": "no_exact_slug",
+        "reason_detail": reason,
+        "changes": [],
+    }
+
+
+def _make_run(idem_key):
+    _product()
+    return call_command(
+        "catalog_queue_create",
+        "--only-untyped",
+        "--in-stock",
+        "--limit",
+        "10",
+        "--idempotency-key",
+        idem_key,
+    )
+
+
+@pytest.mark.django_db
+def test_import_review_without_changes_marks_needs_review(feature_enabled, tmp_path):
+    attr = _tool_type_attr()
+    _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
+    run_id = _make_run("test-import-review-needs-review")
+    run = CatalogProcessingRun.objects.get(pk=run_id)
+    item = run.items.get()
+    export_data = _export_run(run_id, tmp_path)
+    result_path = tmp_path / "review.result.json"
+    _write_result(result_path, run_id, [_abstain_item(item)], export_data)
+
+    result = json.loads(_import_result(result_path, commit=True))
+
+    assert result["skipped"] == 1
+    assert result["errors"] == 0
+    assert not CatalogChange.objects.filter(item__run=run).exists()
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.NEEDS_REVIEW
+    assert item.error_code == "review"
+    assert item.error_detail == "нет точного slug в allowed_options"
+
+
+@pytest.mark.django_db
+def test_import_review_dry_run_writes_nothing(feature_enabled, tmp_path):
+    attr = _tool_type_attr()
+    _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
+    run_id = _make_run("test-import-review-dry-run")
+    run = CatalogProcessingRun.objects.get(pk=run_id)
+    item = run.items.get()
+    export_data = _export_run(run_id, tmp_path)
+    result_path = tmp_path / "review.result.json"
+    _write_result(result_path, run_id, [_abstain_item(item)], export_data)
+
+    result = json.loads(_import_result(result_path))
+
+    assert result["skipped"] == 1
+    assert result["errors"] == 0
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.PENDING
+    assert item.error_code == ""
+    assert not CatalogChange.objects.filter(item__run=run).exists()
+
+
+@pytest.mark.django_db
+def test_import_review_commit_replay_is_idempotent(feature_enabled, tmp_path):
+    attr = _tool_type_attr()
+    _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
+    run_id = _make_run("test-import-review-replay")
+    run = CatalogProcessingRun.objects.get(pk=run_id)
+    item = run.items.get()
+    export_data = _export_run(run_id, tmp_path)
+    result_path = tmp_path / "review.result.json"
+    _write_result(result_path, run_id, [_abstain_item(item)], export_data)
+
+    first = json.loads(_import_result(result_path, commit=True))
+    second = json.loads(_import_result(result_path, commit=True))
+
+    assert first["skipped"] == second["skipped"] == 1
+    assert first["errors"] == second["errors"] == 0
+    assert not CatalogChange.objects.filter(item__run=run).exists()
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.NEEDS_REVIEW
+    assert item.error_code == "review"
+
+
+@pytest.mark.django_db
+def test_import_researched_without_changes_is_contract_error(feature_enabled, tmp_path):
+    attr = _tool_type_attr()
+    _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
+    run_id = _make_run("test-import-researched-empty")
+    run = CatalogProcessingRun.objects.get(pk=run_id)
+    item = run.items.get()
+    export_data = _export_run(run_id, tmp_path)
+    item_data = _abstain_item(item, status="researched")
+    result_path = tmp_path / "researched.result.json"
+    _write_result(result_path, run_id, [item_data], export_data)
+
+    result = json.loads(_import_result(result_path, commit=True))
+
+    assert result["errors"] == 1
+    assert not CatalogChange.objects.filter(item__run=run).exists()
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.NEEDS_REVIEW
+    assert item.error_code == "import_error"
+
+
+@pytest.mark.django_db
+def test_import_unknown_with_changes_rejected(feature_enabled, tmp_path):
+    attr = _tool_type_attr()
+    drill = _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
+    run_id = _make_run("test-import-unknown-with-changes")
+    run = CatalogProcessingRun.objects.get(pk=run_id)
+    item = run.items.get()
+    export_data = _export_run(run_id, tmp_path)
+    item_data = _result_item(item, drill.slug)
+    item_data["status"] = "unknown"
+    result_path = tmp_path / "unknown.result.json"
+    _write_result(result_path, run_id, [item_data], export_data)
+
+    result = json.loads(_import_result(result_path, commit=True))
+
+    assert result["errors"] == 1
+    assert not CatalogChange.objects.filter(item__run=run).exists()
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.NEEDS_REVIEW
+    assert item.error_code == "import_error"
+
+
+@pytest.mark.django_db
+def test_import_identity_failed_with_changes_rejected(feature_enabled, tmp_path):
+    attr = _tool_type_attr()
+    drill = _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
+    run_id = _make_run("test-import-identity-failed-with-changes")
+    run = CatalogProcessingRun.objects.get(pk=run_id)
+    item = run.items.get()
+    export_data = _export_run(run_id, tmp_path)
+    item_data = _result_item(item, drill.slug)
+    item_data["status"] = "identity_failed"
+    result_path = tmp_path / "identity_failed.result.json"
+    _write_result(result_path, run_id, [item_data], export_data)
+
+    result = json.loads(_import_result(result_path, commit=True))
+
+    assert result["errors"] == 1
+    assert not CatalogChange.objects.filter(item__run=run).exists()
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.NEEDS_REVIEW
+    assert item.error_code == "import_error"
