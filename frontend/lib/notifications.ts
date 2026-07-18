@@ -3,8 +3,10 @@
 import { apiFetch } from "./api";
 import type {
   AvailabilitySubscriptionStatus,
+  NotificationItem,
   NotificationPreferences,
   NotificationPreferencesPatch,
+  PaginatedNotifications,
 } from "./types";
 
 /** Текущие настройки уведомлений (GET → Django .../preferences/). */
@@ -45,4 +47,25 @@ export function unsubscribeAvailability(slug: string): Promise<void> {
     `/api/catalog/products/${encodeURIComponent(slug)}/availability-subscription`,
     { method: "DELETE" },
   );
+}
+
+// --- Центр уведомлений (#515, страница — #513 epic) ---
+
+/** Страница истории (DRF LimitOffsetPagination — offset/limit query-параметры). */
+export function getNotificationHistory(offset = 0, limit = 20): Promise<PaginatedNotifications> {
+  return apiFetch<PaginatedNotifications>(
+    `/api/account/notifications?limit=${limit}&offset=${offset}`,
+  );
+}
+
+export function getUnreadNotificationCount(): Promise<{ unread_count: number }> {
+  return apiFetch<{ unread_count: number }>("/api/account/notifications/unread-count");
+}
+
+export function markNotificationRead(id: number): Promise<NotificationItem> {
+  return apiFetch<NotificationItem>(`/api/account/notifications/${id}/read`, { method: "POST" });
+}
+
+export function markAllNotificationsRead(): Promise<{ marked: number }> {
+  return apiFetch<{ marked: number }>("/api/account/notifications/read-all", { method: "POST" });
 }

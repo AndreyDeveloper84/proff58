@@ -232,3 +232,26 @@ export type NotificationPreferencesPatch = Partial<
 export type AvailabilitySubscriptionStatus = {
   status: "active" | "queued" | "notified" | "cancelled" | null;
 };
+
+// Строка истории уведомлений (#515, центр уведомлений — #513 epic). read_at
+// null — непрочитано. policy_skip_reason непусто, если доставка была
+// пропущена по preferences (уведомление всё равно видно в истории).
+export type NotificationItem = {
+  id: number;
+  event: string;
+  category: string;
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
+  policy_skip_reason: string;
+  created_at: string;
+  read_at: string | null;
+};
+
+// Пагинированный ответ DRF LimitOffsetPagination.
+export type PaginatedNotifications = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: NotificationItem[];
+};
