@@ -640,3 +640,87 @@ def apply_catalog_change(
                 return CatalogDecisionResult("failed", change_id, str(exc)[:255])
         except Exception as inner_exc:  # noqa: BLE001
             return CatalogDecisionResult("failed", change_id, str(inner_exc)[:255])
+
+
+@dataclass(frozen=True)
+class CatalogFinalizeResult:
+    """Результат ``finalize_catalog_processing_run``."""
+
+    status: str  # "completed" | "invalid"
+    run_id: uuid.UUID
+    reason: str = ""
+    already_finalized: bool = False
+    outcome: str = ""
+
+
+# Item-статусы, при которых run ещё нельзя финализировать.
+_NON_FINAL_ITEM_STATUSES = {"pending", "processing"}
+
+# Change-статусы, при которых run ещё нельзя финализировать.
+_NON_FINAL_CHANGE_STATUSES = {"proposed", "approved"}
+
+
+def finalize_catalog_processing_run(run_id: uuid.UUID) -> CatalogFinalizeResult:
+    """Финализация run: ``running`` -> ``completed``.
+
+    Блокирует run/items/changes. Запрещена при ``pending``/``processing``
+    items и ``proposed``/``approved`` changes — т.е. допускает смешанный
+    итог вида ``completed`` + ``needs_review`` (+ ``failed``). Идемпотентна:
+    повторный вызов по ``completed`` run возвращает
+    ``already_finalized=True``. Product/PAV не изменяет.
+    """
+    from collections import Counter
+
+    from .models import (
+        CatalogChange,
+        CatalogProcessingItem,
+        CatalogProcessingRun,
+        CatalogProcessingRunStatus,
+    )
+
+    if not _feature_enabled():
+        return CatalogFinalizeResult("invalid", run_id, "feature_disabled")
+
+    with transaction.atomic():
+        run = CatalogProcessingRun.objects.select_for_update().filter(pk=run_id).first()
+        if run is None:
+            return CatalogFinalizeResult("invalid", run_id, "run_not_found")
+        if run.status == CatalogProcessingRunStatus.COMPLETED:
+            return CatalogFinalizeResult("completed", run.id, already_finalized=True)
+        if run.status != CatalogProcessingRunStatus.RUNNING:
+            return CatalogFinalizeResult("invalid", run.id, f"run_not_running:{run.status}")
+
+        items = list(CatalogProcessingItem.objects.select_for_update().filter(run=run))
+        if any(i.status in _NON_FINAL_ITEM_STATUSES for i in items):
+            return CatalogFinalizeResult("invalid", run.id, "items_not_final")
+        changes = list(CatalogChange.objects.select_for_update().filter(item__run=run))
+        if any(c.status in _NON_FINAL_CHANGE_STATUSES for c in changes):
+            return CatalogFinalizeResult("invalid", run.id, "changes_not_final")
+
+        counts = Counter(i.status for i in items)
+        if counts.get("failed"):
+            outcome = "completed_with_errors"
+        elif counts.get("needs_review"):
+            outcome = "completed_with_review"
+        else:
+            outcome = "completed"
+
+        now = timezone.now()
+        stats = dict(run.stats or {})
+        stats.update(
+            {
+                "outcome": outcome,
+                "items_total": len(items),
+                "items_completed": counts.get("completed", 0),
+                "items_needs_review": counts.get("needs_review", 0),
+                "items_failed": counts.get("failed", 0),
+                "changes_total": len(changes),
+                "changes_applied": sum(1 for c in changes if c.status == "applied"),
+                "finalized_at": now.isoformat(),
+            }
+        )
+        run.status = CatalogProcessingRunStatus.COMPLETED
+        run.finished_at = now
+        run.stats = stats
+        run.save(update_fields=["status", "finished_at", "stats"])
+        return CatalogFinalizeResult("completed", run.id, outcome=outcome)

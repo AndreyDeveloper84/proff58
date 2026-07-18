@@ -791,3 +791,28 @@ def test_import_changes_with_unmatched_identity_rejected(
     assert not CatalogChange.objects.filter(item__run=run).exists()
     item.refresh_from_db()
     assert item.status == CatalogProcessingItemStatus.PENDING
+
+
+@pytest.mark.django_db
+def test_queue_finalize_command_success(feature_enabled, tmp_path):
+    run_id = _make_run("test-queue-finalize-success")
+    run = CatalogProcessingRun.objects.get(pk=run_id)
+    item = run.items.get()
+    item.status = CatalogProcessingItemStatus.COMPLETED
+    item.save(update_fields=["status"])
+
+    out = json.loads(call_command("catalog_queue_finalize", "--run", str(run_id)))
+
+    assert out["status"] == "completed"
+    assert out["outcome"] == "completed"
+    run.refresh_from_db()
+    assert run.status == "completed"
+    assert run.finished_at is not None
+
+
+@pytest.mark.django_db
+def test_queue_finalize_command_rejects_pending(feature_enabled):
+    run_id = _make_run("test-queue-finalize-pending")
+
+    with pytest.raises(CommandError, match="items_not_final"):
+        call_command("catalog_queue_finalize", "--run", str(run_id))
