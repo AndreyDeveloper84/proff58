@@ -145,7 +145,7 @@ def test_post_subscribe_in_stock_rejected(client, user, product):
     client.force_authenticate(user=user)
     resp = client.post(_URL.format(slug=product.slug))
     assert resp.status_code == 400
-    assert resp.data["code"] == "product_in_stock"
+    assert resp.data["code"] == "already_in_stock"
 
 
 @pytest.mark.django_db
