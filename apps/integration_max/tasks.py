@@ -33,13 +33,16 @@ def notify_product_available(
     `claim_active_subscriptions` — select_for_update(skip_locked=True), см.
     `apps.catalog.availability_subscriptions`.
     """
-    from apps.catalog.availability_subscriptions import claim_active_subscriptions, mark_notified
-    from apps.catalog.models import Product
+    from apps.catalog.availability_subscriptions import (
+        claim_active_subscriptions,
+        get_product_snapshot,
+        mark_notified_bulk,
+        revert_to_active,
+    )
     from apps.notifications.services import create_notification
 
-    try:
-        product = Product.objects.only("id", "name", "slug", "price").get(pk=product_id)
-    except Product.DoesNotExist:
+    product = get_product_snapshot(product_id)
+    if product is None:
         logger.warning(
             "notify_product_available: product=%s not found (transition=%s)",
             product_id,
@@ -62,6 +65,8 @@ def notify_product_available(
 
     notified = skipped = failed = 0
     for start in range(0, subscriber_count, _FANOUT_CHUNK):
+        chunk_notified_ids: list[int] = []
+        chunk_failed_ids: list[int] = []
         for sub in claimed[start : start + _FANOUT_CHUNK]:
             try:
                 intent = create_notification(
@@ -72,15 +77,23 @@ def notify_product_available(
                 )
             except Exception:
                 failed += 1
+                chunk_failed_ids.append(sub.pk)
                 logger.exception("notify_product_available: subscription=%s failed", sub.pk)
                 continue
             # one-shot: подписка отработана независимо от policy-skip/чат не
             # найден — второй раз на следующий импорт остатков её не шлём.
-            mark_notified(sub.pk)
+            chunk_notified_ids.append(sub.pk)
             if intent is not None and intent.policy_skip_reason:
                 skipped += 1
             else:
                 notified += 1
+
+        if chunk_notified_ids:
+            mark_notified_bulk(chunk_notified_ids)
+        if chunk_failed_ids:
+            # #521: транзиентная ошибка — не оставляем подписку зависшей в
+            # queued навсегда, возвращаем в active под следующий claim.
+            revert_to_active(chunk_failed_ids)
 
     logger.info(
         "notify_product_available: product=%s transition=%s subscribers=%d notified=%d "

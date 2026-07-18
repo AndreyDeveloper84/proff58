@@ -231,6 +231,10 @@ MAX_BOT_USERNAME = env("MAX_BOT_USERNAME", default="")
 # TTL одноразовой попытки авторизации через MAX, минут (#492, §11.3).
 MAX_AUTH_ATTEMPT_TTL_MINUTES = env.int("MAX_AUTH_ATTEMPT_TTL_MINUTES", default=5)
 
+# #521: retention policy — outbox (text/chat_id) короче, чем user-facing история.
+NOTIFICATION_LOG_RETENTION_DAYS = env.int("NOTIFICATION_LOG_RETENTION_DAYS", default=90)
+NOTIFICATION_RETENTION_DAYS = env.int("NOTIFICATION_RETENTION_DAYS", default=365)
+
 # ЮKassa
 # Kill-switch webhook'а оплаты. По умолчанию включён (локалка/тесты); на стенде
 # выключается в prod.py до закрытия #311 (webhook без аутентификации).

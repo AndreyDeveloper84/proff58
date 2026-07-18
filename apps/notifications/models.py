@@ -24,6 +24,19 @@ class NotificationStatus(models.TextChoices):
     UNKNOWN = "unknown", _("Статус неизвестен")
 
 
+class NotificationErrorKind(models.TextChoices):
+    """Классификация последней ошибки провайдера (#521) — только для FAILED.
+
+    RETRYABLE — 429/5xx/сетевые/таймаут: Celery уже отретраил bounded backoff
+    (см. tasks.py), после исчерпания retries можно ручной retry из админки.
+    PERMANENT — 4xx (кроме 429): ретраить бессмысленно (плохой запрос/чат
+    заблокирован и т.п.) — админка не предлагает retry.
+    """
+
+    RETRYABLE = "retryable", _("Временная (можно повторить)")
+    PERMANENT = "permanent", _("Постоянная (повтор бессмыслен)")
+
+
 class NotificationLog(TimeStampedModel):
     """Журнал отправленных уведомлений."""
 
@@ -59,6 +72,13 @@ class NotificationLog(TimeStampedModel):
     text = models.TextField(_("Текст сообщения"), blank=True)
     provider_message_id = models.CharField(
         _("ID сообщения у провайдера"), max_length=128, blank=True
+    )
+    error_kind = models.CharField(
+        _("Тип ошибки"),
+        max_length=10,
+        choices=NotificationErrorKind.choices,
+        blank=True,
+        help_text=_("Заполняется только при status=failed — retryable/permanent (#521)."),
     )
 
     class Meta:

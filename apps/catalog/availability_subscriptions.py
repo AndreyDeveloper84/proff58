@@ -15,7 +15,7 @@ claim под нагрузкой) — `apps.integration_max.tasks.notify_product_
 from __future__ import annotations
 
 from django.conf import settings
-from django.db import models, transaction
+from django.db import IntegrityError, models, transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -170,9 +170,22 @@ def subscribe(user, product: Product) -> ProductAvailabilitySubscription:
     if existing is not None:
         return existing
 
-    return ProductAvailabilitySubscription.objects.create(
-        user=user, product=product, channel=SubscriptionChannel.MAX
-    )
+    try:
+        with transaction.atomic():
+            return ProductAvailabilitySubscription.objects.create(
+                user=user, product=product, channel=SubscriptionChannel.MAX
+            )
+    except IntegrityError:
+        # Гонка (AC #517: идемпотентно): между проверкой выше и create() другой
+        # конкурентный запрос (двойной клик/повтор мобильного клиента) уже создал
+        # активную подписку — uniq_active_availability_subscription отклонила
+        # вставку. Не 500 — отдаём ту же семантику, что и обычный повтор POST.
+        return ProductAvailabilitySubscription.objects.get(
+            user=user,
+            product=product,
+            channel=SubscriptionChannel.MAX,
+            status=SubscriptionStatus.ACTIVE,
+        )
 
 
 def unsubscribe(user, product: Product) -> bool:
@@ -237,3 +250,39 @@ def mark_notified(subscription_id: int) -> None:
     ProductAvailabilitySubscription.objects.filter(pk=subscription_id).update(
         status=SubscriptionStatus.NOTIFIED, notified_at=timezone.now()
     )
+
+
+def mark_notified_bulk(subscription_ids) -> int:
+    """Как mark_notified, но одним UPDATE на пачку (#521) — fan-out не должен
+    бить по одному запросу на каждого подписчика ради простановки терминального
+    статуса."""
+    ids = list(subscription_ids)
+    if not ids:
+        return 0
+    return ProductAvailabilitySubscription.objects.filter(pk__in=ids).update(
+        status=SubscriptionStatus.NOTIFIED, notified_at=timezone.now()
+    )
+
+
+def revert_to_active(subscription_ids) -> int:
+    """Вернуть queued-подписки обратно в active (#521 AC).
+
+    Если fan-out не смог обработать подписку (транзиентная ошибка при
+    create_notification — не business-skip, а исключение) — она не должна
+    зависнуть в queued навсегда: claim_active_subscriptions() забирает только
+    active, так что без явного отката подписчик никогда не получит
+    уведомление ни на этот, ни на следующий приход товара.
+    """
+    ids = list(subscription_ids)
+    if not ids:
+        return 0
+    return ProductAvailabilitySubscription.objects.filter(
+        pk__in=ids, status=SubscriptionStatus.QUEUED
+    ).update(status=SubscriptionStatus.ACTIVE, queued_at=None)
+
+
+def get_product_snapshot(product_id: int) -> Product | None:
+    """Снимок безопасных полей товара для fan-out уведомления (#518/#521) —
+    apps.integration_max.tasks не читает Product напрямую (граница модулей,
+    apps.catalog — единственный владелец Product.objects)."""
+    return Product.objects.filter(pk=product_id).only("id", "name", "slug", "price").first()

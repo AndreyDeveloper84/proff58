@@ -25,84 +25,88 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
-EVENT_TEMPLATES: dict[str, str] = {
-    "order_created": "Заказ №{order_number} оформлен. Ожидайте подтверждения.",
-    "order_confirmed": "Заказ №{order_number} подтверждён.",
-    # #516: ready_note/tracking_note — receiver обязан передавать их всегда (пустой
-    # строкой, если нечего добавить) — иначе .format() упадёт на KeyError-фолбэк.
-    "order_ready": "Заказ №{order_number} собран.{ready_note}",
-    "order_shipped": "Заказ №{order_number} передан в доставку.{tracking_note}",
-    "order_delivered": "Заказ №{order_number} доставлен. Спасибо за покупку!",
-    "order_cancelled": "Заказ №{order_number} отменён.",
-    "order_paid": "Оплата заказа №{order_number} получена. Мы начали сборку.",
-    "order_refunded": "Возврат по заказу №{order_number} выполнен.",
-    "order_partially_refunded": "Оформлен частичный возврат по заказу №{order_number}.",
-    # #518: price_note — receiver/task обязан передавать всегда (пустой строкой,
-    # если цены нет), как ready_note/tracking_note выше.
-    "product_available": "«{product_name}» снова в наличии!{price_note}",
-}
-
-# #515: versioned template registry для user-facing intent (заголовок/категория).
-# Версия — снимок в Notification.template_version на момент создания; смена
+# Единый реестр событий: template (MAX-текст) + category/title/version (intent,
+# #515) — одной записью на event, а не двумя параллельными словарями. Раньше
+# EVENT_TEMPLATES/NOTIFICATION_META велись раздельно и уже успели разойтись
+# (max_connected был в одном, но не в другом — реальные уведомления уходили
+# как debug-фолбэк "Событие: max_connected"); один реестр делает такое
+# расхождение невозможным в принципе, а не только по соглашению.
+#
+# version — снимок в Notification.template_version на момент создания; смена
 # текста здесь не переписывает историю уже созданных intent'ов.
-NOTIFICATION_META: dict[str, dict] = {
+# ready_note/tracking_note/price_note — receiver/task обязаны передавать их
+# всегда (пустой строкой, если нечего добавить) — иначе .format() упадёт на
+# KeyError-фолбэк.
+NOTIFICATION_EVENTS: dict[str, dict] = {
     "order_created": {
+        "template": "Заказ №{order_number} оформлен. Ожидайте подтверждения.",
         "category": NotificationCategory.ORDER_UPDATES,
         "title": "Заказ оформлен",
         "version": 1,
     },
     "order_confirmed": {
+        "template": "Заказ №{order_number} подтверждён.",
         "category": NotificationCategory.ORDER_UPDATES,
         "title": "Заказ подтверждён",
         "version": 1,
     },
     "order_ready": {
+        "template": "Заказ №{order_number} собран.{ready_note}",
         "category": NotificationCategory.ORDER_UPDATES,
         "title": "Заказ готов",
         "version": 1,
     },
     "order_shipped": {
+        "template": "Заказ №{order_number} передан в доставку.{tracking_note}",
         "category": NotificationCategory.ORDER_UPDATES,
         "title": "Заказ в доставке",
         "version": 1,
     },
     "order_delivered": {
+        "template": "Заказ №{order_number} доставлен. Спасибо за покупку!",
         "category": NotificationCategory.ORDER_UPDATES,
         "title": "Заказ доставлен",
         "version": 1,
     },
     "order_cancelled": {
+        "template": "Заказ №{order_number} отменён.",
         "category": NotificationCategory.ORDER_UPDATES,
         "title": "Заказ отменён",
         "version": 1,
     },
     "order_paid": {
+        "template": "Оплата заказа №{order_number} получена. Мы начали сборку.",
         "category": NotificationCategory.ORDER_UPDATES,
         "title": "Заказ оплачен",
         "version": 1,
     },
     "order_refunded": {
+        "template": "Возврат по заказу №{order_number} выполнен.",
         "category": NotificationCategory.ORDER_UPDATES,
         "title": "Возврат выполнен",
         "version": 1,
     },
     "order_partially_refunded": {
+        "template": "Оформлен частичный возврат по заказу №{order_number}.",
         "category": NotificationCategory.ORDER_UPDATES,
         "title": "Частичный возврат",
         "version": 1,
     },
     "max_connected": {
+        "template": "Вы будете получать уведомления о заказах и поступлении товара в этом чате.",
         "category": NotificationCategory.ACCOUNT,
         "title": "MAX подключён",
         "version": 1,
     },
     "product_available": {
+        "template": "«{product_name}» снова в наличии!{price_note}",
         "category": NotificationCategory.PRODUCT_AVAILABILITY,
         "title": "Товар в наличии",
         "version": 1,
     },
 }
-_DEFAULT_NOTIFICATION_META = {
+_DEFAULT_NOTIFICATION_EVENT = {
+    "template": "",
     "category": NotificationCategory.ACCOUNT,
     "title": "Уведомление",
     "version": 1,
@@ -187,7 +191,7 @@ def _claim_outbox(*, user_id, chat_id, event, text, idempotency_key):
 
 
 def _render_text(event: str, payload: dict) -> str:
-    template = EVENT_TEMPLATES.get(event)
+    template = NOTIFICATION_EVENTS.get(event, {}).get("template")
     if template:
         try:
             return template.format(**payload)
@@ -303,7 +307,7 @@ def create_notification(
     if user is None:
         return None
     payload = payload or {}
-    meta = NOTIFICATION_META.get(event, _DEFAULT_NOTIFICATION_META)
+    meta = NOTIFICATION_EVENTS.get(event, _DEFAULT_NOTIFICATION_EVENT)
     title = meta["title"]
     body = _render_text(event, payload)
 

@@ -57,7 +57,7 @@ def handle_contact(chat_id: int, contact_payload: dict) -> dict | None:
     received_hash = contact_payload.get("hash", "")
 
     if not verify_contact_hash(token, vcf_info, received_hash):
-        logger.warning("MAX contact: HMAC verification failed, chat_id=%s", chat_id)
+        logger.warning("MAX contact: HMAC verification failed")  # #521: без chat_id
         return {"chat_id": chat_id, "text": "Не удалось подтвердить номер. Попробуйте ещё раз."}
 
     phone = extract_phone_from_vcf(vcf_info)
@@ -127,11 +127,12 @@ def handle_otp_confirm(chat_id: int, otp: str) -> dict | None:
     User.objects.filter(pk=user.pk).update(max_chat_id=chat_id, phone_verified=True)
     cache.delete(cache_key)
 
-    logger.info("MAX auth: linked chat_id=%s to user=%s", chat_id, user.pk)
+    # #521: без chat_id в логе (платформенный ID пользователя MAX — не для
+    # обычных логов); user.pk достаточно, чтобы найти запись при расследовании.
+    logger.info("MAX auth: linked user=%s", user.pk)
     logger.warning(
-        "MAX legacy OTP flow used: chat_id=%s, user=%s — deprecated by #514, "
+        "MAX legacy OTP flow used: user=%s — deprecated by #514, "
         "see apps/integration_max/handlers/auth_flow.py",
-        chat_id,
         user.pk,
     )
     return {

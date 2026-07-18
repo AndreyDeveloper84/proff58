@@ -32,6 +32,11 @@ _FULFILLMENT_EVENT_MAP = {
     "completed": "order_delivered",
     "cancelled": "order_cancelled",
 }
+# Статусы, для которых отсутствие в _FULFILLMENT_EVENT_MAP — осознанное решение
+# (MVP scope), а не забытый случай. Всё остальное немаппленное — логируем: если
+# apps/orders/models.py FulfillmentStatus обзаведётся новым значением, а сюда
+# его забудут добавить, это не должно тихо теряться без единого сигнала (#521).
+_KNOWN_NON_NOTIFYING_STATUSES = {"new", "assembling"}
 
 
 def _get_order_user(order_id: int):
@@ -75,7 +80,14 @@ def _on_order_paid(sender, order_id, **kwargs):
 def _on_order_status_changed(sender, order_id, old_status, new_status, **kwargs):
     event = _FULFILLMENT_EVENT_MAP.get(new_status)
     if event is None:
-        return  # assembling и любой немаппленный статус — не MAX-notification-worthy
+        if new_status not in _KNOWN_NON_NOTIFYING_STATUSES:
+            logger.warning(
+                "order_status_changed: new_status=%s has no MAX event mapping (order=%s) — "
+                "проверить _FULFILLMENT_EVENT_MAP, если это реальный новый статус",
+                new_status,
+                order_id,
+            )
+        return
     order, user = _get_order_user(order_id)
     if not order or not user:
         return

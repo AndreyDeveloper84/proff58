@@ -7,11 +7,15 @@ from django.urls import include, path
 
 from apps.ai.metrics import metrics_view
 from apps.core import health
+from apps.notifications.metrics import metrics_view as notifications_metrics_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("healthz/", health.healthz, name="healthcheck"),
     path("metrics/", metrics_view, name="prometheus-metrics"),
+    path(
+        "metrics/notifications/", notifications_metrics_view, name="notifications-metrics"
+    ),  # #521
     path("api/1c/", include("apps.sync_1c.api.urls")),
     path("api/catalog/", include("apps.catalog.api.urls")),
     path("api/payments/", include("apps.payments.urls")),
