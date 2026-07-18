@@ -510,3 +510,17 @@ def claim_guest_orders(user) -> int:
         if not ids:
             return 0
         return Order.objects.filter(pk__in=ids).update(user=user)
+
+
+def is_guest_token_expired(order: Order) -> bool:
+    """#438 (m-03): TTL гостевого токена. По истечении доступ по токену закрыт.
+
+    Окно задаётся ``GUEST_ORDER_TOKEN_TTL_DAYS`` (0/None → без ограничения).
+    Ограничивает срок, в течение которого утёкший URL остаётся валидным.
+    Публичная (не ``_``), т.к. её должны переиспользовать и другие модули,
+    проверяющие владение гостевым заказом по access_token (#520 — integration_max).
+    """
+    ttl_days = getattr(settings, "GUEST_ORDER_TOKEN_TTL_DAYS", 0)
+    if not ttl_days:
+        return False
+    return timezone.now() - order.created_at > timedelta(days=int(ttl_days))

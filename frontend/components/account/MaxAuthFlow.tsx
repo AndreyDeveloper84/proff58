@@ -8,12 +8,17 @@ import {
   maxStart,
   maxStatus,
   type MaxAttempt,
+  type MaxAttemptStatus,
 } from "@/lib/auth";
 
 // Поток авторизации/привязки через MAX (#492): создаём попытку, на мобильном
 // открываем диплинк бота, на десктопе показываем QR; опрашиваем статус (§7.3) и по
 // completed зовём onCompleted (вход/обновление). Токен бота на фронт не приходит —
 // только диплинк с одноразовым секретом попытки.
+//
+// `start`/`pollStatus` (#520): опциональный override для сценариев за пределами
+// login/link — напр. отслеживание гостевого заказа (свои start/status-эндпоинты,
+// без побочного login()). Без override — обычное mode-based поведение как раньше.
 
 type Phase = "idle" | "starting" | "waiting" | "completed" | "error";
 const TERMINAL_FAIL = ["expired", "cancelled", "failed"];
@@ -26,10 +31,14 @@ export function MaxAuthFlow({
   mode = "login",
   ctaLabel,
   onCompleted,
+  start: customStart,
+  pollStatus = maxStatus,
 }: {
   mode?: "login" | "link";
   ctaLabel?: string;
   onCompleted: () => void;
+  start?: () => Promise<MaxAttempt>;
+  pollStatus?: (attemptId: string) => Promise<MaxAttemptStatus>;
 }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [attempt, setAttempt] = useState<MaxAttempt | null>(null);
@@ -51,7 +60,7 @@ export function MaxAuthFlow({
     setMessage("");
     setQr(null);
     try {
-      const a = mode === "link" ? await maxLinkStart() : await maxStart();
+      const a = customStart ? await customStart() : mode === "link" ? await maxLinkStart() : await maxStart();
       setAttempt(a);
       setPhase("waiting");
 
@@ -67,7 +76,7 @@ export function MaxAuthFlow({
       stopPoll();
       poll.current = setInterval(async () => {
         try {
-          const s = await maxStatus(a.attempt_id);
+          const s = await pollStatus(a.attempt_id);
           if (s.status === "completed") {
             stopPoll();
             setPhase("completed");
@@ -91,7 +100,7 @@ export function MaxAuthFlow({
       setPhase("error");
       setMessage(e instanceof Error ? e.message : "Не удалось начать вход через MAX.");
     }
-  }, [mode, onCompleted, stopPoll]);
+  }, [mode, onCompleted, stopPoll, customStart, pollStatus]);
 
   const cancel = useCallback(async () => {
     stopPoll();

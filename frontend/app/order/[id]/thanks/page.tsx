@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TrackOrderInMaxCta } from "@/components/order/TrackOrderInMaxCta";
 import { formatPrice } from "@/lib/format";
 import { readStashedOrder } from "@/lib/order-storage";
 import type { Order } from "@/lib/types";
@@ -58,6 +59,9 @@ export default function ThanksPage() {
           Мы свяжемся с вами для подтверждения. Если есть вопросы — позвоните нам или
           напишите на почту.
         </p>
+        {order?.access_token && (
+          <TrackOrderInMaxCta orderNumber={order.order_number} accessToken={order.access_token} />
+        )}
       </div>
 
       {order && (

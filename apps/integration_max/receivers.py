@@ -7,6 +7,11 @@ notifications.services.create_notification().
 #515). Здесь только: (1) типизированный маппинг доменное событие → MAX-событие/
 шаблон, (2) снимок безопасных данных заказа (публичный номер, способ получения,
 трек-номер — НЕ id/токены), (3) idempotency_key на уровне order+ось+цель.
+
+Для гостевых заказов (``order.user is None``) — параллельная ветка через
+``OrderTrackingGrant`` (#520, см. _notify_guest_tracking): тот же outbox/Celery/
+retry (notifications.services.send()), но без intent/preference/history-слоя
+(create_notification()/Notification) — тому гостю без аккаунта нечего показать.
 """
 
 from __future__ import annotations
@@ -49,30 +54,59 @@ def _get_order_user(order_id: int):
     return order, order.user
 
 
+def _notify_guest_tracking(order, event: str, payload: dict, idempotency_key: str) -> None:
+    """Уведомить гостя без аккаунта через OrderTrackingGrant (#520), если он
+    подключил отслеживание.
+
+    Через ``notifications.services.send()`` (не ``create_notification()`` — той
+    нужен ``user`` для intent/preference-слоя): те же шаблоны NOTIFICATION_EVENTS,
+    тот же outbox + Celery-доставка + retry/backoff/классификация ошибок (#521),
+    без реализации этого заново здесь. Не создаётся только Notification
+    (in-app история/read-state) — гостю без аккаунта нечего показывать в ЛК.
+    """
+    from .services import resolve_tracking_grant_chat_id
+
+    chat_id = resolve_tracking_grant_chat_id(order)
+    if not chat_id:
+        return
+
+    from apps.notifications.services import send
+
+    send(user=None, chat_id=chat_id, event=event, payload=payload, idempotency_key=idempotency_key)
+
+
 def _on_order_created(sender, order_id, **kwargs):
     order, user = _get_order_user(order_id)
-    if not order or not user:
+    if not order:
+        return
+    payload = {"order_number": order.order_number}
+    if user is None:
+        _notify_guest_tracking(order, "order_created", payload, f"order-created-{order_id}")
         return
     from apps.notifications.services import create_notification
 
     create_notification(
         user=user,
         event="order_created",
-        payload={"order_number": order.order_number},
+        payload=payload,
         idempotency_key=f"order-created-{order_id}",
     )
 
 
 def _on_order_paid(sender, order_id, **kwargs):
     order, user = _get_order_user(order_id)
-    if not order or not user:
+    if not order:
+        return
+    payload = {"order_number": order.order_number}
+    if user is None:
+        _notify_guest_tracking(order, "order_paid", payload, f"order-paid-{order_id}")
         return
     from apps.notifications.services import create_notification
 
     create_notification(
         user=user,
         event="order_paid",
-        payload={"order_number": order.order_number},
+        payload=payload,
         idempotency_key=f"order-paid-{order_id}",
     )
 
@@ -89,9 +123,8 @@ def _on_order_status_changed(sender, order_id, old_status, new_status, **kwargs)
             )
         return
     order, user = _get_order_user(order_id)
-    if not order or not user:
+    if not order:
         return
-    from apps.notifications.services import create_notification
 
     payload = {"order_number": order.order_number}
     if event == "order_ready":
@@ -108,6 +141,11 @@ def _on_order_status_changed(sender, order_id, old_status, new_status, **kwargs)
             f" Трек-номер: {order.tracking_number}." if order.tracking_number else ""
         )
 
+    if user is None:
+        _notify_guest_tracking(order, event, payload, f"order-status-{order_id}-{new_status}")
+        return
+    from apps.notifications.services import create_notification
+
     create_notification(
         user=user,
         event=event,
@@ -118,18 +156,23 @@ def _on_order_status_changed(sender, order_id, old_status, new_status, **kwargs)
 
 def _on_payment_refunded(sender, payment_id, order_id, refund_id, amount, is_full, **kwargs):
     order, user = _get_order_user(order_id)
-    if not order or not user:
+    if not order:
+        return
+    event = "order_refunded" if is_full else "order_partially_refunded"
+    payload = {"order_number": order.order_number}
+    # ADR-0009: refund_id — конкретная операция возврата, а не order_id — несколько
+    # частичных возвратов по заказу это разные реальные события.
+    idempotency_key = f"order-refunded-{order_id}-{refund_id}"
+    if user is None:
+        _notify_guest_tracking(order, event, payload, idempotency_key)
         return
     from apps.notifications.services import create_notification
 
-    event = "order_refunded" if is_full else "order_partially_refunded"
     create_notification(
         user=user,
         event=event,
-        payload={"order_number": order.order_number},
-        # ADR-0009: refund_id — конкретная операция возврата, а не order_id —
-        # несколько частичных возвратов по заказу это разные реальные события.
-        idempotency_key=f"order-refunded-{order_id}-{refund_id}",
+        payload=payload,
+        idempotency_key=idempotency_key,
     )
 
 

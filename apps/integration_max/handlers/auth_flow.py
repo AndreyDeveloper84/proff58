@@ -27,6 +27,13 @@ _FAIL_TEXT = {
     "attempt_not_pending": "Ссылка недействительна или истекла. Начните вход заново.",
     "bad_phone": "Не удалось определить номер телефона.",
 }
+# #520: track_order — гость без аккаунта, общие тексты выше про «аккаунт» не подходят.
+_TRACK_ORDER_FAIL_TEXT = {
+    "phone_mismatch": "Номер MAX не совпадает с номером заказа.",
+    "no_target_order": "Заказ не найден. Откройте ссылку «Отслеживать в MAX» на странице заказа заново.",
+    "attempt_not_pending": "Ссылка недействительна или истекла. Начните заново со страницы заказа.",
+    "bad_phone": "Не удалось определить номер телефона.",
+}
 _SHARE_BUTTON = {
     "type": "inline_keyboard",
     "payload": {"buttons": [[{"type": "request_contact", "text": "Поделиться номером"}]]},
@@ -55,10 +62,17 @@ def handle_deeplink_start(chat_id: int, max_user_id: int | None, attempt) -> dic
             cache.delete(_chat_key(chat_id))
             return {"chat_id": chat_id, "text": "Вход подтверждён. Вернитесь на сайт."}
 
-    consent = (
-        "Нажимая «Поделиться номером», вы разрешаете использовать номер телефона для "
-        "регистрации, входа, оформления заказов и отправки сервисных уведомлений."
-    )
+    if attempt.operation_type == services.Operation.TRACK_ORDER:
+        # #520: гость не регистрируется и не входит — только сверка номера с заказом.
+        consent = (
+            "Нажимая «Поделиться номером», вы разрешаете сверить его с номером заказа "
+            "и присылать уведомления о статусе именно этого заказа."
+        )
+    else:
+        consent = (
+            "Нажимая «Поделиться номером», вы разрешаете использовать номер телефона для "
+            "регистрации, входа, оформления заказов и отправки сервисных уведомлений."
+        )
     return {"chat_id": chat_id, "text": consent, "attachments": [_SHARE_BUTTON]}
 
 
@@ -95,10 +109,17 @@ def handle_attempt_contact(chat_id: int, contact_payload: dict, sender: dict | N
         attempt, max_user_id=max_user_id, phone=phone, chat_id=chat_id, profile=profile
     )
     cache.delete(_chat_key(chat_id))
+    is_track_order = attempt.operation_type == services.Operation.TRACK_ORDER
 
     if attempt.status == services.Status.COMPLETED:
-        return {"chat_id": chat_id, "text": "Вход подтверждён. Вернитесь на сайт."}
+        text = (
+            "Отслеживание подключено. Вернитесь на сайт."
+            if is_track_order
+            else "Вход подтверждён. Вернитесь на сайт."
+        )
+        return {"chat_id": chat_id, "text": text}
+    fail_texts = _TRACK_ORDER_FAIL_TEXT if is_track_order else _FAIL_TEXT
     return {
         "chat_id": chat_id,
-        "text": _FAIL_TEXT.get(attempt.failure_reason, "Не удалось подтвердить вход."),
+        "text": fail_texts.get(attempt.failure_reason, "Не удалось подтвердить вход."),
     }

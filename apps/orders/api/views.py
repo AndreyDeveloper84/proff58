@@ -47,21 +47,7 @@ def _no_store(response):
     return response
 
 
-def _guest_token_expired(order) -> bool:
-    """#438 (m-03): TTL гостевого токена. По истечении доступ по токену закрыт.
-
-    Окно задаётся ``GUEST_ORDER_TOKEN_TTL_DAYS`` (0/None → без ограничения).
-    Ограничивает срок, в течение которого утёкший URL остаётся валидным.
-    """
-    from datetime import timedelta
-
-    from django.conf import settings
-    from django.utils import timezone
-
-    ttl_days = getattr(settings, "GUEST_ORDER_TOKEN_TTL_DAYS", 0)
-    if not ttl_days:
-        return False
-    return timezone.now() - order.created_at > timedelta(days=int(ttl_days))
+_guest_token_expired = services.is_guest_token_expired
 
 
 def _get_session_key(request) -> str:

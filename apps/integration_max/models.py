@@ -65,6 +65,7 @@ class MaxAuthAttempt(models.Model):
         REGISTRATION = "registration", _("Регистрация")
         LINK = "link", _("Привязка MAX")
         CONFIRM_LOGIN = "confirm_login", _("Подтверждение входа")
+        TRACK_ORDER = "track_order", _("Отслеживание гостевого заказа")
 
     class Status(models.TextChoices):
         PENDING = "pending", _("Ожидание")
@@ -93,6 +94,16 @@ class MaxAuthAttempt(models.Model):
     )
     max_user_id = models.BigIntegerField(_("MAX user_id"), null=True, blank=True)
     chat_id = models.BigIntegerField(_("MAX chat_id"), null=True, blank=True)
+    # Только для track_order (#520): к какому гостевому заказу привязывается попытка.
+    # Слой 4 (integration_max) знает о заказах — обратной зависимости нет (см. CLAUDE.md §4).
+    order = models.ForeignKey(
+        "orders.Order",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="max_track_attempts",
+        verbose_name=_("Заказ (для track_order)"),
+    )
     status = models.CharField(
         _("Статус"), max_length=24, choices=Status.choices, default=Status.PENDING
     )
@@ -125,3 +136,30 @@ class MaxAuthAttempt(models.Model):
             self.Status.EXPIRED,
             self.Status.FAILED,
         }
+
+
+class OrderTrackingGrant(models.Model):
+    """Разрешение слать обновления по ОДНОМУ гостевому заказу в конкретный MAX-чат (#520).
+
+    Намеренно НЕ переиспользует `MaxAccount`: гость не проходит регистрацию/вход,
+    и грант не должен захватывать историю заказов или создавать аккаунт (запрет
+    автослияния — см. Scope тикета). `OneToOneField` — «один грант на заказ»
+    прямо на уровне схемы, а не только проверкой в сервисном слое.
+    """
+
+    order = models.OneToOneField(
+        "orders.Order",
+        on_delete=models.CASCADE,
+        related_name="max_tracking_grant",
+        verbose_name=_("Заказ"),
+    )
+    max_user_id = models.BigIntegerField(_("MAX user_id"))
+    chat_id = models.BigIntegerField(_("MAX chat_id"), null=True, blank=True)
+    granted_at = models.DateTimeField(_("Выдан"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Грант отслеживания заказа в MAX")
+        verbose_name_plural = _("Гранты отслеживания заказа в MAX")
+
+    def __str__(self) -> str:
+        return f"track order={self.order_id} → max_user={self.max_user_id}"

@@ -134,3 +134,59 @@ class MaxStatusMeView(APIView):
                 "linked_at": acct.linked_at.isoformat() if acct else None,
             }
         )
+
+
+class MaxTrackOrderStartView(APIView):
+    """POST /api/orders/<number>/max-track/start/ — начать отслеживание гостевого
+    заказа в MAX (#520).
+
+    ``access_token`` — в теле запроса (не в query string): это мутирующий POST,
+    держать гостевой токен подальше от URL/логов прокси/Referer лишним не будет
+    (тот же токен, что #438 уже бережёт в GuestOrderView через query+no-store).
+    Сам токен НИКУДА дальше не уходит — попытка несёт только public_id/secret
+    (§11.1), в MAX или лог токен заказа не попадает.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
+
+    def post(self, request, number):
+        from apps.orders.models import Order
+        from apps.orders.services import is_guest_token_expired
+
+        token = request.data.get("access_token", "")
+        if not token:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        order = Order.objects.filter(order_number=number, access_token=token, user=None).first()
+        if order is None or is_guest_token_expired(order):
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        session_key = _ensure_session_key(request)
+        started = services.create_attempt(
+            session_key=session_key,
+            operation_type=MaxAuthAttempt.Operation.TRACK_ORDER,
+            order=order,
+        )
+        return Response(_attempt_payload(started), status=status.HTTP_201_CREATED)
+
+
+class MaxTrackOrderStatusView(APIView):
+    """GET /api/orders/max-track/<public_id>/status/ — опрос статуса track_order-попытки.
+
+    В отличие от ``MaxAuthStatusView`` НЕ поднимает Django-сессию по completed —
+    это не вход, гость так и остаётся гостем, только заказ теперь помечен для
+    уведомлений (см. ``OrderTrackingGrant``).
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, public_id):
+        attempt = services.get_attempt(str(public_id))
+        if attempt is None or attempt.operation_type != MaxAuthAttempt.Operation.TRACK_ORDER:
+            return Response({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)
+        # §11.2: чужая браузер-сессия не должна читать статус попытки другого гостя.
+        if attempt.browser_session_key != (request.session.session_key or ""):
+            return Response({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"status": attempt.status, "failure_reason": attempt.failure_reason or None}
+        )
