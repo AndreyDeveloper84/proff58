@@ -31,35 +31,17 @@ from apps.catalog.models import (
     ProductAttributeValue,
 )
 from apps.catalog.processing import canonical_hash, tool_type_snapshot
+from apps.catalog.queue_contract import (
+    TOOL_TYPE_SLUG,
+    _category_paths,
+    _product_snapshot,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
 
-TOOL_TYPE_SLUG = "tool_type"
 MAX_ITEMS = 1000
-
-
-def _product_snapshot(product: Product) -> dict:
-    """Канонический snapshot товара для export/audit."""
-    category_path = ""
-    if product.category_id:
-        category_path = " / ".join(
-            [category.name for category in product.category.get_ancestors()]
-            + [product.category.name]
-        )
-    return {
-        "product_id": product.pk,
-        "code_1c": product.code_1c or "",
-        "article": product.article or "",
-        "barcode": product.barcode or "",
-        "brand": product.brand or "",
-        "name": product.name or "",
-        "original_name": product.original_name or "",
-        "category_id": product.category_id,
-        "category_path": category_path,
-        "source_group": product.source_group or "",
-    }
 
 
 def _products_without_tool_type():
@@ -120,7 +102,8 @@ class Command(BaseCommand):
             "--idempotency-key",
             type=str,
             default=None,
-            help="Ключ идемпотентности. По умолчанию генерируется из параметров.",
+            help="Ключ идемпотентности. Автоключ генерируется из параметров и даты, "
+            "поэтому идемпотентен только в пределах календарного дня.",
         )
         parser.add_argument(
             "--explicit-ids",
@@ -208,6 +191,7 @@ class Command(BaseCommand):
             )
             return str(existing.pk)
 
+        category_paths = _category_paths()
         try:
             with transaction.atomic():
                 run = CatalogProcessingRun.objects.create(
@@ -218,7 +202,7 @@ class Command(BaseCommand):
                     scope=scope,
                     stats={"total_items": count},
                 )
-                items = self._build_items(run, products, mode)
+                items = self._build_items(run, products, mode, category_paths)
                 CatalogProcessingItem.objects.bulk_create(items, batch_size=500)
         except IntegrityError:
             existing = CatalogProcessingRun.objects.filter(idempotency_key=idempotency_key).first()
@@ -259,10 +243,11 @@ class Command(BaseCommand):
         run: CatalogProcessingRun,
         products: Iterable[Product],
         mode: str,
+        category_paths: dict[int, str],
     ) -> list[CatalogProcessingItem]:
         items: list[CatalogProcessingItem] = []
         for product in products:
-            input_snapshot = _product_snapshot(product)
+            input_snapshot = _product_snapshot(product, category_paths)
             baseline = tool_type_snapshot(product)
             baseline_hash = canonical_hash(
                 {
