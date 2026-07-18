@@ -43,9 +43,11 @@ from apps.catalog.processing import (
     create_catalog_change,
     tool_type_snapshot,
 )
-
-from .catalog_queue_create import _product_snapshot
-from .catalog_queue_export import _allowed_tool_type_options, _taxonomy_hash
+from apps.catalog.queue_contract import (
+    _allowed_tool_type_options,
+    _product_snapshot,
+    _taxonomy_hash,
+)
 
 SCHEMA_VERSION = "1.0"
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB

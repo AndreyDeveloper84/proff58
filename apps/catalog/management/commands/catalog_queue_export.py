@@ -20,12 +20,8 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from apps.catalog.models import (
-    Attribute,
-    AttributeOption,
-    CatalogProcessingRun,
-    CatalogProcessingRunStatus,
-)
+from apps.catalog.models import CatalogProcessingRun, CatalogProcessingRunStatus
+from apps.catalog.queue_contract import _allowed_tool_type_options, _taxonomy_hash
 
 SCHEMA_VERSION = "1.0"
 BASE_DIR = Path(settings.BASE_DIR) / "var" / "catalog-processing"
@@ -34,24 +30,6 @@ OUTBOX_DIR = BASE_DIR / "outbox"
 
 def _ensure_dirs() -> None:
     OUTBOX_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def _allowed_tool_type_options() -> list[dict[str, Any]]:
-    attr = Attribute.objects.filter(slug="tool_type").first()
-    if attr is None:
-        return []
-    return [
-        {
-            "slug": opt.slug,
-            "value": opt.value,
-        }
-        for opt in AttributeOption.objects.filter(attribute=attr).order_by("slug")
-    ]
-
-
-def _taxonomy_hash(options: list[dict[str, Any]]) -> str:
-    payload = json.dumps(options, sort_keys=True, ensure_ascii=False)
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _build_export(run: CatalogProcessingRun) -> dict[str, Any]:
