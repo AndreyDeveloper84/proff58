@@ -76,7 +76,7 @@ def handle_attempt_contact(chat_id: int, contact_payload: dict, sender: dict | N
     received_hash = contact_payload.get("hash", "")
     # §11.5: номер подтверждён только штатной передачей контакта MAX (HMAC-подпись).
     if not verify_contact_hash(token, vcf_info, received_hash):
-        logger.warning("MAX auth: HMAC verification failed, chat_id=%s", chat_id)
+        logger.warning("MAX auth: HMAC verification failed")  # #521: без chat_id
         return {"chat_id": chat_id, "text": "Не удалось подтвердить номер. Попробуйте ещё раз."}
 
     phone = extract_phone_from_vcf(vcf_info)

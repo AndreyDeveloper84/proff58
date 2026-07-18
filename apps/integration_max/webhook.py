@@ -68,7 +68,9 @@ def _send_reply(reply: dict | None) -> None:
         with urllib.request.urlopen(req, timeout=10):
             pass
     except Exception:
-        logger.exception("Failed to send MAX reply to chat_id=%s", chat_id)
+        # #521: без chat_id в логе — это ответ боту, идентификатор не нужен для
+        # расследования (webhook сам по себе один на запрос).
+        logger.exception("Failed to send MAX reply")
 
 
 @csrf_exempt

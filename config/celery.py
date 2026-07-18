@@ -37,4 +37,13 @@ app.conf.beat_schedule = {
         "task": "apps.notifications.tasks.reconcile_stuck_notifications",
         "schedule": 10 * 60,  # каждые 10 минут
     },
+    # #521: retention policy — чистка старых outbox-логов/истории уведомлений.
+    "cleanup-old-notification-logs": {
+        "task": "apps.notifications.tasks.cleanup_old_notification_logs",
+        "schedule": crontab(hour=4, minute=0),  # ночью
+    },
+    "cleanup-old-notifications": {
+        "task": "apps.notifications.tasks.cleanup_old_notifications",
+        "schedule": crontab(hour=4, minute=15),
+    },
 }
