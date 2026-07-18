@@ -419,6 +419,8 @@ Item содержит:
 {
   "schema_version": "1.0",
   "run_id": "uuid",
+  "taxonomy_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "export_checksum": "1111111111111111111111111111111111111111111111111111111111111111",
   "items": [
     {
       "product_ref": 123,
@@ -435,7 +437,13 @@ Item содержит:
           "proposed_value": {"option_slug": "drill-driver"},
           "confidence": 96,
           "reason_code": "exact_model_match",
-          "evidence": []
+          "source": "web",
+          "evidence": [
+            {
+              "source_type": "manufacturer",
+              "url": "https://www.bosch-professional.com/example"
+            }
+          ]
         }
       ]
     }
@@ -475,7 +483,7 @@ Commit:
 
 - file size и максимальное количество items;
 - UTF-8 и JSON Schema;
-- schema/run/taxonomy version;
+- schema/run/taxonomy hash и checksum исходного export;
 - отсутствие duplicate product refs;
 - совпадение input hash;
 - run/item/product существуют;
