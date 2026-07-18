@@ -762,3 +762,32 @@ def test_import_identity_failed_with_changes_rejected(feature_enabled, tmp_path)
     item.refresh_from_db()
     assert item.status == CatalogProcessingItemStatus.NEEDS_REVIEW
     assert item.error_code == "import_error"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("identity_status", ["partial", "unknown", "mismatch"])
+def test_import_changes_with_unmatched_identity_rejected(
+    feature_enabled, tmp_path, identity_status
+):
+    """Guard: changes допустимы только при identity.status="matched".
+
+    Файл-level guard в _domain_validation отклоняет весь result целиком,
+    если любой item несёт changes при несовпавшей идентичности.
+    """
+    attr = _tool_type_attr()
+    drill = _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
+    run_id = _make_run(f"test-import-identity-{identity_status}")
+    run = CatalogProcessingRun.objects.get(pk=run_id)
+    item = run.items.get()
+    export_data = _export_run(run_id, tmp_path)
+    item_data = _result_item(item, drill.slug)
+    item_data["identity"]["status"] = identity_status
+    result_path = tmp_path / f"identity-{identity_status}.result.json"
+    _write_result(result_path, run_id, [item_data], export_data)
+
+    with pytest.raises(CommandError, match="identity.status=matched"):
+        _import_result(result_path, commit=True)
+
+    assert not CatalogChange.objects.filter(item__run=run).exists()
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.PENDING
