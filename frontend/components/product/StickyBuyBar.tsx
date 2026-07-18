@@ -12,7 +12,7 @@ import { OrderCta } from "./OrderCta";
 export function StickyBuyBar({
   product,
 }: {
-  product: Pick<Product, "id" | "name" | "price" | "stock">;
+  product: Pick<Product, "id" | "slug" | "name" | "price" | "stock">;
 }) {
   const [shown, setShown] = useState(false);
 
@@ -41,6 +41,7 @@ export function StickyBuyBar({
         </div>
         <OrderCta
           productId={product.id}
+          productSlug={product.slug}
           stock={product.stock}
           hasPrice={product.price.final != null}
         />

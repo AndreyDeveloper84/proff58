@@ -129,6 +129,9 @@ export async function proxyToDjango(
     );
   }
 
-  const body = await upstream.arrayBuffer();
+  // 204/205/304 — null-body-статусы: Response запрещает передавать им тело (даже
+  // пустое ArrayBuffer), иначе конструктор бросает TypeError.
+  const NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304]);
+  const body = NULL_BODY_STATUSES.has(upstream.status) ? null : await upstream.arrayBuffer();
   return new Response(body, { status: upstream.status, headers: responseHeaders });
 }

@@ -90,6 +90,7 @@ export default async function ProductPage({ params }: Props) {
             <ProductPrice price={product.price} />
             <OrderCta
               productId={product.id}
+              productSlug={product.slug}
               stock={product.stock}
               hasPrice={product.price.final != null}
             />

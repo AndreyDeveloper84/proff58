@@ -2,14 +2,27 @@
 // Только клиентская сторона: cookie сессии отправляются автоматически (same-origin).
 // Серверные обращения к Django живут отдельно (lib/adapters.ts, lib/bff.ts) — не дублируем.
 
-// Ошибка обращения к BFF: несёт HTTP-статус и человекочитаемый detail из ответа Django.
+// Ошибка обращения к BFF: несёт HTTP-статус, человекочитаемый detail из ответа
+// Django и (если бэк его отдал) машиночитаемый code — напр. #517/#519:
+// {"detail": "...", "code": "already_in_stock"} — для actionable-веток на фронте
+// вместо разбора текста сообщения.
 export class ApiError extends Error {
   readonly status: number;
-  constructor(message: string, status: number) {
+  readonly code?: string;
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.code = code;
   }
+}
+
+/** Машиночитаемый code из тела ошибки, если бэк его прислал (см. ApiError.code). */
+export function extractErrorCode(body: unknown): string | undefined {
+  if (body && typeof body === "object" && typeof (body as Record<string, unknown>).code === "string") {
+    return (body as Record<string, unknown>).code as string;
+  }
+  return undefined;
 }
 
 /**
@@ -57,7 +70,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
   if (!res.ok) {
     const body: unknown = await res.json().catch(() => undefined);
-    throw new ApiError(extractErrorMessage(body, res.status), res.status);
+    throw new ApiError(extractErrorMessage(body, res.status), res.status, extractErrorCode(body));
   }
 
   if (res.status === 204) return undefined as T;
