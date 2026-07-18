@@ -443,3 +443,37 @@ def test_exception_after_pav_write_marks_failed(feature_enabled, reviewer, monke
 
     # Восстанавливаем для чистоты (monkeypatch сделает это автоматически, но явно надёжнее).
     monkeypatch.undo()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_two_parallel_finalize_calls_single_transition(feature_enabled):
+    p = _product(slug="finalize-concurrent")
+    run = _run()
+    item = _item(run, p)
+    item.status = CatalogProcessingItemStatus.COMPLETED
+    item.save(update_fields=["status"])
+
+    results = []
+    errors = []
+
+    def worker():
+        try:
+            results.append(processing.finalize_catalog_processing_run(run.id))
+        except Exception as exc:  # noqa: BLE001
+            errors.append(exc)
+
+    threads = [threading.Thread(target=worker) for _ in range(2)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert not errors
+    assert len(results) == 2
+    assert all(r.status == "completed" for r in results)
+    # Ровно один поток выполнил переход, второй получил идемпотентный ответ.
+    assert sum(1 for r in results if not r.already_finalized) == 1
+    assert sum(1 for r in results if r.already_finalized) == 1
+    run.refresh_from_db()
+    assert run.status == CatalogProcessingRunStatus.COMPLETED
+    assert run.finished_at is not None

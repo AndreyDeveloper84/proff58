@@ -517,3 +517,173 @@ def test_source_allowlist_rejects_global_sources(feature_enabled, attr, drill_op
 
     assert result.status == "invalid"
     assert result.reason == "invalid_source"
+
+
+# --- finalize_catalog_processing_run ---
+
+
+def _finish_item(item, status):
+    item.status = status
+    item.save(update_fields=["status"])
+
+
+@pytest.mark.django_db
+def test_finalize_success_mixed_completed_and_needs_review(feature_enabled):
+    p1 = _product(slug="fin-1")
+    p2 = _product(slug="fin-2")
+    run = _run()
+    item1 = _item(run, p1)
+    item2 = _item(run, p2)
+    _finish_item(item1, CatalogProcessingItemStatus.COMPLETED)
+    _finish_item(item2, CatalogProcessingItemStatus.NEEDS_REVIEW)
+
+    result = processing.finalize_catalog_processing_run(run.id)
+
+    assert result.status == "completed"
+    assert result.outcome == "completed_with_review"
+    assert not result.already_finalized
+    run.refresh_from_db()
+    assert run.status == CatalogProcessingRunStatus.COMPLETED
+    assert run.finished_at is not None
+    assert run.stats["outcome"] == "completed_with_review"
+    assert run.stats["items_total"] == 2
+    assert run.stats["items_completed"] == 1
+    assert run.stats["items_needs_review"] == 1
+    assert run.stats["items_failed"] == 0
+    assert run.stats["changes_total"] == 0
+    assert run.stats["changes_applied"] == 0
+
+
+@pytest.mark.django_db
+def test_finalize_success_all_completed(feature_enabled):
+    p = _product(slug="fin-all")
+    run = _run()
+    _finish_item(_item(run, p), CatalogProcessingItemStatus.COMPLETED)
+
+    result = processing.finalize_catalog_processing_run(run.id)
+
+    assert result.status == "completed"
+    assert result.outcome == "completed"
+
+
+@pytest.mark.django_db
+def test_finalize_rejects_pending_item(feature_enabled):
+    p = _product(slug="fin-pending")
+    run = _run()
+    _item(run, p)  # pending
+
+    result = processing.finalize_catalog_processing_run(run.id)
+
+    assert result.status == "invalid"
+    assert result.reason == "items_not_final"
+    run.refresh_from_db()
+    assert run.status == CatalogProcessingRunStatus.RUNNING
+    assert run.finished_at is None
+
+
+@pytest.mark.django_db
+def test_finalize_rejects_processing_item(feature_enabled):
+    p = _product(slug="fin-processing")
+    run = _run()
+    _finish_item(_item(run, p), CatalogProcessingItemStatus.PROCESSING)
+
+    result = processing.finalize_catalog_processing_run(run.id)
+
+    assert result.status == "invalid"
+    assert result.reason == "items_not_final"
+
+
+@pytest.mark.django_db
+def test_finalize_rejects_proposed_change(feature_enabled, attr, drill_option):
+    p = _product(slug="fin-proposed")
+    run = _run()
+    item = _item(run, p)
+    proposed = _propose(_cmd(item, drill_option.slug))
+    assert proposed.status == "proposed"
+    # change proposed, но item уже в финальном статусе — guard именно по changes.
+    _finish_item(item, CatalogProcessingItemStatus.COMPLETED)
+
+    result = processing.finalize_catalog_processing_run(run.id)
+
+    assert result.status == "invalid"
+    assert result.reason == "changes_not_final"
+    run.refresh_from_db()
+    assert run.status == CatalogProcessingRunStatus.RUNNING
+
+
+@pytest.mark.django_db
+def test_finalize_rejects_approved_change(feature_enabled, attr, drill_option, reviewer):
+    p = _product(slug="fin-approved")
+    run = _run()
+    item = _item(run, p)
+    proposed = _propose(_cmd(item, drill_option.slug))
+    reviewed = _approve(proposed.change_id, reviewer)
+    assert reviewed.status == "approved"
+    # change approved, но item уже в финальном статусе — guard именно по changes.
+    _finish_item(item, CatalogProcessingItemStatus.COMPLETED)
+
+    result = processing.finalize_catalog_processing_run(run.id)
+
+    assert result.status == "invalid"
+    assert result.reason == "changes_not_final"
+
+
+@pytest.mark.django_db
+def test_finalize_idempotent_second_call(feature_enabled):
+    p = _product(slug="fin-idem")
+    run = _run()
+    _finish_item(_item(run, p), CatalogProcessingItemStatus.COMPLETED)
+
+    first = processing.finalize_catalog_processing_run(run.id)
+    run.refresh_from_db()
+    finished_at = run.finished_at
+    second = processing.finalize_catalog_processing_run(run.id)
+
+    assert first.status == "completed" and not first.already_finalized
+    assert second.status == "completed" and second.already_finalized
+    run.refresh_from_db()
+    assert run.finished_at == finished_at
+
+
+@pytest.mark.django_db
+def test_finalize_rejects_non_running_run(feature_enabled):
+    run = _run(status=CatalogProcessingRunStatus.DRAFT)
+
+    result = processing.finalize_catalog_processing_run(run.id)
+
+    assert result.status == "invalid"
+    assert result.reason == "run_not_running:draft"
+
+
+@pytest.mark.django_db
+def test_finalize_unknown_run(feature_enabled):
+    result = processing.finalize_catalog_processing_run(uuid.uuid4())
+
+    assert result.status == "invalid"
+    assert result.reason == "run_not_found"
+
+
+@pytest.mark.django_db
+def test_finalize_feature_disabled():
+    result = processing.finalize_catalog_processing_run(uuid.uuid4())
+
+    assert result.status == "invalid"
+    assert result.reason == "feature_disabled"
+
+
+@pytest.mark.django_db
+def test_finalize_does_not_touch_product(feature_enabled, attr, drill_option, reviewer):
+    p = _product(slug="fin-no-touch")
+    run = _run()
+    item = _item(run, p)
+    _propose_approve_apply(item, drill_option.slug, reviewer)
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.COMPLETED
+    pav_count_before = ProductAttributeValue.objects.count()
+    cache_before = dict(Product.objects.get(pk=p.pk).attrs_cache or {})
+
+    result = processing.finalize_catalog_processing_run(run.id)
+
+    assert result.status == "completed"
+    assert ProductAttributeValue.objects.count() == pav_count_before
+    assert (Product.objects.get(pk=p.pk).attrs_cache or {}) == cache_before
