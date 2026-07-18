@@ -688,16 +688,12 @@ def finalize_catalog_processing_run(run_id: uuid.UUID) -> CatalogFinalizeResult:
         if run.status == CatalogProcessingRunStatus.COMPLETED:
             return CatalogFinalizeResult("completed", run.id, already_finalized=True)
         if run.status != CatalogProcessingRunStatus.RUNNING:
-            return CatalogFinalizeResult(
-                "invalid", run.id, f"run_not_running:{run.status}"
-            )
+            return CatalogFinalizeResult("invalid", run.id, f"run_not_running:{run.status}")
 
         items = list(CatalogProcessingItem.objects.select_for_update().filter(run=run))
         if any(i.status in _NON_FINAL_ITEM_STATUSES for i in items):
             return CatalogFinalizeResult("invalid", run.id, "items_not_final")
-        changes = list(
-            CatalogChange.objects.select_for_update().filter(item__run=run)
-        )
+        changes = list(CatalogChange.objects.select_for_update().filter(item__run=run))
         if any(c.status in _NON_FINAL_CHANGE_STATUSES for c in changes):
             return CatalogFinalizeResult("invalid", run.id, "changes_not_final")
 
