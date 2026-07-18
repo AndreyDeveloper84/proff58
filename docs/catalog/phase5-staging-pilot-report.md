@@ -2,8 +2,9 @@
 
 Статус: **принят и закрыт** (2026-07-18). Pipeline research queue → import →
 moderation → apply прошёл end-to-end на staging; каталог изменён строго в
-утверждённом объёме (15 значений `tool_type`). Run финализирован как
-`completed_with_review`; staging работает на итоговом `dev@da6919c`.
+утверждённом объёме (15 значений `tool_type`). Run завершён со
+`status=completed` (`outcome=completed_with_review`); состояние пилота
+проверено на `dev@da6919c` до docs-only follow-up.
 
 ## Идентификаторы
 
@@ -12,7 +13,7 @@ moderation → apply прошёл end-to-end на staging; каталог изм
 - Код пилота: `dev@7b24aae` (PR #533 — processing foundation + research queue,
   PR #534 — fix перехода `review` → `needs_review`); закрытие: `dev@da6919c`
   (PR #535 — regression-тест identity guard, PR #536 — `catalog_queue_finalize`,
-  PR #537 — этот отчёт)
+  PR #537 — первоначальный отчёт, PR #538 — фиксация закрытия)
 - Export checksum (SHA-256): `4ca129e595fa5ddccd3e3b979d573854fbea4221558d20985a0cb61b63e5fb29`
 - Result checksum (SHA-256): `a2ec6286f8f624b5c04a00d0bf3c4da596d80edfd3873e2c77f223c2fb7d1dc8`
 - Finalize: 2026-07-18T21:59:11Z, `outcome=completed_with_review`; повторный
@@ -92,11 +93,12 @@ Options НЕ создавались. Соответствие product ↔ пре
 
 ## Состояние после закрытия пилота
 
-- run `f7fe5b29…`: `completed` (`completed_with_review`,
+- run `f7fe5b29…`: `status=completed` (`outcome=completed_with_review`,
   `finished_at=2026-07-18T21:59:11Z`); items: 15 `completed` + 5 `needs_review`;
   changes: 15 `applied`. Product/PAV после finalize не изменились (PAV=60 857).
-- staging: `dev@da6919c`; миграции применены (`migrate --plan` пуст); контейнеры
-  healthy, `/healthz/` → 200.
+- staging: состояние проверено на `dev@da6919c` (до docs-only follow-up);
+  миграции применены (`migrate --plan` пуст); контейнеры healthy,
+  `/healthz/` → 200.
 - `FEATURE_CATALOG_PROCESSING=False`: флаг временно включался только на время
   finalize (`.env.bak-20260718-finalize`), затем выключен, web пересоздан,
   `settings.FEATURES["catalog_processing"] is False` проверено, healthz 200.
@@ -111,14 +113,16 @@ Options НЕ создавались. Соответствие product ↔ пре
    **Done**: PR #536; run финализирован (см. выше).
 3. ~~Gap analysis по всему каталогу.~~ **Done** (read-only): backlog — 1941
    активный товар без `tool_type`; по гэп-областям: шплинты 6 SKU (cat=367),
-   пусковые провода 5 (27249–27254), сварочный кабель 3 (8485, 30870, 31783),
-   сантехнический ключ 1 (32407), осветительная мачта 1 (24523).
+   пусковые провода 5 (27249, 27250, 27251, 27253, 27254; 27252 исключён —
+   `is_active=False`), сварочный кабель 3 (8485, 30870, 31783), сантехнический
+   ключ 1 (32407), осветительная мачта 1 (24523).
 4. **Taxonomy changeset — отдельный PR** (создание/применение options, тесты,
    dry-run оценка затронутых товаров). Только после его ревью — временное
    включение processing и повторная обработка четырёх товаров. Маршрутизация
    (сверена с БД 2026-07-18):
    - новая option `krep-shplinty` → 26863 (+ оценка пула 6 SKU);
-   - новая option для пусковых проводов → 27250 (+ пул 5 SKU, 27249–27254);
+   - новая option для пусковых проводов → 27250 (+ пул 27249, 27251, 27253,
+     27254; 27252 исключён — `is_active=False`);
    - reuse `spetsialnye-klyuchi` → 32407 (подтвердить на ревью changeset'а);
    - reuse `svar-klemmy` → 30870 (подтвердить на ревью changeset'а);
    - мачта 24523 — отложена.
