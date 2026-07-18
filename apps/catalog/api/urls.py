@@ -27,5 +27,10 @@ urlpatterns = [
         views.ProductCompatibleView.as_view(),
         name="product-compatible",
     ),
+    re_path(
+        rf"^products/{_SLUG}/availability-subscription/$",
+        views.ProductAvailabilitySubscriptionView.as_view(),
+        name="product-availability-subscription",
+    ),
     re_path(rf"^products/{_SLUG}/$", views.ProductDetailView.as_view(), name="product-detail"),
 ]

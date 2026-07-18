@@ -316,7 +316,25 @@ def unlink_max(user) -> bool:
     max_user_id = acct.max_user_id
     acct.delete()
     _emit("max_account_unlinked", max_user_id=max_user_id)
+    # #517 AC: unlink не удаляет audit history подписок «сообщить о поступлении»,
+    # но активные без привязки MAX бессмысленны (тихо не уведомят на fan-out) —
+    # переводим явно в cancelled, а не оставляем зависший active.
+    from apps.catalog.availability_subscriptions import cancel_active_for_user
+
+    cancel_active_for_user(user)
     return True
+
+
+def has_active_max_account(user) -> bool:
+    """Есть ли у пользователя каноническая активная привязка MAX (#517).
+
+    В отличие от `resolve_active_chat_id` — без fallback на legacy
+    `User.max_chat_id`: это проверка для НОВОЙ фичи (подписка на поступление),
+    легаси-флоу сознательно не считается «активной привязкой» для неё.
+    """
+    if user is None or not getattr(user, "pk", None):
+        return False
+    return MaxAccount.objects.filter(user=user, is_active=True, chat_id__isnull=False).exists()
 
 
 def resolve_active_chat_id(user) -> int | None:

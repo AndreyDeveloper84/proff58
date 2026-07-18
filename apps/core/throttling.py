@@ -51,6 +51,12 @@ class AuthRateThrottle(_FixedScopeThrottle):
     scope = "auth"
 
 
+class SubscriptionRateThrottle(_FixedScopeThrottle):
+    """Лимит подписки «Сообщить о поступлении» по IP (scope `subscription`, #517)."""
+
+    scope = "subscription"
+
+
 class AnonRateThrottle(_FixedScopeThrottle):
     """Глобальный лимит анонимных запросов по IP (scope `anon`, #279).
 

@@ -15,6 +15,7 @@ from apps.core.events import EventSource, product_created, product_updated
 from apps.pricing.models import PriceRecord
 from apps.pricing.services import WHOLESALE, price_for
 
+from .availability_subscriptions import ProductAvailabilitySubscription
 from .models import (
     Attribute,
     AttributeOption,
@@ -1033,3 +1034,30 @@ class SiteCategoryAdmin(CategoryAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).filter(is_site_v2=True)
+
+
+@admin.register(ProductAvailabilitySubscription)
+class ProductAvailabilitySubscriptionAdmin(admin.ModelAdmin):
+    """Read-only — жизненный цикл ведёт apps.catalog.availability_subscriptions,
+    не ручное редактирование (как NotificationLog/Notification, #514/#515)."""
+
+    list_display = ("user", "product", "channel", "status", "subscribed_at", "notified_at")
+    list_filter = ("channel", "status")
+    search_fields = ("user__phone", "product__name", "product__article")
+    readonly_fields = (
+        "user",
+        "product",
+        "channel",
+        "status",
+        "subscribed_at",
+        "queued_at",
+        "notified_at",
+        "cancelled_at",
+    )
+    date_hierarchy = "subscribed_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

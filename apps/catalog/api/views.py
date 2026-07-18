@@ -3,13 +3,23 @@
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Case, F, FloatField, Prefetch, Q, Value, When
 from django.shortcuts import get_object_or_404
-from rest_framework import generics
-from rest_framework.permissions import AllowAny
+from rest_framework import generics, status
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.throttling import SubscriptionRateThrottle
 from apps.pricing.services import price_map_for_products
 
+from ..availability_subscriptions import (
+    MaxConnectionRequired,
+    ProductInStock,
+    ProductNotEligible,
+    get_eligible_product,
+    get_status,
+    subscribe,
+    unsubscribe,
+)
 from ..filters import ProductFilter, visible_products
 from ..models import Category, ProductAttributeValue, StockStatus
 from ..services import (
@@ -311,3 +321,56 @@ class CategoryFacetsView(APIView):
             "ctaHref": category.hero_cta_href,
         }
         return Response(data)
+
+
+class ProductAvailabilitySubscriptionView(APIView):
+    """GET/POST/DELETE /api/catalog/products/<slug>/availability-subscription/ (#517).
+
+    Только authenticated (product/user ownership — всегда request.user, чужой id
+    в пути невозможен). Правила (товар не в наличии, есть MAX) — в сервисном
+    слое (`apps.catalog.availability_subscriptions`), не только здесь, чтобы их
+    нельзя было обойти вызовом функции напрямую в обход API.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [SubscriptionRateThrottle]
+
+    def _get_product_or_404(self, slug: str):
+        try:
+            return get_eligible_product(slug), None
+        except ProductNotEligible as exc:
+            return None, Response(
+                {"detail": "Товар не найден.", "code": exc.code}, status=status.HTTP_404_NOT_FOUND
+            )
+
+    def get(self, request, slug):
+        product, error = self._get_product_or_404(slug)
+        if error is not None:
+            return error
+        sub = get_status(request.user, product)
+        return Response({"status": sub.status if sub else None})
+
+    def post(self, request, slug):
+        product, error = self._get_product_or_404(slug)
+        if error is not None:
+            return error
+        try:
+            sub = subscribe(request.user, product)
+        except ProductInStock as exc:
+            return Response(
+                {"detail": "Товар сейчас в наличии.", "code": exc.code},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except MaxConnectionRequired as exc:
+            return Response(
+                {"detail": "Нужна активная привязка MAX.", "code": exc.code},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response({"status": sub.status}, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, slug):
+        product, error = self._get_product_or_404(slug)
+        if error is not None:
+            return error
+        unsubscribe(request.user, product)
+        return Response(status=status.HTTP_204_NO_CONTENT)

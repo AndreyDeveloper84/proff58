@@ -939,3 +939,12 @@ class ModerationProduct(Product):
         proxy = True
         verbose_name = _("Товар на модерации")
         verbose_name_plural = _("Очередь модерации обогащения")
+
+
+# #517: ProductAvailabilitySubscription вынесена в отдельный модуль (прецедент —
+# apps.accounts.wishlist, #329). Импортируем здесь, чтобы модель регистрировалась
+# при загрузке app (иначе reverse-аксессор product.availability_subscriptions и
+# makemigrations «не видят» модель до первого lazy-импорта).
+from apps.catalog import availability_subscriptions as _availability_subscriptions  # noqa: E402
+
+ProductAvailabilitySubscription = _availability_subscriptions.ProductAvailabilitySubscription
