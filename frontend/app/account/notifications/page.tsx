@@ -67,27 +67,31 @@ export default function NotificationsPage() {
     }
   }
 
+  // Откат по failure — точечный, через функциональный setState (id/список id, а
+  // не снимок ВСЕГО items "до"): при двух параллельных операциях (напр. клик по
+  // двум разным уведомлениям подряд, одна из них падает) откат к целому снимку
+  // стёр бы уже успешно применённое обновление другой — здесь так не бывает.
   async function handleMarkRead(id: number) {
-    const previous = items;
     setItems((prev) =>
       (prev ?? []).map((n) => (n.id === id && !n.read_at ? { ...n, read_at: new Date().toISOString() } : n)),
     );
     try {
       await markNotificationRead(id);
     } catch {
-      setItems(previous);
+      setItems((prev) => (prev ?? []).map((n) => (n.id === id ? { ...n, read_at: null } : n)));
     }
   }
 
   async function handleMarkAllRead() {
     setMarkingAll(true);
-    const previous = items;
     const now = new Date().toISOString();
+    const flippedIds = (items ?? []).filter((n) => !n.read_at).map((n) => n.id);
     setItems((prev) => (prev ?? []).map((n) => (n.read_at ? n : { ...n, read_at: now })));
     try {
       await markAllNotificationsRead();
     } catch {
-      setItems(previous);
+      const flipped = new Set(flippedIds);
+      setItems((prev) => (prev ?? []).map((n) => (flipped.has(n.id) ? { ...n, read_at: null } : n)));
     } finally {
       setMarkingAll(false);
     }

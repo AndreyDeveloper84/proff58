@@ -108,6 +108,53 @@ describe("NotificationsPage", () => {
     await waitFor(() => expect(row).toBeDisabled());
   });
 
+  it("при ошибке отмены прочитанным откатывает именно эту строку", async () => {
+    mockedHistory.mockResolvedValueOnce({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [item({ read_at: null })],
+    });
+    mockedMarkOne.mockRejectedValueOnce(new Error("network"));
+    render(<NotificationsPage />);
+
+    const row = await screen.findByRole("button", { name: /Заказ подтверждён/ });
+    fireEvent.click(row);
+
+    await waitFor(() => expect(mockedMarkOne).toHaveBeenCalledWith(1));
+    await waitFor(() => expect(row).not.toBeDisabled());
+  });
+
+  it("регресс: провал отметки одного уведомления не откатывает уже применённое обновление другого", async () => {
+    // Раньше откат делался через снимок ВСЕГО items "до" — здесь он стёр бы
+    // успешно применённое обновление второй строки. Теперь откат точечный.
+    mockedHistory.mockResolvedValueOnce({
+      count: 2,
+      next: null,
+      previous: null,
+      results: [item({ id: 1, title: "Первое" }), item({ id: 2, title: "Второе" })],
+    });
+    let rejectFirst!: (e: Error) => void;
+    const firstCall = new Promise<NotificationItem>((_resolve, reject) => {
+      rejectFirst = reject;
+    });
+    mockedMarkOne.mockReturnValueOnce(firstCall);
+    mockedMarkOne.mockResolvedValueOnce(item({ id: 2, title: "Второе", read_at: "2026-07-18T10:05:00Z" }));
+
+    render(<NotificationsPage />);
+    const first = await screen.findByRole("button", { name: /Первое/ });
+    const second = await screen.findByRole("button", { name: /Второе/ });
+
+    fireEvent.click(first); // запрос №1 в полёте (ещё не разрешён)
+    fireEvent.click(second); // запрос №2 — успеет отработать первым
+
+    await waitFor(() => expect(second).toBeDisabled()); // второе уже прочитано
+    rejectFirst(new Error("network")); // теперь первое падает
+
+    await waitFor(() => expect(first).not.toBeDisabled()); // первое откатилось
+    expect(second).toBeDisabled(); // а второе осталось прочитанным, не откатилось
+  });
+
   it("«Прочитать всё» помечает все непрочитанные и скрывает кнопку", async () => {
     mockedHistory.mockResolvedValueOnce({
       count: 1,
@@ -123,6 +170,24 @@ describe("NotificationsPage", () => {
     await waitFor(() => expect(mockedMarkAll).toHaveBeenCalled());
     await waitFor(() =>
       expect(screen.queryByRole("button", { name: "Прочитать всё" })).not.toBeInTheDocument(),
+    );
+  });
+
+  it("при ошибке «Прочитать всё» откатывает и снова показывает кнопку", async () => {
+    mockedHistory.mockResolvedValueOnce({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [item({ read_at: null })],
+    });
+    mockedMarkAll.mockRejectedValueOnce(new Error("network"));
+    render(<NotificationsPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Прочитать всё" }));
+
+    await waitFor(() => expect(mockedMarkAll).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Прочитать всё" })).toBeInTheDocument(),
     );
   });
 
