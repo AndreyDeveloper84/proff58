@@ -1,17 +1,25 @@
 # Phase 5 — staging-пилот catalog processing pipeline
 
-Статус: **технически принят** (2026-07-18). Pipeline research queue → import →
+Статус: **принят и закрыт** (2026-07-18). Pipeline research queue → import →
 moderation → apply прошёл end-to-end на staging; каталог изменён строго в
-утверждённом объёме (15 значений `tool_type`).
+утверждённом объёме (15 значений `tool_type`). Run финализирован как
+`completed_with_review`; staging работает на итоговом `dev@da6919c`.
 
 ## Идентификаторы
 
 - Run UUID: `f7fe5b29-9e2c-4dfb-898c-22859a0dcf35`
 - Idempotency key run: `phase5-staging-20260718-v1` (kind=research, mode=tool_type)
-- Код: `dev@7b24aae` (PR #533 — processing foundation + research queue,
-  PR #534 — fix перехода `review` → `needs_review`)
+- Код пилота: `dev@7b24aae` (PR #533 — processing foundation + research queue,
+  PR #534 — fix перехода `review` → `needs_review`); закрытие: `dev@da6919c`
+  (PR #535 — regression-тест identity guard, PR #536 — `catalog_queue_finalize`,
+  PR #537 — этот отчёт)
 - Export checksum (SHA-256): `4ca129e595fa5ddccd3e3b979d573854fbea4221558d20985a0cb61b63e5fb29`
 - Result checksum (SHA-256): `a2ec6286f8f624b5c04a00d0bf3c4da596d80edfd3873e2c77f223c2fb7d1dc8`
+- Finalize: 2026-07-18T21:59:11Z, `outcome=completed_with_review`; повторный
+  вызов — безопасный no-op (`already_finalized=true`)
+- Pre-finalize snapshot run/items/changes:
+  `var/catalog-processing/snapshot-pre-finalize-20260718.json`, SHA-256
+  `9763a406567ddb8ff0cad2db40a836f285d462925753ab5a1a789d9d18c5b9d8`
 - Reviewer: user `id=1` (staging superuser); все решения только через
   `review_catalog_change` / `apply_catalog_change` (никаких прямых ORM-update)
 
@@ -78,28 +86,44 @@ Confidence применённых: 95×5, 92×1, 90×4, 88×2, 85×2, 80×1.
 | 27250 | Пусковые провода |
 | 30870 | Сварочные кабели в сборе |
 
-Options НЕ создавались. Перед созданием — read-only gap analysis по всему
-каталогу (особенно: сварочный кабель vs `svar-klemmy`; трубные ключи vs
-`klyuchi-gaechnye`/`spetsialnye-klyuchi`; осветительная мачта vs
-`svetilniki`/`prozhektory`).
+Options НЕ создавались. Соответствие product ↔ предметная область сверено с
+названиями товаров в БД при закрытии пилота (2026-07-18): 32407 — «Ключ для
+сантехнической арматуры…», 26863 — «Набор шплинтов…».
 
-## Состояние на конец пилота
+## Состояние после закрытия пилота
 
-- run `f7fe5b29…` остаётся `running`: 15 items `completed`, 5 `needs_review`.
-  Run через ORM не закрывался — операции финализации смешанного результата пока
-  нет (см. follow-up `catalog_queue_finalize`).
-- `FEATURE_CATALOG_PROCESSING=False` на staging (2026-07-18): `.env` сохранён
-  (`.env.bak-20260718-phase5-disable`), web пересоздан, настройка проверена
-  (`settings.FEATURES["catalog_processing"] is False`), healthz 200, каталог
-  без изменений после пересоздания.
+- run `f7fe5b29…`: `completed` (`completed_with_review`,
+  `finished_at=2026-07-18T21:59:11Z`); items: 15 `completed` + 5 `needs_review`;
+  changes: 15 `applied`. Product/PAV после finalize не изменились (PAV=60 857).
+- staging: `dev@da6919c`; миграции применены (`migrate --plan` пуст); контейнеры
+  healthy, `/healthz/` → 200.
+- `FEATURE_CATALOG_PROCESSING=False`: флаг временно включался только на время
+  finalize (`.env.bak-20260718-finalize`), затем выключен, web пересоздан,
+  `settings.FEATURES["catalog_processing"] is False` проверено, healthz 200.
+  **До следующего пилотного запуска флаг не менять.**
 
 ## Follow-ups
 
-1. Regression-тест (параметризованный): `changes` при
-   `identity.status ∈ {partial, unknown, mismatch}` отклоняются importer'ом.
-2. `catalog_queue_finalize` / `finalize_catalog_processing_run()`:
-   блокировка run/items/changes; запрет при pending/processing items и
-   proposed/approved changes; `status=completed`, `finished_at`, статистика
-   `outcome=completed_with_review`; идемпотентность + тест конкурентного
-   вызова; без изменений Product/PAV.
-3. Gap analysis по всему каталогу → решение по пяти taxonomy options.
+1. ~~Regression-тест (параметризованный): `changes` при
+   `identity.status ∈ {partial, unknown, mismatch}` отклоняются importer'ом.~~
+   **Done**: PR #535.
+2. ~~`catalog_queue_finalize` / `finalize_catalog_processing_run()`.~~
+   **Done**: PR #536; run финализирован (см. выше).
+3. ~~Gap analysis по всему каталогу.~~ **Done** (read-only): backlog — 1941
+   активный товар без `tool_type`; по гэп-областям: шплинты 6 SKU (cat=367),
+   пусковые провода 5 (27249–27254), сварочный кабель 3 (8485, 30870, 31783),
+   сантехнический ключ 1 (32407), осветительная мачта 1 (24523).
+4. **Taxonomy changeset — отдельный PR** (создание/применение options, тесты,
+   dry-run оценка затронутых товаров). Только после его ревью — временное
+   включение processing и повторная обработка четырёх товаров. Маршрутизация
+   (сверена с БД 2026-07-18):
+   - новая option `krep-shplinty` → 26863 (+ оценка пула 6 SKU);
+   - новая option для пусковых проводов → 27250 (+ пул 5 SKU, 27249–27254);
+   - reuse `spetsialnye-klyuchi` → 32407 (подтвердить на ревью changeset'а);
+   - reuse `svar-klemmy` → 30870 (подтвердить на ревью changeset'а);
+   - мачта 24523 — отложена.
+5. **Инфраструктурный дефект** (к каталожному пилоту не относится): host nginx
+   для `stg.formulatela58.ru` проксирует на `127.0.0.1:8002`, который не
+   отвечает (прямой probe — timeout); project stack публикует nginx на
+   `127.0.0.1:8082`. До внешнего staging-тестирования проверить port mapping и
+   upstream в host-конфиге nginx.
