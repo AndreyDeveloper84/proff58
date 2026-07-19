@@ -35,7 +35,10 @@
    - `validate` повторно проверяет доменные условия без изменений
      (run, item, baseline, option);
    - `review` переводит `proposed -> approved/rejected` и фиксирует
-     `reviewed_by/reviewed_at/comment`;
+     `reviewed_by/reviewed_at/comment`; `rejected` дополнительно переводит
+     item в `needs_review` (`error_code="rejected"`), если открытых
+     (`proposed`/`approved`) changes у item не осталось, — иначе item
+     навсегда оставался бы `processing` и блокировал finalize run;
    - `apply` атомарно применяет только `approved`-решение через
      `provenance.apply_sourced_value()`;
    - `apps.catalog` не импортирует `apps.ai`.

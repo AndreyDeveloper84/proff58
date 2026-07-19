@@ -343,6 +343,12 @@ def review_catalog_change(
     Записывает ``reviewed_by``, ``reviewed_at`` и ``comment``. Только
     ``approved``-решения могут быть применены ``apply_catalog_change``.
     Блокирует change и повторно проверяет статус под блокировкой.
+
+    При ``rejected``: если у item не осталось открытых (``proposed``/``approved``)
+    changes и item ещё не финальный, item переводится в ``needs_review`` с
+    ``error_code="rejected"`` — иначе item навсегда оставался бы ``processing``
+    и блокировал finalize run. Replay по уже ``rejected`` change лечит такой
+    stranded item, оставшийся от решений до этого исправления.
     """
     from .models import CatalogChange, CatalogChangeStatus
 
@@ -360,6 +366,11 @@ def review_catalog_change(
             if change is None:
                 return _invalid_result("change_not_found")
             if change.status in _FINAL_CHANGE_STATUSES:
+                if (
+                    decision == CatalogChangeStatus.REJECTED
+                    and change.status == CatalogChangeStatus.REJECTED
+                ):
+                    _close_item_after_reject(change)
                 return CatalogChangeResult(change.status, change.id, change.reason_detail)
             if change.status != CatalogChangeStatus.PROPOSED:
                 return _invalid_result("change_not_proposed")
@@ -369,9 +380,34 @@ def review_catalog_change(
             change.reviewed_at = timezone.now()
             change.comment = comment or ""
             change.save(update_fields=["status", "reviewed_by_id", "reviewed_at", "comment"])
+            if decision == CatalogChangeStatus.REJECTED:
+                _close_item_after_reject(change)
             return CatalogChangeResult(decision, change.id, "")
     except Exception as exc:  # noqa: BLE001
         return CatalogChangeResult("failed", uuid.UUID(int=0), str(exc)[:255])
+
+
+def _close_item_after_reject(change) -> None:
+    """Завершает item после reject, если открытых changes не осталось.
+
+    Вызывается внутри транзакции ``review_catalog_change`` под блокировкой
+    change; item блокируется здесь. Финальные item (``completed``/``failed``)
+    не понижаются. Причина берётся из moderator comment change.
+    """
+    from .models import CatalogChange, CatalogProcessingItem
+
+    item = CatalogProcessingItem.objects.select_for_update().filter(pk=change.item_id).first()
+    if item is None or item.status in _FINAL_ITEM_STATUSES:
+        return
+    has_open = (
+        CatalogChange.objects.filter(item=item, status__in=_NON_FINAL_CHANGE_STATUSES)
+        .exclude(pk=change.pk)
+        .exists()
+    )
+    if has_open:
+        return
+    detail = (change.comment or "") or (change.reason_detail or "")
+    _mark_item_needs_review(item, "rejected", detail)
 
 
 def _mark_item_needs_review(item, error_code: str, error_detail: str) -> None:

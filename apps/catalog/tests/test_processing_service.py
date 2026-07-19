@@ -3,6 +3,7 @@ import uuid
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 from apps.catalog import processing
 from apps.catalog.models import (
@@ -687,3 +688,242 @@ def test_finalize_does_not_touch_product(feature_enabled, attr, drill_option, re
     assert result.status == "completed"
     assert ProductAttributeValue.objects.count() == pav_count_before
     assert (Product.objects.get(pk=p.pk).attrs_cache or {}) == cache_before
+
+
+# --- review_catalog_change: rejected ---
+
+
+def _reject(change_id, reviewer, comment=""):
+    return processing.review_catalog_change(
+        change_id, CatalogChangeStatus.REJECTED, reviewer.pk, comment
+    )
+
+
+@pytest.mark.django_db
+def test_reject_sole_proposal_closes_item_needs_review(
+    feature_enabled, attr, drill_option, reviewer
+):
+    p = _product(slug="rej-sole")
+    run = _run()
+    item = _item(run, p, status=CatalogProcessingItemStatus.PROCESSING)
+    proposed = _propose(_cmd(item, drill_option.slug))
+    assert proposed.status == "proposed"
+
+    result = _reject(proposed.change_id, reviewer, "не тот тип инструмента")
+
+    assert result.status == "rejected"
+    change = CatalogChange.objects.get(pk=proposed.change_id)
+    assert change.status == CatalogChangeStatus.REJECTED
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.NEEDS_REVIEW
+    assert item.error_code == "rejected"
+    assert item.error_detail == "не тот тип инструмента"
+
+
+@pytest.mark.django_db
+def test_reject_preserves_moderator_audit_and_comment(
+    feature_enabled, attr, drill_option, reviewer
+):
+    p = _product(slug="rej-audit")
+    run = _run()
+    item = _item(run, p, status=CatalogProcessingItemStatus.PROCESSING)
+    proposed = _propose(_cmd(item, drill_option.slug))
+    long_comment = "комментарий модератора " + "x" * 300  # <= 512, но > 255
+
+    result = _reject(proposed.change_id, reviewer, long_comment)
+
+    assert result.status == "rejected"
+    change = CatalogChange.objects.get(pk=proposed.change_id)
+    assert change.reviewed_by_id == reviewer.pk
+    assert change.reviewed_at is not None
+    assert change.comment == long_comment
+    item.refresh_from_db()
+    assert item.error_code == "rejected"
+    assert item.error_detail == long_comment[:255]
+
+
+@pytest.mark.django_db
+def test_reject_does_not_touch_product(feature_enabled, attr, drill_option, reviewer):
+    p = _product(slug="rej-no-touch")
+    run = _run()
+    item = _item(run, p, status=CatalogProcessingItemStatus.PROCESSING)
+    proposed = _propose(_cmd(item, drill_option.slug))
+    pav_count_before = ProductAttributeValue.objects.count()
+    cache_before = dict(Product.objects.get(pk=p.pk).attrs_cache or {})
+
+    result = _reject(proposed.change_id, reviewer, "отклонено модератором")
+
+    assert result.status == "rejected"
+    assert ProductAttributeValue.objects.count() == pav_count_before
+    assert (Product.objects.get(pk=p.pk).attrs_cache or {}) == cache_before
+
+
+@pytest.mark.django_db
+def test_reject_repeated_is_safe_noop(feature_enabled, attr, drill_option, reviewer):
+    p = _product(slug="rej-noop")
+    run = _run()
+    item = _item(run, p, status=CatalogProcessingItemStatus.PROCESSING)
+    proposed = _propose(_cmd(item, drill_option.slug))
+    first = _reject(proposed.change_id, reviewer, "первое решение")
+    assert first.status == "rejected"
+    change = CatalogChange.objects.get(pk=proposed.change_id)
+    reviewed_at = change.reviewed_at
+
+    second = _reject(proposed.change_id, reviewer, "повторный reject")
+
+    assert second.status == "rejected"
+    change.refresh_from_db()
+    assert change.reviewed_at == reviewed_at
+    assert change.comment == "первое решение"
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.NEEDS_REVIEW
+    assert item.error_code == "rejected"
+
+
+@pytest.mark.django_db
+def test_approve_after_reject_does_not_change_decision(
+    feature_enabled, attr, drill_option, reviewer
+):
+    p = _product(slug="rej-then-approve")
+    run = _run()
+    item = _item(run, p, status=CatalogProcessingItemStatus.PROCESSING)
+    proposed = _propose(_cmd(item, drill_option.slug))
+    rejected = _reject(proposed.change_id, reviewer, "финальный reject")
+    assert rejected.status == "rejected"
+    change = CatalogChange.objects.get(pk=proposed.change_id)
+    reviewed_at = change.reviewed_at
+
+    second = _approve(proposed.change_id, reviewer)
+
+    assert second.status == "rejected"
+    change.refresh_from_db()
+    assert change.status == CatalogChangeStatus.REJECTED
+    assert change.reviewed_at == reviewed_at
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.NEEDS_REVIEW
+
+
+@pytest.mark.django_db
+def test_approve_path_leaves_item_processing(feature_enabled, attr, drill_option, reviewer):
+    p = _product(slug="approve-path")
+    run = _run()
+    item = _item(run, p, status=CatalogProcessingItemStatus.PROCESSING)
+    proposed = _propose(_cmd(item, drill_option.slug))
+
+    reviewed = _approve(proposed.change_id, reviewer)
+
+    assert reviewed.status == "approved"
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.PROCESSING
+    assert item.error_code == ""
+
+
+@pytest.mark.django_db
+def test_reject_one_of_multiple_changes_leaves_item_processing(
+    feature_enabled, attr, drill_option, perforator_option, reviewer
+):
+    p = _product(slug="rej-multi")
+    run = _run()
+    item = _item(run, p, status=CatalogProcessingItemStatus.PROCESSING)
+    first = _propose(_cmd(item, drill_option.slug))
+    second = _propose(_cmd(item, perforator_option.slug))
+    assert first.status == second.status == "proposed"
+
+    rejected = _reject(first.change_id, reviewer, "первый отклонён")
+
+    assert rejected.status == "rejected"
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.PROCESSING
+    assert item.error_code == ""
+
+
+@pytest.mark.django_db
+def test_reject_last_open_change_closes_item(
+    feature_enabled, attr, drill_option, perforator_option, reviewer
+):
+    p = _product(slug="rej-last")
+    run = _run()
+    item = _item(run, p, status=CatalogProcessingItemStatus.PROCESSING)
+    first = _propose(_cmd(item, drill_option.slug))
+    second = _propose(_cmd(item, perforator_option.slug))
+    assert _reject(first.change_id, reviewer, "первый отклонён").status == "rejected"
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.PROCESSING
+
+    rejected = _reject(second.change_id, reviewer, "второй отклонён")
+
+    assert rejected.status == "rejected"
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.NEEDS_REVIEW
+    assert item.error_code == "rejected"
+    assert item.error_detail == "второй отклонён"
+
+
+@pytest.mark.django_db
+def test_reject_does_not_downgrade_completed_item(feature_enabled, attr, drill_option, reviewer):
+    p = _product(slug="rej-completed")
+    run = _run()
+    item = _item(run, p, status=CatalogProcessingItemStatus.PROCESSING)
+    proposed = _propose(_cmd(item, drill_option.slug))
+    _finish_item(item, CatalogProcessingItemStatus.COMPLETED)
+
+    rejected = _reject(proposed.change_id, reviewer, "поздний reject")
+
+    assert rejected.status == "rejected"
+    change = CatalogChange.objects.get(pk=proposed.change_id)
+    assert change.status == CatalogChangeStatus.REJECTED
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.COMPLETED
+
+
+@pytest.mark.django_db
+def test_reject_replay_heals_stranded_processing_item(
+    feature_enabled, attr, drill_option, reviewer
+):
+    """Legacy-состояние: change уже rejected, item застрял в processing."""
+    p = _product(slug="rej-heal")
+    run = _run()
+    item = _item(run, p, status=CatalogProcessingItemStatus.PROCESSING)
+    proposed = _propose(_cmd(item, drill_option.slug))
+    CatalogChange.objects.filter(pk=proposed.change_id).update(
+        status=CatalogChangeStatus.REJECTED,
+        reviewed_by_id=reviewer.pk,
+        reviewed_at=timezone.now(),
+        comment="legacy reject",
+    )
+    change = CatalogChange.objects.get(pk=proposed.change_id)
+    reviewed_at = change.reviewed_at
+
+    replay = _reject(proposed.change_id, reviewer, "replay")
+
+    assert replay.status == "rejected"
+    change.refresh_from_db()
+    assert change.reviewed_at == reviewed_at
+    assert change.comment == "legacy reject"
+    item.refresh_from_db()
+    assert item.status == CatalogProcessingItemStatus.NEEDS_REVIEW
+    assert item.error_code == "rejected"
+    assert item.error_detail == "legacy reject"
+
+
+@pytest.mark.django_db
+def test_finalize_after_reject_mixed_run(feature_enabled, attr, drill_option, reviewer):
+    p1 = _product(slug="rej-fin-1")
+    p2 = _product(slug="rej-fin-2")
+    run = _run()
+    item1 = _item(run, p1, status=CatalogProcessingItemStatus.PROCESSING)
+    item2 = _item(run, p2, status=CatalogProcessingItemStatus.PROCESSING)
+    _finish_item(item1, CatalogProcessingItemStatus.COMPLETED)
+    proposed = _propose(_cmd(item2, drill_option.slug))
+    assert _reject(proposed.change_id, reviewer, "отклонено").status == "rejected"
+
+    result = processing.finalize_catalog_processing_run(run.id)
+
+    assert result.status == "completed"
+    assert result.outcome == "completed_with_review"
+    run.refresh_from_db()
+    assert run.status == CatalogProcessingRunStatus.COMPLETED
+    assert run.stats["items_completed"] == 1
+    assert run.stats["items_needs_review"] == 1
+    assert run.stats["changes_total"] == 1
+    assert run.stats["changes_applied"] == 0
