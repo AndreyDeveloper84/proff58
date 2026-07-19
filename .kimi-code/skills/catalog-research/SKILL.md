@@ -38,6 +38,9 @@ Catalog research skill для безопасного web-исследовани�
 
 2. **Прочитать export**
    - Файл: `var/catalog-processing/outbox/$run_id.json`.
+   - На staging файл доступен и на хосте: `./var` примонтирован в `/app/var`
+     (постоянный bind mount, см. runbook
+     `docs/catalog/operations/research-queue.md`). `docker cp` не используем.
    - Запомни `taxonomy_hash`, `checksum`, `target_kind`, `allowed_options`.
    - Перенеси export-поле `checksum` в result-поле `export_checksum`.
    - Убедись, что `target_kind == "tool_type"`.
