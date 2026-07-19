@@ -132,6 +132,31 @@ Cron:
 
 Скрипт делает `pg_dump`, архивирует `/app/media` и удаляет архивы старше 14 дней.
 
+## Миграции и релиз-шаг
+
+Миграции применяются **отдельным release-шагом** (`docker/release.sh`), а не на старте
+`web` (#441/m-07). Раньше `web` мигрировал при каждом рестарте контейнера — риск гонок и
+долгого/необратимого DDL. Порядок в `deploy.yml`: сборка образов → `release.sh` → подъём.
+
+`docker/release.sh`:
+
+1. поднимает `db` и ждёт готовности (`pg_isready`);
+2. снимает бэкап БД **до** миграций → `pre-migrate-<дата>.sql.gz` в `BACKUP_DIR`
+   (по умолчанию `/home/taximeter/backups/proff58`);
+3. применяет миграции одноразовым контейнером (`compose run --rm web … migrate`).
+
+`web` на старте миграции не применяет — только `migrate --check`: если схема отстала
+(release не отработал), контейнер падает с понятной ошибкой, а не работает на рассинхроне.
+Провал миграции в деплое **останавливает** выкат; бэкап уже снят для отката (см. ниже).
+
+Ручной прогон (миграции без полного передеплоя):
+
+```bash
+cd /home/taximeter/proff58-prod
+bash docker/release.sh
+docker compose -f docker-compose.prod.yml up -d
+```
+
 ## Логи
 
 Файлы лежат в `DEPLOY_PATH/logs`:
@@ -187,4 +212,31 @@ docker compose -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.prod.yml ps
 ```
 
-Если проблема в миграции данных, сначала оценить обратимость миграции и наличие свежего бэкапа. Не откатывать базу без отдельного решения.
+`git checkout` откатывает **код**; на старом коде `web` выполнит `migrate --check` и
+упадёт, если новые миграции уже применены к БД. Тогда нужен откат схемы.
+
+### Откат схемы БД
+
+Бэкап снят release-шагом **до** миграций: `pre-migrate-<дата>.sql.gz` в `BACKUP_DIR`.
+Сначала оцени обратимость — часто достаточно откатить одну миграцию без восстановления:
+
+```bash
+cd /home/taximeter/proff58-prod
+compose="docker compose -f docker-compose.prod.yml"
+$compose run --rm web python manage.py migrate <app> <предыдущая_миграция>
+```
+
+Полное восстановление из дампа (⚠️ данные, добавленные ПОСЛЕ бэкапа, теряются —
+только осознанно; дамп плоский, поэтому БД пересоздаётся):
+
+```bash
+ls -t /home/taximeter/backups/proff58/pre-migrate-*.sql.gz | head   # выбрать нужный
+$compose stop web celery celery-onec celery-beat                    # отсоединить писателей
+$compose exec -T db psql -U "$POSTGRES_USER" -d postgres \
+    -c "DROP DATABASE \"$POSTGRES_DB\" WITH (FORCE);" \
+    -c "CREATE DATABASE \"$POSTGRES_DB\" OWNER \"$POSTGRES_USER\";"
+gunzip -c <pre-migrate-файл> | $compose exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+$compose up -d
+```
+
+Не откатывать базу без отдельного решения.
