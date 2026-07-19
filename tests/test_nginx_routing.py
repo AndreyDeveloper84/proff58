@@ -126,3 +126,37 @@ def test_catchall_and_storefront(locations):
     assert _match("/api/something-new/", locations) == "web"
     assert _match("/", locations) == "frontend"
     assert _match("/catalog/perforatory", locations) == "frontend"
+
+
+# --- Edge rate-limit API 1С (#439/m-04) ---
+
+
+def test_onec_edge_zone_declared():
+    text = CONF.read_text(encoding="utf-8")
+    assert re.search(
+        r"limit_req_zone\s+\$binary_remote_addr\s+zone=onec_edge:", text
+    ), "нет limit_req_zone onec_edge — edge-лимит трафика 1С (m-04) не настроен"
+
+
+def test_onec_edge_limit_applied_on_1c_location():
+    # Отдельный location /api/1c/ обязан применять limit_req на зоне onec_edge.
+    text = re.sub(r"(?m)^\s*#.*$", "", CONF.read_text(encoding="utf-8"))
+    m = re.search(r"location\s+/api/1c/\s*\{([^}]*)\}", text)
+    assert m, "нет отдельного location /api/1c/ с edge-лимитом"
+    body = m.group(1)
+    assert (
+        "limit_req" in body and "onec_edge" in body
+    ), "location /api/1c/ не применяет limit_req zone=onec_edge"
+
+
+def test_1c_still_routes_to_django(locations):
+    # Лимит не должен менять апстрим: обмен 1С по-прежнему на Django.
+    assert _match("/api/1c/products/import", locations) == "web"
+    assert _match("/api/1c/orders/new", locations) == "web"
+
+
+def test_real_client_ip_recovered():
+    # Без realip limit_req считал бы по IP docker-прокси (один бакет на всех).
+    text = CONF.read_text(encoding="utf-8")
+    assert "real_ip_header X-Forwarded-For" in text
+    assert re.search(r"set_real_ip_from\s+\S+", text)
