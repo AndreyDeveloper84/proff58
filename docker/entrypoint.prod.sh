@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 # Entrypoint для web-контейнера в production.
-# Применяет миграции, собирает статику и запускает gunicorn.
+# Проверяет применённость миграций, собирает статику и запускает gunicorn.
 set -euo pipefail
 
 mkdir -p /app/logs
 
-echo "==> Применение миграций"
-python manage.py migrate --noinput
+echo "==> Проверка применённости миграций"
+# Миграции применяются ОТДЕЛЬНЫМ release-шагом (docker/release.sh, #441/m-07), а не
+# на старте web: тяжёлый DDL и гонки при rolling/повторных рестартах опасны (web мог
+# мигрировать на каждом рестарте). Здесь только проверяем: если схема отстала (release
+# не отработал) — падаем сразу с понятной ошибкой, а не стартуем на рассинхроне.
+python manage.py migrate --check
 
 echo "==> Сбор статики"
 python manage.py collectstatic --noinput
