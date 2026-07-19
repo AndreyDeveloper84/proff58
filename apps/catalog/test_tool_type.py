@@ -464,6 +464,15 @@ class GapRoutingPhase5Tests(TestCase):
             "kabel-provod",
         )
 
+    def test_crocodile_clamps_accessory_is_not_puskovye_provoda(self):
+        # Реальный товар 10664: зажимы — аксессуар к проводам, а не сами провода;
+        # «пусковых проводов» (род. падеж) не должно матчиться.
+        ex = self.rules.extract(
+            "Электрика и освещение",
+            "Зажимы (крокодилы) для пусковых проводов Airline L 400А, 14х10,5 см",
+        )
+        self.assertNotEqual(ex.slug, "puskovye-provoda")
+
     def test_rozhkovy_klyuch_is_not_spetsialny(self):
         ex = self.rules.extract("Крепёж и метизы", "Ключ рожковый комбинированный 14мм")
         self.assertNotEqual(ex.slug, "spetsialnye-klyuchi")
@@ -503,3 +512,48 @@ class LoadToolTypesGapOptionsTests(TestCase):
         slugs = {o["slug"] for o in _allowed_tool_type_options()}
         for slug in ("krep-shplinty", "puskovye-provoda", "spetsialnye-klyuchi", "svar-klemmy"):
             self.assertIn(slug, slugs)
+
+
+class LoadToolTypesReuseIdentityTests(TestCase):
+    """Reuse существующих DB options (PR #539 review): identity строк и sort_order.
+
+    load_tool_types делает update_or_create(attribute, value, defaults={slug, sort_order}):
+    существующая запись НЕ дублируется и сохраняет PK/slug, но её sort_order
+    перезаписывается позицией правила в файле (при slug в нескольких категориях
+    побеждает более поздняя категория файла — как у zaryadnye/svar-klemmy).
+    """
+
+    def test_reuse_preserves_pk_and_value_uniqueness(self):
+        attr = Attribute.objects.create(
+            slug="tool_type", name="Тип инструмента", attribute_type=AttributeType.SELECT
+        )
+        sentinel = 999
+        pre = {
+            value: AttributeOption.objects.create(
+                attribute=attr, value=value, slug=slug, sort_order=sentinel
+            )
+            for value, slug in (
+                ("Специальные ключи", "spetsialnye-klyuchi"),
+                ("Клеммы, зажимы, кабели", "svar-klemmy"),
+            )
+        }
+
+        call_command("load_tool_types")
+
+        # Ожидаемый sort_order — позиция правила; при дублировании slug в файле
+        # побеждает более поздняя категория (повторяем контракт загрузчика).
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+        expected_sort: dict[str, int] = {}
+        for cat in rules.categories:
+            for sort, rule in enumerate(rules.options(cat.category)):
+                expected_sort[rule.slug] = sort
+
+        for value, opt in pre.items():
+            self.assertEqual(
+                AttributeOption.objects.filter(attribute=attr, value=value).count(),
+                1,
+                f"дубль option для {value!r}",
+            )
+            opt.refresh_from_db()  # тот же PK — обновление, а не новая строка
+            self.assertNotEqual(opt.sort_order, sentinel, f"{value!r}: sort_order не перезаписан")
+            self.assertEqual(opt.sort_order, expected_sort[opt.slug])
