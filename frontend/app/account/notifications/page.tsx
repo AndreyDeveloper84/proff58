@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, Check } from "lucide-react";
+import { AccountShell } from "@/components/account/AccountShell";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { getMe } from "@/lib/auth";
@@ -100,68 +101,88 @@ export default function NotificationsPage() {
   const unreadCount = items?.filter((n) => !n.read_at).length ?? 0;
 
   return (
-    <div className="mx-auto mt-8 max-w-2xl p-6">
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-ink">Уведомления</h1>
-        {unreadCount > 0 && (
-          <Button variant="outline" size="sm" onClick={handleMarkAllRead} disabled={markingAll}>
-            <Check className="h-4 w-4" aria-hidden />
-            Прочитать всё
-          </Button>
-        )}
-      </div>
-
-      {error && !items && (
-        <ErrorState description={error} action={<Button onClick={() => location.reload()}>Обновить</Button>} />
-      )}
-
-      {!error && items === null && <LoadingState label="Загрузка уведомлений…" />}
-
-      {items !== null && items.length === 0 && (
-        <EmptyState
-          icon={<Bell className="h-10 w-10" aria-hidden />}
-          title="Пока нет уведомлений"
-          description="Здесь появятся статусы заказов, поступление товаров и другие MAX-уведомления."
-        />
-      )}
-
-      {items !== null && items.length > 0 && (
-        <div className="space-y-2">
-          {items.map((n) => (
-            <button
-              key={n.id}
-              type="button"
-              onClick={() => handleMarkRead(n.id)}
-              disabled={!!n.read_at}
-              className="flex w-full flex-col gap-1 rounded-md border border-line bg-surface p-3 text-left transition disabled:cursor-default enabled:hover:bg-raised"
+    <AccountShell title="Уведомления" mobileBackHref="/account/profile">
+      <div className="rounded-lg border border-line bg-surface p-4 sm:p-6">
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-ink">Центр уведомлений</h2>
+            <p className="mt-1 text-xs text-ink-3">
+              Статусы заказов, поступление товаров и сообщения из MAX
+            </p>
+          </div>
+          {unreadCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleMarkAllRead}
+              disabled={markingAll}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2 font-medium text-ink">
-                  {!n.read_at && <span className="h-2 w-2 shrink-0 rounded-full bg-accent" aria-hidden />}
-                  {n.title}
-                </span>
-                <span className="shrink-0 text-xs text-ink-3">
-                  {new Date(n.created_at).toLocaleString("ru-RU", {
-                    day: "numeric",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-              <p className="text-sm text-ink-2">{n.body}</p>
-            </button>
-          ))}
-
-          {hasMore && (
-            <div className="pt-2 text-center">
-              <Button variant="outline" onClick={handleLoadMore} disabled={loadingMore}>
-                {loadingMore ? "Загрузка…" : "Показать ещё"}
-              </Button>
-            </div>
+              <Check className="h-4 w-4" aria-hidden />
+              Прочитать всё
+            </Button>
           )}
         </div>
-      )}
-    </div>
+
+        {error && !items && (
+          <ErrorState
+            description={error}
+            action={<Button onClick={() => location.reload()}>Обновить</Button>}
+          />
+        )}
+
+        {!error && items === null && <LoadingState label="Загрузка уведомлений…" />}
+
+        {items !== null && items.length === 0 && (
+          <EmptyState
+            icon={<Bell className="h-10 w-10" aria-hidden />}
+            title="Пока нет уведомлений"
+            description="Здесь появятся статусы заказов, поступление товаров и другие MAX-уведомления."
+          />
+        )}
+
+        {items !== null && items.length > 0 && (
+          <div className="space-y-2">
+            {items.map((n) => (
+              <button
+                key={n.id}
+                type="button"
+                onClick={() => handleMarkRead(n.id)}
+                disabled={!!n.read_at}
+                className="flex w-full flex-col gap-1 rounded-md border border-line bg-surface p-3 text-left transition disabled:cursor-default enabled:hover:bg-raised"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 font-medium text-ink">
+                    {!n.read_at && (
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full bg-accent"
+                        aria-hidden
+                      />
+                    )}
+                    {n.title}
+                  </span>
+                  <span className="shrink-0 text-xs text-ink-3">
+                    {new Date(n.created_at).toLocaleString("ru-RU", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                <p className="text-sm text-ink-2">{n.body}</p>
+              </button>
+            ))}
+
+            {hasMore && (
+              <div className="pt-2 text-center">
+                <Button variant="outline" onClick={handleLoadMore} disabled={loadingMore}>
+                  {loadingMore ? "Загрузка…" : "Показать ещё"}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </AccountShell>
   );
 }

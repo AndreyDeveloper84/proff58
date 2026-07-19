@@ -96,11 +96,11 @@ export function Header({ logoUrl, siteName = "Профессионал" }: Heade
         </a>
 
         <Link
-          href="/account/login"
+          href="/account/profile"
           className="hidden h-11 shrink-0 items-center gap-2 px-1 text-sm font-medium text-header-ink transition hover:text-accent lg:inline-flex"
         >
           <User className="h-5 w-5" aria-hidden />
-          Войти
+          Мой кабинет
         </Link>
 
         <Link
