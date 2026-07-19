@@ -159,3 +159,10 @@ export async function getWishlist(): Promise<WishlistItem[]> {
     throw e;
   }
 }
+
+export async function addWishlistItem(productId: number): Promise<void> {
+  await apiFetch("/api/account/wishlist", {
+    method: "POST",
+    body: JSON.stringify({ product_id: productId }),
+  });
+}

@@ -11,15 +11,13 @@ import {
   GitCompare,
   Heart,
   Home,
-  LayoutGrid,
   MapPin,
-  Package,
   RefreshCcw,
-  ShoppingCart,
   UserRound,
   WalletCards,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -146,42 +144,6 @@ function AccountSidebar({ pathname }: { pathname: string }) {
   );
 }
 
-const MOBILE_NAV = [
-  { label: "Главная", href: "/", icon: LayoutGrid },
-  { label: "Каталог", href: "/catalog", icon: Package },
-  { label: "Кабинет", href: "/account/profile", icon: UserRound },
-  { label: "Корзина", href: "/cart", icon: ShoppingCart },
-  { label: "Профиль", href: "/account/profile#personal-data", icon: CircleUserRound },
-] as const;
-
-function MobileAccountNav() {
-  return (
-    <nav
-      aria-label="Мобильная навигация"
-      className="fixed inset-x-0 bottom-0 z-50 grid h-[68px] grid-cols-5 border-t border-line bg-surface px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(20,24,27,0.08)] lg:hidden"
-    >
-      {MOBILE_NAV.map((item) => {
-        const Icon = item.icon;
-        const active = item.label === "Кабинет";
-        return (
-          <Link
-            key={item.label}
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              "flex min-w-0 flex-col items-center justify-center gap-1 text-[10px] font-medium",
-              active ? "text-accent" : "text-ink-3",
-            )}
-          >
-            <Icon className="h-5 w-5" aria-hidden />
-            <span className="truncate">{item.label}</span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
-
 export function AccountShell({ title, children, mobileBackHref }: AccountShellProps) {
   const pathname = usePathname();
 
@@ -225,7 +187,7 @@ export function AccountShell({ title, children, mobileBackHref }: AccountShellPr
           <div className="min-w-0">{children}</div>
         </div>
       </div>
-      <MobileAccountNav />
+      <MobileBottomNav active="account" />
     </main>
   );
 }
