@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from django.conf import settings
+from django.core.management import call_command
 from django.test import TestCase
 
 from apps.catalog.models import (
@@ -17,6 +18,7 @@ from apps.catalog.models import (
     Product,
     ProductAttributeValue,
 )
+from apps.catalog.queue_contract import _allowed_tool_type_options
 from apps.catalog.tool_type import (
     ASSIGNED,
     MODERATION,
@@ -391,3 +393,167 @@ class TransliterateTests(TestCase):
 
     def test_latin_and_digits_untouched(self):
         self.assertEqual(transliterate("SDS-MAX 18В"), "sds-max 18v")
+
+
+class GapRoutingPhase5Tests(TestCase):
+    """Taxonomy changeset (gaps Phase 5): маршрутизация по реальному rules-файлу.
+
+    Две новые option (`krep-shplinty`, `puskovye-provoda`) и два reuse-маршрута
+    (32407 → `spetsialnye-klyuchi` в «Крепёж и метизы», 30870 → `svar-klemmy`
+    в «Электрика и освещение»). Мачта 24523 сознательно не покрывается — отложена.
+    """
+
+    def setUp(self):
+        self.rules = ToolTypeRules.from_file(
+            Path(settings.BASE_DIR) / "data" / "tool_type_rules.json"
+        )
+
+    def _slug(self, top, name):
+        ex = self.rules.extract(top, name)
+        self.assertEqual(ex.result, ASSIGNED, f"{name!r}: ожидался assigned, получен {ex.result}")
+        return ex.slug
+
+    def test_shplinty_names_route_to_krep_shplinty(self):
+        # Все шесть активных SKU пула шплинтов (cat=367).
+        for name in (
+            "Штифт со шплинтом",
+            "Набор пружинных шплинтов 150 предметов",
+            "Набор шплинтов S головки с фиксацией 150 пр.//СИБРТЕХ",
+            "Набор шплинтов S головки х L, 1,6х25,2,3х25,2,3х38,3,1х32,3,",
+            "Набор шплинтов S головки х L, 3,2х50,4х64,х4,8х76,х6,4х50,6,",
+            "Набор штифтов с головкой и отверстием под шплинт 60 пр.//СИБРТЕХ",
+        ):
+            self.assertEqual(self._slug("Крепёж и метизы", name), "krep-shplinty", name)
+
+    def test_puskovye_provoda_names(self):
+        # Пул пусковых проводов: 27249–27254 (без неактивного 27252).
+        for name in (
+            "Провода стартовые 2,5 м. 500 Ампер",
+            "Провода стартовые 2,5м 300А ЗУБР морозостойкие",
+            "Провода стартовые 2м 200А ЗУБР морозостойкие",
+            "Провода стартовые 3,0 м. 500 Ампер",
+            "Провода стартовые 3м 400А ЗУБР морозостойкие",
+        ):
+            self.assertEqual(self._slug("Электрика и освещение", name), "puskovye-provoda", name)
+
+    def test_santeh_key_routes_to_spetsialnye_klyuchi(self):
+        name = "Ключ для сантехнической арматуры №1 для гаек до 40мм 330мм KRAFTOOL PANZER A"
+        self.assertEqual(self._slug("Крепёж и метизы", name), "spetsialnye-klyuchi")
+
+    def test_grounding_cable_routes_to_svar_klemmy(self):
+        self.assertEqual(
+            self._slug("Электрика и освещение", "Кабель с клеммой заземления"),
+            "svar-klemmy",
+        )
+
+    def test_shpilka_is_not_shplint(self):
+        self.assertEqual(
+            self._slug("Крепёж и метизы", "Шпилька резьбовая М8х1000 оцинкованная"),
+            "krep-shpilki",
+        )
+
+    def test_pusko_zaryadnoe_is_not_puskovye_provoda(self):
+        self.assertEqual(
+            self._slug("Электрика и освещение", "Пуско-зарядное устройство 12/24В 400А"),
+            "pusko-zaryadnye",
+        )
+
+    def test_power_cable_is_not_puskovye_provoda(self):
+        self.assertEqual(
+            self._slug("Электрика и освещение", "Кабель ВВГ-П нг(А)-LS 3х2,5"),
+            "kabel-provod",
+        )
+
+    def test_crocodile_clamps_accessory_is_not_puskovye_provoda(self):
+        # Реальный товар 10664: зажимы — аксессуар к проводам, а не сами провода;
+        # «пусковых проводов» (род. падеж) не должно матчиться.
+        ex = self.rules.extract(
+            "Электрика и освещение",
+            "Зажимы (крокодилы) для пусковых проводов Airline L 400А, 14х10,5 см",
+        )
+        self.assertNotEqual(ex.slug, "puskovye-provoda")
+
+    def test_rozhkovy_klyuch_is_not_spetsialny(self):
+        ex = self.rules.extract("Крепёж и метизы", "Ключ рожковый комбинированный 14мм")
+        self.assertNotEqual(ex.slug, "spetsialnye-klyuchi")
+
+    def test_svarka_keeps_own_svar_klemmy_route(self):
+        # Существующий маршрут в «Сварочном оборудовании» не сломан.
+        self.assertEqual(
+            self._slug("Сварочное оборудование", "Кабель сварочный КГ 1х25"),
+            "svar-klemmy",
+        )
+
+    def test_reused_option_values_consistent(self):
+        # update_or_create в load_tool_types ключуется по (attribute, value):
+        # одинаковый slug обязан нести одинаковое value во всех категориях,
+        # иначе появится дубль option.
+        values: dict[str, set[str]] = {}
+        for cat in self.rules.categories:
+            for rule in self.rules.options(cat.category):
+                if rule.slug in ("svar-klemmy", "spetsialnye-klyuchi"):
+                    values.setdefault(rule.slug, set()).add(rule.tool_type)
+        self.assertEqual(values["svar-klemmy"], {"Клеммы, зажимы, кабели"})
+        self.assertEqual(values["spetsialnye-klyuchi"], {"Специальные ключи"})
+
+
+class LoadToolTypesGapOptionsTests(TestCase):
+    """load_tool_types на реальном rules-файле: идемпотентность и allowed_options export."""
+
+    def test_second_run_creates_nothing_and_gap_options_exported(self):
+        call_command("load_tool_types")
+        attr = Attribute.objects.get(slug="tool_type")
+        first = AttributeOption.objects.filter(attribute=attr).count()
+
+        created = call_command("load_tool_types")
+
+        self.assertEqual(created, "0")
+        self.assertEqual(AttributeOption.objects.filter(attribute=attr).count(), first)
+        slugs = {o["slug"] for o in _allowed_tool_type_options()}
+        for slug in ("krep-shplinty", "puskovye-provoda", "spetsialnye-klyuchi", "svar-klemmy"):
+            self.assertIn(slug, slugs)
+
+
+class LoadToolTypesReuseIdentityTests(TestCase):
+    """Reuse существующих DB options (PR #539 review): identity строк и sort_order.
+
+    load_tool_types делает update_or_create(attribute, value, defaults={slug, sort_order}):
+    существующая запись НЕ дублируется и сохраняет PK/slug, но её sort_order
+    перезаписывается позицией правила в файле (при slug в нескольких категориях
+    побеждает более поздняя категория файла — как у zaryadnye/svar-klemmy).
+    """
+
+    def test_reuse_preserves_pk_and_value_uniqueness(self):
+        attr = Attribute.objects.create(
+            slug="tool_type", name="Тип инструмента", attribute_type=AttributeType.SELECT
+        )
+        sentinel = 999
+        pre = {
+            value: AttributeOption.objects.create(
+                attribute=attr, value=value, slug=slug, sort_order=sentinel
+            )
+            for value, slug in (
+                ("Специальные ключи", "spetsialnye-klyuchi"),
+                ("Клеммы, зажимы, кабели", "svar-klemmy"),
+            )
+        }
+
+        call_command("load_tool_types")
+
+        # Ожидаемый sort_order — позиция правила; при дублировании slug в файле
+        # побеждает более поздняя категория (повторяем контракт загрузчика).
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+        expected_sort: dict[str, int] = {}
+        for cat in rules.categories:
+            for sort, rule in enumerate(rules.options(cat.category)):
+                expected_sort[rule.slug] = sort
+
+        for value, opt in pre.items():
+            self.assertEqual(
+                AttributeOption.objects.filter(attribute=attr, value=value).count(),
+                1,
+                f"дубль option для {value!r}",
+            )
+            opt.refresh_from_db()  # тот же PK — обновление, а не новая строка
+            self.assertNotEqual(opt.sort_order, sentinel, f"{value!r}: sort_order не перезаписан")
+            self.assertEqual(opt.sort_order, expected_sort[opt.slug])
