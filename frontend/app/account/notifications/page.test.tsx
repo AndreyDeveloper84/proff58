@@ -7,6 +7,7 @@ const pushMock = vi.fn();
 const routerMock = { push: pushMock };
 vi.mock("next/navigation", () => ({
   useRouter: () => routerMock,
+  usePathname: () => "/account/notifications",
 }));
 vi.mock("@/lib/auth", () => ({ getMe: vi.fn() }));
 vi.mock("@/lib/notifications", () => ({

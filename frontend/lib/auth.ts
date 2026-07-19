@@ -6,6 +6,29 @@
 // этого logout/PATCH получали бы 403. Единый apiFetch даёт единообразную
 // обработку ошибок (ApiError с detail из Django).
 import { ApiError, apiFetch } from "@/lib/api";
+import type { Order } from "@/lib/types";
+
+export type AccountProfile = {
+  company_name: string;
+  inn: string;
+  kpp: string;
+  legal_address: string;
+};
+
+export type AccountUser = {
+  id: number;
+  phone: string;
+  email: string;
+  full_name: string;
+  customer_type: "b2c" | "b2b";
+  profile: AccountProfile | null;
+};
+
+export type WishlistItem = {
+  product_id: number;
+  product_name: string;
+  product_slug: string;
+};
 
 export async function login(phone: string, password: string) {
   return apiFetch<Record<string, unknown>>("/api/account/login/", {
@@ -32,9 +55,9 @@ export async function logout() {
   await apiFetch<void>("/api/account/logout/", { method: "POST" });
 }
 
-export async function getMe() {
+export async function getMe(): Promise<AccountUser | null> {
   try {
-    return await apiFetch<Record<string, unknown>>("/api/account/me/", { method: "GET" });
+    return await apiFetch<AccountUser>("/api/account/me/", { method: "GET" });
   } catch (e) {
     if (e instanceof ApiError) return null;
     throw e;
@@ -113,11 +136,11 @@ export async function maxAccountStatus() {
   }
 }
 
-export async function getOrders() {
+export async function getOrders(): Promise<Order[]> {
   // #438 (m-05): /api/orders/ теперь пагинирован ({count, results}); разворачиваем
   // results. Массив на входе тоже поддерживаем (обратная совместимость).
   try {
-    const data = await apiFetch<{ results?: Record<string, unknown>[] } | Record<string, unknown>[]>(
+    const data = await apiFetch<{ results?: Order[] } | Order[]>(
       "/api/orders/",
       { method: "GET" },
     );
@@ -128,11 +151,18 @@ export async function getOrders() {
   }
 }
 
-export async function getWishlist() {
+export async function getWishlist(): Promise<WishlistItem[]> {
   try {
-    return await apiFetch<Record<string, unknown>[]>("/api/account/wishlist/", { method: "GET" });
+    return await apiFetch<WishlistItem[]>("/api/account/wishlist/", { method: "GET" });
   } catch (e) {
     if (e instanceof ApiError) return [];
     throw e;
   }
+}
+
+export async function addWishlistItem(productId: number): Promise<void> {
+  await apiFetch("/api/account/wishlist", {
+    method: "POST",
+    body: JSON.stringify({ product_id: productId }),
+  });
 }
