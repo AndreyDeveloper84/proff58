@@ -399,6 +399,15 @@ def test_concurrent_approve_and_reject_is_consistent(feature_enabled, reviewer):
     statuses = {r.status for r in results}
     # Один поток выиграл, другой увидел финальный статус.
     assert CatalogChangeStatus.APPLIED not in statuses
+    item.refresh_from_db()
+    if change.status == CatalogChangeStatus.REJECTED:
+        # Победивший reject завершает item: открытых changes не осталось.
+        assert item.status == CatalogProcessingItemStatus.NEEDS_REVIEW
+        assert item.error_code == "rejected"
+    else:
+        # Победивший approve не трогает item (fixture создаёт его pending).
+        assert item.status == CatalogProcessingItemStatus.PENDING
+        assert item.error_code == ""
 
 
 @pytest.mark.django_db(transaction=True)
