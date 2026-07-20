@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
 import { ApiError } from "@/lib/api";
+import { getDeliveryZones, type DeliveryZoneOption } from "@/lib/delivery";
 import { formatPrice } from "@/lib/format";
 import { placeOrder } from "@/lib/orders";
 import {
@@ -53,6 +54,26 @@ export default function CheckoutPage() {
   // гарантированно отклонялся. Выводим значение из типа покупателя.
   const payment: PaymentMethod = isB2B ? "invoice" : "online";
 
+  // Зоны доставки (аудит №5): без delivery_zone сервер не считает стоимость
+  // (заказ уходил с доставкой 0 ₽ и заниженным итогом). Слаг выбранной зоны
+  // уходит в POST /api/orders; стоимость из списка — только предпросмотр,
+  // сервер (quote_for_order) пересчитывает сам.
+  const [zones, setZones] = useState<DeliveryZoneOption[]>([]);
+  const [zoneSlug, setZoneSlug] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    getDeliveryZones(total).then((data) => {
+      if (active) setZones(data);
+    });
+    return () => {
+      active = false;
+    };
+  }, [total]);
+
+  const courierZones = useMemo(() => zones.filter((z) => z.type === "courier"), [zones]);
+  const selectedZone = courierZones.find((z) => z.zone === zoneSlug) ?? null;
+
   // Пустую корзину оформлять нечего — уводим на /cart (после загрузки снимка).
   useEffect(() => {
     if (!loading && (!cart || cart.lines.length === 0)) {
@@ -91,6 +112,11 @@ export default function CheckoutPage() {
     if (delivery === "courier" && !address.trim()) {
       return setError("Укажите адрес доставки");
     }
+    // Зона обязательна, только если список зон вообще доступен: при недоступном
+    // справочнике заказ создаётся без зоны (менеджер уточнит) — как раньше.
+    if (delivery === "courier" && courierZones.length > 0 && !zoneSlug) {
+      return setError("Выберите зону доставки");
+    }
 
     inFlight.current = true;
     setSubmitting(true);
@@ -107,6 +133,7 @@ export default function CheckoutPage() {
         legal_address: isB2B ? legalAddress.trim() : "",
         delivery_method: delivery,
         delivery_address: delivery === "courier" ? address.trim() : "",
+        delivery_zone: delivery === "courier" ? zoneSlug : "",
         payment_method: payment,
         comment: comment.trim(),
       });
@@ -305,20 +332,50 @@ export default function CheckoutPage() {
             <span className="text-sm text-ink">Самовывоз</span>
           </label>
           {delivery === "courier" && (
-            <div>
-              <label htmlFor="address" className="mb-1 block text-sm text-ink-2">
-                Адрес доставки *
-              </label>
-              <input
-                id="address"
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className={inputClass}
-                placeholder="Город, улица, дом, квартира"
-                autoComplete="street-address"
-              />
-            </div>
+            <>
+              {courierZones.length > 0 && (
+                <div>
+                  <label htmlFor="deliveryZone" className="mb-1 block text-sm text-ink-2">
+                    Зона доставки *
+                  </label>
+                  <select
+                    id="deliveryZone"
+                    value={zoneSlug}
+                    onChange={(e) => setZoneSlug(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">— выберите зону —</option>
+                    {courierZones.map((z) => (
+                      <option key={z.zone} value={z.zone}>
+                        {z.name}
+                        {z.free_delivery
+                          ? " — бесплатно"
+                          : Number(z.cost) > 0
+                            ? ` — ${formatPrice(Number(z.cost))}`
+                            : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-ink-3">
+                    Стоимость доставки рассчитывается сервером и входит в итог заказа.
+                  </p>
+                </div>
+              )}
+              <div>
+                <label htmlFor="address" className="mb-1 block text-sm text-ink-2">
+                  Адрес доставки *
+                </label>
+                <input
+                  id="address"
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className={inputClass}
+                  placeholder="Город, улица, дом, квартира"
+                  autoComplete="street-address"
+                />
+              </div>
+            </>
           )}
         </fieldset>
 
@@ -390,16 +447,35 @@ export default function CheckoutPage() {
               </div>
             ))}
           </div>
+          {delivery === "courier" && selectedZone && (
+            <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-sm">
+              <span className="text-ink-2">Доставка ({selectedZone.name}):</span>
+              <span className="font-display font-semibold text-ink">
+                {selectedZone.free_delivery ? "бесплатно" : formatPrice(Number(selectedZone.cost))}
+              </span>
+            </div>
+          )}
           <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
             <span className="text-lg text-ink-2">Итого:</span>
             <span className="font-display text-2xl font-bold text-ink">
-              {mixedCurrencies ? "—" : formatPrice(total)}
+              {mixedCurrencies
+                ? "—"
+                : formatPrice(
+                    total +
+                      (delivery === "courier" && selectedZone && !selectedZone.free_delivery
+                        ? Number(selectedZone.cost) || 0
+                        : 0),
+                  )}
             </span>
           </div>
-          {mixedCurrencies && (
+          {mixedCurrencies ? (
             <p className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
               В корзине товары в разных валютах — итог не считается. Вернитесь в корзину и
               оформите их отдельными заказами.
+            </p>
+          ) : (
+            <p className="mt-1 text-right text-[11px] text-ink-3">
+              Точный итог (с доставкой) рассчитывает сервер при оформлении.
             </p>
           )}
         </div>

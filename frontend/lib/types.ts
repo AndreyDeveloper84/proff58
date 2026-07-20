@@ -230,6 +230,9 @@ export type PlaceOrderData = {
   legal_address?: string;
   delivery_method: string;
   delivery_address?: string;
+  // Слаг зоны доставки (GET /api/delivery/zones). Без него сервер не считает
+  // стоимость доставки (not_required, 0 ₽) — итог заказа занижен (аудит №5).
+  delivery_zone?: string;
   comment?: string;
   payment_method: string;
 };
