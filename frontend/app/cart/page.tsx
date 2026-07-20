@@ -137,6 +137,9 @@ export default function CartPage() {
   }
 
   const isEmpty = !cart || cart.lines.length === 0;
+  // #375: при смешении валют бэк обнуляет total и поднимает флаг — оформление
+  // невозможно, показываем причину вместо загадочного «Итого: 0 ₽».
+  const mixedCurrencies = Boolean(cart?.has_mixed_currencies);
   const lineCount = cart?.lines.length ?? 0;
 
   return (
@@ -288,15 +291,27 @@ export default function CartPage() {
                 <div className="flex items-end justify-between gap-3">
                   <span className="text-base font-semibold text-ink">Итого</span>
                   <span className="font-display text-3xl font-bold text-ink">
-                    {formatPrice(total)}
+                    {mixedCurrencies ? "—" : formatPrice(total)}
                   </span>
                 </div>
-                <Link
-                  href="/checkout"
-                  className="mt-5 flex h-12 w-full items-center justify-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink transition hover:brightness-95"
-                >
-                  Перейти к оформлению
-                </Link>
+                {mixedCurrencies && (
+                  <p className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+                    В корзине товары в разных валютах — итог не считается. Оформите их
+                    отдельными заказами, удалив лишние позиции.
+                  </p>
+                )}
+                {mixedCurrencies ? (
+                  <span className="mt-5 flex h-12 w-full cursor-not-allowed items-center justify-center rounded-md bg-accent/40 px-5 text-sm font-semibold text-accent-ink">
+                    Перейти к оформлению
+                  </span>
+                ) : (
+                  <Link
+                    href="/checkout"
+                    className="mt-5 flex h-12 w-full items-center justify-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink transition hover:brightness-95"
+                  >
+                    Перейти к оформлению
+                  </Link>
+                )}
                 <div className="mt-4 flex items-center gap-2 text-xs text-accent">
                   <LockKeyhole className="h-4 w-4" aria-hidden />
                   <div>
@@ -315,14 +330,22 @@ export default function CartPage() {
           <div className="fixed inset-x-0 bottom-[68px] z-40 flex h-[72px] items-center justify-between gap-3 border-t border-line bg-surface px-4 shadow-[0_-8px_24px_rgba(20,24,27,0.08)] lg:hidden">
             <div>
               <p className="text-[11px] text-ink-3">Итого:</p>
-              <p className="text-lg font-bold text-ink">{formatPrice(total)}</p>
+              <p className="text-lg font-bold text-ink">
+                {mixedCurrencies ? "—" : formatPrice(total)}
+              </p>
             </div>
-            <Link
-              href="/checkout"
-              className="flex h-11 items-center justify-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
-            >
-              К оформлению
-            </Link>
+            {mixedCurrencies ? (
+              <span className="flex h-11 cursor-not-allowed items-center justify-center rounded-md bg-accent/40 px-5 text-sm font-semibold text-accent-ink">
+                К оформлению
+              </span>
+            ) : (
+              <Link
+                href="/checkout"
+                className="flex h-11 items-center justify-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
+              >
+                К оформлению
+              </Link>
+            )}
           </div>
         </>
       )}
