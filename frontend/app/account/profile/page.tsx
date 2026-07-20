@@ -30,29 +30,10 @@ import {
   type WishlistItem,
 } from "@/lib/auth";
 import { formatPrice, pluralize } from "@/lib/format";
+import { isInProgress, statusBadgeClass } from "@/lib/order-status";
 import type { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-function isOrderInProgress(order: Order) {
-  const status = order.display_status.toLowerCase();
-  return !["доставлен", "выполнен", "отмен", "возврат"].some((token) =>
-    status.includes(token),
-  );
-}
-
-function statusClass(status: string) {
-  const value = status.toLowerCase();
-  if (value.includes("достав") || value.includes("выполн")) {
-    return "bg-accent/10 text-accent";
-  }
-  if (value.includes("обработ") || value.includes("сбор") || value.includes("подтверж")) {
-    return "bg-blue-50 text-blue-700";
-  }
-  if (value.includes("отмен") || value.includes("возврат")) {
-    return "bg-red-50 text-danger";
-  }
-  return "bg-raised text-ink-2";
-}
 
 function orderDate(value: string) {
   return new Date(value).toLocaleDateString("ru-RU", {
@@ -109,7 +90,7 @@ export default function ProfilePage() {
   }, [router]);
 
   const orderSummary = useMemo(() => {
-    const inProgress = orders.filter(isOrderInProgress).length;
+    const inProgress = orders.filter(isInProgress).length;
     const total = orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
     return { inProgress, total };
   }, [orders]);
@@ -225,7 +206,7 @@ export default function ProfilePage() {
                     <span
                       className={cn(
                         "w-fit rounded-md px-2 py-1 text-[11px] font-semibold",
-                        statusClass(order.display_status),
+                        statusBadgeClass(order),
                       )}
                     >
                       {order.display_status}
