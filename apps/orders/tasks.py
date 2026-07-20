@@ -42,3 +42,17 @@ def release_expired_reservations(limit: int = 500) -> int:
     if released:
         logger.info("release_expired_reservations: released %s reservation(s)", released)
     return released
+
+
+@shared_task(name="apps.orders.tasks.expire_b2b_invoices")
+def expire_b2b_invoices(limit: int = 500) -> int:
+    """#559: истечь неоплаченные B2B-счета старше 24ч.
+
+    Атомарно на каждый счёт: счёт → EXPIRED, заказ → payment=EXPIRED +
+    fulfillment=CANCELLED, резерв освобождается (идемпотентно — двойного
+    возврата остатков не бывает, даже если release_expired_reservations
+    успел отработать раньше).
+    """
+    from .invoice_lifecycle import expire_due_invoices
+
+    return expire_due_invoices(limit=limit)
