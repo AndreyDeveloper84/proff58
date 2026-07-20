@@ -3,7 +3,7 @@ from django.contrib import admin, messages
 from apps.catalog.models import EnrichStatus, ModerationProduct
 
 from . import services
-from .models import AiCallLog, ContentFinding, FindingEvidence
+from .models import AiCallLog, ContentFinding, ExternalCall, FindingEvidence
 
 
 @admin.register(AiCallLog)
@@ -124,3 +124,51 @@ class ContentFindingAdmin(admin.ModelAdmin):
                 self.message_user(request, msg, messages.WARNING)
             else:
                 self.message_user(request, msg, messages.INFO)
+
+
+@admin.register(ExternalCall)
+class ExternalCallAdmin(admin.ModelAdmin):
+    """Вызовы внешних источников (#432/M-09): ручная сверка UNKNOWN.
+
+    UNKNOWN держит резерв дневного бюджета до сверки человеком (вызов мог пройти
+    и оплатиться — авто-решение запрещено спекой §6.5). Оператор проверяет у
+    провайдера, прошёл ли вызов, и выбирает действие ниже.
+    """
+
+    list_display = (
+        "id",
+        "run",
+        "adapter",
+        "status",
+        "reserved_cost",
+        "reserved_day",
+        "attempt_count",
+        "finished_at",
+    )
+    list_filter = ("status", "adapter")
+    search_fields = ("run__idempotency_key", "provider_idempotency_key")
+    readonly_fields = [f.name for f in ExternalCall._meta.fields]
+    actions = ["resolve_unknown_as_error", "resolve_unknown_as_paid"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def _resolve(self, request, queryset, outcome, verb):
+        done = skipped = 0
+        for call in queryset:
+            if services.resolve_unknown_call(call.pk, outcome=outcome):
+                done += 1
+            else:
+                skipped += 1
+        msg = f"{verb}: {done}"
+        if skipped:
+            msg += f"; пропущено (не unknown): {skipped}"
+        self.message_user(request, msg, messages.INFO if done else messages.WARNING)
+
+    @admin.action(description="Сверка UNKNOWN: вызов НЕ прошёл → error, резерв снять")
+    def resolve_unknown_as_error(self, request, queryset):
+        self._resolve(request, queryset, "error", "Резерв снят")
+
+    @admin.action(description="Сверка UNKNOWN: вызов прошёл и оплачен → ok, резерв в расход")
+    def resolve_unknown_as_paid(self, request, queryset):
+        self._resolve(request, queryset, "ok", "Списано в расход")

@@ -233,3 +233,91 @@ def test_stub_adapter_configuration_error(budget):
         product_id=p.pk, idempotency_key="stub", sources=[_RaisingSource(NotImplementedError())]
     )
     assert run.status == SourcingRun.Status.CONFIGURATION_ERROR
+
+
+# --- #432 (M-09, production-замыкание): ручная сверка UNKNOWN-вызовов ---
+
+
+def _unknown_call(product, key="unc-res"):
+    """Довести вызов до UNKNOWN штатным путём (uncertain-исход адаптера)."""
+    from apps.ai.sourcing.ports import SourceUncertain
+
+    services.source_content(
+        product_id=product.pk, idempotency_key=key, sources=[_RaisingSource(SourceUncertain())]
+    )
+    return ExternalCall.objects.get(run__idempotency_key=key, adapter="web")
+
+
+@pytest.mark.django_db
+def test_resolve_unknown_as_error_releases_reserve(budget):
+    """Сверка «вызов не прошёл»: резерв снят, call=error → retry снова возможен."""
+    p = _product()
+    call = _unknown_call(p)
+
+    assert services.resolve_unknown_call(call.pk, outcome="error") is True
+
+    call.refresh_from_db()
+    b = SourcingBudget.objects.get(day=dt.date(2026, 6, 29))
+    assert call.status == ExternalCall.Status.ERROR
+    assert b.reserved == 0
+    assert b.spent == 0
+    # error-вызов снова захватывается ретраем (владение передаётся).
+    _, owns = services._reserve_and_open_call(call.run, "web")
+    assert owns is True
+
+
+@pytest.mark.django_db
+def test_resolve_unknown_as_paid_moves_reserve_to_spent(budget):
+    """Сверка «вызов прошёл и оплачен»: резерв переходит в spent по верхней границе."""
+    p = _product()
+    call = _unknown_call(p)
+
+    assert services.resolve_unknown_call(call.pk, outcome="ok") is True
+
+    call.refresh_from_db()
+    b = SourcingBudget.objects.get(day=dt.date(2026, 6, 29))
+    assert call.status == ExternalCall.Status.OK
+    assert call.cost == services.MAX_CALL_COST
+    assert b.reserved == 0
+    assert b.spent == services.MAX_CALL_COST
+
+
+@pytest.mark.django_db
+def test_resolve_unknown_idempotent_and_guarded(budget):
+    """Повторная сверка и сверка не-UNKNOWN вызова — no-op (False), бюджет не двигается."""
+    p = _product()
+    call = _unknown_call(p)
+    services.resolve_unknown_call(call.pk, outcome="error")
+
+    assert services.resolve_unknown_call(call.pk, outcome="error") is False
+    assert services.resolve_unknown_call(call.pk, outcome="ok") is False
+    b = SourcingBudget.objects.get(day=dt.date(2026, 6, 29))
+    assert b.reserved == 0 and b.spent == 0
+
+    with pytest.raises(ValueError):
+        services.resolve_unknown_call(call.pk, outcome="paid")
+
+
+@pytest.mark.django_db
+def test_resolve_uses_reservation_day_budget(budget, monkeypatch):
+    """Резерв снимается со строки ДНЯ РЕЗЕРВИРОВАНИЯ, даже если сверка позже (#8)."""
+    p = _product()
+    call = _unknown_call(p)
+    # Сверка «на следующий день».
+    monkeypatch.setattr(services, "_today", lambda: dt.date(2026, 6, 30))
+
+    services.resolve_unknown_call(call.pk, outcome="ok")
+
+    b_old = SourcingBudget.objects.get(day=dt.date(2026, 6, 29))
+    assert b_old.reserved == 0 and b_old.spent == services.MAX_CALL_COST
+    assert not SourcingBudget.objects.filter(day=dt.date(2026, 6, 30), spent__gt=0).exists()
+
+
+@pytest.mark.django_db
+def test_beat_schedules_sourcing_janitors():
+    """#432: janitor'ы sourcing стоят в beat — зависшие прогоны добиваются сами."""
+    from config.celery import app
+
+    beat = app.conf.beat_schedule
+    assert beat["mark-stale-sourcing-runs"]["task"] == "apps.ai.tasks.mark_stale_sourcing_runs"
+    assert beat["purge-sourcing-excerpts"]["task"] == "apps.ai.tasks.purge_sourcing_excerpts"

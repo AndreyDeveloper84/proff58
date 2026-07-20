@@ -472,6 +472,44 @@ def _close_call(call, status, *, reply=None):
         call.save()
 
 
+def resolve_unknown_call(call_id: int, *, outcome: str) -> bool:
+    """Ручная сверка UNKNOWN-вызова (#432/M-09, производственное замыкание §6.5).
+
+    UNKNOWN означает «вызов мог пройти и оплатиться» (read-timeout/разрыв после
+    отправки): резерв бюджета удержан, авто-retry запрещён. Развязка — человеком,
+    после проверки у провайдера, прошёл ли вызов:
+
+    - ``outcome="error"`` — вызов НЕ прошёл: резерв снимается, call → error
+      (retry снова возможен — _reserve_and_open_call захватывает error-вызовы);
+    - ``outcome="ok"`` — вызов прошёл и оплачен: резерв переводится в spent по
+      верхней границе (reserved_cost — фактическая цена неизвестна, консервативно),
+      call → ok (без findings: контент этого вызова утерян, но деньги учтены).
+
+    Идемпотентно: не-UNKNOWN вызовы не трогаются (возврат False).
+    """
+    if outcome not in ("error", "ok"):
+        raise ValueError(f"outcome должен быть 'error' или 'ok', получен {outcome!r}")
+    with transaction.atomic():
+        call = ExternalCall.objects.select_for_update().filter(pk=call_id).first()
+        if call is None or call.status != ExternalCall.Status.UNKNOWN:
+            return False
+        day = call.reserved_day or _today()
+        b, _ = SourcingBudget.objects.select_for_update().get_or_create(
+            day=day, defaults={"daily_cap": Decimal("0")}
+        )
+        if outcome == "ok":
+            call.status = ExternalCall.Status.OK
+            call.cost = call.reserved_cost
+            b.spent += call.reserved_cost
+        else:
+            call.status = ExternalCall.Status.ERROR
+        b.reserved -= call.reserved_cost
+        call.finished_at = timezone.now()
+        b.save()
+        call.save()
+    return True
+
+
 def _persist_findings(call, product, reply):
     for raw in reply.findings:
         f = validate(raw)
