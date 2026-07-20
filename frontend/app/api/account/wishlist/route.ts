@@ -12,6 +12,11 @@ export async function POST(request: NextRequest): Promise<Response> {
 }
 
 export async function DELETE(request: NextRequest): Promise<Response> {
+  // Пустая строка → undefined: иначе в Django уйдёт Content-Type: application/json
+  // с пустым телом, и request.data упадёт с ParseError (400 «JSON parse error»).
   const body = await request.text();
-  return proxyToDjango(request, "/api/account/wishlist/", { method: "DELETE", body });
+  return proxyToDjango(request, "/api/account/wishlist/", {
+    method: "DELETE",
+    body: body || undefined,
+  });
 }

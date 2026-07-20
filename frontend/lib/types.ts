@@ -205,9 +205,18 @@ export type Order = {
   legal_address: string;
   delivery_method: string;
   delivery_address: string;
+  // Серверный расчёт доставки (#429/M-05): зона, стоимость (null = manual_required,
+  // менеджер посчитает) и статус расчёта. Decimal → строка.
+  delivery_zone: string;
+  delivery_cost: string | null;
+  delivery_calc_status: string;
   comment: string;
   payment_method: string;
   total: string;
+  // Снимок НДС для B2B (#430/M-06): ставка — число, суммы — строки; для B2C нулевые.
+  vat_rate: number;
+  vat_amount: string;
+  amount_without_vat: string;
   currency: string;
   created_at: string;
   items: OrderItem[];

@@ -137,11 +137,13 @@ export async function maxAccountStatus() {
 }
 
 export async function getOrders(): Promise<Order[]> {
-  // #438 (m-05): /api/orders/ теперь пагинирован ({count, results}); разворачиваем
+  // #438 (m-05): /api/orders теперь пагинирован ({count, results}); разворачиваем
   // results. Массив на входе тоже поддерживаем (обратная совместимость).
+  // Без хвостового слэша: nginx матчит BFF-роуты точными путями (location = /api/orders),
+  // а путь со слэшем уходил в Django напрямую мимо BFF (см. правило в lib/cart.ts).
   try {
     const data = await apiFetch<{ results?: Order[] } | Order[]>(
-      "/api/orders/",
+      "/api/orders",
       { method: "GET" },
     );
     return Array.isArray(data) ? data : (data.results ?? []);
