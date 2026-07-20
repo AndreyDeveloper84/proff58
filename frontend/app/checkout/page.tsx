@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
 import { ApiError } from "@/lib/api";
-import { getDeliveryZones, type DeliveryZoneOption } from "@/lib/delivery";
+import {
+  getDeliverySlots,
+  getDeliveryZones,
+  type DeliverySlotOption,
+  type DeliveryZoneOption,
+} from "@/lib/delivery";
 import { formatPrice } from "@/lib/format";
 import { placeOrder } from "@/lib/orders";
 import {
@@ -24,6 +29,15 @@ type PaymentMethod = "online" | "invoice";
 
 const inputClass =
   "w-full rounded-md border border-line bg-canvas px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none";
+
+// #569: подпись группы слотов: «вт, 21 июля».
+function formatSlotDate(iso: string) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("ru-RU", {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+  });
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -74,6 +88,35 @@ export default function CheckoutPage() {
   const courierZones = useMemo(() => zones.filter((z) => z.type === "courier"), [zones]);
   const selectedZone = courierZones.find((z) => z.zone === zoneSlug) ?? null;
 
+  // #569: слоты доставки — только B2C + курьер. Пустой список = пикер скрыт,
+  // заказ уходит без слота (менеджер согласует время). Сервер перепроверит
+  // слот авторитетно при оформлении.
+  const [slots, setSlots] = useState<DeliverySlotOption[]>([]);
+  const [slotId, setSlotId] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Для B2B/самовывоза пикер не рендерится и slot_id не уходит в payload —
+    // список можно не чистить, только не запрашивать.
+    if (isB2B || delivery !== "courier") return;
+    let active = true;
+    getDeliverySlots(zoneSlug || undefined).then((data) => {
+      if (active) setSlots(data);
+    });
+    return () => {
+      active = false;
+    };
+  }, [isB2B, delivery, zoneSlug]);
+
+  const slotsByDate = useMemo(() => {
+    const groups = new Map<string, DeliverySlotOption[]>();
+    for (const slot of slots) {
+      const list = groups.get(slot.date) ?? [];
+      list.push(slot);
+      groups.set(slot.date, list);
+    }
+    return [...groups.entries()];
+  }, [slots]);
+
   // Пустую корзину оформлять нечего — уводим на /cart (после загрузки снимка).
   useEffect(() => {
     if (!loading && (!cart || cart.lines.length === 0)) {
@@ -118,6 +161,11 @@ export default function CheckoutPage() {
     if (!isB2B && delivery === "courier" && courierZones.length > 0 && !zoneSlug) {
       return setError("Выберите зону доставки");
     }
+    // #569: слот обязателен, только если слоты вообще есть — пустой справочник
+    // не должен останавливать курьерские заказы.
+    if (!isB2B && delivery === "courier" && slots.length > 0 && !slotId) {
+      return setError("Выберите дату и время доставки");
+    }
 
     inFlight.current = true;
     setSubmitting(true);
@@ -135,6 +183,7 @@ export default function CheckoutPage() {
         delivery_method: isB2B ? "pickup" : delivery,
         delivery_address: !isB2B && delivery === "courier" ? address.trim() : "",
         delivery_zone: !isB2B && delivery === "courier" ? zoneSlug : "",
+        delivery_slot_id: !isB2B && delivery === "courier" ? slotId : null,
         payment_method: payment,
         comment: comment.trim(),
       });
@@ -145,6 +194,12 @@ export default function CheckoutPage() {
       router.push(`/order/${order.order_number}/thanks`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Ошибка при оформлении заказа");
+      // #569: заказ со слотом не прошёл (чаще всего «время уже занято») —
+      // обновляем справочник и сбрасываем выбор, текст ошибки уже от сервера.
+      if (err instanceof ApiError && !isB2B && delivery === "courier" && slotId) {
+        setSlotId(null);
+        getDeliverySlots(zoneSlug || undefined).then(setSlots);
+      }
       inFlight.current = false;
       setSubmitting(false);
     }
@@ -193,7 +248,11 @@ export default function CheckoutPage() {
                   name="customerType"
                   value={value}
                   checked={customerType === value}
-                  onChange={() => setCustomerType(value)}
+                  onChange={() => {
+                    setCustomerType(value);
+                    // #569: у B2B слотов нет — выбранный слот неактуален.
+                    setSlotId(null);
+                  }}
                   className="accent-accent"
                 />
                 <span className="text-sm text-ink">{label}</span>
@@ -327,7 +386,11 @@ export default function CheckoutPage() {
               name="delivery"
               value="courier"
               checked={delivery === "courier"}
-              onChange={() => setDelivery("courier")}
+              onChange={() => {
+                setDelivery("courier");
+                // #569: возврат к курьеру начинается с чистого выбора слота.
+                setSlotId(null);
+              }}
               className="accent-accent"
             />
             <span className="text-sm text-ink">Курьер</span>
@@ -338,7 +401,12 @@ export default function CheckoutPage() {
               name="delivery"
               value="pickup"
               checked={delivery === "pickup"}
-              onChange={() => setDelivery("pickup")}
+              onChange={() => {
+                setDelivery("pickup");
+                // #569: самовывозу слот не нужен — устаревший id не должен
+                // попасть в payload (бэк ответит 400).
+                setSlotId(null);
+              }}
               className="accent-accent"
             />
             <span className="text-sm text-ink">Самовывоз</span>
@@ -353,7 +421,11 @@ export default function CheckoutPage() {
                   <select
                     id="deliveryZone"
                     value={zoneSlug}
-                    onChange={(e) => setZoneSlug(e.target.value)}
+                    onChange={(e) => {
+                      setZoneSlug(e.target.value);
+                      // #569: зональные слоты другой зоны несовместимы.
+                      setSlotId(null);
+                    }}
                     className={inputClass}
                   >
                     <option value="">— выберите зону —</option>
@@ -372,6 +444,35 @@ export default function CheckoutPage() {
                     Стоимость доставки рассчитывается сервером и входит в итог заказа.
                   </p>
                 </div>
+              )}
+              {slots.length > 0 ? (
+                <div>
+                  <label htmlFor="deliverySlot" className="mb-1 block text-sm text-ink-2">
+                    Дата и время доставки *
+                  </label>
+                  <select
+                    id="deliverySlot"
+                    value={slotId ?? ""}
+                    onChange={(e) => setSlotId(e.target.value ? Number(e.target.value) : null)}
+                    className={inputClass}
+                  >
+                    <option value="">— выберите интервал —</option>
+                    {slotsByDate.map(([date, daySlots]) => (
+                      <optgroup key={date} label={formatSlotDate(date)}>
+                        {daySlots.map((slot) => (
+                          <option key={slot.id} value={slot.id}>
+                            {slot.starts_at}–{slot.ends_at}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <p className="text-xs text-ink-3">
+                  Доступных интервалов доставки нет — менеджер согласует время после
+                  оформления заказа.
+                </p>
               )}
               <div>
                 <label htmlFor="address" className="mb-1 block text-sm text-ink-2">

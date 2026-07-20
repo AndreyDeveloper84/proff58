@@ -203,6 +203,13 @@ def calculate(*, address, cart) -> DeliveryQuote:
 # DeliveryQuote: { cost, days, method, zone }
 ```
 
+Слоты доставки (#569): `DeliverySlot` (дата + интервал + вместимость) в
+`delivery`, витрина/валидация — `delivery.slots`. Занятость слота считается по
+живым заказам, единственная точка подсчёта — `orders.slots` (function-level
+связка `orders ↔ delivery` в обе стороны: orders вызывает `delivery.slots` при
+бронировании, `delivery.slots` читает занятость через `orders.slots`; прямые
+запросы в чужие таблицы по-прежнему запрещены).
+
 ### 4.4 `notifications.services`
 ```python
 def send(*, user=None, chat_id=None, event: str, payload: dict) -> None:

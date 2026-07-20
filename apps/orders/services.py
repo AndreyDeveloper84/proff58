@@ -465,6 +465,31 @@ def place_order(
     order.delivery_snapshot = quote.snapshot
     grand_total = total + (quote.cost or _ZERO)
 
+    # #569: слот доставки — только B2C + курьер (у юрлиц доставки нет, #558).
+    # Бронирование под локом строки слота (порядок локов: cart → products → slot):
+    # COUNT живых заказов и вставка сериализуются, при гонке за последнее место
+    # второй покупатель получает ValidationError. Слот необязателен: пустой
+    # справочник не должен останавливать курьерские заказы (обязательность
+    # «когда слоты есть» держит фронт).
+    slot_id = delivery.get("delivery_slot_id")
+    if slot_id:
+        if customer_type == CustomerType.B2B:
+            raise ValidationError("Доставка для юрлиц недоступна — слот доставки не нужен.")
+        if (delivery.get("delivery_method") or "") != "courier":
+            raise ValidationError("Слот доставки доступен только для курьерской доставки.")
+        from apps.delivery.slots import lock_slot_for_booking, slot_snapshot
+        from apps.orders.slots import occupied_count
+
+        slot = lock_slot_for_booking(
+            slot_id,
+            method="courier",
+            zone_slug=delivery.get("delivery_zone", "") or "",
+        )
+        if occupied_count(slot.pk) >= slot.capacity:
+            raise ValidationError("Это время уже занято — выберите другой интервал.")
+        order.delivery_slot = slot
+        order.delivery_slot_snapshot = slot_snapshot(slot)
+
     order.total = grand_total
     order.currency = order_currency or "RUB"
     # #430 (M-06): снимок НДС для B2B (цена включает НДС; ставка фиксируется на
@@ -491,6 +516,8 @@ def place_order(
             "delivery_cost",
             "delivery_calc_status",
             "delivery_snapshot",
+            "delivery_slot",
+            "delivery_slot_snapshot",
             "vat_rate",
             "amount_without_vat",
             "vat_amount",

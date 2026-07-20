@@ -194,6 +194,25 @@ class Order(TimeStampedModel):
     )
     delivery_snapshot = models.JSONField(_("Снимок тарифа доставки"), default=dict, blank=True)
 
+    # --- Слот доставки (#569). FK нужен для подсчёта занятости слота; снимок —
+    # отдельным полем (delivery_snapshot целиком перезаписывает quote_for_order),
+    # чтобы история заказа переживала правку/деактивацию слота админом.
+    # PROTECT: слот с заказами не удалить — менеджер деактивирует. ---
+    delivery_slot = models.ForeignKey(
+        "delivery.DeliverySlot",
+        verbose_name=_("Слот доставки"),
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="orders",
+    )
+    delivery_slot_snapshot = models.JSONField(
+        _("Снимок слота доставки"),
+        default=dict,
+        blank=True,
+        help_text=_("slot_id, date, starts_at, ends_at, delivery_method, zone."),
+    )
+
     # --- Итоги ---
     total = models.DecimalField(
         _("Сумма заказа"),

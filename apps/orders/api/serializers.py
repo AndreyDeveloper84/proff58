@@ -119,6 +119,7 @@ class OrderSerializer(serializers.ModelSerializer):
     display_status = serializers.CharField(read_only=True)
     total = serializers.SerializerMethodField()
     reservation_expired = serializers.SerializerMethodField()
+    delivery_slot = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -143,6 +144,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "delivery_zone",
             "delivery_cost",
             "delivery_calc_status",
+            "delivery_slot",
             "comment",
             "payment_method",
             "total",
@@ -175,6 +177,18 @@ class OrderSerializer(serializers.ModelSerializer):
             return False
         return obj.reserved_until <= timezone.now()
 
+    def get_delivery_slot(self, obj):
+        # #569: наружу — снимок, а не живой слот (история заказа не «плывёт» при
+        # правке слота админом). Пустой снимок у старых заказов → null.
+        snapshot = obj.delivery_slot_snapshot or {}
+        if not snapshot:
+            return None
+        return {
+            "date": snapshot.get("date", ""),
+            "starts_at": snapshot.get("starts_at", ""),
+            "ends_at": snapshot.get("ends_at", ""),
+        }
+
 
 class CreateOrderSerializer(serializers.Serializer):
     """Тело POST /api/orders/.
@@ -198,6 +212,8 @@ class CreateOrderSerializer(serializers.Serializer):
     delivery_method = serializers.CharField(required=False, allow_blank=True, default="")
     delivery_address = serializers.CharField(required=False, allow_blank=True, default="")
     delivery_zone = serializers.CharField(required=False, allow_blank=True, default="")
+    # #569: слот доставки (только B2C + курьер; авторитетная проверка — place_order).
+    delivery_slot_id = serializers.IntegerField(required=False, allow_null=True, default=None)
     comment = serializers.CharField(required=False, allow_blank=True, default="")
     payment_method = serializers.CharField(required=False, allow_blank=True, default="")
 
@@ -266,10 +282,21 @@ class CreateOrderSerializer(serializers.Serializer):
                     {"delivery_method": "Доставка для юрлиц недоступна — только самовывоз."}
                 )
             attrs["delivery_zone"] = ""
+            # #569: слот — часть доставки, которой у юрлиц нет (зеркало #558).
+            if attrs.get("delivery_slot_id"):
+                raise serializers.ValidationError(
+                    {"delivery_slot_id": "Доставка для юрлиц недоступна — слот выбрать нельзя."}
+                )
 
         elif attrs.get("payment_method") == "invoice":
             raise serializers.ValidationError(
                 {"payment_method": "Оплата по счёту доступна только для B2B."}
+            )
+
+        # #569: слот имеет смысл только у курьерской доставки (зеркало place_order).
+        if attrs.get("delivery_slot_id") and (attrs.get("delivery_method") or "") != "courier":
+            raise serializers.ValidationError(
+                {"delivery_slot_id": "Слот доставки доступен только для курьерской доставки."}
             )
 
         return attrs

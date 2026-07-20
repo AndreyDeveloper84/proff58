@@ -25,6 +25,20 @@ export function pluralize(n: number, one: string, few: string, many: string): st
   return many;
 }
 
+/** Слот доставки (#569): снимок из заказа → «21.07.2026, 10:00–14:00». */
+export function formatDeliverySlot(slot: {
+  date: string;
+  starts_at: string;
+  ends_at: string;
+}): string {
+  const date = new Date(`${slot.date}T00:00:00`).toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  return `${date}, ${slot.starts_at}–${slot.ends_at}`;
+}
+
 /** slug/токен → человекочитаемая подпись: «cordless-drill» → «Cordless drill». */
 export function humanizeToken(token: string): string {
   const s = token.replace(/[-_]/g, " ").trim();

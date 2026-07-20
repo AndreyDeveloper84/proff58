@@ -218,6 +218,9 @@ export type Order = {
   vat_amount: string;
   amount_without_vat: string;
   currency: string;
+  // Слот доставки (#569): снимок даты/интервала из заказа; null — слот не
+  // выбирался. Optional: старые stashed-снимки поля не содержат.
+  delivery_slot?: { date: string; starts_at: string; ends_at: string } | null;
   // Резерв товара (#568): B2C — 30 мин, B2B — 24ч со счётом. Поля optional:
   // stashed-снимки заказов в sessionStorage, созданные до деплоя, их не содержат.
   // reservation_expired — «честный» серверный признак (не зависит от лага janitor'а).
@@ -248,6 +251,8 @@ export type PlaceOrderData = {
   // Слаг зоны доставки (GET /api/delivery/zones). Без него сервер не считает
   // стоимость доставки (not_required, 0 ₽) — итог заказа занижен (аудит №5).
   delivery_zone?: string;
+  // Слот доставки (#569): только B2C + курьер; сервер перепроверит сам.
+  delivery_slot_id?: number | null;
   comment?: string;
   payment_method: string;
 };
