@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from ..models import Order, OrderItem
+from ..models import B2BInvoice, Order, OrderItem
 
 
 def _money(value):
@@ -255,3 +255,71 @@ class CreateOrderSerializer(serializers.Serializer):
             )
 
         return attrs
+
+
+class B2BInvoiceSerializer(serializers.ModelSerializer):
+    """Счёт юрлица в ЛК (#560, эпик #557).
+
+    Деньги — из снимка заказа (источник правды, #559): для B2B Wave 1 доставки
+    нет, поэтому ``goods_total == order.total``. ``invoice_url`` ведёт на
+    существующий HTML-счёт (InvoiceView, owner-only для авторизованных).
+    """
+
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    order_number = serializers.CharField(source="order.order_number", read_only=True)
+    order_display_status = serializers.CharField(source="order.display_status", read_only=True)
+    fulfillment_status = serializers.CharField(source="order.fulfillment_status", read_only=True)
+    payment_status = serializers.CharField(source="order.payment_status", read_only=True)
+    goods_total = serializers.DecimalField(
+        source="order.total", max_digits=14, decimal_places=2, read_only=True
+    )
+    vat_rate = serializers.IntegerField(source="order.vat_rate", read_only=True)
+    vat_amount = serializers.DecimalField(
+        source="order.vat_amount", max_digits=14, decimal_places=2, read_only=True
+    )
+    amount_without_vat = serializers.DecimalField(
+        source="order.amount_without_vat", max_digits=14, decimal_places=2, read_only=True
+    )
+    total = serializers.DecimalField(
+        source="order.total", max_digits=14, decimal_places=2, read_only=True
+    )
+    currency = serializers.CharField(source="order.currency", read_only=True)
+    is_expired = serializers.SerializerMethodField()
+    invoice_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = B2BInvoice
+        fields = (
+            "number",
+            "status",
+            "status_display",
+            "order_number",
+            "order_display_status",
+            "fulfillment_status",
+            "payment_status",
+            "goods_total",
+            "vat_rate",
+            "vat_amount",
+            "amount_without_vat",
+            "total",
+            "currency",
+            "issued_at",
+            "valid_until",
+            "is_expired",
+            "invoice_url",
+        )
+        read_only_fields = fields
+
+    def get_is_expired(self, invoice) -> bool:
+        # Признак «срок вышел» для UI: либо janitor уже перевёл в expired, либо
+        # срок прошёл, а janitor ещё не добежал (интервал 10 мин).
+        from django.utils import timezone
+
+        from apps.orders.models import InvoiceStatus
+
+        if invoice.status == InvoiceStatus.EXPIRED:
+            return True
+        return invoice.status == InvoiceStatus.ISSUED and invoice.valid_until <= timezone.now()
+
+    def get_invoice_url(self, invoice) -> str:
+        return f"/api/orders/{invoice.order.order_number}/invoice/"

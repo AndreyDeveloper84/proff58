@@ -317,3 +317,46 @@ class InvoiceView(APIView):
         html = render_to_string("orders/invoice.html", {"invoice": invoice})
         # Счёт содержит ПДн; при гостевом токене в URL — запрещаем кеш/referrer.
         return _no_store(HttpResponse(html, content_type="text/html"))
+
+
+class AccountInvoicesView(APIView):
+    """GET /api/account/invoices/ — счета B2B текущего пользователя (#560).
+
+    Owner-only: только счета по заказам самого пользователя. У B2C-аккаунта
+    список пуст (счета выставляются только B2B-заказам). Пагинация — как у
+    списка заказов (#438/m-05).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from ..models import B2BInvoice
+        from .serializers import B2BInvoiceSerializer
+
+        qs = (
+            B2BInvoice.objects.filter(order__user=request.user)
+            .select_related("order")
+            .order_by("-issued_at")
+        )
+        paginator = LimitOffsetPagination()
+        page = paginator.paginate_queryset(qs, request, view=self)
+        return paginator.get_paginated_response(B2BInvoiceSerializer(page, many=True).data)
+
+
+class AccountInvoiceDetailView(APIView):
+    """GET /api/account/invoices/{number}/ — детали счёта, только владелец."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, number):
+        from ..models import B2BInvoice
+        from .serializers import B2BInvoiceSerializer
+
+        invoice = (
+            B2BInvoice.objects.filter(number=number, order__user=request.user)
+            .select_related("order")
+            .first()
+        )
+        if invoice is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(B2BInvoiceSerializer(invoice).data)

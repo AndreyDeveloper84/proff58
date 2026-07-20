@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   CircleUserRound,
   ClipboardList,
+  FileText,
   GitCompare,
   Heart,
   Home,
@@ -37,6 +38,9 @@ type NavItem = {
 const PRIMARY_NAV: NavItem[] = [
   { label: "Главная", href: "/account/profile", icon: Home, match: "/account/profile" },
   { label: "Заказы", href: "/account/orders", icon: ClipboardList, match: "/account/orders" },
+  // #560: счета юрлица (24ч, эпик #557). Пункт виден всем — B2C увидит пустое
+  // состояние с пояснением (тип покупателя в Shell не прокидывается).
+  { label: "Счета", href: "/account/invoices", icon: FileText, match: "/account/invoices" },
   { label: "Избранное", href: "/account/wishlist", icon: Heart, match: "/account/wishlist" },
   {
     label: "Сравнение",

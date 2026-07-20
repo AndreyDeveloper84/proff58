@@ -15,6 +15,15 @@ urlpatterns = [
         views.CartItemRestoreView.as_view(),
         name="cart-item-restore",
     ),
+    # #560: счета B2B в ЛК. Префикс account/ здесь легален: urls смонтированы на
+    # /api/ (как account/max/* у integration_max), а nginx уже шлёт /api/account/
+    # целиком в Next-BFF.
+    path("account/invoices/", views.AccountInvoicesView.as_view(), name="account-invoices"),
+    path(
+        "account/invoices/<str:number>/",
+        views.AccountInvoiceDetailView.as_view(),
+        name="account-invoice-detail",
+    ),
     path("orders/", views.OrdersView.as_view(), name="orders"),
     path("orders/<str:number>/", views.OrderDetailView.as_view(), name="order-detail"),
     path("orders/<str:number>/invoice/", views.InvoiceView.as_view(), name="order-invoice"),
