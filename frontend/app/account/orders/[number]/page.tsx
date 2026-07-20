@@ -19,6 +19,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
+import { ReservationNotice } from "@/components/order/ReservationNotice";
 import { getMe, getOrder } from "@/lib/auth";
 import { formatPrice, humanizeToken, pluralize } from "@/lib/format";
 import { statusBadgeClass } from "@/lib/order-status";
@@ -235,6 +236,9 @@ export default function OrderDetailsPage() {
               value={displayToken(order.payment_method, PAYMENT_METHOD_LABELS)}
             />
             <InfoRow label="Статус" value={PAYMENT_STATUS_LABELS[order.payment_status]} />
+            <div>
+              <ReservationNotice order={order} />
+            </div>
           </InfoCard>
 
           <InfoCard icon={UserRound} title="Получатель">

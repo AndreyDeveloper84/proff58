@@ -36,8 +36,17 @@ from .models import (
 
 _ZERO = Decimal("0.00")
 
-# TTL резерва (#423, B-03): по истечении janitor освобождает неоплаченный резерв.
-RESERVATION_TTL_SECONDS = 24 * 3600
+# TTL резерва B2B (#423, B-03; #559): 24 часа — вместе со счётом
+# (invoice.valid_until == reserved_until). Для B2C — 30 минут (#568),
+# настройка RESERVATION_TTL_B2C_MINUTES.
+RESERVATION_TTL_B2B_SECONDS = 24 * 3600
+
+
+def _reservation_ttl(customer_type: str) -> timedelta:
+    """TTL резерва по типу покупателя: B2C — минуты из настройки, B2B — 24ч."""
+    if customer_type == CustomerType.B2B:
+        return timedelta(seconds=RESERVATION_TTL_B2B_SECONDS)
+    return timedelta(minutes=int(getattr(settings, "RESERVATION_TTL_B2C_MINUTES", 30)))
 
 
 # ---------------------------------------------------------------------------
@@ -471,8 +480,9 @@ def place_order(
         order.vat_amount = vat
     # #423 (B-03): резерв удержан выше (available -= qty, reserved += qty по строкам).
     # Фиксируем статус и TTL — janitor освободит его, если заказ не оплатят вовремя.
+    # TTL зависит от типа покупателя (#568): B2C — 30 мин, B2B — 24ч со счётом.
     order.reservation_status = ReservationStatus.HELD
-    order.reserved_until = timezone.now() + timedelta(seconds=RESERVATION_TTL_SECONDS)
+    order.reserved_until = timezone.now() + _reservation_ttl(customer_type)
     order.save(
         update_fields=[
             "total",

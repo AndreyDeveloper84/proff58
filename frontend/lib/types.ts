@@ -218,6 +218,12 @@ export type Order = {
   vat_amount: string;
   amount_without_vat: string;
   currency: string;
+  // Резерв товара (#568): B2C — 30 мин, B2B — 24ч со счётом. Поля optional:
+  // stashed-снимки заказов в sessionStorage, созданные до деплоя, их не содержат.
+  // reservation_expired — «честный» серверный признак (не зависит от лага janitor'а).
+  reserved_until?: string | null;
+  reservation_status?: "none" | "held" | "released" | "confirmed";
+  reservation_expired?: boolean;
   created_at: string;
   items: OrderItem[];
   // Только для гостевых заказов (#322/#520) — сервер отдаёт при создании, если
