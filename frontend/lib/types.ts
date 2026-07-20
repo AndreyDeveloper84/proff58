@@ -143,6 +143,9 @@ export type Cart = {
   lines: CartLine[];
   total: string;
   currency: string;
+  // #375: валюты строк различаются → бэк обнуляет total и поднимает флаг.
+  // Без обработки флага UI показывал «Итого: 0 ₽» без объяснения причины.
+  has_mixed_currencies: boolean;
 };
 
 export type OrderItem = {

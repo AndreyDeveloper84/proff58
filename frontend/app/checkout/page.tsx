@@ -44,9 +44,18 @@ export default function CheckoutPage() {
     }
   }, [loading, cart, router]);
 
+  // #375: при смешении валют бэк обнуляет total — такой заказ оформлять нельзя
+  // (корзина блокирует переход, но прямой заход на /checkout тоже надо закрыть).
+  const mixedCurrencies = Boolean(cart?.has_mixed_currencies);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (inFlight.current) return;
+    if (mixedCurrencies) {
+      return setError(
+        "В корзине товары в разных валютах — оформите их отдельными заказами.",
+      );
+    }
 
     if (!name.trim()) return setError("Укажите имя");
     if (!isValidPhone(phone)) return setError("Укажите корректный телефон");
@@ -318,15 +327,23 @@ export default function CheckoutPage() {
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
             <span className="text-lg text-ink-2">Итого:</span>
-            <span className="font-display text-2xl font-bold text-ink">{formatPrice(total)}</span>
+            <span className="font-display text-2xl font-bold text-ink">
+              {mixedCurrencies ? "—" : formatPrice(total)}
+            </span>
           </div>
+          {mixedCurrencies && (
+            <p className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+              В корзине товары в разных валютах — итог не считается. Вернитесь в корзину и
+              оформите их отдельными заказами.
+            </p>
+          )}
         </div>
 
         <div className="flex justify-end">
           <Button
             type="submit"
             variant="accent"
-            disabled={submitting}
+            disabled={submitting || mixedCurrencies}
             className="px-8 py-2.5 text-base"
           >
             {submitting ? "Оформляем…" : "Оформить заказ"}
