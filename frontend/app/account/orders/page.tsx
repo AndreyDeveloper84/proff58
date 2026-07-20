@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, ClipboardList, RotateCcw } from "lucide-react";
+import { ChevronRight, ClipboardList, RotateCcw } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { getMe, getOrders } from "@/lib/auth";
 import { formatPrice, pluralize } from "@/lib/format";
@@ -42,7 +42,6 @@ export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [tab, setTab] = useState<OrderTab>("all");
-  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -196,50 +195,18 @@ export default function OrdersPage() {
                     Повторить заказ
                   </Link>
                 )}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setExpandedOrderId((current) => (current === order.id ? null : order.id))
-                  }
-                  aria-expanded={expandedOrderId === order.id}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line px-4 text-sm font-semibold text-ink transition hover:bg-raised"
+                <Link
+                  href={`/account/orders/${encodeURIComponent(order.order_number)}`}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink transition hover:brightness-110"
                 >
-                  {expandedOrderId === order.id ? "Скрыть детали" : "Подробнее"}
-                  {expandedOrderId === order.id ? (
-                    <ChevronUp className="h-4 w-4" aria-hidden />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" aria-hidden />
-                  )}
-                </button>
+                  Открыть заказ
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </Link>
               </div>
-
-              {expandedOrderId === order.id && (
-                <dl className="mt-4 grid gap-3 border-t border-line pt-4 text-sm sm:grid-cols-2">
-                  <OrderDetail label="Способ получения" value={order.delivery_method || "Не указан"} />
-                  <OrderDetail label="Способ оплаты" value={order.payment_method || "Не указан"} />
-                  <OrderDetail
-                    label="Адрес доставки"
-                    value={order.delivery_address || "Самовывоз"}
-                  />
-                  <OrderDetail
-                    label="Получатель"
-                    value={order.customer_name || "Не указан"}
-                  />
-                </dl>
-              )}
             </div>
           </article>
         ))}
       </div>
     </AccountShell>
-  );
-}
-
-function OrderDetail({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs text-ink-3">{label}</dt>
-      <dd className="mt-1 text-sm font-medium text-ink">{value}</dd>
-    </div>
   );
 }
