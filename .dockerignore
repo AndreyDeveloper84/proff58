@@ -15,3 +15,32 @@ htmlcov
 staticfiles
 media
 *.sqlite3
+
+# --- Непродуктовое из образа web (#442/TD-05) ---
+# Образ web (context: .) — headless Django API. COPY . . тянул сюда сотни МБ
+# балласта. dev это не ломает: docker-compose.yml монтирует исходники томом .:/app;
+# CI гоняет тесты из checkout; прод-команды каталога используют apps/scripts/docker/data.
+
+# Фронт — отдельный образ (context ./frontend). В образе web не нужен; node_modules
+# (~700 МБ) и .next (~350 МБ) — чистый мусор в build context.
+frontend
+
+# Vendored agent-тулинг (~140 МБ, 900+ файлов) — только для разработки, не для рантайма.
+.claude
+
+# Доки, CI-конфиги, кросс-модульные тесты — прод-образу не нужны.
+docs
+.github
+tests
+
+# Node/сборочные артефакты (на случай появления вне frontend/).
+node_modules
+**/node_modules
+.next
+
+# Рантайм-тома (в проде — bind-mount ./logs, ./var), IDE/OS-артефакты.
+logs
+var
+.vscode
+.idea
+.DS_Store
