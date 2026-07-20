@@ -19,9 +19,11 @@ staging и миграций данных этот ADR не выполняет**.
 options точного типа не было. В batch-50 товары того же семейства (12956,
 13002) дали **abstention с `taxonomy_gap`**: research отказался повторять
 широкую классификацию, модератор пометил расхождение с прецедентом Phase 5
-как family divergence. Это единственный системный gap batch-50
-(2 abstention + 3 товара в in-stock пуле + 65 SKU всего), и он блокирует
-как закрытие needs_review-хвоста, так и будущие rules/research прогоны.
+как family divergence. Это **приоритетный, наиболее подтверждённый**
+системный gap batch-50 (2 abstention + 3 товара в in-stock пуле +
+65 SKU всего; в отчёте есть и другие повторяющиеся gaps — напр.,
+«наборы»/аксессуары), и он блокирует как закрытие needs_review-хвоста,
+так и будущие rules/research прогоны.
 
 Граничный вопрос, который ADR обязан решить явно (решение 5 Phase 6 plan):
 отношение динамометрических **ключей** к `klyuchi-gaechnye` и к
@@ -95,6 +97,12 @@ options точного типа не было. В batch-50 товары того
 Принять **вариант A**: создать option `dinamometricheskie-klyuchi`
 («Динамометрические ключи») атрибута `tool_type`.
 
+Размещение нового option — **секция ручного инструмента** в manifest
+допустимых значений; новый `CategoryAttribute` **не создаётся**
+(используется существующий атрибут `tool_type`). Фактический sort-order
+impact (позиция option в фасетах/фильтрах) проверяется отдельным
+taxonomy changeset при реализации.
+
 ### Граница типов (явно)
 
 - **`dinamometricheskie-klyuchi`**: ручные ключи с контролем момента
@@ -104,7 +112,10 @@ options точного типа не было. В batch-50 товары того
 - **`otvertki`**: динамометрические отвёртки остаются здесь (13936 и
   семейство 13931–13935, 46579, 46580). Отдельный
   `dinamometricheskie-otvertki` не создаётся — семейство мало (8 SKU,
-  1 in-stock); вопрос пересматривается при росте > 20 active SKU.
+  1 in-stock). Превышение порога **> 20 active SKU** — **сигнал
+  обязательного пересмотра**, а не автоматическое основание для создания
+  option: решение учитывает facet/user value и повторные abstention
+  по семейству в research-прогонах.
 - **`adaptery`**: электронные динамометрические адаптеры/измерители
   (10537) — измерительный прибор, не затяжной инструмент.
 - **`klyuchi-gaechnye`**: только гаечные ключи без контроля момента.
@@ -133,22 +144,35 @@ options точного типа не было. В batch-50 товары того
 
 После создания option отдельным changeset:
 
-1. Ремедиация 12957/12959 — новый `CatalogProcessingRun` (kind=manual
-   или rules) из двух items; для каждого change `before_value` =
-   текущий `klyuchi-gaechnye` (web, 85), `proposed_value` =
-   `dinamometricheskie-klyuchi`, evidence ссылается на Phase 5/batch-50
-   решения и этот ADR.
-2. Поскольку collision policy Phase 6 запрещает перезапись существующего
-   `tool_type`, remediation-change создаётся явно как **миграционный**
-   (отдельный вид change с baseline = текущее значение); модерация и
-   apply — только через `review_catalog_change` / `apply_catalog_change`,
-   reviewer id=1, строго по одному, с pre/post-проверками по протоколу
-   batch-50.
-3. После apply старое значение фиксируется в `before_value` change;
-   прямых ORM-update и массовых перезаписей не выполняется.
-4. Порядок: option changeset → миграция 2 PAV → новый run для 17 active
-   и needs_review-хвоста (12956, 13002) → затем rules/research по
-   остальным SKU семейства.
+1. Ремедиация 12957/12959 — новый `CatalogProcessingRun` с **kind=manual**
+   из двух items (`catalog_queue_create --explicit-ids 12957 12959`;
+   explicit-ids допускает товары с заполненным `tool_type`). Используется
+   **существующий `CatalogChange`** — новых status/target/change kind не
+   вводится; модель уже сохраняет текущий baseline и `before_value`.
+2. Параметры каждого change, явно:
+   - `source=manual` — это утверждённая человеком taxonomy-коррекция,
+     а не web/rules evidence;
+   - `confidence=100` — решение принято этим ADR, эмпирической
+     неопределённости нет;
+   - `baseline_hash` / `before_value` = текущее
+     `klyuchi-gaechnye` / source=web / confidence=85;
+   - `proposed_value` = `dinamometricheskie-klyuchi`;
+   - evidence ссылается на Phase 5/batch-50 решения и этот ADR.
+3. Модерация и apply — только через `review_catalog_change` /
+   `apply_catalog_change`, reviewer id=1, строго по одному, с
+   pre/post-проверками по протоколу batch-50. После apply старое значение
+   фиксируется в `before_value`; прямых ORM-update и массовых перезаписей
+   не выполняется.
+4. Phase 6 collision policy («существующий `tool_type` → товар
+   исключается, перезапись запрещена») **не обходится и не изменяется**:
+   эта миграция находится вне rules flow и явно разрешается настоящим ADR
+   как разовая утверждённая коррекция двух конкретных товаров.
+5. Перед реализацией — обязательный regression-тест: existing web PAV →
+   approved manual taxonomy correction → applied (проверяет, что apply
+   корректно замещает web-значение manual-коррекцией с сохранением audit).
+6. Порядок: option changeset → regression-тест → миграция 2 PAV → новый
+   run для 17 active и needs_review-хвоста (12956, 13002) → затем
+   rules/research по остальным SKU семейства.
 
 ### Negative cases (routing)
 
@@ -176,8 +200,8 @@ predictions, precision ≥ 99%).
 
 **Плюсы:**
 
-- закрыт единственный системный taxonomy gap batch-50; needs_review
-  12956/13002 получают путь разрешения новым run;
+- закрыт приоритетный, наиболее подтверждённый системный taxonomy gap
+  batch-50; needs_review 12956/13002 получают путь разрешения новым run;
 - семантически точная классификация 65 SKU; устранён источник
   family divergence между Phase 5 и будущими research;
 - чистая основа для conjunctive routing-правила с negative fixtures.
