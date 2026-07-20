@@ -44,6 +44,8 @@ export function MaxAuthFlow({
   const [attempt, setAttempt] = useState<MaxAttempt | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  // Нейтральная подсказка ожидания (confirmation_required) — не ошибка, другой стиль.
+  const [hint, setHint] = useState("");
   const poll = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopPoll = useCallback(() => {
@@ -58,6 +60,7 @@ export function MaxAuthFlow({
   const start = useCallback(async () => {
     setPhase("starting");
     setMessage("");
+    setHint("");
     setQr(null);
     try {
       const a = customStart ? await customStart() : mode === "link" ? await maxLinkStart() : await maxStart();
@@ -81,6 +84,10 @@ export function MaxAuthFlow({
             stopPoll();
             setPhase("completed");
             onCompleted();
+          } else if (s.status === "confirmation_required") {
+            // Бэк ждёт подтверждения в приложении (§ confirm_login). Без этой ветки
+            // polling крутился бы молча — пользователь не знал бы, что делать.
+            setHint("Подтвердите вход в приложении MAX.");
           } else if (TERMINAL_FAIL.includes(s.status)) {
             stopPoll();
             setPhase("error");
@@ -115,6 +122,7 @@ export function MaxAuthFlow({
     setAttempt(null);
     setQr(null);
     setMessage("");
+    setHint("");
   }, [attempt, stopPoll]);
 
   if (phase === "idle" || phase === "starting") {
@@ -163,6 +171,7 @@ export function MaxAuthFlow({
         </a>
       )}
 
+      {hint && !message && <p className="mt-3 text-sm font-medium text-accent">{hint}</p>}
       {message && <p className="mt-3 text-sm text-danger">{message}</p>}
 
       <div className="mt-4">

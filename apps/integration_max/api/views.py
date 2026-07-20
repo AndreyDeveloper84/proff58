@@ -98,7 +98,11 @@ class MaxAuthCancelView(APIView):
         )
         if attempt is None:
             return Response({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)
-        return Response({"status": attempt.status})
+        # failure_reason — как в status-эндпоинтах: клиент типизирует ответ единым
+        # MaxAttemptStatus {status, failure_reason}; без поля тип обещал больше, чем бэк отдавал.
+        return Response(
+            {"status": attempt.status, "failure_reason": attempt.failure_reason or None}
+        )
 
 
 class MaxLinkStartView(APIView):

@@ -243,6 +243,9 @@ def test_cancel_attempt(api):
     start = api.post("/api/auth/max/start/").json()
     resp = api.post(f"/api/auth/max/{start['attempt_id']}/cancel/")
     assert resp.status_code == 200 and resp.json()["status"] == "cancelled"
+    # Контракт единый со status-эндпоинтами: {status, failure_reason} —
+    # клиент типизирует ответ как MaxAttemptStatus.
+    assert "failure_reason" in resp.json()
 
 
 @pytest.mark.django_db
