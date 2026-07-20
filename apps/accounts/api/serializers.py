@@ -26,8 +26,11 @@ class LoginSerializer(serializers.Serializer):
 class RegisterSerializer(serializers.Serializer):
     phone = serializers.CharField()
     password = serializers.CharField()
-    full_name = serializers.CharField(required=False, default="")
-    email = serializers.EmailField(required=False, default="")
+    # allow_blank: форма регистрации шлёт ключи всегда, даже с пустым значением
+    # (имя необязательно). Без allow_blank DRF валит пустую строку ДО применения
+    # default="" → регистрация без имени падала с 400 «Это поле не может быть пустым».
+    full_name = serializers.CharField(required=False, allow_blank=True, default="")
+    email = serializers.EmailField(required=False, allow_blank=True, default="")
     customer_type = serializers.ChoiceField(choices=["b2c", "b2b"], default="b2c")
 
     def validate_phone(self, value):

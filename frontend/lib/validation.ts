@@ -18,6 +18,22 @@ export function isValidPhone(value: string): boolean {
   return d.length === 10;
 }
 
+// ИНН: 10 цифр — юрлицо, 12 — ИП. Зеркалит серверный _INN_RE (apps/orders/invoice.py),
+// чтобы форма не отправляла заведомо отклоняемые B2B-реквизиты.
+export function isValidInn(value: string): boolean {
+  return /^\d{10}$|^\d{12}$/.test(value.trim());
+}
+
+// ИНН из 10 цифр = юрлицо → КПП обязателен (у ИП с ИНН из 12 цифр — нет).
+export function isLegalEntityInn(value: string): boolean {
+  return /^\d{10}$/.test(value.trim());
+}
+
+// КПП: ровно 9 цифр. Зеркалит серверный _KPP_RE.
+export function isValidKpp(value: string): boolean {
+  return /^\d{9}$/.test(value.trim());
+}
+
 // Нормализация к виду +7XXXXXXXXXX (на сервер уходит уже единообразно).
 export function normalizePhone(value: string): string {
   const d = digitsOf(value);

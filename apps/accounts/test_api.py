@@ -54,6 +54,35 @@ def test_register_weak_password_rejected(client):
 
 
 @pytest.mark.django_db
+def test_register_without_name(client):
+    """Имя необязательно: форма шлёт full_name="" — регистрация должна проходить.
+
+    Раньше CharField(required=False, default="") без allow_blank валил пустую
+    строку (400 «Это поле не может быть пустым»), хотя поле в UI не обязательное.
+    """
+    resp = client.post(
+        "/api/account/register/",
+        {"phone": "+79009999997", "password": "StrongPass2026", "full_name": ""},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.json()
+    user = User.objects.get(phone="+79009999997")
+    assert user.full_name == ""
+
+
+@pytest.mark.django_db
+def test_register_with_blank_email(client):
+    """E-mail тоже необязателен и может прийти пустой строкой."""
+    resp = client.post(
+        "/api/account/register/",
+        {"phone": "+79009999996", "password": "StrongPass2026", "email": ""},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.json()
+    assert User.objects.get(phone="+79009999996").email == ""
+
+
+@pytest.mark.django_db
 def test_register_duplicate_phone(client, user):
     resp = client.post(
         "/api/account/register/",

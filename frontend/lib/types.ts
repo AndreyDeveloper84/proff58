@@ -143,6 +143,9 @@ export type Cart = {
   lines: CartLine[];
   total: string;
   currency: string;
+  // #375: валюты строк различаются → бэк обнуляет total и поднимает флаг.
+  // Без обработки флага UI показывал «Итого: 0 ₽» без объяснения причины.
+  has_mixed_currencies: boolean;
 };
 
 export type OrderItem = {
@@ -161,13 +164,36 @@ export type OrderItem = {
   line_total: string | null;
 };
 
+// Оси статусов заказа — union-литералы значений Django TextChoices
+// (apps/orders/models.py). Не расширять «на всякий случай»: расхождение с бэком
+// должно падать типами, а не молча уходить в серый бейдж.
+// ВНИМАНИЕ: payment_status — ось ЗАКАЗА (orders.PaymentStatus: "paid" = оплачен),
+// НЕ статус платежа ЮKassa (payments.PaymentStatus: там "succeeded") — не путать.
+export type FulfillmentStatus =
+  | "new"
+  | "confirmed"
+  | "assembling"
+  | "ready"
+  | "shipped"
+  | "completed"
+  | "cancelled";
+export type OrderPaymentStatus =
+  | "pending"
+  | "paid"
+  | "expired"
+  | "partially_refunded"
+  | "refunded";
+export type Sync1CStatus = "pending" | "exported";
+
 export type Order = {
   id: number;
   order_number: string;
   external_order_id: string;
-  fulfillment_status: string;
-  payment_status: string;
-  sync_1c_status: string;
+  fulfillment_status: FulfillmentStatus;
+  payment_status: OrderPaymentStatus;
+  sync_1c_status: Sync1CStatus;
+  // Человекочитаемый статус (display_status бэка) — ТОЛЬКО текст бейджа.
+  // Логика (вкладки, счётчики, цвета) — по осям выше, см. lib/order-status.ts.
   display_status: string;
   customer_name: string;
   customer_phone: string;

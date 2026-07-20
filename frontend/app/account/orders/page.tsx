@@ -8,6 +8,7 @@ import { ChevronDown, ChevronUp, ClipboardList, RotateCcw } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { getMe, getOrders } from "@/lib/auth";
 import { formatPrice, pluralize } from "@/lib/format";
+import { isCancelled, isDelivered, isInProgress, statusBadgeClass } from "@/lib/order-status";
 import type { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -20,32 +21,13 @@ const TABS: { value: OrderTab; label: string }[] = [
   { value: "cancelled", label: "Отменённые" },
 ];
 
+// Вкладки — по машиночитаемым осям (lib/order-status), не по разбору display_status:
+// «В доставке» (shipped) — это ещё «В обработке», а не «Доставленные».
 function orderMatchesTab(order: Order, tab: OrderTab) {
   if (tab === "all") return true;
-  const status = order.display_status.toLowerCase();
-  if (tab === "delivered") {
-    return status.includes("достав") || status.includes("выполн");
-  }
-  if (tab === "cancelled") {
-    return status.includes("отмен") || status.includes("возврат");
-  }
-  return !["достав", "выполн", "отмен", "возврат"].some((token) =>
-    status.includes(token),
-  );
-}
-
-function statusClass(status: string) {
-  const value = status.toLowerCase();
-  if (value.includes("достав") || value.includes("выполн")) {
-    return "bg-accent/10 text-accent";
-  }
-  if (value.includes("обработ") || value.includes("сбор") || value.includes("подтверж")) {
-    return "bg-blue-50 text-blue-700";
-  }
-  if (value.includes("отмен") || value.includes("возврат")) {
-    return "bg-red-50 text-danger";
-  }
-  return "bg-raised text-ink-2";
+  if (tab === "delivered") return isDelivered(order);
+  if (tab === "cancelled") return isCancelled(order);
+  return isInProgress(order);
 }
 
 function orderDate(value: string) {
@@ -147,7 +129,7 @@ export default function OrdersPage() {
               <span
                 className={cn(
                   "rounded-md px-2 py-1 text-[11px] font-semibold",
-                  statusClass(order.display_status),
+                  statusBadgeClass(order),
                 )}
               >
                 {order.display_status}
@@ -203,8 +185,9 @@ export default function OrdersPage() {
               )}
 
               <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
-                {(order.display_status.toLowerCase().includes("достав") ||
-                  order.display_status.toLowerCase().includes("выполн")) && (
+                {/* «Повторить заказ» — только для реально завершённых. Раньше матчился
+                    токен "достав", и кнопка светилась у заказа «В доставке» (ещё едет). */}
+                {isDelivered(order) && (
                   <Link
                     href="/catalog"
                     className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line px-4 text-sm font-semibold text-ink transition hover:bg-raised"
