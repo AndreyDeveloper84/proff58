@@ -7,7 +7,7 @@ import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReservationNotice } from "@/components/order/ReservationNotice";
 import { TrackOrderInMaxCta } from "@/components/order/TrackOrderInMaxCta";
-import { formatPrice } from "@/lib/format";
+import { formatDeliverySlot, formatPrice } from "@/lib/format";
 import { readStashedOrder } from "@/lib/order-storage";
 import type { Order } from "@/lib/types";
 
@@ -82,6 +82,12 @@ export default function ThanksPage() {
                   {DELIVERY_LABELS[order.delivery_method] ?? (order.delivery_method || "—")}
                 </span>
               </div>
+              {order.delivery_slot && (
+                <div className="flex justify-between">
+                  <span className="text-ink-3">Дата и время доставки</span>
+                  <span className="text-ink">{formatDeliverySlot(order.delivery_slot)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-ink-3">Оплата</span>
                 <span className="text-ink">

@@ -220,6 +220,7 @@ class OrdersView(APIView):
             "delivery_method": data["delivery_method"],
             "delivery_address": data["delivery_address"],
             "delivery_zone": data["delivery_zone"],
+            "delivery_slot_id": data["delivery_slot_id"],
             "comment": data["comment"],
         }
         try:

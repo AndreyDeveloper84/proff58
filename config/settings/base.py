@@ -260,6 +260,9 @@ GUEST_ORDER_TOKEN_TTL_DAYS = env.int("GUEST_ORDER_TOKEN_TTL_DAYS", default=90)
 # резерв живёт 24 часа вместе со счётом (#559, invoice.valid_until == reserved_until).
 RESERVATION_TTL_B2C_MINUTES = env.int("RESERVATION_TTL_B2C_MINUTES", default=30)
 
+# Горизонт показа слотов доставки в checkout, дней (#569).
+DELIVERY_SLOT_HORIZON_DAYS = env.int("DELIVERY_SLOT_HORIZON_DAYS", default=14)
+
 # Prometheus-метрики sourcing pipeline (#374). Пустой токен — эндпоинт открыт
 # (только для внутренних сетей). В проде задать непустой METRICS_TOKEN.
 METRICS_TOKEN = env("METRICS_TOKEN", default="")

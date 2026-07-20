@@ -17,14 +17,16 @@ vi.mock("@/components/cart/CartProvider", () => ({
 
 vi.mock("@/lib/orders", () => ({ placeOrder: vi.fn() }));
 vi.mock("@/lib/order-storage", () => ({ stashOrder: vi.fn() }));
-vi.mock("@/lib/delivery", () => ({ getDeliveryZones: vi.fn() }));
+// #569: страница импортирует и getDeliverySlots — без него мок роняет рендер.
+vi.mock("@/lib/delivery", () => ({ getDeliveryZones: vi.fn(), getDeliverySlots: vi.fn() }));
 
-import { getDeliveryZones } from "@/lib/delivery";
+import { getDeliverySlots, getDeliveryZones } from "@/lib/delivery";
 import { placeOrder } from "@/lib/orders";
 import CheckoutPage from "./page";
 
 const mockedPlaceOrder = placeOrder as unknown as ReturnType<typeof vi.fn>;
 const mockedGetZones = getDeliveryZones as unknown as ReturnType<typeof vi.fn>;
+const mockedGetSlots = getDeliverySlots as unknown as ReturnType<typeof vi.fn>;
 
 const ZONES = [
   { zone: "penza", name: "Пенза (город)", type: "courier", cost: "500.00", free_delivery: false },
@@ -49,6 +51,9 @@ describe("CheckoutPage — зона доставки (аудит №5)", () => {
     mockedPlaceOrder.mockResolvedValue({ order_number: "П-1" });
     mockedGetZones.mockReset();
     mockedGetZones.mockResolvedValue(ZONES);
+    // Слоты в этих тестах не участвуют — пустой справочник (пикер скрыт).
+    mockedGetSlots.mockReset();
+    mockedGetSlots.mockResolvedValue([]);
   });
 
   it("курьер: зона обязательна — без неё заказ не отправляется", async () => {

@@ -21,7 +21,7 @@ import {
 import { AccountShell } from "@/components/account/AccountShell";
 import { ReservationNotice } from "@/components/order/ReservationNotice";
 import { getMe, getOrder } from "@/lib/auth";
-import { formatPrice, humanizeToken, pluralize } from "@/lib/format";
+import { formatDeliverySlot, formatPrice, humanizeToken, pluralize } from "@/lib/format";
 import { statusBadgeClass } from "@/lib/order-status";
 import type { Order, OrderItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -227,6 +227,12 @@ export default function OrderDetailsPage() {
             />
             {order.delivery_zone && (
               <InfoRow label="Зона доставки" value={humanizeToken(order.delivery_zone)} />
+            )}
+            {order.delivery_slot && (
+              <InfoRow
+                label="Дата и время доставки"
+                value={formatDeliverySlot(order.delivery_slot)}
+              />
             )}
           </InfoCard>
 

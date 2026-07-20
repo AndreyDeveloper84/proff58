@@ -80,6 +80,69 @@ class DeliveryZone(TimeStampedModel):
         return self.name
 
 
+class DeliverySlot(TimeStampedModel):
+    """Слот доставки: дата + временной интервал с ограниченной вместимостью (#569).
+
+    Менеджер создаёт слоты в админке; checkout отдаёт покупателю только
+    активные будущие слоты со свободными местами. Занятость НЕ хранится
+    счётчиком — считается по «живым» заказам слота (fulfillment != cancelled,
+    см. apps.orders.slots.occupied_counts): отмена заказа автоматически
+    освобождает место, дрейф счётчика невозможен. Единственный автоматический
+    освободитель места — отмена заказа (менеджером/1С); истечение 30-минутного
+    резерва товара (#568) слот не освобождает.
+    """
+
+    date = models.DateField(_("Дата"), db_index=True)
+    starts_at = models.TimeField(_("Начало интервала"))
+    ends_at = models.TimeField(_("Конец интервала"))
+    delivery_method = models.CharField(
+        _("Способ доставки"),
+        max_length=20,
+        choices=DeliveryType.choices,
+        default=DeliveryType.COURIER,
+    )
+    # null = слот действует для всех зон. PROTECT: зону со слотами нельзя
+    # удалить (деактивировать — можно); превращение зонального слота в
+    # глобальный через SET_NULL было бы молчаливым расширением географии.
+    zone = models.ForeignKey(
+        DeliveryZone,
+        verbose_name=_("Зона доставки"),
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="slots",
+        help_text=_("Пусто — слот доступен во всех зонах."),
+    )
+    capacity = models.PositiveSmallIntegerField(
+        _("Лимит заказов"),
+        default=4,
+        validators=[MinValueValidator(1)],
+    )
+    is_active = models.BooleanField(_("Активен"), default=True)
+
+    class Meta:
+        verbose_name = _("Слот доставки")
+        verbose_name_plural = _("Слоты доставки")
+        ordering = ["date", "starts_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["date", "starts_at", "ends_at", "delivery_method", "zone"],
+                name="uniq_delivery_slot_window",
+                nulls_distinct=False,
+            ),
+            models.CheckConstraint(
+                check=models.Q(ends_at__gt=models.F("starts_at")),
+                name="delivery_slot_ends_after_starts",
+            ),
+        ]
+        indexes = [models.Index(fields=["is_active", "date"], name="slot_active_date_idx")]
+
+    def __str__(self) -> str:
+        window = f"{self.starts_at:%H:%M}–{self.ends_at:%H:%M}"
+        scope = self.zone.name if self.zone_id else "все зоны"
+        return f"{self.date} {window} ({scope})"
+
+
 class PickupPoint(TimeStampedModel):
     """Пункт самовывоза.
 
