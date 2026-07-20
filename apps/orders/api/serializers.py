@@ -118,6 +118,7 @@ class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     display_status = serializers.CharField(read_only=True)
     total = serializers.SerializerMethodField()
+    reservation_expired = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -149,6 +150,9 @@ class OrderSerializer(serializers.ModelSerializer):
             "vat_amount",
             "amount_without_vat",
             "currency",
+            "reserved_until",
+            "reservation_status",
+            "reservation_expired",
             "created_at",
             "items",
         )
@@ -156,6 +160,20 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_total(self, obj):
         return _money(obj.total)
+
+    def get_reservation_expired(self, obj) -> bool:
+        # #568: «резерв истёк» привязан к сроку, а не к статусу — RELEASED
+        # достигается и не по истечению (payment_failed, отмена/отказ 1С).
+        # HELD с прошедшим сроком — janitor (интервал 10 мин) ещё не добежал.
+        from django.utils import timezone
+
+        from apps.orders.models import ReservationStatus
+
+        if obj.reserved_until is None:
+            return False
+        if obj.reservation_status not in (ReservationStatus.HELD, ReservationStatus.RELEASED):
+            return False
+        return obj.reserved_until <= timezone.now()
 
 
 class CreateOrderSerializer(serializers.Serializer):

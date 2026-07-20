@@ -256,6 +256,10 @@ VAT_RATE_PERCENT = env.int("VAT_RATE_PERCENT", default=22)
 # Ограничивает срок жизни URL с токеном (ПДн) на случай утечки через логи/историю.
 GUEST_ORDER_TOKEN_TTL_DAYS = env.int("GUEST_ORDER_TOKEN_TTL_DAYS", default=90)
 
+# TTL резерва товара для B2C-заказов, минут (#568). B2B не настраивается: там
+# резерв живёт 24 часа вместе со счётом (#559, invoice.valid_until == reserved_until).
+RESERVATION_TTL_B2C_MINUTES = env.int("RESERVATION_TTL_B2C_MINUTES", default=30)
+
 # Prometheus-метрики sourcing pipeline (#374). Пустой токен — эндпоинт открыт
 # (только для внутренних сетей). В проде задать непустой METRICS_TOKEN.
 METRICS_TOKEN = env("METRICS_TOKEN", default="")

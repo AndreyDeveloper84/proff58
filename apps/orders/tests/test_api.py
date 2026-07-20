@@ -418,3 +418,60 @@ def test_order_persisted_after_api_create(api, b2c_user, product):
     assert Order.objects.filter(user=b2c_user).count() == 1
     order = Order.objects.get(user=b2c_user)
     assert order.total == Decimal("1000.00")
+
+
+# ---------------------------------------------------------------------------
+# Резерв в контракте API (#568)
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_order_response_contains_reservation_fields(api, product):
+    """POST /api/orders/ отдаёт reserved_until + статус резерва (для таймера UI)."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post(
+        "/api/orders/",
+        {"customer_name": "Иван", "customer_phone": "+79990000042"},
+        format="json",
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["reservation_status"] == "held"
+    assert body["reserved_until"] is not None
+    assert body["reservation_expired"] is False
+
+
+@pytest.mark.django_db
+def test_reservation_expired_true_before_janitor(api, b2c_user, product):
+    """HELD с прошедшим сроком → reservation_expired=true (janitor ещё не добежал)."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    api.force_authenticate(user=b2c_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {}, format="json")
+    order_number = resp.json()["order_number"]
+    Order.objects.filter(order_number=order_number).update(
+        reserved_until=timezone.now() - timedelta(minutes=1)
+    )
+
+    detail = api.get(f"/api/orders/{order_number}/")
+    assert detail.status_code == 200
+    body = detail.json()
+    assert body["reservation_status"] == "held"
+    assert body["reservation_expired"] is True
+
+
+@pytest.mark.django_db
+def test_reservation_fields_in_orders_list(api, b2c_user, product):
+    """Новые поля есть и в GET-списке заказов, не только в POST-ответе."""
+    api.force_authenticate(user=b2c_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    api.post("/api/orders/", {}, format="json")
+
+    listing = api.get("/api/orders/")
+    assert listing.status_code == 200
+    payload = listing.json()
+    rows = payload["results"] if isinstance(payload, dict) and "results" in payload else payload
+    assert rows, "список заказов пуст"
+    assert "reserved_until" in rows[0]
+    assert "reservation_expired" in rows[0]

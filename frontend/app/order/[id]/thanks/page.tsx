@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ReservationNotice } from "@/components/order/ReservationNotice";
 import { TrackOrderInMaxCta } from "@/components/order/TrackOrderInMaxCta";
 import { formatPrice } from "@/lib/format";
 import { readStashedOrder } from "@/lib/order-storage";
@@ -93,6 +94,9 @@ export default function ThanksPage() {
                   <span className="text-right text-ink">{order.delivery_address}</span>
                 </div>
               )}
+            </div>
+            <div className="mt-3">
+              <ReservationNotice order={order} />
             </div>
           </div>
 

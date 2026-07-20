@@ -228,3 +228,85 @@ def test_repeat_payment_succeeded_is_idempotent():
     events.payment_succeeded.send(sender=None, order_id=order.pk, payment_id=1)
     p.refresh_from_db()
     assert p.reserved_quantity == Decimal("0")  # без двойного списания
+
+
+# ── TTL по типу покупателя (#568) ──────────────────────────────────────
+
+
+def _ttl_window(before, after, delta: timedelta):
+    """Интервал допустимых значений reserved_until для TTL, взятого до/после вызова."""
+    return before + delta, after + delta
+
+
+B2B_DATA = {
+    "customer_name": "Иван Петров",
+    "customer_phone": "+79001234567",
+    "customer_email": "buh@romashka.ru",
+    "customer_type": "b2b",
+    "company_name": "ООО «Ромашка»",
+    "inn": "7700000000",
+    "kpp": "770001001",
+    "legal_address": "г. Пенза, ул. Ленина, 1",
+}
+
+
+@pytest.mark.django_db
+def test_b2c_reservation_ttl_is_30_minutes(cart, product):
+    add_to_cart(cart, product, 1)
+    before = timezone.now()
+    order = place_order(
+        cart,
+        user=None,
+        customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+    )
+    after = timezone.now()
+    lo, hi = _ttl_window(before, after, timedelta(minutes=30))
+    assert lo <= order.reserved_until <= hi
+
+
+@pytest.mark.django_db
+def test_b2c_ttl_configurable(cart, product, settings):
+    settings.RESERVATION_TTL_B2C_MINUTES = 5
+    add_to_cart(cart, product, 1)
+    before = timezone.now()
+    order = place_order(
+        cart,
+        user=None,
+        customer_data={"customer_name": "Гость", "customer_phone": "+79990099099"},
+    )
+    after = timezone.now()
+    lo, hi = _ttl_window(before, after, timedelta(minutes=5))
+    assert lo <= order.reserved_until <= hi
+
+
+@pytest.mark.django_db
+def test_authenticated_b2c_ttl_is_30_minutes(cart, product, b2c_user):
+    add_to_cart(cart, product, 1)
+    before = timezone.now()
+    order = place_order(cart, user=b2c_user, customer_data={})
+    after = timezone.now()
+    lo, hi = _ttl_window(before, after, timedelta(minutes=30))
+    assert lo <= order.reserved_until <= hi
+
+
+@pytest.mark.django_db
+def test_b2b_reservation_ttl_stays_24_hours(cart, product, b2b_user):
+    add_to_cart(cart, product, 1)
+    before = timezone.now()
+    order = place_order(cart, user=b2b_user, customer_data={})
+    after = timezone.now()
+    lo, hi = _ttl_window(before, after, timedelta(hours=24))
+    assert lo <= order.reserved_until <= hi
+    # Инвариант #559: счёт и резерв истекают вместе.
+    assert order.b2b_invoice.valid_until == order.reserved_until
+
+
+@pytest.mark.django_db
+def test_guest_b2b_ttl_stays_24_hours(cart, product):
+    """Гостевой B2B (customer_type из тела) тоже получает 24ч, а не 30 мин."""
+    add_to_cart(cart, product, 1)
+    before = timezone.now()
+    order = place_order(cart, user=None, customer_data=dict(B2B_DATA))
+    after = timezone.now()
+    lo, hi = _ttl_window(before, after, timedelta(hours=24))
+    assert lo <= order.reserved_until <= hi
