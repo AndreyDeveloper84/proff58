@@ -96,3 +96,48 @@ def test_bulk_approve_partial_success_on_error(budget, monkeypatch):
     admin = ContentFindingAdmin(ContentFinding, None)
     admin.approve_selected(None, ContentFinding.objects.filter(pk__in=[f1.pk, f2.pk]))
     assert set(calls) == {f1.pk, f2.pk}
+
+
+@pytest.mark.django_db
+def test_admin_resolve_unknown_actions(budget):
+    """#432: сверка UNKNOWN из админки — резерв снимается/списывается, не-unknown пропускается."""
+    from unittest import mock
+
+    from apps.ai.admin import ExternalCallAdmin
+    from apps.ai.models import ExternalCall
+    from apps.ai.sourcing.ports import SourceUncertain
+
+    class _Boom:
+        name = "web"
+
+        def find(self, query, *, idempotency_key):
+            raise SourceUncertain()
+
+    cat = Category.objects.filter(slug="perf").first() or Category.add_root(
+        name="Перф", slug="perf"
+    )
+    p = Product.objects.create(
+        category=cat,
+        name="",
+        slug="adm-unk",
+        description="",
+        original_name="Перфоратор",
+        status=ProductStatus.IMPORTED,
+        is_active=False,
+        price="1000",
+    )
+    services.source_content(product_id=p.pk, idempotency_key="adm-unk", sources=[_Boom()])
+    call = ExternalCall.objects.get(run__idempotency_key="adm-unk")
+    assert call.status == ExternalCall.Status.UNKNOWN
+
+    admin_obj = ExternalCallAdmin(ExternalCall, admin_site=mock.Mock())
+    admin_obj.message_user = mock.Mock()
+    admin_obj.resolve_unknown_as_error(mock.Mock(), ExternalCall.objects.filter(pk=call.pk))
+
+    call.refresh_from_db()
+    assert call.status == ExternalCall.Status.ERROR
+    assert SourcingBudget.objects.get(day=dt.date(2026, 6, 29)).reserved == 0
+
+    # Повторный прогон action'а по уже разрешённому вызову — пропуск, без сдвига бюджета.
+    admin_obj.resolve_unknown_as_paid(mock.Mock(), ExternalCall.objects.filter(pk=call.pk))
+    assert SourcingBudget.objects.get(day=dt.date(2026, 6, 29)).spent == 0

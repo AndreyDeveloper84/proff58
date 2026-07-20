@@ -37,6 +37,18 @@ app.conf.beat_schedule = {
         "task": "apps.orders.tasks.expire_b2b_invoices",
         "schedule": 10 * 60,  # каждые 10 минут
     },
+    # #432 (M-09): зависшие RUNNING-прогоны sourcing → run=error, call=unknown
+    # (резерв удержан до ручной сверки в админке «Вызовы внешних источников»).
+    # Janitor существовал, но в beat не стоял — зависших никто не добивал.
+    "mark-stale-sourcing-runs": {
+        "task": "apps.ai.tasks.mark_stale_sourcing_runs",
+        "schedule": 10 * 60,  # каждые 10 минут
+    },
+    # #432: гигиена ПДн/объёма — чистка raw_excerpt старше 30 дней.
+    "purge-sourcing-excerpts": {
+        "task": "apps.ai.tasks.purge_sourcing_excerpts",
+        "schedule": 24 * 3600,  # раз в сутки
+    },
     # #431 (M-08): сверка «зависших» в SENDING уведомлений (crash-after-send).
     "reconcile-stuck-notifications": {
         "task": "apps.notifications.tasks.reconcile_stuck_notifications",
