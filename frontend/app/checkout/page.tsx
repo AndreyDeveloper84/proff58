@@ -109,12 +109,13 @@ export default function CheckoutPage() {
       if (!legalAddress.trim()) return setError("Укажите юридический адрес");
       if (!email.trim()) return setError("Укажите e-mail — на него придёт счёт");
     }
-    if (delivery === "courier" && !address.trim()) {
+    // #558: для юрлиц доставки нет (самовывоз) — адрес и зона не запрашиваются.
+    if (!isB2B && delivery === "courier" && !address.trim()) {
       return setError("Укажите адрес доставки");
     }
     // Зона обязательна, только если список зон вообще доступен: при недоступном
     // справочнике заказ создаётся без зоны (менеджер уточнит) — как раньше.
-    if (delivery === "courier" && courierZones.length > 0 && !zoneSlug) {
+    if (!isB2B && delivery === "courier" && courierZones.length > 0 && !zoneSlug) {
       return setError("Выберите зону доставки");
     }
 
@@ -131,9 +132,9 @@ export default function CheckoutPage() {
         inn: isB2B ? inn.trim() : "",
         kpp: isB2B ? kpp.trim() : "",
         legal_address: isB2B ? legalAddress.trim() : "",
-        delivery_method: delivery,
-        delivery_address: delivery === "courier" ? address.trim() : "",
-        delivery_zone: delivery === "courier" ? zoneSlug : "",
+        delivery_method: isB2B ? "pickup" : delivery,
+        delivery_address: !isB2B && delivery === "courier" ? address.trim() : "",
+        delivery_zone: !isB2B && delivery === "courier" ? zoneSlug : "",
         payment_method: payment,
         comment: comment.trim(),
       });
@@ -305,6 +306,17 @@ export default function CheckoutPage() {
           )}
         </fieldset>
 
+        {/* #558 (Wave 1): для юрлиц доставки нет — блок скрыт, заказ уходит самовывозом,
+            счёт формируется только на товары. Бэк отклонит courier для B2B в любом случае. */}
+        {isB2B ? (
+          <div className="rounded-lg border border-line bg-surface p-5">
+            <h2 className="font-display text-lg font-semibold uppercase text-ink">Получение</h2>
+            <p className="mt-2 text-sm text-ink-2">
+              Для юридических лиц — самовывоз со склада. Счёт формируется только на товары;
+              доставка для организаций появится позже.
+            </p>
+          </div>
+        ) : (
         <fieldset className="space-y-3 rounded-lg border border-line bg-surface p-5">
           <legend className="px-2 font-display text-lg font-semibold uppercase text-ink">
             Способ доставки
@@ -378,6 +390,7 @@ export default function CheckoutPage() {
             </>
           )}
         </fieldset>
+        )}
 
         <fieldset className="space-y-3 rounded-lg border border-line bg-surface p-5">
           <legend className="px-2 font-display text-lg font-semibold uppercase text-ink">
@@ -447,7 +460,7 @@ export default function CheckoutPage() {
               </div>
             ))}
           </div>
-          {delivery === "courier" && selectedZone && (
+          {!isB2B && delivery === "courier" && selectedZone && (
             <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-sm">
               <span className="text-ink-2">Доставка ({selectedZone.name}):</span>
               <span className="font-display font-semibold text-ink">
@@ -462,7 +475,7 @@ export default function CheckoutPage() {
                 ? "—"
                 : formatPrice(
                     total +
-                      (delivery === "courier" && selectedZone && !selectedZone.free_delivery
+                      (!isB2B && delivery === "courier" && selectedZone && !selectedZone.free_delivery
                         ? Number(selectedZone.cost) || 0
                         : 0),
                   )}

@@ -240,6 +240,15 @@ class CreateOrderSerializer(serializers.Serializer):
                 )
             attrs["payment_method"] = "invoice"
 
+            # #558 (Wave 1): доставки для юрлиц нет. Курьер — явный отказ, зону
+            # игнорируем уже на границе API, чтобы она не могла повлиять на сумму
+            # (place_order держит тот же инвариант авторитетно).
+            if (attrs.get("delivery_method") or "") == "courier":
+                raise serializers.ValidationError(
+                    {"delivery_method": "Доставка для юрлиц недоступна — только самовывоз."}
+                )
+            attrs["delivery_zone"] = ""
+
         elif attrs.get("payment_method") == "invoice":
             raise serializers.ValidationError(
                 {"payment_method": "Оплата по счёту доступна только для B2B."}

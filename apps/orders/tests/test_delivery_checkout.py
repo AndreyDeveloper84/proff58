@@ -84,14 +84,17 @@ def test_cdek_manual_required_preliminary_total(cart, product, cdek_zone):
 
 
 @pytest.mark.django_db
-def test_b2b_vat_includes_delivery(cart, product, penza_zone, b2b_user):
-    add_to_cart(cart, product, 1)  # 1000 + 500 доставка = 1500
+def test_b2b_vat_from_goods_delivery_not_applied(cart, product, penza_zone, b2b_user):
+    """#558 (Wave 1): у аутентифицированного B2B зона игнорируется — счёт и НДС
+    только на товары (раньше тест закреплял «НДС с доставкой», контракт отменён #444)."""
+    add_to_cart(cart, product, 1)  # 1000; зона не должна добавить 500
     order = place_order(cart, user=b2b_user, delivery={"delivery_zone": "penza"})
-    assert order.total == Decimal("1500.00")
-    # НДС 22% на (товары+доставка): 1500*22/122 = 270.49; без НДС = 1229.51.
+    assert order.total == Decimal("1000.00")
+    assert order.delivery_calc_status == DeliveryCalcStatus.NOT_REQUIRED
+    # НДС 22% от товаров: 1000*22/122 = 180.33; без НДС = 819.67.
     assert order.vat_rate == 22
-    assert order.vat_amount == Decimal("270.49")
-    assert order.amount_without_vat == Decimal("1229.51")
+    assert order.vat_amount == Decimal("180.33")
+    assert order.amount_without_vat == Decimal("819.67")
 
 
 @pytest.mark.django_db
