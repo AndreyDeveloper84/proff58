@@ -828,6 +828,12 @@
             "стеклорез"
           ],
           "source": "name_keywords"
+        },
+        {
+          "tool_type": "Динамометрические ключи",
+          "slug": "dinamometricheskie-klyuchi",
+          "match_keywords": [],
+          "source": "name_keywords"
         }
       ]
     },
