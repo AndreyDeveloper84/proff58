@@ -51,7 +51,10 @@ describe("ProfilePage dashboard", () => {
       {
         id: 10,
         order_number: "П-2026-0010",
-        display_status: "В обработке",
+        // Реальные значения бэка: display_status — только текст, логика по осям.
+        fulfillment_status: "confirmed",
+        payment_status: "paid",
+        display_status: "Подтверждён",
         total: "18990.00",
         currency: "RUB",
         created_at: "2026-07-19T10:00:00Z",
