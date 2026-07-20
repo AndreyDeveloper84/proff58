@@ -340,6 +340,10 @@ def place_order(
         if payment_method and payment_method != "invoice":
             raise ValidationError("B2B-заказ оплачивается только по счёту.")
         payment_method = "invoice"
+        # #558 (Wave 1): доставки для юрлиц нет — заказ оформляется самовывозом,
+        # счёт формируется только на товары. Курьерскую доставку отклоняем явно.
+        if (delivery.get("delivery_method") or "") == "courier":
+            raise ValidationError("Доставка для юрлиц недоступна — только самовывоз.")
     elif payment_method == "invoice":
         raise ValidationError("Оплата по счёту доступна только для B2B-заказов.")
 
@@ -425,13 +429,26 @@ def place_order(
     # корзине (единый источник правды), включается в итог и облагается НДС вместе
     # с товарами. При manual_required (нет весогабаритов для СДЭК) стоимость
     # неизвестна → delivery_cost=null, итог предварительный (только товары).
-    from apps.delivery.services import quote_for_order
+    from apps.delivery.services import NOT_REQUIRED, DeliveryQuote, quote_for_order
 
-    quote = quote_for_order(
-        zone_slug=delivery.get("delivery_zone", "") or "",
-        goods_total=total,
-        items=items,
-    )
+    if customer_type == CustomerType.B2B:
+        # #558 (Wave 1): для юрлиц доставка не считается вовсе — независимо от
+        # присланной зоны (она не должна влиять на сумму счёта). Кост 0 и
+        # not_required, снимок несёт машиночитаемую причину; manual_required
+        # для B2B недостижим — счёт всегда только на товары.
+        quote = DeliveryQuote(
+            zone_slug="",
+            method="",
+            status=NOT_REQUIRED,
+            cost=_ZERO,
+            snapshot={"reason": "b2b_delivery_not_supported"},
+        )
+    else:
+        quote = quote_for_order(
+            zone_slug=delivery.get("delivery_zone", "") or "",
+            goods_total=total,
+            items=items,
+        )
     order.delivery_zone = quote.zone_slug
     order.delivery_cost = quote.cost
     # Значения статусов delivery.services совпадают с Order.DeliveryCalcStatus.
@@ -442,7 +459,8 @@ def place_order(
     order.total = grand_total
     order.currency = order_currency or "RUB"
     # #430 (M-06): снимок НДС для B2B (цена включает НДС; ставка фиксируется на
-    # момент заказа). База НДС — итог (товары + доставка). Для B2C поля нулевые.
+    # момент заказа). База НДС — итог; для B2B в Wave 1 доставки нет (#558),
+    # поэтому база всегда равна товарной сумме. Для B2C поля нулевые.
     if customer_type == CustomerType.B2B:
         from apps.pricing.vat import vat_breakdown
 

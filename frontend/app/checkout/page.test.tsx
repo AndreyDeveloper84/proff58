@@ -91,7 +91,20 @@ describe("CheckoutPage — B2B-реквизиты и способ оплаты",
       legal_address: "г. Пенза, ул. Ленина, 1",
       customer_email: "buh@romashka.ru",
       payment_method: "invoice",
+      // #558 (Wave 1): доставки для юрлиц нет — всегда самовывоз без зоны/адреса.
+      delivery_method: "pickup",
+      delivery_zone: "",
+      delivery_address: "",
     });
+  });
+
+  it("B2B: блок доставки скрыт, показано пояснение про самовывоз", () => {
+    render(<CheckoutPage />);
+    expect(screen.getByText("Способ доставки")).toBeTruthy();
+    fireEvent.click(screen.getByLabelText("Организация"));
+    expect(screen.queryByText("Способ доставки")).toBeNull();
+    expect(screen.getByText(/самовывоз со склада/i)).toBeTruthy();
+    expect(screen.getByText(/Счёт формируется только на товары/i)).toBeTruthy();
   });
 
   it("ИП (ИНН 12 цифр): КПП не требуется", async () => {
