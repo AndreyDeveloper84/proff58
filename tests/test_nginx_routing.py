@@ -37,6 +37,10 @@ FRONTEND_PATHS = [
     "/api/cart/items",
     "/api/cart/items/42",
     "/api/orders",
+    "/api/orders/PROF-12",
+    "/api/orders/PROF-12/",
+    "/api/orders/PROF-12/invoice",
+    "/api/orders/PROF-12/invoice/",
     "/api/orders/PROF-12/max-track/start",
     "/api/orders/max-track/xyz/status",
     "/api/catalog/products/drel/availability-subscription",
@@ -50,7 +54,6 @@ WEB_PATHS = [
     "/api/catalog/products/drel/facets/",
     "/api/1c/products/import",  # интегратор 1С — только Django (X-Api-Key)
     "/api/1c/prices/update",
-    "/api/orders/PROF-12/",  # детали заказа owner-only → Django
     "/api/orders/",  # список заказов (GET, безопасный метод) → Django
     "/api/ai/products/drel/recommendations/",
     "/healthz/",
