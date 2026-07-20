@@ -102,11 +102,18 @@ class Order(models.Model):
 Выдан и оплачен: fulfillment=completed  payment=paid    sync=exported
 ```
 
-**B2B по счёту** (безнал идёт 1–3 дня)
+**B2B по счёту** (#557/#559, Wave 1: счёт и резерв живут 24 часа)
+
+Счёт (`B2BInvoice`, статусы `issued/paid/expired/cancelled`) выставляется
+автоматически при оформлении B2B-заказа; `valid_until == reserved_until`.
+Доставки для юрлиц в Wave 1 нет (#558) — счёт только на товары, самовывоз.
 ```
-Счёт выставлен: fulfillment=confirmed payment=pending sync=exported
-Оплата пришла:  fulfillment=ready     payment=paid    sync=exported
+Счёт выставлен: invoice=issued  fulfillment=new       payment=pending
+Оплата пришла:  invoice=paid    fulfillment=new…ready payment=paid     (резерв списан)
+Не оплачен 24ч: invoice=expired fulfillment=cancelled payment=expired  (резерв снят janitor'ом)
 ```
+Оплату отмечает менеджер (админка «Счета B2B» → «Отметить оплаченным»);
+истёкший счёт «оживить» нельзя — заказ оформляется заново.
 
 **Возврат после доставки** (история цела)
 ```
