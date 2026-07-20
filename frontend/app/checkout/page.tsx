@@ -7,7 +7,14 @@ import { useCart } from "@/components/cart/CartProvider";
 import { ApiError } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { placeOrder } from "@/lib/orders";
-import { isValidEmail, isValidPhone, normalizePhone } from "@/lib/validation";
+import {
+  isLegalEntityInn,
+  isValidEmail,
+  isValidInn,
+  isValidKpp,
+  isValidPhone,
+  normalizePhone,
+} from "@/lib/validation";
 import { stashOrder } from "@/lib/order-storage";
 
 type CustomerType = "b2c" | "b2b";
@@ -32,10 +39,19 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [inn, setInn] = useState("");
+  const [kpp, setKpp] = useState("");
+  const [legalAddress, setLegalAddress] = useState("");
   const [address, setAddress] = useState("");
   const [comment, setComment] = useState("");
   const [delivery, setDelivery] = useState<DeliveryMethod>("courier");
-  const [payment, setPayment] = useState<PaymentMethod>("online");
+
+  const isB2B = customerType === "b2b";
+
+  // Способ оплаты не хранится в состоянии: бэк (CreateOrderSerializer.validate) допускает
+  // ровно одну связку — b2c → online, b2b → invoice, любая другая комбинация даёт 400.
+  // Раньше payment был независимым состоянием с дефолтом "online", поэтому B2B-заказ
+  // гарантированно отклонялся. Выводим значение из типа покупателя.
+  const payment: PaymentMethod = isB2B ? "invoice" : "online";
 
   // Пустую корзину оформлять нечего — уводим на /cart (после загрузки снимка).
   useEffect(() => {
@@ -60,8 +76,17 @@ export default function CheckoutPage() {
     if (!name.trim()) return setError("Укажите имя");
     if (!isValidPhone(phone)) return setError("Укажите корректный телефон");
     if (email.trim() && !isValidEmail(email)) return setError("Укажите корректный e-mail");
-    if (customerType === "b2b" && !companyName.trim()) {
-      return setError("Укажите название организации");
+    // B2B-реквизиты зеркалят validate_b2b_requisites (apps/orders/invoice.py): без них
+    // бэк отвечает 400, а заполнить их в форме было негде — B2B-заказ не оформлялся вовсе.
+    if (isB2B) {
+      if (!companyName.trim()) return setError("Укажите название организации");
+      if (!isValidInn(inn)) return setError("ИНН должен содержать 10 или 12 цифр");
+      if (isLegalEntityInn(inn) && !kpp.trim()) {
+        return setError("КПП обязателен для юридического лица (ИНН из 10 цифр)");
+      }
+      if (kpp.trim() && !isValidKpp(kpp)) return setError("КПП должен содержать 9 цифр");
+      if (!legalAddress.trim()) return setError("Укажите юридический адрес");
+      if (!email.trim()) return setError("Укажите e-mail — на него придёт счёт");
     }
     if (delivery === "courier" && !address.trim()) {
       return setError("Укажите адрес доставки");
@@ -76,8 +101,10 @@ export default function CheckoutPage() {
         customer_phone: normalizePhone(phone),
         customer_email: email.trim(),
         customer_type: customerType,
-        company_name: customerType === "b2b" ? companyName.trim() : "",
-        inn: customerType === "b2b" ? inn.trim() : "",
+        company_name: isB2B ? companyName.trim() : "",
+        inn: isB2B ? inn.trim() : "",
+        kpp: isB2B ? kpp.trim() : "",
+        legal_address: isB2B ? legalAddress.trim() : "",
         delivery_method: delivery,
         delivery_address: delivery === "courier" ? address.trim() : "",
         payment_method: payment,
@@ -176,7 +203,7 @@ export default function CheckoutPage() {
           </div>
           <div>
             <label htmlFor="email" className="mb-1 block text-sm text-ink-2">
-              E-mail
+              E-mail {isB2B ? "*" : ""}
             </label>
             <input
               id="email"
@@ -206,7 +233,7 @@ export default function CheckoutPage() {
               </div>
               <div>
                 <label htmlFor="inn" className="mb-1 block text-sm text-ink-2">
-                  ИНН
+                  ИНН *
                 </label>
                 <input
                   id="inn"
@@ -216,6 +243,35 @@ export default function CheckoutPage() {
                   onChange={(e) => setInn(e.target.value)}
                   className={inputClass}
                   placeholder="7700000000"
+                />
+                <p className="mt-1 text-xs text-ink-3">10 цифр — организация, 12 — ИП.</p>
+              </div>
+              {/* КПП обязателен только для юрлица (ИНН 10 цифр); у ИП его нет. */}
+              <div>
+                <label htmlFor="kpp" className="mb-1 block text-sm text-ink-2">
+                  КПП {isLegalEntityInn(inn) ? "*" : ""}
+                </label>
+                <input
+                  id="kpp"
+                  type="text"
+                  inputMode="numeric"
+                  value={kpp}
+                  onChange={(e) => setKpp(e.target.value)}
+                  className={inputClass}
+                  placeholder="770001001"
+                />
+              </div>
+              <div>
+                <label htmlFor="legalAddress" className="mb-1 block text-sm text-ink-2">
+                  Юридический адрес *
+                </label>
+                <input
+                  id="legalAddress"
+                  type="text"
+                  value={legalAddress}
+                  onChange={(e) => setLegalAddress(e.target.value)}
+                  className={inputClass}
+                  placeholder="123456, г. Москва, ул. Ленина, д. 1, оф. 2"
                 />
               </div>
             </>
@@ -270,28 +326,37 @@ export default function CheckoutPage() {
           <legend className="px-2 font-display text-lg font-semibold uppercase text-ink">
             Способ оплаты
           </legend>
-          <label className="flex cursor-pointer items-center gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent">
-            <input
-              type="radio"
-              name="payment"
-              value="online"
-              checked={payment === "online"}
-              onChange={() => setPayment("online")}
-              className="accent-accent"
-            />
-            <span className="text-sm text-ink">Онлайн-оплата</span>
-          </label>
-          <label className="flex cursor-pointer items-center gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent">
-            <input
-              type="radio"
-              name="payment"
-              value="invoice"
-              checked={payment === "invoice"}
-              onChange={() => setPayment("invoice")}
-              className="accent-accent"
-            />
-            <span className="text-sm text-ink">Счёт для организации (B2B)</span>
-          </label>
+          {/* Способ оплаты определяется типом покупателя (см. вывод payment выше), поэтому
+              оба варианта показываем, но заблокированными: правило видно, выбрать нечего. */}
+          {(
+            [
+              ["online", "Онлайн-оплата"],
+              ["invoice", "Счёт для организации (B2B)"],
+            ] as const
+          ).map(([value, label]) => (
+            <label
+              key={value}
+              className={`flex items-center gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent ${
+                payment === value ? "" : "opacity-50"
+              }`}
+            >
+              <input
+                type="radio"
+                name="payment"
+                value={value}
+                checked={payment === value}
+                disabled
+                readOnly
+                className="accent-accent"
+              />
+              <span className="text-sm text-ink">{label}</span>
+            </label>
+          ))}
+          <p className="text-xs text-ink-3">
+            {isB2B
+              ? "Заказы организаций оплачиваются только по счёту."
+              : "Оплата по счёту доступна только для организаций."}
+          </p>
         </fieldset>
 
         <div className="rounded-lg border border-line bg-surface p-5">
