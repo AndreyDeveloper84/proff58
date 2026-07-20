@@ -490,6 +490,14 @@ def place_order(
         ]
     )
 
+    # #559 (эпик #557): B2B-заказу выставляется счёт со сроком действия 24ч —
+    # ровно до order.reserved_until (счёт и резерв истекают вместе). Внутри
+    # общей транзакции: заказ без счёта или счёт без заказа невозможны.
+    if customer_type == CustomerType.B2B:
+        from apps.orders.invoice_lifecycle import issue_invoice
+
+        issue_invoice(order)
+
     # Корзину не удаляем: фиксируем как оформленную (история + идемпотентность).
     cart.status = CartStatus.ORDERED
     cart.ordered_at = timezone.now()

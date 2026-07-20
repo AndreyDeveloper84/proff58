@@ -447,3 +447,50 @@ class CartItem(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.product} × {self.quantity}"
+
+
+class InvoiceStatus(models.TextChoices):
+    """Статусы B2B-счёта (#559): счёт — бизнес-документ со сроком действия 24ч."""
+
+    ISSUED = "issued", _("Выставлен")
+    PAID = "paid", _("Оплачен")
+    EXPIRED = "expired", _("Истёк")
+    CANCELLED = "cancelled", _("Отменён")
+
+
+class B2BInvoice(TimeStampedModel):
+    """Счёт юрлица (#559, эпик #557, Wave 1).
+
+    Выставляется при оформлении B2B-заказа, действует 24 часа — ровно столько же
+    удерживается резерв товара (``Order.reserved_until == valid_until``). Если счёт
+    не оплачен вовремя, janitor (`expire_b2b_invoices`) атомарно переводит его в
+    EXPIRED, отменяет заказ и освобождает резерв. Суммы НЕ дублируются — источник
+    правды по деньгам остаётся снимок заказа (total / vat_amount / amount_without_vat).
+    """
+
+    order = models.OneToOneField(
+        Order, on_delete=models.CASCADE, related_name="b2b_invoice", verbose_name=_("Заказ")
+    )
+    number = models.CharField(_("Номер счёта"), max_length=40, unique=True)
+    status = models.CharField(
+        _("Статус"),
+        max_length=12,
+        choices=InvoiceStatus.choices,
+        default=InvoiceStatus.ISSUED,
+        db_index=True,
+    )
+    issued_at = models.DateTimeField(_("Выставлен"))
+    valid_until = models.DateTimeField(
+        _("Действителен до"),
+        db_index=True,
+        help_text=_("24 часа с момента выставления; совпадает с TTL резерва товара."),
+    )
+    paid_at = models.DateTimeField(_("Оплачен"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("Счёт B2B")
+        verbose_name_plural = _("Счета B2B")
+        ordering = ["-issued_at"]
+
+    def __str__(self) -> str:
+        return f"Счёт {self.number} ({self.get_status_display()})"
