@@ -24,6 +24,12 @@ export type AccountUser = {
   profile: AccountProfile | null;
 };
 
+export type AccountUserPatch = {
+  full_name?: string;
+  email?: string;
+  profile?: Partial<AccountProfile>;
+};
+
 export type WishlistItem = {
   product_id: number;
   product_name: string;
@@ -62,6 +68,24 @@ export async function getMe(): Promise<AccountUser | null> {
     if (e instanceof ApiError) return null;
     throw e;
   }
+}
+
+export async function updateMe(data: AccountUserPatch): Promise<AccountUser> {
+  return apiFetch<AccountUser>("/api/account/me/", {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function changePhone(newPhone: string, password: string): Promise<void> {
+  await apiFetch("/api/account/change-phone/", {
+    method: "POST",
+    body: JSON.stringify({ new_phone: newPhone, password }),
+  });
+}
+
+export async function deleteAccount(): Promise<void> {
+  await apiFetch("/api/account/delete/", { method: "POST" });
 }
 
 export async function otpLogin(phone: string, otp: string) {
@@ -153,6 +177,12 @@ export async function getOrders(): Promise<Order[]> {
   }
 }
 
+export async function getOrder(orderNumber: string): Promise<Order> {
+  return apiFetch<Order>(`/api/orders/${encodeURIComponent(orderNumber)}`, {
+    method: "GET",
+  });
+}
+
 export async function getWishlist(): Promise<WishlistItem[]> {
   try {
     return await apiFetch<WishlistItem[]>("/api/account/wishlist/", { method: "GET" });
@@ -165,6 +195,13 @@ export async function getWishlist(): Promise<WishlistItem[]> {
 export async function addWishlistItem(productId: number): Promise<void> {
   await apiFetch("/api/account/wishlist", {
     method: "POST",
+    body: JSON.stringify({ product_id: productId }),
+  });
+}
+
+export async function removeWishlistItem(productId: number): Promise<void> {
+  await apiFetch("/api/account/wishlist", {
+    method: "DELETE",
     body: JSON.stringify({ product_id: productId }),
   });
 }
