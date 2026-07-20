@@ -87,8 +87,10 @@ gate формально пройден. Владелец продукта 2026-0
 - moderator acceptance ≥ 90% на двух batch: **97,22% / 100%** — пройдено
 - 0 прямых/неподтверждённых изменений: **0** — пройдено (все записи только
   через сервисы с evidence; importer создавал только pending/proposed)
-- 100% baseline-конфликтов заблокировано: конфликтов **0**, все 35 apply прошли
-  baseline pre-check — пройдено
+- 100% baseline-конфликтов заблокировано: в batch конфликтов было **0**,
+  эмпирического знаменателя нет. Механизм (`baseline_hash` + provenance)
+  подтверждён контрактными тестами и pre-check baseline перед каждым из
+  35 apply — критерий выполнен на доступных данных
 
 ## Причины review / reject
 
@@ -149,5 +151,7 @@ champion.ru).
 - Phase 6: proposal-only/shadow план — `docs/plans/2026-07-20-PHASE6_PROPOSAL_SHADOW_PLAN.md`
 - Решения по taxonomy gaps (11 типов + отсос припоя) — отдельными ADR/options,
   массового создания options без решения не было
-- 15 needs_review items остаются в run для будущего разбора после taxonomy
-  решений; run закрыт как `completed_with_review`
+- 15 needs_review items остаются в закрытом run **только как audit trail**:
+  run завершён (`completed_with_review`), эти items терминальны и не будут
+  переобрабатываться в нём. Повторная обработка возможна исключительно
+  **новым run** после соответствующих taxonomy-решений
