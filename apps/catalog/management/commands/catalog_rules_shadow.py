@@ -9,6 +9,12 @@ gate_sample (v1). Rules как proposals (этап 6.1) включаются о�
 (P1.6), версионирование отчёта и code_sha (P1.4), атомарная запись с
 защитой от перезаписи (P1.5), per-rule метрики (P1.8), gate-артефакты
 (P0.3), строгий pool-контракт с Trim(article) (P1.7).
+
+Hotfix post-#579: gate_sample fail-closed — ``--gate-sample-out`` требует
+``--corpus`` (или явный ``--skip-corpus-overlap-check``, артефакт помечается
+``corpus_overlap_checked=false``), обязательный ``collision_count``, replay
+через ``load_corpus``, ValueError загрузок → CommandError, групповой
+rollback пары артефактов.
 """
 
 from __future__ import annotations
@@ -185,10 +191,31 @@ class Command(BaseCommand):
             default=None,
             help="JSON applied-корпуса: overlap-проверка gate_sample (training leakage).",
         )
+        parser.add_argument(
+            "--skip-corpus-overlap-check",
+            action="store_true",
+            help="Разрешить gate_sample без --corpus; артефакт помечается "
+            "corpus_overlap_checked=false (НЕофициальный, gate его не примет).",
+        )
 
     def handle(self, *args, **options):
         started = timezone.now()
-        ruleset = load_ruleset(Path(options["ruleset"]) if options["ruleset"] else None)
+        # fail-closed (review post-#579): официальный gate_sample обязан быть
+        # проверен на пересечение с training corpus; отказ до любой работы.
+        if (
+            options["gate_sample_out"]
+            and not options["corpus"]
+            and not options["skip_corpus_overlap_check"]
+        ):
+            raise CommandError(
+                "--gate-sample-out требует --corpus; проверка sample ∩ training corpus "
+                "обязательна для официального gate "
+                "(или явный --skip-corpus-overlap-check для неофициального sample)"
+            )
+        try:
+            ruleset = load_ruleset(Path(options["ruleset"]) if options["ruleset"] else None)
+        except ValueError as exc:  # никаких traceback оператору
+            raise CommandError(str(exc)) from exc
 
         # --- snapshot-чтение (P1.6): ВСЕ запросы в одной транзакции ---
         # SET TRANSACTION возможен только первым оператором свежего BEGIN —
@@ -332,6 +359,7 @@ class Command(BaseCommand):
                     "force": options["force"],
                     "gate_sample_out": options["gate_sample_out"],
                     "corpus": options["corpus"],
+                    "skip_corpus_overlap_check": options["skip_corpus_overlap_check"],
                 },
             },
             "generated_at": finished.isoformat(),
@@ -373,7 +401,10 @@ class Command(BaseCommand):
         }
 
         if options["replay_corpus"]:
-            report["replay"] = self._replay(ruleset, Path(options["replay_corpus"]))
+            try:
+                report["replay"] = self._replay(ruleset, Path(options["replay_corpus"]))
+            except ValueError as exc:  # повреждённый corpus → CommandError, не traceback
+                raise CommandError(str(exc)) from exc
 
         # gate_sample валидируется ДО записи любых артефактов: отказ без
         # частично записанных файлов (P0.3).
@@ -388,6 +419,10 @@ class Command(BaseCommand):
                 "seed": options["seed"],
                 "pool": options["pool"],
                 "pool_filter_version": POOL_FILTER_VERSION,
+                # fail-closed контракт (review post-#579): без --corpus
+                # (только с --skip-corpus-overlap-check) артефакт неофициален
+                "corpus_overlap_checked": bool(options["corpus"]),
+                "collision_count": len(collisions),
                 "rows": [
                     {
                         "product_id": p["product_id"],
@@ -399,7 +434,12 @@ class Command(BaseCommand):
                     for p in selected
                 ],
             }
-            corpus = load_corpus(Path(options["corpus"])) if options["corpus"] else None
+            corpus = None
+            if options["corpus"]:
+                try:
+                    corpus = load_corpus(Path(options["corpus"]))
+                except ValueError as exc:  # никаких traceback оператору
+                    raise CommandError(str(exc)) from exc
             sample_violations = validate_gate_sample(gate_sample, corpus)
             if sample_violations:
                 raise CommandError(f"gate_sample не прошёл аудит: {sample_violations}")
@@ -417,10 +457,23 @@ class Command(BaseCommand):
                 if path.exists():
                     raise CommandError(f"Файл уже существует (нужен --force): {path}")
 
-        for path, data in outputs:
-            payload = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
-            digest = _write_atomic(path, payload)
-            self.stdout.write(f"artifact={path} sha256={digest}")
+        # групповой rollback (review post-#579): пара артефактов неделима —
+        # при падении любой записи уже записанные файлы удаляются best-effort,
+        # исключение перевыбрасывается
+        written: list[Path] = []
+        try:
+            for path, data in outputs:
+                payload = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
+                digest = _write_atomic(path, payload)
+                written.append(path)
+                self.stdout.write(f"artifact={path} sha256={digest}")
+        except BaseException:
+            for path in written:
+                try:
+                    path.unlink(missing_ok=True)
+                except OSError:
+                    pass
+            raise
         content_hash = canonical_hash(
             {k: v for k, v in report.items() if k not in VOLATILE_REPORT_KEYS}
         )
@@ -435,40 +488,45 @@ class Command(BaseCommand):
     @staticmethod
     def _replay(ruleset, corpus_path: Path) -> dict:
         """Regression replay на applied-корпусе. НЕ gate: правила выведены из
-        этих же товаров (training leakage), см. план Phase 6 §6.0."""
-        corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
+        этих же товаров (training leakage), см. план Phase 6 §6.0.
+        Corpus загружается через ``load_corpus`` (schema + unique IDs +
+        counters + facts_hash): повреждённый corpus → ValueError, а не
+        правдоподобный recall (review post-#579). ``corpus_hash`` —
+        canonical_hash исходного dict (текст читается один раз)."""
+        raw = json.loads(corpus_path.read_text(encoding="utf-8"))
+        corpus = load_corpus(corpus_path)
         rules = [r for r in ruleset.rules if r.tier == TIER_CANDIDATE]
         correct, mismatches = 0, []
-        for item in corpus["items"]:
+        for item in corpus.items:
             facts = ProductFacts(
-                product_id=item["product_id"],
-                name=item.get("name", ""),
-                original_name=item.get("original_name", ""),
-                brand=item.get("brand", ""),
-                source_group=item.get("source_group", ""),
-                article=item.get("article", ""),
+                product_id=item.product_id,
+                name=item.name,
+                original_name=item.original_name,
+                brand=item.brand,
+                source_group=item.source_group,
+                article=item.article,
             )
             verdict = evaluate_product(rules, facts)
             predicted = verdict.option_slug if verdict.status == "prediction" else ""
-            if predicted == item["applied_option_slug"]:
+            if predicted == item.applied_option_slug:
                 correct += 1
             else:
                 mismatches.append(
                     {
-                        "product_id": item["product_id"],
-                        "expected": item["applied_option_slug"],
+                        "product_id": item.product_id,
+                        "expected": item.applied_option_slug,
                         "predicted": predicted,
                         "status": verdict.status,
                     }
                 )
-        total = len(corpus["items"])
+        total = len(corpus.items)
         recall = round(correct / total, 4) if total else 0.0
         return {
-            "corpus_id": corpus.get("corpus_id", ""),
-            "corpus_hash": canonical_hash(corpus),
+            "corpus_id": corpus.corpus_id,
+            "corpus_hash": canonical_hash(raw),
             "items": total,
             "correct": correct,
             "recall": recall,
-            "expected_recall": corpus.get("expected_recall"),
+            "expected_recall": corpus.expected_recall,
             "mismatches": mismatches,
         }

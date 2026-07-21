@@ -12,6 +12,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from apps.ai.models import ContentFinding
+from apps.catalog.management.commands import catalog_rules_shadow as shadow_cmd
 from apps.catalog.management.commands.catalog_rules_shadow import VOLATILE_REPORT_KEYS
 from apps.catalog.models import (
     Attribute,
@@ -360,6 +361,7 @@ def test_printed_sha256_matches_file_bytes(tmp_path):
         pool="in-stock",
         out=str(out),
         gate_sample_out=str(sample_out),
+        skip_corpus_overlap_check=True,  # hotfix post-#579: иначе --corpus обязателен
         stdout=buf,
     )
     printed = {}
@@ -650,3 +652,175 @@ def test_content_hash_deterministic_across_runs(tmp_path):
     report = json.loads(out.read_text(encoding="utf-8"))
     stable = {k: v for k, v in report.items() if k not in VOLATILE_REPORT_KEYS}
     assert canonical_hash(stable) == hashes[0]
+
+
+# --- hotfix post-#579: fail-closed gate sample ---
+
+
+@pytest.mark.django_db
+def test_gate_sample_requires_corpus(tmp_path):
+    """--gate-sample-out без --corpus и без --skip-corpus-overlap-check →
+    CommandError; артефакты НЕ созданы (официальный gate обязан проверять
+    sample ∩ training corpus)."""
+    attr = _tool_type_attr()
+    _option(attr, "Шплинты", "krep-shplinty")
+    _product(original_name="Шплинт 6,4х76", article="FC1")
+    out = tmp_path / "report.json"
+    sample_out = tmp_path / "gate_sample.json"
+    with pytest.raises(CommandError, match="--corpus"):
+        call_command(
+            "catalog_rules_shadow",
+            ruleset=str(_ruleset_file(tmp_path)),
+            pool="in-stock",
+            out=str(out),
+            gate_sample_out=str(sample_out),
+        )
+    assert not out.exists()
+    assert not sample_out.exists()
+
+
+@pytest.mark.django_db
+def test_gate_sample_skip_check_marks_unofficial(tmp_path):
+    """--skip-corpus-overlap-check разрешает запись без corpus, но артефакт
+    помечается corpus_overlap_checked=false (неофициальный sample)."""
+    attr = _tool_type_attr()
+    _option(attr, "Шплинты", "krep-shplinty")
+    _product(original_name="Шплинт 6,4х76", article="FC2")
+    sample_out = tmp_path / "gate_sample.json"
+    _run(
+        _ruleset_file(tmp_path),
+        tmp_path / "report.json",
+        gate_sample_out=str(sample_out),
+        skip_corpus_overlap_check=True,
+    )
+    artifact = json.loads(sample_out.read_text(encoding="utf-8"))
+    assert artifact["corpus_overlap_checked"] is False
+
+
+@pytest.mark.django_db
+def test_gate_sample_with_corpus_marks_checked(tmp_path):
+    """С --corpus артефакт помечается corpus_overlap_checked=true и несёт
+    обязательный collision_count."""
+    attr = _tool_type_attr()
+    _option(attr, "Шплинты", "krep-shplinty")
+    _product(original_name="Шплинт 6,4х76", article="FC3")
+    corpus = _corpus_file(tmp_path, [900000771])
+    sample_out = tmp_path / "gate_sample.json"
+    _run(
+        _ruleset_file(tmp_path),
+        tmp_path / "report.json",
+        gate_sample_out=str(sample_out),
+        corpus=str(corpus),
+    )
+    artifact = json.loads(sample_out.read_text(encoding="utf-8"))
+    assert artifact["corpus_overlap_checked"] is True
+    assert "collision_count" in artifact
+
+
+@pytest.mark.django_db
+def test_gate_sample_artifact_has_collision_count(tmp_path):
+    """collision_count == counts.collisions отчёта: 0 в мирном случае,
+    >0 в синтетическом прогоне с коллизией."""
+    attr = _tool_type_attr()
+    _option(attr, "Шплинты", "krep-shplinty")
+    _option(attr, "Гвозди", "krep-gvozdi")
+    _product(original_name="Шплинт оцинкованный 6,4х76", article="FC4")
+    corpus = _corpus_file(tmp_path, [900000781])
+    # мирный случай: одно candidate-правило → predictions без коллизий
+    peace_dir = tmp_path / "peace"
+    peace_dir.mkdir()
+    sample1 = tmp_path / "s1.json"
+    _run(
+        _ruleset_file(peace_dir),
+        tmp_path / "r1.json",
+        gate_sample_out=str(sample1),
+        corpus=str(corpus),
+    )
+    assert json.loads(sample1.read_text(encoding="utf-8"))["collision_count"] == 0
+    # два правила с разными slugs матчат один товар → коллизия
+    coll_dir = tmp_path / "coll"
+    coll_dir.mkdir()
+    sample2 = tmp_path / "s2.json"
+    _run(
+        _two_rule_ruleset(coll_dir, prefix="cc"),
+        tmp_path / "r2.json",
+        gate_sample_out=str(sample2),
+        corpus=str(corpus),
+    )
+    assert json.loads(sample2.read_text(encoding="utf-8"))["collision_count"] > 0
+
+
+@pytest.mark.django_db
+def test_artifacts_group_rollback(tmp_path, monkeypatch):
+    """Падение второй записи (gate_sample) удаляет уже записанный report:
+    пара артефактов неделима, исключение перевыбрасывается."""
+    attr = _tool_type_attr()
+    _option(attr, "Шплинты", "krep-shplinty")
+    _product(original_name="Шплинт 6,4х76", article="RB1")
+    corpus = _corpus_file(tmp_path, [900000691])
+    out = tmp_path / "report.json"
+    sample_out = tmp_path / "gate_sample.json"
+    original = shadow_cmd._write_atomic
+    calls = []
+
+    def boom(path, payload):
+        calls.append(path)
+        if len(calls) == 2:  # вторая запись (gate_sample) падает
+            raise OSError("disk full")
+        return original(path, payload)
+
+    monkeypatch.setattr(shadow_cmd, "_write_atomic", boom)
+    with pytest.raises(OSError, match="disk full"):
+        call_command(
+            "catalog_rules_shadow",
+            ruleset=str(_ruleset_file(tmp_path)),
+            pool="in-stock",
+            out=str(out),
+            gate_sample_out=str(sample_out),
+            corpus=str(corpus),
+        )
+    assert not out.exists()  # первый артефакт откачен
+    assert not sample_out.exists()
+
+
+@pytest.mark.django_db
+def test_invalid_ruleset_gives_command_error(tmp_path):
+    """Битый ruleset → CommandError с понятным сообщением, а не сырой
+    ValueError traceback оператору."""
+    bad = tmp_path / "bad_ruleset.json"
+    bad.write_text("{not valid json", encoding="utf-8")
+    with pytest.raises(CommandError, match="не валидный JSON"):
+        call_command(
+            "catalog_rules_shadow",
+            ruleset=str(bad),
+            pool="in-stock",
+            out=str(tmp_path / "r.json"),
+        )
+
+
+@pytest.mark.django_db
+def test_replay_uses_load_corpus(tmp_path):
+    """Replay-corpus с дублем product_id → ошибка загрузки, команда НЕ
+    выдаёт правдоподобный recall по повреждённому corpus."""
+    attr = _tool_type_attr()
+    _option(attr, "Шплинты", "krep-shplinty")
+    corpus = _corpus_file(tmp_path, [900000601])
+    data = json.loads(corpus.read_text(encoding="utf-8"))
+    dup = dict(data["items"][0])
+    dup["change_id"] = "ch-dup"
+    dup["pav_id"] = 999999
+    data["items"].append(dup)
+    data["counters"]["raw_applied_changes"] = 2
+    data["counters"]["distinct_products"] = 2
+    data["counters"]["current_label_corpus"] = 2
+    corpus.write_text(json.dumps(data), encoding="utf-8")
+    out = tmp_path / "report.json"
+    with pytest.raises(CommandError, match="Дубли product_id"):
+        call_command(
+            "catalog_rules_shadow",
+            ruleset=str(_ruleset_file(tmp_path)),
+            pool="in-stock",
+            out=str(out),
+            replay_corpus=str(corpus),
+        )
+    assert not out.exists()
