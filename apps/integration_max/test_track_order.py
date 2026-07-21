@@ -394,7 +394,7 @@ def _run_webhook_flow(api, order, token, phone, mock_send):
             format="json",
         ).json()
         deeplink_token = start["deeplink"].split("start=", 1)[1]
-        hdr = {"HTTP_X_MAX_WEBHOOK_SECRET": "wh-secret"}
+        hdr = {"HTTP_X_MAX_BOT_API_SECRET": "wh-secret"}
 
         api.post(
             "/api/max/webhook/",

@@ -203,7 +203,7 @@ def test_e2e_registration_via_webhook(mock_send, api):
     token = None
     # token содержится в диплинке после start=
     token = start["deeplink"].split("start=", 1)[1]
-    hdr = {"HTTP_X_MAX_WEBHOOK_SECRET": "wh-secret"}
+    hdr = {"HTTP_X_MAX_BOT_API_SECRET": "wh-secret"}
 
     # bot_started по диплинку
     api.post(

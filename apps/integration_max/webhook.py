@@ -43,7 +43,9 @@ def _verify_webhook_secret(request) -> bool:
     if not secret:
         logger.error("MAX_WEBHOOK_SECRET не задан — webhook отклонён (fail-closed)")
         return False
-    provided = request.headers.get("X-Max-Webhook-Secret", "")
+    # MAX возвращает secret, указанный при создании подписки, именно в этом
+    # заголовке: https://dev.max.ru/docs-api/methods/POST/subscriptions
+    provided = request.headers.get("X-Max-Bot-Api-Secret", "")
     return constant_time_compare(provided, secret)
 
 
@@ -51,7 +53,7 @@ def _send_reply(reply: dict | None) -> None:
     if not reply:
         return
     token = getattr(settings, "MAX_BOT_TOKEN", "")
-    api_url = getattr(settings, "MAX_BOT_API_URL", "https://platform-api.max.ru")
+    api_url = getattr(settings, "MAX_BOT_API_URL", "https://platform-api2.max.ru")
     if not token:
         logger.warning("MAX_BOT_TOKEN not set, reply not sent")
         return

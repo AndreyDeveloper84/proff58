@@ -60,7 +60,7 @@ def send_message(chat_id: int, text: str, **kwargs) -> bool:
     generic Exception, чтобы вызывающий (tasks.py) мог решить, ретраить ли.
     """
     token = getattr(settings, "MAX_BOT_TOKEN", "")
-    api_url = getattr(settings, "MAX_BOT_API_URL", "https://platform-api.max.ru")
+    api_url = getattr(settings, "MAX_BOT_API_URL", "https://platform-api2.max.ru")
     if not token:
         raise MaxPermanentError("MAX_BOT_TOKEN not configured")
 
