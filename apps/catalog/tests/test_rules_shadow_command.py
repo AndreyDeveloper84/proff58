@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import re
 import stat
 import uuid
 from io import StringIO
@@ -11,6 +12,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from apps.ai.models import ContentFinding
+from apps.catalog.management.commands.catalog_rules_shadow import VOLATILE_REPORT_KEYS
 from apps.catalog.models import (
     Attribute,
     AttributeOption,
@@ -601,3 +603,50 @@ def test_shadow_command_sample_deterministic(tmp_path):
     s1 = json.loads(out1.read_text(encoding="utf-8"))["sample"]["product_ids"]
     s2 = json.loads(out2.read_text(encoding="utf-8"))["sample"]["product_ids"]
     assert s1 == s2 and len(s1) == 3
+
+
+@pytest.mark.django_db
+def test_empty_ruleset_yields_zero_predictions(tmp_path):
+    # пустой ruleset ("rules": []) валиден (P1.9): прогон идёт, predictions = 0
+    attr = _tool_type_attr()
+    _option(attr, "Шплинты", "krep-shplinty")
+    _product(original_name="Шплинт 6,4х76 оцинкованный", article="Z1")
+    ruleset = _ruleset_file(tmp_path, rules=[], fixtures=[])
+    report = _run(ruleset, tmp_path / "report.json")
+    assert report["pool"]["size"] == 1
+    assert report["counts"]["predictions"] == 0
+    assert report["counts"]["collisions"] == 0
+    assert report["counts"]["no_match"] == 1
+    assert report["predictions"] == []
+    assert report["per_rule"] == {}
+    assert report["predictions_share"] == 0.0
+
+
+@pytest.mark.django_db
+def test_content_hash_deterministic_across_runs(tmp_path):
+    # content_hash (canonical_hash без volatile-полей, P1.5) одинаков
+    # в двух прогонах с идентичными args (P1.9)
+    attr = _tool_type_attr()
+    _option(attr, "Шплинты", "krep-shplinty")
+    _product(original_name="Шплинт 6,4х76 оцинкованный", article="R1")
+    ruleset = _ruleset_file(tmp_path)
+    out = tmp_path / "report.json"
+    hashes = []
+    for _ in range(2):
+        buf = StringIO()
+        call_command(
+            "catalog_rules_shadow",
+            ruleset=str(ruleset),
+            pool="in-stock",
+            out=str(out),
+            force=True,  # оба прогона с одинаковыми args → hash сравним
+            stdout=buf,
+        )
+        m = re.search(r"content_hash=([0-9a-f]{64})", buf.getvalue())
+        assert m, buf.getvalue()
+        hashes.append(m.group(1))
+    assert hashes[0] == hashes[1]
+    # напечатанный hash совпадает с canonical_hash отчёта без volatile-полей
+    report = json.loads(out.read_text(encoding="utf-8"))
+    stable = {k: v for k, v in report.items() if k not in VOLATILE_REPORT_KEYS}
+    assert canonical_hash(stable) == hashes[0]

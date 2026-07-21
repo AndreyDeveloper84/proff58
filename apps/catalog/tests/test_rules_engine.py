@@ -244,6 +244,28 @@ def test_ruleset_hash_stable_under_key_reorder(tmp_path):
     assert load_ruleset(p1).ruleset_hash == load_ruleset(p2).ruleset_hash
 
 
+def test_load_ruleset_invalid_json(tmp_path):
+    # битый JSON — понятный ValueError (P1.9), а не голый JSONDecodeError traceback
+    p = tmp_path / "ruleset.json"
+    p.write_text("{ не json", encoding="utf-8")
+    with pytest.raises(ValueError, match="JSON"):
+        load_ruleset(p)
+
+
+def test_load_ruleset_missing_file(tmp_path):
+    # отсутствующий файл — понятный ValueError с путём (P1.9), а не FileNotFoundError
+    with pytest.raises(ValueError, match="не найден"):
+        load_ruleset(tmp_path / "no-such-ruleset.json")
+
+
+def test_empty_ruleset_valid(tmp_path):
+    # пустой ruleset ("rules": []) валиден (P1.9): ни схема, ни семантика не требуют ≥1 правила
+    rs = _write_ruleset(tmp_path, rules=[], negative_fixtures=[])
+    assert rs.rules == ()
+    assert rs.negative_fixtures == ()
+    assert len(rs.ruleset_hash) == 64
+
+
 # --- Токены и keyword-семантика (P1.2) ---
 
 

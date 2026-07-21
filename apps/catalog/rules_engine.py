@@ -117,9 +117,17 @@ def _schema_validator() -> Draft7Validator:
 
 def load_ruleset(path: Path | None = None) -> ShadowRuleset:
     """Загрузить и провалидировать ruleset (schema + семантика);
-    hash — канонический SHA-256."""
-    path = path or RULESET_PATH
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    hash — канонический SHA-256. Отсутствующий/битый файл — ValueError
+    с понятным сообщением (P1.9)."""
+    path = Path(path) if path else RULESET_PATH
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(f"Ruleset не найден: {path}") from exc
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Ruleset не валидный JSON ({path}): {exc}") from exc
     errors = sorted(_schema_validator().iter_errors(data), key=lambda e: list(e.path))
     if errors:
         raise ValueError(f"Ruleset не соответствует схеме: {errors[0].message}")
