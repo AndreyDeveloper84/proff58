@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apps.crm_tasks",
     "apps.analytics",
     "apps.delivery",
+    "apps.promotions",
     "apps.content",
     "apps.reviews",
 ]

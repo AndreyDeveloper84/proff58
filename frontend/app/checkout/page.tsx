@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
+import { PromoCodeField } from "@/components/cart/PromoCodeField";
 import { ApiError } from "@/lib/api";
 import {
   getDeliverySlots,
@@ -68,6 +69,14 @@ export default function CheckoutPage() {
   // гарантированно отклонялся. Выводим значение из типа покупателя.
   const payment: PaymentMethod = isB2B ? "invoice" : "online";
 
+  // #571: серверный промо-breakdown. Суммы здесь — только превью; авторитетный
+  // расчёт (включая free_delivery-код) делает place_order.
+  const promoDiscount = Number(cart?.items_discount_total ?? 0) || 0;
+  const goodsPayable = cart ? Number(cart.grand_total) || total : total;
+  const hasFreeDeliveryCode = Boolean(
+    cart?.applied_promotions?.some((a) => a.discount_type === "free_delivery"),
+  );
+
   // Зоны доставки (аудит №5): без delivery_zone сервер не считает стоимость
   // (заказ уходил с доставкой 0 ₽ и заниженным итогом). Слаг выбранной зоны
   // уходит в POST /api/orders; стоимость из списка — только предпросмотр,
@@ -77,13 +86,13 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     let active = true;
-    getDeliveryZones(total).then((data) => {
+    getDeliveryZones(goodsPayable).then((data) => {
       if (active) setZones(data);
     });
     return () => {
       active = false;
     };
-  }, [total]);
+  }, [goodsPayable]);
 
   const courierZones = useMemo(() => zones.filter((z) => z.type === "courier"), [zones]);
   const selectedZone = courierZones.find((z) => z.zone === zoneSlug) ?? null;
@@ -548,6 +557,9 @@ export default function CheckoutPage() {
           <h2 className="mb-3 font-display text-lg font-semibold uppercase text-ink">
             Состав заказа
           </h2>
+          <div className="mb-4">
+            <PromoCodeField />
+          </div>
           <div className="space-y-2">
             {cart.lines.map((line) => (
               <div key={line.id} className="flex items-center justify-between gap-2 text-sm">
@@ -561,11 +573,23 @@ export default function CheckoutPage() {
               </div>
             ))}
           </div>
+          {promoDiscount > 0 && (
+            <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-sm">
+              <span className="text-ink-2">Скидка по акциям:</span>
+              <span className="font-display font-semibold text-accent">
+                − {formatPrice(promoDiscount)}
+              </span>
+            </div>
+          )}
           {!isB2B && delivery === "courier" && selectedZone && (
             <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-sm">
               <span className="text-ink-2">Доставка ({selectedZone.name}):</span>
               <span className="font-display font-semibold text-ink">
-                {selectedZone.free_delivery ? "бесплатно" : formatPrice(Number(selectedZone.cost))}
+                {selectedZone.free_delivery
+                  ? "бесплатно"
+                  : hasFreeDeliveryCode
+                    ? "бесплатно (промокод)"
+                    : formatPrice(Number(selectedZone.cost))}
               </span>
             </div>
           )}
@@ -575,8 +599,12 @@ export default function CheckoutPage() {
               {mixedCurrencies
                 ? "—"
                 : formatPrice(
-                    total +
-                      (!isB2B && delivery === "courier" && selectedZone && !selectedZone.free_delivery
+                    goodsPayable +
+                      (!isB2B &&
+                      delivery === "courier" &&
+                      selectedZone &&
+                      !selectedZone.free_delivery &&
+                      !hasFreeDeliveryCode
                         ? Number(selectedZone.cost) || 0
                         : 0),
                   )}
