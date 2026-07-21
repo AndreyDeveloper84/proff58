@@ -177,6 +177,9 @@ def _validate_semantics(rules: tuple[ShadowRule, ...], fixtures: tuple[dict, ...
     for r in rules:
         dims = {d: getattr(r, d) for d in _DIMENSIONS}
         nonempty = {d: v for d, v in dims.items() if v}
+        # 0. любое правило (любой tier): ≥1 непустое измерение
+        if not nonempty:
+            errors.append(f"{r.rule_ref}: правило без непустых измерений")
         # 1. candidate: ≥2 непустых измерения
         if r.tier == TIER_CANDIDATE and len(nonempty) < 2:
             errors.append(
@@ -209,9 +212,10 @@ def _validate_semantics(rules: tuple[ShadowRule, ...], fixtures: tuple[dict, ...
                 if not v.strip():
                     errors.append(f"{r.rule_ref}: пустое значение в измерении {dim}")
                 elif dim in _KEYWORD_DIMENSIONS:
-                    if not tokenize(v):
+                    kw_tokens = tokenize(v)
+                    if not kw_tokens:
                         errors.append(f"{r.rule_ref}: keyword {v!r} пуст после tokenize")
-                    elif len(v) < MIN_KEYWORD_LEN:
+                    elif max(len(t) for t in kw_tokens) < MIN_KEYWORD_LEN:
                         errors.append(
                             f"{r.rule_ref}: keyword {v!r} короче {MIN_KEYWORD_LEN} символов"
                         )
@@ -334,6 +338,7 @@ def check_negative_fixtures(ruleset: ShadowRuleset) -> list[str]:
     for fix in ruleset.negative_fixtures:
         facts = ProductFacts(
             product_id=0,
+            name=fix.get("name", ""),
             original_name=fix.get("name", ""),
             brand=fix.get("brand", ""),
             source_group=fix.get("source_group", ""),

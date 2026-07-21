@@ -96,6 +96,19 @@ def test_candidate_requires_two_dimensions(tmp_path):
         load_ruleset(p)
 
 
+def test_any_tier_requires_one_dimension(tmp_path):
+    # shadow_regression с пустым match тоже обязана иметь ≥1 непустое измерение
+    data = _ruleset_dict()
+    data["rules"][0]["tier"] = "shadow_regression"
+    data["rules"][0]["derived_from"] = []
+    data["rules"][0]["match"] = {}
+    data["negative_fixtures"] = []
+    p = tmp_path / "ruleset.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="непустых измерений"):
+        load_ruleset(p)
+
+
 def test_keyword_only_must_be_regression_tier(tmp_path):
     data = _ruleset_dict()
     data["rules"][0]["match"] = {"original_name_keywords_any": ["шплинт"]}
@@ -134,6 +147,16 @@ def test_dimension_values_normalized_unique(tmp_path):
 def test_keyword_min_length(tmp_path):
     data = _ruleset_dict()
     data["rules"][0]["match"]["original_name_keywords_any"] = ["оч"]
+    p = tmp_path / "ruleset.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="символ"):
+        load_ruleset(p)
+
+
+def test_keyword_min_length_measured_by_tokens(tmp_path):
+    # «оч!» — 3 символа после normalize, но самый длинный токен — 2
+    data = _ruleset_dict()
+    data["rules"][0]["match"]["original_name_keywords_any"] = ["оч!"]
     p = tmp_path / "ruleset.json"
     p.write_text(json.dumps(data), encoding="utf-8")
     with pytest.raises(ValueError, match="символ"):
@@ -430,3 +453,19 @@ def test_check_negative_fixtures_scoped(tmp_path):
     violations = check_negative_fixtures(rs_bad)
     assert len(violations) == 1
     assert "tt-b-001" in violations[0]
+
+
+def test_fixture_name_populates_both_name_fields(tmp_path):
+    # keyword из name_keywords_any матчит fixture по полю name → ровно 1 violation
+    rules = [
+        _rule(
+            "tt-name-001",
+            "siz-ochki",
+            {"brand_any": ["Hitachi"], "name_keywords_any": ["очки"]},
+        )
+    ]
+    fixtures = [_fixture("nf-name-001", ["tt-name-001"], name="Очки защитные", brand="Hitachi")]
+    rs = _write_ruleset(tmp_path, rules=rules, negative_fixtures=fixtures)
+    violations = check_negative_fixtures(rs)
+    assert len(violations) == 1
+    assert "tt-name-001" in violations[0]

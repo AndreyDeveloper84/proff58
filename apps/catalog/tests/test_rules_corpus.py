@@ -134,6 +134,15 @@ def test_corpus_counters_inconsistent_rejected(tmp_path):
         load_corpus(p)
 
 
+def test_corpus_current_label_mismatch_rejected(tmp_path):
+    data = _corpus_dict()
+    data["counters"]["current_label_corpus"] = 1  # != len(items)=2
+    p = tmp_path / "corpus.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="current_label_corpus"):
+        load_corpus(p)
+
+
 # --- validate_gate_sample ---
 
 
