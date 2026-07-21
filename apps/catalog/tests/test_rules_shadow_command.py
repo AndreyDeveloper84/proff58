@@ -33,6 +33,7 @@ def _product(**kw):
         status=ProductStatus.IMPORTED,
         is_active=True,
         article="A1",
+        source_group="Крепёж",
         content_locked=False,
         available_quantity=1,
         price="100",
@@ -62,10 +63,20 @@ def _ruleset_file(tmp_path, slug="krep-shplinty"):
             {
                 "rule_ref": "tt-test-001",
                 "option_slug": slug,
-                "match": {"name_keywords_any": ["шплинт"]},
+                "match": {
+                    "original_name_keywords_any": ["шплинт"],
+                    "source_group_any": ["Крепёж"],
+                },
+                "derived_from": [26864, 26865],
             }
         ],
-        "negative_fixtures": [{"name": "Пассатижи комбинированные"}],
+        "negative_fixtures": [
+            {
+                "fixture_ref": "nf-test-001",
+                "rule_refs": ["tt-test-001"],
+                "name": "Пассатижи комбинированные",
+            }
+        ],
     }
     p = tmp_path / "ruleset.json"
     p.write_text(json.dumps(data), encoding="utf-8")

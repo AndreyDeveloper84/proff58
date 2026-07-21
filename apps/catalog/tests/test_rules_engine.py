@@ -5,9 +5,12 @@ import pytest
 from apps.catalog.rules_engine import (
     ProductFacts,
     check_negative_fixtures,
+    describe_match,
     evaluate_product,
+    keyword_matches_text,
     load_ruleset,
     rule_matches,
+    tokenize,
     validate_against_taxonomy,
 )
 
@@ -18,32 +21,179 @@ def _ruleset_dict(**over):
         "ruleset_id": "tool_type.v1",
         "rules": [
             {
-                "rule_ref": "tt-test-001",
+                "rule_ref": "tt-krep-shplinty-001",
                 "option_slug": "krep-shplinty",
-                "match": {"name_keywords_any": ["шплинт"]},
+                "match": {
+                    "source_group_any": ["Крепёж"],
+                    "original_name_keywords_any": ["шплинт"],
+                },
                 "negative_keywords": [],
                 "derived_from": [26864, 26865],
             }
         ],
-        "negative_fixtures": [],
+        "negative_fixtures": [
+            {
+                "fixture_ref": "nf-shplinty-001",
+                "rule_refs": ["tt-krep-shplinty-001"],
+                "name": "Гвоздь строительный 6х100",
+                "source_group": "Крепёж",
+            }
+        ],
     }
     data.update(over)
     return data
 
 
-def test_load_ruleset_valid(tmp_path):
+def _rule(rule_ref, slug, match, **kw):
+    """Валидный candidate-правило v2 (≥2 измерения + derived_from)."""
+    rule = {
+        "rule_ref": rule_ref,
+        "option_slug": slug,
+        "match": match,
+        "negative_keywords": [],
+        "derived_from": [26864, 26865],
+    }
+    rule.update(kw)
+    return rule
+
+
+def _fixture(fixture_ref, rule_refs, **facts):
+    fix = {
+        "fixture_ref": fixture_ref,
+        "rule_refs": rule_refs,
+        "name": "Гвоздь строительный 6х100",
+    }
+    fix.update(facts)
+    return fix
+
+
+def _write_ruleset(tmp_path, **over):
+    data = _ruleset_dict(**over)
     p = tmp_path / "ruleset.json"
-    p.write_text(json.dumps(_ruleset_dict()), encoding="utf-8")
-    rs = load_ruleset(p)
+    p.write_text(json.dumps(data), encoding="utf-8")
+    return load_ruleset(p)
+
+
+# --- load_ruleset: schema + семантический валидатор ---
+
+
+def test_load_ruleset_valid(tmp_path):
+    rs = _write_ruleset(tmp_path)
     assert rs.version == 1
     assert rs.ruleset_id == "tool_type.v1"
     assert len(rs.rules) == 1
-    assert rs.rules[0].rule_ref == "tt-test-001"
+    assert rs.rules[0].rule_ref == "tt-krep-shplinty-001"
     assert rs.rules[0].tier == "candidate"  # default
     assert len(rs.ruleset_hash) == 64
 
 
-def test_load_ruleset_rejects_schema_violation(tmp_path):
+def test_candidate_requires_two_dimensions(tmp_path):
+    data = _ruleset_dict()
+    data["rules"][0]["match"] = {"original_name_keywords_any": ["шплинт"]}
+    p = tmp_path / "ruleset.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="измерен"):
+        load_ruleset(p)
+
+
+def test_keyword_only_must_be_regression_tier(tmp_path):
+    data = _ruleset_dict()
+    data["rules"][0]["match"] = {"original_name_keywords_any": ["шплинт"]}
+    p = tmp_path / "ruleset.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="shadow_regression"):
+        load_ruleset(p)
+    # то же правило с tier=shadow_regression валидно (derived_from/fixture не нужны)
+    data["rules"][0]["tier"] = "shadow_regression"
+    data["rules"][0]["derived_from"] = []
+    data["negative_fixtures"] = []
+    p.write_text(json.dumps(data), encoding="utf-8")
+    rs = load_ruleset(p)
+    assert rs.rules[0].tier == "shadow_regression"
+
+
+def test_candidate_requires_two_derived_from(tmp_path):
+    for bad in ([26864], [26864, 26864]):
+        data = _ruleset_dict()
+        data["rules"][0]["derived_from"] = bad
+        p = tmp_path / "ruleset.json"
+        p.write_text(json.dumps(data), encoding="utf-8")
+        with pytest.raises(ValueError, match="derived_from"):
+            load_ruleset(p)
+
+
+def test_dimension_values_normalized_unique(tmp_path):
+    data = _ruleset_dict()
+    data["rules"][0]["match"]["original_name_keywords_any"] = ["Шплинт", "шплинт"]
+    p = tmp_path / "ruleset.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="дубли"):
+        load_ruleset(p)
+
+
+def test_keyword_min_length(tmp_path):
+    data = _ruleset_dict()
+    data["rules"][0]["match"]["original_name_keywords_any"] = ["оч"]
+    p = tmp_path / "ruleset.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="символ"):
+        load_ruleset(p)
+
+
+def test_empty_after_tokenize_rejected(tmp_path):
+    data = _ruleset_dict()
+    data["rules"][0]["match"]["original_name_keywords_any"] = ["!!!"]
+    p = tmp_path / "ruleset.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="tokenize"):
+        load_ruleset(p)
+
+
+def test_candidate_requires_own_fixture(tmp_path):
+    rules = [
+        _rule(
+            "tt-a-001",
+            "krep-shplinty",
+            {"original_name_keywords_any": ["шплинт"], "source_group_any": ["Крепёж"]},
+        ),
+        _rule(
+            "tt-b-001",
+            "krep-gvozdi",
+            {"original_name_keywords_any": ["гвоздь"], "source_group_any": ["Крепёж"]},
+        ),
+    ]
+    # fixture ссылается только на tt-b-001 — у tt-a-001 своей fixture нет
+    rs = _ruleset_dict(rules=rules, negative_fixtures=[_fixture("nf-b-001", ["tt-b-001"])])
+    p = tmp_path / "ruleset.json"
+    p.write_text(json.dumps(rs), encoding="utf-8")
+    with pytest.raises(ValueError, match="fixture"):
+        load_ruleset(p)
+
+
+def test_fixture_unknown_rule_ref(tmp_path):
+    data = _ruleset_dict()
+    data["negative_fixtures"][0]["rule_refs"] = ["tt-ghost-999"]
+    p = tmp_path / "ruleset.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="rule_ref"):
+        load_ruleset(p)
+
+
+def test_duplicate_predicates_rejected(tmp_path):
+    match = {"original_name_keywords_any": ["шплинт"], "source_group_any": ["Крепёж"]}
+    rules = [
+        _rule("tt-a-001", "krep-shplinty", dict(match)),
+        _rule("tt-b-001", "krep-gvozdi", dict(match)),
+    ]
+    fixtures = [_fixture("nf-a-001", ["tt-a-001"]), _fixture("nf-b-001", ["tt-b-001"])]
+    data = _ruleset_dict(rules=rules, negative_fixtures=fixtures)
+    p = tmp_path / "ruleset.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="дубликат"):
+        load_ruleset(p)
+
+
+def test_schema_violation_still_rejected(tmp_path):
     bad = _ruleset_dict()
     del bad["rules"][0]["rule_ref"]
     p = tmp_path / "ruleset.json"
@@ -52,21 +202,12 @@ def test_load_ruleset_rejects_schema_violation(tmp_path):
         load_ruleset(p)
 
 
-def test_load_ruleset_rejects_duplicate_rule_ref(tmp_path):
+def test_duplicate_rule_ref_rejected(tmp_path):
     data = _ruleset_dict()
-    data["rules"].append(data["rules"][0])
+    data["rules"].append(dict(data["rules"][0]))
     p = tmp_path / "ruleset.json"
     p.write_text(json.dumps(data), encoding="utf-8")
     with pytest.raises(ValueError, match="rule_ref"):
-        load_ruleset(p)
-
-
-def test_load_ruleset_rejects_empty_match(tmp_path):
-    data = _ruleset_dict()
-    data["rules"][0]["match"] = {}
-    p = tmp_path / "ruleset.json"
-    p.write_text(json.dumps(data), encoding="utf-8")
-    with pytest.raises(ValueError, match="без единого условия"):
         load_ruleset(p)
 
 
@@ -80,37 +221,89 @@ def test_ruleset_hash_stable_under_key_reorder(tmp_path):
     assert load_ruleset(p1).ruleset_hash == load_ruleset(p2).ruleset_hash
 
 
-def _write_ruleset(tmp_path, **over):
-    data = _ruleset_dict(**over)
-    p = tmp_path / "ruleset.json"
-    p.write_text(json.dumps(data), encoding="utf-8")
-    return load_ruleset(p)
+# --- Токены и keyword-семантика (P1.2) ---
 
 
-def test_match_is_conjunctive_across_dimensions(tmp_path):
-    rs = _write_ruleset(tmp_path)
-    rule = rs.rules[0]
-    assert rule_matches(rule, ProductFacts(product_id=1, original_name="Шплинт 6,4х76"))
-    assert not rule_matches(rule, ProductFacts(product_id=2, original_name="Гвоздь 6х100"))
+def test_tokenize_separators():
+    assert tokenize("Шплинт 6,4х76 (DIN 94)") == ["шплинт", "6", "4х76", "din", "94"]
 
 
-def test_match_normalization_yo_and_case(tmp_path):
-    rs = _write_ruleset(tmp_path)
-    rule = rs.rules[0]
-    # keyword "шплинт" должен матчить "ШПЛИНТ" и ё-варианты после фолдинга
-    assert rule_matches(rule, ProductFacts(product_id=1, original_name="ШПЛИНТ 3,2х50"))
+def test_keyword_prefix_matches_morphology():
+    assert keyword_matches_text("шплинт", "Шплинты 6,4х76")
 
 
-def test_brand_dimension_and_negative_keyword(tmp_path):
+def test_keyword_no_substring_match():
+    assert not keyword_matches_text("болгарка", "Гайка болгарская М8")
+
+
+def test_phrase_keyword_consecutive():
+    assert keyword_matches_text("ключ динамометрический", "Ключ динамометрический 1/2")
+    # порядок токенов важен
+    assert not keyword_matches_text("ключ динамометрический", "динамометрический ключ")
+
+
+# --- matching: раздельные поля, evidence, veto ---
+
+
+def test_field_separation(tmp_path):
     rs = _write_ruleset(
         tmp_path,
         rules=[
-            {
-                "rule_ref": "tt-brand-001",
-                "option_slug": "siz-ochki",
-                "match": {"brand_any": ["Hitachi"], "name_keywords_any": ["очки"]},
-                "negative_keywords": ["чехол"],
-            }
+            _rule(
+                "tt-orig-001",
+                "krep-shplinty",
+                {"original_name_keywords_any": ["шплинт"], "source_group_any": ["Крепёж"]},
+            ),
+            _rule(
+                "tt-name-001",
+                "krep-shplinty",
+                {"name_keywords_any": ["шплинт"], "source_group_any": ["Крепёж"]},
+            ),
+        ],
+        negative_fixtures=[
+            _fixture("nf-orig-001", ["tt-orig-001"]),
+            _fixture("nf-name-001", ["tt-name-001"]),
+        ],
+    )
+    orig_rule, name_rule = rs.rules
+    only_name = ProductFacts(
+        product_id=1, name="Шплинт 6,4х76", original_name="", source_group="Крепёж"
+    )
+    only_orig = ProductFacts(
+        product_id=2, name="", original_name="Шплинт 6,4х76", source_group="Крепёж"
+    )
+    # keyword original_name_keywords_any НЕ матчит слово, которое только в name
+    assert not rule_matches(orig_rule, only_name)
+    assert rule_matches(orig_rule, only_orig)
+    # и наоборот
+    assert rule_matches(name_rule, only_name)
+    assert not rule_matches(name_rule, only_orig)
+
+
+def test_match_evidence_records_field(tmp_path):
+    rs = _write_ruleset(tmp_path)
+    rule = rs.rules[0]
+    facts = ProductFacts(product_id=1, original_name="Шплинты 6,4х76", source_group="Крепёж")
+    detail = describe_match(rule, facts)
+    assert detail["matched"] is True
+    assert "original_name_keywords_any" in detail["dimensions"]
+    assert "source_group_any" in detail["dimensions"]
+    assert detail["keywords"]["original_name"] == ["шплинт"]
+
+
+def test_brand_and_negative_veto(tmp_path):
+    rs = _write_ruleset(
+        tmp_path,
+        rules=[
+            _rule(
+                "tt-brand-001",
+                "siz-ochki",
+                {"brand_any": ["Hitachi"], "original_name_keywords_any": ["очки"]},
+                negative_keywords=["чехол"],
+            )
+        ],
+        negative_fixtures=[
+            _fixture("nf-brand-001", ["tt-brand-001"], name="Перчатки рабочие", brand="Hitachi")
         ],
     )
     rule = rs.rules[0]
@@ -120,57 +313,85 @@ def test_brand_dimension_and_negative_keyword(tmp_path):
     assert rule_matches(rule, ok)
     assert not rule_matches(rule, wrong_brand)
     assert not rule_matches(rule, negated)
+    assert describe_match(rule, negated)["vetoed_by"] == "чехол"
+
+
+# --- evaluate_product ---
 
 
 def test_evaluate_excludes_existing_tool_type(tmp_path):
     rs = _write_ruleset(tmp_path)
     verdict = evaluate_product(
-        rs.rules, ProductFacts(product_id=1, original_name="Шплинт", has_tool_type=True)
+        rs.rules,
+        ProductFacts(
+            product_id=1, original_name="Шплинт", source_group="Крепёж", has_tool_type=True
+        ),
     )
     assert verdict.status == "excluded_existing_tool_type"
 
 
-def test_evaluate_same_slug_multi_rule_single_prediction(tmp_path):
+def test_same_slug_multi_rule(tmp_path):
     rs = _write_ruleset(
         tmp_path,
         rules=[
-            {
-                "rule_ref": "tt-a-001",
-                "option_slug": "krep-shplinty",
-                "match": {"name_keywords_any": ["шплинт"]},
-            },
-            {
-                "rule_ref": "tt-a-002",
-                "option_slug": "krep-shplinty",
-                "match": {"article_prefix_any": ["DIN94"]},
-            },
+            _rule(
+                "tt-a-001",
+                "krep-shplinty",
+                {"original_name_keywords_any": ["шплинт"], "source_group_any": ["Крепёж"]},
+            ),
+            _rule(
+                "tt-a-002",
+                "krep-shplinty",
+                {"article_prefix_any": ["DIN94"], "source_group_any": ["Крепёж"]},
+            ),
+        ],
+        negative_fixtures=[
+            _fixture("nf-a-001", ["tt-a-001"]),
+            _fixture("nf-a-002", ["tt-a-002"]),
         ],
     )
     verdict = evaluate_product(
-        rs.rules, ProductFacts(product_id=1, original_name="Шплинт", article="DIN94-6X76")
+        rs.rules,
+        ProductFacts(
+            product_id=1,
+            original_name="Шплинт 6,4х76",
+            article="DIN94-6X76",
+            source_group="Крепёж",
+        ),
     )
     assert verdict.status == "prediction"
     assert verdict.option_slug == "krep-shplinty"
     assert verdict.rule_refs == ("tt-a-001", "tt-a-002")
+    assert set(verdict.evidence) == {"tt-a-001", "tt-a-002"}
+    assert all(d["matched"] for d in verdict.evidence.values())
 
 
-def test_evaluate_different_slugs_is_collision(tmp_path):
+def test_collision(tmp_path):
     rs = _write_ruleset(
         tmp_path,
         rules=[
-            {
-                "rule_ref": "tt-a-001",
-                "option_slug": "krep-shplinty",
-                "match": {"name_keywords_any": ["шплинт"]},
-            },
-            {
-                "rule_ref": "tt-b-001",
-                "option_slug": "krep-gvozdi",
-                "match": {"name_keywords_any": ["шплинт"]},
-            },
+            _rule(
+                "tt-a-001",
+                "krep-shplinty",
+                {"original_name_keywords_any": ["шплинт"], "source_group_any": ["Крепёж"]},
+            ),
+            _rule(
+                "tt-b-001",
+                "krep-gvozdi",
+                {
+                    "original_name_keywords_any": ["шплинт", "гвоздь"],
+                    "source_group_any": ["Крепёж"],
+                },
+            ),
+        ],
+        negative_fixtures=[
+            _fixture("nf-a-001", ["tt-a-001"]),
+            _fixture("nf-b-001", ["tt-b-001"]),
         ],
     )
-    verdict = evaluate_product(rs.rules, ProductFacts(product_id=1, original_name="Шплинт"))
+    verdict = evaluate_product(
+        rs.rules, ProductFacts(product_id=1, original_name="Шплинт", source_group="Крепёж")
+    )
     assert verdict.status == "collision"
     assert verdict.slugs == ("krep-gvozdi", "krep-shplinty")
     assert verdict.rule_refs == ("tt-a-001", "tt-b-001")
@@ -182,18 +403,30 @@ def test_validate_against_taxonomy(tmp_path):
     assert validate_against_taxonomy(rs, {"other"}) == ["krep-shplinty"]
 
 
-def test_check_negative_fixtures(tmp_path):
-    rs = _write_ruleset(
-        tmp_path,
-        negative_fixtures=[
-            {"name": "Пассатижи комбинированные", "note": "не шплинт"},
-        ],
-    )
+def test_check_negative_fixtures_scoped(tmp_path):
+    rules = [
+        _rule(
+            "tt-a-001",
+            "krep-shplinty",
+            {"original_name_keywords_any": ["шплинт"], "source_group_any": ["Крепёж"]},
+        ),
+        _rule(
+            "tt-b-001",
+            "instr-passatizhi",
+            {"original_name_keywords_any": ["пассатижи"], "source_group_any": ["Крепёж"]},
+        ),
+    ]
+    # tt-a-001 матчит nf-b-001 («Шплинт…»), но не связан с ней → violation нет;
+    # tt-b-001 матчит nf-a-001 («Пассатижи…»), но тоже не связан → violation нет.
+    fixtures = [
+        _fixture("nf-a-001", ["tt-a-001"], name="Пассатижи комбинированные", source_group="Крепёж"),
+        _fixture("nf-b-001", ["tt-b-001"], name="Шплинт 6,4х76", source_group="Крепёж"),
+    ]
+    rs = _write_ruleset(tmp_path, rules=rules, negative_fixtures=fixtures)
     assert check_negative_fixtures(rs) == []
-    rs_bad = _write_ruleset(
-        tmp_path,
-        negative_fixtures=[{"name": "Шплинт оцинкованный"}],
-    )
+    # связываем nf-a-001 с tt-b-001 → связанное правило матчит fixture → violation
+    fixtures[0] = dict(fixtures[0], rule_refs=["tt-a-001", "tt-b-001"])
+    rs_bad = _write_ruleset(tmp_path, rules=rules, negative_fixtures=fixtures)
     violations = check_negative_fixtures(rs_bad)
     assert len(violations) == 1
-    assert "tt-test-001" in violations[0]
+    assert "tt-b-001" in violations[0]

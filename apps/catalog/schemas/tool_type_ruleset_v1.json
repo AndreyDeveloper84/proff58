@@ -16,17 +16,18 @@
     }
   },
   "definitions": {
+    "rule_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
     "rule": {
       "type": "object",
       "required": ["rule_ref", "option_slug", "match"],
       "additionalProperties": false,
       "properties": {
-        "rule_ref": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 64,
-          "pattern": "^[a-z0-9][a-z0-9-]*$"
-        },
+        "rule_ref": {"$ref": "#/definitions/rule_ref"},
         "option_slug": {
           "type": "string",
           "minLength": 1,
@@ -39,6 +40,7 @@
           "additionalProperties": false,
           "properties": {
             "brand_any": {"type": "array", "items": {"type": "string", "minLength": 1}, "default": []},
+            "original_name_keywords_any": {"type": "array", "items": {"type": "string", "minLength": 1}, "default": []},
             "name_keywords_any": {"type": "array", "items": {"type": "string", "minLength": 1}, "default": []},
             "source_group_any": {"type": "array", "items": {"type": "string", "minLength": 1}, "default": []},
             "article_prefix_any": {"type": "array", "items": {"type": "string", "minLength": 1}, "default": []}
@@ -51,10 +53,17 @@
     },
     "negative_fixture": {
       "type": "object",
-      "required": ["name"],
+      "required": ["fixture_ref", "rule_refs"],
       "additionalProperties": false,
       "properties": {
-        "name": {"type": "string", "minLength": 1},
+        "fixture_ref": {"$ref": "#/definitions/rule_ref"},
+        "rule_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/definitions/rule_ref"}
+        },
+        "expected": {"type": "string", "enum": ["no_match"], "default": "no_match"},
+        "name": {"type": "string", "default": ""},
         "brand": {"type": "string", "default": ""},
         "source_group": {"type": "string", "default": ""},
         "article": {"type": "string", "default": ""},
