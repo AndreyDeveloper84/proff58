@@ -20,6 +20,20 @@ PRECISION_GATE = 0.99
 MIN_ROWS_GATE = 100
 
 
+def _load_json(path: Path, kind: str):
+    """Чтение входного JSON: отсутствующий файл, не-UTF8 или битый JSON —
+    CommandError с понятным сообщением (стиль как у queue_import._load_json)."""
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError as exc:
+        raise CommandError(f"Файл не найден ({kind}): {path}") from exc
+    except json.JSONDecodeError as exc:
+        raise CommandError(f"Невалидный JSON ({kind}): {exc}") from exc
+    except UnicodeDecodeError as exc:
+        raise CommandError(f"Файл не UTF-8 ({kind}): {exc}") from exc
+
+
 class Command(BaseCommand):
     help = "Валидация labels против gate_sample: сводка decisions, precision, gate_passed."
 
@@ -30,8 +44,8 @@ class Command(BaseCommand):
         parser.add_argument("--labels", type=str, required=True, help="Путь к labels JSON.")
 
     def handle(self, *args, **options):
-        sample = json.loads(Path(options["gate_sample"]).read_text(encoding="utf-8"))
-        labels = json.loads(Path(options["labels"]).read_text(encoding="utf-8"))
+        sample = _load_json(Path(options["gate_sample"]), "gate_sample")
+        labels = _load_json(Path(options["labels"]), "labels")
         violations = validate_gate_labels(labels, sample)
         if violations:
             raise CommandError("gate labels невалидны: " + "; ".join(violations))
@@ -40,10 +54,11 @@ class Command(BaseCommand):
         decisions = Counter(lb.get("decision") for lb in labels.get("labels", []))
         correct = decisions.get("correct", 0)
         # знаменатель — все строки sample (unverifiable/taxonomy_gap тоже снижают precision)
-        precision = round(correct / rows, 4) if rows else 0.0
+        precision = correct / rows if rows else 0.0
         # collisions берётся из sample-артефакта, если поле есть (int или список)
         raw_collisions = sample.get("collisions")
         collisions = len(raw_collisions) if isinstance(raw_collisions, list) else raw_collisions
+        # gate по НЕокруглённому precision; округление — только для вывода
         gate_passed = (
             precision >= PRECISION_GATE
             and rows >= MIN_ROWS_GATE
@@ -56,7 +71,9 @@ class Command(BaseCommand):
 
         summary = " ".join(f"{d}={decisions.get(d, 0)}" for d in sorted(GATE_LABEL_DECISIONS))
         self.stdout.write(f"rows={rows} decisions: {summary}")
-        self.stdout.write(f"observed_precision={precision} (correct={correct} / rows={rows})")
+        self.stdout.write(
+            f"observed_precision={round(precision, 4)} (correct={correct} / rows={rows})"
+        )
         gate_rule = f"precision>={PRECISION_GATE} and rows>={MIN_ROWS_GATE}"
         if collisions is not None:
             gate_rule += f" and collisions(={collisions})==0"

@@ -99,3 +99,27 @@ def test_wrong_sample_hash_fails(tmp_path):
     labels = _labels(sample, sample_hash="0" * 64)
     with pytest.raises(CommandError, match="sample_hash"):
         _run(tmp_path, sample, labels)
+
+
+def test_malformed_labels_json_fails(tmp_path):
+    sample_p = _write(tmp_path, "sample.json", _sample())
+    labels_p = tmp_path / "labels.json"
+    labels_p.write_text("{not valid json", encoding="utf-8")
+    with pytest.raises(CommandError, match="Невалидный JSON"):
+        call_command(
+            "catalog_rules_gate_validate",
+            gate_sample=str(sample_p),
+            labels=str(labels_p),
+            stdout=StringIO(),
+        )
+
+
+def test_missing_labels_file_fails(tmp_path):
+    sample_p = _write(tmp_path, "sample.json", _sample())
+    with pytest.raises(CommandError, match="не найден"):
+        call_command(
+            "catalog_rules_gate_validate",
+            gate_sample=str(sample_p),
+            labels=str(tmp_path / "no-such-labels.json"),
+            stdout=StringIO(),
+        )

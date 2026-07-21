@@ -1,8 +1,10 @@
+import hashlib
 import json
 import os
 import stat
 import uuid
 from io import StringIO
+from pathlib import Path
 
 import pytest
 from django.core.management import call_command
@@ -339,6 +341,33 @@ def test_output_file_mode_0600(tmp_path):
         "catalog_rules_shadow", ruleset=str(_ruleset_file(tmp_path)), pool="in-stock", out=str(out)
     )
     assert stat.S_IMODE(os.stat(out).st_mode) == 0o600
+
+
+@pytest.mark.django_db
+def test_printed_sha256_matches_file_bytes(tmp_path):
+    """Контракт sha256= на stdout: хэш БАЙТОВ файла, не LF-payload (Windows: \r\n)."""
+    attr = _tool_type_attr()
+    _option(attr, "Шплинты", "krep-shplinty")
+    _product(original_name="Шплинт 6,4х76 оцинкованный", article="H1")
+    out = tmp_path / "report.json"
+    sample_out = tmp_path / "gate_sample.json"
+    buf = StringIO()
+    call_command(
+        "catalog_rules_shadow",
+        ruleset=str(_ruleset_file(tmp_path)),
+        pool="in-stock",
+        out=str(out),
+        gate_sample_out=str(sample_out),
+        stdout=buf,
+    )
+    printed = {}
+    for line in buf.getvalue().splitlines():
+        if line.startswith("artifact="):
+            path_s, sha = line.removeprefix("artifact=").rsplit(" sha256=", 1)
+            printed[Path(path_s)] = sha
+    assert set(printed) == {out, sample_out}  # оба артефакта печатают sha256
+    for path, sha in printed.items():
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == sha
 
 
 # --- метрики / коллизии ---

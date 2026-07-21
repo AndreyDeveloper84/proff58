@@ -112,12 +112,15 @@ def _default_out_path(pool: str, ruleset_hash: str, started) -> Path:
 
 def _write_atomic(path: Path, payload: str) -> str:
     """tmp-файл в той же директории + os.replace; 0o600 на POSIX (P1.5).
-    Возвращает sha256 записанного содержимого."""
+    Запись бинарная: байты файла совпадают с payload на любой платформе
+    (без трансляции \\n → \\r\\n на Windows), поэтому возвращаемый sha256 —
+    всегда хэш фактических байтов файла."""
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=f"{path.name}.", suffix=".tmp")
+    data = payload.encode("utf-8")
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(payload)
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
         os.replace(tmp_name, path)
     except BaseException:
         try:
@@ -127,7 +130,7 @@ def _write_atomic(path: Path, payload: str) -> str:
         raise
     if os.name == "posix":
         os.chmod(path, 0o600)
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    return hashlib.sha256(data).hexdigest()
 
 
 def _tally(per_rule: dict, verdict) -> None:
