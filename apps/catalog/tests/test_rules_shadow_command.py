@@ -332,6 +332,7 @@ def test_out_exists_requires_force(tmp_path):
     call_command(
         "catalog_rules_shadow", ruleset=str(ruleset), pool="in-stock", out=str(out), force=True
     )
+    assert not list(tmp_path.glob("report.json.*"))  # backup убран после успеха (review #580)
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX mode bits")
@@ -781,6 +782,75 @@ def test_artifacts_group_rollback(tmp_path, monkeypatch):
         )
     assert not out.exists()  # первый артефакт откачен
     assert not sample_out.exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("fail_at", [1, 2])
+def test_group_rollback_preserves_preexisting_artifact(tmp_path, monkeypatch, fail_at):
+    """--force + падение любой из записей: ранее существовавшие артефакты НЕ
+    теряются (review #580) — оригинальное содержимое восстанавливается из
+    backup, ни .bak, ни .tmp файлов не остаётся."""
+    attr = _tool_type_attr()
+    _option(attr, "Шплинты", "krep-shplinty")
+    _product(original_name="Шплинт 6,4х76", article="RB2")
+    corpus = _corpus_file(tmp_path, [900000692])
+    out = tmp_path / "report.json"
+    sample_out = tmp_path / "gate_sample.json"
+    sentinels = {out: '{"old": "report"}\n', sample_out: '{"old": "sample"}\n'}
+    for path, text in sentinels.items():
+        path.write_text(text, encoding="utf-8")
+    original = shadow_cmd._write_atomic
+    calls = []
+
+    def boom(path, payload):
+        calls.append(path)
+        if len(calls) == fail_at:
+            raise OSError("disk full")
+        return original(path, payload)
+
+    monkeypatch.setattr(shadow_cmd, "_write_atomic", boom)
+    with pytest.raises(OSError, match="disk full"):
+        call_command(
+            "catalog_rules_shadow",
+            ruleset=str(_ruleset_file(tmp_path)),
+            pool="in-stock",
+            out=str(out),
+            gate_sample_out=str(sample_out),
+            corpus=str(corpus),
+            force=True,
+        )
+    for path, text in sentinels.items():  # оригиналы восстановлены, а не удалены
+        assert path.read_text(encoding="utf-8") == text
+    assert not list(tmp_path.glob("report.json.*"))  # ни .bak, ни .tmp
+    assert not list(tmp_path.glob("gate_sample.json.*"))
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("variant", ["identical", "dotdot"])
+def test_out_and_gate_sample_same_path_rejected(tmp_path, variant):
+    """Одинаковый путь --out и --gate-sample-out (в т.ч. через относительный
+    ..) → CommandError до любой записи (review #580): иначе gate_sample
+    молча перезаписывает report и команда завершается «успешно»."""
+    attr = _tool_type_attr()
+    _option(attr, "Шплинты", "krep-shplinty")
+    _product(original_name="Шплинт 6,4х76", article="SP1")
+    corpus = _corpus_file(tmp_path, [900000693])
+    if variant == "identical":
+        out = tmp_path / "same.json"
+    else:
+        (tmp_path / "sub").mkdir()
+        out = tmp_path / "sub" / ".." / "same.json"
+    sample_out = tmp_path / "same.json"
+    with pytest.raises(CommandError, match="совпадают"):
+        call_command(
+            "catalog_rules_shadow",
+            ruleset=str(_ruleset_file(tmp_path)),
+            pool="in-stock",
+            out=str(out),
+            gate_sample_out=str(sample_out),
+            corpus=str(corpus),
+        )
+    assert not (tmp_path / "same.json").exists()
 
 
 @pytest.mark.django_db

@@ -7,7 +7,8 @@ decisions, observed precision и gate_passed. Никаких записей — 
 
 Hotfix post-#579 (fail-closed): sample без ``corpus_overlap_checked: true``
 или без ``collision_count == 0`` gate НЕ проходит — violation в выводе,
-``gate_passed=false`` и ненулевой выход (CommandError).
+``gate_passed=false`` и ненулевой выход (CommandError). ``collision_count``
+проверяется строго по типу (review #580): JSON bool — НЕ валидный int.
 """
 
 from __future__ import annotations
@@ -64,8 +65,17 @@ class Command(BaseCommand):
                 "corpus не проверено (неофициальный sample)"
             )
         collision_count = sample.get("collision_count")
-        if collision_count is None:
-            sample_violations.append("обязательное поле collision_count отсутствует")
+        # строгая type-проверка (review #580): isinstance(False, int) is True,
+        # поэтому JSON bool отклоняется явно — он НЕ валидный ноль
+        if (
+            isinstance(collision_count, bool)
+            or not isinstance(collision_count, int)
+            or collision_count < 0
+        ):
+            sample_violations.append(
+                "обязательное поле collision_count отсутствует или не int >= 0: "
+                f"{collision_count!r}"
+            )
         elif collision_count != 0:
             sample_violations.append(f"collision_count={collision_count} != 0")
 

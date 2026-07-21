@@ -194,6 +194,24 @@ def test_gate_fails_when_collision_count_nonzero(tmp_path):
     assert "gate_passed=false" in buf.getvalue()
 
 
+def test_gate_fails_when_collision_count_bool(tmp_path):
+    """collision_count=false (JSON bool) НЕ является валидным нулём: в Python
+    False == 0, поэтому fail-closed контракт требует строгой type-проверки
+    (review #580). bool отклоняется так же, как отсутствие поля."""
+    sample = _big_sample(collision_count=False)
+    sample_p = _write(tmp_path, "sample.json", sample)
+    labels_p = _write(tmp_path, "labels.json", _labels(sample))
+    buf = StringIO()
+    with pytest.raises(CommandError, match="collision_count"):
+        call_command(
+            "catalog_rules_gate_validate",
+            gate_sample=str(sample_p),
+            labels=str(labels_p),
+            stdout=buf,
+        )
+    assert "gate_passed=false" in buf.getvalue()
+
+
 def test_gate_passes_with_clean_sample(tmp_path):
     """overlap checked + collision_count=0 + валидные labels (100 rows, все
     correct) → gate пройден."""

@@ -13,8 +13,10 @@ gate_sample (v1). Rules как proposals (этап 6.1) включаются о�
 Hotfix post-#579: gate_sample fail-closed — ``--gate-sample-out`` требует
 ``--corpus`` (или явный ``--skip-corpus-overlap-check``, артефакт помечается
 ``corpus_overlap_checked=false``), обязательный ``collision_count``, replay
-через ``load_corpus``, ValueError загрузок → CommandError, групповой
-rollback пары артефактов.
+через ``load_corpus``, ValueError загрузок → CommandError, групповая запись
+пары артефактов с backup/restore: ранее существовавшие файлы (``--force``)
+не теряются при откате, одинаковый путь report/gate_sample отклоняется
+fail-fast (review #580).
 """
 
 from __future__ import annotations
@@ -114,6 +116,14 @@ def _default_out_path(pool: str, ruleset_hash: str, started) -> Path:
         if not candidate.exists():
             return candidate
     raise CommandError("Не удалось подобрать уникальное имя файла отчёта")
+
+
+def _backup_path(path: Path) -> Path:
+    """Уникальное свободное имя backup рядом с целью (restore при откате)."""
+    fd, name = tempfile.mkstemp(dir=path.parent, prefix=f"{path.name}.", suffix=".bak")
+    os.close(fd)
+    os.unlink(name)  # mkstemp создаёт файл; нужно только уникальное имя
+    return Path(name)
 
 
 def _write_atomic(path: Path, payload: str) -> str:
@@ -452,18 +462,34 @@ class Command(BaseCommand):
         outputs = [(out, report)]
         if gate_sample is not None:
             outputs.append((Path(options["gate_sample_out"]), gate_sample))
+        # fail-fast (review #580): одинаковый путь report/gate_sample (в т.ч.
+        # относительный, с ..) означал бы молчаливую перезапись отчёта
+        # gate_sample'ом — нормализуем через resolve()+normcase до записи
+        seen_paths: set[str] = set()
+        for path, _ in outputs:
+            key = os.path.normcase(str(path.resolve()))
+            if key in seen_paths:
+                raise CommandError(f"Пути выходных артефактов совпадают: {path}")
+            seen_paths.add(key)
         if not options["force"]:
             for path, _ in outputs:
                 if path.exists():
                     raise CommandError(f"Файл уже существует (нужен --force): {path}")
 
-        # групповой rollback (review post-#579): пара артефактов неделима —
-        # при падении любой записи уже записанные файлы удаляются best-effort,
+        # групповая запись с backup/restore (review #580): пара артефактов
+        # неделима, а ранее существовавшие файлы (--force) НЕ теряются —
+        # перед перезаписью цель уходит в backup рядом; при падении любой
+        # записи новые файлы удаляются best-effort, оригиналы возвращаются,
         # исключение перевыбрасывается
         written: list[Path] = []
+        backups: list[tuple[Path, Path]] = []  # (backup, исходная цель)
         try:
             for path, data in outputs:
                 payload = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
+                if path.exists():
+                    backup = _backup_path(path)
+                    os.replace(path, backup)
+                    backups.append((backup, path))
                 digest = _write_atomic(path, payload)
                 written.append(path)
                 self.stdout.write(f"artifact={path} sha256={digest}")
@@ -473,7 +499,17 @@ class Command(BaseCommand):
                     path.unlink(missing_ok=True)
                 except OSError:
                     pass
+            for backup, path in reversed(backups):
+                try:
+                    os.replace(backup, path)
+                except OSError:
+                    pass
             raise
+        for backup, _ in backups:  # успех: backup больше не нужен
+            try:
+                backup.unlink(missing_ok=True)
+            except OSError:
+                pass
         content_hash = canonical_hash(
             {k: v for k, v in report.items() if k not in VOLATILE_REPORT_KEYS}
         )
