@@ -195,11 +195,19 @@ def test_config_check_requires_secret_when_max_active():
     assert any(e.id == "integration_max.E001" for e in errors)
 
 
-@override_settings(MAX_BOT_TOKEN="tok", MAX_WEBHOOK_SECRET="s")
+@override_settings(MAX_BOT_TOKEN="tok", MAX_WEBHOOK_SECRET="s", MAX_BOT_USERNAME="test_bot")
 def test_config_check_passes_with_secret():
     from apps.integration_max.apps import _check_max_webhook_secret
 
     assert _check_max_webhook_secret(None) == []
+
+
+@override_settings(MAX_BOT_TOKEN="tok", MAX_WEBHOOK_SECRET="s", MAX_BOT_USERNAME="")
+def test_config_check_requires_username_when_max_active():
+    from apps.integration_max.apps import _check_max_webhook_secret
+
+    errors = _check_max_webhook_secret(None)
+    assert any(e.id == "integration_max.E002" for e in errors)
 
 
 # ═══════════ AUTH FLOW ═══════════

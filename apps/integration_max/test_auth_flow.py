@@ -28,7 +28,9 @@ PHONE = "+79001234567"
 
 
 @pytest.fixture(autouse=True)
-def _clear_cache():
+def _max_auth_test_settings(settings):
+    settings.MAX_BOT_TOKEN = TOKEN
+    settings.MAX_BOT_USERNAME = "test_auth_bot"
     cache.clear()
     yield
     cache.clear()
@@ -160,9 +162,18 @@ def test_start_returns_deeplink_without_pii(api):
     assert resp.status_code == 201
     data = resp.json()
     assert data["attempt_id"] and data["status"] == "pending"
-    assert data["deeplink"].startswith("https://max.ru/")
+    assert data["deeplink"].startswith("https://max.ru/test_auth_bot?start=")
     assert "start=" in data["deeplink"]
     assert PHONE not in data["deeplink"]  # §11.1: без PII
+
+
+@override_settings(MAX_BOT_USERNAME="")
+@pytest.mark.django_db
+def test_start_rejects_missing_bot_username_without_creating_attempt(api):
+    resp = api.post("/api/auth/max/start/")
+    assert resp.status_code == 503
+    assert resp.json()["detail"] == "Вход через MAX временно недоступен."
+    assert not MaxAuthAttempt.objects.exists()
 
 
 @pytest.mark.django_db

@@ -38,6 +38,22 @@ def _attempt_payload(started: services.StartedAttempt) -> dict:
     }
 
 
+def _start_attempt(**kwargs) -> Response:
+    """Создать попытку или явно сообщить, что MAX не настроен.
+
+    Раньше пустой ``MAX_BOT_USERNAME`` превращался в ссылку ``max.ru/bot`` и
+    пользователь видел рабочий на вид, но недействительный QR-код.
+    """
+    try:
+        started = services.create_attempt(**kwargs)
+    except services.MaxIntegrationUnavailable:
+        return Response(
+            {"detail": "Вход через MAX временно недоступен."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    return Response(_attempt_payload(started), status=status.HTTP_201_CREATED)
+
+
 class MaxAuthStartView(APIView):
     """POST /api/auth/max/start/ — создать попытку входа/регистрации (§7.1)."""
 
@@ -46,10 +62,9 @@ class MaxAuthStartView(APIView):
 
     def post(self, request):
         session_key = _ensure_session_key(request)
-        started = services.create_attempt(
+        return _start_attempt(
             session_key=session_key, operation_type=MaxAuthAttempt.Operation.LOGIN
         )
-        return Response(_attempt_payload(started), status=status.HTTP_201_CREATED)
 
 
 class MaxAuthStatusView(APIView):
@@ -113,12 +128,11 @@ class MaxLinkStartView(APIView):
 
     def post(self, request):
         session_key = _ensure_session_key(request)
-        started = services.create_attempt(
+        return _start_attempt(
             session_key=session_key,
             operation_type=MaxAuthAttempt.Operation.LINK,
             user=request.user,
         )
-        return Response(_attempt_payload(started), status=status.HTTP_201_CREATED)
 
 
 class MaxUnlinkView(APIView):
@@ -170,12 +184,11 @@ class MaxTrackOrderStartView(APIView):
             return Response({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)
 
         session_key = _ensure_session_key(request)
-        started = services.create_attempt(
+        return _start_attempt(
             session_key=session_key,
             operation_type=MaxAuthAttempt.Operation.TRACK_ORDER,
             order=order,
         )
-        return Response(_attempt_payload(started), status=status.HTTP_201_CREATED)
 
 
 class MaxTrackOrderStatusView(APIView):

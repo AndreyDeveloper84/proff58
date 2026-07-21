@@ -29,6 +29,10 @@ Operation = MaxAuthAttempt.Operation
 Status = MaxAuthAttempt.Status
 
 
+class MaxIntegrationUnavailable(RuntimeError):
+    """MAX login cannot start because the bot is not configured."""
+
+
 def _hash_secret(secret: str) -> str:
     return hashlib.sha256(secret.encode("utf-8")).hexdigest()
 
@@ -53,9 +57,19 @@ class StartedAttempt:
     token: str
 
 
+def _max_bot_username() -> str:
+    bot_token = (getattr(settings, "MAX_BOT_TOKEN", "") or "").strip()
+    username = (getattr(settings, "MAX_BOT_USERNAME", "") or "").strip().lstrip("@")
+    if not bot_token or not username:
+        # Не подставляем правдоподобную заглушку: QR и CTA с max.ru/bot внешне
+        # выглядели рабочими, но MAX справедливо отклонял их как недействительные.
+        raise MaxIntegrationUnavailable("MAX bot credentials are incomplete")
+    return username
+
+
 def build_deeplink(token: str) -> str:
     """Диплинк бота с одноразовым токеном (§11.1: только случайный id, без PII)."""
-    username = getattr(settings, "MAX_BOT_USERNAME", "") or "bot"
+    username = _max_bot_username()
     return f"https://max.ru/{username}?start={token}"
 
 
@@ -68,6 +82,9 @@ def create_attempt(
     конкретному гостевому заказу, против телефона которого сверяется контакт из MAX.
     """
     secret = secrets.token_urlsafe(24)
+    # Проверяем конфигурацию до INSERT, чтобы при выключенном/неполном MAX не
+    # оставлять в БД заведомо бесполезные pending-попытки.
+    _max_bot_username()
     attempt = MaxAuthAttempt.objects.create(
         secret_hash=_hash_secret(secret),
         browser_session_key=session_key or "",
