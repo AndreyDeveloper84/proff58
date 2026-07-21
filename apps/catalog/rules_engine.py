@@ -106,3 +106,73 @@ def _build_rule(raw: dict) -> ShadowRule:
         negative_keywords=tuple(normalize(k) for k in raw.get("negative_keywords", [])),
         derived_from=tuple(raw.get("derived_from", [])),
     )
+
+
+@dataclass(frozen=True)
+class ProductVerdict:
+    product_id: int
+    status: str  # prediction | collision | excluded_existing_tool_type | no_match
+    option_slug: str = ""
+    rule_refs: tuple[str, ...] = ()
+    slugs: tuple[str, ...] = ()
+
+
+def _haystack(facts: ProductFacts) -> str:
+    """1С-имя приоритетно (конвенция legacy enrich); fallback на витринное."""
+    return normalize(facts.original_name or facts.name)
+
+
+def rule_matches(rule: ShadowRule, facts: ProductFacts) -> bool:
+    haystack = _haystack(facts)
+    if rule.negative_keywords and any(k in haystack for k in rule.negative_keywords):
+        return False
+    if rule.brand_any and normalize(facts.brand) not in rule.brand_any:
+        return False
+    if rule.name_keywords_any and not any(k in haystack for k in rule.name_keywords_any):
+        return False
+    if rule.source_group_any and normalize(facts.source_group) not in rule.source_group_any:
+        return False
+    if rule.article_prefix_any and not any(
+        normalize(facts.article).startswith(p) for p in rule.article_prefix_any
+    ):
+        return False
+    return True
+
+
+def evaluate_product(rules, facts: ProductFacts) -> ProductVerdict:
+    """Вердикт по товару. Existing tool_type исключается ДО матчинга
+    (решение 3: перезапись запрещена, попыток быть не должно)."""
+    if facts.has_tool_type:
+        return ProductVerdict(facts.product_id, "excluded_existing_tool_type")
+    hits = [r for r in rules if rule_matches(r, facts)]
+    if not hits:
+        return ProductVerdict(facts.product_id, "no_match")
+    slugs = tuple(sorted({r.option_slug for r in hits}))
+    refs = tuple(sorted(r.rule_ref for r in hits))
+    if len(slugs) > 1:
+        return ProductVerdict(facts.product_id, "collision", slugs=slugs, rule_refs=refs)
+    return ProductVerdict(facts.product_id, "prediction", option_slug=slugs[0], rule_refs=refs)
+
+
+def validate_against_taxonomy(ruleset: ShadowRuleset, allowed_slugs: set[str]) -> list[str]:
+    """Slugs правил, отсутствующие в allowed options (должно быть пусто)."""
+    return sorted({r.option_slug for r in ruleset.rules} - allowed_slugs)
+
+
+def check_negative_fixtures(ruleset: ShadowRuleset) -> list[str]:
+    """Каждая negative fixture обязана давать no_match по всем правилам."""
+    violations = []
+    for i, fix in enumerate(ruleset.negative_fixtures):
+        facts = ProductFacts(
+            product_id=-(i + 1),
+            original_name=fix.get("name", ""),
+            brand=fix.get("brand", ""),
+            source_group=fix.get("source_group", ""),
+            article=fix.get("article", ""),
+        )
+        for r in ruleset.rules:
+            if rule_matches(r, facts):
+                violations.append(
+                    f"negative_fixture[{i}] {fix.get('name')!r} матчится правилом {r.rule_ref}"
+                )
+    return violations
