@@ -225,7 +225,7 @@ SYNC_IMPORT_TIME_LIMIT = env.int("SYNC_IMPORT_TIME_LIMIT", default=15 * 60)  # �
 # MAX Bot (мессенджер) — уведомления и авторизация (docs/max-bot-setup.md).
 MAX_BOT_TOKEN = env("MAX_BOT_TOKEN", default="")
 MAX_WEBHOOK_SECRET = env("MAX_WEBHOOK_SECRET", default="")
-MAX_BOT_API_URL = env("MAX_BOT_API_URL", default="https://platform-api2.max.ru")
+MAX_BOT_API_URL = env("MAX_BOT_API_URL", default="https://platform-api.max.ru")
 # Имя бота для диплинка авторизации (https://max.ru/<username>?start=<token>).
 MAX_BOT_USERNAME = env("MAX_BOT_USERNAME", default="")
 # TTL одноразовой попытки авторизации через MAX, минут (#492, §11.3).

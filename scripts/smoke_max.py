@@ -22,7 +22,7 @@ import sys
 import urllib.error
 import urllib.request
 
-API_BASE = os.environ.get("MAX_BOT_API_URL", "https://platform-api2.max.ru").rstrip("/")
+API_BASE = os.environ.get("MAX_BOT_API_URL", "https://platform-api.max.ru").rstrip("/")
 
 PASS, FAIL, SKIP = "PASS", "FAIL", "SKIP"
 

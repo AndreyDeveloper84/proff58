@@ -53,7 +53,7 @@ def _send_reply(reply: dict | None) -> None:
     if not reply:
         return
     token = getattr(settings, "MAX_BOT_TOKEN", "")
-    api_url = getattr(settings, "MAX_BOT_API_URL", "https://platform-api2.max.ru")
+    api_url = getattr(settings, "MAX_BOT_API_URL", "https://platform-api.max.ru")
     if not token:
         logger.warning("MAX_BOT_TOKEN not set, reply not sent")
         return
