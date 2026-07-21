@@ -25,7 +25,11 @@ from . import services
 from .models import MaxAuthAttempt, OrderTrackingGrant
 from .tests import TOKEN, _make_vcf_payload
 
-MAX_SETTINGS = {"MAX_BOT_TOKEN": "test-token", "MAX_BOT_API_URL": "https://test.max.ru"}
+MAX_SETTINGS = {
+    "MAX_BOT_TOKEN": "test-token",
+    "MAX_BOT_USERNAME": "test_track_bot",
+    "MAX_BOT_API_URL": "https://test.max.ru",
+}
 
 Status = MaxAuthAttempt.Status
 Operation = MaxAuthAttempt.Operation
@@ -34,7 +38,9 @@ OTHER_PHONE = "+79009998877"
 
 
 @pytest.fixture(autouse=True)
-def _clear_cache():
+def _max_track_test_settings(settings):
+    settings.MAX_BOT_TOKEN = "test-token"
+    settings.MAX_BOT_USERNAME = "test_track_bot"
     cache.clear()
     yield
     cache.clear()
@@ -388,7 +394,7 @@ def _run_webhook_flow(api, order, token, phone, mock_send):
             format="json",
         ).json()
         deeplink_token = start["deeplink"].split("start=", 1)[1]
-        hdr = {"HTTP_X_MAX_WEBHOOK_SECRET": "wh-secret"}
+        hdr = {"HTTP_X_MAX_BOT_API_SECRET": "wh-secret"}
 
         api.post(
             "/api/max/webhook/",

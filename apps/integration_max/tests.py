@@ -79,7 +79,7 @@ def test_webhook_rejects_invalid_json(client):
         "/api/max/webhook/",
         data="bad",
         content_type="application/json",
-        HTTP_X_MAX_WEBHOOK_SECRET="my-secret",
+        HTTP_X_MAX_BOT_API_SECRET="my-secret",
     )
     assert resp.status_code == 400
 
@@ -91,7 +91,7 @@ def test_webhook_rejects_wrong_secret(client):
         "/api/max/webhook/",
         data=json.dumps({"update_type": "bot_started", "timestamp": 1, "chat_id": 1}),
         content_type="application/json",
-        HTTP_X_MAX_WEBHOOK_SECRET="wrong",
+        HTTP_X_MAX_BOT_API_SECRET="wrong",
     )
     assert resp.status_code == 403
 
@@ -104,7 +104,7 @@ def test_webhook_accepts_correct_secret(mock_send, client):
         "/api/max/webhook/",
         data=json.dumps({"update_type": "bot_started", "timestamp": 2, "chat_id": 100, "user": {}}),
         content_type="application/json",
-        HTTP_X_MAX_WEBHOOK_SECRET="my-secret",
+        HTTP_X_MAX_BOT_API_SECRET="my-secret",
     )
     assert resp.status_code == 200
     mock_send.assert_called_once()
@@ -130,7 +130,7 @@ def test_webhook_fail_closed_when_secret_unset(client):
         "/api/max/webhook/",
         data=json.dumps({"update_type": "bot_started", "timestamp": 10, "chat_id": 1}),
         content_type="application/json",
-        HTTP_X_MAX_WEBHOOK_SECRET="anything",
+        HTTP_X_MAX_BOT_API_SECRET="anything",
     )
     assert resp.status_code == 403
 
@@ -145,7 +145,7 @@ def test_webhook_bot_started(mock_send, client):
             {"update_type": "bot_started", "timestamp": 3, "chat_id": 12345, "user": {}}
         ),
         content_type="application/json",
-        HTTP_X_MAX_WEBHOOK_SECRET="my-secret",
+        HTTP_X_MAX_BOT_API_SECRET="my-secret",
     )
     assert resp.status_code == 200
     reply = mock_send.call_args[0][0]
@@ -166,7 +166,7 @@ def test_webhook_duplicate_ignored(mock_send, client):
             "message": {"body": {"mid": "dup-1"}},
         }
     )
-    headers = {"HTTP_X_MAX_WEBHOOK_SECRET": "my-secret"}
+    headers = {"HTTP_X_MAX_BOT_API_SECRET": "my-secret"}
     client.post("/api/max/webhook/", data=payload, content_type="application/json", **headers)
     client.post("/api/max/webhook/", data=payload, content_type="application/json", **headers)
     assert mock_send.call_count == 1
@@ -181,7 +181,7 @@ def test_webhook_rejects_oversized_body(client):
         "/api/max/webhook/",
         data=big,
         content_type="application/json",
-        HTTP_X_MAX_WEBHOOK_SECRET="my-secret",
+        HTTP_X_MAX_BOT_API_SECRET="my-secret",
     )
     assert resp.status_code == 413
 
@@ -195,11 +195,19 @@ def test_config_check_requires_secret_when_max_active():
     assert any(e.id == "integration_max.E001" for e in errors)
 
 
-@override_settings(MAX_BOT_TOKEN="tok", MAX_WEBHOOK_SECRET="s")
+@override_settings(MAX_BOT_TOKEN="tok", MAX_WEBHOOK_SECRET="s", MAX_BOT_USERNAME="test_bot")
 def test_config_check_passes_with_secret():
     from apps.integration_max.apps import _check_max_webhook_secret
 
     assert _check_max_webhook_secret(None) == []
+
+
+@override_settings(MAX_BOT_TOKEN="tok", MAX_WEBHOOK_SECRET="s", MAX_BOT_USERNAME="")
+def test_config_check_requires_username_when_max_active():
+    from apps.integration_max.apps import _check_max_webhook_secret
+
+    errors = _check_max_webhook_secret(None)
+    assert any(e.id == "integration_max.E002" for e in errors)
 
 
 # ═══════════ AUTH FLOW ═══════════
@@ -287,7 +295,7 @@ def test_contact_already_linked(user):
 @pytest.mark.django_db
 @mock.patch("apps.integration_max.webhook._send_reply")
 def test_e2e_auth_flow(mock_send, client, user):
-    hdr = {"HTTP_X_MAX_WEBHOOK_SECRET": "my-secret"}
+    hdr = {"HTTP_X_MAX_BOT_API_SECRET": "my-secret"}
     # 1. bot_started
     client.post(
         "/api/max/webhook/",

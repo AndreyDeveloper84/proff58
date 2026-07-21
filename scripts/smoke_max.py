@@ -22,7 +22,7 @@ import sys
 import urllib.error
 import urllib.request
 
-API_BASE = "https://platform-api.max.ru"
+API_BASE = os.environ.get("MAX_BOT_API_URL", "https://platform-api.max.ru").rstrip("/")
 
 PASS, FAIL, SKIP = "PASS", "FAIL", "SKIP"
 
@@ -102,13 +102,22 @@ def check_subscriptions(r, token, insecure):
         )
 
 
-def subscribe_webhook(r, token, url, insecure):
+def subscribe_webhook(r, token, url, secret, insecure):
+    if not secret:
+        r.check(
+            f"POST /subscriptions — подписка на {url}",
+            False,
+            "укажите --secret или MAX_WEBHOOK_SECRET",
+        )
+        return
+
     status, body = _request(
         "POST",
         "/subscriptions",
         token,
         body={
             "url": url,
+            "secret": secret,
             "update_types": [
                 "bot_started",
                 "message_created",
@@ -137,6 +146,11 @@ def main(argv=None):
         metavar="URL",
         help="подписать webhook (напр. https://proff58.ru/api/max/webhook/)",
     )
+    parser.add_argument(
+        "--secret",
+        default=os.environ.get("MAX_WEBHOOK_SECRET"),
+        help="секрет webhook (или env MAX_WEBHOOK_SECRET; обязателен с --subscribe)",
+    )
     parser.add_argument("--insecure", action="store_true", help="не проверять TLS")
     args = parser.parse_args(argv)
 
@@ -153,7 +167,7 @@ def main(argv=None):
         return r.summary()
 
     if args.subscribe:
-        subscribe_webhook(r, args.token, args.subscribe, args.insecure)
+        subscribe_webhook(r, args.token, args.subscribe, args.secret, args.insecure)
 
     check_subscriptions(r, args.token, args.insecure)
 

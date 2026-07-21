@@ -26,13 +26,24 @@ def _check_max_webhook_secret(app_configs, **kwargs):
     """
     from django.conf import settings
 
-    if getattr(settings, "MAX_BOT_TOKEN", "") and not getattr(settings, "MAX_WEBHOOK_SECRET", ""):
-        return [
+    token = (getattr(settings, "MAX_BOT_TOKEN", "") or "").strip()
+    errors = []
+    if token and not (getattr(settings, "MAX_WEBHOOK_SECRET", "") or "").strip():
+        errors.append(
             Error(
                 "MAX_BOT_TOKEN задан, но MAX_WEBHOOK_SECRET пуст — webhook отклонит "
                 "все запросы (fail-closed).",
                 hint="Задайте MAX_WEBHOOK_SECRET в окружении интеграции MAX.",
                 id="integration_max.E001",
             )
-        ]
-    return []
+        )
+    if token and not (getattr(settings, "MAX_BOT_USERNAME", "") or "").strip():
+        errors.append(
+            Error(
+                "MAX_BOT_TOKEN задан, но MAX_BOT_USERNAME пуст — QR-код и ссылка "
+                "входа через MAX не могут быть сформированы.",
+                hint="Задайте публичный ник бота из ответа MAX Bot API GET /me.",
+                id="integration_max.E002",
+            )
+        )
+    return errors
