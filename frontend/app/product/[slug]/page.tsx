@@ -6,6 +6,7 @@ import { ProductAvailability } from "@/components/product/ProductAvailability";
 import { ProductBadges } from "@/components/product/ProductBadges";
 import { OrderCta } from "@/components/product/OrderCta";
 import { CompatibilitySections } from "@/components/product/CompatibilitySections";
+import { ProductReviews } from "@/components/product/ProductReviews";
 import { StickyBuyBar } from "@/components/product/StickyBuyBar";
 import { ProductJsonLd } from "@/components/product/ProductJsonLd";
 import { Collapsible } from "@/components/product/Collapsible";
@@ -25,6 +26,7 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await getProduct(slug);
   if (!product) notFound();
+  const reviews = await fetchProductReviewsSafe(slug);
 
   // Главная → Каталог → …категории (из breadcrumb)… → Товар (последний — текст, без ссылки).
   const crumbs = [
@@ -131,9 +133,20 @@ export default async function ProductPage({ params }: Props) {
 
       <div className="mt-10">
         <CompatibilitySections sections={product.compatible} />
+
+        {reviews && <ProductReviews slug={slug} initial={reviews} />}
       </div>
 
       <StickyBuyBar product={product} />
     </div>
   );
+}
+
+
+// #573: отзывы — best-effort SSR (флаг off/ошибка → null → секции нет).
+async function fetchProductReviewsSafe(slug: string) {
+  const base = process.env.INTERNAL_API_BASE_URL;
+  if (!base) return null;
+  const { fetchProductReviewsFromApi } = await import("@/lib/adapters");
+  return fetchProductReviewsFromApi(base.replace(/\/$/, ""), slug);
 }

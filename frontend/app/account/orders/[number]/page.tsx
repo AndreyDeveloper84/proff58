@@ -19,10 +19,15 @@ import {
   UserRound,
 } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
+import { AccountDialog } from "@/components/account/AccountDialog";
 import { ReservationNotice } from "@/components/order/ReservationNotice";
+import { ReviewForm } from "@/components/reviews/ReviewForm";
+import { StarDisplay } from "@/components/reviews/StarRating";
 import { getMe, getOrder } from "@/lib/auth";
 import { formatDeliverySlot, formatPrice, humanizeToken, pluralize } from "@/lib/format";
-import { statusBadgeClass } from "@/lib/order-status";
+import { isDelivered, statusBadgeClass } from "@/lib/order-status";
+import { getMyReviewForOrder } from "@/lib/reviews";
+import type { MyReview } from "@/lib/types";
 import type { Order, OrderItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -90,6 +95,9 @@ export default function OrderDetailsPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // #573: null — отзыва нет (показать CTA), "disabled" — фича выключена, undefined — не грузили.
+  const [review, setReview] = useState<MyReview | null | "disabled" | undefined>(undefined);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -104,6 +112,11 @@ export default function OrderDetailsPage() {
       .then((data) => {
         if (!active || !data) return;
         setOrder(data);
+        if (isDelivered(data)) {
+          getMyReviewForOrder(data.order_number).then((r) => {
+            if (active) setReview(r);
+          });
+        }
       })
       .catch((caught) => {
         if (!active) return;
@@ -325,6 +338,57 @@ export default function OrderDetailsPage() {
             </dl>
           </div>
         </section>
+
+        {isDelivered(order) && review !== "disabled" && review !== undefined && (
+          <section className="rounded-lg border border-line bg-surface p-5">
+            <h2 className="text-sm font-semibold text-ink">Отзыв о заказе</h2>
+            {review === null ? (
+              <div className="mt-3">
+                <p className="text-sm text-ink-2">
+                  Заказ получен — поделитесь впечатлением о товарах, доставке и магазине.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setReviewOpen(true)}
+                  className="mt-3 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink"
+                >
+                  Оставить отзыв
+                </button>
+              </div>
+            ) : (
+              <div className="mt-3 space-y-2 text-sm">
+                <StarDisplay value={review.product_rating} />
+                {review.status === "pending" && (
+                  <p className="text-ink-2">Спасибо! Отзыв отправлен на модерацию.</p>
+                )}
+                {review.status === "approved" && (
+                  <p className="text-accent">Отзыв опубликован.</p>
+                )}
+                {review.status === "rejected" && (
+                  <p className="text-danger">
+                    Отзыв отклонён{review.rejection_reason ? `: ${review.rejection_reason}` : "."}
+                  </p>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+
+        <AccountDialog
+          title="Отзыв о заказе"
+          description="Оценки обязательны, текст — по желанию. Отзыв появится после модерации."
+          open={reviewOpen}
+          onClose={() => setReviewOpen(false)}
+        >
+          <ReviewForm
+            orderNumber={order.order_number}
+            onCancel={() => setReviewOpen(false)}
+            onDone={(created) => {
+              setReview(created);
+              setReviewOpen(false);
+            }}
+          />
+        </AccountDialog>
 
         {order.comment && (
           <section className="rounded-lg border border-line bg-surface p-5">

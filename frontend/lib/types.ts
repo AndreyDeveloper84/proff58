@@ -304,3 +304,34 @@ export type PaginatedNotifications = {
   previous: string | null;
   results: NotificationItem[];
 };
+
+// ═══════════ Отзывы (#573) ═══════════
+
+export type ReviewStatus = "pending" | "approved" | "rejected";
+
+// «Мой» отзыв (ЛК). Публичный вариант ниже — намеренно без ПДн.
+export type MyReview = {
+  id: number;
+  order_number: string;
+  product_rating: number;
+  delivery_rating: number;
+  shop_rating: number;
+  text: string;
+  status: ReviewStatus;
+  status_display: string;
+  rejection_reason: string;
+  created_at: string;
+};
+
+export type PublicReview = {
+  author_name: string;
+  product_rating: number;
+  text: string;
+  created_at: string;
+};
+
+export type ProductReviewsPayload = {
+  count: number;
+  results: PublicReview[];
+  summary: { product_rating_avg: number | null; count: number };
+};
