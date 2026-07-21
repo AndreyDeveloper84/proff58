@@ -50,15 +50,47 @@ jobs:
           script: |
             set -euo pipefail
             cd "${{ secrets.DEPLOY_PATH }}"
+            target_sha="${{ github.sha }}"
             git fetch origin ${{ github.ref_name }}
             git checkout ${{ github.ref_name }}
             git reset --hard origin/${{ github.ref_name }}
+            actual_sha="$(git rev-parse HEAD)"
+            if [ "$actual_sha" != "$target_sha" ]; then
+              echo "::error::Checkout SHA mismatch: expected $target_sha, got $actual_sha"
+              exit 1
+            fi
 
             # BuildKit: переиспользуем слойный кэш между деплоями (cache-mount'ы npm ci и
             # next build в Dockerfile фронта) — при неизменном package-lock.json фронт берётся
             # из кэша, а не пересобирается с нуля по ~17 мин.
             export DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1
             compose="docker compose -f docker-compose.prod.yml"
+
+            lock_file="${DEPLOY_LOCK_FILE:-.deploy.lock}"
+            exec 9>"$lock_file"
+            if ! flock -n 9; then
+              echo "::error::Another deploy/manual maintenance operation is active ($lock_file is locked)"
+              exit 1
+            fi
+            echo "sha=$target_sha started_at=$(date -Is) actor=${{ github.actor }} run=${{ github.run_id }}" > .deploy.lock.info
+            finish_deploy() {
+              local rc=$?
+              if [ "$rc" -ne 0 ]; then
+                echo "::error::Deploy failed for $target_sha; staging may need recovery"
+                {
+                  echo "sha=$target_sha"
+                  echo "failed_at=$(date -Is)"
+                  echo "actor=${{ github.actor }}"
+                  echo "run=${{ github.run_id }}"
+                } > .deploy.failed
+                $compose ps || true
+              else
+                rm -f .deploy.failed
+              fi
+              rm -f .deploy.lock.info
+              exit "$rc"
+            }
+            trap finish_deploy EXIT
 
             # Сетевые икоты Docker Hub (напр. «load metadata for node:22-slim → TLS handshake
             # timeout») роняли деплой на ровном месте. Оборачиваем тягу и сборку в ретрай с
@@ -82,9 +114,11 @@ jobs:
             # миграции должен ОСТАНОВИТЬ деплой (бэкап уже снят, откат по docs/DEPLOY.md).
             bash docker/release.sh
 
-            # Подъём/обновление сервисов новым образом (web стартует на мигрированной БД).
-            # Повтор идемпотентен: уже поднятые контейнеры не трогаются.
-            retry $compose up -d --build
+            # Подъём/обновление app-сервисов новым образом (web стартует на мигрированной БД).
+            # db/redis только гарантируем поднятыми; app-контейнеры пересоздаём без зависимостей,
+            # чтобы не остаться на старом образе и при этом случайно не пересоздать Postgres/Redis.
+            retry $compose up -d --no-build db redis
+            retry $compose up -d --no-build --force-recreate --no-deps web celery celery-onec celery-beat frontend nginx
 
             # nginx подключает default.conf через bind-mount: смена содержимого файла НЕ
             # пересоздаёт контейнер автоматически (compose смотрит на спеку, не на содержимое
@@ -96,5 +130,6 @@ jobs:
             # /api|/healthz, витрина/_next/* — рабочая storefront-политика. Гоняем из контейнера
             # web против сервиса nginx внутри compose-сети (curl не нужен, скрипт на stdlib).
             # Проваленная проверка (витрина под 'none' → сломанный рендер) валит деплой.
+            bash docker/deploy_assert.sh
             retry $compose exec -T web python scripts/smoke_csp.py --base http://nginx
             docker image prune -f

@@ -49,4 +49,7 @@ $compose exec -T db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip >"$backup"
 echo "==> Применение миграций"
 $compose run --rm web python manage.py migrate --noinput
 
+echo "==> Checking that migration plan is empty"
+$compose run --rm web python manage.py migrate --check
+
 echo "==> Release готов: бэкап снят ($backup), миграции применены. Можно поднимать web."
