@@ -13,6 +13,17 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.." # корень репозитория
 
+# #576 (п.5): при РУЧНОМ запуске берём тот же лок, что и деплой-пайплайн, — чтобы
+# не столкнуться с идущим деплоем. Из деплоя лок уже удержан (DEPLOY_LOCK_HELD=1),
+# повторный flock на том же файле здесь заблокировал бы сам себя.
+if [[ "${DEPLOY_LOCK_HELD:-0}" != "1" ]]; then
+    exec 9>".deploy.lock"
+    flock -w 300 9 || {
+        echo "Не удалось взять .deploy.lock за 5 мин — идёт деплой/другая операция." >&2
+        exit 1
+    }
+fi
+
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 compose="docker compose -f $COMPOSE_FILE"
 

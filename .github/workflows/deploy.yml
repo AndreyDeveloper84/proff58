@@ -45,14 +45,28 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           # Полная пересборка образов (особенно фронт: npm ci + next build) на VPS
-          # дольше дефолтных 10m → SSH-команда падала по таймауту («Run Command Timeout»).
-          command_timeout: 30m
+          # дольше дефолтных 10m. #576: ран #565 шёл 33m45s при лимите 30m — ssh-action
+          # убивал скрипт ПОСЛЕ git reset, но ДО release/up, оставляя стенд в рассинхроне
+          # (checkout новый, миграции не применены, web старый). 60m с запасом.
+          command_timeout: 60m
           script: |
             set -euo pipefail
             cd "${{ secrets.DEPLOY_PATH }}"
+
+            # #576 (п.5): лок деплоя. Один деплой единовременно; ручные compose-операции
+            # обязаны брать тот же лок (docs/DEPLOY.md) — коллизии «деплой против рук»
+            # оставляли стенд в непонятном состоянии. Не ждём дольше 15 минут.
+            exec 9>".deploy.lock"
+            flock -w 900 9 || { echo "::error::Не удалось взять .deploy.lock за 15 мин — на стенде идёт другой деплой/ручная операция."; exit 1; }
+            export DEPLOY_LOCK_HELD=1
+
             git fetch origin ${{ github.ref_name }}
             git checkout ${{ github.ref_name }}
             git reset --hard origin/${{ github.ref_name }}
+
+            # #576 (п.4): маркер сборки. SHA попадает в образ (COPY . .), после подъёма
+            # сверяется с checkout — честный ответ «web пересоздан из свежего кода».
+            git rev-parse HEAD > .build-sha
 
             # BuildKit: переиспользуем слойный кэш между деплоями (cache-mount'ы npm ci и
             # next build в Dockerfile фронта) — при неизменном package-lock.json фронт берётся
@@ -91,6 +105,31 @@ jobs:
             # mount) → принудительно проверяем и перечитываем конфиг, иначе изменения маршрутов
             # (напр. headless: / → Next) не применяются и staging выглядит «без изменений».
             $compose exec -T nginx nginx -t && $compose restart nginx
+
+            # ── #576 (п.4): post-deploy ассерты. НЕ под retry: провал любого — явный
+            # failure с точной причиной, а не «success при рассинхроне». ──
+
+            # 1) web пересоздан из СВЕЖЕГО кода: SHA внутри контейнера == checkout.
+            #    (`migrate --check` в старом контейнере дал бы ложный успех — старый код
+            #    своих миграций не знает; SHA-маркер ловит именно stale web.)
+            deployed_sha="$($compose exec -T web cat /app/.build-sha 2>/dev/null || echo MISSING)"
+            expected_sha="$(git rev-parse HEAD)"
+            if [ "$deployed_sha" != "$expected_sha" ]; then
+              echo "::error::web работает НЕ из свежего образа: в контейнере $deployed_sha, checkout $expected_sha — деплой рассинхронизирован."
+              exit 1
+            fi
+
+            # 2) схема БД синхронна коду web (предохранитель #441 — теперь в самом ране).
+            $compose exec -T web python manage.py migrate --check || {
+              echo "::error::migrate --check провален: применены не все миграции — release-шаг не отработал."
+              exit 1
+            }
+
+            # 3) healthz живой (БД+Redis) изнутри web.
+            $compose exec -T web python -c "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz/', timeout=10).status==200 else 1)" || {
+              echo "::error::healthz не отвечает 200 после деплоя."
+              exit 1
+            }
 
             # Smoke развёрнутого nginx (#424/B-04): строгий default-src 'none' — только для
             # /api|/healthz, витрина/_next/* — рабочая storefront-политика. Гоняем из контейнера

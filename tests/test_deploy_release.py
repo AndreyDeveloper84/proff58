@@ -47,3 +47,32 @@ def test_deploy_invokes_release_step():
     assert re.search(
         r"bash\s+docker/release\.sh", text
     ), "deploy.yml должен вызывать release-шаг (docker/release.sh) перед подъёмом"
+
+
+# --- #576: пайплайн не должен молча оставлять стенд в рассинхроне ---
+
+
+def test_deploy_timeout_covers_long_builds():
+    """Ран #565 шёл 33m45s при лимите 30m — ssh-action убивал скрипт посреди сборки."""
+    text = DEPLOY.read_text(encoding="utf-8")
+    m = re.search(r"command_timeout:\s*(\d+)m", text)
+    assert m, "command_timeout должен быть задан явно"
+    assert int(m.group(1)) >= 60, "лимит SSH-команды должен покрывать сборку фронта (≥60m)"
+
+
+def test_deploy_has_post_assertions():
+    """Ассерты в самом ране: stale web / неприменённые миграции / мёртвый healthz = failure."""
+    text = DEPLOY.read_text(encoding="utf-8")
+    assert ".build-sha" in text, "нет SHA-маркера сборки — stale web не детектится"
+    assert "migrate --check" in text, "нет post-deploy migrate --check"
+    assert "healthz" in text, "нет post-deploy healthz-проверки"
+
+
+def test_deploy_and_release_take_lock():
+    """#576 п.5: деплой и ручной release.sh сериализуются одним flock-локом."""
+    deploy_text = DEPLOY.read_text(encoding="utf-8")
+    release_text = RELEASE.read_text(encoding="utf-8")
+    assert "flock" in deploy_text and ".deploy.lock" in deploy_text
+    assert (
+        "flock" in release_text and "DEPLOY_LOCK_HELD" in release_text
+    ), "release.sh должен брать лок standalone и НЕ брать повторно из деплоя"
