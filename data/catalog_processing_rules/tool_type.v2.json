@@ -1,0 +1,1079 @@
+{
+  "negative_fixtures": [
+    {
+      "article": "59330-300-2.5",
+      "fixture_ref": "fix-puskovye-27250",
+      "name": "Провода стартовые 2,5м 300А ЗУБР морозостойкие",
+      "note": "product_id=27250; sg=Оснастка без 'шплинт': пусковые провода — соседний label той же группы.",
+      "rule_refs": [
+        "tt-krep-shplinty-nabor"
+      ],
+      "source_group": "Оснастка"
+    },
+    {
+      "article": "47605",
+      "fixture_ref": "fix-shplinty-26863",
+      "name": "Набор шплинтов S головки с фиксацией 150 пр.//СИБРТЕХ",
+      "note": "product_id=26863; sg=Оснастка без 'провода стартовые': набор шплинтов.",
+      "rule_refs": [
+        "tt-puskovye-provoda-startovye"
+      ],
+      "source_group": "Оснастка"
+    },
+    {
+      "article": "012-0500-2",
+      "fixture_ref": "fix-pnevmomolotok-28677",
+      "name": "Пика к отбойному молотку П11Ч 1,2кг (к МО-2, МО-3, МО-4, Б-3) уп=20шт",
+      "note": "product_id=28677; sg=Пневмоинструмент: оснастка отбойного молотка, не степлер.",
+      "rule_refs": [
+        "tt-bp-pnevmosteplery-gvozde"
+      ],
+      "source_group": "Пневмоинструмент"
+    },
+    {
+      "article": "38743",
+      "fixture_ref": "fix-poyas-36713",
+      "name": "Пояс монтажника KRAFTOOL INDUSTRIE 9 карманов, петля д/рулетки",
+      "note": "product_id=36713; sg=СИЗ: пояс монтажника, не очки/маска.",
+      "rule_refs": [
+        "tt-siz-ochki-zashchitnye"
+      ],
+      "source_group": "Средства индивидуальной защиты"
+    },
+    {
+      "article": "64015",
+      "fixture_ref": "fix-otvertka-13936",
+      "name": "Отвертка динамометрическая ЗУБР регулируемая, 1 - 6 Н/м",
+      "note": "product_id=13936; ADR-0011 near-miss: отвертка динамометрическая в той же sg — НЕ ключ.",
+      "rule_refs": [
+        "tt-dinamometricheskie-klyuchi-klyuch"
+      ],
+      "source_group": "Ключи, головки, воротки, удлинители"
+    },
+    {
+      "article": "64044-200",
+      "fixture_ref": "fix-adapter-dinam-10537",
+      "name": "Адаптер динамометрический электронный 40-200Нм 1/2\" с переходниками  1/4, 3/8 KRAFTOOL",
+      "note": "product_id=10537; Адаптер динамометрический: другая sg и без 'держатель'.",
+      "rule_refs": [
+        "tt-dinamometricheskie-klyuchi-klyuch",
+        "tt-izm-shtativy-derzhatel"
+      ],
+      "source_group": "Измерительный инструмент"
+    },
+    {
+      "article": "34704",
+      "fixture_ref": "fix-derzhatel-10631",
+      "name": "Держатель клипса универсальный шарнирный KRAFTOOL MM2",
+      "note": "product_id=10631; sg=Измерительный инструмент без 'адаптер': держатель.",
+      "rule_refs": [
+        "tt-adaptery-universal"
+      ],
+      "source_group": "Измерительный инструмент"
+    },
+    {
+      "article": "71/6/42",
+      "fixture_ref": "fix-klemmy-30870",
+      "name": "Кабель с клеммой заземления",
+      "note": "product_id=30870; sg=Сварочное оборудование: кабель с клеммой, не регулятор.",
+      "rule_refs": [
+        "tt-svar-reduktory-regulyator"
+      ],
+      "source_group": "Сварочное оборудование"
+    },
+    {
+      "article": "46-0-660",
+      "fixture_ref": "fix-plitkorez-37594",
+      "name": "Плиткорез 600мм  на подшипниках Remocolor",
+      "note": "product_id=37594; sg=Строительно-отделочный: плиткорез, не лента.",
+      "rule_refs": [
+        "tt-hoz-lenty-malyarnaya"
+      ],
+      "source_group": "Строительно-отделочный инструмент"
+    },
+    {
+      "article": "73351",
+      "fixture_ref": "fix-shaiby-23255",
+      "name": "Набор медных шайб (150 предметов)",
+      "note": "product_id=23255; sg=Наборы инструмента: 'набор медных шайб' — разделяет keyword 'набор'.",
+      "rule_refs": [
+        "tt-nabory-instrumenta-dielektr"
+      ],
+      "source_group": "Наборы инструмента"
+    },
+    {
+      "article": "CBCJ7Y",
+      "fixture_ref": "fix-svechi-1817",
+      "name": "Свеча зажигания для 2- такт CJ7Y MD-STARS",
+      "note": "product_id=1817; sg=Бензоинструмент (вне области правила): свеча, не кейс.",
+      "rule_refs": [
+        "tt-yashchiki-sumki-keys-prochee"
+      ],
+      "source_group": "Бензоинструмент и расходники для них"
+    },
+    {
+      "article": "C1013",
+      "fixture_ref": "fix-sumka-1855",
+      "name": "Сумка для бензопилы CHAMPION",
+      "note": "product_id=1855; Отклонённая review cross-комбинация: 'сумка' в sg=Бензоинструмент НЕ должна матчиться суженным правилом.",
+      "rule_refs": [
+        "tt-yashchiki-sumki-keys-prochee"
+      ],
+      "source_group": "Бензоинструмент и расходники для них"
+    },
+    {
+      "fixture_ref": "fix-izolenta-lom-40677",
+      "name": "Лом строительный 1300мм 25 мм СИБИН",
+      "note": "product_id=40677; лом в sg=Хозтовары — соседний товар без keyword 'изолента'.",
+      "rule_refs": [
+        "tt-hoz-izolenta-izolenta"
+      ],
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "fixture_ref": "fix-lomy-izolenta-39790",
+      "name": "Изолента 15ммх10м БЕЛАЯ СИБРТЕХ",
+      "note": "product_id=39790; изолента в sg=Хозтовары — соседний label той же группы.",
+      "rule_refs": [
+        "tt-lomy-gvozdodery-lom"
+      ],
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "fixture_ref": "fix-nasosy-gazonokosilka-43773",
+      "name": "Газонокосилка электрическая Einhell GC-EM 1437 1400Вт,37см, 36л",
+      "note": "product_id=43773; газонокосилка в sg=Электроинструмент — не насос.",
+      "rule_refs": [
+        "tt-obor-nasosy-nasos"
+      ],
+      "source_group": "Электроинструмент"
+    },
+    {
+      "fixture_ref": "fix-gazonokosilki-nasos-44221",
+      "name": "Насос вибрационный ВН-10Н Вихрь, 10 м кабель, ниж.",
+      "note": "product_id=44221; насос в sg=Электроинструмент — не газонокосилка.",
+      "rule_refs": [
+        "tt-bp-gazonokosilki-gazonokosilka"
+      ],
+      "source_group": "Электроинструмент"
+    },
+    {
+      "fixture_ref": "fix-svar-nasos-44271",
+      "name": "Насос дренажный для грязной воды 300 Вт Зубр",
+      "note": "product_id=44271; насос в sg=Электроинструмент — не сварочный аппарат.",
+      "rule_refs": [
+        "tt-svar-apparaty-truby"
+      ],
+      "source_group": "Электроинструмент"
+    },
+    {
+      "fixture_ref": "fix-fonari-trimmer-652",
+      "name": "Триммер аккум DENZEL RT300-36, Li-ion 36В 4Ач 2 аккум 18В 4Ач",
+      "note": "product_id=652; триммер в sg=Аккумуляторный — не фонарь.",
+      "rule_refs": [
+        "tt-fonari-akkum"
+      ],
+      "source_group": "Аккумуляторный инструмент"
+    },
+    {
+      "fixture_ref": "fix-trimmery-fonar-665",
+      "name": "Фонарь BOSCH GLI (без аккум.и зар.устройства)",
+      "note": "product_id=665; фонарь в sg=Аккумуляторный — не триммер.",
+      "rule_refs": [
+        "tt-bp-trimmery-akkum"
+      ],
+      "source_group": "Аккумуляторный инструмент"
+    },
+    {
+      "fixture_ref": "fix-vozdukhoduvki-gazonokosilka-429",
+      "name": "Газонокосилка аккумуляторная  ЗУБР ГКЛ-3736-42, 37см бесщеточ 36В, 2х18В АКБ 4ач",
+      "note": "product_id=429; газонокосилка в sg=Аккумуляторный — не воздуходувка.",
+      "rule_refs": [
+        "tt-bp-vozdukhoduvki-akkum"
+      ],
+      "source_group": "Аккумуляторный инструмент"
+    },
+    {
+      "fixture_ref": "fix-takelazh-tros-369",
+      "name": "Трос металлополимерный прозрачный ПР-4.0, (4,0мм толщина, катушка 100м.п.), Россия// Сибртех",
+      "note": "product_id=369; 'трос' без 'ленточный' — металлополимерный трос не должен матчиться.",
+      "rule_refs": [
+        "tt-krep-takelazh-styazhka"
+      ],
+      "source_group": "Автомобильный инструмент"
+    },
+    {
+      "article": "73351",
+      "fixture_ref": "fix-zvezdochki-shaiby-23255",
+      "name": "Набор медных шайб (150 предметов)",
+      "note": "product_id=23255; 'набор медных шайб' — разделяет keyword 'набор' (= v1 fix-shaiby-23255).",
+      "rule_refs": [
+        "tt-nabory-instrumenta-zvezdochki"
+      ],
+      "source_group": "Наборы инструмента"
+    },
+    {
+      "fixture_ref": "fix-sterzhni-tonkonosy-35059",
+      "name": "Тонконосы 125 мм Серия мини черно-желтая мягкая ру",
+      "note": "product_id=35059; тонконосы в sg=Слесарно-столярный — не клеевые стержни.",
+      "rule_refs": [
+        "tt-sterzhni-kleevye-kleevye"
+      ],
+      "source_group": "Слесарно-столярный инструмент"
+    },
+    {
+      "fixture_ref": "fix-tonkonosy-sterzhni-34635",
+      "name": "Стержни клеевые 11х200 мм., прозрачные универс. STAYER",
+      "note": "product_id=34635; клеевые стержни в sg=Слесарно-столярный — не тонконосы.",
+      "rule_refs": [
+        "tt-passatizhi-tonkonosy"
+      ],
+      "source_group": "Слесарно-столярный инструмент"
+    },
+    {
+      "fixture_ref": "fix-verstak-tonkonosy-35060",
+      "name": "Тонконосы 160 мм Серия WP \"SAMURAI\"",
+      "note": "product_id=35060; тонконосы в sg=Слесарно-столярный — не верстак.",
+      "rule_refs": [
+        "tt-obor-mebel-verstak"
+      ],
+      "source_group": "Слесарно-столярный инструмент"
+    },
+    {
+      "fixture_ref": "fix-payalniki-pripoy-24855",
+      "name": "Припой оловянно-свинцовый 30% Sn/70% Pb 250 гр. СВ",
+      "note": "product_id=24855; припой в sg=Осветительное — расходник, не паяльник.",
+      "rule_refs": [
+        "tt-payalniki-elektro"
+      ],
+      "source_group": "Осветительное и электротехническое оборудование"
+    },
+    {
+      "fixture_ref": "fix-pripoy-payalnik-24703",
+      "name": "Паяльник  25 Вт, дер.ручка",
+      "note": "product_id=24703; паяльник в sg=Осветительное — инструмент, не расходник.",
+      "rule_refs": [
+        "tt-raskhodniki-pajki-pripoy"
+      ],
+      "source_group": "Осветительное и электротехническое оборудование"
+    },
+    {
+      "fixture_ref": "fix-ruletki-koleso-10807",
+      "name": "Колесо дорожное BOSCH GWM 32, 10000м, 0.5 мм/м, Диаметр колеса 31.9 см, Вес 2 кг",
+      "note": "product_id=10807; дорожное колесо в sg=Измерительный — не мерная лента.",
+      "rule_refs": [
+        "tt-izm-ruletki-mernaya-lenta"
+      ],
+      "source_group": "Измерительный инструмент"
+    },
+    {
+      "fixture_ref": "fix-kolesa-lenta-10819",
+      "name": "Лента мерная 10м с фиберглассовым полотном STAYER",
+      "note": "product_id=10819; мерная лента в sg=Измерительный — не колесо.",
+      "rule_refs": [
+        "tt-izm-kolesa-dorozhnoe"
+      ],
+      "source_group": "Измерительный инструмент"
+    },
+    {
+      "article": "012-0500-2",
+      "fixture_ref": "fix-vlagootdelitel-pika-28677",
+      "name": "Пика к отбойному молотку П11Ч 1,2кг (к МО-2, МО-3, МО-4, Б-3) уп=20шт",
+      "note": "product_id=28677; оснастка отбойного молотка — не подготовка воздуха (= v1 fix-pnevmomolotok-28677).",
+      "rule_refs": [
+        "tt-bp-podgotovka-vozduha-vlagootdelitel"
+      ],
+      "source_group": "Пневмоинструмент"
+    },
+    {
+      "fixture_ref": "fix-svechi-sumka-1856",
+      "name": "Сумка для бензопилы тем.сер+красн",
+      "note": "product_id=1856; сумка для бензопилы в sg=Бензоинструмент — не свеча.",
+      "rule_refs": [
+        "tt-zap-svechi-zazhiganiya"
+      ],
+      "source_group": "Бензоинструмент и расходники для них"
+    },
+    {
+      "fixture_ref": "fix-sumka-svecha-1818",
+      "name": "Свеча зажигания для 2- такт CMR7H MD-STARS",
+      "note": "product_id=1818; свеча зажигания в sg=Бензоинструмент — не сумка.",
+      "rule_refs": [
+        "tt-yashchiki-sumki-benzopila"
+      ],
+      "source_group": "Бензоинструмент и расходники для них"
+    },
+    {
+      "fixture_ref": "fix-shitok-champion-2069",
+      "name": "Щиток защитный сетчатый CHAMPION",
+      "note": "product_id=2069; 'щиток' вне sg=СИЗ не должен матчиться (sg-pin).",
+      "rule_refs": [
+        "tt-siz-ochki-shitok"
+      ],
+      "source_group": "Бензоинструмент и расходники для них"
+    },
+    {
+      "fixture_ref": "fix-polotno-gromkogovoritel-29557",
+      "name": "Громкоговоритель HS-10-A (INTER-M) рупорный 10Вт",
+      "note": "product_id=29557; громкоговоритель в sg=Пожарка — не полотно.",
+      "rule_refs": [
+        "tt-siz-pozh-inventar-polotno"
+      ],
+      "source_group": "Пожарка"
+    },
+    {
+      "fixture_ref": "fix-kompressory-styazhka-302",
+      "name": "Стяжка груза   543кг 1,82мх2,54см САТ (4шт)",
+      "note": "product_id=302; стяжка груза в sg=Автомобильный — не компрессор.",
+      "rule_refs": [
+        "tt-bp-kompressory-avto"
+      ],
+      "source_group": "Автомобильный инструмент"
+    },
+    {
+      "fixture_ref": "fix-shampun-antikor-5315",
+      "name": "Антикор полимерно-битумный 2.3л Кордон",
+      "note": "product_id=5315; строка sg=Герметики без целевого keyword 'шампунь'.",
+      "rule_refs": [
+        "tt-obor-pena-shampun"
+      ],
+      "source_group": "Герметики, пены, клеи и пр отделочные материалы"
+    },
+    {
+      "fixture_ref": "fix-podsumok-poyas-36720",
+      "name": "Пояс монтерский ПМ-20",
+      "note": "product_id=36720; 'пояс монтерский' — не 'пояс для инструмента'/подсумок; сужение keyword.",
+      "rule_refs": [
+        "tt-sumki-poyasnye-podsumok"
+      ],
+      "source_group": "Средства индивидуальной защиты"
+    },
+    {
+      "fixture_ref": "fix-gromkogovoritel-polotno-29733",
+      "name": "Полотно противопожарное ПП-1000 (1,5*2,0) (до 1000",
+      "note": "product_id=29733; противопожарное полотно в sg=Пожарка — не громкоговоритель.",
+      "rule_refs": [
+        "tt-siz-izveshchateli-gromkogovoritel"
+      ],
+      "source_group": "Пожарка"
+    },
+    {
+      "fixture_ref": "fix-kobura-podsumok-36660",
+      "name": "Подсумок поясной ЗУБР \"ЭКСПЕРТ\" держатель для моло",
+      "note": "product_id=36660; подсумок в sg=СИЗ — граница кобура/подсумок.",
+      "rule_refs": [
+        "tt-kobury-dlya-instrumenta-kobura"
+      ],
+      "source_group": "Средства индивидуальной защиты"
+    }
+  ],
+  "note": "approved 2026-07-22, Phase 7C Stage 2.7 per-rule review (27/29 rules accepted, incl. 1 modified); base tool_type.v1 + 27 new rules",
+  "rules": [
+    {
+      "derived_from": [
+        26863,
+        26864,
+        26865
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "шплинт"
+        ],
+        "source_group_any": [
+          "Оснастка"
+        ]
+      },
+      "note": "Наборы шплинтов в sg=Оснастка; prefix 'шплинт' покрывает 'шплинтов'.",
+      "option_slug": "krep-shplinty",
+      "rule_ref": "tt-krep-shplinty-nabor",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        27250,
+        27251,
+        27254
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "провода стартовые"
+        ],
+        "source_group_any": [
+          "Оснастка"
+        ]
+      },
+      "note": "Пусковые (стартовые) провода в sg=Оснастка; двухсловный keyword.",
+      "option_slug": "puskovye-provoda",
+      "rule_ref": "tt-puskovye-provoda-startovye",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        28891,
+        28892,
+        28893,
+        28901
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "пневмонейлер",
+          "гвоздезабивной"
+        ],
+        "source_group_any": [
+          "Пневмоинструмент"
+        ]
+      },
+      "note": "Пневмонейлеры (3) + гвоздезабивной пневмопистолет (1) в sg=Пневмоинструмент.",
+      "option_slug": "bp-pnevmosteplery",
+      "rule_ref": "tt-bp-pnevmosteplery-gvozde",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        36300,
+        36302,
+        36304,
+        36377,
+        36378
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "маска щиток",
+          "очки защитные"
+        ],
+        "source_group_any": [
+          "Средства индивидуальной защиты"
+        ]
+      },
+      "note": "Защитные маски-щитки (3) + очки газосварщика (2) в sg=СИЗ.",
+      "option_slug": "siz-ochki",
+      "rule_ref": "tt-siz-ochki-zashchitnye",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        12957,
+        12959
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "ключ динамометрический"
+        ],
+        "source_group_any": [
+          "Ключи, головки, воротки, удлинители"
+        ]
+      },
+      "note": "ADR-0011 remediation family; 'ключ динамометрический' НЕ матчит 'отвертка динамометрическая' (13936) и 'адаптер динамометрический' (10537).",
+      "option_slug": "dinamometricheskie-klyuchi",
+      "rule_ref": "tt-dinamometricheskie-klyuchi-klyuch",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        1110,
+        1111,
+        6681,
+        6682,
+        10537
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "адаптер"
+        ],
+        "source_group_any": [
+          "Аккумуляторы и зарядные устройства",
+          "Запасные части",
+          "Измерительный инструмент"
+        ]
+      },
+      "note": "Адаптеры в трёх sg (Аккумуляторы и зарядные устройства, Запасные части, Измерительный инструмент); hyphen split: 'адаптер-переходник' -> токен 'адаптер'.",
+      "option_slug": "adaptery",
+      "rule_ref": "tt-adaptery-universal",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        10631,
+        10632
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "держатель"
+        ],
+        "source_group_any": [
+          "Измерительный инструмент"
+        ]
+      },
+      "note": "Держатели KRAFTOOL в sg=Измерительный инструмент (provenance = applied changes).",
+      "option_slug": "izm-shtativy",
+      "rule_ref": "tt-izm-shtativy-derzhatel",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        31106,
+        31109
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "регулятор расхода газа"
+        ],
+        "source_group_any": [
+          "Сварочное оборудование"
+        ]
+      },
+      "note": "Регуляторы расхода газа в sg=Сварочное оборудование; трёхсловный keyword.",
+      "option_slug": "svar-reduktory",
+      "rule_ref": "tt-svar-reduktory-regulyator",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        37269,
+        37270
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "лента малярная"
+        ],
+        "source_group_any": [
+          "Строительно-отделочный инструмент"
+        ]
+      },
+      "note": "Малярные ленты в sg=Строительно-отделочный инструмент.",
+      "option_slug": "hoz-lenty",
+      "rule_ref": "tt-hoz-lenty-malyarnaya",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        22650,
+        22651
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "набор диэлектрического"
+        ],
+        "source_group_any": [
+          "Наборы инструмента"
+        ]
+      },
+      "note": "Диэлектрические наборы в sg=Наборы инструмента; отличает от 'набор медных шайб'.",
+      "option_slug": "nabory-instrumenta",
+      "rule_ref": "tt-nabory-instrumenta-dielektr",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        30223,
+        30225
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "кейс"
+        ],
+        "source_group_any": [
+          "Прочее"
+        ]
+      },
+      "note": "Кейсы Hitachi в sg=Прочее (review: cross-product отклонён; 1855 'сумка' исключён из области правила до второго подтверждения).",
+      "option_slug": "yashchiki-sumki",
+      "rule_ref": "tt-yashchiki-sumki-keys-prochee",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        39790,
+        39791
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "изолента"
+        ],
+        "source_group_any": [
+          "Хозтовары, сад, огород"
+        ]
+      },
+      "note": "Изолента в sg=Хозтовары; яя-префиксные варианты не матчатся (ограничение matcher).",
+      "option_slug": "hoz-izolenta",
+      "rule_ref": "tt-hoz-izolenta-izolenta",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        40677,
+        37013
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "лом",
+          "гвоздодер"
+        ],
+        "source_group_any": [
+          "Хозтовары, сад, огород",
+          "Строительно-отделочный инструмент"
+        ]
+      },
+      "note": "Ломы (Хозтовары) + гвоздодёры (Строительно-отделочный) → один tool_type.",
+      "option_slug": "lomy-gvozdodery",
+      "rule_ref": "tt-lomy-gvozdodery-lom",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        44271,
+        44276
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "насос"
+        ],
+        "source_group_any": [
+          "Электроинструмент"
+        ]
+      },
+      "note": "Электрические насосы в sg=Электроинструмент.",
+      "option_slug": "obor-nasosy",
+      "rule_ref": "tt-obor-nasosy-nasos",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        43773,
+        429
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "газонокосилка"
+        ],
+        "source_group_any": [
+          "Электроинструмент",
+          "Аккумуляторный инструмент"
+        ]
+      },
+      "note": "Электро- и аккумуляторные газонокосилки.",
+      "option_slug": "bp-gazonokosilki",
+      "rule_ref": "tt-bp-gazonokosilki-gazonokosilka",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        43680,
+        43691
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "аппарат для сварки"
+        ],
+        "source_group_any": [
+          "Электроинструмент"
+        ]
+      },
+      "note": "Аппараты для сварки полимерных труб (monitoring: пограничный подтип).",
+      "option_slug": "svar-apparaty",
+      "rule_ref": "tt-svar-apparaty-truby",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        665,
+        671
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "фонарь"
+        ],
+        "source_group_any": [
+          "Аккумуляторный инструмент"
+        ]
+      },
+      "note": "Аккумуляторные фонари.",
+      "option_slug": "fonari",
+      "rule_ref": "tt-fonari-akkum",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        652,
+        656
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "триммер"
+        ],
+        "source_group_any": [
+          "Аккумуляторный инструмент"
+        ]
+      },
+      "note": "Аккумуляторные триммеры.",
+      "option_slug": "bp-trimmery",
+      "rule_ref": "tt-bp-trimmery-akkum",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        422,
+        423
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "воздуходувка"
+        ],
+        "source_group_any": [
+          "Аккумуляторный инструмент"
+        ]
+      },
+      "note": "Аккумуляторные воздуходувки (monitoring: малый support).",
+      "option_slug": "bp-vozdukhoduvki",
+      "rule_ref": "tt-bp-vozdukhoduvki-akkum",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        302,
+        361
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "стяжка груза",
+          "трос ленточный"
+        ],
+        "source_group_any": [
+          "Автомобильный инструмент"
+        ]
+      },
+      "note": "Грузовые стяжки и ленточные тросы; двухсловные keywords исключают 'стяжка пружин' и 'трос металлополимерный'.",
+      "option_slug": "krep-takelazh",
+      "rule_ref": "tt-krep-takelazh-styazhka",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        22670,
+        22671
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "набор звездочек"
+        ],
+        "source_group_any": [
+          "Наборы инструмента"
+        ]
+      },
+      "note": "Наборы торцевых звёздочек; тот же slug, что v1 dielektr, измерения не пересекаются.",
+      "option_slug": "nabory-instrumenta",
+      "rule_ref": "tt-nabory-instrumenta-zvezdochki",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        34635,
+        34647
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "стержни клеевые"
+        ],
+        "source_group_any": [
+          "Слесарно-столярный инструмент"
+        ]
+      },
+      "note": "Клеевые стержни в sg=Слесарно-столярный.",
+      "option_slug": "sterzhni-kleevye",
+      "rule_ref": "tt-sterzhni-kleevye-kleevye",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        35059,
+        35060
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "тонконосы"
+        ],
+        "source_group_any": [
+          "Слесарно-столярный инструмент"
+        ]
+      },
+      "note": "Тонконосы — подтип пассатижей.",
+      "option_slug": "passatizhi",
+      "rule_ref": "tt-passatizhi-tonkonosy",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        31973,
+        31976
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "верстак"
+        ],
+        "source_group_any": [
+          "Слесарно-столярный инструмент"
+        ]
+      },
+      "note": "Верстаки (monitoring: малый support).",
+      "option_slug": "obor-mebel",
+      "rule_ref": "tt-obor-mebel-verstak",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        24703,
+        24705
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "паяльник"
+        ],
+        "source_group_any": [
+          "Осветительное и электротехническое оборудование"
+        ]
+      },
+      "note": "Электрические паяльники; выбран payalniki (не смешанный payalniki-stancii) по текущему наполнению taxonomy.",
+      "option_slug": "payalniki",
+      "rule_ref": "tt-payalniki-elektro",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        24855,
+        24867
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "припой"
+        ],
+        "source_group_any": [
+          "Осветительное и электротехническое оборудование"
+        ]
+      },
+      "note": "Припой — расходник для пайки.",
+      "option_slug": "raskhodniki-pajki",
+      "rule_ref": "tt-raskhodniki-pajki-pripoy",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        10819,
+        10823
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "лента мерная"
+        ],
+        "source_group_any": [
+          "Измерительный инструмент"
+        ]
+      },
+      "note": "Геодезические мерные ленты = рулетки.",
+      "option_slug": "izm-ruletki",
+      "rule_ref": "tt-izm-ruletki-mernaya-lenta",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        10807,
+        10808
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "колесо дорожное"
+        ],
+        "source_group_any": [
+          "Измерительный инструмент"
+        ]
+      },
+      "note": "Дорожные (измерительные) колёса (monitoring: малый support).",
+      "option_slug": "izm-kolesa",
+      "rule_ref": "tt-izm-kolesa-dorozhnoe",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        28320,
+        29034
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "влагоотделитель",
+          "регулятор давления"
+        ],
+        "source_group_any": [
+          "Пневмоинструмент"
+        ]
+      },
+      "note": "FRL-подготовка воздуха: влагоотделители + регуляторы давления.",
+      "option_slug": "bp-podgotovka-vozduha",
+      "rule_ref": "tt-bp-podgotovka-vozduha-vlagootdelitel",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        1818,
+        1819
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "свеча зажигания"
+        ],
+        "source_group_any": [
+          "Бензоинструмент и расходники для них"
+        ]
+      },
+      "note": "Свечи зажигания 2/4-такт в sg=Бензоинструмент.",
+      "option_slug": "zap-svechi",
+      "rule_ref": "tt-zap-svechi-zazhiganiya",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        1856,
+        1857
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "сумка для бензопилы"
+        ],
+        "source_group_any": [
+          "Бензоинструмент и расходники для них"
+        ]
+      },
+      "note": "Сумки для бензопил; второе подтверждение cross-комбинации, отложенной v1 review (fix-sumka-1855) (monitoring: малый support).",
+      "option_slug": "yashchiki-sumki",
+      "rule_ref": "tt-yashchiki-sumki-benzopila",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        36877,
+        36881
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "щиток"
+        ],
+        "source_group_any": [
+          "Средства индивидуальной защиты"
+        ]
+      },
+      "note": "Лицевые защитные щитки без токена 'маска'; same-slug multi-match с tt-siz-ochki-zashchitnye допустим.",
+      "option_slug": "siz-ochki",
+      "rule_ref": "tt-siz-ochki-shitok",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        29733,
+        29734
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "полотно противопожарное"
+        ],
+        "source_group_any": [
+          "Пожарка"
+        ]
+      },
+      "note": "Противопожарные полотна (monitoring: малый support).",
+      "option_slug": "siz-pozh-inventar",
+      "rule_ref": "tt-siz-pozh-inventar-polotno",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        180,
+        192
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "компрессор"
+        ],
+        "source_group_any": [
+          "Автомобильный инструмент"
+        ]
+      },
+      "note": "Автомобильные 12В компрессоры.",
+      "option_slug": "bp-kompressory",
+      "rule_ref": "tt-bp-kompressory-avto",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        6214,
+        6217
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "шампунь"
+        ],
+        "source_group_any": [
+          "Герметики, пены, клеи и пр отделочные материалы"
+        ]
+      },
+      "note": "Шампуни для минимоек — автохимия в obor-pena.",
+      "option_slug": "obor-pena",
+      "rule_ref": "tt-obor-pena-shampun",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        36660,
+        36708
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "подсумок",
+          "пояс для инструмента"
+        ],
+        "source_group_any": [
+          "Средства индивидуальной защиты"
+        ]
+      },
+      "note": "Подсумки и инструментальные пояса; keyword сужен по Stage 2.7 review ('пояс для' → 'пояс для инструмента') (monitoring: малый support).",
+      "option_slug": "sumki-poyasnye",
+      "rule_ref": "tt-sumki-poyasnye-podsumok",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        29557,
+        29558
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "громкоговоритель"
+        ],
+        "source_group_any": [
+          "Пожарка"
+        ]
+      },
+      "note": "Рупорные громкоговорители — оповещатели (monitoring: нет прецедента в наполнении slug).",
+      "option_slug": "siz-izveshchateli",
+      "rule_ref": "tt-siz-izveshchateli-gromkogovoritel",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        36136,
+        36140
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "кобура"
+        ],
+        "source_group_any": [
+          "Средства индивидуальной защиты"
+        ]
+      },
+      "note": "Кобуры для шуруповёртов; буквальное соответствие slug.",
+      "option_slug": "kobury-dlya-instrumenta",
+      "rule_ref": "tt-kobury-dlya-instrumenta-kobura",
+      "tier": "candidate"
+    }
+  ],
+  "ruleset_id": "tool_type.v2",
+  "version": 1
+}
