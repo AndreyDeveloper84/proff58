@@ -8,16 +8,23 @@ gate precision ≥ 99% выполняется в Phase 7B на независи�
 Порог 0.59 сохраняет все 32 покрытых товара: потеря любого из них даёт
 31/54 ≈ 0.5741 < 0.59 и роняет тест. Все 22 mismatch обязаны быть
 ``no_match`` — wrong-slug prediction или collision недопустимы.
+
+Taxonomy-проверка ruleset выполняется против НЕЗАВИСИМОГО pinned export
+(``tool_type_taxonomy_export.v1.json`` — read-only snapshot staging
+2026-07-21, 328 rows / 327 unique slugs), а не против taxonomy,
+построенной из самого ruleset: циклический тест не способен упасть
+(review PR #581). Export одновременно документирует DEVIATION-2
+(duplicate slug ``steplery``).
 """
 
+import json
+from dataclasses import replace
 from pathlib import Path
 
-import pytest
 from django.conf import settings
 
 from apps.catalog.management.commands.catalog_rules_shadow import Command as ShadowCommand
-from apps.catalog.models import Attribute, AttributeOption, AttributeType
-from apps.catalog.queue_contract import _allowed_tool_type_options
+from apps.catalog.queue_contract import _taxonomy_hash
 from apps.catalog.rules_engine import (
     ProductFacts,
     check_negative_fixtures,
@@ -35,9 +42,28 @@ CORPUS_PATH = (
     / "applied_corpus_tool_type.v1.json"
 )
 
+TAXONOMY_EXPORT_PATH = (
+    Path(settings.BASE_DIR)
+    / "data"
+    / "catalog_processing_rules"
+    / "tool_type_taxonomy_export.v1.json"
+)
+
 EXPECTED_ITEMS = 54
 EXPECTED_CORRECT = 32
 APPROVED_EXPECTED_RECALL = 0.59
+# pinned staging taxonomy 2026-07-21 (DEVIATION-2: duplicate slug steplery)
+PINNED_TAXONOMY_ROWS = 328
+PINNED_TAXONOMY_UNIQUE_SLUGS = 327
+PINNED_TAXONOMY_HASH = "1100482c4c074499cf3950d902de84e1afe70c0e80b6ee363c777a4b7c1f5a9f"
+
+
+def _pinned_export() -> dict:
+    return json.loads(TAXONOMY_EXPORT_PATH.read_text(encoding="utf-8"))
+
+
+def _pinned_allowed_slugs() -> set[str]:
+    return {o["slug"] for o in _pinned_export()["options"]}
 
 
 def test_ruleset_loads():
@@ -63,17 +89,34 @@ def test_derived_from_subset_of_corpus():
     assert leaked == []
 
 
-@pytest.mark.django_db
-def test_ruleset_slugs_exist_in_taxonomy():
-    attr = Attribute.objects.get_or_create(
-        slug="tool_type",
-        defaults={"name": "Тип инструмента", "attribute_type": AttributeType.SELECT},
-    )[0]
+def test_ruleset_slugs_exist_in_pinned_taxonomy():
+    """Ruleset проверяется против НЕЗАВИСИМОГО pinned staging export —
+    источника, который не строится из проверяемого ruleset (review PR #581:
+    циклический тест, создающий options из slug'ов ruleset, не способен
+    обнаружить опечатку или удалённый taxonomy slug)."""
     ruleset = load_ruleset(RULESET_PATH)
-    for slug in sorted({r.option_slug for r in ruleset.rules}):
-        AttributeOption.objects.get_or_create(attribute=attr, slug=slug, defaults={"value": slug})
-    allowed = {o["slug"] for o in _allowed_tool_type_options()}
-    assert validate_against_taxonomy(ruleset, allowed) == []
+    assert validate_against_taxonomy(ruleset, _pinned_allowed_slugs()) == []
+
+
+def test_taxonomy_check_catches_unknown_slug():
+    """Negative: подмена одного option_slug на несуществующий обязана
+    вернуть нарушение — доказывает, что проверка способна падать."""
+    ruleset = load_ruleset(RULESET_PATH)
+    broken_rule = replace(ruleset.rules[0], option_slug="krep-shplintyy")
+    broken = replace(ruleset, rules=(broken_rule,) + ruleset.rules[1:])
+    assert validate_against_taxonomy(broken, _pinned_allowed_slugs()) == ["krep-shplintyy"]
+
+
+def test_pinned_taxonomy_integrity_and_deviation_2():
+    """Целостность pinned export + фиксация DEVIATION-2 (duplicate slug
+    steplery): 328 строк, 327 уникальных slug, hash пересчитывается."""
+    export = _pinned_export()
+    rows = export["options"]
+    assert export["count"] == len(rows) == PINNED_TAXONOMY_ROWS
+    assert len({o["slug"] for o in rows}) == PINNED_TAXONOMY_UNIQUE_SLUGS
+    assert _taxonomy_hash(rows) == export["taxonomy_hash"] == PINNED_TAXONOMY_HASH
+    steplery_values = sorted(o["value"] for o in rows if o["slug"] == "steplery")
+    assert steplery_values == ["Степлеры (скобозабивные)", "Степлеры и заклёпочники"]
 
 
 def test_replay_meets_approved_recall():

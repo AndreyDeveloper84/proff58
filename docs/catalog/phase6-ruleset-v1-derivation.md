@@ -182,6 +182,12 @@ monitoring: precision этих правил отдельно показать в
   контрактом. На текущие 11 правил влияния нет (slug не используется).
   До Phase 7B: PK/sort_order обеих записей, PAV-ссылки, канонический
   option, поведение importer/facets; исправление — отдельная авторизация.
+  Pinned snapshot taxonomy зафиксирован repo fixture
+  `data/catalog_processing_rules/tool_type_taxonomy_export.v1.json`
+  (verbatim staging export 2026-07-21, sha256
+  `c092aacf42ddf7aac1ffeb970d474a1fcc30caff8eacf463f06e93e8c6b33990`);
+  regression-тест `test_pinned_taxonomy_integrity_and_deviation_2`
+  фиксирует 328/327 и оба значения `steplery`.
 
 ## Replay (informational, НЕ gate; training leakage по построению)
 
@@ -236,4 +242,5 @@ ruleset (схема ruleset его не содержит).
 | expected_recall = 0.59 — APPROVED | replay v2 measured 32/54 = 0.5926; порог сохраняет все 32 совпадения и падает при потере одного | 2026-07-21 (пользователь, финальное решение) |
 | Ruleset v2 — APPROVED, 11/11 rules; Stage 7 — CLOSED | все проверки на repo fixtures зелёные | 2026-07-21 (пользователь, финальное решение) |
 | Fixture PR — AUTHORIZED | ruleset + corpus fixture + derivation + replay regression test | 2026-07-21 (пользователь, финальное решение) |
+| Taxonomy-тест признан циклическим (PR #581 review) | тест сам создавал options из slug'ов ruleset → не способен упасть; заменён на pinned staging taxonomy export + negative test | 2026-07-21 (пользователь, PR review; analyst fix) |
 | Phase 7B — NOT AUTHORIZED | blocked pending DEVIATION-2 investigation + отдельная авторизация | 2026-07-21 (пользователь, финальное решение) |
