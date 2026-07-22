@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import { Star } from "lucide-react";
 import { getProduct } from "@/lib/catalog";
+import { pluralize } from "@/lib/format";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPrice } from "@/components/product/ProductPrice";
 import { ProductAvailability } from "@/components/product/ProductAvailability";
@@ -39,9 +41,14 @@ export default async function ProductPage({ params }: Props) {
   const specsDl = (
     <dl className="divide-y divide-line rounded-lg border border-line">
       {product.specs.map((s, i) => (
-        <div key={`${s.label}-${i}`} className="flex gap-3 px-3 py-2 text-sm">
-          <dt className="w-1/2 text-ink-3">{s.label}</dt>
-          <dd className="w-1/2 text-ink-2">{s.value}</dd>
+        // #574: на 320px жёсткие 50/50 ломали длинные значения («SDS-Max, 1500 Вт»)
+        // — до sm характеристики идут в две строки, дальше в две колонки.
+        <div
+          key={`${s.label}-${i}`}
+          className="flex flex-col gap-0.5 px-3 py-2 text-sm sm:flex-row sm:gap-3"
+        >
+          <dt className="text-ink-3 sm:w-1/2">{s.label}</dt>
+          <dd className="text-ink-2 sm:w-1/2">{s.value}</dd>
         </div>
       ))}
     </dl>
@@ -54,7 +61,9 @@ export default async function ProductPage({ params }: Props) {
   ) : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
+    // #574: нижний отступ под липкую панель покупки — иначе она перекрывала
+    // последнюю карточку отзывов.
+    <div className="mx-auto max-w-6xl px-4 pb-28 pt-6">
       <ProductJsonLd product={product} crumbs={crumbs} />
       <nav
         aria-label="Хлебные крошки"
@@ -80,6 +89,25 @@ export default async function ProductPage({ params }: Props) {
         <div className="flex flex-col gap-4">
           {product.brand && <span className="text-sm text-ink-3">{product.brand}</span>}
           <h1 className="font-display text-2xl font-semibold text-ink">{product.name}</h1>
+          {/* #574: рейтинг рядом с названием — раньше отзывы были только внизу
+              страницы, и понять «есть ли оценки» до скролла было нельзя. Блок
+              скрыт при нулевом количестве (docs/design/pages/pdp.md: не рисуем
+              «0 отзывов» как тупик). */}
+          {reviews && reviews.summary.count > 0 && (
+            <a
+              href="#reviews"
+              className="flex w-fit items-center gap-2 text-sm text-ink-2 hover:text-accent"
+            >
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden />
+              <span className="font-semibold text-ink">
+                {(reviews.summary.product_rating_avg ?? 0).toFixed(1)}
+              </span>
+              <span className="underline-offset-2 hover:underline">
+                {reviews.summary.count}{" "}
+                {pluralize(reviews.summary.count, "отзыв", "отзыва", "отзывов")}
+              </span>
+            </a>
+          )}
           <div className="flex items-center justify-between gap-3">
             <ProductBadges badges={product.badges} discountPct={product.price.discountPct} />
             <ShareButton title={product.name} />

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Star } from "lucide-react";
 import { StarDisplay } from "@/components/reviews/StarRating";
+import { EmptyState } from "@/components/ui/states";
 import { formatDate } from "@/lib/format";
 import { fetchProductReviews } from "@/lib/reviews";
 import type { ProductReviewsPayload, PublicReview } from "@/lib/types";
@@ -18,19 +19,24 @@ export function ProductReviews({
 }) {
   const [items, setItems] = useState<PublicReview[]>(initial.results);
   const [loading, setLoading] = useState(false);
+  // #574: сбой догрузки раньше проглатывался (fetchProductReviews → null), и
+  // кнопка «Показать ещё» просто ничего не делала — выглядело как поломка.
+  const [loadError, setLoadError] = useState(false);
   const total = initial.count;
   const avg = initial.summary.product_rating_avg;
 
   const loadMore = async () => {
     setLoading(true);
+    setLoadError(false);
     const next = await fetchProductReviews(slug, items.length);
     if (next) setItems((prev) => [...prev, ...next.results]);
+    else setLoadError(true);
     setLoading(false);
   };
 
   return (
-    <section className="mt-10">
-      <h2 className="mb-4 flex items-center gap-3 font-display text-2xl font-semibold uppercase tracking-wide text-ink">
+    <section id="reviews" className="mt-10 scroll-mt-24">
+      <h2 className="mb-4 flex flex-wrap items-center gap-3 font-display text-2xl font-semibold uppercase tracking-wide text-ink">
         Отзывы ({total})
         {avg !== null && total > 0 && (
           <span className="inline-flex items-center gap-1 text-lg normal-case text-ink-2">
@@ -40,11 +46,16 @@ export function ProductReviews({
         )}
       </h2>
       {total === 0 ? (
-        <p className="rounded-lg border border-line bg-surface p-6 text-sm text-ink-2">
-          Пока нет отзывов. Купите товар — и поделитесь впечатлением первым.
-        </p>
+        <EmptyState
+          icon={<Star className="h-10 w-10" aria-hidden />}
+          title="Отзывов пока нет"
+          description="Купите товар — и поделитесь впечатлением первым."
+          className="rounded-lg border border-line bg-surface"
+        />
       ) : (
         <div className="space-y-4">
+          {/* Список только дополняется (offset-пагинация, порядок не меняется),
+              поэтому индекс — стабильный ключ; id отзыва бэк не отдаёт. */}
           {items.map((review, i) => (
             <article key={i} className="rounded-lg border border-line bg-surface p-4">
               <div className="flex flex-wrap items-center gap-3">
@@ -55,14 +66,19 @@ export function ProductReviews({
               {review.text && <p className="mt-2 text-sm text-ink-2">{review.text}</p>}
             </article>
           ))}
+          {loadError && (
+            <p role="alert" className="text-sm text-danger">
+              Не удалось загрузить остальные отзывы. Попробуйте ещё раз.
+            </p>
+          )}
           {items.length < total && (
             <button
               type="button"
               onClick={loadMore}
               disabled={loading}
-              className="rounded-md border border-line px-4 py-2 text-sm font-semibold text-ink transition hover:border-accent disabled:opacity-50"
+              className="h-11 rounded-md border border-line px-4 text-sm font-semibold text-ink transition hover:border-accent disabled:opacity-50 sm:h-10"
             >
-              {loading ? "Загружаем…" : "Показать ещё"}
+              {loading ? "Загружаем…" : loadError ? "Повторить" : "Показать ещё"}
             </button>
           )}
         </div>

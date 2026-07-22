@@ -109,7 +109,9 @@ function AddToCartCta({ productId, isOrder }: { productId: number; isOrder: bool
         ) : (
           <ShoppingCart className="h-4 w-4" aria-hidden />
         )}
-        {phase === "added" ? "Добавлено" : phase === "error" ? "Ошибка, повторить" : label}
+        {/* #574: та же формулировка, что в карточке списка (AddToCartButton) —
+            одно и то же событие называлось «Ошибка, повторить» и «Не удалось добавить». */}
+        {phase === "added" ? "Добавлено" : phase === "error" ? "Не удалось добавить" : label}
       </Button>
     </div>
   );
