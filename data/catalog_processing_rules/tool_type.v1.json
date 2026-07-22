@@ -1,0 +1,342 @@
+{
+  "negative_fixtures": [
+    {
+      "article": "59330-300-2.5",
+      "fixture_ref": "fix-puskovye-27250",
+      "name": "Провода стартовые 2,5м 300А ЗУБР морозостойкие",
+      "note": "product_id=27250; sg=Оснастка без 'шплинт': пусковые провода — соседний label той же группы.",
+      "rule_refs": [
+        "tt-krep-shplinty-nabor"
+      ],
+      "source_group": "Оснастка"
+    },
+    {
+      "article": "47605",
+      "fixture_ref": "fix-shplinty-26863",
+      "name": "Набор шплинтов S головки с фиксацией 150 пр.//СИБРТЕХ",
+      "note": "product_id=26863; sg=Оснастка без 'провода стартовые': набор шплинтов.",
+      "rule_refs": [
+        "tt-puskovye-provoda-startovye"
+      ],
+      "source_group": "Оснастка"
+    },
+    {
+      "article": "012-0500-2",
+      "fixture_ref": "fix-pnevmomolotok-28677",
+      "name": "Пика к отбойному молотку П11Ч 1,2кг (к МО-2, МО-3, МО-4, Б-3) уп=20шт",
+      "note": "product_id=28677; sg=Пневмоинструмент: оснастка отбойного молотка, не степлер.",
+      "rule_refs": [
+        "tt-bp-pnevmosteplery-gvozde"
+      ],
+      "source_group": "Пневмоинструмент"
+    },
+    {
+      "article": "38743",
+      "fixture_ref": "fix-poyas-36713",
+      "name": "Пояс монтажника KRAFTOOL INDUSTRIE 9 карманов, петля д/рулетки",
+      "note": "product_id=36713; sg=СИЗ: пояс монтажника, не очки/маска.",
+      "rule_refs": [
+        "tt-siz-ochki-zashchitnye"
+      ],
+      "source_group": "Средства индивидуальной защиты"
+    },
+    {
+      "article": "64015",
+      "fixture_ref": "fix-otvertka-13936",
+      "name": "Отвертка динамометрическая ЗУБР регулируемая, 1 - 6 Н/м",
+      "note": "product_id=13936; ADR-0011 near-miss: отвертка динамометрическая в той же sg — НЕ ключ.",
+      "rule_refs": [
+        "tt-dinamometricheskie-klyuchi-klyuch"
+      ],
+      "source_group": "Ключи, головки, воротки, удлинители"
+    },
+    {
+      "article": "64044-200",
+      "fixture_ref": "fix-adapter-dinam-10537",
+      "name": "Адаптер динамометрический электронный 40-200Нм 1/2\" с переходниками  1/4, 3/8 KRAFTOOL",
+      "note": "product_id=10537; Адаптер динамометрический: другая sg и без 'держатель'.",
+      "rule_refs": [
+        "tt-dinamometricheskie-klyuchi-klyuch",
+        "tt-izm-shtativy-derzhatel"
+      ],
+      "source_group": "Измерительный инструмент"
+    },
+    {
+      "article": "34704",
+      "fixture_ref": "fix-derzhatel-10631",
+      "name": "Держатель клипса универсальный шарнирный KRAFTOOL MM2",
+      "note": "product_id=10631; sg=Измерительный инструмент без 'адаптер': держатель.",
+      "rule_refs": [
+        "tt-adaptery-universal"
+      ],
+      "source_group": "Измерительный инструмент"
+    },
+    {
+      "article": "71/6/42",
+      "fixture_ref": "fix-klemmy-30870",
+      "name": "Кабель с клеммой заземления",
+      "note": "product_id=30870; sg=Сварочное оборудование: кабель с клеммой, не регулятор.",
+      "rule_refs": [
+        "tt-svar-reduktory-regulyator"
+      ],
+      "source_group": "Сварочное оборудование"
+    },
+    {
+      "article": "46-0-660",
+      "fixture_ref": "fix-plitkorez-37594",
+      "name": "Плиткорез 600мм  на подшипниках Remocolor",
+      "note": "product_id=37594; sg=Строительно-отделочный: плиткорез, не лента.",
+      "rule_refs": [
+        "tt-hoz-lenty-malyarnaya"
+      ],
+      "source_group": "Строительно-отделочный инструмент"
+    },
+    {
+      "article": "73351",
+      "fixture_ref": "fix-shaiby-23255",
+      "name": "Набор медных шайб (150 предметов)",
+      "note": "product_id=23255; sg=Наборы инструмента: 'набор медных шайб' — разделяет keyword 'набор'.",
+      "rule_refs": [
+        "tt-nabory-instrumenta-dielektr"
+      ],
+      "source_group": "Наборы инструмента"
+    },
+    {
+      "article": "CBCJ7Y",
+      "fixture_ref": "fix-svechi-1817",
+      "name": "Свеча зажигания для 2- такт CJ7Y MD-STARS",
+      "note": "product_id=1817; sg=Бензоинструмент (вне области правила): свеча, не кейс.",
+      "rule_refs": [
+        "tt-yashchiki-sumki-keys-prochee"
+      ],
+      "source_group": "Бензоинструмент и расходники для них"
+    },
+    {
+      "article": "C1013",
+      "fixture_ref": "fix-sumka-1855",
+      "name": "Сумка для бензопилы CHAMPION",
+      "note": "product_id=1855; Отклонённая review cross-комбинация: 'сумка' в sg=Бензоинструмент НЕ должна матчиться суженным правилом.",
+      "rule_refs": [
+        "tt-yashchiki-sumki-keys-prochee"
+      ],
+      "source_group": "Бензоинструмент и расходники для них"
+    }
+  ],
+  "note": "approved 2026-07-21, Stage 7 closed (11/11 rules); expected_recall=0.59 в corpus fixture",
+  "rules": [
+    {
+      "derived_from": [
+        26863,
+        26864,
+        26865
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "шплинт"
+        ],
+        "source_group_any": [
+          "Оснастка"
+        ]
+      },
+      "note": "Наборы шплинтов в sg=Оснастка; prefix 'шплинт' покрывает 'шплинтов'.",
+      "option_slug": "krep-shplinty",
+      "rule_ref": "tt-krep-shplinty-nabor",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        27250,
+        27251,
+        27254
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "провода стартовые"
+        ],
+        "source_group_any": [
+          "Оснастка"
+        ]
+      },
+      "note": "Пусковые (стартовые) провода в sg=Оснастка; двухсловный keyword.",
+      "option_slug": "puskovye-provoda",
+      "rule_ref": "tt-puskovye-provoda-startovye",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        28891,
+        28892,
+        28893,
+        28901
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "пневмонейлер",
+          "гвоздезабивной"
+        ],
+        "source_group_any": [
+          "Пневмоинструмент"
+        ]
+      },
+      "note": "Пневмонейлеры (3) + гвоздезабивной пневмопистолет (1) в sg=Пневмоинструмент.",
+      "option_slug": "bp-pnevmosteplery",
+      "rule_ref": "tt-bp-pnevmosteplery-gvozde",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        36300,
+        36302,
+        36304,
+        36377,
+        36378
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "маска щиток",
+          "очки защитные"
+        ],
+        "source_group_any": [
+          "Средства индивидуальной защиты"
+        ]
+      },
+      "note": "Защитные маски-щитки (3) + очки газосварщика (2) в sg=СИЗ.",
+      "option_slug": "siz-ochki",
+      "rule_ref": "tt-siz-ochki-zashchitnye",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        12957,
+        12959
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "ключ динамометрический"
+        ],
+        "source_group_any": [
+          "Ключи, головки, воротки, удлинители"
+        ]
+      },
+      "note": "ADR-0011 remediation family; 'ключ динамометрический' НЕ матчит 'отвертка динамометрическая' (13936) и 'адаптер динамометрический' (10537).",
+      "option_slug": "dinamometricheskie-klyuchi",
+      "rule_ref": "tt-dinamometricheskie-klyuchi-klyuch",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        1110,
+        1111,
+        6681,
+        6682,
+        10537
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "адаптер"
+        ],
+        "source_group_any": [
+          "Аккумуляторы и зарядные устройства",
+          "Запасные части",
+          "Измерительный инструмент"
+        ]
+      },
+      "note": "Адаптеры в трёх sg (Аккумуляторы и зарядные устройства, Запасные части, Измерительный инструмент); hyphen split: 'адаптер-переходник' -> токен 'адаптер'.",
+      "option_slug": "adaptery",
+      "rule_ref": "tt-adaptery-universal",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        10631,
+        10632
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "держатель"
+        ],
+        "source_group_any": [
+          "Измерительный инструмент"
+        ]
+      },
+      "note": "Держатели KRAFTOOL в sg=Измерительный инструмент (provenance = applied changes).",
+      "option_slug": "izm-shtativy",
+      "rule_ref": "tt-izm-shtativy-derzhatel",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        31106,
+        31109
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "регулятор расхода газа"
+        ],
+        "source_group_any": [
+          "Сварочное оборудование"
+        ]
+      },
+      "note": "Регуляторы расхода газа в sg=Сварочное оборудование; трёхсловный keyword.",
+      "option_slug": "svar-reduktory",
+      "rule_ref": "tt-svar-reduktory-regulyator",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        37269,
+        37270
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "лента малярная"
+        ],
+        "source_group_any": [
+          "Строительно-отделочный инструмент"
+        ]
+      },
+      "note": "Малярные ленты в sg=Строительно-отделочный инструмент.",
+      "option_slug": "hoz-lenty",
+      "rule_ref": "tt-hoz-lenty-malyarnaya",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        22650,
+        22651
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "набор диэлектрического"
+        ],
+        "source_group_any": [
+          "Наборы инструмента"
+        ]
+      },
+      "note": "Диэлектрические наборы в sg=Наборы инструмента; отличает от 'набор медных шайб'.",
+      "option_slug": "nabory-instrumenta",
+      "rule_ref": "tt-nabory-instrumenta-dielektr",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        30223,
+        30225
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "кейс"
+        ],
+        "source_group_any": [
+          "Прочее"
+        ]
+      },
+      "note": "Кейсы Hitachi в sg=Прочее (review: cross-product отклонён; 1855 'сумка' исключён из области правила до второго подтверждения).",
+      "option_slug": "yashchiki-sumki",
+      "rule_ref": "tt-yashchiki-sumki-keys-prochee",
+      "tier": "candidate"
+    }
+  ],
+  "ruleset_id": "tool_type.v1",
+  "version": 1
+}
