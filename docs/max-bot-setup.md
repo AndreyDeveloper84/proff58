@@ -95,11 +95,16 @@ https://dev.proff58.ru/api/max/webhook/      # staging
 curl -X POST https://platform-api.max.ru/subscriptions \
   -H "Authorization: $MAX_BOT_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://proff58.ru/api/max/webhook/",
-    "update_types": ["bot_started", "message_created", "message_callback"]
-  }'
+  -d "{
+    \"url\": \"https://proff58.ru/api/max/webhook/\",
+    \"secret\": \"$MAX_WEBHOOK_SECRET\",
+    \"update_types\": [\"bot_started\", \"message_created\", \"message_callback\"]
+  }"
 ```
+
+Поле `secret` обязательно. MAX передаёт его при каждом webhook-запросе в
+заголовке `X-Max-Bot-Api-Secret`; обработчик сравнивает его с
+`MAX_WEBHOOK_SECRET`.
 
 ### 4.2 Локальная разработка (ngrok)
 
@@ -114,10 +119,11 @@ ngrok http 8000
 curl -X POST https://platform-api.max.ru/subscriptions \
   -H "Authorization: $MAX_BOT_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://<xxxx>.ngrok.io/api/max/webhook/",
-    "update_types": ["bot_started", "message_created", "message_callback"]
-  }'
+  -d "{
+    \"url\": \"https://<xxxx>.ngrok.io/api/max/webhook/\",
+    \"secret\": \"$MAX_WEBHOOK_SECRET\",
+    \"update_types\": [\"bot_started\", \"message_created\", \"message_callback\"]
+  }"
 ```
 
 ### 4.3 Проверка подписки

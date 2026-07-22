@@ -1,6 +1,9 @@
 # ADR-0011: Отдельный tool_type `dinamometricheskie-klyuchi` для динамометрических ключей
 
-- Статус: предложено
+- Статус: принято (2026-07-20); option `dinamometricheskie-klyuchi`
+  материализована 2026-07-21 (327 → 328), remediation товаров 12957/12959
+  завершена 2026-07-21 (run `3afffd16-005a-4f73-95fd-d068aa725391`,
+  outcome=completed, source=manual, confidence=100)
 - Дата: 2026-07-20
 - Связано: ADR-0001 (tool_type — атрибут, не категория),
   ADR-0010 (catalog processing foundation),
