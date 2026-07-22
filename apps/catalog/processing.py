@@ -321,13 +321,17 @@ def validate_catalog_change(change_id: uuid.UUID) -> CatalogValidationResult:
     if current_hash != stored_baseline_hash:
         return CatalogValidationResult(False, "baseline_changed")
 
-    attr = Attribute.objects.filter(slug=TOOL_TYPE_SLUG).first()
-    if attr is None:
+    try:
+        attr = Attribute.objects.get(slug=TOOL_TYPE_SLUG)
+    except Attribute.DoesNotExist:
         return CatalogValidationResult(False, "missing_attribute")
     option_slug = change.proposed_value.get("option_slug")
-    option = AttributeOption.objects.filter(attribute=attr, slug=option_slug).first()
-    if option is None:
+    try:
+        AttributeOption.objects.get(attribute=attr, slug=option_slug)
+    except AttributeOption.DoesNotExist:
         return CatalogValidationResult(False, "unknown_option")
+    except AttributeOption.MultipleObjectsReturned:
+        return CatalogValidationResult(False, "option_slug_conflict")
 
     return CatalogValidationResult(True, "")
 
@@ -567,8 +571,9 @@ def apply_catalog_change(
                 return CatalogDecisionResult("conflict", locked_change.id, "baseline_changed")
 
             # Find attribute and option strictly by slug.
-            attr = Attribute.objects.filter(slug=TOOL_TYPE_SLUG).first()
-            if attr is None:
+            try:
+                attr = Attribute.objects.get(slug=TOOL_TYPE_SLUG)
+            except Attribute.DoesNotExist:
                 locked_change.status = CatalogChangeStatus.INVALID
                 locked_change.reason_code = "missing_attribute"
                 locked_change.reason_detail = "tool_type attribute not found"
@@ -578,14 +583,24 @@ def apply_catalog_change(
                 )
                 return CatalogDecisionResult("invalid", locked_change.id, "missing_attribute")
             option_slug = locked_change.proposed_value.get("option_slug")
-            option = AttributeOption.objects.filter(attribute=attr, slug=option_slug).first()
-            if option is None:
+            try:
+                option = AttributeOption.objects.get(attribute=attr, slug=option_slug)
+            except AttributeOption.DoesNotExist:
                 locked_change.status = CatalogChangeStatus.INVALID
                 locked_change.reason_code = "unknown_option"
                 locked_change.reason_detail = f"unknown tool_type option: {option_slug}"
                 locked_change.save(update_fields=["status", "reason_code", "reason_detail"])
                 _mark_item_needs_review(locked_item, "unknown_option", locked_change.reason_detail)
                 return CatalogDecisionResult("invalid", locked_change.id, "unknown_option")
+            except AttributeOption.MultipleObjectsReturned:
+                locked_change.status = CatalogChangeStatus.INVALID
+                locked_change.reason_code = "option_slug_conflict"
+                locked_change.reason_detail = f"multiple tool_type options for slug: {option_slug}"
+                locked_change.save(update_fields=["status", "reason_code", "reason_detail"])
+                _mark_item_needs_review(
+                    locked_item, "option_slug_conflict", locked_change.reason_detail
+                )
+                return CatalogDecisionResult("invalid", locked_change.id, "option_slug_conflict")
 
             # Apply through provenance.
             # Change уже approved — equal-priority override разрешён.

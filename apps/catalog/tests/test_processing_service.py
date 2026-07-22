@@ -1,4 +1,5 @@
 import uuid
+from unittest.mock import patch
 
 import pytest
 from django.conf import settings
@@ -927,3 +928,38 @@ def test_finalize_after_reject_mixed_run(feature_enabled, attr, drill_option, re
     assert run.stats["items_needs_review"] == 1
     assert run.stats["changes_total"] == 1
     assert run.stats["changes_applied"] == 0
+
+
+@pytest.mark.django_db
+def test_validate_option_slug_conflict_is_loud(feature_enabled, attr, drill_option):
+    """Дубль option slug при валидации — громкая ошибка, не молчаливый .first()."""
+    p = _product(slug="p-slug-conflict-validate")
+    run = _run()
+    item = _item(run, p)
+    proposed = _propose(_cmd(item, drill_option.slug))
+
+    with patch.object(
+        AttributeOption.objects, "get", side_effect=AttributeOption.MultipleObjectsReturned
+    ):
+        validated = processing.validate_catalog_change(proposed.change_id)
+    assert validated.valid is False
+    assert validated.reason == "option_slug_conflict"
+
+
+@pytest.mark.django_db
+def test_apply_option_slug_conflict_is_loud(feature_enabled, reviewer, attr, drill_option):
+    """Дубль option slug при apply — change INVALID с reason_code=option_slug_conflict."""
+    p = _product(slug="p-slug-conflict-apply")
+    run = _run()
+    item = _item(run, p)
+    proposed = _propose(_cmd(item, drill_option.slug))
+    reviewed = _approve(proposed.change_id, reviewer)
+    assert reviewed.status == "approved"
+
+    with patch.object(
+        AttributeOption.objects, "get", side_effect=AttributeOption.MultipleObjectsReturned
+    ):
+        result = processing.apply_catalog_change(proposed.change_id)
+    assert result.status == "invalid"
+    change = CatalogChange.objects.get(pk=proposed.change_id)
+    assert change.reason_code == "option_slug_conflict"

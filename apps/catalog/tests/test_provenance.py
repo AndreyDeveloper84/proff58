@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from apps.catalog import provenance as prov
@@ -177,3 +179,26 @@ def test_apply_unknown_option_invalid():
         observed_source="",
     )
     assert prov.apply_sourced_value(cmd).status == "invalid"
+
+
+@pytest.mark.django_db
+def test_apply_option_slug_conflict_invalid():
+    """Дубль option slug в provenance — ApplyResult(invalid, 'option slug conflict')."""
+    from apps.catalog.models import AttributeOption
+
+    p = _product()
+    Attribute.objects.create(name="Патрон", slug="chuck", attribute_type=AttributeType.SELECT)
+    cmd = _cmd(
+        p,
+        target_kind="attribute",
+        attribute_slug="chuck",
+        value={"type": "option", "value": "sds-plus"},
+        observed_value_hash=prov.value_hash(None),
+        observed_source="",
+    )
+    with patch.object(
+        AttributeOption.objects, "get", side_effect=AttributeOption.MultipleObjectsReturned
+    ):
+        r = prov.apply_sourced_value(cmd)
+    assert r.status == "invalid"
+    assert r.reason == "option slug conflict"
