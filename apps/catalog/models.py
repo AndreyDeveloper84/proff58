@@ -165,6 +165,13 @@ class AttributeOption(models.Model):
         verbose_name_plural = _("Варианты характеристик")
         ordering = ["sort_order", "value"]
         unique_together = [("attribute", "value")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["attribute", "slug"],
+                condition=~models.Q(slug=""),
+                name="uniq_attributeoption_attr_slug_nonempty",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.attribute.name}: {self.value}"
