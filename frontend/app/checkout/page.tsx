@@ -190,34 +190,34 @@ export default function CheckoutPage() {
       );
     }
 
-    if (!name.trim()) return setError("Укажите имя");
-    if (!isValidPhone(phone)) return setError("Укажите корректный телефон");
-    if (email.trim() && !isValidEmail(email)) return setError("Укажите корректный e-mail");
+    if (!name.trim()) return setError("Укажите имя.");
+    if (!isValidPhone(phone)) return setError("Укажите корректный телефон.");
+    if (email.trim() && !isValidEmail(email)) return setError("Укажите корректный e-mail.");
     // B2B-реквизиты зеркалят validate_b2b_requisites (apps/orders/invoice.py): без них
     // бэк отвечает 400, а заполнить их в форме было негде — B2B-заказ не оформлялся вовсе.
     if (isB2B) {
-      if (!companyName.trim()) return setError("Укажите название организации");
-      if (!isValidInn(inn)) return setError("ИНН должен содержать 10 или 12 цифр");
+      if (!companyName.trim()) return setError("Укажите название организации.");
+      if (!isValidInn(inn)) return setError("ИНН должен содержать 10 или 12 цифр.");
       if (isLegalEntityInn(inn) && !kpp.trim()) {
-        return setError("КПП обязателен для юридического лица (ИНН из 10 цифр)");
+        return setError("КПП обязателен для юридического лица (ИНН из 10 цифр).");
       }
-      if (kpp.trim() && !isValidKpp(kpp)) return setError("КПП должен содержать 9 цифр");
-      if (!legalAddress.trim()) return setError("Укажите юридический адрес");
-      if (!email.trim()) return setError("Укажите e-mail — на него придёт счёт");
+      if (kpp.trim() && !isValidKpp(kpp)) return setError("КПП должен содержать 9 цифр.");
+      if (!legalAddress.trim()) return setError("Укажите юридический адрес.");
+      if (!email.trim()) return setError("Укажите e-mail — на него придёт счёт.");
     }
     // #558: для юрлиц доставки нет (самовывоз) — адрес и зона не запрашиваются.
     if (!isB2B && delivery === "courier" && !address.trim()) {
-      return setError("Укажите адрес доставки");
+      return setError("Укажите адрес доставки.");
     }
     // Зона обязательна, только если список зон вообще доступен: при недоступном
     // справочнике заказ создаётся без зоны (менеджер уточнит) — как раньше.
     if (!isB2B && delivery === "courier" && courierZones.length > 0 && !zoneSlug) {
-      return setError("Выберите зону доставки");
+      return setError("Выберите зону доставки.");
     }
     // #569: слот обязателен, только если слоты вообще есть — пустой справочник
     // не должен останавливать курьерские заказы.
     if (!isB2B && delivery === "courier" && (slots?.length ?? 0) > 0 && !slotId) {
-      return setError("Выберите дату и время доставки");
+      return setError("Выберите дату и время доставки.");
     }
 
     inFlight.current = true;

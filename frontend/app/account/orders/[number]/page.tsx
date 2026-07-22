@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { AccountDialog } from "@/components/account/AccountDialog";
+import { EmptyState, ErrorState } from "@/components/ui/states";
 import { ReservationNotice, reservationState } from "@/components/order/ReservationNotice";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { StarDisplay } from "@/components/reviews/StarRating";
@@ -137,23 +138,36 @@ export default function OrderDetailsPage() {
 
   if (loading) return <OrderLoading />;
 
+  const backToOrdersLink = (
+    <Link
+      href="/account/orders"
+      className="inline-flex h-11 items-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
+    >
+      <ChevronLeft className="h-4 w-4" aria-hidden />
+      Вернуться к заказам
+    </Link>
+  );
+
   if (!order) {
     return (
       <AccountShell title="Детали заказа" mobileBackHref="/account/orders">
-        <section className="rounded-lg border border-line bg-surface px-5 py-12 text-center">
-          <ReceiptText className="mx-auto h-10 w-10 text-ink-3" aria-hidden />
-          <h2 className="mt-3 text-base font-semibold text-ink">Заказ не найден</h2>
-          <p className="mx-auto mt-1 max-w-md text-sm text-ink-3">
-            {error || "Возможно, заказ был удалён или принадлежит другому аккаунту."}
-          </p>
-          <Link
-            href="/account/orders"
-            className="mt-5 inline-flex h-11 items-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden />
-            Вернуться к заказам
-          </Link>
-        </section>
+        {/* #574: сбой загрузки и «такого заказа нет» — разные ситуации: в первом
+            случае обновление страницы помогает, во втором нет. Раньше текст
+            ошибки подставлялся внутрь блока «Заказ не найден». */}
+        {error ? (
+          <ErrorState
+            title="Не удалось загрузить заказ"
+            description={error}
+            action={backToOrdersLink}
+          />
+        ) : (
+          <EmptyState
+            icon={<ReceiptText className="h-10 w-10" aria-hidden />}
+            title="Заказ не найден"
+            description="Возможно, заказ был удалён или принадлежит другому аккаунту."
+            action={backToOrdersLink}
+          />
+        )}
       </AccountShell>
     );
   }
