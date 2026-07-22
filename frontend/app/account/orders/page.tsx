@@ -4,11 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, ClipboardList, RotateCcw } from "lucide-react";
+import { ChevronRight, ClipboardList, Clock3, RotateCcw, Star } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
+import { reservationState } from "@/components/order/ReservationNotice";
 import { getMe, getOrders } from "@/lib/auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
-import { formatDate, formatPrice, pluralize } from "@/lib/format";
+import { formatDate, formatDateTime, formatPrice, pluralize } from "@/lib/format";
 import { isCancelled, isDelivered, isInProgress, statusBadgeClass } from "@/lib/order-status";
 import type { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -146,11 +147,25 @@ export default function OrdersPage() {
                   </p>
                 </div>
                 {order.delivery_address && (
-                  <p className="max-w-md text-right text-xs leading-5 text-ink-3">
+                  <p className="max-w-md text-xs leading-5 text-ink-3 sm:text-right">
                     {order.delivery_address}
                   </p>
                 )}
               </div>
+
+              {/* #574: резерв виден и в списке. Раньше «ждём оплату» показывалось,
+                  а то, что резерв тикает или уже истёк, — только внутри заказа. */}
+              {reservationState(order) === "held" && (
+                <p className="mt-3 flex items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                  <Clock3 className="h-4 w-4 shrink-0" aria-hidden />
+                  Товар зарезервирован до {formatDateTime(order.reserved_until!)}
+                </p>
+              )}
+              {reservationState(order) === "expired" && (
+                <p className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+                  Время резерва истекло — наличие подтвердит менеджер.
+                </p>
+              )}
 
               {order.items.length > 0 && (
                 <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
@@ -188,15 +203,27 @@ export default function OrdersPage() {
                 {isDelivered(order) && (
                   <Link
                     href="/catalog"
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line px-4 text-sm font-semibold text-ink transition hover:bg-raised"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-line px-4 text-sm font-semibold text-ink transition hover:bg-raised sm:h-10"
                   >
                     <RotateCcw className="h-4 w-4" aria-hidden />
                     Повторить заказ
                   </Link>
                 )}
+                {/* #574: «Оставить отзыв» была только внутри заказа — из списка
+                    доставленных заказов путь к отзыву не просматривался.
+                    Форма живёт на странице заказа, поэтому ведём туда якорем. */}
+                {isDelivered(order) && (
+                  <Link
+                    href={`/account/orders/${encodeURIComponent(order.order_number)}#review`}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-line px-4 text-sm font-semibold text-ink transition hover:bg-raised sm:h-10"
+                  >
+                    <Star className="h-4 w-4" aria-hidden />
+                    Оставить отзыв
+                  </Link>
+                )}
                 <Link
                   href={`/account/orders/${encodeURIComponent(order.order_number)}`}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink transition hover:brightness-110"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink transition hover:brightness-110 sm:h-10"
                 >
                   Открыть заказ
                   <ChevronRight className="h-4 w-4" aria-hidden />

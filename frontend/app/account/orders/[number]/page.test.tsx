@@ -79,7 +79,7 @@ describe("OrderDetailsPage", () => {
 
     expect(await screen.findByText("Дрель аккумуляторная")).toBeInTheDocument();
     expect(screen.getByText("ООО Инструмент")).toBeInTheDocument();
-    expect(screen.getByText("В том числе НДС 20%")).toBeInTheDocument();
+    expect(screen.getByText("В т.ч. НДС 20%")).toBeInTheDocument();
     expect(screen.getByText("Позвонить перед доставкой")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Открыть счёт" })).toHaveAttribute(
       "href",

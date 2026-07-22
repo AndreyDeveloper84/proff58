@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { AccountDialog } from "@/components/account/AccountDialog";
-import { ReservationNotice } from "@/components/order/ReservationNotice";
+import { ReservationNotice, reservationState } from "@/components/order/ReservationNotice";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { StarDisplay } from "@/components/reviews/StarRating";
 import { getMe, getOrder } from "@/lib/auth";
@@ -199,6 +199,14 @@ export default function OrderDetailsPage() {
               </p>
             </div>
           </div>
+          {/* #574: резерв — рядом со статусами заказа, а не спрятан в карточке
+              «Оплата» внизу. Это срочная информация: пока она была под сгибом,
+              покупатель узнавал о сроке уже после его истечения. */}
+          {reservationState(order) !== "none" && (
+            <div className="px-5 pb-5 lg:px-6">
+              <ReservationNotice order={order} />
+            </div>
+          )}
           {isB2B && (
             <div className="flex flex-col gap-3 border-t border-line bg-raised/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
               <div className="flex items-start gap-3">
@@ -251,9 +259,6 @@ export default function OrderDetailsPage() {
               value={displayToken(order.payment_method, PAYMENT_METHOD_LABELS)}
             />
             <InfoRow label="Статус" value={PAYMENT_STATUS_LABELS[order.payment_status]} />
-            <div>
-              <ReservationNotice order={order} />
-            </div>
           </InfoCard>
 
           <InfoCard icon={UserRound} title="Получатель">
@@ -319,7 +324,7 @@ export default function OrderDetailsPage() {
                     value={formatPrice(Number(order.amount_without_vat) || 0, order.currency)}
                   />
                   <TotalRow
-                    label={`В том числе НДС ${order.vat_rate}%`}
+                    label={`В т.ч. НДС ${order.vat_rate}%`}
                     value={formatPrice(Number(order.vat_amount) || 0, order.currency)}
                   />
                 </div>
@@ -335,8 +340,9 @@ export default function OrderDetailsPage() {
           </div>
         </section>
 
+        {/* #574: id — цель ссылки «Оставить отзыв» из списка заказов. */}
         {isDelivered(order) && review !== "disabled" && review !== undefined && (
-          <section className="rounded-lg border border-line bg-surface p-5">
+          <section id="review" className="scroll-mt-24 rounded-lg border border-line bg-surface p-5">
             <h2 className="text-sm font-semibold text-ink">Отзыв о заказе</h2>
             {review === null ? (
               <div className="mt-3">
@@ -346,7 +352,7 @@ export default function OrderDetailsPage() {
                 <button
                   type="button"
                   onClick={() => setReviewOpen(true)}
-                  className="mt-3 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink"
+                  className="mt-3 inline-flex h-11 items-center rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink sm:h-10"
                 >
                   Оставить отзыв
                 </button>

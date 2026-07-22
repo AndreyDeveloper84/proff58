@@ -42,6 +42,11 @@ export default function ThanksPage() {
   }, [orderNumber]);
   const order = useSyncExternalStore(subscribe, getSnapshot, () => null);
 
+  // Сумма товаров из снимка строк: order.total включает доставку, а отдельного
+  // поля «товары» бэк не отдаёт.
+  const itemsTotal =
+    order?.items.reduce((sum, item) => sum + (Number(item.line_total) || 0), 0) ?? 0;
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <div className="flex flex-col items-center gap-4 text-center">
@@ -60,8 +65,23 @@ export default function ThanksPage() {
           Мы свяжемся с вами для подтверждения. Если есть вопросы — позвоните нам или
           напишите на почту.
         </p>
+        {/* #574: резерв — сразу под подтверждением, а не внизу карточки деталей:
+            срок короткий, и увидеть его нужно первым делом. */}
+        {order && <ReservationNotice order={order} />}
         {order?.access_token && (
           <TrackOrderInMaxCta orderNumber={order.order_number} accessToken={order.access_token} />
+        )}
+        {/* #574: без снимка заказа страница показывала голый номер и ничего больше.
+            Объясняем, что заказ создан, и даём путь к нему. */}
+        {!order && (
+          <div className="rounded-lg border border-line bg-surface px-4 py-3 text-sm text-ink-2">
+            Детали заказа не сохранились в этом браузере — на сам заказ это не влияет.
+            Состав и статус смотрите{" "}
+            <Link href="/account/orders" className="font-semibold text-accent hover:underline">
+              в личном кабинете
+            </Link>
+            .
+          </div>
         )}
       </div>
 
@@ -101,9 +121,6 @@ export default function ThanksPage() {
                 </div>
               )}
             </div>
-            <div className="mt-3">
-              <ReservationNotice order={order} />
-            </div>
           </div>
 
           <div className="rounded-lg border border-line bg-surface p-5">
@@ -118,15 +135,46 @@ export default function ThanksPage() {
                     <span className="text-ink-3"> × {item.quantity}</span>
                   </span>
                   <span className="shrink-0 font-display font-semibold text-ink">
-                    {item.line_total ? formatPrice(Number(item.line_total)) : "—"}
+                    {item.line_total ? formatPrice(Number(item.line_total), order.currency) : "—"}
                   </span>
                 </div>
               ))}
             </div>
-            <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
-              <span className="text-lg text-ink-2">Итого:</span>
-              <span className="font-display text-2xl font-bold text-ink">
-                {formatPrice(Number(order.total))}
+            {/* #574: итог был одной строкой без разбивки — покупатель не понимал,
+                вошла ли доставка в сумму. Раскладываем по снимку заказа; валюта
+                берётся из заказа, как в кабинете. */}
+            <div className="mt-3 space-y-1 border-t border-line pt-3 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 flex-1 truncate text-ink-2">Товары</span>
+                <span className="shrink-0 text-ink">{formatPrice(itemsTotal, order.currency)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 flex-1 truncate text-ink-2">Доставка</span>
+                <span className="shrink-0 text-ink">
+                  {order.delivery_cost === null
+                    ? "уточнит менеджер"
+                    : Number(order.delivery_cost) === 0
+                      ? "бесплатно"
+                      : formatPrice(Number(order.delivery_cost), order.currency)}
+                </span>
+              </div>
+              {order.vat_rate > 0 && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="min-w-0 flex-1 truncate text-ink-2">
+                    В т.ч. НДС {order.vat_rate}%
+                  </span>
+                  <span className="shrink-0 text-ink">
+                    {formatPrice(Number(order.vat_amount) || 0, order.currency)}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-3">
+              <span className="min-w-0 flex-1 text-lg text-ink-2">
+                {order.delivery_cost === null ? "Предварительный итог:" : "Итого:"}
+              </span>
+              <span className="shrink-0 font-display text-2xl font-bold text-ink">
+                {formatPrice(Number(order.total), order.currency)}
               </span>
             </div>
           </div>
