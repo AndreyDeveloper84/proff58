@@ -150,8 +150,9 @@ def apply_sourced_value(cmd: SourcedValueCommand) -> ApplyResult:
         return ApplyResult("applied")
 
     # attribute
-    attr = Attribute.objects.filter(slug=cmd.attribute_slug).first()
-    if attr is None:
+    try:
+        attr = Attribute.objects.get(slug=cmd.attribute_slug)
+    except Attribute.DoesNotExist:
         return ApplyResult("missing_attribute")
     pav = ProductAttributeValue.objects.filter(product=product, attribute=attr).first()
     current_source = pav.source if pav else ""
@@ -163,12 +164,15 @@ def apply_sourced_value(cmd: SourcedValueCommand) -> ApplyResult:
     is_option = attr.attribute_type in (AttributeType.SELECT, AttributeType.MULTISELECT)
     if is_option:  # #371/#9b: select/multiselect читаются из value_option, не value_text
         raw = cmd.value.get("value")
-        option = (
-            AttributeOption.objects.filter(attribute=attr, slug=raw).first()
-            or AttributeOption.objects.filter(attribute=attr, value=raw).first()
-        )
-        if option is None:
-            return ApplyResult("invalid", "unknown option")
+        try:
+            option = AttributeOption.objects.get(attribute=attr, slug=raw)
+        except AttributeOption.DoesNotExist:
+            try:
+                option = AttributeOption.objects.get(attribute=attr, value=raw)
+            except (AttributeOption.DoesNotExist, AttributeOption.MultipleObjectsReturned):
+                return ApplyResult("invalid", "unknown option")
+        except AttributeOption.MultipleObjectsReturned:
+            return ApplyResult("invalid", "option slug conflict")
     else:
         try:
             coerced = _coerce(attr.attribute_type, cmd.value)
