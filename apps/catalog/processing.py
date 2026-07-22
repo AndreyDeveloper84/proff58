@@ -595,9 +595,7 @@ def apply_catalog_change(
             except AttributeOption.MultipleObjectsReturned:
                 locked_change.status = CatalogChangeStatus.INVALID
                 locked_change.reason_code = "option_slug_conflict"
-                locked_change.reason_detail = (
-                    f"multiple tool_type options for slug: {option_slug}"
-                )
+                locked_change.reason_detail = f"multiple tool_type options for slug: {option_slug}"
                 locked_change.save(update_fields=["status", "reason_code", "reason_detail"])
                 _mark_item_needs_review(
                     locked_item, "option_slug_conflict", locked_change.reason_detail

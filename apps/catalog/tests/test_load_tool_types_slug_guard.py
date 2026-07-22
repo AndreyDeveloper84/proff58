@@ -80,7 +80,9 @@ def test_slug_value_conflict_with_db_rejected(tmp_path):
     attr = Attribute.objects.create(
         slug="tool_type", name="Тип инструмента", attribute_type=AttributeType.SELECT
     )
-    AttributeOption.objects.create(attribute=attr, value="Степлеры (скобозабивные)", slug="steplery")
+    AttributeOption.objects.create(
+        attribute=attr, value="Степлеры (скобозабивные)", slug="steplery"
+    )
     base = _rules_file(
         tmp_path,
         [{"tool_type": "Степлеры и заклёпочники", "slug": "steplery"}],

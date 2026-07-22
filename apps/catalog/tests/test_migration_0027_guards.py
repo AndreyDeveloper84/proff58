@@ -19,9 +19,7 @@ _spec.loader.exec_module(_mig)
 
 
 def _attr():
-    return Attribute.objects.create(
-        slug="tool_type", name="T", attribute_type=AttributeType.SELECT
-    )
+    return Attribute.objects.create(slug="tool_type", name="T", attribute_type=AttributeType.SELECT)
 
 
 @pytest.mark.django_db
