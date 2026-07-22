@@ -135,6 +135,18 @@ export type CartLine = {
   price_type: string;
   currency: string;
   line_total: string | null;
+  // #571: скидка по акции/промокоду на строку (не путать с маркетинговым discount).
+  promo_discount: string | null;
+};
+
+// #571: применённая акция в breakdown корзины/заказа (суммы считает только сервер).
+export type AppliedPromotion = {
+  id: number;
+  name: string;
+  discount_type: "percent" | "fixed_amount" | "free_delivery";
+  scope: "product" | "category" | "cart";
+  promo_code: string;
+  amount: string;
 };
 
 export type Cart = {
@@ -146,6 +158,15 @@ export type Cart = {
   // #375: валюты строк различаются → бэк обнуляет total и поднимает флаг.
   // Без обработки флага UI показывал «Итого: 0 ₽» без объяснения причины.
   has_mixed_currencies: boolean;
+  // #571: промо-breakdown. total — сумма строк ДО промо; grand_total — к оплате
+  // после скидок на товары. Поля присутствуют всегда (при выключенном флаге
+  // promotions_enabled=false и значения нейтральны).
+  items_discount_total: string;
+  grand_total: string;
+  promo_code: string;
+  applied_promotions: AppliedPromotion[];
+  promo_code_error: { code: string; message: string } | null;
+  promotions_enabled: boolean;
 };
 
 export type OrderItem = {

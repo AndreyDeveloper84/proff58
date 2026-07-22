@@ -112,6 +112,46 @@ class CartView(APIView):
         return _cart_response(request, cart)
 
 
+class CartPromoView(APIView):
+    """POST/DELETE /api/cart/promo/ — применить/снять промокод (#571).
+
+    Код валидируется ДО сохранения: невалидный не прилипает к корзине (400 с
+    человеческим текстом). Флаг promotions выключен → 404 (фичи нет). Суммы
+    скидок фронт не передаёт никогда — только код; расчёт в get_cart_view.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [OrdersRateThrottle]
+
+    def post(self, request):
+        from apps.core.features import is_enabled
+        from apps.promotions.services import resolve_promo_code
+
+        if not is_enabled("promotions"):
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        code = str(request.data.get("code", "") or "").strip()
+        if not code:
+            return Response({"detail": "Укажите промокод."}, status=status.HTTP_400_BAD_REQUEST)
+        promo, error = resolve_promo_code(code)
+        if error is not None:
+            return Response({"detail": error.message}, status=status.HTTP_400_BAD_REQUEST)
+        cart = _get_or_create_active_cart(request)
+        cart.promo_code = promo.promo_code  # каноническое написание кода
+        cart.save(update_fields=["promo_code", "updated_at"])
+        return _cart_response(request, cart)
+
+    def delete(self, request):
+        from apps.core.features import is_enabled
+
+        if not is_enabled("promotions"):
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        cart = _get_or_create_active_cart(request)
+        if cart.promo_code:
+            cart.promo_code = ""
+            cart.save(update_fields=["promo_code", "updated_at"])
+        return _cart_response(request, cart)
+
+
 class CartItemsView(APIView):
     """POST /api/cart/items/ — добавить товар в корзину."""
 

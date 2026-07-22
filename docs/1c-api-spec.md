@@ -370,15 +370,23 @@ POST /api/1c/stocks/update
       "payment": { "method": "online", "status": "paid" },
       "customer": { "type": "b2c", "name": "Иван Иванов", "phone": "+79000000000", "email": "client@example.com" },
       "delivery": { "method": "delivery", "address": "Пенза, ул. Московская, 1", "comment": "Позвонить за час", "cost": "0.00" },
-      "totals": { "items_total": "5900.00", "delivery_total": "0.00", "total": "5900.00", "currency": "RUB" },
+      "totals": { "items_total": "5900.00", "delivery_total": "0.00", "total": "5900.00", "currency": "RUB", "items_discount_total": "0.00", "promo_code": "" },
       "items": [
-        { "line_id": 1, "external_id": "1c-000123", "sku": "BOSCH-GSB13RE", "name": "Дрель ударная BOSCH GSB 13 RE", "unit": "шт", "quantity": "1.000", "price": "5900.00", "total": "5900.00" }
+        { "line_id": 1, "external_id": "1c-000123", "sku": "BOSCH-GSB13RE", "name": "Дрель ударная BOSCH GSB 13 RE", "unit": "шт", "quantity": "1.000", "price": "5900.00", "total": "5900.00", "promo_discount": "0.00" }
       ]
     }
   ]
 }
 ```
 
+> **Скидки по акциям/промокодам (#571).** ДОП-поля, добавленные к контракту
+> (неизвестные поля 1С игнорирует): `items[].promo_discount` — скидка на строку,
+> `totals.items_discount_total` — сумма скидок, `totals.promo_code` — справочно.
+> `items[].total` — сумма строки **ДО** скидки; `totals.total` — итог заказа
+> **ПОСЛЕ** скидок (и с доставкой, когда она передаётся). Товарная часть:
+> `Σ items[].total − totals.items_discount_total`.
+> Если 1С должна проводить скидку документом — согласовать маппинг с интегратором.
+>
 > **Стоимость доставки пока не передаётся.** Поля `delivery.cost` и
 > `totals.delivery_total` сейчас **всегда `"0.00"`**, а `totals.total` равен
 > `items_total` (сумме строк). Поле — часть финального контракта и наполнится
