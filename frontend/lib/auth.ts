@@ -160,11 +160,13 @@ export async function maxAccountStatus() {
   }
 }
 
-export async function getOrders(): Promise<Order[]> {
+export async function getOrders(): Promise<Order[] | "error"> {
   // #438 (m-05): /api/orders теперь пагинирован ({count, results}); разворачиваем
   // results. Массив на входе тоже поддерживаем (обратная совместимость).
   // Без хвостового слэша: nginx матчит BFF-роуты точными путями (location = /api/orders),
   // а путь со слэшем уходил в Django напрямую мимо BFF (см. правило в lib/cart.ts).
+  // #574: сбой возвращает "error", а не [] — иначе при 500 экран показывал
+  // «Заказов пока нет», то есть пустое состояние врало о наличии данных.
   try {
     const data = await apiFetch<{ results?: Order[] } | Order[]>(
       "/api/orders",
@@ -172,7 +174,7 @@ export async function getOrders(): Promise<Order[]> {
     );
     return Array.isArray(data) ? data : (data.results ?? []);
   } catch (e) {
-    if (e instanceof ApiError) return [];
+    if (e instanceof ApiError) return "error";
     throw e;
   }
 }
@@ -183,11 +185,12 @@ export async function getOrder(orderNumber: string): Promise<Order> {
   });
 }
 
-export async function getWishlist(): Promise<WishlistItem[]> {
+/** #574: "error" вместо [] — пустой список и сбой загрузки различимы на экране. */
+export async function getWishlist(): Promise<WishlistItem[] | "error"> {
   try {
     return await apiFetch<WishlistItem[]>("/api/account/wishlist/", { method: "GET" });
   } catch (e) {
-    if (e instanceof ApiError) return [];
+    if (e instanceof ApiError) return "error";
     throw e;
   }
 }

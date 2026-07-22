@@ -1,7 +1,23 @@
 // Отзывы (#573). Мутации/«мои» — через BFF (/api/account/reviews, nginx-префикс
 // уже в Next); публичный список — GET напрямую в Django (catch-all, без CSRF).
 import { ApiError, apiFetch } from "@/lib/api";
-import type { MyReview, ProductReviewsPayload } from "@/lib/types";
+import type { MyReview, ProductReviewsPayload, ReviewStatus } from "@/lib/types";
+
+// #574: единые формулировки статуса модерации. Раньше страница заказа и раздел
+// «Мои отзывы» описывали один и тот же статус по-разному (свой текст против
+// status_display с бэка), и пользователь видел два разных сообщения об одном отзыве.
+export const REVIEW_STATUS_LABEL: Record<ReviewStatus, string> = {
+  pending: "На модерации",
+  approved: "Опубликован",
+  rejected: "Отклонён",
+};
+
+/** Пояснение статуса на странице заказа: что произошло и что дальше. */
+export function reviewStatusText(status: ReviewStatus, rejectionReason?: string): string {
+  if (status === "pending") return "Отзыв отправлен на модерацию — опубликуем после проверки.";
+  if (status === "approved") return "Отзыв опубликован на странице товара.";
+  return rejectionReason ? `Отзыв отклонён: ${rejectionReason}` : "Отзыв отклонён.";
+}
 
 export type ReviewDraft = {
   order_number: string;
@@ -18,7 +34,8 @@ export function createReview(draft: ReviewDraft): Promise<MyReview> {
   });
 }
 
-export async function getMyReviews(): Promise<MyReview[] | "disabled"> {
+/** #574: сбой — "error", а не []: «Отзывов пока нет» не должно скрывать 500. */
+export async function getMyReviews(): Promise<MyReview[] | "disabled" | "error"> {
   try {
     const data = await apiFetch<{ results?: MyReview[] }>("/api/account/reviews", {
       method: "GET",
@@ -26,7 +43,7 @@ export async function getMyReviews(): Promise<MyReview[] | "disabled"> {
     return data.results ?? [];
   } catch (e) {
     if (e instanceof ApiError && e.code === "reviews_disabled") return "disabled";
-    if (e instanceof ApiError) return [];
+    if (e instanceof ApiError) return "error";
     throw e;
   }
 }

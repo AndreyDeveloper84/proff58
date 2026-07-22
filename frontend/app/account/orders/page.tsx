@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, ClipboardList, RotateCcw } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { getMe, getOrders } from "@/lib/auth";
-import { formatPrice, pluralize } from "@/lib/format";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { formatDate, formatPrice, pluralize } from "@/lib/format";
 import { isCancelled, isDelivered, isInProgress, statusBadgeClass } from "@/lib/order-status";
 import type { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -30,17 +31,11 @@ function orderMatchesTab(order: Order, tab: OrderTab) {
   return isInProgress(order);
 }
 
-function orderDate(value: string) {
-  return new Date(value).toLocaleDateString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
 export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[] | null>(null);
+  // #574: сбой загрузки — своё состояние, иначе экран показывал «Заказов пока нет».
+  const [failed, setFailed] = useState(false);
   const [tab, setTab] = useState<OrderTab>("all");
 
   useEffect(() => {
@@ -51,7 +46,9 @@ export default function OrdersPage() {
         return;
       }
       getOrders().then((data) => {
-        if (active) setOrders(data);
+        if (!active) return;
+        if (data === "error") setFailed(true);
+        else setOrders(data);
       });
     });
     return () => {
@@ -85,33 +82,35 @@ export default function OrdersPage() {
           ))}
         </div>
 
-        {orders === null && (
-          <div
-            className="h-56 animate-pulse rounded-lg border border-line bg-surface"
-            aria-label="Загрузка заказов"
+        {failed && (
+          <ErrorState
+            title="Не удалось загрузить заказы"
+            description="Проверьте соединение и обновите страницу — заказы никуда не пропали."
           />
         )}
 
-        {orders !== null && visibleOrders.length === 0 && (
-          <section className="rounded-lg border border-line bg-surface px-5 py-12 text-center">
-            <ClipboardList className="mx-auto h-10 w-10 text-ink-3" aria-hidden />
-            <h2 className="mt-3 text-base font-semibold text-ink">
-              {orders.length === 0 ? "Заказов пока нет" : "В этой категории заказов нет"}
-            </h2>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-ink-3">
-              {orders.length === 0
+        {!failed && orders === null && <LoadingState label="Загружаем заказы…" />}
+
+        {!failed && orders !== null && visibleOrders.length === 0 && (
+          <EmptyState
+            icon={<ClipboardList className="h-10 w-10" aria-hidden />}
+            title={orders.length === 0 ? "Заказов пока нет" : "В этой категории заказов нет"}
+            description={
+              orders.length === 0
                 ? "Оформите первый заказ — здесь появятся его состав, сумма и статус."
-                : "Выберите другую вкладку, чтобы посмотреть остальные заказы."}
-            </p>
-            {orders.length === 0 && (
-              <Link
-                href="/catalog"
-                className="mt-5 inline-flex h-11 items-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
-              >
-                Перейти в каталог
-              </Link>
-            )}
-          </section>
+                : "Выберите другую вкладку, чтобы посмотреть остальные заказы."
+            }
+            action={
+              orders.length === 0 ? (
+                <Link
+                  href="/catalog"
+                  className="inline-flex h-11 items-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
+                >
+                  Перейти в каталог
+                </Link>
+              ) : undefined
+            }
+          />
         )}
 
         {visibleOrders.map((order) => (
@@ -123,7 +122,7 @@ export default function OrdersPage() {
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-4 sm:px-5">
               <div>
                 <h2 className="text-sm font-semibold text-ink">№ {order.order_number}</h2>
-                <p className="mt-1 text-[11px] text-ink-3">от {orderDate(order.created_at)}</p>
+                <p className="mt-1 text-[11px] text-ink-3">от {formatDate(order.created_at)}</p>
               </div>
               <span
                 className={cn(

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Clock3 } from "lucide-react";
+import { formatDateTime } from "@/lib/format";
 import type { Order } from "@/lib/types";
 
 // Плашка резерва товара для B2C (#568): «зарезервировано до HH:MM» либо
@@ -9,16 +10,6 @@ import type { Order } from "@/lib/types";
 // истечения даёт сервер (reservation_expired), клиентский interval лишь
 // переключает плашку, если срок наступил, пока страница открыта.
 const RECHECK_MS = 30_000;
-
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export function ReservationNotice({ order }: { order: Order }) {
   const { reserved_until, reservation_status, reservation_expired } = order;

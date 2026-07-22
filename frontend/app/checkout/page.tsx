@@ -12,7 +12,7 @@ import {
   type DeliverySlotOption,
   type DeliveryZoneOption,
 } from "@/lib/delivery";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatSlotDay } from "@/lib/format";
 import { placeOrder } from "@/lib/orders";
 import {
   isLegalEntityInn,
@@ -30,15 +30,6 @@ type PaymentMethod = "online" | "invoice";
 
 const inputClass =
   "w-full rounded-md border border-line bg-canvas px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none";
-
-// #569: подпись группы слотов: «вт, 21 июля».
-function formatSlotDate(iso: string) {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("ru-RU", {
-    weekday: "short",
-    day: "numeric",
-    month: "long",
-  });
-}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -467,7 +458,7 @@ export default function CheckoutPage() {
                   >
                     <option value="">— выберите интервал —</option>
                     {slotsByDate.map(([date, daySlots]) => (
-                      <optgroup key={date} label={formatSlotDate(date)}>
+                      <optgroup key={date} label={formatSlotDay(date)}>
                         {daySlots.map((slot) => (
                           <option key={slot.id} value={slot.id}>
                             {slot.starts_at}–{slot.ends_at}

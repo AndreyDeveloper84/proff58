@@ -3,16 +3,9 @@
 import { useState } from "react";
 import { Star } from "lucide-react";
 import { StarDisplay } from "@/components/reviews/StarRating";
+import { formatDate } from "@/lib/format";
 import { fetchProductReviews } from "@/lib/reviews";
 import type { ProductReviewsPayload, PublicReview } from "@/lib/types";
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("ru-RU", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 // Публичные отзывы товара (#573): SSR отдал первую страницу+агрегат,
 // «Показать ещё» догружает клиентски. Только approved (гарантирует бэк).

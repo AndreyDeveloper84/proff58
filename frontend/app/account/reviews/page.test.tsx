@@ -7,7 +7,15 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/account/reviews",
 }));
 vi.mock("@/lib/auth", () => ({ getMe: vi.fn() }));
-vi.mock("@/lib/reviews", () => ({ getMyReviews: vi.fn() }));
+vi.mock("@/lib/reviews", () => ({
+  getMyReviews: vi.fn(),
+  // #574: статусы теперь берутся из общего словаря, а не из status_display бэка.
+  REVIEW_STATUS_LABEL: {
+    pending: "На модерации",
+    approved: "Опубликован",
+    rejected: "Отклонён",
+  },
+}));
 
 import { getMe } from "@/lib/auth";
 import { getMyReviews } from "@/lib/reviews";

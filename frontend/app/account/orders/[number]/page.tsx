@@ -24,9 +24,15 @@ import { ReservationNotice } from "@/components/order/ReservationNotice";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { StarDisplay } from "@/components/reviews/StarRating";
 import { getMe, getOrder } from "@/lib/auth";
-import { formatDeliverySlot, formatPrice, humanizeToken, pluralize } from "@/lib/format";
+import {
+  formatDateTime,
+  formatDeliverySlot,
+  formatPrice,
+  humanizeToken,
+  pluralize,
+} from "@/lib/format";
 import { isDelivered, statusBadgeClass } from "@/lib/order-status";
-import { getMyReviewForOrder } from "@/lib/reviews";
+import { getMyReviewForOrder, reviewStatusText } from "@/lib/reviews";
 import type { MyReview } from "@/lib/types";
 import type { Order, OrderItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -53,16 +59,6 @@ const DELIVERY_METHOD_LABELS: Record<string, string> = {
   pickup: "Самовывоз",
   transport_company: "Транспортная компания",
 };
-
-function dateTime(value: string) {
-  return new Date(value).toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function displayToken(value: string, labels: Record<string, string>) {
   if (!value) return "Не указан";
@@ -188,7 +184,7 @@ export default function OrderDetailsPage() {
                   {PAYMENT_STATUS_LABELS[order.payment_status]}
                 </span>
               </div>
-              <p className="mt-3 text-sm text-ink-3">Оформлен {dateTime(order.created_at)}</p>
+              <p className="mt-3 text-sm text-ink-3">Оформлен {formatDateTime(order.created_at)}</p>
               <p className="mt-1 text-xs text-ink-3">
                 {order.items.length}{" "}
                 {pluralize(order.items.length, "товар", "товара", "товаров")}
@@ -358,17 +354,19 @@ export default function OrderDetailsPage() {
             ) : (
               <div className="mt-3 space-y-2 text-sm">
                 <StarDisplay value={review.product_rating} />
-                {review.status === "pending" && (
-                  <p className="text-ink-2">Спасибо! Отзыв отправлен на модерацию.</p>
-                )}
-                {review.status === "approved" && (
-                  <p className="text-accent">Отзыв опубликован.</p>
-                )}
-                {review.status === "rejected" && (
-                  <p className="text-danger">
-                    Отзыв отклонён{review.rejection_reason ? `: ${review.rejection_reason}` : "."}
-                  </p>
-                )}
+                {/* #574: формулировки — из lib/reviews, чтобы страница заказа и
+                    раздел «Мои отзывы» говорили о статусе одинаково. */}
+                <p
+                  className={
+                    review.status === "approved"
+                      ? "text-accent"
+                      : review.status === "rejected"
+                        ? "text-danger"
+                        : "text-ink-2"
+                  }
+                >
+                  {reviewStatusText(review.status, review.rejection_reason)}
+                </p>
               </div>
             )}
           </section>

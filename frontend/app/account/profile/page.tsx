@@ -42,7 +42,7 @@ import {
   type AccountUser,
   type WishlistItem,
 } from "@/lib/auth";
-import { formatPrice, pluralize } from "@/lib/format";
+import { formatDate, formatPrice, pluralize } from "@/lib/format";
 import { isInProgress, statusBadgeClass } from "@/lib/order-status";
 import type { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -55,14 +55,6 @@ import {
   normalizePhone,
 } from "@/lib/validation";
 
-
-function orderDate(value: string) {
-  return new Date(value).toLocaleDateString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
 
 function DashboardLoading() {
   return (
@@ -93,6 +85,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<AccountUser | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersFailed, setOrdersFailed] = useState(false);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
@@ -128,8 +121,10 @@ export default function ProfilePage() {
         const [orderData, wishlistData] = await Promise.all([getOrders(), getWishlist()]);
         if (!active) return;
         setUser(data);
-        setOrders(orderData);
-        setWishlist(wishlistData);
+        // #574: сбой загрузки не превращаем в «0 заказов» — счётчики врали бы.
+        if (orderData === "error") setOrdersFailed(true);
+        else setOrders(orderData);
+        if (wishlistData !== "error") setWishlist(wishlistData);
         setLoading(false);
       })
       .catch(() => {
@@ -350,7 +345,14 @@ export default function ProfilePage() {
               </Link>
             </div>
 
-            {orders.length === 0 ? (
+            {ordersFailed ? (
+              <div className="px-4 py-10 text-center">
+                <p className="text-sm font-semibold text-danger">Не удалось загрузить заказы</p>
+                <p className="mt-1 text-xs text-ink-3">
+                  Обновите страницу — заказы никуда не пропали.
+                </p>
+              </div>
+            ) : orders.length === 0 ? (
               <div className="px-4 py-10 text-center">
                 <ClipboardList className="mx-auto h-9 w-9 text-ink-3" aria-hidden />
                 <p className="mt-3 text-sm font-semibold text-ink">Заказов пока нет</p>
@@ -376,7 +378,7 @@ export default function ProfilePage() {
                         № {order.order_number}
                       </p>
                       <p className="mt-0.5 text-[11px] text-ink-3">
-                        от {orderDate(order.created_at)}
+                        от {formatDate(order.created_at)}
                       </p>
                     </div>
                     <span

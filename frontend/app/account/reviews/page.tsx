@@ -7,7 +7,9 @@ import { Star } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { StarDisplay } from "@/components/reviews/StarRating";
 import { getMe } from "@/lib/auth";
-import { getMyReviews } from "@/lib/reviews";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { formatDate } from "@/lib/format";
+import { REVIEW_STATUS_LABEL, getMyReviews } from "@/lib/reviews";
 import type { MyReview, ReviewStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -17,18 +19,12 @@ const STATUS_BADGE: Record<ReviewStatus, string> = {
   rejected: "bg-red-50 text-danger",
 };
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
 export default function MyReviewsPage() {
   const router = useRouter();
   const [items, setItems] = useState<MyReview[]>([]);
   const [disabled, setDisabled] = useState(false);
+  // #574: сбой загрузки отличаем от «отзывов пока нет».
+  const [failed, setFailed] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,6 +38,7 @@ export default function MyReviewsPage() {
         const data = await getMyReviews();
         if (!active) return;
         if (data === "disabled") setDisabled(true);
+        else if (data === "error") setFailed(true);
         else setItems(data);
         setLoading(false);
       })
@@ -56,10 +53,7 @@ export default function MyReviewsPage() {
   if (loading) {
     return (
       <AccountShell title="Отзывы">
-        <div className="space-y-4" aria-label="Загрузка отзывов">
-          <div className="h-36 animate-pulse rounded-lg border border-line bg-surface" />
-          <div className="h-36 animate-pulse rounded-lg border border-line bg-surface" />
-        </div>
+        <LoadingState label="Загружаем отзывы…" />
       </AccountShell>
     );
   }
@@ -67,17 +61,30 @@ export default function MyReviewsPage() {
   return (
     <AccountShell title="Отзывы">
       {disabled ? (
-        <div className="rounded-lg border border-line bg-surface p-10 text-center text-sm text-ink-2">
-          Раздел отзывов временно отключён.
-        </div>
+        <EmptyState
+          icon={<Star className="h-10 w-10" aria-hidden />}
+          title="Раздел отзывов временно отключён"
+          description="Загляните позже — мы вернём его, как только закончим настройку."
+        />
+      ) : failed ? (
+        <ErrorState
+          title="Не удалось загрузить отзывы"
+          description="Проверьте соединение и обновите страницу."
+        />
       ) : items.length === 0 ? (
-        <div className="rounded-lg border border-line bg-surface p-10 text-center">
-          <Star className="mx-auto h-10 w-10 text-ink-3" aria-hidden />
-          <h2 className="mt-3 font-display text-lg font-semibold text-ink">Отзывов пока нет</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-ink-2">
-            После получения заказа на его странице появится кнопка «Оставить отзыв».
-          </p>
-        </div>
+        <EmptyState
+          icon={<Star className="h-10 w-10" aria-hidden />}
+          title="Отзывов пока нет"
+          description="После получения заказа на его странице появится кнопка «Оставить отзыв»."
+          action={
+            <Link
+              href="/account/orders"
+              className="inline-flex h-11 items-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
+            >
+              К моим заказам
+            </Link>
+          }
+        />
       ) : (
         <div className="space-y-4">
           {items.map((review) => (
@@ -95,7 +102,7 @@ export default function MyReviewsPage() {
                     STATUS_BADGE[review.status],
                   )}
                 >
-                  {review.status_display}
+                  {REVIEW_STATUS_LABEL[review.status]}
                 </span>
               </div>
               <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-3">

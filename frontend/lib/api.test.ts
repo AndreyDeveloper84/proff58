@@ -23,7 +23,21 @@ describe("extractErrorMessage", () => {
     );
   });
 
-  it("фолбэк на «Ошибка N» без тела", () => {
-    expect(extractErrorMessage(undefined, 500)).toBe("Ошибка 500.");
+  // #574: без тела ответа пользователь не должен видеть HTTP-код — только
+  // понятное действие. Фолбэк подбирается по классу статуса.
+  it("фолбэк без тела — человеческий текст, а не код статуса", () => {
+    expect(extractErrorMessage(undefined, 500)).toBe(
+      "Сервис временно недоступен. Попробуйте повторить через минуту.",
+    );
+    expect(extractErrorMessage(undefined, 403)).toBe("Сессия истекла. Войдите заново и повторите.");
+    expect(extractErrorMessage(undefined, 404)).toBe(
+      "Данные не найдены — возможно, страница устарела. Обновите её.",
+    );
+    expect(extractErrorMessage(undefined, 429)).toBe(
+      "Слишком много попыток. Подождите минуту и повторите.",
+    );
+    expect(extractErrorMessage(undefined, 400)).toBe(
+      "Не удалось выполнить действие. Попробуйте ещё раз.",
+    );
   });
 });
