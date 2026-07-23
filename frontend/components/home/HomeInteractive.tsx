@@ -6,7 +6,8 @@ import type { CategoryNode } from "@/lib/catalog";
 import { Hero } from "./Hero";
 import { HomeIntentGrid } from "./HomeIntentGrid";
 import { HomeServiceStrip } from "./HomeServiceStrip";
-import { CategoryGrid } from "./CategoryGrid";
+import { PopularCategories } from "./PopularCategories";
+import { PopularBrands } from "./PopularBrands";
 import { TrustBadges } from "./TrustBadges";
 import { Bestsellers } from "./Bestsellers";
 import { ConsultBlock } from "./ConsultBlock";
@@ -27,9 +28,12 @@ export function HomeInteractive({ categories, bestsellers }: HomeInteractiveProp
       <Hero onConsult={openModal} />
       <HomeIntentGrid />
       <HomeServiceStrip />
-      <CategoryGrid categories={categories} />
-      <TrustBadges />
+      {/* #589: порядок витрины по макету — хиты → категории (pill'ы) → бренды.
+          Крупные плитки CategoryGrid на главной заменены pill-рядом. */}
       <Bestsellers products={bestsellers} />
+      <PopularCategories categories={categories} />
+      <PopularBrands />
+      <TrustBadges />
       <ConsultBlock onConsult={openModal} />
       <AboutStats />
       <InquiryModal open={modalOpen} onClose={() => setModalOpen(false)} />
