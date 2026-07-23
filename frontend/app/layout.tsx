@@ -4,6 +4,7 @@ import { Inter, Oswald } from "next/font/google";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { THEME_INIT_SCRIPT } from "@/components/layout/ThemeToggle";
 import { getSiteTheme } from "@/lib/theme";
 import "./globals.css";
 
@@ -35,9 +36,9 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const theme = await getSiteTheme();
 
-  // #477: светлая тема — по умолчанию (токены в :root). Тёмная — под классом .dark
-  // (secondary/dark-mode). Шапка/подвал остаются тёмными: класс dark на их корне
-  // (см. Header/Footer). Витрина товарных поверхностей — светлая.
+  // #477/#586: светлая тема — по умолчанию (токены в :root). Тёмная — под классом
+  // .dark, управляется переключателем (ThemeToggle). Header следует за темой (#586),
+  // подвал пока тёмный до редизайна #591.
   return (
     <html
       lang="ru"
@@ -52,6 +53,9 @@ export default async function RootLayout({
       }
     >
       <body className="min-h-full antialiased">
+        {/* #586: применяем сохранённую тему ДО отрисовки — без вспышки светлой
+            темы у пользователей, выбравших тёмную. Должен идти первым в body. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         {/* CartProvider — общее состояние корзины (счётчик Header, add-to-cart). */}
         <CartProvider>
           <div className="flex min-h-screen flex-col">
