@@ -515,15 +515,15 @@ class LoadToolTypesGapOptionsTests(TestCase):
 
 
 class LoadToolTypesReuseIdentityTests(TestCase):
-    """Reuse существующих DB options (PR #539 review): identity строк и sort_order.
+    """Reuse существующих DB options: identity строк и sort_order (Wave 7.1/H1).
 
-    load_tool_types делает update_or_create(attribute, value, defaults={slug, sort_order}):
-    существующая запись НЕ дублируется и сохраняет PK/slug, но её sort_order
-    перезаписывается позицией правила в файле (при slug в нескольких категориях
-    побеждает более поздняя категория файла — как у zaryadnye/svar-klemmy).
+    load_tool_types материализует options из canonical manifest, ключ — slug:
+    существующая запись НЕ дублируется и сохраняет PK/value; sort_order
+    по умолчанию НЕ перезаписывается (display metadata), синхронизация —
+    только явным ``--update-display``.
     """
 
-    def test_reuse_preserves_pk_and_value_uniqueness(self):
+    def test_reuse_preserves_pk_value_and_sort_order(self):
         attr = Attribute.objects.create(
             slug="tool_type", name="Тип инструмента", attribute_type=AttributeType.SELECT
         )
@@ -540,20 +540,38 @@ class LoadToolTypesReuseIdentityTests(TestCase):
 
         call_command("load_tool_types")
 
-        # Ожидаемый sort_order — позиция правила; при дублировании slug в файле
-        # побеждает более поздняя категория (повторяем контракт загрузчика).
-        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
-        expected_sort: dict[str, int] = {}
-        for cat in rules.categories:
-            for sort, rule in enumerate(rules.options(cat.category)):
-                expected_sort[rule.slug] = sort
-
         for value, opt in pre.items():
             self.assertEqual(
                 AttributeOption.objects.filter(attribute=attr, value=value).count(),
                 1,
                 f"дубль option для {value!r}",
             )
-            opt.refresh_from_db()  # тот же PK — обновление, а не новая строка
-            self.assertNotEqual(opt.sort_order, sentinel, f"{value!r}: sort_order не перезаписан")
-            self.assertEqual(opt.sort_order, expected_sort[opt.slug])
+            opt.refresh_from_db()  # тот же PK — новой строки нет
+            self.assertEqual(opt.value, value)
+            self.assertEqual(
+                opt.sort_order,
+                sentinel,
+                f"{value!r}: sort_order перезаписан без --update-display",
+            )
+
+    def test_update_display_syncs_sort_order(self):
+        from apps.catalog.taxonomy_manifest import load_manifest
+
+        attr = Attribute.objects.create(
+            slug="tool_type", name="Тип инструмента", attribute_type=AttributeType.SELECT
+        )
+        opt = AttributeOption.objects.create(
+            attribute=attr,
+            value="Специальные ключи",
+            slug="spetsialnye-klyuchi",
+            sort_order=999,
+        )
+        expected = {o.slug: o.sort_order for o in load_manifest().options}["spetsialnye-klyuchi"]
+
+        call_command("load_tool_types", update_display=True)
+
+        opt.refresh_from_db()
+        self.assertEqual(opt.sort_order, expected)
+        self.assertEqual(
+            AttributeOption.objects.filter(attribute=attr, value="Специальные ключи").count(), 1
+        )
