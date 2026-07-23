@@ -55,35 +55,42 @@ export const SITE = {
     { icon: "gift", label: "Программа лояльности" },
   ],
 
+  // #591: только РАБОЧИЕ маршруты — инфо-страниц (/delivery, /about, /faq …)
+  // на сайте нет, битые ссылки в подвале не рисуем. Группы «Компания»/«Покупателям»
+  // из макета появятся вместе со статическими страницами (см. MR).
   footerColumns: [
     {
-      title: "Каталог",
+      title: "Каталог товаров",
       links: [
         { label: "Электроинструмент", href: "/catalog" },
-        { label: "Бензоинструмент", href: "/catalog" },
+        { label: "Ручной инструмент", href: "/catalog" },
+        { label: "Измерительный инструмент", href: "/catalog" },
         { label: "Садовая техника", href: "/catalog" },
-        { label: "Оснастка", href: "/catalog" },
+        { label: "Сварочное оборудование", href: "/catalog" },
+        { label: "Все категории", href: "/catalog" },
       ],
     },
     {
-      title: "Покупателю",
+      title: "Покупателям",
       links: [
-        { label: "Доставка и оплата", href: "/delivery" },
-        { label: "Гарантия", href: "/warranty" },
-        { label: "Возврат", href: "/returns" },
-        { label: "Вопросы и ответы", href: "/faq" },
+        { label: "Личный кабинет", href: "/account/profile" },
+        { label: "Мои заказы", href: "/account/orders" },
+        { label: "Избранное", href: "/account/wishlist" },
+        { label: "Корзина", href: "/cart" },
       ],
     },
     {
-      title: "Компания",
+      title: "Помощь",
       links: [
-        { label: "О магазине", href: "/about" },
-        { label: "Контакты", href: "/contacts" },
-        { label: "Сервисный центр", href: "/service" },
-        { label: "Вакансии", href: "/jobs" },
+        { label: "Поиск по каталогу", href: "/search" },
+        { label: "Подбор инструмента", href: "/catalog" },
       ],
     },
   ],
+
+  // #591: описание магазина в левом блоке подвала.
+  footerAbout:
+    "Профессиональный инструмент с экспертной поддержкой в Пензе. Подберём, доставим, обслужим.",
 
   // Иконка — строковый ключ (маппинг в Footer): vk|telegram|youtube|whatsapp.
   socials: [
