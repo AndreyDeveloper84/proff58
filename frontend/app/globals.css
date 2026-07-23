@@ -12,25 +12,20 @@
   `.dark` (совместимо с @custom-variant dark) ИЛИ [data-theme="dark"] (переключатель
   темы, #586). Ближайший предок с темой выигрывает при резолве var.
 
-  #586: шапка (--header-…/--topbar-…) СЛЕДУЕТ за темой — светлая в светлой теме,
-  тёмная в тёмной (утверждённый макет главной — светлый e-commerce header). Подвал
-  (--footer-…) пока тёмный тема-независимо — его редизайн отдельной задачей (#591).
+  #586/#591: шапка (--header-…/--topbar-…) СЛЕДУЕТ за темой — светлая в светлой
+  теме, тёмная в тёмной (утверждённый макет — светлый e-commerce). Подвал использует
+  обычные семантические токены (bg-surface/border-line) и тоже следует за темой.
 
   Компоненты используют ТОЛЬКО семантические токены (никакого raw-hex) — смена темы
   их не трогает. --accent / --primary приходят из SiteSettings (inline style на <html>).
 */
 
-/* Общие (не зависят от темы): радиусы + тёмная рамка подвала (до #591). */
+/* Общие (не зависят от темы): радиусы. */
 :root {
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-pill: 999px;
-
-  /* Подвал — всегда тёмный до редизайна #591. */
-  --footer-bg: #0e1113;
-  --footer-ink: #aeb6bc;
-  --footer-line: #2a2f34;
 }
 
 /* Светлая тема — ДЕФОЛТ для товарных поверхностей (#477). */
@@ -147,15 +142,12 @@
   --color-st-done: var(--st-done);
   --color-st-cancel: var(--st-cancel);
 
-  /* Тёмная хром-рамка (#477): bg-header, text-header-ink, border-header-line, bg-footer, … */
+  /* Шапка (#586): bg-header, text-header-ink, border-header-line, bg-topbar, … */
   --color-header: var(--header-bg);
   --color-header-ink: var(--header-ink);
   --color-header-line: var(--header-line);
   --color-topbar: var(--topbar-bg);
   --color-topbar-ink: var(--topbar-ink);
-  --color-footer: var(--footer-bg);
-  --color-footer-ink: var(--footer-ink);
-  --color-footer-line: var(--footer-line);
 
   --font-sans: var(--font-inter);
   --font-display: var(--font-oswald);
