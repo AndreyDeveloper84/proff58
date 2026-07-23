@@ -70,6 +70,16 @@ describe("OrdersPage (#574)", () => {
     expect(link.getAttribute("href")).toBe("/account/orders/%D0%9F-1#review");
   });
 
+  it("#573 B2B: у доставленного заказа юрлица пути к отзыву нет", async () => {
+    mockedGetOrders.mockResolvedValue([
+      order({ fulfillment_status: "completed", payment_status: "paid", customer_type: "b2b" }),
+    ]);
+    render(<OrdersPage />);
+    // «Открыть заказ» есть — значит карточка отрисовалась; «Оставить отзыв» — нет.
+    await screen.findByRole("link", { name: /Открыть заказ/ });
+    expect(screen.queryByRole("link", { name: /Оставить отзыв/ })).toBeNull();
+  });
+
   it("сбой загрузки не выдаётся за пустой список", async () => {
     mockedGetOrders.mockResolvedValue("error");
     render(<OrdersPage />);

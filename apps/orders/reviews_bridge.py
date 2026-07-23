@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from apps.accounts.models import CustomerType
+
 from .models import FulfillmentStatus, Order, OrderItem
 
 
@@ -19,6 +21,7 @@ class ReviewableOrder:
     order_id: int
     order_number: str
     is_completed: bool
+    is_b2b: bool
     product_ids: list[int]
 
 
@@ -32,7 +35,7 @@ def get_order_for_review(user, order_number: str) -> ReviewableOrder | None:
         return None
     order = (
         Order.objects.filter(order_number=order_number, user=user)
-        .only("id", "order_number", "fulfillment_status")
+        .only("id", "order_number", "fulfillment_status", "customer_type")
         .first()
     )
     if order is None:
@@ -46,6 +49,7 @@ def get_order_for_review(user, order_number: str) -> ReviewableOrder | None:
         order_id=order.pk,
         order_number=order.order_number,
         is_completed=order.fulfillment_status == FulfillmentStatus.COMPLETED,
+        is_b2b=order.customer_type == CustomerType.B2B,
         product_ids=product_ids,
     )
 

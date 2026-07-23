@@ -4,8 +4,10 @@
 1. фичефлаг ``reviews`` включён;
 2. заказ существует И принадлежит пользователю (чужой/несуществующий не
    различаются — анти-перебор номеров);
-3. заказ строго завершён (``fulfillment_status == completed``; shipped — ещё нет);
-4. отзыв по заказу ещё не оставлен (unique на уровне БД закрывает гонку).
+3. заказ розничный (B2C): в B2B-flow доставки нет, а одна из оценок — доставка,
+   поэтому в Wave 1 отзывы по B2B-заказам не принимаются (см. #573, B2B-доработка);
+4. заказ строго завершён (``fulfillment_status == completed``; shipped — ещё нет);
+5. отзыв по заказу ещё не оставлен (unique на уровне БД закрывает гонку).
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from .models import Review, ReviewStatus
 ERROR_MESSAGES = {
     "reviews_disabled": "Отзывы временно недоступны.",
     "order_not_found": "Заказ не найден.",
+    "b2b_reviews_disabled": "Отзывы доступны только для розничных заказов.",
     "order_not_completed": "Отзыв можно оставить после получения заказа.",
     "already_reviewed": "Вы уже оставили отзыв по этому заказу.",
 }
@@ -61,6 +64,9 @@ def create_review(
     order = get_order_for_review(user, order_number)
     if order is None:
         raise ReviewError("order_not_found")
+    if order.is_b2b:
+        # B2B-flow без доставки — оценивать её нечем; отзывы юрлиц — future scope.
+        raise ReviewError("b2b_reviews_disabled")
     if not order.is_completed:
         raise ReviewError("order_not_completed")
     if Review.objects.filter(order_id=order.order_id).exists():

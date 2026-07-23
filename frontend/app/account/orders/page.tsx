@@ -211,8 +211,9 @@ export default function OrdersPage() {
                 )}
                 {/* #574: «Оставить отзыв» была только внутри заказа — из списка
                     доставленных заказов путь к отзыву не просматривался.
-                    Форма живёт на странице заказа, поэтому ведём туда якорем. */}
-                {isDelivered(order) && (
+                    Форма живёт на странице заказа, поэтому ведём туда якорем.
+                    #573 B2B: юрлицам отзывы в Wave 1 недоступны — путь скрыт. */}
+                {isDelivered(order) && order.customer_type !== "b2b" && (
                   <Link
                     href={`/account/orders/${encodeURIComponent(order.order_number)}#review`}
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-line px-4 text-sm font-semibold text-ink transition hover:bg-raised sm:h-10"
