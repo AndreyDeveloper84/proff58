@@ -8,10 +8,8 @@ import { HomeIntentGrid } from "./HomeIntentGrid";
 import { HomeServiceStrip } from "./HomeServiceStrip";
 import { PopularCategories } from "./PopularCategories";
 import { PopularBrands } from "./PopularBrands";
-import { TrustBadges } from "./TrustBadges";
 import { Bestsellers } from "./Bestsellers";
-import { ConsultBlock } from "./ConsultBlock";
-import { AboutStats } from "./AboutStats";
+import { HomeBottom } from "./HomeBottom";
 import { InquiryModal } from "./InquiryModal";
 
 type HomeInteractiveProps = {
@@ -33,9 +31,11 @@ export function HomeInteractive({ categories, bestsellers }: HomeInteractiveProp
       <Bestsellers products={bestsellers} />
       <PopularCategories categories={categories} />
       <PopularBrands />
-      <TrustBadges />
-      <ConsultBlock onConsult={openModal} />
-      <AboutStats />
+      {/* #590: нижняя зона по макету — «почему покупают» + статьи + подписка +
+          MAX-карточка. TrustBadges/ConsultBlock/AboutStats с главной убраны:
+          в макете их нет (их роль выполняют hero-CTA и WhyBuy), компоненты
+          остаются в кодовой базе для других страниц. */}
+      <HomeBottom />
       <InquiryModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );
