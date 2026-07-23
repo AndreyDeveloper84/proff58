@@ -79,6 +79,21 @@ export const HOME_CONTENT = {
     { icon: "Wrench", title: "Сервис и ремонт", text: "диагностика и обслуживание" },
   ] as ServiceItem[],
 
+  // #589: популярные бренды (curated). Логотипов-ассетов пока нет — карточки
+  // текстовые (структура позволяет добавить image später). Ссылка — поиск по
+  // бренду: отдельного маршрута «все товары бренда» нет, /search?q= работает.
+  popularBrands: [
+    "Makita",
+    "Bosch",
+    "DeWALT",
+    "Metabo",
+    "AEG",
+    "Milwaukee",
+    "Hilti",
+    "Stanley",
+    "Ресанта",
+  ] as string[],
+
   // slug корневой категории → фон плитки (плейсхолдеры; дизайнер заменит). Дефолт — ниже.
   categoryAssets: {} as Record<string, string>,
   // Курируемые «хиты»: slug'и товаров. Пусто → fallback на ?sort=new (см. lib/catalog.ts).
