@@ -11,6 +11,7 @@ from django.db import IntegrityError, transaction
 from django.test import override_settings
 from rest_framework.test import APIClient
 
+from apps.accounts.models import CustomerType
 from apps.catalog.models import Category, Product, ProductStatus
 from apps.orders.models import FulfillmentStatus, Order, OrderItem
 from apps.orders.reviews_bridge import get_order_for_review
@@ -51,9 +52,19 @@ def product(db):
     )
 
 
-def _order(user, product, status=FulfillmentStatus.COMPLETED, number="П-REV-1"):
+def _order(
+    user,
+    product,
+    status=FulfillmentStatus.COMPLETED,
+    number="П-REV-1",
+    customer_type=CustomerType.B2C,
+):
     order = Order.objects.create(
-        order_number=number, user=user, fulfillment_status=status, customer_name="Иван"
+        order_number=number,
+        user=user,
+        fulfillment_status=status,
+        customer_name="Иван",
+        customer_type=customer_type,
     )
     OrderItem.objects.create(
         order=order,
@@ -80,6 +91,7 @@ def test_bridge_own_completed(user, product):
     _order(user, product)
     ro = get_order_for_review(user, "П-REV-1")
     assert ro.is_completed and ro.product_ids == [product.pk]
+    assert ro.is_b2b is False  # розничный заказ по умолчанию
 
 
 @pytest.mark.django_db
@@ -111,6 +123,19 @@ def test_not_completed_rejected(user, product, fstatus):
     with pytest.raises(services.ReviewError) as e:
         _create(user)
     assert e.value.code == "order_not_completed"
+
+
+@pytest.mark.django_db
+def test_b2b_order_cannot_review(user, product):
+    # B2B-flow без доставки: одна из оценок — доставка, поэтому отзывы юрлиц
+    # в Wave 1 не принимаются (#573, B2B-доработка). Проверка — до статуса заказа.
+    _order(user, product, customer_type=CustomerType.B2B)
+    ro = get_order_for_review(user, "П-REV-1")
+    assert ro.is_b2b is True
+    with pytest.raises(services.ReviewError) as e:
+        _create(user)
+    assert e.value.code == "b2b_reviews_disabled"
+    assert not Review.objects.exists()
 
 
 @pytest.mark.django_db
@@ -207,6 +232,20 @@ def test_api_create_and_mine(api, user, product):
         format="json",
     )
     assert resp.status_code == 409 and resp.json()["code"] == "already_reviewed"
+
+
+@pytest.mark.django_db
+def test_api_b2b_forbidden(api, user, product):
+    _order(user, product, customer_type=CustomerType.B2B)
+    api.force_authenticate(user=user)
+    resp = api.post(
+        "/api/account/reviews/",
+        {"order_number": "П-REV-1", "product_rating": 5, "delivery_rating": 4, "shop_rating": 5},
+        format="json",
+    )
+    assert resp.status_code == 403, resp.json()
+    assert resp.json()["code"] == "b2b_reviews_disabled"
+    assert not Review.objects.exists()
 
 
 @pytest.mark.django_db

@@ -354,8 +354,10 @@ export default function OrderDetailsPage() {
           </div>
         </section>
 
-        {/* #574: id — цель ссылки «Оставить отзыв» из списка заказов. */}
-        {isDelivered(order) && review !== "disabled" && review !== undefined && (
+        {/* #574: id — цель ссылки «Оставить отзыв» из списка заказов.
+            #573 B2B: в B2B-flow нет доставки (одна из оценок), поэтому отзывы
+            по заказам юрлиц в Wave 1 не принимаются — раздел скрыт. */}
+        {!isB2B && isDelivered(order) && review !== "disabled" && review !== undefined && (
           <section id="review" className="scroll-mt-24 rounded-lg border border-line bg-surface p-5">
             <h2 className="text-sm font-semibold text-ink">Отзыв о заказе</h2>
             {review === null ? (

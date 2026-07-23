@@ -27,6 +27,7 @@ _DISABLED = {"detail": services.ERROR_MESSAGES["reviews_disabled"], "code": "rev
 _ERROR_STATUS = {
     "reviews_disabled": status.HTTP_404_NOT_FOUND,
     "order_not_found": status.HTTP_404_NOT_FOUND,
+    "b2b_reviews_disabled": status.HTTP_403_FORBIDDEN,
     "order_not_completed": status.HTTP_400_BAD_REQUEST,
     "already_reviewed": status.HTTP_409_CONFLICT,
 }
