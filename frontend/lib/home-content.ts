@@ -7,6 +7,8 @@ export type HomeStat = { value: number; suffix: string; label: string };
 export type NavLink = { label: string; href: string };
 export type TrustItem = { icon: string; title: string };
 export type HeroBullet = { icon: string; text: string };
+export type IntentCard = { icon: string; title: string; text: string; href: string };
+export type ServiceItem = { icon: string; title: string; text: string };
 
 export const HOME_CONTENT = {
   topbar: {
@@ -45,6 +47,38 @@ export const HOME_CONTENT = {
     secondaryCta: { label: "Перейти в каталог", href: "/catalog" },
     maxPill: { title: "Консультация в MAX", note: "Подбор инструмента в чате за 2–3 минуты" },
   },
+  // #588: сценарный вход «Что вы хотите сделать?» — помогает выбрать по задаче,
+  // не думая в терминах дерева каталога. Ссылки ведут в каталог (маппинг на
+  // конкретные разделы/поиск — follow-up, когда закрепим taxonomy-маршруты).
+  intent: {
+    title: "Что вы хотите сделать?",
+    cards: [
+      { icon: "Home", title: "Для дома", text: "Ремонт, сад, мебель, бытовые задачи", href: "/catalog" },
+      { icon: "Paintbrush", title: "Ремонт квартиры", text: "Отделка, электрика, сантехника", href: "/catalog" },
+      { icon: "Hammer", title: "Стройка и бетон", text: "Фундамент, стены, бетонные работы", href: "/catalog" },
+      {
+        icon: "Briefcase",
+        title: "Профессиональная работа",
+        text: "Ежедневные нагрузки, интенсивное использование",
+        href: "/catalog",
+      },
+      {
+        icon: "Cog",
+        title: "Расходные материалы и оснастка",
+        text: "Буры, диски, свёрла, расходники",
+        href: "/catalog",
+      },
+    ] as IntentCard[],
+  },
+  // #588: сервисная полоса преимуществ под сценариями.
+  serviceStrip: [
+    { icon: "MapPin", title: "Магазин в Пензе", text: "ул. Складская, 10" },
+    { icon: "Truck", title: "Самовывоз сегодня", text: "при заказе до 15:00" },
+    { icon: "Users", title: "Помощь в подборе", text: "подберём лучшее решение" },
+    { icon: "CheckCircle2", title: "Проверим совместимость", text: "оснастки и инструмента" },
+    { icon: "Wrench", title: "Сервис и ремонт", text: "диагностика и обслуживание" },
+  ] as ServiceItem[],
+
   // slug корневой категории → фон плитки (плейсхолдеры; дизайнер заменит). Дефолт — ниже.
   categoryAssets: {} as Record<string, string>,
   // Курируемые «хиты»: slug'и товаров. Пусто → fallback на ?sort=new (см. lib/catalog.ts).

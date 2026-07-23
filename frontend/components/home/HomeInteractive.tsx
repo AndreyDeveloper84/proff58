@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { Product } from "@/lib/types";
 import type { CategoryNode } from "@/lib/catalog";
 import { Hero } from "./Hero";
+import { HomeIntentGrid } from "./HomeIntentGrid";
+import { HomeServiceStrip } from "./HomeServiceStrip";
 import { CategoryGrid } from "./CategoryGrid";
 import { TrustBadges } from "./TrustBadges";
 import { Bestsellers } from "./Bestsellers";
@@ -23,6 +25,8 @@ export function HomeInteractive({ categories, bestsellers }: HomeInteractiveProp
   return (
     <>
       <Hero onConsult={openModal} />
+      <HomeIntentGrid />
+      <HomeServiceStrip />
       <CategoryGrid categories={categories} />
       <TrustBadges />
       <Bestsellers products={bestsellers} />
