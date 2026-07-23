@@ -1,0 +1,731 @@
+{
+  "artifact": "gate_labels",
+  "labels": [
+    {
+      "decision": "correct",
+      "product_id": 189,
+      "rationale": "Автомобильный компрессор (Сервис Ключ) — slug «Компрессоры»; правило 23: авто-компрессоры остаются компрессорами.",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 193,
+      "rationale": "Автомобильный компрессор 12В DENZEL — slug «Компрессоры».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 197,
+      "rationale": "Поршневой автомобильный компрессор СПЕЦ — slug «Компрессоры».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 304,
+      "rationale": "Стяжка груза (такелажная, 4 шт) — slug «Тросы, канаты, такелаж»; двухсловный keyword правила 9 отделяет от стяжек пружин.",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 310,
+      "rationale": "Стяжка груза — slug «Тросы, канаты, такелаж».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 313,
+      "rationale": "Стяжка груза — slug «Тросы, канаты, такелаж».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 315,
+      "rationale": "Стяжка груза полипропиленовая — slug «Тросы, канаты, такелаж».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 320,
+      "rationale": "Стяжка груза усиленная — slug «Тросы, канаты, такелаж».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 326,
+      "rationale": "Стяжка груза — slug «Тросы, канаты, такелаж».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 363,
+      "rationale": "Трос ленточный (буксировочный) 5т — slug «Тросы, канаты, такелаж».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 366,
+      "rationale": "Трос ленточный усиленный 10т — slug «Тросы, канаты, такелаж».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 422,
+      "rationale": "Аккумуляторная воздуходувка — slug «Воздуходувки»; тип не зависит от источника питания (review правила 8). MONITORING.",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 429,
+      "rationale": "Аккумуляторная газонокосилка — slug «Газонокосилки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 665,
+      "rationale": "Аккумуляторный фонарь BOSCH — slug «Фонари».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 673,
+      "rationale": "Аккумуляторный фонарь Hitachi — slug «Фонари».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 677,
+      "rationale": "Аккумуляторный фонарь Einhell — slug «Фонари».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 1113,
+      "rationale": "Адаптер АКБ-платформ (DeWalt→Makita) — slug «Адаптеры и переходники».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 1818,
+      "rationale": "Свеча зажигания для 2-тактных двигателей — slug «Свечи зажигания».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 1857,
+      "rationale": "Сумка для бензопилы — slug «Ящики, сумки, органайзеры». MONITORING (правило 20).",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 1858,
+      "rationale": "Сумка для бензопилы — slug «Ящики, сумки, органайзеры». MONITORING (правило 20).",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 6215,
+      "rationale": "Шампунь для минимоек = автохимия — slug «Пеногенераторы и автохимия»; прецедент 6213 (правило 24).",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 6683,
+      "rationale": "Резиновый адаптер шланга пылесоса 32–41мм — slug «Адаптеры и переходники».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 10633,
+      "rationale": "Держатель с микролифтом (измерительный) — slug «Штативы, отражатели, держатели» (держатели прямо в значении slug).",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 10807,
+      "rationale": "Дорожное измерительное колесо BOSCH — slug «Измерительные колёса (курвиметры)». MONITORING (правило 17).",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 12944,
+      "rationale": "Динамометрический ключ 1/2\" — slug «Динамометрические ключи».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 12955,
+      "rationale": "Динамометрический ключ 1/4\" — slug «Динамометрические ключи».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 12980,
+      "rationale": "Динамометрический ключ 1/4\" KING TONY — slug «Динамометрические ключи».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 13002,
+      "rationale": "Динамометрический ключ 1/2\" ЗУБР — slug «Динамометрические ключи».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 22670,
+      "rationale": "Набор торкс-звёздочек (9 пр.) — slug «Наборы инструмента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 22672,
+      "rationale": "Набор торкс-звёздочек Т10–Т50 — slug «Наборы инструмента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 22677,
+      "rationale": "Набор звёздочек E4–E24 — slug «Наборы инструмента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 24724,
+      "rationale": "Электропаяльник 100Вт — slug «Паяльники» (payalniki, не станции — правило 14).",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 24733,
+      "rationale": "Электропаяльник 30–130Вт — slug «Паяльники».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 24740,
+      "rationale": "Электропаяльник 40Вт ЗУБР — slug «Паяльники».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 24855,
+      "rationale": "Припой оловянно-свинцовый — slug «Расходники для пайки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 24867,
+      "rationale": "Припой ПОС-61 с канифолью — slug «Расходники для пайки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 24874,
+      "rationale": "Припой ПОС-61 — slug «Расходники для пайки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 27253,
+      "rationale": "Стартовые (пусковые) провода 500А — slug «Пусковые провода».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 28890,
+      "rationale": "Пневмонейлер (гвозди 23P) — slug «Пневмостеплеры и нейлеры» (нейлер прямо в значении slug).",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 28894,
+      "rationale": "Пневмонейлер ЗУБР — slug «Пневмостеплеры и нейлеры».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 29035,
+      "rationale": "Регулятор давления с манометром (пневмо) — slug «Подготовка сжатого воздуха» (правило 18).",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 29557,
+      "rationale": "Рупорный громкоговоритель 10Вт (sg=Пожарка) — slug «Извещатели и оповещатели»: оповещатель по значению slug; MONITORING (правило 26), прецедентов наполнения slug нет — обязательная проверка reviewer.",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 29733,
+      "rationale": "Противопожарное полотно ПП-1000 — slug «Пожарный инвентарь». MONITORING (правило 22).",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 30216,
+      "rationale": "Инструментальный кейс HIKOKI — slug «Ящики, сумки, органайзеры».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 30229,
+      "rationale": "Пластиковый кейс Hitachi — slug «Ящики, сумки, органайзеры».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "unverifiable",
+      "product_id": 31104,
+      "rationale": "По разрешённым источникам подтверждается, что товар является регулятором расхода азота и относится к сварочному оборудованию, но недостаточно данных, чтобы независимо подтвердить его принадлежность именно к slug «Газовые редукторы», а не к отдельной категории регуляторов расхода. Внешний поиск запрещён, поэтому классификация отмечается как unverifiable.",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 31973,
+      "rationale": "Верстак Bosch PTA 1000 — slug «Верстаки и мебель мастерской». MONITORING (правило 13).",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 31974,
+      "rationale": "Верстак Bosch PTA 2400 — slug «Верстаки и мебель мастерской». MONITORING (правило 13).",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 34648,
+      "rationale": "Клеевые стержни 12мм — slug «Клеевые стержни».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 34649,
+      "rationale": "Клеевые стержни 12мм — slug «Клеевые стержни».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 34656,
+      "rationale": "Клеевые стержни 8мм — slug «Клеевые стержни».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 34658,
+      "rationale": "Клеевые стержни 8мм — slug «Клеевые стержни».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 35061,
+      "rationale": "Тонконосы 160мм — подтип плоскогубцев (правило 12) — slug «Пассатижи и плоскогубцы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 35062,
+      "rationale": "Тонконосы 165мм — slug «Пассатижи и плоскогубцы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 36140,
+      "rationale": "Кобура для шуруповёрта — slug «Кобуры для инструмента»; sg=СИЗ — особенность каталога, не ошибка правила.",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 36301,
+      "rationale": "Защитный лицевой щиток — slug «Очки и щитки защитные» (щитки прямо в значении slug); same-slug multi = одна классификация. MONITORING.",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 36307,
+      "rationale": "Защитный лицевой щиток поликарбонат — slug «Очки и щитки защитные»; same-slug multi. MONITORING.",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 36310,
+      "rationale": "Защитный лицевой щиток СИБИН — slug «Очки и щитки защитные»; same-slug multi. MONITORING.",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 37015,
+      "rationale": "Гвоздодёр 400мм — slug «Ломы, гвоздодёры, монтировки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 37017,
+      "rationale": "Гвоздодёр 800мм армированный — slug «Ломы, гвоздодёры, монтировки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 37019,
+      "rationale": "Гвоздодёр TRUPER 45см — slug «Ломы, гвоздодёры, монтировки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 37020,
+      "rationale": "Гвоздодёр TRUPER 60см — slug «Ломы, гвоздодёры, монтировки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 37271,
+      "rationale": "Малярная креповая лента 30мм — slug «Ленты клейкие и сигнальные».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 37272,
+      "rationale": "Малярная креповая лента 38мм — slug «Ленты клейкие и сигнальные».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 37273,
+      "rationale": "Малярная креповая лента 48мм — slug «Ленты клейкие и сигнальные».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 39790,
+      "rationale": "Изолента 15мм ПВХ — slug «Изолента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 39791,
+      "rationale": "Изолента 15мм ПВХ — slug «Изолента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 39826,
+      "rationale": "Изолента ПВХ не поддерживающая горение — slug «Изолента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 39828,
+      "rationale": "Изолента ПВХ ВИХРЬ — slug «Изолента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 39833,
+      "rationale": "Изолента ПВХ 20м — slug «Изолента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 39837,
+      "rationale": "Изолента ПВХ 19мм — slug «Изолента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 39841,
+      "rationale": "Изолента ПВХ ВИХРЬ — slug «Изолента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 39848,
+      "rationale": "Изолента ЗУБР Электрик 6000В — slug «Изолента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 39874,
+      "rationale": "Изолента х/б прорезиненная — slug «Изолента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 39883,
+      "rationale": "Изолента х/б — slug «Изолента».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 40678,
+      "rationale": "Строительный лом 1500мм — slug «Ломы, гвоздодёры, монтировки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 40683,
+      "rationale": "Строительный лом 1250–1300мм — slug «Ломы, гвоздодёры, монтировки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 40684,
+      "rationale": "Строительный лом 1350мм — slug «Ломы, гвоздодёры, монтировки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 40685,
+      "rationale": "Строительный лом 28мм — slug «Ломы, гвоздодёры, монтировки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 40686,
+      "rationale": "Строительный лом 30мм Сибртех — slug «Ломы, гвоздодёры, монтировки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 43696,
+      "rationale": "Аппарат для сварки ПП-труб Candan — подтип сварочных аппаратов (правило 5) — slug «Сварочные аппараты, инверторы, плазморезы». MONITORING.",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 43699,
+      "rationale": "Аппарат для сварки ПП-труб CANDAN — slug «Сварочные аппараты». MONITORING.",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 43768,
+      "rationale": "Электрическая газонокосилка CHAMPION 3кВт — slug «Газонокосилки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 43774,
+      "rationale": "Электрическая газонокосилка Einhell — slug «Газонокосилки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 43775,
+      "rationale": "Электрическая газонокосилка Huter — slug «Газонокосилки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 43780,
+      "rationale": "Электрическая газонокосилка Hitachi — slug «Газонокосилки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 43786,
+      "rationale": "Электрическая газонокосилка ЗУБР 1700Вт — slug «Газонокосилки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 43787,
+      "rationale": "Электрическая газонокосилка ЗУБР 2000Вт — slug «Газонокосилки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 43789,
+      "rationale": "Роторная газонокосилка ЗУБР — slug «Газонокосилки».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44222,
+      "rationale": "Вибрационный насос Вихрь — slug «Насосы» (правило 3: электрические насосы → obor-nasosy).",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44223,
+      "rationale": "Вибрационный насос Вихрь — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44272,
+      "rationale": "Дренажный насос Зубр — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44277,
+      "rationale": "Дренажный насос ВИХРЬ — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44281,
+      "rationale": "Дренажный насос ВИХРЬ — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44285,
+      "rationale": "Дренажный насос ЗУБР АкваСенсор — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44307,
+      "rationale": "Поверхностный насос Джамбо — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44312,
+      "rationale": "Поверхностный насос Вихрь — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44319,
+      "rationale": "Погружной насос ГНОМ — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44332,
+      "rationale": "Скважинный насос — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44337,
+      "rationale": "Фекальный насос ВИХРЬ — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44338,
+      "rationale": "Фекальный насос ВИХРЬ — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44339,
+      "rationale": "Фекальный насос ВИХРЬ — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    },
+    {
+      "decision": "correct",
+      "product_id": 44340,
+      "rationale": "Фекальный насос — slug «Насосы».",
+      "reviewed_at": "2026-07-22T20:36:13Z",
+      "reviewer_id": "andrey"
+    }
+  ],
+  "matcher_version": "1.0",
+  "phase": "7D",
+  "reviewer_id": "andrey",
+  "ruleset_hash": "9bf0271a61e729a900cda57705bdf785b96496efc462448894b27650a04bf330",
+  "sample_hash": "888980e7209c27026c13f56152330e5264d8da7103345fefb685713f8635a6db"
+}
