@@ -6,6 +6,7 @@
 export type HomeStat = { value: number; suffix: string; label: string };
 export type NavLink = { label: string; href: string };
 export type TrustItem = { icon: string; title: string };
+export type HeroBullet = { icon: string; text: string };
 
 export const HOME_CONTENT = {
   topbar: {
@@ -26,15 +27,23 @@ export const HOME_CONTENT = {
     { label: "Избранное", href: "/account/wishlist" },
     // «Сравнение» — Wave 2, страницы пока нет (не даём мёртвую ссылку).
   ] as NavLink[],
+  // #587: hero по утверждённому макету — тёмный фотобаннер, экспертный подбор.
   hero: {
-    titleLine1: "ПРОФЕССИОНАЛЬНЫЙ ИНСТРУМЕНТ",
-    titleLine2: "для тех, кто создаёт будущее",
+    titleLine1: "Профессиональный инструмент",
+    titleLine2: "с экспертным подбором под вашу задачу",
+    subtitle:
+      "Оригинальная продукция, в наличии в Пензе, сервисный центр и быстрая доставка. " +
+      "Подберём оптимальное решение под ваш проект и бюджет.",
     bullets: [
-      "Официальная гарантия",
-      "Профессиональная консультация",
-      "Доставка по Пензе и области",
-    ],
-    primaryCta: { label: "Перейти в магазин", href: "/catalog" },
+      { icon: "ShieldCheck", text: "Оригинальная продукция" },
+      { icon: "Truck", text: "Быстрая доставка и самовывоз" },
+      { icon: "Users", text: "Помощь экспертов в подборе" },
+      { icon: "Wrench", text: "Сервисный центр в Пензе" },
+    ] as HeroBullet[],
+    // primaryCta открывает модалку подбора (InquiryModal); secondary ведёт в каталог.
+    primaryCta: { label: "Подобрать инструмент" },
+    secondaryCta: { label: "Перейти в каталог", href: "/catalog" },
+    maxPill: { title: "Консультация в MAX", note: "Подбор инструмента в чате за 2–3 минуты" },
   },
   // slug корневой категории → фон плитки (плейсхолдеры; дизайнер заменит). Дефолт — ниже.
   categoryAssets: {} as Record<string, string>,
