@@ -51,6 +51,7 @@
   </tbody>
 </table>
 
+{% if invoice.items_discount_total %}<div>Скидка{% if invoice.promo_code %} (промокод {{ invoice.promo_code }}){% endif %}: −{{ invoice.items_discount_total }} {{ invoice.currency }}</div>{% endif %}
 <div class="total">Итого: {{ invoice.total }} {{ invoice.currency }}</div>
 </body>
 </html>

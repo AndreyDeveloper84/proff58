@@ -51,9 +51,11 @@ describe("auth client (M-11)", () => {
     expect(await getMe()).toBeNull();
   });
 
-  it("getOrders возвращает [] при ApiError", async () => {
+  // #574: сбой возвращает "error", а не [] — иначе экран заказов показывал
+  // «Заказов пока нет» и выдавал ошибку сервера за пустой список.
+  it("getOrders возвращает \"error\" при ApiError", async () => {
     mockedFetch.mockRejectedValueOnce(new ApiError("403", 403));
-    expect(await getOrders()).toEqual([]);
+    expect(await getOrders()).toBe("error");
   });
 
   it("updateMe отправляет PATCH профиля через BFF", async () => {

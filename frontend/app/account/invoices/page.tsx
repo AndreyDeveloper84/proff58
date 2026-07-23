@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock3, Download, FileText } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { getMe } from "@/lib/auth";
-import { formatPrice } from "@/lib/format";
+import { formatDateTime, formatPrice } from "@/lib/format";
 import { getInvoices, type B2BInvoice } from "@/lib/invoices";
 import { cn } from "@/lib/utils";
 
@@ -17,16 +18,6 @@ const STATUS_BADGE: Record<B2BInvoice["status"], string> = {
   expired: "bg-red-50 text-danger",
   cancelled: "bg-raised text-ink-2",
 };
-
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function InvoiceCard({ invoice }: { invoice: B2BInvoice }) {
   // Срок вышел, а janitor ещё не перевёл статус (интервал 10 мин) — честно
@@ -106,6 +97,7 @@ export default function InvoicesPage() {
   const router = useRouter();
   const [invoices, setInvoices] = useState<B2BInvoice[]>([]);
   const [isB2B, setIsB2B] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -119,7 +111,9 @@ export default function InvoicesPage() {
         const data = await getInvoices();
         if (!active) return;
         setIsB2B(user.customer_type === "b2b");
-        setInvoices(data);
+        // #574: сбой загрузки не выдаём за «счетов пока нет».
+        if (data === "error") setFailed(true);
+        else setInvoices(data);
         setLoading(false);
       })
       .catch(() => {
@@ -133,26 +127,28 @@ export default function InvoicesPage() {
   if (loading) {
     return (
       <AccountShell title="Счета">
-        <div className="space-y-4" aria-label="Загрузка счетов">
-          <div className="h-40 animate-pulse rounded-lg border border-line bg-surface" />
-          <div className="h-40 animate-pulse rounded-lg border border-line bg-surface" />
-        </div>
+        <LoadingState label="Загружаем счета…" />
       </AccountShell>
     );
   }
 
   return (
     <AccountShell title="Счета">
-      {invoices.length === 0 ? (
-        <div className="rounded-lg border border-line bg-surface p-10 text-center">
-          <FileText className="mx-auto h-10 w-10 text-ink-3" aria-hidden />
-          <h2 className="mt-3 font-display text-lg font-semibold text-ink">Счетов пока нет</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-ink-2">
-            {isB2B
+      {failed ? (
+        <ErrorState
+          title="Не удалось загрузить счета"
+          description="Проверьте соединение и обновите страницу."
+        />
+      ) : invoices.length === 0 ? (
+        <EmptyState
+          icon={<FileText className="h-10 w-10" aria-hidden />}
+          title="Счетов пока нет"
+          description={
+            isB2B
               ? "Оформите заказ от организации — счёт появится здесь. Счёт действует 24 часа, на это время товар резервируется."
-              : "Счета выставляются заказам организаций (B2B). Укажите тип покупателя «Организация» при оформлении заказа."}
-          </p>
-        </div>
+              : "Счета выставляются заказам организаций (B2B). Укажите тип покупателя «Организация» при оформлении заказа."
+          }
+        />
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-ink-2">

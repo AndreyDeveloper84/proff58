@@ -90,6 +90,7 @@ export function ProductCard({
       <ProductPrice price={product.price} compact />
       <AddToCartButton
         productId={product.id}
+        productSlug={product.slug}
         stock={product.stock}
         hasPrice={product.price.final != null}
       />
@@ -98,6 +99,7 @@ export function ProductCard({
     <div className="mt-auto pt-2">
       <AddToCartButton
         productId={product.id}
+        productSlug={product.slug}
         stock={product.stock}
         hasPrice={product.price.final != null}
         fullWidth

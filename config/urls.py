@@ -28,6 +28,9 @@ urlpatterns = [
     path("api/core/", include("apps.core.urls")),
     path("api/delivery/", include("apps.delivery.urls")),
     path("api/", include("apps.orders.api.urls")),
+    # #573: account/reviews/ идёт в Next-BFF (префикс /api/account/ в nginx),
+    # reviews/product/<slug>/ — catch-all /api/ → Django (GET, CSRF не нужен).
+    path("api/", include("apps.reviews.api.urls")),
     path("catalog/", include("apps.catalog.storefront_urls")),
 ]
 

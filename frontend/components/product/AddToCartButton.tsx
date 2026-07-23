@@ -1,53 +1,64 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, Check, Loader2, ShoppingCart } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Bell, Check, FileText, Loader2, ShoppingCart } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
 import { ApiError } from "@/lib/api";
 import type { StockState } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 // CTA зависит от наличия и наличия цены — это разные сценарии покупки:
 //   in    → В корзину (реальное добавление через useCart)
 //   order → Под заказ (заявочный, аналитика)
-//   out   → Сообщить о поступлении (заявочный)
-//   нет цены → Запросить цену (заявочный)
+//   out   → Сообщить о поступлении → ведём на PDP, там живёт подписка
+//   нет цены → Запросить цену → ведём на PDP, там модалка заявки
+//
+// #574: заявочные кнопки раньше рендерились без onClick и вообще ничего не
+// делали (глобального обработчика data-event нет, lib/analytics.track — no-op).
+// Настоящее действие для обоих сценариев есть только на карточке товара, поэтому
+// это ссылки на PDP, а не мёртвые кнопки. Тексты выровнены с PDP.
 export function AddToCartButton({
   productId,
+  productSlug,
   stock = "in",
   hasPrice = true,
   fullWidth = false,
 }: {
   productId: number;
+  productSlug: string;
   stock?: StockState;
   hasPrice?: boolean;
   // fullWidth — растянуть заявочные кнопки (нет в наличии / нет цены) на всю ширину карточки.
   fullWidth?: boolean;
 }) {
   const wide = fullWidth ? "w-full" : "";
+  const href = `/product/${productSlug}`;
   if (!hasPrice) {
     return (
-      <Button
-        variant="outline"
-        className={wide}
+      <Link
+        href={href}
+        className={cn(buttonVariants({ variant: "outline" }), wide)}
         data-event="request_price"
         data-product-id={productId}
       >
-        Уточнить цену
-      </Button>
+        <FileText className="h-4 w-4" aria-hidden />
+        Запросить цену
+      </Link>
     );
   }
   if (stock === "out") {
     return (
-      <Button
-        variant="outline"
-        className={wide}
+      <Link
+        href={href}
+        className={cn(buttonVariants({ variant: "outline" }), wide)}
         data-event="notify_restock"
         data-product-id={productId}
       >
         <Bell className="h-4 w-4" aria-hidden />
         Сообщить о поступлении
-      </Button>
+      </Link>
     );
   }
   // in / order / низкий остаток → добавление в корзину (под заказ — предзаказ в корзину).

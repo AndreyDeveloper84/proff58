@@ -1,7 +1,13 @@
-"""Отзывы покупателей с премодерацией (#72).
+"""Отзывы покупателей с обязательной модерацией (#573).
 
-Единая модель Review с subject_type для расширения (отзывы о заказе/сервисе
-добавляются тем же модулем без нового приложения).
+Один отзыв на заказ (OneToOne): три оценки (товары/доставка/магазин) + текст.
+Публично видны ТОЛЬКО ``approved`` — и только снапшот-поля (``author_name``),
+никаких ПДн. Право на отзыв проверяет сервисный слой (``services.create_review``)
+через мост ``apps.orders.reviews_bridge`` — в таблицу заказов напрямую модуль
+не ходит (CLAUDE.md §4).
+
+Гостевые отзывы — future scope: ``author`` nullable как задел, но создание
+сейчас только для аутентифицированного владельца заказа.
 """
 
 from __future__ import annotations
@@ -14,14 +20,9 @@ from django.utils.translation import gettext_lazy as _
 from apps.core.models import TimeStampedModel
 
 
-class SubjectType(models.TextChoices):
-    PRODUCT = "product", _("Товар")
-    ORDER = "order", _("Заказ")
-
-
 class ReviewStatus(models.TextChoices):
     PENDING = "pending", _("На модерации")
-    APPROVED = "approved", _("Одобрен")
+    APPROVED = "approved", _("Опубликован")
     REJECTED = "rejected", _("Отклонён")
 
 
@@ -29,13 +30,19 @@ class ReviewQuerySet(models.QuerySet):
     def approved(self) -> ReviewQuerySet:
         return self.filter(status=ReviewStatus.APPROVED)
 
-    def for_product(self, product_id: int) -> ReviewQuerySet:
-        return self.filter(subject_type=SubjectType.PRODUCT, subject_id=product_id)
+
+def _rating_field(verbose):
+    return models.PositiveSmallIntegerField(
+        verbose, validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
 
 
 class Review(TimeStampedModel):
-    """Отзыв покупателя о товаре (или другом объекте в будущем)."""
+    """Отзыв по завершённому заказу (право на отзыв — см. services.create_review)."""
 
+    order = models.OneToOneField(
+        "orders.Order", on_delete=models.CASCADE, related_name="review", verbose_name=_("Заказ")
+    )
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -44,45 +51,38 @@ class Review(TimeStampedModel):
         related_name="reviews",
         verbose_name=_("Автор"),
     )
-    author_name = models.CharField(_("Имя автора"), max_length=150, blank=True)
-    subject_type = models.CharField(
-        _("Тип объекта"),
-        max_length=20,
-        choices=SubjectType.choices,
-        default=SubjectType.PRODUCT,
-        db_index=True,
+    author_name = models.CharField(
+        _("Публичное имя"),
+        max_length=150,
+        blank=True,
+        help_text=_("Снапшот («Имя И.»): публичный API отдаёт только его, не ПДн автора."),
     )
-    subject_id = models.PositiveIntegerField(_("ID объекта"), db_index=True)
-    rating = models.PositiveSmallIntegerField(
-        _("Оценка"),
-        validators=[MinValueValidator(1), MaxValueValidator(5)],
-    )
-    body = models.TextField(_("Текст отзыва"), blank=True)
+    product_rating = _rating_field(_("Оценка товаров"))
+    delivery_rating = _rating_field(_("Оценка доставки"))
+    shop_rating = _rating_field(_("Оценка магазина"))
+    text = models.TextField(_("Текст"), blank=True)
     status = models.CharField(
         _("Статус"),
-        max_length=20,
+        max_length=10,
         choices=ReviewStatus.choices,
         default=ReviewStatus.PENDING,
         db_index=True,
     )
-    moderated_at = models.DateTimeField(_("Дата модерации"), null=True, blank=True)
+    rejection_reason = models.TextField(_("Причина отклонения"), blank=True)
+    moderated_at = models.DateTimeField(_("Промодерирован"), null=True, blank=True)
 
-    objects: ReviewQuerySet = ReviewQuerySet.as_manager()
+    objects = ReviewQuerySet.as_manager()
 
     class Meta:
         verbose_name = _("Отзыв")
         verbose_name_plural = _("Отзывы")
         ordering = ["-created_at"]
         indexes = [
-            models.Index(
-                fields=["subject_type", "subject_id", "status"],
-                name="reviews_subject_status_idx",
-            ),
+            models.Index(fields=["status", "-created_at"], name="reviews_status_created_idx"),
         ]
 
     def __str__(self) -> str:
-        author = self.author_name or (self.author.get_full_name() if self.author else "Аноним")
-        return f"[{self.rating}★] {author} → {self.subject_type}#{self.subject_id}"
+        return f"Отзыв по заказу {self.order_id} ({self.get_status_display()})"
 
     @property
     def is_approved(self) -> bool:

@@ -14,6 +14,7 @@ import {
   Home,
   MapPin,
   RefreshCcw,
+  Star,
   UserRound,
   WalletCards,
 } from "lucide-react";
@@ -42,6 +43,8 @@ const PRIMARY_NAV: NavItem[] = [
   // состояние с пояснением (тип покупателя в Shell не прокидывается).
   { label: "Счета", href: "/account/invoices", icon: FileText, match: "/account/invoices" },
   { label: "Избранное", href: "/account/wishlist", icon: Heart, match: "/account/wishlist" },
+  // #573: отзывы; страница сама показывает off/empty-состояния (прецедент — «Счета»).
+  { label: "Отзывы", href: "/account/reviews", icon: Star, match: "/account/reviews" },
   {
     label: "Сравнение",
     href: "/account/profile#comparison",

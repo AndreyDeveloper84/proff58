@@ -12,8 +12,10 @@ import {
 import type { Cart } from "@/lib/types";
 import {
   addToCart as apiAdd,
+  applyPromoCode as apiApplyPromo,
   getCart,
   removeItem as apiRemove,
+  removePromoCode as apiRemovePromo,
   updateItem as apiUpdate,
 } from "@/lib/cart";
 
@@ -28,6 +30,9 @@ type CartContextValue = {
   add: (productId: number, quantity?: number) => Promise<Cart>;
   update: (itemId: number, quantity: number) => Promise<Cart>;
   remove: (itemId: number) => Promise<Cart>;
+  // #571: промокод. Ошибку 400 (невалидный код) пробрасываем вызову — поле покажет detail.
+  applyPromo: (code: string) => Promise<Cart>;
+  removePromo: () => Promise<Cart>;
   refresh: () => Promise<void>;
 };
 
@@ -97,6 +102,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [applyIfLatest],
   );
 
+  const applyPromo = useCallback(
+    async (code: string) => {
+      const seq = ++seqRef.current;
+      return applyIfLatest(seq, await apiApplyPromo(code));
+    },
+    [applyIfLatest],
+  );
+
+  const removePromo = useCallback(async () => {
+    const seq = ++seqRef.current;
+    return applyIfLatest(seq, await apiRemovePromo());
+  }, [applyIfLatest]);
+
   const value = useMemo<CartContextValue>(() => {
     const lines = cart?.lines ?? [];
     return {
@@ -107,9 +125,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       add,
       update,
       remove,
+      applyPromo,
+      removePromo,
       refresh,
     };
-  }, [cart, loading, add, update, remove, refresh]);
+  }, [cart, loading, add, update, remove, applyPromo, removePromo, refresh]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

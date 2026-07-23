@@ -24,14 +24,15 @@ export type B2BInvoice = {
   invoice_url: string;
 };
 
-export async function getInvoices(): Promise<B2BInvoice[]> {
+/** #574: "error" вместо [] — сбой загрузки не выдаём за «счетов пока нет». */
+export async function getInvoices(): Promise<B2BInvoice[] | "error"> {
   try {
     const data = await apiFetch<{ results?: B2BInvoice[] }>("/api/account/invoices", {
       method: "GET",
     });
     return data.results ?? [];
   } catch (e) {
-    if (e instanceof ApiError) return [];
+    if (e instanceof ApiError) return "error";
     throw e;
   }
 }

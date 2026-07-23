@@ -254,6 +254,12 @@ class DeleteAccountView(APIView):
 
             WishlistItem.objects.filter(user=user_obj).delete()
 
+            # #573: снапшот публичного имени в отзывах — тоже ПДн. Сами отзывы
+            # (оценки/текст) остаются анонимно, author уже SET_NULL.
+            from apps.reviews.models import Review
+
+            Review.objects.filter(author=user_obj).update(author_name="Покупатель")
+
             user_obj.phone = f"deleted-{user_obj.pk}"
             user_obj.full_name = ""
             user_obj.email = ""
