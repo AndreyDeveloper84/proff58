@@ -1,10 +1,23 @@
-"""Загрузка словаря ``tool_type`` из ``tool_type_rules.json`` (ADR-0001).
+"""Загрузка словаря ``tool_type`` из canonical taxonomy manifest (Wave 7.1/H1).
 
 ``tool_type`` — это АТРИБУТ (вторая ось навигации / SEO-фасет), а не категория.
-Создаёт ``Attribute(slug="tool_type")`` и его ``AttributeOption`` (value + slug)
-для всех категорий правил. Записи с ``action:"recategorize"`` — это НЕ тип,
-варианты для них не создаются. Привязывает ``CategoryAttribute`` (is_filter=True,
-is_seo_facet=True) к категориям верхнего уровня, где tool_type применим.
+Раньше ``AttributeOption`` материализовались из ``data/tool_type_rules.json``;
+теперь единственный источник operational taxonomy — canonical manifest
+(``data/catalog_processing_rules/tool_type_taxonomy.v1.json``).
+``tool_type_rules.json`` остаётся источником legacy extraction rules и
+используется здесь ТОЛЬКО для привязки ``CategoryAttribute`` (его semantics
+не меняется).
+
+Seed-политика (H1 §6):
+
+- создаёт отсутствующие manifest options (ключ — slug);
+- идемпотентен: повторный запуск — no-op;
+- ничего не удаляет и не переслагивает существующие options;
+- fail-closed при несовместимом slug/value mapping (включая значение manifest,
+  уже существующее в БД под другим slug, — вне ``semantic_duplicate_allowlist``);
+- ``sort_order`` существующих options обновляется только с ``--update-display``,
+  иначе расхождение display metadata только сообщается;
+- структурированный отчёт created/present/display_updated/display_mismatch.
 """
 
 from __future__ import annotations
@@ -20,6 +33,7 @@ from apps.catalog.models import (
     Category,
     CategoryAttribute,
 )
+from apps.catalog.taxonomy_manifest import load_manifest
 from apps.catalog.tool_type import ToolTypeRules
 
 TOOL_TYPE_SLUG = "tool_type"
@@ -27,15 +41,30 @@ TOOL_TYPE_NAME = "Тип инструмента"
 
 
 class Command(BaseCommand):
-    help = "Создать Attribute(tool_type) и его варианты из data/tool_type_rules.json."
+    help = "Создать Attribute(tool_type) и его варианты из canonical taxonomy manifest."
 
     def add_arguments(self, parser):
-        parser.add_argument("--path", default=None, help="Каталог с tool_type_rules.json")
+        parser.add_argument(
+            "--path",
+            default=None,
+            help="Каталог с tool_type_rules.json (только для привязки CategoryAttribute)",
+        )
+        parser.add_argument(
+            "--manifest",
+            default=None,
+            help="Путь к taxonomy manifest (default: canonical tool_type_taxonomy.v1.json)",
+        )
+        parser.add_argument(
+            "--update-display",
+            action="store_true",
+            help="Обновлять sort_order существующих options по manifest (иначе только отчёт)",
+        )
 
     def handle(self, *args, **options):
-        base = options["path"] or data_dir()
-        rules = ToolTypeRules.from_file(f"{base}/tool_type_rules.json")
-        self._validate_option_slugs(rules)
+        try:
+            manifest = load_manifest(options["manifest"])
+        except (ValueError, FileNotFoundError) as exc:
+            raise CommandError(str(exc)) from exc
 
         with transaction.atomic():
             attribute, _ = Attribute.objects.get_or_create(
@@ -48,69 +77,70 @@ class Command(BaseCommand):
                 ),
             )
 
-            options_created = 0
-            per_category: dict[str, int] = {}
-            for cat in rules.categories:
-                count = 0
-                for sort, rule in enumerate(rules.options(cat.category)):
-                    _, created = AttributeOption.objects.update_or_create(
+            created = 0
+            present = 0
+            display_updated = 0
+            display_mismatch: list[str] = []
+            # Значение manifest, уже существующее в БД под другим slug, — это
+            # несовместимый mapping: создание дубликата value запрещено
+            # (кроме explicit allow-list manifest).
+            db_slug_by_value = {
+                opt.value: opt.slug for opt in AttributeOption.objects.filter(attribute=attribute)
+            }
+            allow = manifest.allow_pairs
+
+            for mopt in manifest.options:
+                opt = AttributeOption.objects.filter(attribute=attribute, slug=mopt.slug).first()
+                if opt is None:
+                    existing_slug = db_slug_by_value.get(mopt.value)
+                    if existing_slug is not None and {existing_slug, mopt.slug} not in allow:
+                        raise CommandError(
+                            f"incompatible slug/value mapping: value {mopt.value!r} уже есть в БД "
+                            f"под slug {existing_slug!r}, manifest предлагает {mopt.slug!r}"
+                        )
+                    AttributeOption.objects.create(
                         attribute=attribute,
-                        value=rule.tool_type,
-                        defaults=dict(slug=rule.slug, sort_order=sort),
+                        slug=mopt.slug,
+                        value=mopt.value,
+                        sort_order=mopt.sort_order,
                     )
-                    options_created += int(created)
-                    count += 1
-                per_category[cat.category] = count
+                    db_slug_by_value[mopt.value] = mopt.slug
+                    created += 1
+                elif opt.value != mopt.value:
+                    raise CommandError(
+                        f"option slug conflicts with DB: {mopt.slug}: "
+                        f"db={opt.value!r} vs manifest={mopt.value!r}"
+                    )
+                else:
+                    present += 1
+                    if opt.sort_order != mopt.sort_order:
+                        if options["update_display"]:
+                            opt.sort_order = mopt.sort_order
+                            opt.save(update_fields=["sort_order"])
+                            display_updated += 1
+                        else:
+                            display_mismatch.append(mopt.slug)
+
+            base = options["path"] or data_dir()
+            rules = ToolTypeRules.from_file(f"{base}/tool_type_rules.json")
+            for cat in rules.categories:
                 self._bind_category(attribute, cat.category)
 
-        summary = ", ".join(f"{name}: {n}" for name, n in per_category.items())
         self.stdout.write(
             self.style.SUCCESS(
-                f"Атрибут tool_type готов. Вариантов создано: {options_created}. "
-                f"По категориям — {summary}."
+                f"Атрибут tool_type готов (manifest v{manifest.manifest_version}, "
+                f"{len(manifest.options)} options). created={created}, present={present}, "
+                f"display_updated={display_updated}, display_mismatch={len(display_mismatch)}."
             )
         )
-        return str(options_created)
-
-    def _validate_option_slugs(self, rules: ToolTypeRules) -> None:
-        """Fail-fast: slug обязан отображаться ровно в одно value; конфликты с БД запрещены.
-
-        Повтор пары (value, slug) в нескольких категориях легален (дедуп по value);
-        недопустим slug с >1 distinct value (DEVIATION-2).
-        """
-        slug_values: dict[str, set[str]] = {}
-        for cat in rules.categories:
-            for rule in rules.options(cat.category):
-                if rule.slug:
-                    slug_values.setdefault(rule.slug, set()).add(rule.tool_type)
-        ambiguous = {slug: sorted(vals) for slug, vals in slug_values.items() if len(vals) > 1}
-        if ambiguous:
-            details = "; ".join(f"{slug}: {vals}" for slug, vals in ambiguous.items())
-            raise CommandError(f"duplicate option slugs in seed: {details}")
-
-        existing_rows = AttributeOption.objects.filter(
-            attribute__slug=TOOL_TYPE_SLUG, slug__in=slug_values
-        ).values_list("slug", "value")
-        db_values: dict[str, list[str]] = {}
-        for slug, value in existing_rows:
-            db_values.setdefault(slug, []).append(value)
-        db_duplicates = {slug: vals for slug, vals in db_values.items() if len(vals) > 1}
-        if db_duplicates:
-            details = "; ".join(
-                f"{slug} x{len(vals)}: {sorted(vals)}" for slug, vals in db_duplicates.items()
+        if display_mismatch:
+            self.stdout.write(
+                self.style.WARNING(
+                    "sort_order расходится с manifest (для синхронизации — --update-display): "
+                    + ", ".join(display_mismatch[:20])
+                )
             )
-            raise CommandError(f"duplicate option slugs in DB: {details}")
-        conflicts = {
-            slug: (vals[0], next(iter(slug_values[slug])))
-            for slug, vals in db_values.items()
-            if vals[0] != next(iter(slug_values[slug]))
-        }
-        if conflicts:
-            details = "; ".join(
-                f"{slug}: db={db_val!r} vs seed={seed_val!r}"
-                for slug, (db_val, seed_val) in conflicts.items()
-            )
-            raise CommandError(f"option slug conflicts with DB: {details}")
+        return str(created)
 
     def _bind_category(self, attribute: Attribute, category_name: str) -> None:
         """Привязать tool_type к категории верхнего уровня (если она есть в дереве)."""

@@ -109,10 +109,16 @@ class TaxonomyManifest:
     identity_hash: str
     semantic_hash: str
     path: Path
+    semantic_duplicate_allowlist: tuple[tuple[str, ...], ...] = ()
 
     @property
     def slugs(self) -> set[str]:
         return {o.slug for o in self.options}
+
+    @property
+    def allow_pairs(self) -> set[frozenset]:
+        """Пары slug, для которых manifest явно разрешает duplicate semantic value."""
+        return {frozenset(pair) for pair in self.semantic_duplicate_allowlist}
 
 
 def validate_manifest_doc(doc: dict) -> list[str]:
@@ -228,6 +234,9 @@ def load_manifest(path: Path | None = None) -> TaxonomyManifest:
         identity_hash=doc["taxonomy_identity_hash"],
         semantic_hash=doc["manifest_semantic_hash"],
         path=path,
+        semantic_duplicate_allowlist=tuple(
+            tuple(pair) for pair in doc.get("semantic_duplicate_allowlist", [])
+        ),
     )
 
 

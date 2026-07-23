@@ -14,10 +14,9 @@
 
 from __future__ import annotations
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
-from django.utils.text import slugify
 
 from apps.catalog.attrs_cache import flush_attrs_cache_merged
 from apps.catalog.ingest import data_dir
@@ -32,7 +31,8 @@ from apps.catalog.models import (
     Product,
     ProductAttributeValue,
 )
-from apps.catalog.tool_type import ASSIGNED, RECATEGORIZE, ToolTypeRules, normalize, transliterate
+from apps.catalog.taxonomy_manifest import load_options_index
+from apps.catalog.tool_type import ASSIGNED, RECATEGORIZE, ToolTypeRules, normalize
 
 BATCH = 1000
 
@@ -55,6 +55,9 @@ class Command(BaseCommand):
 
         top_name_by_id, path_str_by_id = self._category_meta()
         opt_by_slug, opt_by_value = self._option_indexes(attribute)
+        # Wave 7.1/H1: runtime-создание AttributeOption — только из canonical
+        # taxonomy manifest (см. _resolve_option); extraction не меняется.
+        manifest_options = load_options_index()
         # Существующие PAV — объектами (для bulk_update при повторном прогоне).
         # Иначе update_or_create по одной строке вешает Postgres (≈16k round-trip'ов
         # + шторм сигналов rebuild_attrs_cache).
@@ -94,7 +97,9 @@ class Command(BaseCommand):
 
                     tool_type_value = ""
                     if ex.result == ASSIGNED:
-                        option = self._resolve_option(attribute, ex, opt_by_slug, opt_by_value)
+                        option = self._resolve_option(
+                            attribute, ex, opt_by_slug, opt_by_value, manifest_options
+                        )
                         tool_type_value = option.value
                         stats["tool_type_assigned"] += 1
                         pav = existing_pav.get(product.id)
@@ -231,32 +236,33 @@ class Command(BaseCommand):
             product.attrs_cache = {k: v for k, v in product.attrs_cache.items() if k != "tool_type"}
             cache_updates.append(product)
 
-    def _resolve_option(self, attribute, ex, opt_by_slug, opt_by_value) -> AttributeOption:
-        """Опция tool_type для assigned. Для inherit-подгрупп вне правил — создаём."""
+    def _resolve_option(
+        self, attribute, ex, opt_by_slug, opt_by_value, manifest_options
+    ) -> AttributeOption:
+        """Опция tool_type для assigned.
+
+        Wave 7.1/H1 guard: создание options — только из canonical taxonomy
+        manifest (taxonomy не растёт в runtime). Значение вне manifest —
+        fail-closed CommandError. Extraction-логика не меняется.
+        """
         if ex.slug and ex.slug in opt_by_slug:
             return opt_by_slug[ex.slug]
         key = normalize(ex.tool_type)
         if key in opt_by_value:
             return opt_by_value[key]
-        slug = ex.slug or self._unique_option_slug(attribute, ex.tool_type)
+        mopt = manifest_options.by_slug(ex.slug) if ex.slug else None
+        if mopt is None:
+            mopt = manifest_options.by_normalized_value(ex.tool_type)
+        if mopt is None:
+            raise CommandError(
+                f"option_not_in_manifest: {ex.tool_type!r} (slug={ex.slug!r}). "
+                "Taxonomy не растёт в runtime: добавьте option в canonical "
+                "taxonomy manifest и выполните seed (load_tool_types)."
+            )
         option = AttributeOption.objects.create(
-            attribute=attribute, value=ex.tool_type, slug=slug, sort_order=900
+            attribute=attribute, value=mopt.value, slug=mopt.slug, sort_order=mopt.sort_order
         )
         opt_by_value[key] = option
-        if slug:
-            opt_by_slug[slug] = option
+        if option.slug:
+            opt_by_slug[option.slug] = option
         return option
-
-    @staticmethod
-    def _unique_option_slug(attribute: Attribute, value: str) -> str:
-        # Транслитерируем кириллицу до slugify: иначе slugify(allow_unicode=False)
-        # вырезает её в пустоту → бессмысленные tip-N. «Прочая оснастка» →
-        # prochaya-osnastka. Фолбэк tip — только для совсем пустого результата.
-        base = slugify(transliterate(value), allow_unicode=False) or "tip"
-        slug = base
-        n = 2
-        taken = set(attribute.options.values_list("slug", flat=True))
-        while slug in taken:
-            slug = f"{base}-{n}"
-            n += 1
-        return slug
