@@ -15,13 +15,14 @@ export const SITE = {
     store: "Магазин на ул. Складская, 10", // адрес магазина в topbar (из SITE.address)
     catalogLabel: "Каталог товаров",
     searchPlaceholder: "Поиск по каталогу",
-    // Инфо-ссылки topbar (справа от региона/магазина). Маршруты-заглушки —
-    // как в существующем topNav; аудит битых ссылок — в финальной QA (#592).
+    // Инфо-пункты topbar. #592: страниц под них пока нет, поэтому Header
+    // рендерит их future-текстом (не ссылками). href появится вместе со
+    // статическими страницами.
     topLinks: [
-      { label: "Сервис и ремонт", href: "/service" },
-      { label: "Доставка и оплата", href: "/delivery" },
-      { label: "Гарантии", href: "/warranty" },
-      { label: "Контакты", href: "/contacts" },
+      { label: "Сервис и ремонт" },
+      { label: "Доставка и оплата" },
+      { label: "Гарантии" },
+      { label: "Контакты" },
     ],
   },
 
@@ -36,15 +37,8 @@ export const SITE = {
     },
   },
 
-  // Верхнее меню инфо-панели.
-  topNav: [
-    { label: "Акции", href: "/promo" }, // TODO: маршруты-заглушки
-    { label: "Доставка и оплата", href: "/delivery" },
-    { label: "Гарантия", href: "/warranty" },
-    { label: "Сервис", href: "/service" },
-    { label: "Компания", href: "/about" },
-    { label: "Контакты", href: "/contacts" },
-  ],
+  // #592: старое topNav удалено — единственный потребитель (TopBar.tsx) был
+  // мёртвым кодом со ссылками на несуществующие страницы.
 
   // Иконка — строковый ключ (маппинг в Footer): shield|truck|undo|wrench|gift.
   trustBadges: [

@@ -41,6 +41,16 @@ describe("Header (#586)", () => {
     expect(screen.queryByRole("link", { name: /Сравнение/ })).toBeNull();
   });
 
+  // #592: инфо-страниц (/service, /delivery, …) не существует — пункты topbar
+  // рендерятся future-текстом, а не битыми ссылками.
+  it("инфо-пункты topbar — не ссылки, пока страниц нет", () => {
+    render(<Header />);
+    for (const l of SITE.header.topLinks) {
+      const el = screen.getByText(l.label);
+      expect(el.closest("a")).toBeNull();
+    }
+  });
+
   it("переключатель темы добавляет класс .dark на <html>", () => {
     render(<Header />);
     const toggle = screen.getAllByRole("button", { name: /тёмную тему/i })[0];

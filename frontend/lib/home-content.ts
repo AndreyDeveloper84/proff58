@@ -4,7 +4,6 @@
 // приходят из API; здесь — лишь привязка slug→картинка и курируемый список «хитов».
 
 export type HomeStat = { value: number; suffix: string; label: string };
-export type NavLink = { label: string; href: string };
 export type TrustItem = { icon: string; title: string };
 export type HeroBullet = { icon: string; text: string };
 export type IntentCard = { icon: string; title: string; text: string; href: string };
@@ -16,19 +15,8 @@ export const HOME_CONTENT = {
     phone: "8 (800) 600-44-99",
     phoneHref: "tel:+78006004499",
   },
-  nav: [
-    { label: "Акции", href: "#" },
-    { label: "Доставка и оплата", href: "#" },
-    { label: "Гарантия", href: "#" },
-    { label: "Сервис", href: "#" },
-    { label: "Компания", href: "#" },
-    { label: "Контакты", href: "#" },
-  ] as NavLink[],
-  account: [
-    { label: "Личный кабинет", href: "/account/profile" },
-    { label: "Избранное", href: "/account/wishlist" },
-    // «Сравнение» — Wave 2, страницы пока нет (не даём мёртвую ссылку).
-  ] as NavLink[],
+  // #592: nav/account удалены — потреблялись только старым тёмным Header
+  // (до #586); «#»-ссылки в новых компонентах запрещены DoD эпика.
   // #587: hero по утверждённому макету — тёмный фотобаннер, экспертный подбор.
   hero: {
     titleLine1: "Профессиональный инструмент",

@@ -74,10 +74,13 @@ export function Header({ logoUrl, siteName = "Профессионал" }: Heade
               {SITE.region}
             </span>
             <span className="text-topbar-ink">{SITE.header.store}</span>
+            {/* #592: инфо-страниц (/service, /delivery, …) на сайте пока нет —
+                пункты показаны как future-текст, а не битые ссылки. Станут
+                ссылками вместе со статическими страницами. */}
             {SITE.header.topLinks.map((l) => (
-              <Link key={l.label} href={l.href} className="transition hover:text-accent">
+              <span key={l.label} className="cursor-default" title="Раздел скоро появится">
                 {l.label}
-              </Link>
+              </span>
             ))}
           </div>
           <div className="flex items-center gap-2">
@@ -212,16 +215,9 @@ export function Header({ logoUrl, siteName = "Профессионал" }: Heade
               <Heart className="h-4 w-4" aria-hidden />
               Избранное
             </Link>
-            {SITE.header.topLinks.map((l) => (
-              <Link
-                key={l.label}
-                href={l.href}
-                className="flex min-h-11 items-center border-b border-header-line py-2.5 text-sm text-topbar-ink last:border-0 hover:text-accent"
-                onClick={() => setOpen(false)}
-              >
-                {l.label}
-              </Link>
-            ))}
+            {/* #592: инфо-пункты (сервис/доставка/гарантии/контакты) в мобильном
+                меню не показываем, пока нет страниц — некликабельные строки в
+                меню бесполезны, битые ссылки запрещены DoD эпика. */}
             <div className="flex items-center justify-between py-2.5">
               <a href={SITE.phone.href} className="text-sm font-semibold text-header-ink">
                 {SITE.phone.display}
