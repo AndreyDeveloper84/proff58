@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  MessageSquareText,
   ShieldCheck,
   Truck,
   Users,
@@ -91,11 +90,21 @@ export function Hero({ onConsult, maxHref = SITE.support.max.href }: HeroProps) 
                 target="_blank"
                 rel="noopener noreferrer"
                 data-event="hero_consult_max"
-                className="mt-3 inline-flex min-h-[34px] w-full max-w-[440px] items-center gap-2 rounded-sm bg-white px-3 text-xs text-[#656b72] transition hover:bg-white/90"
+                className="mt-3 inline-flex min-h-[34px] items-center gap-2.5 self-start rounded-sm bg-white px-3.5 text-xs text-[#656b72] transition hover:bg-white/90"
               >
-                <MessageSquareText className="h-4 w-4 shrink-0 text-[#6156f5]" aria-hidden />
-                <span className="font-semibold text-[#6156f5]">{h.maxPill.title}</span>
-                <span className="ml-3 hidden sm:inline">{h.maxPill.note}</span>
+                {/* Фирменное лого MAX из ассетов проекта — по правке ревью. */}
+                <Image
+                  src="/brands/max-colored.png"
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="h-[18px] w-[18px] shrink-0 object-contain"
+                  aria-hidden
+                />
+                <span className="whitespace-nowrap font-semibold text-[#6156f5]">
+                  {h.maxPill.title}
+                </span>
+                <span className="ml-2 hidden whitespace-nowrap sm:inline">{h.maxPill.note}</span>
               </a>
             </div>
           </div>
