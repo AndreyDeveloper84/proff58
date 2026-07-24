@@ -1,8 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// #586: header по утверждённому макету — светлый, каталог/поиск/корзина работают,
-// сравнение без мёртвой ссылки, переключатель темы присутствует.
+// Header по утверждённому макету — каталог/поиск/корзина работают,
+// сравнение остаётся без мёртвой ссылки.
 vi.mock("@/components/cart/CartProvider", () => ({
   useCart: () => ({ count: 3 }),
 }));
@@ -51,12 +51,9 @@ describe("Header (#586)", () => {
     }
   });
 
-  it("переключатель темы добавляет класс .dark на <html>", () => {
+  it("не добавляет отсутствующий в утверждённом макете переключатель темы", () => {
     render(<Header />);
-    const toggle = screen.getAllByRole("button", { name: /тёмную тему/i })[0];
-    expect(document.documentElement.classList.contains("dark")).toBe(false);
-    toggle.click();
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(screen.queryByRole("button", { name: /тёмную тему/i })).toBeNull();
   });
 
   it("телефон и график из макета отображаются", () => {

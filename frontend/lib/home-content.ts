@@ -122,10 +122,30 @@ export const HOME_CONTENT = {
   articles: {
     title: "Полезные статьи и обзоры",
     items: [
-      { title: "Как выбрать шуруповёрт для дома и дачи", date: "18 мая 2026" },
-      { title: "Перфоратор или дрель: что выбрать?", date: "12 мая 2026" },
-      { title: "Топ-10 оснастки, которая должна быть у мастера", date: "6 мая 2026" },
-      { title: "Уход за инструментом: простые правила", date: "28 апреля 2026" },
+      {
+        title: "Как выбрать шуруповёрт для дома и дачи",
+        date: "18 мая 2026",
+        image: "/home/hero/approved-tools-hero.png",
+        imagePosition: "48% 58%",
+      },
+      {
+        title: "Перфоратор или дрель: что выбрать?",
+        date: "12 мая 2026",
+        image: "/home/hero/approved-tools-hero.png",
+        imagePosition: "61% 58%",
+      },
+      {
+        title: "Топ-10 оснастки, которая должна быть у мастера",
+        date: "6 мая 2026",
+        image: "/home/hero/approved-tools-hero.png",
+        imagePosition: "75% 62%",
+      },
+      {
+        title: "Уход за инструментом: простые правила",
+        date: "28 апреля 2026",
+        image: "/home/hero/approved-tools-hero.png",
+        imagePosition: "91% 58%",
+      },
     ],
   },
   // #590: карточка MAX-помощи (правая колонка нижней зоны).

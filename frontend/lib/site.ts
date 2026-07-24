@@ -95,3 +95,48 @@ export const SITE = {
 
   payments: ["Картой онлайн", "Наличными", "Безналичный (B2B)", "При получении"],
 } as const;
+
+export type ResolvedStorefront = {
+  region: string;
+  address: string;
+  store: string;
+  schedule: string;
+  email: string;
+  phone: { display: string; href: string };
+  phoneNote: string;
+  maxHref: string;
+};
+
+// SiteSettings.contacts — JSONField без жёсткой схемы. Поддерживаем только
+// перечисленные публичные строковые ключи; неизвестные значения не попадают в UI.
+export function resolveStorefront(input?: {
+  region?: string;
+  contacts?: Record<string, unknown>;
+}): ResolvedStorefront {
+  const contacts = input?.contacts ?? {};
+  const text = (...keys: string[]): string => {
+    for (const key of keys) {
+      const value = contacts[key];
+      if (typeof value === "string" && value.trim()) return value.trim();
+    }
+    return "";
+  };
+  const display = text("phone_display", "phone") || SITE.phone.display;
+  const digits = display.replace(/\D/g, "");
+  const inferredHref = digits ? `tel:+${digits.replace(/^8(?=\d{10}$)/, "7")}` : SITE.phone.href;
+  const address = text("address", "store_address") || SITE.address;
+
+  return {
+    region: input?.region?.trim() || SITE.region,
+    address,
+    store: text("store", "store_label") || `Магазин: ${address.replace(/^г\.\s*Пенза,\s*/i, "")}`,
+    schedule: text("schedule", "working_hours") || SITE.schedule,
+    email: text("email") || SITE.email,
+    phone: {
+      display,
+      href: text("phone_href") || inferredHref,
+    },
+    phoneNote: text("phone_note") || SITE.phoneNote,
+    maxHref: text("max_url", "max_href") || SITE.support.max.href,
+  };
+}
