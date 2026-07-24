@@ -41,26 +41,41 @@ export const HOME_CONTENT = {
   intent: {
     title: "Что вы хотите сделать?",
     cards: [
-      { icon: "Home", title: "Для дома", text: "Ремонт, сад, мебель, бытовые задачи", href: "/catalog" },
-      { icon: "Paintbrush", title: "Ремонт квартиры", text: "Отделка, электрика, сантехника", href: "/catalog" },
-      { icon: "Hammer", title: "Стройка и бетон", text: "Фундамент, стены, бетонные работы", href: "/catalog" },
+      {
+        icon: "Home",
+        title: "Для дома",
+        text: "Ремонт, сад, мебель, бытовые задачи",
+        href: "/catalog/ruchnoy",
+      },
+      {
+        icon: "Paintbrush",
+        title: "Ремонт квартиры",
+        text: "Отделка, электрика, сантехника",
+        href: "/catalog/stroitelnyy",
+      },
+      {
+        icon: "Hammer",
+        title: "Стройка и бетон",
+        text: "Фундамент, стены, бетонные работы",
+        href: "/catalog/elektroinstrument",
+      },
       {
         icon: "Briefcase",
         title: "Профессиональная работа",
         text: "Ежедневные нагрузки, интенсивное использование",
-        href: "/catalog",
+        href: "/catalog/silovaya",
       },
       {
         icon: "Cog",
         title: "Расходные материалы и оснастка",
         text: "Буры, диски, свёрла, расходники",
-        href: "/catalog",
+        href: "/catalog/osnastka",
       },
     ] as IntentCard[],
   },
   // #588: сервисная полоса преимуществ под сценариями.
   serviceStrip: [
-    { icon: "MapPin", title: "Магазин в Пензе", text: "ул. Складская, 10" },
+    { icon: "MapPin", title: "Магазин в Пензе", text: "1-й Онежский проезд, 12" },
     { icon: "Truck", title: "Самовывоз сегодня", text: "при заказе до 15:00" },
     { icon: "Users", title: "Помощь в подборе", text: "подберём лучшее решение" },
     { icon: "CheckCircle2", title: "Проверим совместимость", text: "оснастки и инструмента" },

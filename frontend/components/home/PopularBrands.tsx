@@ -24,7 +24,7 @@ export function PopularBrands() {
               key={brand}
               href={`/search?q=${encodeURIComponent(brand)}`}
               aria-label={`Товары бренда ${brand}`}
-              className="grid h-14 place-items-center rounded-md border border-line bg-surface px-2 transition hover:border-accent"
+              className="group grid h-14 place-items-center rounded-md border border-line bg-surface px-2 transition hover:border-accent"
             >
               <span className="select-none font-display text-sm font-bold uppercase tracking-wide text-ink-2 transition group-hover:text-ink sm:text-base">
                 {brand}

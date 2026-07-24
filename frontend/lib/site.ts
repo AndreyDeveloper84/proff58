@@ -7,12 +7,12 @@ export const SITE = {
   phoneNote: "Бесплатно по России", // #586: подпись под телефоном в шапке
   schedule: "Пн–Вс 09:00–20:00",
   email: "info@proff58.ru", // TODO: SiteSettings
-  address: "г. Пенза, ул. Складская, 10", // TODO: SiteSettings
+  address: "г. Пенза, 1-й Онежский проезд, 12", // TODO: SiteSettings
 
   // #586: шапка по утверждённому макету главной.
   header: {
     tagline: "магазин инструментов", // подпись под логотипом
-    store: "Магазин на ул. Складская, 10", // адрес магазина в topbar (из SITE.address)
+    store: "Магазин на 1-м Онежском проезде, 12", // адрес магазина в topbar (из SITE.address)
     catalogLabel: "Каталог товаров",
     searchPlaceholder: "Поиск по каталогу",
     // Инфо-пункты topbar. #592: страниц под них пока нет, поэтому Header

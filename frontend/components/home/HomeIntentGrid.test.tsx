@@ -14,11 +14,14 @@ describe("HomeIntentGrid (#588)", () => {
     ).toBeInTheDocument();
     const links = screen.getAllByRole("link");
     expect(links).toHaveLength(HOME_CONTENT.intent.cards.length);
-    for (const link of links) {
-      const href = link.getAttribute("href");
+    const hrefs = links.map((link) => link.getAttribute("href"));
+    for (const href of hrefs) {
       expect(href).toBeTruthy();
       expect(href).not.toBe("#");
+      expect(href).toMatch(/^\/catalog\//);
     }
+    // Сценарии ведут в разные разделы каталога, а не все в один /catalog.
+    expect(new Set(hrefs).size).toBe(hrefs.length);
     expect(screen.getByText("Для дома")).toBeInTheDocument();
     expect(screen.getByText("Расходные материалы и оснастка")).toBeInTheDocument();
   });
