@@ -6,7 +6,6 @@ import type { CategoryNode } from "@/lib/catalog";
 import type { ResolvedStorefront } from "@/lib/site";
 import { Hero } from "./Hero";
 import { HomeIntentGrid } from "./HomeIntentGrid";
-import { HomeServiceStrip } from "./HomeServiceStrip";
 import { PopularCategories } from "./PopularCategories";
 import { PopularBrands } from "./PopularBrands";
 import { Bestsellers } from "./Bestsellers";
@@ -27,7 +26,6 @@ export function HomeInteractive({ categories, bestsellers, storefront }: HomeInt
     <>
       <Hero onConsult={openModal} maxHref={storefront.maxHref} />
       <HomeIntentGrid />
-      <HomeServiceStrip />
       {/* #589: порядок витрины по макету — хиты → категории (pill'ы) → бренды.
           Крупные плитки CategoryGrid на главной заменены pill-рядом. */}
       <Bestsellers products={bestsellers} maxHref={storefront.maxHref} />

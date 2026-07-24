@@ -7,24 +7,14 @@ import {
   MapPin,
   MessageSquareText,
   Phone,
-  Play,
   QrCode,
-  Send,
-  type LucideIcon,
 } from "lucide-react";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
 
-// Маппинг строковых ключей конфига в иконки (lib/site.ts — без JSX).
-const SOCIAL_ICONS: Record<string, LucideIcon> = {
-  telegram: Send,
-  youtube: Play, // у lucide нет бренд-иконки YouTube → play-заглушка
-  vk: Send, // у lucide нет бренд-иконки VK → нейтральная заглушка
-};
-
 // Компактный подвал по макету. Состав навигации намеренно определяется только
 // существующими маршрутами — отсутствующие backend-разделы не подменяются "#".
-// Стили — только семантические токены (globals.css); литеральные цвета оставлены
-// лишь у чужих брендов (кружки соцсетей, фиолетовый MAX).
+// Стили — только семантические токены (globals.css); литеральный цвет оставлен
+// лишь у чужого бренда (фиолетовый MAX).
 export function Footer({
   logoUrl,
   siteName = SITE.brand.name,
@@ -37,7 +27,7 @@ export function Footer({
   return (
     <footer className="border-t border-line bg-surface">
       <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-6 px-4 py-6 sm:grid-cols-2 lg:grid-cols-[1.35fr_1.05fr_.9fr_.85fr_1.05fr_1.05fr]">
-        {/* Левый блок: лого + описание + соцсети */}
+        {/* Левый блок: лого + описание */}
         <div>
           <span className="flex items-center gap-2">
             {logoUrl ? (
@@ -64,23 +54,8 @@ export function Footer({
           <p className="mt-2 max-w-[260px] text-[11px] leading-[1.4] text-ink-2">
             {SITE.footerAbout}
           </p>
-          <div className="mt-3 flex gap-2">
-            {SITE.socials.map((s) => {
-              const Icon = SOCIAL_ICONS[s.icon] ?? Send;
-              return (
-                <a
-                  key={s.label}
-                  href={s.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={s.label}
-                  className="grid h-7 w-7 place-items-center rounded-full text-white transition hover:brightness-90 first:bg-[#2787f5] [&:nth-child(2)]:bg-[#28a8ea] [&:nth-child(3)]:bg-[#ee2b2b]"
-                >
-                  <Icon className="h-3.5 w-3.5" aria-hidden />
-                </a>
-              );
-            })}
-          </div>
+          {/* Кнопки соцсетей удалены по решению команды: реальных аккаунтов нет,
+              ссылки вели на главные страницы сервисов. Вернуть вместе с адресами. */}
         </div>
 
         {/* Группы ссылок */}

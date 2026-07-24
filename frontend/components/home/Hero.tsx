@@ -29,7 +29,7 @@ export function Hero({ onConsult, maxHref = SITE.support.max.href }: HeroProps) 
   return (
     <section className="bg-surface">
       <div className="mx-auto max-w-[1400px] px-4 pt-1.5">
-        <div className="dark relative min-h-[300px] overflow-hidden rounded-md bg-header lg:h-[300px]">
+        <div className="dark relative min-h-[300px] overflow-hidden rounded-md bg-header">
           <Image
             src="/home/hero/approved-tools-hero.png"
             alt=""
@@ -43,7 +43,7 @@ export function Hero({ onConsult, maxHref = SITE.support.max.href }: HeroProps) 
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,10,.98)_0%,rgba(5,8,10,.91)_31%,rgba(5,8,10,.54)_51%,rgba(5,8,10,.08)_74%)]"
           />
-          <div className="relative flex min-h-[300px] items-center px-5 py-6 sm:px-8 lg:px-12 lg:py-5">
+          <div className="relative flex min-h-[300px] items-center px-5 py-6 sm:px-8 lg:px-12 lg:py-6">
             <div className="w-full max-w-[620px]">
               <h1 className="font-sans text-[29px] font-extrabold leading-[1.08] tracking-[-0.02em] text-white sm:text-[31px]">
                 {h.titleLine1}
@@ -70,7 +70,7 @@ export function Hero({ onConsult, maxHref = SITE.support.max.href }: HeroProps) 
                 })}
               </ul>
 
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
                   onClick={onConsult}
@@ -91,7 +91,7 @@ export function Hero({ onConsult, maxHref = SITE.support.max.href }: HeroProps) 
                 target="_blank"
                 rel="noopener noreferrer"
                 data-event="hero_consult_max"
-                className="mt-4 inline-flex min-h-[34px] w-full max-w-[440px] items-center gap-2 rounded-sm bg-white px-3 text-xs text-[#656b72] transition hover:bg-white/90"
+                className="mt-3 inline-flex min-h-[34px] w-full max-w-[440px] items-center gap-2 rounded-sm bg-white px-3 text-xs text-[#656b72] transition hover:bg-white/90"
               >
                 <MessageSquareText className="h-4 w-4 shrink-0 text-[#6156f5]" aria-hidden />
                 <span className="font-semibold text-[#6156f5]">{h.maxPill.title}</span>

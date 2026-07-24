@@ -84,23 +84,62 @@ export function Header({
               <MapPin className="h-3.5 w-3.5 text-accent" aria-hidden />
               {storefront.region}
             </span>
-            <span className="flex items-center gap-1.5 font-medium text-brand">
+            <span className="flex items-center gap-1.5 font-medium text-accent">
               <Store className="h-3.5 w-3.5" aria-hidden />
               {storefront.store}
             </span>
-            {SITE.header.topLinks.map((l) => (
-              <span
-                key={l.label}
-                className="flex cursor-default items-center gap-1.5"
-                title="Раздел скоро появится"
-              >
-                {(() => {
-                  const Icon = TOP_LINK_ICONS[l.label] ?? Wrench;
-                  return <Icon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden />;
-                })()}
-                {l.label}
-              </span>
-            ))}
+            {/* Инфо-пункты — не ссылки (страниц нет), но каждый раскрывает своё
+                подменю по hover/фокусу: сюда переехала бывшая сервисная полоса
+                главной. «Контакты» рендерятся из storefront (SiteSettings). */}
+            {SITE.header.topLinks.map((l) => {
+              const Icon = TOP_LINK_ICONS[l.label] ?? Wrench;
+              const isContacts = l.label === "Контакты";
+              return (
+                <span
+                  key={l.label}
+                  tabIndex={0}
+                  className="group relative flex cursor-default items-center gap-1.5 py-2 outline-none"
+                >
+                  <Icon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden />
+                  {l.label}
+                  <span className="invisible absolute left-1/2 top-full z-50 w-64 -translate-x-1/2 rounded-md border border-header-line bg-header p-3 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                    {isContacts ? (
+                      <span className="block space-y-1.5">
+                        <span className="block text-xs font-semibold text-header-ink">
+                          {storefront.address}
+                        </span>
+                        <a
+                          href={storefront.phone.href}
+                          className="block text-xs text-topbar-ink hover:text-accent"
+                        >
+                          {storefront.phone.display}
+                        </a>
+                        <a
+                          href={`mailto:${storefront.email}`}
+                          className="block text-xs text-topbar-ink hover:text-accent"
+                        >
+                          {storefront.email}
+                        </a>
+                        <span className="block text-xs text-topbar-ink">{storefront.schedule}</span>
+                      </span>
+                    ) : (
+                      <span className="block space-y-2">
+                        {l.menu.map((m) => (
+                          <span key={m.title} className="block">
+                            <span className="block text-xs font-semibold text-header-ink">
+                              {m.title}
+                            </span>
+                            <span className="block text-[11px] leading-snug text-topbar-ink">
+                              {m.text}
+                            </span>
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </span>
+                </span>
+              );
+            })}
           </div>
           <div className="flex items-center">
             <span className="flex items-center gap-1.5">
