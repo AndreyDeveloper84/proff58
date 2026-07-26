@@ -113,10 +113,17 @@ docker-compose.yml · docker-compose.prod.yml
 | `data/.../applied_corpus_tool_type.v1.json` | applied corpus (54 items), из него выведены правила |
 | `apps/catalog/rules_engine.py` | matcher: `load_ruleset`, `load_corpus`, `evaluate_product` |
 | `apps/catalog/rules_gate.py` | **independent gate 2.0** — пересчитывает всё, declared-полям не доверяет |
+| `apps/catalog/rules_release.py` | release manifest — детерминированная версия контура (входы + хэши + метрики пройденного gate) |
+| `data/.../rules_release_manifest.v1.json` | зафиксированная версия контура; CI сверяет `--check` |
 
 Команды: `catalog_rules_shadow` (proposal-only прогон), `catalog_rules_gate_validate`
-(gate, exit 0/1/2/3), `catalog_taxonomy_reconcile` (read-only дрейф манифест↔БД),
+(gate, exit 0/1/2/3), `catalog_rules_release_manifest` (release manifest: генерация
+и `--check`), `catalog_taxonomy_reconcile` (read-only дрейф манифест↔БД),
 `load_tool_types` (seed из манифеста: fail-closed, no-delete).
+
+CI-джоба `catalog-rules-gate` (`.github/workflows/tests.yml`) гоняет gate на
+замороженном 7D sample против default ruleset + `release_manifest --check`; exit
+code команды = статус джобы.
 
 **Инварианты:**
 - Опции `tool_type` создаются **только** из манифеста; `enrich_tool_type` и
@@ -130,6 +137,7 @@ docker-compose.yml · docker-compose.prod.yml
 
 Документы: **план текущей волны — `docs/plans/2026-07-26-WAVE7_1_H3_H5_PLAN.md`**,
 `docs/catalog/tool-type-taxonomy-manifest.md`, `docs/catalog/rules-gate-h2.md`,
+`docs/catalog/rules-release-manifest.md`,
 `docs/plans/2026-07-*PHASE7*`; протоколы стадий — `scratchpad/wave7/wave7-h*-report.md`.
 
 Общий playbook изменений каталога (gate-cycle: read-only → preflight → dry-run →
