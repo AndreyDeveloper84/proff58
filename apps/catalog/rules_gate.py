@@ -26,6 +26,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
+from django.conf import settings
 from django.utils import timezone
 
 from apps.catalog.processing import canonical_hash
@@ -40,6 +41,13 @@ from apps.catalog.rules_engine import (
     validate_gate_sample,
 )
 from apps.catalog.taxonomy_manifest import load_manifest
+
+DEFAULT_CORPUS_PATH = (
+    Path(settings.BASE_DIR)
+    / "data"
+    / "catalog_processing_rules"
+    / "applied_corpus_tool_type.v1.json"
+)
 
 GATE_VERSION = "2.0"
 REPORT_SCHEMA_VERSION = 1

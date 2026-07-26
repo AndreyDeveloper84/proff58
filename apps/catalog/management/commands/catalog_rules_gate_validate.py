@@ -19,23 +19,16 @@ import os
 import tempfile
 from pathlib import Path
 
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.catalog.rules_gate import (
+    DEFAULT_CORPUS_PATH,
     EXIT_INTERNAL,
     EXIT_PASSED,
     EXIT_THRESHOLD_FAILED,
     MIN_ROWS_GATE,
     PRECISION_GATE,
     run_independent_gate,
-)
-
-DEFAULT_CORPUS_PATH = (
-    Path(settings.BASE_DIR)
-    / "data"
-    / "catalog_processing_rules"
-    / "applied_corpus_tool_type.v1.json"
 )
 
 

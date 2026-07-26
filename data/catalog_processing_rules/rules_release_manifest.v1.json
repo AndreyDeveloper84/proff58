@@ -1,0 +1,73 @@
+{
+  "canonical": {
+    "gate": {
+      "declared_mismatches": [
+        {
+          "declared_value": "b357be604801197e33182b84fde1755361e29653d98bd49429623b3ba604326b",
+          "field_path": "sample.taxonomy_hash",
+          "recomputed_value": "fc13be7804b06713dccde5cd2888a437a1a7521772d5911acc7d9d93636714d8",
+          "severity": "legacy_recipe"
+        }
+      ],
+      "gate_passed": true,
+      "legacy_taxonomy_hash_allowed": "b357be604801197e33182b84fde1755361e29653d98bd49429623b3ba604326b",
+      "metrics": {
+        "correct": 102,
+        "decisions": {
+          "correct": 102,
+          "unverifiable": 1
+        },
+        "precision": 0.9902912621359223,
+        "rows": 103,
+        "wilson95": [
+          0.9470405148534974,
+          0.9982841526917288
+        ]
+      },
+      "report_schema_version": 1,
+      "thresholds": {
+        "min_rows_gate": 100,
+        "precision_gate": 0.99
+      },
+      "warnings": []
+    },
+    "gate_version": "2.0",
+    "inputs": {
+      "corpus": {
+        "artifact_sha256": "6663a6fe48c2c2656604a179c1f70338a08a9d3e2a364a5ec2f663600b85d6e3",
+        "corpus_id": "staging-tool-type-6ebb8ac9d856",
+        "items": 54,
+        "path": "data/catalog_processing_rules/applied_corpus_tool_type.v1.json"
+      },
+      "gate_sample": {
+        "artifact_sha256": "873ee2a19e7dedbc322357f8ff4108690b4e3f6a25889571e13c5f7191bfdeb8",
+        "path": "apps/catalog/tests/fixtures/phase7d-gate-sample-official.json",
+        "rows": 103
+      },
+      "labels": {
+        "artifact_sha256": "4cb05d36213d1183c9fe93956471118beb253042b5dd40a3454df9ad143928f1",
+        "labels": 103,
+        "path": "apps/catalog/tests/fixtures/phase7d-labels.json"
+      },
+      "ruleset": {
+        "artifact_sha256": "ff449701939e993e6bf3e0d68de20d07a672884a54df602c7b2807316f8728ec",
+        "path": "data/catalog_processing_rules/tool_type.v2.json",
+        "rules": 38,
+        "ruleset_hash": "9bf0271a61e729a900cda57705bdf785b96496efc462448894b27650a04bf330",
+        "ruleset_id": "tool_type.v2",
+        "version": 1
+      },
+      "taxonomy_manifest": {
+        "artifact_sha256": "e996502f2dde898f359ceb2817da7ba33d98ee36774b656cb1a58a74bb9aa42d",
+        "manifest_semantic_hash": "91b3ed0c1f7b2bd08c63fe9460b43c20cdf04fa748921465589d1c90b7058b16",
+        "manifest_version": 1,
+        "options": 328,
+        "path": "data/catalog_processing_rules/tool_type_taxonomy.v1.json",
+        "taxonomy_identity_hash": "fc13be7804b06713dccde5cd2888a437a1a7521772d5911acc7d9d93636714d8"
+      }
+    },
+    "matcher_version": "1.0",
+    "schema_version": 1
+  },
+  "canonical_hash": "f43d6e0d3b55af12bd55727dabe3bb054fb457eb4113033b3dc850b89e82c223"
+}
