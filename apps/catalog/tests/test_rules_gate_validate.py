@@ -6,11 +6,13 @@ from io import StringIO
 from pathlib import Path
 
 import pytest
+from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from apps.catalog.processing import canonical_hash
 
+TESTS_WORKFLOW = Path(settings.BASE_DIR) / ".github" / "workflows" / "tests.yml"
 FIXTURES = Path(__file__).parent / "fixtures"
 FROZEN_SAMPLE = FIXTURES / "phase7d-gate-sample-official.json"
 FROZEN_LABELS = FIXTURES / "phase7d-labels.json"
@@ -43,6 +45,23 @@ def test_frozen_sample_passes_without_legacy_flag():
     assert "wilson95=[0.9470" in out
     assert "collisions_recomputed=0" in out
     assert "gate_passed=true" in out
+
+
+def test_ci_job_carries_no_legacy_taxonomy_poblazhka():
+    """Guard (H4): возврат поблажки в CI обязан падать тестом, а не проходить ревью.
+
+    Пока `--allow-legacy-taxonomy-hash` стоит в джобе, зелёный CI не является
+    полным доказательством контура — ровно тот дефект доверия, ради которого
+    затевалась Wave 7.1. Проверяется исполняемая часть workflow (env и run),
+    комментарии намеренно игнорируются.
+    """
+    yaml = pytest.importorskip("yaml")
+    workflow = yaml.safe_load(TESTS_WORKFLOW.read_text(encoding="utf-8"))
+    job = workflow["jobs"]["catalog-rules-gate"]
+    assert not [k for k in job.get("env", {}) if "LEGACY" in k.upper()]
+    for step in job["steps"]:
+        assert "allow-legacy-taxonomy-hash" not in step.get("run", ""), step.get("name")
+        assert not [k for k in step.get("env", {}) if "LEGACY" in k.upper()], step.get("name")
 
 
 def test_legacy_taxonomy_binding_blocks_exit_2(tmp_path):

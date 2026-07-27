@@ -53,22 +53,22 @@
       "slug": "aksessuary-dlya-klyuchey",
       "value": "Аксессуары для ключей",
       "sort_order": 92,
-      "origin_kind": "legacy_unknown",
-      "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "PAV-backed option без репозиторного provenance; каноничность подтверждена inventory Wave 7.1",
-      "review_ref": "wave7-inventory",
+      "origin_kind": "manual_backport",
+      "origin_ref": "ruchnoy-roadmap round 15",
+      "review_status": "approved",
+      "review_reason": "provenance восстановлен в Wave 7.1 H4 обратным поиском по docs/: опция создана документированным раундом каталога и подтверждена товарами",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
       "slug": "armiruyushchie-lenty-binty",
       "value": "Армирующие ленты и бинты",
       "sort_order": 102,
-      "origin_kind": "legacy_unknown",
-      "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "PAV-backed option без репозиторного provenance; каноничность подтверждена inventory Wave 7.1",
-      "review_ref": "wave7-inventory",
+      "origin_kind": "manual_backport",
+      "origin_ref": "catalog-readiness-roadmap round 2",
+      "review_status": "approved",
+      "review_reason": "provenance восстановлен в Wave 7.1 H4 обратным поиском по docs/: опция создана документированным раундом каталога и подтверждена товарами",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -273,22 +273,22 @@
       "slug": "bp-nabory-pnevmoinstrumenta",
       "value": "Наборы пневмоинструмента",
       "sort_order": 142,
-      "origin_kind": "legacy_unknown",
-      "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "PAV-backed option без репозиторного provenance; каноничность подтверждена inventory Wave 7.1",
-      "review_ref": "wave7-inventory",
+      "origin_kind": "manual_backport",
+      "origin_ref": "catalog-readiness-roadmap round 3",
+      "review_status": "approved",
+      "review_reason": "provenance восстановлен в Wave 7.1 H4 обратным поиском по docs/: опция создана документированным раундом каталога и подтверждена товарами",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
       "slug": "bp-osnastka-pnevmomolotkov",
       "value": "Оснастка и запчасти для пневмомолотков",
       "sort_order": 132,
-      "origin_kind": "legacy_unknown",
-      "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "PAV-backed option без репозиторного provenance; каноничность подтверждена inventory Wave 7.1",
-      "review_ref": "wave7-inventory",
+      "origin_kind": "manual_backport",
+      "origin_ref": "catalog-readiness-roadmap round 3",
+      "review_status": "approved",
+      "review_reason": "provenance восстановлен в Wave 7.1 H4 обратным поиском по docs/: опция создана документированным раундом каталога и подтверждена товарами",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -550,11 +550,11 @@
       "slug": "fiksatory-germetiki-rezby",
       "value": "Фиксаторы и герметики резьбы",
       "sort_order": 42,
-      "origin_kind": "legacy_unknown",
-      "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "PAV-backed option без репозиторного provenance; каноничность подтверждена inventory Wave 7.1",
-      "review_ref": "wave7-inventory",
+      "origin_kind": "manual_backport",
+      "origin_ref": "stroitelnyy-roadmap round 4",
+      "review_status": "approved",
+      "review_reason": "provenance восстановлен в Wave 7.1 H4 обратным поиском по docs/: опция создана документированным раундом каталога и подтверждена товарами",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -849,9 +849,9 @@
       "sort_order": 16,
       "origin_kind": "seed",
       "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "unused by products and ruleset; removal — отдельное бизнес-решение",
-      "review_ref": "wave7-inventory",
+      "review_status": "approved",
+      "review_reason": "не используется товарами и ruleset; решением владельца (Wave 7.1 H4) оставлена как пробел ассортимента, удаление отложено до процедур отката H5",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -1269,11 +1269,11 @@
       "slug": "kovshi-shtukaturnye",
       "value": "Ковши штукатурные",
       "sort_order": 41,
-      "origin_kind": "legacy_unknown",
-      "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "PAV-backed option без репозиторного provenance; каноничность подтверждена inventory Wave 7.1",
-      "review_ref": "wave7-inventory",
+      "origin_kind": "manual_backport",
+      "origin_ref": "stroitelnyy-roadmap round 4",
+      "review_status": "approved",
+      "review_reason": "provenance восстановлен в Wave 7.1 H4 обратным поиском по docs/: опция создана документированным раундом каталога и подтверждена товарами",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -1504,11 +1504,11 @@
       "slug": "kukhonnye-razdelochnye-nozhi",
       "value": "Кухонные и разделочные ножи",
       "sort_order": 62,
-      "origin_kind": "legacy_unknown",
-      "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "PAV-backed option без репозиторного provenance; каноничность подтверждена inventory Wave 7.1",
-      "review_ref": "wave7-inventory",
+      "origin_kind": "manual_backport",
+      "origin_ref": "ruchnoy-roadmap round 11",
+      "review_status": "approved",
+      "review_reason": "provenance восстановлен в Wave 7.1 H4 обратным поиском по docs/: опция создана документированным раундом каталога и подтверждена товарами",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -1583,9 +1583,9 @@
       "sort_order": 33,
       "origin_kind": "seed",
       "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "unused by products and ruleset; removal — отдельное бизнес-решение",
-      "review_ref": "wave7-inventory",
+      "review_status": "approved",
+      "review_reason": "не используется товарами и ruleset; решением владельца (Wave 7.1 H4) оставлена как пробел ассортимента, удаление отложено до процедур отката H5",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -1970,9 +1970,9 @@
       "sort_order": 31,
       "origin_kind": "seed",
       "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "unused by products and ruleset; removal — отдельное бизнес-решение",
-      "review_ref": "wave7-inventory",
+      "review_status": "approved",
+      "review_reason": "не используется товарами и ruleset; решением владельца (Wave 7.1 H4) оставлена как пробел ассортимента, удаление отложено до процедур отката H5",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -2170,9 +2170,9 @@
       "sort_order": 34,
       "origin_kind": "seed",
       "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "unused by products and ruleset; removal — отдельное бизнес-решение",
-      "review_ref": "wave7-inventory",
+      "review_status": "approved",
+      "review_reason": "не используется товарами и ruleset; решением владельца (Wave 7.1 H4) оставлена как пробел ассортимента, удаление отложено до процедур отката H5",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -2344,11 +2344,11 @@
       "slug": "rukoyatki-dlya-instrumenta",
       "value": "Рукоятки для ручного инструмента",
       "sort_order": 72,
-      "origin_kind": "legacy_unknown",
-      "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "PAV-backed option без репозиторного provenance; каноничность подтверждена inventory Wave 7.1",
-      "review_ref": "wave7-inventory",
+      "origin_kind": "manual_backport",
+      "origin_ref": "ruchnoy-roadmap round 12",
+      "review_status": "approved",
+      "review_reason": "provenance восстановлен в Wave 7.1 H4 обратным поиском по docs/: опция создана документированным раундом каталога и подтверждена товарами",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -2608,11 +2608,11 @@
       "slug": "skruchevateli-provoloki",
       "value": "Скручиватели проволоки",
       "sort_order": 112,
-      "origin_kind": "legacy_unknown",
-      "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "PAV-backed option без репозиторного provenance; каноничность подтверждена inventory Wave 7.1",
-      "review_ref": "wave7-inventory",
+      "origin_kind": "manual_backport",
+      "origin_ref": "catalog-readiness-roadmap round 2",
+      "review_status": "approved",
+      "review_reason": "provenance восстановлен в Wave 7.1 H4 обратным поиском по docs/: опция создана документированным раундом каталога и подтверждена товарами",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -2630,11 +2630,11 @@
       "slug": "spetsialnye-nozhi",
       "value": "Специальные ножи",
       "sort_order": 82,
-      "origin_kind": "legacy_unknown",
-      "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "PAV-backed option без репозиторного provenance; каноничность подтверждена inventory Wave 7.1",
-      "review_ref": "wave7-inventory",
+      "origin_kind": "manual_backport",
+      "origin_ref": "ruchnoy-roadmap round 14",
+      "review_status": "approved",
+      "review_reason": "provenance восстановлен в Wave 7.1 H4 обратным поиском по docs/: опция создана документированным раундом каталога и подтверждена товарами",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -2916,11 +2916,11 @@
       "slug": "stroitelnye-lesa-vyshki",
       "value": "Строительные леса и вышки-туры",
       "sort_order": 0,
-      "origin_kind": "legacy_unknown",
-      "origin_ref": null,
-      "review_status": "pending_business_review",
-      "review_reason": "PAV-backed option без репозиторного provenance; каноничность подтверждена inventory Wave 7.1",
-      "review_ref": "wave7-inventory",
+      "origin_kind": "manual_backport",
+      "origin_ref": "stroitelnyy-roadmap round 1",
+      "review_status": "approved",
+      "review_reason": "provenance восстановлен в Wave 7.1 H4 обратным поиском по docs/: опция создана документированным раундом каталога и подтверждена товарами",
+      "review_ref": "wave7-h4",
       "legacy_aliases": []
     },
     {
@@ -3651,5 +3651,5 @@
     }
   ],
   "taxonomy_identity_hash": "fc13be7804b06713dccde5cd2888a437a1a7521772d5911acc7d9d93636714d8",
-  "manifest_semantic_hash": "91b3ed0c1f7b2bd08c63fe9460b43c20cdf04fa748921465589d1c90b7058b16"
+  "manifest_semantic_hash": "d906be2f021bcf372dfbdb25d8ffb49f1bd7a5cd713f8a9cdd9699dad6277681"
 }

@@ -51,8 +51,8 @@
         "version": 1
       },
       "taxonomy_manifest": {
-        "artifact_sha256": "e996502f2dde898f359ceb2817da7ba33d98ee36774b656cb1a58a74bb9aa42d",
-        "manifest_semantic_hash": "91b3ed0c1f7b2bd08c63fe9460b43c20cdf04fa748921465589d1c90b7058b16",
+        "artifact_sha256": "19389539d7e2da5fde8b3d651905cd0ff29541819484c0bfcf4265f1c85bfa6f",
+        "manifest_semantic_hash": "d906be2f021bcf372dfbdb25d8ffb49f1bd7a5cd713f8a9cdd9699dad6277681",
         "manifest_version": 1,
         "options": 328,
         "path": "data/catalog_processing_rules/tool_type_taxonomy.v1.json",
@@ -62,5 +62,5 @@
     "matcher_version": "1.0",
     "schema_version": 1
   },
-  "canonical_hash": "52a8651c794813591de3712e1396b370d87b668a0b2efa545c31fa2b958e5996"
+  "canonical_hash": "e0ff608edc771b5d52874046db13107fd69a24f7f27f7b4a706224bc24e81c8d"
 }

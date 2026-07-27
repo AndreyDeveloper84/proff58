@@ -25,7 +25,9 @@ V2_PATH = Path(settings.BASE_DIR) / "data" / "catalog_processing_rules" / "tool_
 SEED_RULES_PATH = Path(settings.BASE_DIR) / "data" / "tool_type_rules.json"
 
 PINNED_IDENTITY_HASH = "fc13be7804b06713dccde5cd2888a437a1a7521772d5911acc7d9d93636714d8"
-PINNED_SEMANTIC_HASH = "91b3ed0c1f7b2bd08c63fe9460b43c20cdf04fa748921465589d1c90b7058b16"
+# H4: clean-taxonomy снял 15 pending_business_review (identity_hash не менялся —
+# slug/value не тронуты; semantic_hash покрывает origin/review metadata).
+PINNED_SEMANTIC_HASH = "d906be2f021bcf372dfbdb25d8ffb49f1bd7a5cd713f8a9cdd9699dad6277681"
 
 BACKPORTED_SLUGS = {
     "bp-podgotovka-vozduha",
@@ -33,7 +35,10 @@ BACKPORTED_SLUGS = {
     "sumki-poyasnye",
     "sterzhni-kleevye",
 }
-LEGACY_UNKNOWN_SLUGS = {
+# Опции, созданные документированными раундами каталога; в H1 были помечены
+# origin_kind=legacy_unknown из-за отсутствия в seed-файле, в H4 provenance
+# восстановлен и они переведены в manual_backport/approved.
+REBOUND_BACKPORT_SLUGS = {
     "stroitelnye-lesa-vyshki",
     "kovshi-shtukaturnye",
     "fiksatory-germetiki-rezby",
@@ -102,12 +107,33 @@ def test_backported_slugs_present():
     assert BACKPORTED_SLUGS <= m.slugs
 
 
-def test_pending_business_review_set_is_exact():
+def test_no_pending_business_review_left():
+    """H4: все 15 «серых» записей разобраны решением владельца."""
     m = load_manifest()
-    pending = {o.slug for o in m.options if o.review_status == "pending_business_review"}
-    assert pending == LEGACY_UNKNOWN_SLUGS | UNUSED_SLUGS
-    legacy = {o.slug for o in m.options if o.origin_kind == "legacy_unknown"}
-    assert legacy == LEGACY_UNKNOWN_SLUGS
+    assert {o.slug for o in m.options if o.review_status != "approved"} == set()
+    assert {o.slug for o in m.options if o.origin_kind == "legacy_unknown"} == set()
+
+
+def test_rebound_slugs_carry_origin_ref():
+    """Записи, чей provenance восстановлен в H4, обязаны ссылаться на раунд."""
+    m = load_manifest()
+    by_slug = {o.slug: o for o in m.options}
+    for slug in REBOUND_BACKPORT_SLUGS:
+        opt = by_slug[slug]
+        assert opt.origin_kind == "manual_backport", slug
+        assert opt.origin_ref, slug
+        assert opt.review_ref == "wave7-h4", slug
+
+
+def test_unused_slugs_kept_with_written_decision():
+    """4 неиспользуемые seed-опции оставлены осознанно, с зафиксированной причиной."""
+    m = load_manifest()
+    by_slug = {o.slug: o for o in m.options}
+    for slug in UNUSED_SLUGS:
+        opt = by_slug[slug]
+        assert opt.origin_kind == "seed", slug
+        assert opt.review_status == "approved", slug
+        assert opt.review_ref == "wave7-h4", slug
 
 
 def test_collision_winners_carry_losing_alias_and_approved():
