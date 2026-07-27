@@ -8,7 +8,10 @@ import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
+from apps.catalog.processing import canonical_hash
 from apps.catalog.rules_release import (
+    DEFAULT_GATE_SAMPLE_PATH,
+    DEFAULT_LABELS_PATH,
     RELEASE_MANIFEST_PATH,
     build_release_manifest,
     canonical_bytes,
@@ -19,15 +22,28 @@ LEGACY_TAXONOMY_HASH = "b357be604801197e33182b84fde1755361e29653d98bd49429623b3b
 
 
 def _run(**kwargs):
+    """H4: команда вызывается без поблажки — входы на canonical binding."""
     buf = StringIO()
-    kwargs.setdefault("allow_legacy_taxonomy_hash", LEGACY_TAXONOMY_HASH)
     call_command("catalog_rules_release_manifest", stdout=buf, **kwargs)
     return buf.getvalue()
 
 
 def _document():
-    doc, _ = build_release_manifest(allow_legacy_taxonomy_hash=LEGACY_TAXONOMY_HASH)
+    doc, _ = build_release_manifest()
     return doc
+
+
+def _legacy_bound_inputs(tmp_path):
+    """Копия default-входов с legacy taxonomy_hash (labels перепривязаны)."""
+    sample = json.loads(DEFAULT_GATE_SAMPLE_PATH.read_text(encoding="utf-8"))
+    sample["taxonomy_hash"] = LEGACY_TAXONOMY_HASH
+    labels = json.loads(DEFAULT_LABELS_PATH.read_text(encoding="utf-8"))
+    labels["sample_hash"] = canonical_hash(sample)
+    sample_p = tmp_path / "sample.json"
+    labels_p = tmp_path / "labels.json"
+    sample_p.write_text(json.dumps(sample, ensure_ascii=False), encoding="utf-8")
+    labels_p.write_text(json.dumps(labels, ensure_ascii=False), encoding="utf-8")
+    return {"gate_sample": str(sample_p), "labels": str(labels_p)}
 
 
 # --- режим --check (контур CI) ---
@@ -39,9 +55,15 @@ def test_check_committed_manifest_passes():
     assert "gate rows=103 correct=102" in out
 
 
-def test_check_without_legacy_flag_fails_exit_2():
+def test_check_on_legacy_binding_fails_exit_2(tmp_path):
+    """Артефакт с legacy taxonomy_hash без явного флага — exit 2 (blocking gate)."""
     with pytest.raises(CommandError) as exc_info:
-        call_command("catalog_rules_release_manifest", "--check", stdout=StringIO())
+        call_command(
+            "catalog_rules_release_manifest",
+            "--check",
+            **_legacy_bound_inputs(tmp_path),
+            stdout=StringIO(),
+        )
     assert exc_info.value.returncode == 2
     assert "blocking gate errors" in str(exc_info.value)
 
@@ -58,7 +80,6 @@ def test_check_detects_drift_in_consistent_manifest(tmp_path):
             "catalog_rules_release_manifest",
             "--check",
             manifest=str(path),
-            allow_legacy_taxonomy_hash=LEGACY_TAXONOMY_HASH,
             stdout=buf,
         )
     assert exc_info.value.returncode == 2

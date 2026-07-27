@@ -29,16 +29,13 @@ def _run(gate_sample, labels, **kwargs):
     return buf.getvalue()
 
 
-def _frozen_with_legacy():
-    return {
-        "gate_sample": FROZEN_SAMPLE,
-        "labels": FROZEN_LABELS,
-        "allow_legacy_taxonomy_hash": LEGACY_TAXONOMY_HASH,
-    }
+def _frozen():
+    """H4: замороженный sample несёт canonical taxonomy binding — без поблажки."""
+    return {"gate_sample": FROZEN_SAMPLE, "labels": FROZEN_LABELS}
 
 
-def test_frozen_sample_passes_with_legacy_flag():
-    out = _run(**_frozen_with_legacy())
+def test_frozen_sample_passes_without_legacy_flag():
+    out = _run(**_frozen())
     assert "rows=103" in out
     assert "correct=102" in out
     assert "unverifiable=1" in out
@@ -48,9 +45,18 @@ def test_frozen_sample_passes_with_legacy_flag():
     assert "gate_passed=true" in out
 
 
-def test_frozen_sample_blocks_without_legacy_flag():
+def test_legacy_taxonomy_binding_blocks_exit_2(tmp_path):
+    """Негативная матрица: артефакт с legacy taxonomy_hash без флага — exit 2."""
+    sample = json.loads(FROZEN_SAMPLE.read_text(encoding="utf-8"))
+    sample["taxonomy_hash"] = LEGACY_TAXONOMY_HASH
+    labels = json.loads(FROZEN_LABELS.read_text(encoding="utf-8"))
+    labels["sample_hash"] = canonical_hash(sample)
+    sample_p = tmp_path / "sample.json"
+    labels_p = tmp_path / "labels.json"
+    sample_p.write_text(json.dumps(sample, ensure_ascii=False), encoding="utf-8")
+    labels_p.write_text(json.dumps(labels, ensure_ascii=False), encoding="utf-8")
     with pytest.raises(CommandError) as exc_info:
-        _run(gate_sample=FROZEN_SAMPLE, labels=FROZEN_LABELS)
+        _run(gate_sample=sample_p, labels=labels_p)
     assert exc_info.value.returncode == 2
     assert "taxonomy_hash" in str(exc_info.value)
 
@@ -67,11 +73,7 @@ def test_thresholds_failed_exit_1(tmp_path):
     sample_p.write_text(json.dumps(sample, ensure_ascii=False), encoding="utf-8")
     labels_p.write_text(json.dumps(labels, ensure_ascii=False), encoding="utf-8")
     with pytest.raises(CommandError) as exc_info:
-        _run(
-            gate_sample=sample_p,
-            labels=labels_p,
-            allow_legacy_taxonomy_hash=LEGACY_TAXONOMY_HASH,
-        )
+        _run(gate_sample=sample_p, labels=labels_p)
     assert exc_info.value.returncode == 1
     assert "thresholds" in str(exc_info.value)
 
@@ -102,18 +104,14 @@ def test_tampered_rule_refs_exit_2(tmp_path):
     sample_p.write_text(json.dumps(sample, ensure_ascii=False), encoding="utf-8")
     labels_p.write_text(json.dumps(labels, ensure_ascii=False), encoding="utf-8")
     with pytest.raises(CommandError) as exc_info:
-        _run(
-            gate_sample=sample_p,
-            labels=labels_p,
-            allow_legacy_taxonomy_hash=LEGACY_TAXONOMY_HASH,
-        )
+        _run(gate_sample=sample_p, labels=labels_p)
     assert exc_info.value.returncode == 2
     assert "rule_refs" in str(exc_info.value)
 
 
 def test_out_machine_report_atomic(tmp_path):
     out_p = tmp_path / "report.json"
-    _run(**_frozen_with_legacy(), out=out_p)
+    _run(**_frozen(), out=out_p)
     report = json.loads(out_p.read_text(encoding="utf-8"))
     assert report["gate_passed"] is True
     assert report["schema_version"] == 1
@@ -122,9 +120,9 @@ def test_out_machine_report_atomic(tmp_path):
     assert report["blocking_errors"] == []
     # перезапись без --force запрещена
     with pytest.raises(CommandError, match="--force"):
-        _run(**_frozen_with_legacy(), out=out_p)
+        _run(**_frozen(), out=out_p)
     # с --force — перезаписывается
-    _run(**_frozen_with_legacy(), out=out_p, force=True)
+    _run(**_frozen(), out=out_p, force=True)
 
 
 def test_format_json_prints_machine_report():
@@ -133,7 +131,6 @@ def test_format_json_prints_machine_report():
         "catalog_rules_gate_validate",
         gate_sample=str(FROZEN_SAMPLE),
         labels=str(FROZEN_LABELS),
-        allow_legacy_taxonomy_hash=LEGACY_TAXONOMY_HASH,
         format="json",
         stdout=buf,
     )

@@ -549,14 +549,22 @@ def _frozen_gate(**kw):
     return run_independent_gate(**kwargs)
 
 
-def test_frozen_sample_blocks_without_legacy_flag():
+def _frozen_rebound_to(tmp_path, taxonomy_hash):
+    """Копия замороженного sample с другим taxonomy_hash (labels перепривязаны)."""
+    sample = json.loads(FROZEN_SAMPLE.read_text(encoding="utf-8"))
+    sample["taxonomy_hash"] = taxonomy_hash
+    labels = json.loads(FROZEN_LABELS.read_text(encoding="utf-8"))
+    labels["sample_hash"] = canonical_hash(sample)
+    sample_p = tmp_path / "sample.json"
+    labels_p = tmp_path / "labels.json"
+    sample_p.write_text(json.dumps(sample, ensure_ascii=False), encoding="utf-8")
+    labels_p.write_text(json.dumps(labels, ensure_ascii=False), encoding="utf-8")
+    return {"sample_path": sample_p, "labels_path": labels_p}
+
+
+def test_frozen_sample_passes_without_legacy_flag():
+    """H4: sample перевыпущен на canonical binding — поблажка больше не нужна."""
     outcome = _frozen_gate()
-    assert outcome.exit_code == EXIT_INVALID
-    assert any("sample.taxonomy_hash" in e for e in outcome.blocking_errors)
-
-
-def test_frozen_sample_passes_with_legacy_flag():
-    outcome = _frozen_gate(allow_legacy_taxonomy_hash=LEGACY_TAXONOMY_HASH)
     assert outcome.exit_code == EXIT_PASSED, outcome.blocking_errors
     assert outcome.gate_passed is True
     metrics = outcome.report["metrics"]
@@ -568,13 +576,38 @@ def test_frozen_sample_passes_with_legacy_flag():
     assert hi == pytest.approx(0.998284, abs=1e-5)
     assert outcome.report["replay"]["checked"] == 103
     assert outcome.report["replay"]["collisions_recomputed"] == 0
+    assert outcome.report["declared_mismatches"] == []
+
+
+def test_frozen_sample_binds_canonical_taxonomy_identity():
+    outcome = _frozen_gate()
+    sample = json.loads(FROZEN_SAMPLE.read_text(encoding="utf-8"))
+    identity = outcome.report["hashes"]["taxonomy_identity_hash"]
+    assert sample["taxonomy_hash"] == identity
+    assert identity != LEGACY_TAXONOMY_HASH
+
+
+def test_frozen_sample_with_legacy_taxonomy_hash_blocks(tmp_path):
+    """Негативная матрица на реальном артефакте: legacy binding без флага — blocking."""
+    outcome = _frozen_gate(**_frozen_rebound_to(tmp_path, LEGACY_TAXONOMY_HASH))
+    assert outcome.exit_code == EXIT_INVALID
+    assert any("sample.taxonomy_hash" in e for e in outcome.blocking_errors)
+
+
+def test_frozen_sample_legacy_flag_still_admits_legacy_artifact(tmp_path):
+    """Механизм replay исторических артефактов работает и после re-gate."""
+    outcome = _frozen_gate(
+        **_frozen_rebound_to(tmp_path, LEGACY_TAXONOMY_HASH),
+        allow_legacy_taxonomy_hash=LEGACY_TAXONOMY_HASH,
+    )
+    assert outcome.exit_code == EXIT_PASSED, outcome.blocking_errors
     mm = outcome.report["declared_mismatches"]
-    assert any(m["severity"] == "legacy_recipe" for m in mm)
+    assert [m["severity"] for m in mm] == ["legacy_recipe"]
 
 
 def test_frozen_sample_deterministic():
-    a = _frozen_gate(allow_legacy_taxonomy_hash=LEGACY_TAXONOMY_HASH).report
-    b = _frozen_gate(allow_legacy_taxonomy_hash=LEGACY_TAXONOMY_HASH).report
+    a = _frozen_gate().report
+    b = _frozen_gate().report
     a.pop("generated_at")
     b.pop("generated_at")
     assert a == b

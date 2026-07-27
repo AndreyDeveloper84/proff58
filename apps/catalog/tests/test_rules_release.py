@@ -26,7 +26,7 @@ RULESET_SRC = Path(settings.BASE_DIR) / "data" / "catalog_processing_rules" / "t
 
 
 def _build(**kwargs):
-    kwargs.setdefault("allow_legacy_taxonomy_hash", LEGACY_TAXONOMY_HASH)
+    """H4: входы по умолчанию — canonical binding, поблажка не передаётся."""
     return build_release_manifest(**kwargs)
 
 
@@ -99,8 +99,8 @@ def test_gate_metrics_are_recorded_unrounded():
     assert gate["metrics"]["correct"] == 102
     assert gate["metrics"]["precision"] == 102 / 103
     assert gate["thresholds"] == {"precision_gate": 0.99, "min_rows_gate": 100}
-    assert gate["legacy_taxonomy_hash_allowed"] == LEGACY_TAXONOMY_HASH
-    assert [m["severity"] for m in gate["declared_mismatches"]] == ["legacy_recipe"]
+    assert gate["legacy_taxonomy_hash_allowed"] is None
+    assert gate["declared_mismatches"] == []
 
 
 def test_primary_inputs_are_lf_pinned():
@@ -123,8 +123,17 @@ def test_committed_manifest_matches_recomputed():
 # --- fail-closed: manifest не выпускается поверх непройденного gate ---
 
 
-def test_no_manifest_without_legacy_flag():
-    doc, outcome = build_release_manifest()
+def test_no_manifest_on_legacy_taxonomy_binding(tmp_path):
+    """Artifact с legacy taxonomy_hash без явного флага — manifest не выпускается."""
+    sample = json.loads(DEFAULT_GATE_SAMPLE_PATH.read_text(encoding="utf-8"))
+    sample["taxonomy_hash"] = LEGACY_TAXONOMY_HASH
+    labels = json.loads(DEFAULT_LABELS_PATH.read_text(encoding="utf-8"))
+    labels["sample_hash"] = canonical_hash(sample)
+    sample_p = tmp_path / "sample.json"
+    labels_p = tmp_path / "labels.json"
+    sample_p.write_text(json.dumps(sample, ensure_ascii=False), encoding="utf-8")
+    labels_p.write_text(json.dumps(labels, ensure_ascii=False), encoding="utf-8")
+    doc, outcome = build_release_manifest(sample_path=sample_p, labels_path=labels_p)
     assert doc is None
     assert outcome.exit_code == 2
     assert any("taxonomy_hash" in e for e in outcome.blocking_errors)

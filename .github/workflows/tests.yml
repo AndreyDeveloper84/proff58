@@ -93,22 +93,20 @@ jobs:
       DATABASE_URL: postgres://proff:proff@localhost:5432/proff58
       CELERY_BROKER_URL: redis://localhost:6379/0
       CELERY_RESULT_BACKEND: redis://localhost:6379/1
-      # Замороженный 7D sample несёт legacy DB-order taxonomy_hash (H2 §4);
-      # поблажка явная и снимается в H4 (re-gate на canonical binding).
-      LEGACY_TAXONOMY_HASH: b357be604801197e33182b84fde1755361e29653d98bd49429623b3ba604326b
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - run: pip install -r requirements/dev.txt
+      # H4: sample перевыпущен на canonical taxonomy binding (fc13be78…),
+      # поблажка --allow-legacy-taxonomy-hash снята из обоих шагов. Джоба
+      # проходит только на canonical identity — зелёный CI = полное доказательство.
       - name: Gate — frozen 7D sample против default ruleset
         run: |
           python manage.py catalog_rules_gate_validate \
             --gate-sample apps/catalog/tests/fixtures/phase7d-gate-sample-official.json \
-            --labels apps/catalog/tests/fixtures/phase7d-labels.json \
-            --allow-legacy-taxonomy-hash "$LEGACY_TAXONOMY_HASH"
+            --labels apps/catalog/tests/fixtures/phase7d-labels.json
       - name: Release manifest — проверка зафиксированной версии контура
         run: |
-          python manage.py catalog_rules_release_manifest --check \
-            --allow-legacy-taxonomy-hash "$LEGACY_TAXONOMY_HASH"
+          python manage.py catalog_rules_release_manifest --check
