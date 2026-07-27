@@ -131,7 +131,9 @@ code команды = статус джобы.
 - Gate не доверяет самодекларированным полям артефактов — всё пересчитывается
   (`docs/catalog/rules-gate-h2.md`).
 - `taxonomy_identity_hash` = `fc13be78…` (canonical). Legacy DB-order hash
-  `b357be60…` допустим только явным `--allow-legacy-taxonomy-hash`.
+  `b357be60…` допустим только явным `--allow-legacy-taxonomy-hash` и в штатном
+  контуре не используется: с Wave 7.1 H4 замороженный gate-sample перевыпущен на
+  canonical binding, CI гоняет гейт без поблажки.
 - Shadow-контур **ничего не пишет в БД**; apply — отдельная авторизация.
 - **Phase 8 (pilot rollout) заморожена** до `WAVE 7.1 ACCEPTED`.
 

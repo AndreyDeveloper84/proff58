@@ -62,14 +62,18 @@ applied corpus, canonical taxonomy manifest, matcher или метрик gate д
 ## Команда
 
 ```bash
-LEG=b357be604801197e33182b84fde1755361e29653d98bd49429623b3ba604326b
-
 # генерация/обновление (по умолчанию — default ruleset + frozen 7D sample)
-python manage.py catalog_rules_release_manifest --allow-legacy-taxonomy-hash "$LEG"
+python manage.py catalog_rules_release_manifest
 
 # проверка зафиксированной версии (режим CI)
-python manage.py catalog_rules_release_manifest --check --allow-legacy-taxonomy-hash "$LEG"
+python manage.py catalog_rules_release_manifest --check
 ```
+
+С H4 замороженный 7D sample несёт **canonical** `taxonomy_hash`
+(`fc13be78…`), поэтому `--allow-legacy-taxonomy-hash` в штатном контуре не
+нужен: `legacy_taxonomy_hash_allowed` в манифесте = `null`,
+`declared_mismatches` = `[]`. Флаг остаётся только для replay исторических
+артефактов с legacy DB-order binding.
 
 Флаги: `--manifest` (файл release manifest — цель записи или источник
 `--check`), `--check`, `--force`, `--format text|json`, а также переопределение
@@ -99,9 +103,9 @@ python manage.py catalog_rules_release_manifest --check --allow-legacy-taxonomy-
 2. `catalog_rules_release_manifest --check`.
 
 Exit code команды = статус джобы. Сервисы (Postgres/Redis) не поднимаются:
-контур DB-independent. Поблажка `--allow-legacy-taxonomy-hash` задана
-переменной `LEGACY_TAXONOMY_HASH` на уровне джобы и снимается в H4 (re-gate
-sample на canonical binding).
+контур DB-independent. Поблажек нет: с H4 оба шага выполняются **без**
+`--allow-legacy-taxonomy-hash`, джоба проходит только на canonical taxonomy
+identity — зелёный CI является полным доказательством.
 
 ## Обновление manifest
 

@@ -26,7 +26,7 @@ load primary inputs (schema + content validation)
 ## Hash contract
 
 - `ruleset_hash` — canonical_hash ruleset-файла (пересчитывается); sample и labels обязаны совпасть.
-- `taxonomy_identity_hash` — из canonical manifest (H1). Declared `sample.taxonomy_hash`: mismatch → blocking; legacy samples (DB-order recipe, до H1) допускаются **только** явным `--allow-legacy-taxonomy-hash <hash>` (severity `legacy_recipe`).
+- `taxonomy_identity_hash` — из canonical manifest (H1). Declared `sample.taxonomy_hash`: mismatch → blocking; legacy samples (DB-order recipe, до H1) допускаются **только** явным `--allow-legacy-taxonomy-hash <hash>` (severity `legacy_recipe`). **С H4** замороженный 7D sample перевыпущен на canonical binding, поэтому штатный контур (и CI) флаг не использует; он остаётся исключительно для replay исторических артефактов.
 - `manifest_semantic_hash`, `artifact_sha256` всех входов — в report для audit.
 
 ## Declared artifact policy
@@ -43,17 +43,21 @@ Declared-поля никогда не source of truth: `corpus_overlap_checked` 
 ## Использование
 
 ```bash
-# frozen Phase 7D sample (legacy taxonomy hash — явный флаг)
+# frozen Phase 7D sample — canonical binding (H4), поблажка не нужна
 python manage.py catalog_rules_gate_validate \
-  --gate-sample phase7d-gate-sample-official.json \
-  --labels phase7d-labels.json \
-  --allow-legacy-taxonomy-hash b357be6048…326b \
+  --gate-sample apps/catalog/tests/fixtures/phase7d-gate-sample-official.json \
+  --labels apps/catalog/tests/fixtures/phase7d-labels.json \
   --out report.json [--force] [--format json]
 
-# canonical sample будущих фаз (taxonomy_hash == canonical identity)
+# произвольные входы
 python manage.py catalog_rules_gate_validate \
   --gate-sample … --labels … \
   [--ruleset PATH] [--corpus PATH] [--taxonomy-manifest PATH]
+
+# исторический артефакт с legacy DB-order binding — только явным флагом
+python manage.py catalog_rules_gate_validate \
+  --gate-sample … --labels … \
+  --allow-legacy-taxonomy-hash b357be6048…326b
 ```
 
 Команда не пишет в БД, не меняет feature flags, не применяет predictions.
