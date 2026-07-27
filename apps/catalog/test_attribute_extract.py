@@ -650,6 +650,108 @@ def test_golovki_drive_and_size(rules):
     assert f["size"].number == Decimal("13")
 
 
+# --- size у ключей/головок: диапазоны отсекаем, пары «10х11» СОХРАНЯЕМ ---------
+#
+# Правило `size` у `golovki` и `klyuchi-gaechnye` использует lookbehind
+# `(?<![\d.,/-])`, который блокирует диапазон («10-32 мм» → набор/разводной ключ, где
+# одного размера нет), но НЕ блокирует «х». Это осознанное расхождение с конвенцией
+# `passatizhi`/`bokorezy`/`nozhovki` (`(?<![\d.,/x*х-])`): у двустороннего ключа «10х11»
+# размер 11 реально существует, и его удаление лишило бы 211 товаров поиска по размеру.
+# Полноценное решение (мультизначение / size_min+size_max) вынесено отдельной задачей.
+
+
+@pytest.mark.parametrize(
+    "tt,name",
+    [
+        # диапазоны и наборы — одного размера нет, значение извлекаться не должно
+        ("golovki", "Набор головок 1/2, 10-32 мм, 26 предметов"),
+        ("golovki", "Головка многоразмерная, 6-21 мм, под квадрат 3/8, CrV"),
+        ("golovki", 'Набор головок 1" , 8 предметов, 24-46мм FROSP'),
+        ("klyuchi-gaechnye", "Ключ разводной 150мм 0-19 мм W27AT6 Jonnesway"),
+        ("klyuchi-gaechnye", "Ключ для фитингов 32-75 мм ПНД"),
+        ("klyuchi-gaechnye", "Ключ универсальный самозажимной 8-14, 15-22мм, 250мм"),
+        ("klyuchi-gaechnye", "Ключ гаечный комб трещ.  8-22 мм  Cr-V   ЗУБР ПРОФ"),
+    ],
+)
+def test_size_range_does_not_yield_single_value(rules, tt, name):
+    assert "size" not in {v.slug: v for v in rules.extract(tt, name)}
+
+
+@pytest.mark.parametrize(
+    "tt,name,expected",
+    [
+        # ЯКОРЬ осознанного расхождения: «х» НЕ блокируется, пара даёт размер.
+        # Если кто-то «выровняет» правило по passatizhi, добавив «х» в lookbehind,
+        # эти кейсы упадут — расхождение должно сниматься решением, а не рефакторингом.
+        ("klyuchi-gaechnye", "Ключ накидной 10х11 мм  СК", Decimal("11")),
+        ("klyuchi-gaechnye", "Ключ баллонный 24х27мм торцовый ЗУБР МАСТЕР", Decimal("27")),
+        ("golovki", "Ключ торцевой 14х14 мм изогнутый", Decimal("14")),
+        ("golovki", "Ключ трубчатый 8х9мм KWB", Decimal("9")),
+    ],
+)
+def test_size_pair_is_kept_deliberately(rules, tt, name, expected):
+    assert {v.slug: v for v in rules.extract(tt, name)}["size"].number == expected
+
+
+@pytest.mark.parametrize(
+    "tt,name,expected",
+    [
+        # одиночные размеры не задеты починкой
+        ("golovki", "Ключ ступичный  50мм торцевой восьмигранный ЗУБР", Decimal("50")),
+        ("golovki", "Ключ торцовый 27 мм СИБИН односторонний, оцинкован", Decimal("27")),
+        ("klyuchi-gaechnye", "Ключ Т-образный 10мм KING TONY", Decimal("10")),
+        ("klyuchi-gaechnye", "Ключ Т-образный с рукояткой 5мм, DUEL", Decimal("5")),
+    ],
+)
+def test_size_single_value_still_extracted(rules, tt, name, expected):
+    # «Т-образный» содержит дефис, но не перед числом — на извлечение не влияет.
+    assert {v.slug: v for v in rules.extract(tt, name)}["size"].number == expected
+
+
+# --- motor_type у шлифмашин: «щёточный шлифователь» — это КЛАСС, не двигатель ----
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        # Класс инструмента (машина со щёткой-насадкой), а не тип двигателя.
+        # У METABO S 18 LTX (аккумуляторная) двигатель вполне может быть бесщёточным —
+        # голое «щеточн» записало бы прямо противоположное.
+        "Щеточный шлифователь METABO S 18 LTX",
+        "Щеточный шлифователь METABO SE 12-115 SET",
+        "Щеточный шлифователь METABO SE 17-200 RT SET 220в",
+        "Шлифмаш щеточная ИНТЕРСКОЛ ШМ-110/1400ЭМ",
+    ],
+)
+def test_shlifmashiny_brush_sander_is_not_motor_type(rules, name):
+    assert "motor_type" not in {v.slug: v for v in rules.extract("shlifmashiny", name)}
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Шлифмашина 1400Вт щеточный двигатель", "brushed"),
+        ("Шлифмашина коллекторный двигатель 900Вт", "brushed"),
+        ("Шлифмашина brushed 900Вт", "brushed"),
+        ("Шлифмашина бесщёточная 18В", "brushless"),
+        ("Шлифмашина б/щ 18В", "brushless"),
+    ],
+)
+def test_shlifmashiny_motor_type_real_signals(rules, name, expected):
+    assert {v.slug: v for v in rules.extract("shlifmashiny", name)}[
+        "motor_type"
+    ].option_slug == expected
+
+
+@pytest.mark.parametrize("tt", ["dreli-shurupoverty", "perforatory", "bolgarki-ushm", "pily"])
+def test_bare_shchetochn_still_works_for_other_tool_types(rules, tt):
+    # Сужение сделано ТОЛЬКО для shlifmashiny: там есть класс «щёточный шлифователь».
+    # В остальных типах «щёточный» означает двигатель — правило не трогали.
+    assert {v.slug: v for v in rules.extract(tt, "Инструмент щеточный 800Вт")}[
+        "motor_type"
+    ].option_slug == "brushed"
+
+
 def test_vorotki_drive_and_type(rules):
     f = {v.slug: v for v in rules.extract("vorotki", "Вороток 1/2 250мм Т-образный с трещоткой")}
     assert f["drive"].option_slug == "d-1-2"

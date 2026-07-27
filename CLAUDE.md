@@ -146,7 +146,11 @@ code команды = статус джобы.
   транзакции записи под `SELECT … FOR UPDATE` (H6), потому что план строится вне
   этой транзакции; чужая запись, прошедшая между планом и применением, даёт
   conflict, а не перезапись.
-- **Phase 8 (pilot rollout) заморожена** до `WAVE 7.1 ACCEPTED`.
+- **Phase 8 (pilot rollout) заморожена** до `WAVE 7.1 ACCEPTED`. Основание для снятия
+  заморозки подготовлено (сводный отчёт волны —
+  `docs/plans/2026-07-27-WAVE7_1_ACCEPTANCE_REPORT.md`), но **объявление
+  `WAVE 7.1 ACCEPTED` делает владелец**; до этого объявления заморозка действует и
+  первая ступень (synthetic batch) не начинается.
 
 Документы: **план текущей волны — `docs/plans/2026-07-26-WAVE7_1_H3_H5_PLAN.md`**,
 `docs/catalog/tool-type-taxonomy-manifest.md`, `docs/catalog/rules-gate-h2.md`,
