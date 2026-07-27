@@ -122,7 +122,7 @@ class Command(BaseCommand):
                 f"canonical_hash: зафиксирован {recorded['canonical_hash']!r}, "
                 f"пересчитан {document['canonical_hash']!r}"
             )
-        self._emit(document, fmt, mode="check", path=path)
+        self._emit(document, fmt, mode="check")
         if diffs:
             for d in diffs:
                 self.stdout.write(f"drift: {d}")
@@ -137,7 +137,7 @@ class Command(BaseCommand):
         data = canonical_bytes(document)
         existing = path.read_bytes() if path.exists() else None
         if existing == data:
-            self._emit(document, fmt, mode="unchanged", path=path)
+            self._emit(document, fmt, mode="unchanged")
             self.stdout.write(f"unchanged={path} (байт-идентичен)")
             return
         if existing is not None and not force:
@@ -146,12 +146,12 @@ class Command(BaseCommand):
                 returncode=EXIT_INVALID,
             )
         _write_bytes_atomic(data, path)
-        self._emit(document, fmt, mode="written", path=path)
+        self._emit(document, fmt, mode="written")
         self.stdout.write(f"written={path}")
 
     # --- вывод ---
 
-    def _emit(self, document: dict, fmt: str, *, mode: str, path: Path) -> None:
+    def _emit(self, document: dict, fmt: str, *, mode: str) -> None:
         if fmt == "json":
             self.stdout.write(canonical_bytes(document).decode("utf-8").rstrip("\n"))
             return
