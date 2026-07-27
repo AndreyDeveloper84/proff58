@@ -15,6 +15,12 @@
 * ``boolean`` — да/нет по whitelist: сначала ``false_keywords``, затем
   ``true_keywords``; иначе значение не извлекается.
 
+Любое правило может объявить ``skip_if`` — список стоп-слов. Если хоть одно из них
+входит в нормализованное название, правило **не применяется целиком** (значение не
+извлекается). Нужно для товаров, у которых характеристики в единственном числе не
+существует: «Набор ключей 6-19 мм, 8 шт.» не имеет одного «размера под ключ». Выразить
+это в regex нельзя — Python не поддерживает lookbehind переменной длины.
+
 Приоритет источника берётся из правила (поле ``priority`` / карта
 ``source_priority``), а НЕ хардкодится в движке: ``enrich_attributes`` сравнивает
 приоритет нового значения с уже сохранённым (``ProductAttributeValue.source``),
@@ -61,6 +67,7 @@ class AttrRule:
     true_keywords: tuple[str, ...] = ()  # boolean
     false_keywords: tuple[str, ...] = ()  # boolean
     derive: dict | None = None  # инференс по другим атрибутам (см. _derive_one)
+    skip_if: tuple[str, ...] = ()  # стоп-слова: правило целиком не применяется
 
 
 @dataclass
@@ -122,6 +129,7 @@ class AttributeRules:
             true_keywords=tuple(a.get("true_keywords", [])),
             false_keywords=tuple(a.get("false_keywords", [])),
             derive=a.get("derive"),
+            skip_if=tuple(a.get("skip_if", [])),
         )
 
     def rules_for(self, tool_type_slug: str) -> list[AttrRule]:
@@ -181,6 +189,12 @@ class AttributeRules:
 
     @staticmethod
     def _extract_one(rule: AttrRule, norm: str) -> AttrValue | None:
+        # Стоп-слова правила: у товара-набора «размер»/«диаметр» один назвать нельзя
+        # («Набор ключей 6-19 мм, 8 шт.»), поэтому правило не применяется целиком —
+        # это надёжнее, чем пытаться выразить исключение в regex.
+        if any(normalize(kw) in norm for kw in rule.skip_if):
+            return None
+
         if rule.kind == SELECT:
             for opt in rule.options:
                 for kw in opt.keywords:

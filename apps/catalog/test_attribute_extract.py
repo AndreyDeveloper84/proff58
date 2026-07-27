@@ -671,6 +671,11 @@ def test_golovki_drive_and_size(rules):
         ("klyuchi-gaechnye", "Ключ для фитингов 32-75 мм ПНД"),
         ("klyuchi-gaechnye", "Ключ универсальный самозажимной 8-14, 15-22мм, 250мм"),
         ("klyuchi-gaechnye", "Ключ гаечный комб трещ.  8-22 мм  Cr-V   ЗУБР ПРОФ"),
+        # Диапазон с ПРОБЕЛАМИ вокруг дефиса — эти кейсы намеренно без слова «набор»,
+        # иначе их отсекал бы skip_if и защита lookbehind осталась бы непроверенной.
+        ("klyuchi-gaechnye", "Ключ трубный рычажный №1 10 - 36 мм CrV"),
+        ("klyuchi-gaechnye", "Ключ разводной 300мм 0 - 34 мм Jonnesway"),
+        ("golovki", "Головка многоразмерная 11 - 32 мм под квадрат 1/2 CrV"),
     ],
 )
 def test_size_range_does_not_yield_single_value(rules, tt, name):
@@ -750,6 +755,101 @@ def test_bare_shchetochn_still_works_for_other_tool_types(rules, tt):
     assert {v.slug: v for v in rules.extract(tt, "Инструмент щеточный 800Вт")}[
         "motor_type"
     ].option_slug == "brushed"
+
+
+# --- skip_if: у набора характеристики в единственном числе не существует ---------
+
+
+def test_skip_if_blocks_whole_rule():
+    """Движковый механизм: стоп-слово отключает правило целиком."""
+    doc = {
+        "source_priority": {"regex": 40},
+        "tool_types": [
+            {
+                "tool_type": "t",
+                "attributes": [
+                    {
+                        "slug": "size",
+                        "name": "Размер",
+                        "kind": "number",
+                        "unit": "мм",
+                        "source": "regex",
+                        "skip_if": ["набор"],
+                        "regex": [r"(\d{1,2})\s*мм"],
+                    }
+                ],
+            }
+        ],
+    }
+    r = AttributeRules.from_dict(doc)
+    assert {v.slug: v for v in r.extract("t", "Ключ 17мм")}["size"].number == Decimal("17")
+    assert "size" not in {v.slug: v for v in r.extract("t", "Набор ключей 17мм")}
+    # стоп-слово нормализуется так же, как keywords (регистр, ё)
+    assert "size" not in {v.slug: v for v in r.extract("t", "НАБОР ключей 17мм")}
+
+
+@pytest.mark.parametrize(
+    "tt,name",
+    [
+        # диапазон с ПРОБЕЛАМИ вокруг дефиса — lookbehind на один символ его не ловил
+        ("klyuchi-gaechnye", "Набор ключей комбинированных, 6 - 19 мм, 8 шт., CrV"),
+        # перечисление размеров в наборе
+        ("klyuchi-gaechnye", "Набор ключей комбинированных НКК-4 Арсенал 4 ключа 24; 27; 30; 32мм"),
+        # длина вставок, а не размер
+        ("klyuchi-gaechnye", "Набор вставок 3/8 Torx+Spline+шестигранники 40 предм. L-30 и 75 мм"),
+        ("golovki", "Набор головок 3/4 ударн.17-50 мм, 90 мм, 16 пред. Airline"),
+        ("golovki", "Комплект головок торцевых 10 шт 8-24мм"),
+    ],
+)
+def test_size_not_extracted_for_sets(rules, tt, name):
+    assert "size" not in {v.slug: v for v in rules.extract(tt, name)}
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        # «х» у коронок КОНСТРУКТИВНЫЙ: первое число пары — это диаметр.
+        # Отдельный паттерн «(\d{1,3})\s*[х*x]\s*\d» ради этого и написан.
+        ("Коронка алм. 42х10хМ16 бетон+переходник/SKYWER", Decimal("42")),
+        ("Коронка алм. 125х5хМ16 бетон+переходник/SKYWER", Decimal("125")),
+        ("Коронка биметалл 68 мм", Decimal("68")),
+    ],
+)
+def test_koronki_diameter_pair_is_constructive(rules, name, expected):
+    assert {v.slug: v for v in rules.extract("koronki", name)}["diameter"].number == expected
+
+
+@pytest.mark.parametrize(
+    "tt,name",
+    [
+        ("koronki", "Коронка карбид. 33-53-67-73-83 мм кольцевая по кафелю"),
+        ("sverla", "Сверло ступен. KRAFTOOL COBALT 4-12мм 9 ступ винт проточка"),
+        ("sverla", "Сверло по дереву перовое регулироемое 15-38мм STAYER"),
+    ],
+)
+def test_diameter_not_extracted_for_ranges(rules, tt, name):
+    assert "diameter" not in {v.slug: v for v in rules.extract(tt, name)}
+
+
+def test_sverla_step_count_is_not_taken_as_diameter(rules):
+    # После блокировки диапазона последний паттерн подхватывал ЧИСЛО СТУПЕНЕЙ:
+    # «Сверло ступенчатое 9 ступеней 4-12мм» давало diameter=9. Не должен.
+    assert "diameter" not in {
+        v.slug: v for v in rules.extract("sverla", "Сверло ступенчатое 9 ступеней 4-12мм")
+    }
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        # штатные форматы свёрл не задеты
+        ("Сверло по мет. к/х ф 8,5 Р18", Decimal("8.5")),
+        ("Сверло ц/х  ф10,5 сред серия класс А, нитрид титана", Decimal("10.5")),
+        ("Сверло алмазное трубчатое  10х10хHEX SKYWER гранит", Decimal("10")),
+    ],
+)
+def test_sverla_diameter_regular_formats(rules, name, expected):
+    assert {v.slug: v for v in rules.extract("sverla", name)}["diameter"].number == expected
 
 
 def test_vorotki_drive_and_type(rules):
