@@ -197,8 +197,20 @@
           "priority": 40,
           "is_filter": true,
           "regex": [
-            "(\\d+(?:[.,]\\d+)?)\\s*(?:дж|дж\\.|джоул|joule)(?![а-яёa-z])"
+            "(\\d+(?:[.,]\\d+)?)\\s*(?:дж|дж\\.|джоул|joule)(?![а-яёa-z])",
+            "(\\d+(?:[.,]\\d+)?)\\s*(?:д|ж)(?![а-яёa-z0-9])"
           ]
+        },
+        {
+          "slug": "no_load_speed",
+          "name": "Обороты х.х.",
+          "kind": "number",
+          "unit": "об/мин",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": false,
+          "is_ai_feature": true,
+          "regex": ["(\\d{3,5})\\s*об[/.\\s]?мин"]
         },
         {
           "slug": "chuck",
@@ -217,7 +229,7 @@
             {
               "value": "SDS-plus",
               "slug": "sds-plus",
-              "keywords": ["sds-plus", "sds plus", "sds+", "sdsplus"]
+              "keywords": ["sds-plus", "sds plus", "sds+", "sdsplus", "sds"]
             }
           ]
         },
@@ -232,7 +244,7 @@
             {
               "value": "Бесщёточный",
               "slug": "brushless",
-              "keywords": ["бесщеточн", "бесщетк", "безщеточн", "б/щ", "brushless", "bl-"]
+              "keywords": ["бесщеточн", "бесщетк", "безщеточн", "бесщ", "б/щ", "brushless", "bl-"]
             },
             {
               "value": "Щёточный",
