@@ -6,6 +6,8 @@ export interface SiteTheme {
   primary_color: string;
   accent_color: string;
   logo_url: string;
+  region: string;
+  contacts: Record<string, unknown>;
 }
 
 const DEFAULT_THEME: SiteTheme = {
@@ -13,6 +15,8 @@ const DEFAULT_THEME: SiteTheme = {
   primary_color: "#00a14b",
   accent_color: "#b5e61d",
   logo_url: "",
+  region: "Пенза",
+  contacts: {},
 };
 
 export async function getSiteTheme(): Promise<SiteTheme> {
@@ -24,7 +28,15 @@ export async function getSiteTheme(): Promise<SiteTheme> {
       next: { revalidate: 60 },
     });
     if (!res.ok) return DEFAULT_THEME;
-    return (await res.json()) as SiteTheme;
+    const data = (await res.json()) as Partial<SiteTheme>;
+    return {
+      ...DEFAULT_THEME,
+      ...data,
+      contacts:
+        data.contacts && typeof data.contacts === "object" && !Array.isArray(data.contacts)
+          ? data.contacts
+          : {},
+    };
   } catch {
     return DEFAULT_THEME;
   }

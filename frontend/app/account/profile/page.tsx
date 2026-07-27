@@ -12,7 +12,6 @@ import {
   ClipboardList,
   Clock3,
   Edit3,
-  GitCompare,
   Heart,
   LoaderCircle,
   LogOut,
@@ -459,13 +458,19 @@ export default function ProfilePage() {
           </PreviewCard>
 
           <PreviewCard
-            id="comparison"
-            icon={GitCompare}
-            title="Сравнение"
-            count={0}
-            href="/catalog"
+            id="notifications-preview"
+            icon={Clock3}
+            title="Уведомления"
+            count={orderSummary.inProgress}
+            href="/account/notifications"
           >
-            <EmptyPreview text="Выберите похожие товары в каталоге для сравнения" />
+            <EmptyPreview
+              text={
+                orderSummary.inProgress > 0
+                  ? "Новые статусы заказов доступны в центре уведомлений"
+                  : "Здесь появятся изменения статусов заказов"
+              }
+            />
           </PreviewCard>
 
           <PreviewCard
@@ -564,9 +569,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <div id="payment-methods" className="scroll-mt-24">
-            <MaxLinkCard />
-          </div>
+          <MaxLinkCard />
           <NotificationPreferencesCard />
         </section>
 

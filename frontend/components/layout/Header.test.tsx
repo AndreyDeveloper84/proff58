@@ -1,8 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// #586: header по утверждённому макету — светлый, каталог/поиск/корзина работают,
-// сравнение без мёртвой ссылки, переключатель темы присутствует.
+// Header по утверждённому макету — каталог/поиск/корзина работают,
+// сравнение остаётся без мёртвой ссылки.
 vi.mock("@/components/cart/CartProvider", () => ({
   useCart: () => ({ count: 3 }),
 }));
@@ -51,18 +51,30 @@ describe("Header (#586)", () => {
     }
   });
 
-  it("переключатель темы добавляет класс .dark на <html>", () => {
+  it("не добавляет отсутствующий в утверждённом макете переключатель темы", () => {
     render(<Header />);
-    const toggle = screen.getAllByRole("button", { name: /тёмную тему/i })[0];
-    expect(document.documentElement.classList.contains("dark")).toBe(false);
-    toggle.click();
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(screen.queryByRole("button", { name: /тёмную тему/i })).toBeNull();
   });
 
   it("телефон и график из макета отображаются", () => {
     render(<Header />);
     expect(screen.getAllByText(SITE.phone.display)[0]).toBeInTheDocument();
     expect(screen.getByText(SITE.phoneNote)).toBeInTheDocument();
-    expect(screen.getByText(SITE.schedule)).toBeInTheDocument();
+    // График встречается дважды: topbar и подменю «Контакты».
+    expect(screen.getAllByText(SITE.schedule)[0]).toBeInTheDocument();
+  });
+
+  it("инфо-пункты topbar содержат hover-подменю с контентом сервисной полосы", () => {
+    render(<Header />);
+    // Подменю всегда в DOM (показ — CSS hover/focus-within): контент проверяем напрямую.
+    for (const link of SITE.header.topLinks) {
+      expect(screen.getByText(link.label)).toBeInTheDocument();
+      for (const m of link.menu) {
+        expect(screen.getByText(m.title)).toBeInTheDocument();
+      }
+    }
+    // «Контакты» рендерятся из storefront: адрес и e-mail присутствуют.
+    expect(screen.getAllByText(/Онежский проезд/)[0]).toBeInTheDocument();
+    expect(screen.getByText(SITE.email)).toBeInTheDocument();
   });
 });

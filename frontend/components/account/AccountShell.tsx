@@ -6,17 +6,13 @@ import { usePathname } from "next/navigation";
 import {
   Bell,
   ChevronLeft,
-  CircleUserRound,
   ClipboardList,
   FileText,
-  GitCompare,
   Heart,
   Home,
   MapPin,
-  RefreshCcw,
   Star,
   UserRound,
-  WalletCards,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
@@ -45,12 +41,6 @@ const PRIMARY_NAV: NavItem[] = [
   { label: "Избранное", href: "/account/wishlist", icon: Heart, match: "/account/wishlist" },
   // #573: отзывы; страница сама показывает off/empty-состояния (прецедент — «Счета»).
   { label: "Отзывы", href: "/account/reviews", icon: Star, match: "/account/reviews" },
-  {
-    label: "Сравнение",
-    href: "/account/profile#comparison",
-    icon: GitCompare,
-  },
-  { label: "Возвраты и заявки", href: "/account/orders", icon: RefreshCcw },
 ];
 
 const SETTINGS_NAV: NavItem[] = [
@@ -60,17 +50,11 @@ const SETTINGS_NAV: NavItem[] = [
     icon: UserRound,
   },
   { label: "Адреса доставки", href: "/account/profile#addresses", icon: MapPin },
-  { label: "Способы оплаты", href: "/account/profile#payment-methods", icon: WalletCards },
   {
     label: "Уведомления",
     href: "/account/notifications",
     icon: Bell,
     match: "/account/notifications",
-  },
-  {
-    label: "Профиль компании",
-    href: "/account/profile#company-profile",
-    icon: CircleUserRound,
   },
 ];
 

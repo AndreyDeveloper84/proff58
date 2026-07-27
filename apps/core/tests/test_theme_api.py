@@ -20,6 +20,8 @@ def settings_obj(db):
     s.name = "Тест-магазин"
     s.primary_color = "#112233"
     s.accent_color = "#aabbcc"
+    s.region = "Пензенская область"
+    s.contacts = {"phone": "+7 8412 00-00-00", "address": "г. Пенза"}
     s.save()
     return s
 
@@ -33,6 +35,8 @@ def test_theme_returns_colors(client, settings_obj):
     assert data["primary_color"] == "#112233"
     assert data["accent_color"] == "#aabbcc"
     assert data["name"] == "Тест-магазин"
+    assert data["region"] == "Пензенская область"
+    assert data["contacts"]["phone"] == "+7 8412 00-00-00"
 
 
 @pytest.mark.django_db

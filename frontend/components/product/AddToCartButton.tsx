@@ -25,6 +25,7 @@ export function AddToCartButton({
   stock = "in",
   hasPrice = true,
   fullWidth = false,
+  compact = false,
 }: {
   productId: number;
   productSlug: string;
@@ -32,14 +33,16 @@ export function AddToCartButton({
   hasPrice?: boolean;
   // fullWidth — растянуть заявочные кнопки (нет в наличии / нет цены) на всю ширину карточки.
   fullWidth?: boolean;
+  compact?: boolean;
 }) {
   const wide = fullWidth ? "w-full" : "";
+  const size = compact ? "h-8 min-h-8 rounded-sm px-2 text-[11px]" : "";
   const href = `/product/${productSlug}`;
   if (!hasPrice) {
     return (
       <Link
         href={href}
-        className={cn(buttonVariants({ variant: "outline" }), wide)}
+        className={cn(buttonVariants({ variant: "outline" }), wide, size)}
         data-event="request_price"
         data-product-id={productId}
       >
@@ -52,7 +55,7 @@ export function AddToCartButton({
     return (
       <Link
         href={href}
-        className={cn(buttonVariants({ variant: "outline" }), wide)}
+        className={cn(buttonVariants({ variant: "outline" }), wide, size)}
         data-event="notify_restock"
         data-product-id={productId}
       >
@@ -62,13 +65,13 @@ export function AddToCartButton({
     );
   }
   // in / order / низкий остаток → добавление в корзину (под заказ — предзаказ в корзину).
-  return <AddInStockButton productId={productId} />;
+  return <AddInStockButton productId={productId} compact={compact} />;
 }
 
 type Phase = "idle" | "loading" | "added" | "error";
 
 // Реальное добавление в корзину для товара в наличии с ценой.
-function AddInStockButton({ productId }: { productId: number }) {
+function AddInStockButton({ productId, compact = false }: { productId: number; compact?: boolean }) {
   const { add } = useCart();
   const [phase, setPhase] = useState<Phase>("idle");
   // Очищаем таймер «Добавлено»/«ошибка» при размонтировании, чтобы не дёргать состояние.
@@ -115,6 +118,7 @@ function AddInStockButton({ productId }: { productId: number }) {
       onClick={handleClick}
       data-event="add_to_cart_from_plp"
       data-product-id={productId}
+      className={compact ? "h-8 w-11 min-w-11 rounded-sm" : undefined}
     >
       {phase === "loading" ? (
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
