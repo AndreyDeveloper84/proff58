@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from datetime import timedelta
 from decimal import Decimal
 
@@ -20,6 +20,7 @@ from apps.accounts.models import CustomerType
 from apps.accounts.phone import normalize_phone
 from apps.catalog.models import Product
 from apps.core.events import order_created
+from apps.core.features import is_enabled
 from apps.pricing.services import price_for
 
 from .models import (
@@ -145,17 +146,29 @@ class CartLine:
     price_type: str
     currency: str
     line_total: Decimal | None  # None, если у товара нет цены
+    promo_discount: Decimal | None = None  # #571: скидка по акции/коду на строку
 
 
 @dataclass(frozen=True)
 class CartView:
-    """Снимок корзины для вывода: строки + итог."""
+    """Снимок корзины для вывода: строки + итог (+ промо-breakdown, #571).
+
+    ``total`` — сумма строк ДО промо (исторический контракт); ``grand_total`` —
+    к оплате после скидок на товары. Промо-поля присутствуют всегда: при
+    выключенном флаге ``promotions`` они нейтральны (нули/пусто).
+    """
 
     cart: Cart
     lines: list[CartLine]
     total: Decimal
     currency: str
     has_mixed_currencies: bool = False
+    items_discount_total: Decimal = _ZERO
+    grand_total: Decimal = _ZERO
+    promo_code: str = ""
+    applied_promotions: list = field(default_factory=list)
+    promo_code_error: dict | None = None
+    promotions_enabled: bool = False
 
 
 def get_cart_view(cart: Cart, user=None) -> CartView:
@@ -203,12 +216,68 @@ def get_cart_view(cart: Cart, user=None) -> CartView:
     if has_mixed_currencies:
         total = _ZERO
 
+    # --- Акции/промокод (#571): один is_enabled на расчёт (get_solo → БД). ---
+    promotions_enabled = is_enabled("promotions")
+    items_discount = _ZERO
+    applied_payload: list[dict] = []
+    code_error_payload: dict | None = None
+    if promotions_enabled and not has_mixed_currencies and (lines or cart.promo_code):
+        from apps.promotions.services import PromoLineInput, compute_promotions
+
+        customer_type = (
+            getattr(user, "customer_type", CustomerType.B2C)
+            if user is not None and getattr(user, "is_authenticated", False)
+            else CustomerType.B2C
+        )
+        breakdown = compute_promotions(
+            [
+                PromoLineInput(
+                    key=ln.item.pk,
+                    product_id=ln.product.pk,
+                    quantity=ln.quantity,
+                    line_total=ln.line_total,
+                )
+                for ln in lines
+                if ln.line_total is not None
+            ],
+            promo_code=cart.promo_code,
+            customer_type=customer_type,
+            # Контекст корзины: доставка ещё не выбрана — free_delivery-код ждёт
+            # оформления (delivery_status="" по контракту compute_promotions).
+        )
+        items_discount = breakdown.items_discount_total
+        lines = [
+            replace(ln, promo_discount=breakdown.line_discounts.get(ln.item.pk)) for ln in lines
+        ]
+        applied_payload = [
+            {
+                "id": a.promotion_id,
+                "name": a.name,
+                "discount_type": a.discount_type,
+                "scope": a.scope,
+                "promo_code": a.promo_code,
+                "amount": str(a.amount),
+            }
+            for a in breakdown.applied
+        ]
+        if breakdown.code_error is not None:
+            code_error_payload = {
+                "code": breakdown.code_error.code,
+                "message": breakdown.code_error.message,
+            }
+
     return CartView(
         cart=cart,
         lines=lines,
         total=total,
         currency=order_currency or "RUB",
         has_mixed_currencies=has_mixed_currencies,
+        items_discount_total=items_discount,
+        grand_total=max(total - items_discount, _ZERO),
+        promo_code=cart.promo_code if promotions_enabled else "",
+        applied_promotions=applied_payload,
+        promo_code_error=code_error_payload,
+        promotions_enabled=promotions_enabled,
     )
 
 
@@ -386,6 +455,7 @@ def place_order(
 
     total = _ZERO
     order_currency = None
+    order_items_by_cart_item: dict[int, OrderItem] = {}  # #571: для promo-снимков строк
     for item in items:
         product = locked_products.get(item.product_id)
 
@@ -418,7 +488,7 @@ def place_order(
             reserved_quantity=models.F("reserved_quantity") + qty,
         )
 
-        OrderItem.objects.create(
+        order_items_by_cart_item[item.pk] = OrderItem.objects.create(
             order=order,
             product=product,
             code_1c=product.code_1c or "",
@@ -433,6 +503,32 @@ def place_order(
             quantity=qty,
             line_total=line_total,
         )
+
+    # #571: скидки считаются СЕРВЕРОМ из промокода корзины (фронт код не передаёт).
+    # Двухфазно: товарные скидки нужны ДО quote (порог free_from считается от суммы
+    # после скидок — контракт quote_for_order), а free_delivery — ПОСЛЕ quote
+    # (скидка на фактическую стоимость). Расчёт детерминирован — обе фазы согласованы.
+    promotions_enabled = is_enabled("promotions")
+    promo_inputs = []
+    items_discount = _ZERO
+    if promotions_enabled:
+        from apps.promotions.services import PromoLineInput, compute_promotions
+
+        promo_inputs = [
+            PromoLineInput(
+                key=cart_item_id,
+                product_id=oi.product_id,
+                quantity=oi.quantity,
+                line_total=oi.line_total,
+            )
+            for cart_item_id, oi in order_items_by_cart_item.items()
+        ]
+        items_discount = compute_promotions(
+            promo_inputs,
+            promo_code=cart.promo_code,
+            customer_type=customer_type,
+        ).items_discount_total
+    goods_after_discount = max(total - items_discount, _ZERO)
 
     # #429 (M-05, ADR #444): стоимость доставки считается СЕРВЕРОМ по серверной
     # корзине (единый источник правды), включается в итог и облагается НДС вместе
@@ -455,7 +551,9 @@ def place_order(
     else:
         quote = quote_for_order(
             zone_slug=delivery.get("delivery_zone", "") or "",
-            goods_total=total,
+            # #571: порог free_from — от суммы товаров ПОСЛЕ скидок (контракт
+            # quote_for_order): скидка может «отщёлкнуть» бесплатную доставку.
+            goods_total=goods_after_discount,
             items=items,
         )
     order.delivery_zone = quote.zone_slug
@@ -463,7 +561,57 @@ def place_order(
     # Значения статусов delivery.services совпадают с Order.DeliveryCalcStatus.
     order.delivery_calc_status = quote.status
     order.delivery_snapshot = quote.snapshot
-    grand_total = total + (quote.cost or _ZERO)
+
+    # #571, фаза 2: финальный breakdown с контекстом доставки (free_delivery-код
+    # дисконтирует фактическую стоимость). Товарные скидки детерминированы и
+    # совпадают с фазой 1. Невалидный код на момент оформления — отказ (кроме
+    # not_beneficial: «не дал выгоды» заказ не блокирует).
+    delivery_discount = _ZERO
+    if promotions_enabled and (promo_inputs or cart.promo_code):
+        from apps.promotions.services import compute_promotions
+
+        breakdown = compute_promotions(
+            promo_inputs,
+            promo_code=cart.promo_code,
+            customer_type=customer_type,
+            delivery_cost=quote.cost,
+            delivery_status=quote.status,
+        )
+        if breakdown.code_error is not None and breakdown.code_error.code != "not_beneficial":
+            raise ValidationError(f"Промокод: {breakdown.code_error.message}")
+        items_discount = breakdown.items_discount_total  # == фаза 1 (детерминизм)
+        goods_after_discount = max(total - items_discount, _ZERO)
+        delivery_discount = breakdown.delivery_discount
+        for cart_item_id, amount in breakdown.line_discounts.items():
+            oi = order_items_by_cart_item.get(cart_item_id)
+            if oi is not None:
+                OrderItem.objects.filter(pk=oi.pk).update(promo_discount=amount)
+        order.promo_code = cart.promo_code
+        order.items_discount_total = items_discount
+        order.delivery_discount = delivery_discount
+        order.promo_snapshot = {
+            "code": cart.promo_code,
+            "items_discount_total": str(items_discount),
+            "delivery_discount": str(delivery_discount),
+            "applied": [
+                {
+                    "id": a.promotion_id,
+                    "name": a.name,
+                    "discount_type": a.discount_type,
+                    "scope": a.scope,
+                    "promo_code": a.promo_code,
+                    "amount": str(a.amount),
+                }
+                for a in breakdown.applied
+            ],
+            "code_error": (
+                {"code": breakdown.code_error.code, "message": breakdown.code_error.message}
+                if breakdown.code_error
+                else None
+            ),
+        }
+
+    grand_total = goods_after_discount + (quote.cost or _ZERO) - delivery_discount
 
     # #569: слот доставки — только B2C + курьер (у юрлиц доставки нет, #558).
     # Бронирование под локом строки слота (порядок локов: cart → products → slot):
@@ -493,8 +641,8 @@ def place_order(
     order.total = grand_total
     order.currency = order_currency or "RUB"
     # #430 (M-06): снимок НДС для B2B (цена включает НДС; ставка фиксируется на
-    # момент заказа). База НДС — итог; для B2B в Wave 1 доставки нет (#558),
-    # поэтому база всегда равна товарной сумме. Для B2C поля нулевые.
+    # момент заказа). База НДС — итог ПОСЛЕ скидок (#571); для B2B в Wave 1
+    # доставки нет (#558) → база = товарная сумма со скидками. Для B2C поля нулевые.
     if customer_type == CustomerType.B2B:
         from apps.pricing.vat import vat_breakdown
 
@@ -518,6 +666,10 @@ def place_order(
             "delivery_snapshot",
             "delivery_slot",
             "delivery_slot_snapshot",
+            "promo_code",
+            "promo_snapshot",
+            "items_discount_total",
+            "delivery_discount",
             "vat_rate",
             "amount_without_vat",
             "vat_amount",

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Heart, LoaderCircle, Trash2 } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import {
   getMe,
   getWishlist,
@@ -17,6 +18,7 @@ export default function WishlistPage() {
   const router = useRouter();
   const [items, setItems] = useState<WishlistItem[] | null>(null);
   const [removingId, setRemovingId] = useState<number | null>(null);
+  const [failed, setFailed] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -27,7 +29,10 @@ export default function WishlistPage() {
         return;
       }
       getWishlist().then((data) => {
-        if (active) setItems(data);
+        if (!active) return;
+        // #574: сбой загрузки не выдаём за «в избранном пока пусто».
+        if (data === "error") setFailed(true);
+        else setItems(data);
       });
     });
     return () => {
@@ -65,27 +70,29 @@ export default function WishlistPage() {
           </p>
         )}
 
-        {items === null && (
-          <div
-            className="h-56 animate-pulse rounded-lg border border-line bg-surface"
-            aria-label="Загрузка избранного"
+        {failed && (
+          <ErrorState
+            title="Не удалось загрузить избранное"
+            description="Проверьте соединение и обновите страницу."
           />
         )}
 
-        {items !== null && items.length === 0 && (
-          <section className="rounded-lg border border-line bg-surface px-5 py-12 text-center">
-            <Heart className="mx-auto h-10 w-10 text-ink-3" aria-hidden />
-            <h2 className="mt-3 text-base font-semibold text-ink">В избранном пока пусто</h2>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-ink-3">
-              Сохраняйте интересные товары, чтобы быстро вернуться к ним позже.
-            </p>
-            <Link
-              href="/catalog"
-              className="mt-5 inline-flex h-11 items-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
-            >
-              Перейти в каталог
-            </Link>
-          </section>
+        {!failed && items === null && <LoadingState label="Загружаем избранное…" />}
+
+        {!failed && items !== null && items.length === 0 && (
+          <EmptyState
+            icon={<Heart className="h-10 w-10" aria-hidden />}
+            title="В избранном пока пусто"
+            description="Сохраняйте интересные товары, чтобы быстро вернуться к ним позже."
+            action={
+              <Link
+                href="/catalog"
+                className="inline-flex h-11 items-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
+              >
+                Перейти в каталог
+              </Link>
+            }
+          />
         )}
 
         {items !== null && items.length > 0 && (

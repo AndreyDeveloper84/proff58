@@ -236,6 +236,18 @@ class Order(TimeStampedModel):
         _("Сумма без НДС"), max_digits=14, decimal_places=2, default=Decimal("0.00")
     )
 
+    # --- Акции/промокод (#571) — снимок применённых промо на момент оформления.
+    # promo_snapshot несёт applied[] (id/название/тип/сумма) — правка акции задним
+    # числом историю заказа не меняет. total хранится УЖЕ со скидками. ---
+    promo_code = models.CharField(_("Промокод"), max_length=40, blank=True, default="")
+    promo_snapshot = models.JSONField(_("Снимок промо"), default=dict, blank=True)
+    items_discount_total = models.DecimalField(
+        _("Скидка на товары"), max_digits=14, decimal_places=2, default=Decimal("0.00")
+    )
+    delivery_discount = models.DecimalField(
+        _("Скидка на доставку"), max_digits=14, decimal_places=2, default=Decimal("0.00")
+    )
+
     # --- Резерв склада (#423, B-03) ---
     reserved_until = models.DateTimeField(
         _("Резерв до"),
@@ -348,6 +360,11 @@ class OrderItem(TimeStampedModel):
     discount = models.DecimalField(
         _("Скидка"), max_digits=14, decimal_places=2, null=True, blank=True
     )
+    # #571: промо-скидка строки — ОТДЕЛЬНО от маркетингового discount (old_price−price).
+    # line_total остаётся price_final × qty (до промо); итог заказа — со скидками.
+    promo_discount = models.DecimalField(
+        _("Скидка по акции"), max_digits=14, decimal_places=2, null=True, blank=True
+    )
     price_type = models.CharField(_("Тип цены"), max_length=16, blank=True)
     currency = models.CharField(_("Валюта"), max_length=3, default="RUB")
 
@@ -397,6 +414,9 @@ class Cart(TimeStampedModel):
         blank=True,
         help_text=_("Для гостевой корзины (анонимный пользователь)."),
     )
+    # #571: применённый промокод живёт НА корзине (переживает cart→checkout и
+    # сессию гостя); place_order читает его отсюда, фронт код не передаёт.
+    promo_code = models.CharField(_("Промокод"), max_length=40, blank=True, default="")
     status = models.CharField(
         _("Статус"),
         max_length=10,

@@ -35,6 +35,7 @@ FRONTEND_PATHS = [
     "/api/inquiry",
     "/api/cart",
     "/api/cart/items",
+    "/api/cart/promo",
     "/api/cart/items/42",
     "/api/orders",
     "/api/orders/PROF-12",

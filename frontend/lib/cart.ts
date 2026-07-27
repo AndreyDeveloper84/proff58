@@ -31,3 +31,16 @@ export function updateItem(itemId: number, quantity: number): Promise<Cart> {
 export function removeItem(itemId: number): Promise<Cart> {
   return apiFetch<Cart>(`/api/cart/items/${itemId}`, { method: "DELETE" });
 }
+
+/** Применить промокод (POST → Django /api/cart/promo/). 400 с detail при невалидном (#571). */
+export function applyPromoCode(code: string): Promise<Cart> {
+  return apiFetch<Cart>("/api/cart/promo", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
+/** Снять промокод с корзины (DELETE → Django /api/cart/promo/). */
+export function removePromoCode(): Promise<Cart> {
+  return apiFetch<Cart>("/api/cart/promo", { method: "DELETE" });
+}

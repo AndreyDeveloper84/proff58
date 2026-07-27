@@ -649,6 +649,9 @@ def _serialize_order_for_export(order: Order) -> dict:
                 "quantity": str(item.quantity),
                 "price": _decimal_str(item.price_final),
                 "total": _decimal_str(item.line_total),
+                # #571: скидка по акции на строку (ДОП-поле; line total — ДО скидки,
+                # итог заказа — после). 1С игнорирует неизвестные поля.
+                "promo_discount": _decimal_str(item.promo_discount or 0),
             }
         )
     return {
@@ -677,6 +680,11 @@ def _serialize_order_for_export(order: Order) -> dict:
             "delivery_total": "0.00",
             "total": _decimal_str(order.total),
             "currency": order.currency,
+            # #571 (ДОП-поля, конверт расширяемый): сумма скидок по акциям/промокоду.
+            # Инвариант для 1С: Σ items.total − items_discount_total == totals.total
+            # (доставка в totals у Wave-#50 нулевая). promo_code — справочно.
+            "items_discount_total": _decimal_str(order.items_discount_total or 0),
+            "promo_code": order.promo_code or "",
         },
         "items": items,
     }

@@ -57,6 +57,12 @@ class SubscriptionRateThrottle(_FixedScopeThrottle):
     scope = "subscription"
 
 
+class ReviewsRateThrottle(_FixedScopeThrottle):
+    """Лимит создания отзывов по IP (scope `reviews`, #573) — антиспам модерации."""
+
+    scope = "reviews"
+
+
 class AnonRateThrottle(_FixedScopeThrottle):
     """Глобальный лимит анонимных запросов по IP (scope `anon`, #279).
 

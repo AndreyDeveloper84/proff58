@@ -33,6 +33,7 @@ class CartLineSerializer(serializers.Serializer):
     price_type = serializers.CharField()
     currency = serializers.CharField()
     line_total = serializers.SerializerMethodField()
+    promo_discount = serializers.SerializerMethodField()
 
     def get_price_final(self, obj):
         return _money(obj.price_final)
@@ -46,9 +47,12 @@ class CartLineSerializer(serializers.Serializer):
     def get_line_total(self, obj):
         return _money(obj.line_total)
 
+    def get_promo_discount(self, obj):
+        return _money(obj.promo_discount)
+
 
 class CartViewSerializer(serializers.Serializer):
-    """Корзина целиком: строки + итог."""
+    """Корзина целиком: строки + итог (+ промо-breakdown #571, поля всегда есть)."""
 
     id = serializers.IntegerField(source="cart.id")
     status = serializers.CharField(source="cart.status")
@@ -56,9 +60,21 @@ class CartViewSerializer(serializers.Serializer):
     total = serializers.SerializerMethodField()
     currency = serializers.CharField()
     has_mixed_currencies = serializers.BooleanField()
+    items_discount_total = serializers.SerializerMethodField()
+    grand_total = serializers.SerializerMethodField()
+    promo_code = serializers.CharField()
+    applied_promotions = serializers.ListField(child=serializers.DictField())
+    promo_code_error = serializers.DictField(allow_null=True)
+    promotions_enabled = serializers.BooleanField()
 
     def get_total(self, obj):
         return _money(obj.total)
+
+    def get_items_discount_total(self, obj):
+        return _money(obj.items_discount_total)
+
+    def get_grand_total(self, obj):
+        return _money(obj.grand_total)
 
 
 # --- Запись в корзину (тело запросов) ---
@@ -96,6 +112,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "currency",
             "quantity",
             "line_total",
+            "promo_discount",
         )
         read_only_fields = fields
 
@@ -120,6 +137,7 @@ class OrderSerializer(serializers.ModelSerializer):
     total = serializers.SerializerMethodField()
     reservation_expired = serializers.SerializerMethodField()
     delivery_slot = serializers.SerializerMethodField()
+    applied_promotions = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -148,6 +166,10 @@ class OrderSerializer(serializers.ModelSerializer):
             "comment",
             "payment_method",
             "total",
+            "promo_code",
+            "items_discount_total",
+            "delivery_discount",
+            "applied_promotions",
             "vat_rate",
             "vat_amount",
             "amount_without_vat",
@@ -162,6 +184,10 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_total(self, obj):
         return _money(obj.total)
+
+    def get_applied_promotions(self, obj):
+        # #571: только снимок — правка акции задним числом заказ не меняет.
+        return (obj.promo_snapshot or {}).get("applied", [])
 
     def get_reservation_expired(self, obj) -> bool:
         # #568: «резерв истёк» привязан к сроку, а не к статусу — RELEASED

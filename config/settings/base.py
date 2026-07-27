@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apps.crm_tasks",
     "apps.analytics",
     "apps.delivery",
+    "apps.promotions",
     "apps.content",
     "apps.reviews",
 ]
@@ -204,6 +205,8 @@ REST_FRAMEWORK = {
         # #427 (M-03): чувствительные auth-эндпоинты (login/register/OTP/смена
         # телефона) — низкий лимит против брутфорса пароля и enumeration телефонов.
         "auth": env("AUTH_THROTTLE_RATE", default="10/min"),
+        # #573: создание отзывов (антиспам очереди модерации).
+        "reviews": env("REVIEWS_THROTTLE_RATE", default="10/hour"),
         # #517: подписка/отписка «Сообщить о поступлении» (только authenticated).
         "subscription": env("SUBSCRIPTION_THROTTLE_RATE", default="30/min"),
     },

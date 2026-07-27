@@ -26,9 +26,23 @@ export function extractErrorCode(body: unknown): string | undefined {
 }
 
 /**
+ * Запасной текст, когда бэк не прислал ни `detail`, ни пофайлдовых ошибок (#574).
+ * Раньше здесь возвращалось «Ошибка 500.» — этот текст попадал прямо в баннер
+ * checkout и кабинета, то есть пользователь видел HTTP-код вместо действия.
+ */
+function fallbackErrorMessage(status: number): string {
+  if (status === 401 || status === 403) return "Сессия истекла. Войдите заново и повторите.";
+  if (status === 404) return "Данные не найдены — возможно, страница устарела. Обновите её.";
+  if (status === 429) return "Слишком много попыток. Подождите минуту и повторите.";
+  if (status >= 500) return "Сервис временно недоступен. Попробуйте повторить через минуту.";
+  return "Не удалось выполнить действие. Попробуйте ещё раз.";
+}
+
+/**
  * Человекочитаемое сообщение из тела ошибки Django/DRF. Поддерживает и общий
  * `{detail}`, и пофайлдовые ошибки сериализатора `{field: ["msg", ...] | "msg"}`
- * (например, при регистрации — правила пароля), иначе — «Ошибка <status>.».
+ * (например, при регистрации — правила пароля). Если бэк текста не дал —
+ * {@link fallbackErrorMessage} по статусу.
  */
 export function extractErrorMessage(body: unknown, status: number): string {
   if (body && typeof body === "object") {
@@ -42,7 +56,7 @@ export function extractErrorMessage(body: unknown, status: number): string {
     }
     if (parts.length) return parts.join(" ");
   }
-  return `Ошибка ${status}.`;
+  return fallbackErrorMessage(status);
 }
 
 /**
@@ -65,7 +79,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       headers,
     });
   } catch {
-    throw new ApiError("Нет связи с сервером.", 0);
+    throw new ApiError("Нет связи с сервером. Проверьте интернет и повторите.", 0);
   }
 
   if (!res.ok) {
