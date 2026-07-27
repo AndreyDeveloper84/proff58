@@ -10,6 +10,8 @@ from io import StringIO
 import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from apps.catalog.models import (
     Attribute,
@@ -164,6 +166,92 @@ def test_option_deleted_between_plan_and_apply_aborts_write(taxonomy):
         apply_rollback(plan)
 
     assert ProductAttributeValue.objects.get(product=p1).value_option.slug == "sverla"
+
+
+# --- 2b. baseline изменился между планом и применением (H6) ---
+#
+# plan_rollback читает live вне транзакции записи. Если между планом и apply
+# чужой процесс поменял tool_type, применение обязано увидеть это внутри своей
+# транзакции и отказать целиком, а не молча перезаписать чужое изменение.
+
+
+def _forward_pair(attribute, options, products):
+    """Пара снимков «до»/«после» для отката products с sverla обратно на bury."""
+    ids = [p.id for p in products]
+    before = build_snapshot(product_ids=ids)
+    ProductAttributeValue.objects.filter(product_id__in=ids).update(value_option=options["sverla"])
+    Product.objects.filter(id__in=ids).update(attrs_cache={"tool_type": "Свёрла"})
+    after = build_snapshot(product_ids=ids)
+    return after, before
+
+
+def test_baseline_changed_between_plan_and_apply_aborts_whole_write(taxonomy):
+    attribute, options = taxonomy
+    p1 = _product("p1", option=options["bury"], attribute=attribute, cache_value="Буры")
+    p2 = _product("p2", option=options["bury"], attribute=attribute, cache_value="Буры")
+    after, before = _forward_pair(attribute, options, [p1, p2])
+    plan = plan_rollback(after, before)
+    assert plan.counts["write"] == 2
+
+    # чужая запись между планом и применением — только по p1
+    koronki = AttributeOption.objects.create(attribute=attribute, slug="koronki", value="Коронки")
+    ProductAttributeValue.objects.filter(product=p1).update(value_option=koronki)
+
+    with pytest.raises(RollbackError, match="baseline изменился между планом и применением"):
+        apply_rollback(plan)
+
+    # чужое изменение уцелело, а p2 не откачен: план не применён целиком
+    assert ProductAttributeValue.objects.get(product=p1).value_option.slug == "koronki"
+    assert ProductAttributeValue.objects.get(product=p2).value_option.slug == "sverla"
+
+
+def test_pav_removed_between_plan_and_apply_aborts_write(taxonomy):
+    attribute, options = taxonomy
+    p1 = _product("p1", option=options["bury"], attribute=attribute, cache_value="Буры")
+    after, before = _forward_pair(attribute, options, [p1])
+    plan = plan_rollback(after, before)
+
+    ProductAttributeValue.objects.filter(product=p1).delete()
+
+    with pytest.raises(RollbackError, match="baseline изменился между планом и применением"):
+        apply_rollback(plan)
+
+    assert not ProductAttributeValue.objects.filter(product=p1).exists()
+
+
+def test_concurrent_rollback_to_same_target_is_counted_as_noop(taxonomy):
+    """Чужой процесс уже откатил товар на цель — это не conflict, а идемпотентность."""
+    attribute, options = taxonomy
+    p1 = _product("p1", option=options["bury"], attribute=attribute, cache_value="Буры")
+    after, before = _forward_pair(attribute, options, [p1])
+    plan = plan_rollback(after, before)
+
+    ProductAttributeValue.objects.filter(product=p1).update(value_option=options["bury"])
+    Product.objects.filter(id=p1.id).update(attrs_cache={"tool_type": "Буры"})
+
+    stats = apply_rollback(plan)
+
+    assert stats == {"written": 0, "noop": 1}
+    assert ProductAttributeValue.objects.get(product=p1).value_option.slug == "bury"
+
+
+def test_apply_locks_product_and_pav_rows(taxonomy):
+    """Повторная сверка обязана идти под блокировкой, иначе окно гонки остаётся."""
+    attribute, options = taxonomy
+    p1 = _product("p1", option=options["bury"], attribute=attribute, cache_value="Буры")
+    after, before = _forward_pair(attribute, options, [p1])
+    plan = plan_rollback(after, before)
+
+    with CaptureQueriesContext(connection) as captured:
+        apply_rollback(plan)
+
+    # «Блокируй, потом смотри»: первое же обращение apply к каждой из таблиц
+    # обязано быть FOR UPDATE, иначе повторная сверка читает незалоченные строки
+    # и окно гонки остаётся открытым.
+    for table in ("catalog_product", "catalog_productattributevalue"):
+        touching = [q["sql"] for q in captured.captured_queries if f'FROM "{table}"' in q["sql"]]
+        assert touching, f"apply не обращался к {table}"
+        assert "FOR UPDATE" in touching[0].upper(), touching[0]
 
 
 # --- 3. reverse-map: remap-цели ---

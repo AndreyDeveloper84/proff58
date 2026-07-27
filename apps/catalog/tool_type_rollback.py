@@ -18,6 +18,11 @@ apply-pipeline) здесь не меняется и не вызывается �
 
 Fail-closed: план с любым конфликтом не применяется целиком; запись идёт одной
 транзакцией, поэтому частичный сбой не оставляет полуприменённого состояния.
+План строится **вне** транзакции записи, поэтому ``apply_rollback`` берёт строки
+под ``select_for_update`` и повторяет сверку baseline тем же решающим правилом
+(``_decide``) уже внутри транзакции (H6): чужая запись, успевшая пройти между
+планом и применением, даёт conflict, а не молчаливую перезапись. Товар, который
+кто-то уже привёл к цели, считается ``noop`` — идемпотентность сохраняется.
 Опции ``tool_type`` модуль не создаёт (инвариант manifest-only): целевой slug
 обязан существовать в live-словаре.
 
@@ -280,16 +285,25 @@ def plan_rollback(from_doc: dict, to_doc: dict) -> RollbackPlan:
             "to_attrs_cache_tool_type": dst["attrs_cache_tool_type"],
             "live_option_slug": live["option_slug"] if live is not None else None,
         }
-        if live is None:
-            entry.update(decision=DECISION_CONFLICT, reason="product_missing")
-        elif live["option_slug"] == dst["option_slug"]:
-            entry.update(decision=DECISION_NOOP, reason="already_at_target")
-        elif live["option_slug"] == src["option_slug"]:
-            entry.update(decision=DECISION_WRITE, reason="baseline_matches_from")
-        else:
-            entry.update(decision=DECISION_CONFLICT, reason="baseline_changed")
+        decision, reason = _decide(live, src["option_slug"], dst["option_slug"])
+        entry.update(decision=decision, reason=reason)
         entries.append(entry)
     return RollbackPlan(entries=tuple(entries), target_doc=to_doc, source_doc=from_doc)
+
+
+def _decide(live_row: dict | None, from_slug: str | None, to_slug: str | None) -> tuple[str, str]:
+    """Решение по одному товару: сравнение live с парой снимков.
+
+    Общая точка для плана и для повторной сверки внутри транзакции записи —
+    так «что решил план» и «что проверяет apply» не могут разъехаться.
+    """
+    if live_row is None:
+        return DECISION_CONFLICT, "product_missing"
+    if live_row["option_slug"] == to_slug:
+        return DECISION_NOOP, "already_at_target"
+    if live_row["option_slug"] == from_slug:
+        return DECISION_WRITE, "baseline_matches_from"
+    return DECISION_CONFLICT, "baseline_changed"
 
 
 # --- применение ---
@@ -313,13 +327,48 @@ def apply_rollback(plan: RollbackPlan) -> dict:
         if attribute is None:
             raise RollbackError("атрибут tool_type не найден")
         option_by_slug = {o.slug: o for o in attribute.options.all()}
-        products = Product.objects.in_bulk([e["product_id"] for e in writes])
-        touched: list[Product] = []
+
+        # План строился вне этой транзакции. Берём строки под блокировку и
+        # повторяем сверку baseline тем же решающим правилом: чужая запись,
+        # успевшая пройти между планом и применением, обязана дать conflict,
+        # а не молчаливую перезапись. Порядок по id — против взаимных дедлоков.
+        write_ids = sorted(e["product_id"] for e in writes)
+        list(Product.objects.select_for_update().filter(id__in=write_ids).order_by("id"))
+        list(
+            ProductAttributeValue.objects.select_for_update()
+            .filter(attribute=attribute, product_id__in=write_ids)
+            .order_by("product_id")
+        )
+        live_now = {r["product_id"]: r for r in _rows_for(write_ids)}
+        drifted: list[str] = []
+        settled = 0
+        applicable: list[dict] = []
         for entry in writes:
+            decision, reason = _decide(
+                live_now.get(entry["product_id"]),
+                entry["from_option_slug"],
+                entry["to_option_slug"],
+            )
             pid = entry["product_id"]
-            product = products.get(pid)
-            if product is None:
+            if decision == DECISION_WRITE:
+                applicable.append(entry)
+            elif decision == DECISION_NOOP:
+                settled += 1  # чужой процесс уже привёл товар к цели
+            elif reason == "product_missing":
                 raise RollbackError(f"товар {pid} исчез между планом и применением")
+            else:
+                drifted.append(f"{pid}:{reason}:live={live_now[pid]['option_slug']!r}")
+        if drifted:
+            raise RollbackError(
+                f"откат отклонён: baseline изменился между планом и применением "
+                f"по {len(drifted)} товарам — {drifted[:10]}"
+            )
+
+        products = Product.objects.in_bulk(write_ids)
+        touched: list[Product] = []
+        for entry in applicable:
+            pid = entry["product_id"]
+            product = products[pid]
             target_slug = entry["to_option_slug"]
             pav = ProductAttributeValue.objects.filter(product_id=pid, attribute=attribute).first()
             if target_slug is None:
@@ -345,7 +394,7 @@ def apply_rollback(plan: RollbackPlan) -> dict:
             product.attrs_cache = cache
             touched.append(product)
         flush_attrs_cache_merged(touched, lambda p: {CACHE_KEY})
-    return {"written": len(writes), "noop": counts[DECISION_NOOP]}
+    return {"written": len(applicable), "noop": counts[DECISION_NOOP] + settled}
 
 
 # --- post-audit ---
