@@ -270,7 +270,7 @@ export default function CartPage() {
                     onChange={() => setDeliveryMethod("delivery")}
                     icon={Truck}
                     title="Доставка"
-                    description="По всей России и странам СНГ"
+                    description="По Пензе и области"
                     hint="Рассчитаем на следующем шаге"
                   />
                   <DeliveryOption
@@ -278,8 +278,8 @@ export default function CartPage() {
                     onChange={() => setDeliveryMethod("pickup")}
                     icon={MapPin}
                     title="Самовывоз"
-                    description="Бесплатно из наших магазинов"
-                    hint="Пункт можно выбрать на карте"
+                    description="ул. Суворова, 225"
+                    hint="Бесплатно"
                   />
                 </div>
               </section>
