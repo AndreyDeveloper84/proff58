@@ -852,6 +852,73 @@ def test_sverla_diameter_regular_formats(rules, name, expected):
     assert {v.slug: v for v in rules.extract("sverla", name)}["diameter"].number == expected
 
 
+# --- disc_diameter: дефис блокируется ТОЛЬКО после цифры / «z» / «Р» --------------
+#
+# «32-200» — диапазон, «z-100» — число зубьев, «Р-180» — зернистость: всё это не
+# диаметр. Но после букв дефис блокировать нельзя: «МОК-300», «КЛТ-125» — это как раз
+# диаметр. Поэтому lookbehind сужен до `(?<![\dzр]-)`, а не до любого дефиса.
+# У `voltage` и `piki-dolota.length` дефис намеренно НЕ блокируется — см. тесты ниже.
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Державка с пруж.фиксатором для коронок 32-200, с шестигранным хвостовиком",
+        "Диск пильный 255х30мм z-100 ELITECH",
+        "Диск пильный 355х25,4 z-100 СЕБ по пластику",
+        "Мини-насадки с алмазным напылением ЗУБР в пластик боксе, Р-180, хвостовик",
+    ],
+)
+def test_disc_diameter_ignores_range_teeth_and_grit(rules, name):
+    assert "disc_diameter" not in {v.slug: v for v in rules.extract("krugi-shlif", name)}
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        # После БУКВ дефис не блокируется — там настоящий диаметр.
+        ("Чашка абразивная МОК-300, МОК-150 18.004", Decimal("300")),
+        ("Круг лепестковый торцевой 125х22 мм. Р24 КЛТ-125", Decimal("125")),
+        # Диск, диаметр которого есть в списке, читается как раньше.
+        ("Диск пильный 300х32 z-100 СЕБ", Decimal("300")),
+    ],
+)
+def test_disc_diameter_after_letters_is_kept(rules, name, expected):
+    assert {v.slug: v for v in rules.extract("krugi-shlif", name)}[
+        "disc_diameter"
+    ].number == expected
+
+
+# --- voltage: дефис НЕ блокируем — это модельная маркировка, а не диапазон --------
+
+
+@pytest.mark.parametrize(
+    "tt,name,expected",
+    [
+        # В русских названиях «ДА-18 В» дефис отделяет индекс модели, а за ним идёт
+        # НАСТОЯЩЕЕ напряжение. Проверено на стенде: все названия с дефисом перед
+        # напряжением (5 шт.) — реальные вольты, ни одного диапазона.
+        ("dreli-shurupoverty", "Шуруп. аккум. ЗУБР ДА-18 В, Li-Ion, 2 АКБ", Decimal("18")),
+        ("dreli-shurupoverty", "Шуруп. аккум. ДИОЛД ДЭА-12В-04, 12В", Decimal("12")),
+        ("shlifmashiny", "Шлифмаш угл аккум. ЗУБР AB-125- 20В бесщеточная без АКБ", Decimal("20")),
+    ],
+)
+def test_voltage_after_dash_is_real_voltage(rules, tt, name, expected):
+    assert {v.slug: v for v in rules.extract(tt, name)}["voltage"].number == expected
+
+
+def test_piki_dolota_length_takes_second_number_of_pair(rules):
+    # Группа правила — ВТОРОЕ число пары «18х400»: 18 это Ø хвостовика, 400 — длина.
+    # Блокировать дефис перед первым числом бессмысленно (он ничего не говорит о
+    # длине) и вредно: «ЗД-18х400» потеряло бы корректные 400.
+    assert {v.slug: v for v in rules.extract("piki-dolota", "Пика SDS-max 18х400 мм ЗУБР")}[
+        "length"
+    ].number == Decimal("400")
+    assert {v.slug: v for v in rules.extract("piki-dolota", "Долото ЗД-18х400 SDS-max")}[
+        "length"
+    ].number == Decimal("400")
+
+
 def test_vorotki_drive_and_type(rules):
     f = {v.slug: v for v in rules.extract("vorotki", "Вороток 1/2 250мм Т-образный с трещоткой")}
     assert f["drive"].option_slug == "d-1-2"
