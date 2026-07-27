@@ -148,6 +148,100 @@ def test_perforatory_kilowatt_not_supported(rules):
     assert "power" not in _perf(rules, "Перфоратор 1.2кВт")
 
 
+# --- Перфораторы: якорь на четыре правила Phase 0.5 (PR #593) -----------------
+#
+# Правила ниже добавлены докруткой Phase 0.5 и живут ИСКЛЮЧИТЕЛЬНО в данных
+# (data/attribute_rules.json, секция perforatory). Движок про них не знает, поэтому
+# единственная защита от их случайной правки — эти тесты. Все они read-only по
+# отношению к словарю: читают его через module-фикстуру `rules` и ничего не пишут.
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        # 1С обрезает длинные названия по ширине поля: «…5,9Дж» приезжает как «…5,9ж»,
+        # «…2,9Дж» — как «…2,9Д». Второй паттерн energy_impact ловит именно это.
+        ("Перфоратор ЗУБР ЗП-5,9ж", Decimal("5.9")),
+        ("Перфоратор ЗУБР ЗП-2,9Д", Decimal("2.9")),
+        ("Перфоратор Ставр ПЭ-3,5ж", Decimal("3.5")),
+        ("Перфоратор Интерскол П-1,9Д", Decimal("1.9")),
+    ],
+)
+def test_perforatory_energy_impact_truncated_forms(rules, name, expected):
+    assert _perf(rules, name)["energy_impact"].number == expected
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        # Обрезанная МОДЕЛЬНАЯ маркировка, а не энергия удара: «ЗП-24 Д» — это индекс
+        # модели, 24 Дж у перфоратора такого класса не бывает. Усечённый паттерн обязан
+        # требовать дробное число, иначе целое + кириллическая Д/Ж на конце названия
+        # даёт мусорное значение. Тест падает при возврате широкого «(\d+(?:[.,]\d+)?)».
+        "Перфоратор ЗУБР ЗП-24 Д",
+        "Перфоратор ЗУБР ЗП-24 Ж",
+        "Перфоратор Макита HR2470 24Д",
+    ],
+)
+def test_perforatory_energy_impact_ignores_truncated_model_marking(rules, name):
+    assert "energy_impact" not in _perf(rules, name)
+
+
+def test_perforatory_energy_impact_full_form_wins_over_truncated(rules):
+    # Порядок паттернов в правиле, а не позиция в строке: полная форма «2,4Дж»
+    # проверяется первой и выигрывает, даже если усечённая «5,9ж» стоит левее.
+    assert _perf(rules, "Перфоратор 5,9ж 2,4Дж")["energy_impact"].number == Decimal("2.4")
+    # «дж» не должно распадаться на усечённое «д»: значение целое и корректное.
+    assert _perf(rules, "Перфоратор 10Дж")["energy_impact"].number == Decimal("10")
+
+
+def test_perforatory_chuck_bare_sds_does_not_hijack_sds_max(rules):
+    """Голое «sds» у опции SDS-plus не должно перехватывать SDS-max.
+
+    Держится ИСКЛЮЧИТЕЛЬНО на порядке опций в JSON: движок берёт первую опцию, чьё
+    любое ключевое слово — подстрока названия (attribute_extract.py, `_extract_one`).
+    «sds» — подстрока «sds-max», поэтому SDS-max обязан перебираться раньше SDS-plus.
+    При перестановке опций местами тест падает: matched станет «sds», slug — «sds-plus».
+    """
+    found = _perf(rules, "Перфоратор SDS-max 1500Вт")["chuck"]
+    assert found.option_slug == "sds-max"
+    assert found.matched == "sds-max", "SDS-max перехвачен голым «sds» — переставлены опции"
+
+    # Голое «sds» существует и работает: перфоратор без уточнения — это SDS-plus.
+    bare = _perf(rules, "Перфоратор SDS 800Вт")["chuck"]
+    assert bare.option_slug == "sds-plus" and bare.matched == "sds"
+
+    # Инвариант порядка зафиксирован явно — не только через поведение.
+    chuck_rule = next(r for r in rules.rules_for(PERF) if r.slug == "chuck")
+    slugs = [o.slug for o in chuck_rule.options]
+    assert slugs.index("sds-max") < slugs.index("sds-plus")
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Перфоратор DeWALT бесщ. 18В", "brushless"),  # сокращение «бесщ.» (Phase 0.5)
+        ("Перфоратор бесщёточный 18В", "brushless"),
+        ("Перфоратор б/щ 18В", "brushless"),
+        ("Перфоратор щеточный 800Вт", "brushed"),
+    ],
+)
+def test_perforatory_motor_type_brushless_abbreviation(rules, name, expected):
+    # «щеточн» — подстрока «бесщеточн», поэтому brushless обязан идти раньше brushed.
+    assert _perf(rules, name)["motor_type"].option_slug == expected
+
+
+def test_perforatory_no_load_speed_takes_upper_bound_and_ignores_blows(rules):
+    # Диапазон «0-1050 об/мин»: regex требует 3-5 цифр подряд, «0-» отсекается,
+    # берётся верхняя граница.
+    assert _perf(rules, "Перфоратор 0-1050об/мин")["no_load_speed"].number == Decimal("1050")
+    # «уд/мин» — частота ударов, другая характеристика: правилом не ловится.
+    assert "no_load_speed" not in _perf(rules, "Перфоратор 4500уд/мин")
+    # Обе величины в одном названии — берутся только обороты.
+    both = _perf(rules, "Перфоратор 900Вт 0-1050 об/мин 4500 уд/мин")
+    assert both["no_load_speed"].number == Decimal("1050")
+
+
 # --- Болгарки/УШМ (tool_type=bolgarki-ushm) ----------------------------------
 
 USHM = "bolgarki-ushm"
