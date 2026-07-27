@@ -3,7 +3,9 @@ import { Search as SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product/ProductCard";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { searchProducts } from "@/lib/catalog";
+import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Поиск" };
 
@@ -26,11 +28,20 @@ export default async function SearchPage({
   const products = query ? await searchProducts(query) : [];
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="mb-6 font-display text-3xl font-semibold uppercase tracking-wide text-ink">
+    <main className="mx-auto w-full max-w-[1400px] px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-7">
+      <nav
+        aria-label="Хлебные крошки"
+        className="mb-4 hidden items-center gap-2 text-xs text-ink-3 sm:flex"
+      >
+        <Link href="/" className="hover:text-accent">Главная</Link>
+        <span aria-hidden>›</span>
+        <span>Поиск</span>
+      </nav>
+
+      <h1 className="font-display text-2xl font-semibold text-ink lg:text-[30px]">
         {query ? (
           <>
-            Результаты поиска: <span className="text-accent">«{query}»</span>
+            Результаты поиска: <span>«{query}»</span>
           </>
         ) : (
           "Поиск"
@@ -38,13 +49,16 @@ export default async function SearchPage({
       </h1>
 
       {query && products.length > 0 && (
-        <p className="mb-4 text-sm text-ink-3">
+        <p className="mb-5 mt-1 text-sm text-ink-3">
           Найдено {products.length} {plural(products.length)}
         </p>
       )}
 
       {!query ? (
-        <p className="text-ink-3">Введите запрос в строку поиска</p>
+        <div className="rounded-lg border border-line bg-surface p-8 text-center">
+          <SearchIcon className="mx-auto h-10 w-10 text-ink-3" strokeWidth={1.5} aria-hidden />
+          <p className="mt-3 text-sm text-ink-2">Введите модель, артикул или бренд в строку поиска</p>
+        </div>
       ) : products.length === 0 ? (
         <div className="flex flex-col items-center gap-4 rounded-lg border border-line bg-surface p-12 text-center">
           <SearchIcon className="h-16 w-16 text-ink-3" strokeWidth={1} aria-hidden />
@@ -55,12 +69,34 @@ export default async function SearchPage({
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {products.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+          <section className="mt-5 flex flex-col gap-3 rounded-lg border border-line bg-surface p-4 sm:flex-row sm:items-center">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-raised">
+              <SearchIcon className="h-5 w-5 text-accent" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-semibold text-ink">Не нашли нужную модель?</h2>
+              <p className="mt-0.5 text-xs text-ink-3">
+                Специалист поможет подобрать инструмент по вашей задаче.
+              </p>
+            </div>
+            <a
+              href={SITE.support.max.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-md border border-[#6156f5] px-4 text-sm font-semibold text-[#5146ed]"
+            >
+              Консультация в MAX
+            </a>
+          </section>
+        </>
       )}
+      <MobileBottomNav active="search" />
     </main>
   );
 }

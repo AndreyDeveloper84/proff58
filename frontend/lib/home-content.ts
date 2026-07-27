@@ -41,31 +41,40 @@ export const HOME_CONTENT = {
   intent: {
     title: "Что вы хотите сделать?",
     cards: [
-      { icon: "Home", title: "Для дома", text: "Ремонт, сад, мебель, бытовые задачи", href: "/catalog" },
-      { icon: "Paintbrush", title: "Ремонт квартиры", text: "Отделка, электрика, сантехника", href: "/catalog" },
-      { icon: "Hammer", title: "Стройка и бетон", text: "Фундамент, стены, бетонные работы", href: "/catalog" },
+      {
+        icon: "Home",
+        title: "Для дома",
+        text: "Ремонт, сад, мебель, бытовые задачи",
+        href: "/catalog/ruchnoy",
+      },
+      {
+        icon: "Paintbrush",
+        title: "Ремонт квартиры",
+        text: "Отделка, электрика, сантехника",
+        href: "/catalog/stroitelnyy",
+      },
+      {
+        icon: "Hammer",
+        title: "Стройка и бетон",
+        text: "Фундамент, стены, бетонные работы",
+        href: "/catalog/elektroinstrument",
+      },
       {
         icon: "Briefcase",
         title: "Профессиональная работа",
         text: "Ежедневные нагрузки, интенсивное использование",
-        href: "/catalog",
+        href: "/catalog/silovaya",
       },
       {
         icon: "Cog",
         title: "Расходные материалы и оснастка",
         text: "Буры, диски, свёрла, расходники",
-        href: "/catalog",
+        href: "/catalog/osnastka",
       },
     ] as IntentCard[],
   },
-  // #588: сервисная полоса преимуществ под сценариями.
-  serviceStrip: [
-    { icon: "MapPin", title: "Магазин в Пензе", text: "ул. Складская, 10" },
-    { icon: "Truck", title: "Самовывоз сегодня", text: "при заказе до 15:00" },
-    { icon: "Users", title: "Помощь в подборе", text: "подберём лучшее решение" },
-    { icon: "CheckCircle2", title: "Проверим совместимость", text: "оснастки и инструмента" },
-    { icon: "Wrench", title: "Сервис и ремонт", text: "диагностика и обслуживание" },
-  ] as ServiceItem[],
+  // Сервисная полоса удалена с главной: её содержимое переехало в выпадающие
+  // подменю инфо-пунктов topbar (SITE.header.topLinks, lib/site.ts).
 
   // #589: популярные бренды (curated). Логотипов-ассетов пока нет — карточки
   // текстовые (структура позволяет добавить image später). Ссылка — поиск по
@@ -107,10 +116,30 @@ export const HOME_CONTENT = {
   articles: {
     title: "Полезные статьи и обзоры",
     items: [
-      { title: "Как выбрать шуруповёрт для дома и дачи", date: "18 мая 2026" },
-      { title: "Перфоратор или дрель: что выбрать?", date: "12 мая 2026" },
-      { title: "Топ-10 оснастки, которая должна быть у мастера", date: "6 мая 2026" },
-      { title: "Уход за инструментом: простые правила", date: "28 апреля 2026" },
+      {
+        title: "Как выбрать шуруповёрт для дома и дачи",
+        date: "18 мая 2026",
+        image: "/home/hero/approved-tools-hero.png",
+        imagePosition: "48% 58%",
+      },
+      {
+        title: "Перфоратор или дрель: что выбрать?",
+        date: "12 мая 2026",
+        image: "/home/hero/approved-tools-hero.png",
+        imagePosition: "61% 58%",
+      },
+      {
+        title: "Топ-10 оснастки, которая должна быть у мастера",
+        date: "6 мая 2026",
+        image: "/home/hero/approved-tools-hero.png",
+        imagePosition: "75% 62%",
+      },
+      {
+        title: "Уход за инструментом: простые правила",
+        date: "28 апреля 2026",
+        image: "/home/hero/approved-tools-hero.png",
+        imagePosition: "91% 58%",
+      },
     ],
   },
   // #590: карточка MAX-помощи (правая колонка нижней зоны).

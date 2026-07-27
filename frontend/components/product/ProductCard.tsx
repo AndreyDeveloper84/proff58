@@ -9,6 +9,7 @@ import { ProductImage } from "./ProductImage";
 import { ProductPrice } from "./ProductPrice";
 import { ProductSpecs } from "./ProductSpecs";
 import { AddToCartButton } from "./AddToCartButton";
+import { SITE } from "@/lib/site";
 
 // Статус-лейбл карточки по макету: цветной текст сверху-слева. Комбинирует наличие и
 // наличие цены (нет цены → «Цена уточняется» вне зависимости от остатка).
@@ -26,14 +27,23 @@ function statusInfo(product: Product): { label: string; cls: string; clock?: boo
   return { label: "В наличии", cls: "text-brand" };
 }
 
-function StatusLabel({ product }: { product: Product }) {
+function StatusLabel({ product, compact = false }: { product: Product; compact?: boolean }) {
   const s = statusInfo(product);
   return (
-    <span className={cn("inline-flex items-center gap-1 text-xs font-semibold", s.cls)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 font-semibold",
+        compact ? "text-[10px]" : "text-xs",
+        s.cls,
+      )}
+    >
       {s.clock ? (
-        <Clock className="h-3.5 w-3.5" aria-hidden />
+        <Clock className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} aria-hidden />
       ) : (
-        <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+        <span
+          className={cn("rounded-full bg-current", compact ? "h-1 w-1" : "h-1.5 w-1.5")}
+          aria-hidden
+        />
       )}
       {s.label}
     </span>
@@ -44,12 +54,16 @@ export function ProductCard({
   product,
   view = "grid",
   showFavorite = true,
+  variant = "default",
+  maxHref = SITE.support.max.href,
 }: {
   product: Product;
   view?: "grid" | "list";
   // Избранное — Wave 2: сердце присутствует в шаблоне по референсу, но это ещё не
   // завершённая функция (локальное визуальное состояние, без бэкенда/персистентности).
   showFavorite?: boolean;
+  variant?: "default" | "home";
+  maxHref?: string;
 }) {
   const [fav, setFav] = useState(false);
   const href = `/product/${product.slug}`;
@@ -106,6 +120,80 @@ export function ProductCard({
       />
     </div>
   );
+
+  if (variant === "home") {
+    return (
+      <article
+        data-event="product_card_click"
+        data-product-id={product.id}
+        className={cn(
+          "relative flex h-[212px] flex-col overflow-hidden rounded-sm border border-line bg-surface",
+          dimmed && "opacity-70",
+        )}
+      >
+        <div className="absolute left-2 top-2 z-10 flex gap-1">
+          {product.price.discountPct != null && (
+            <span className="rounded-full bg-danger px-2 py-0.5 text-[10px] font-bold text-white">
+              −{product.price.discountPct}%
+            </span>
+          )}
+          {product.badges.includes("hit") && (
+            <span className="rounded-full bg-[#ff8700] px-2 py-0.5 text-[10px] font-bold text-white">
+              Хит
+            </span>
+          )}
+        </div>
+
+        {showFavorite && (
+          <div className="absolute right-1 top-0.5 z-10 scale-75">{heart}</div>
+        )}
+
+        <div className="flex min-h-0 flex-1 flex-col px-2 pt-1.5">
+          <a href={href} aria-label={product.name} className="block">
+            <ProductImage
+              src={product.image}
+              alt={product.name}
+              sizes="220px"
+              className="h-[88px] w-full aspect-auto rounded-none bg-surface"
+            />
+          </a>
+          <a
+            href={href}
+            className="line-clamp-2 min-h-[29px] text-[11px] font-semibold leading-[1.25] text-ink hover:text-accent"
+          >
+            {product.brand ? `${product.brand} ` : ""}
+            {product.name}
+          </a>
+          <div className="mt-0.5 line-clamp-1 text-[10px] leading-tight text-ink-2">
+            {product.specs?.slice(0, 3).map((s) => s.value).join(" · ")}
+          </div>
+          <div className="mt-1 flex items-end justify-between gap-2">
+            <div>
+              <StatusLabel product={product} compact />
+              <ProductPrice price={product.price} micro />
+            </div>
+            <AddToCartButton
+              productId={product.id}
+              productSlug={product.slug}
+              stock={product.stock}
+              hasPrice={product.price.final != null}
+              compact
+            />
+          </div>
+        </div>
+
+        <a
+          href={maxHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex h-6 shrink-0 items-center justify-center border-t border-line text-[10px] font-medium text-[#6156f5] hover:bg-[#f7f6ff]"
+          aria-label={`Консультация в MAX по товару ${product.name}`}
+        >
+          Консультация в MAX
+        </a>
+      </article>
+    );
+  }
 
   if (view === "list") {
     return (

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Wrench } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // Светлая фото-зона: товар читается на тёмном каталоге. Нет фото → фирменный
 // плейсхолдер «Фото готовится» (временное состояние, не дефект).
@@ -9,14 +10,16 @@ export function ProductImage({
   alt,
   priority = false,
   sizes = "(max-width: 768px) 50vw, 25vw",
+  className,
 }: {
   src?: string;
   alt: string;
   priority?: boolean;
   sizes?: string;
+  className?: string;
 }) {
   return (
-    <div className="relative aspect-square overflow-hidden rounded-md bg-photo">
+    <div className={cn("relative aspect-square overflow-hidden rounded-md bg-photo", className)}>
       {src ? (
         <Image
           src={src}
