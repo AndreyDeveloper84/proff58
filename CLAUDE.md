@@ -115,11 +115,15 @@ docker-compose.yml · docker-compose.prod.yml
 | `apps/catalog/rules_gate.py` | **independent gate 2.0** — пересчитывает всё, declared-полям не доверяет |
 | `apps/catalog/rules_release.py` | release manifest — детерминированная версия контура (входы + хэши + метрики пройденного gate) |
 | `data/.../rules_release_manifest.v1.json` | зафиксированная версия контура; CI сверяет `--check` |
+| `apps/catalog/tool_type_rollback.py` | откат применённого `tool_type`: снимок → план (`noop`/`write`/`conflict`) → запись одной транзакцией + post-audit |
+| `apps/catalog/taxonomy_reverse.py` | reverse-map манифеста `N → N-1`: план понижения, fail-closed при неоднозначном откате |
 
 Команды: `catalog_rules_shadow` (proposal-only прогон), `catalog_rules_gate_validate`
 (gate, exit 0/1/2/3), `catalog_rules_release_manifest` (release manifest: генерация
 и `--check`), `catalog_taxonomy_reconcile` (read-only дрейф манифест↔БД),
-`load_tool_types` (seed из манифеста: fail-closed, no-delete).
+`load_tool_types` (seed из манифеста: fail-closed, no-delete),
+`catalog_tool_type_snapshot` / `catalog_tool_type_rollback` (откат применённого,
+dry-run по умолчанию), `catalog_taxonomy_downgrade` (понижение версии словаря).
 
 CI-джоба `catalog-rules-gate` (`.github/workflows/tests.yml`) гоняет gate на
 замороженном 7D sample против default ruleset + `release_manifest --check`; exit
@@ -135,11 +139,14 @@ code команды = статус джобы.
   контуре не используется: с Wave 7.1 H4 замороженный gate-sample перевыпущен на
   canonical binding, CI гоняет гейт без поблажки.
 - Shadow-контур **ничего не пишет в БД**; apply — отдельная авторизация.
+- Откат `tool_type` исполняется **парой снимков** (`--from` ожидаемое текущее,
+  `--to` цель): live вне обоих состояний → `conflict`, а не молчаливая перезапись;
+  план с любым конфликтом не применяется целиком (`docs/catalog/tool-type-reverse-migration.md`).
 - **Phase 8 (pilot rollout) заморожена** до `WAVE 7.1 ACCEPTED`.
 
 Документы: **план текущей волны — `docs/plans/2026-07-26-WAVE7_1_H3_H5_PLAN.md`**,
 `docs/catalog/tool-type-taxonomy-manifest.md`, `docs/catalog/rules-gate-h2.md`,
-`docs/catalog/rules-release-manifest.md`,
+`docs/catalog/rules-release-manifest.md`, `docs/catalog/tool-type-reverse-migration.md`,
 `docs/plans/2026-07-*PHASE7*`; протоколы стадий — `scratchpad/wave7/wave7-h*-report.md`.
 
 Общий playbook изменений каталога (gate-cycle: read-only → preflight → dry-run →
@@ -174,6 +181,8 @@ exec bit). Любое третье падение — регрессия.
   `enrich_tool_type`, `backfill_option_slugs`, `rebuild_attrs_cache`
 - **Аудит:** `catalog_taxonomy_audit`, `catalog_taxonomy_reconcile`, `attribute_coverage`,
   `coverage_report`, `tool_type_gaps`, `analyze_subgroup`, `catalog_v2_report`
+- **Откат и обратимость (H5):** `catalog_tool_type_snapshot`, `catalog_tool_type_rollback`,
+  `catalog_taxonomy_downgrade`
 - **Очередь исследования:** `catalog_queue_create|export|import|status|finalize`
 - **1С/обмен:** `import_1c`, `apply_stocks_1c`, `mark_stale_syncs`, `demo_1c_orders`
 
