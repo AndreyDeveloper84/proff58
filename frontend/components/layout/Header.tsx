@@ -18,6 +18,7 @@ import {
   Store,
   Truck,
   User,
+  UserRound,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -189,7 +190,7 @@ export function Header({
           <span className="text-[11px] font-normal text-topbar-ink">{storefront.phoneNote}</span>
         </a>
 
-        {/* Действия — desktop: избранное · сравнение (future) · корзина */}
+        {/* Действия — desktop: избранное · сравнение (future) · корзина · кабинет */}
         <div className="ml-auto hidden shrink-0 items-center gap-1 lg:flex">
           <Link
             href="/account/wishlist"
@@ -222,6 +223,14 @@ export function Header({
               )}
             </span>
             <span className="text-[11px]">Корзина</span>
+          </Link>
+          <Link
+            href="/account/profile"
+            className="flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
+            aria-label="Личный кабинет"
+          >
+            <UserRound className="h-5 w-5" aria-hidden />
+            <span className="text-[11px]">Кабинет</span>
           </Link>
         </div>
 
