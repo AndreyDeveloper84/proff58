@@ -9,29 +9,23 @@
   тёмные — шапка и подвал (брендовая рамка) и допустимые тёмные акцент-зоны.
 
   Дефолт токенов — СВЕТЛАЯ (:root / [data-theme="light"]). Тёмная — под классом
-  `.dark` (совместимо с @custom-variant dark) ИЛИ [data-theme="dark"] (демо-острова
-  с переключателем). Ближайший предок с темой выигрывает при резолве var, поэтому
-  светлый каталог и тёмная шапка сосуществуют на одной странице. Отдельные токены
-  тёмной хром-рамки (--header-… и --footer-…) тема-независимы (шапка/подвал тёмные).
+  `.dark` (совместимо с @custom-variant dark) ИЛИ [data-theme="dark"] (переключатель
+  темы, #586). Ближайший предок с темой выигрывает при резолве var.
+
+  #586/#591: шапка (--header-…/--topbar-…) СЛЕДУЕТ за темой — светлая в светлой
+  теме, тёмная в тёмной (утверждённый макет — светлый e-commerce). Подвал использует
+  обычные семантические токены (bg-surface/border-line) и тоже следует за темой.
 
   Компоненты используют ТОЛЬКО семантические токены (никакого raw-hex) — смена темы
   их не трогает. --accent / --primary приходят из SiteSettings (inline style на <html>).
 */
 
-/* Общие (не зависят от темы): радиусы + тёмная хром-рамка шапки/подвала. */
+/* Общие (не зависят от темы): радиусы. */
 :root {
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-pill: 999px;
-
-  /* Тёмная брендовая рамка — всегда тёмная, в обеих темах. */
-  --header-bg: #12161a;
-  --header-ink: #eef1f3;
-  --header-line: #2a2f34;
-  --footer-bg: #0e1113;
-  --footer-ink: #aeb6bc;
-  --footer-line: #2a2f34;
 }
 
 /* Светлая тема — ДЕФОЛТ для товарных поверхностей (#477). */
@@ -43,6 +37,13 @@
   --surface: #ffffff;
   --surface-raised: #eef1f4;
   --border: #cfd4da;
+
+  /* #586: светлый header — белая основная строка, светло-серый topbar. */
+  --header-bg: #ffffff;
+  --header-ink: #14181b;
+  --header-line: #e5e8ec;
+  --topbar-bg: #f3f4f6;
+  --topbar-ink: #4b5560;
 
   --text: #14181b;
   --text-secondary: #495057;
@@ -78,6 +79,13 @@
   --surface: #16191c;
   --surface-raised: #1e2226;
   --border: #2a2f34;
+
+  /* #586: тёмный header — прежняя брендовая рамка. */
+  --header-bg: #12161a;
+  --header-ink: #eef1f3;
+  --header-line: #2a2f34;
+  --topbar-bg: #0e1113;
+  --topbar-ink: #aeb6bc;
 
   --text: #f2f4f5;
   --text-secondary: #aeb6bc;
@@ -134,13 +142,12 @@
   --color-st-done: var(--st-done);
   --color-st-cancel: var(--st-cancel);
 
-  /* Тёмная хром-рамка (#477): bg-header, text-header-ink, border-header-line, bg-footer, … */
+  /* Шапка (#586): bg-header, text-header-ink, border-header-line, bg-topbar, … */
   --color-header: var(--header-bg);
   --color-header-ink: var(--header-ink);
   --color-header-line: var(--header-line);
-  --color-footer: var(--footer-bg);
-  --color-footer-ink: var(--footer-ink);
-  --color-footer-line: var(--footer-line);
+  --color-topbar: var(--topbar-bg);
+  --color-topbar-ink: var(--topbar-ink);
 
   --font-sans: var(--font-inter);
   --font-display: var(--font-oswald);

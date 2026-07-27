@@ -42,6 +42,10 @@ class InvoiceData:
     # финальный счёт не выпускается до ввода стоимости.
     delivery_cost: Decimal | None = None
     delivery_pending: bool = False
+    # #571: скидка по акциям/промокоду — отдельной строкой, чтобы счёт сходился
+    # арифметически: сумма строк − скидка (+ доставка) == итог.
+    items_discount_total: Decimal = Decimal("0.00")
+    promo_code: str = ""
 
     @property
     def status(self) -> str:
@@ -134,6 +138,8 @@ def prepare_invoice(order) -> InvoiceData:
         amount_without_vat=order.amount_without_vat,
         delivery_cost=order.delivery_cost,
         delivery_pending=order.delivery_calc_status == "manual_required",
+        items_discount_total=order.items_discount_total,
+        promo_code=order.promo_code,
     )
 
 

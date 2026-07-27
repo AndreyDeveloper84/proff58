@@ -19,10 +19,22 @@ import {
   UserRound,
 } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
-import { ReservationNotice } from "@/components/order/ReservationNotice";
+import { AccountDialog } from "@/components/account/AccountDialog";
+import { EmptyState, ErrorState } from "@/components/ui/states";
+import { ReservationNotice, reservationState } from "@/components/order/ReservationNotice";
+import { ReviewForm } from "@/components/reviews/ReviewForm";
+import { StarDisplay } from "@/components/reviews/StarRating";
 import { getMe, getOrder } from "@/lib/auth";
-import { formatDeliverySlot, formatPrice, humanizeToken, pluralize } from "@/lib/format";
-import { statusBadgeClass } from "@/lib/order-status";
+import {
+  formatDateTime,
+  formatDeliverySlot,
+  formatPrice,
+  humanizeToken,
+  pluralize,
+} from "@/lib/format";
+import { isDelivered, statusBadgeClass } from "@/lib/order-status";
+import { getMyReviewForOrder, reviewStatusText } from "@/lib/reviews";
+import type { MyReview } from "@/lib/types";
 import type { Order, OrderItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -48,16 +60,6 @@ const DELIVERY_METHOD_LABELS: Record<string, string> = {
   pickup: "Самовывоз",
   transport_company: "Транспортная компания",
 };
-
-function dateTime(value: string) {
-  return new Date(value).toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function displayToken(value: string, labels: Record<string, string>) {
   if (!value) return "Не указан";
@@ -90,6 +92,9 @@ export default function OrderDetailsPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // #573: null — отзыва нет (показать CTA), "disabled" — фича выключена, undefined — не грузили.
+  const [review, setReview] = useState<MyReview | null | "disabled" | undefined>(undefined);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -104,6 +109,11 @@ export default function OrderDetailsPage() {
       .then((data) => {
         if (!active || !data) return;
         setOrder(data);
+        if (isDelivered(data)) {
+          getMyReviewForOrder(data.order_number).then((r) => {
+            if (active) setReview(r);
+          });
+        }
       })
       .catch((caught) => {
         if (!active) return;
@@ -128,23 +138,36 @@ export default function OrderDetailsPage() {
 
   if (loading) return <OrderLoading />;
 
+  const backToOrdersLink = (
+    <Link
+      href="/account/orders"
+      className="inline-flex h-11 items-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
+    >
+      <ChevronLeft className="h-4 w-4" aria-hidden />
+      Вернуться к заказам
+    </Link>
+  );
+
   if (!order) {
     return (
       <AccountShell title="Детали заказа" mobileBackHref="/account/orders">
-        <section className="rounded-lg border border-line bg-surface px-5 py-12 text-center">
-          <ReceiptText className="mx-auto h-10 w-10 text-ink-3" aria-hidden />
-          <h2 className="mt-3 text-base font-semibold text-ink">Заказ не найден</h2>
-          <p className="mx-auto mt-1 max-w-md text-sm text-ink-3">
-            {error || "Возможно, заказ был удалён или принадлежит другому аккаунту."}
-          </p>
-          <Link
-            href="/account/orders"
-            className="mt-5 inline-flex h-11 items-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden />
-            Вернуться к заказам
-          </Link>
-        </section>
+        {/* #574: сбой загрузки и «такого заказа нет» — разные ситуации: в первом
+            случае обновление страницы помогает, во втором нет. Раньше текст
+            ошибки подставлялся внутрь блока «Заказ не найден». */}
+        {error ? (
+          <ErrorState
+            title="Не удалось загрузить заказ"
+            description={error}
+            action={backToOrdersLink}
+          />
+        ) : (
+          <EmptyState
+            icon={<ReceiptText className="h-10 w-10" aria-hidden />}
+            title="Заказ не найден"
+            description="Возможно, заказ был удалён или принадлежит другому аккаунту."
+            action={backToOrdersLink}
+          />
+        )}
       </AccountShell>
     );
   }
@@ -175,7 +198,7 @@ export default function OrderDetailsPage() {
                   {PAYMENT_STATUS_LABELS[order.payment_status]}
                 </span>
               </div>
-              <p className="mt-3 text-sm text-ink-3">Оформлен {dateTime(order.created_at)}</p>
+              <p className="mt-3 text-sm text-ink-3">Оформлен {formatDateTime(order.created_at)}</p>
               <p className="mt-1 text-xs text-ink-3">
                 {order.items.length}{" "}
                 {pluralize(order.items.length, "товар", "товара", "товаров")}
@@ -190,6 +213,14 @@ export default function OrderDetailsPage() {
               </p>
             </div>
           </div>
+          {/* #574: резерв — рядом со статусами заказа, а не спрятан в карточке
+              «Оплата» внизу. Это срочная информация: пока она была под сгибом,
+              покупатель узнавал о сроке уже после его истечения. */}
+          {reservationState(order) !== "none" && (
+            <div className="px-5 pb-5 lg:px-6">
+              <ReservationNotice order={order} />
+            </div>
+          )}
           {isB2B && (
             <div className="flex flex-col gap-3 border-t border-line bg-raised/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
               <div className="flex items-start gap-3">
@@ -242,9 +273,6 @@ export default function OrderDetailsPage() {
               value={displayToken(order.payment_method, PAYMENT_METHOD_LABELS)}
             />
             <InfoRow label="Статус" value={PAYMENT_STATUS_LABELS[order.payment_status]} />
-            <div>
-              <ReservationNotice order={order} />
-            </div>
           </InfoCard>
 
           <InfoCard icon={UserRound} title="Получатель">
@@ -310,7 +338,7 @@ export default function OrderDetailsPage() {
                     value={formatPrice(Number(order.amount_without_vat) || 0, order.currency)}
                   />
                   <TotalRow
-                    label={`В том числе НДС ${order.vat_rate}%`}
+                    label={`В т.ч. НДС ${order.vat_rate}%`}
                     value={formatPrice(Number(order.vat_amount) || 0, order.currency)}
                   />
                 </div>
@@ -325,6 +353,62 @@ export default function OrderDetailsPage() {
             </dl>
           </div>
         </section>
+
+        {/* #574: id — цель ссылки «Оставить отзыв» из списка заказов.
+            #573 B2B: в B2B-flow нет доставки (одна из оценок), поэтому отзывы
+            по заказам юрлиц в Wave 1 не принимаются — раздел скрыт. */}
+        {!isB2B && isDelivered(order) && review !== "disabled" && review !== undefined && (
+          <section id="review" className="scroll-mt-24 rounded-lg border border-line bg-surface p-5">
+            <h2 className="text-sm font-semibold text-ink">Отзыв о заказе</h2>
+            {review === null ? (
+              <div className="mt-3">
+                <p className="text-sm text-ink-2">
+                  Заказ получен — поделитесь впечатлением о товарах, доставке и магазине.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setReviewOpen(true)}
+                  className="mt-3 inline-flex h-11 items-center rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink sm:h-10"
+                >
+                  Оставить отзыв
+                </button>
+              </div>
+            ) : (
+              <div className="mt-3 space-y-2 text-sm">
+                <StarDisplay value={review.product_rating} />
+                {/* #574: формулировки — из lib/reviews, чтобы страница заказа и
+                    раздел «Мои отзывы» говорили о статусе одинаково. */}
+                <p
+                  className={
+                    review.status === "approved"
+                      ? "text-accent"
+                      : review.status === "rejected"
+                        ? "text-danger"
+                        : "text-ink-2"
+                  }
+                >
+                  {reviewStatusText(review.status, review.rejection_reason)}
+                </p>
+              </div>
+            )}
+          </section>
+        )}
+
+        <AccountDialog
+          title="Отзыв о заказе"
+          description="Оценки обязательны, текст — по желанию. Отзыв появится после модерации."
+          open={reviewOpen}
+          onClose={() => setReviewOpen(false)}
+        >
+          <ReviewForm
+            orderNumber={order.order_number}
+            onCancel={() => setReviewOpen(false)}
+            onDone={(created) => {
+              setReview(created);
+              setReviewOpen(false);
+            }}
+          />
+        </AccountDialog>
 
         {order.comment && (
           <section className="rounded-lg border border-line bg-surface p-5">

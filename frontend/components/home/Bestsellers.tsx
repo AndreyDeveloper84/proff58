@@ -18,7 +18,8 @@ export function Bestsellers({ products }: BestsellersProps) {
   };
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+    // #592: единый контейнер главной — 1400px, как header и остальные секции.
+    <section className="mx-auto max-w-[1400px] px-4 py-10 lg:py-12">
       <div className="mb-5 flex items-end justify-between gap-4">
         <h2 className="font-display text-2xl font-semibold uppercase tracking-wide text-ink">
           Хиты продаж

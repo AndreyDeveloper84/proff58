@@ -135,6 +135,18 @@ export type CartLine = {
   price_type: string;
   currency: string;
   line_total: string | null;
+  // #571: скидка по акции/промокоду на строку (не путать с маркетинговым discount).
+  promo_discount: string | null;
+};
+
+// #571: применённая акция в breakdown корзины/заказа (суммы считает только сервер).
+export type AppliedPromotion = {
+  id: number;
+  name: string;
+  discount_type: "percent" | "fixed_amount" | "free_delivery";
+  scope: "product" | "category" | "cart";
+  promo_code: string;
+  amount: string;
 };
 
 export type Cart = {
@@ -146,6 +158,15 @@ export type Cart = {
   // #375: валюты строк различаются → бэк обнуляет total и поднимает флаг.
   // Без обработки флага UI показывал «Итого: 0 ₽» без объяснения причины.
   has_mixed_currencies: boolean;
+  // #571: промо-breakdown. total — сумма строк ДО промо; grand_total — к оплате
+  // после скидок на товары. Поля присутствуют всегда (при выключенном флаге
+  // promotions_enabled=false и значения нейтральны).
+  items_discount_total: string;
+  grand_total: string;
+  promo_code: string;
+  applied_promotions: AppliedPromotion[];
+  promo_code_error: { code: string; message: string } | null;
+  promotions_enabled: boolean;
 };
 
 export type OrderItem = {
@@ -303,4 +324,35 @@ export type PaginatedNotifications = {
   next: string | null;
   previous: string | null;
   results: NotificationItem[];
+};
+
+// ═══════════ Отзывы (#573) ═══════════
+
+export type ReviewStatus = "pending" | "approved" | "rejected";
+
+// «Мой» отзыв (ЛК). Публичный вариант ниже — намеренно без ПДн.
+export type MyReview = {
+  id: number;
+  order_number: string;
+  product_rating: number;
+  delivery_rating: number;
+  shop_rating: number;
+  text: string;
+  status: ReviewStatus;
+  status_display: string;
+  rejection_reason: string;
+  created_at: string;
+};
+
+export type PublicReview = {
+  author_name: string;
+  product_rating: number;
+  text: string;
+  created_at: string;
+};
+
+export type ProductReviewsPayload = {
+  count: number;
+  results: PublicReview[];
+  summary: { product_rating_avg: number | null; count: number };
 };

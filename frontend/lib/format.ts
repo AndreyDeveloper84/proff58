@@ -25,6 +25,38 @@ export function pluralize(n: number, one: string, few: string, many: string): st
   return many;
 }
 
+// #574: единые форматы даты. Раньше каждая страница объявляла свой хелпер, и один
+// и тот же отзыв в кабинете и на карточке товара датировался по-разному.
+
+/** Дата → «21.07.2026». Для списков, карточек, дат отзыва. */
+export function formatDate(value: string): string {
+  return new Date(value).toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+/** Дата и время → «21.07.2026, 14:30». Для резерва, счетов, «оформлен …». */
+export function formatDateTime(value: string): string {
+  return new Date(value).toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** День слота доставки (#569) → «вт, 21 июля». Подпись группы в пикере. */
+export function formatSlotDay(isoDate: string): string {
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString("ru-RU", {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+  });
+}
+
 /** Слот доставки (#569): снимок из заказа → «21.07.2026, 10:00–14:00». */
 export function formatDeliverySlot(slot: {
   date: string;

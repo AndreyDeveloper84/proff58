@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { CartItemRow } from "@/components/cart/CartItemRow";
 import { useCart } from "@/components/cart/CartProvider";
+import { PromoCodeField } from "@/components/cart/PromoCodeField";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
@@ -111,6 +112,9 @@ export default function CartPage() {
     [cart],
   );
   const discount = Math.max(0, baseTotal - total);
+  // #571: серверный промо-breakdown (grand_total — к оплате после скидок по акциям).
+  const promoDiscount = Number(cart?.items_discount_total ?? 0) || 0;
+  const payable = cart ? Number(cart.grand_total) || total : total;
 
   const handleRemoveSelected = () =>
     run(async () => {
@@ -140,6 +144,8 @@ export default function CartPage() {
   // #375: при смешении валют бэк обнуляет total и поднимает флаг — оформление
   // невозможно, показываем причину вместо загадочного «Итого: 0 ₽».
   const mixedCurrencies = Boolean(cart?.has_mixed_currencies);
+  // #574: суммы — в валюте корзины, как в кабинете (раньше всегда «₽»).
+  const currency = cart?.currency || "RUB";
   const lineCount = cart?.lines.length ?? 0;
 
   return (
@@ -279,19 +285,27 @@ export default function CartPage() {
               </section>
 
               <section className="rounded-lg border border-line bg-surface p-4">
-                <div className="space-y-3 text-sm">
-                  <SummaryRow label={`${lineCount} ${pluralize(lineCount, "товар", "товара", "товаров")}`} value={formatPrice(baseTotal)} />
+                <PromoCodeField />
+                <div className="mt-3 space-y-3 text-sm">
+                  <SummaryRow label={`${lineCount} ${pluralize(lineCount, "товар", "товара", "товаров")}`} value={formatPrice(baseTotal, currency)} />
                   <SummaryRow
                     label="Скидка"
-                    value={discount > 0 ? `− ${formatPrice(discount)}` : formatPrice(0)}
+                    value={discount > 0 ? `− ${formatPrice(discount, currency)}` : formatPrice(0, currency)}
                     accent={discount > 0}
                   />
+                  {promoDiscount > 0 && (
+                    <SummaryRow
+                      label="Скидка по акциям"
+                      value={`− ${formatPrice(promoDiscount, currency)}`}
+                      accent
+                    />
+                  )}
                 </div>
                 <div className="my-4 border-t border-line" />
                 <div className="flex items-end justify-between gap-3">
                   <span className="text-base font-semibold text-ink">Итого</span>
                   <span className="font-display text-3xl font-bold text-ink">
-                    {mixedCurrencies ? "—" : formatPrice(total)}
+                    {mixedCurrencies ? "—" : formatPrice(payable, currency)}
                   </span>
                 </div>
                 {mixedCurrencies && (
@@ -331,7 +345,7 @@ export default function CartPage() {
             <div>
               <p className="text-[11px] text-ink-3">Итого:</p>
               <p className="text-lg font-bold text-ink">
-                {mixedCurrencies ? "—" : formatPrice(total)}
+                {mixedCurrencies ? "—" : formatPrice(payable, currency)}
               </p>
             </div>
             {mixedCurrencies ? (

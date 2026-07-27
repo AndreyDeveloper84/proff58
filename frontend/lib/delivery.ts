@@ -11,7 +11,9 @@ export type DeliveryZoneOption = {
   free_delivery: boolean;
 };
 
-export async function getDeliveryZones(cartTotal: number): Promise<DeliveryZoneOption[]> {
+export async function getDeliveryZones(
+  cartTotal: number,
+): Promise<DeliveryZoneOption[] | "error"> {
   try {
     const data = await apiFetch<{ zones: DeliveryZoneOption[] }>(
       `/api/delivery/zones?cart_total=${encodeURIComponent(cartTotal)}`,
@@ -21,7 +23,9 @@ export async function getDeliveryZones(cartTotal: number): Promise<DeliveryZoneO
   } catch (e) {
     // Зоны — вспомогательные данные: их недоступность не должна ронять чекаут
     // (заказ без зоны создаётся как not_required — как и до этой фичи).
-    if (e instanceof ApiError) return [];
+    // #574: но и молчать нельзя — раньше сбой был неотличим от пустого
+    // справочника, и покупатель просто не видел выбора зоны без объяснения.
+    if (e instanceof ApiError) return "error";
     throw e;
   }
 }
@@ -35,7 +39,9 @@ export type DeliverySlotOption = {
   ends_at: string; // "14:00"
 };
 
-export async function getDeliverySlots(zoneSlug?: string): Promise<DeliverySlotOption[]> {
+export async function getDeliverySlots(
+  zoneSlug?: string,
+): Promise<DeliverySlotOption[] | "error"> {
   try {
     const qs = zoneSlug ? `?zone=${encodeURIComponent(zoneSlug)}` : "";
     const data = await apiFetch<{ slots: DeliverySlotOption[] }>(`/api/delivery/slots${qs}`, {
@@ -45,7 +51,9 @@ export async function getDeliverySlots(zoneSlug?: string): Promise<DeliverySlotO
   } catch (e) {
     // Пустой список = «слотов нет»: чекаут скрывает пикер и оформляет заказ
     // без слота (менеджер согласует время) — недоступность API не роняет заказ.
-    if (e instanceof ApiError) return [];
+    // #574: сбой отдаём как "error" — «интервалов нет» и «не смогли загрузить»
+    // это разные сообщения, второе предлагает повтор.
+    if (e instanceof ApiError) return "error";
     throw e;
   }
 }

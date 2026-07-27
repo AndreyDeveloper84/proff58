@@ -594,3 +594,21 @@ export async function fetchBestsellersFromApi(
     return [];
   }
 }
+
+// #573: первая страница отзывов товара + агрегат — SSR напрямую в Django
+// (SEO; флаг reviews off → 404 → null → секция не рендерится, без мигания).
+export async function fetchProductReviewsFromApi(
+  root: string,
+  slug: string,
+): Promise<import("./types").ProductReviewsPayload | null> {
+  try {
+    const res = await fetch(
+      `${root}/api/reviews/product/${encodeURIComponent(slug)}/?limit=10`,
+      { cache: "no-store", headers: { "X-Forwarded-Proto": "https" } },
+    );
+    if (!res.ok) return null;
+    return (await res.json()) as import("./types").ProductReviewsPayload;
+  } catch {
+    return null;
+  }
+}

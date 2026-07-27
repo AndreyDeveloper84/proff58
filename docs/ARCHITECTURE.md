@@ -410,7 +410,14 @@ class SiteSettings(models.Model):
 Нумерация сквозная, не привязана к модулю. Существующие ADR:
 - `ADR-0006-pricing.md` — единый контракт ценообразования (`price_for`)
 - `ADR-0007-catalog-hierarchy-ownership.md` — владение деревом категорий
+- `ADR-0007a-nasosy-vodosnabzhenie.md` — размещение насосов/водоснабжения в дереве
 - `ADR-0008-order-three-axes.md` — три независимые оси статусов заказа
+- `ADR-0009-payment-refunded-event.md` — доменное событие `payment_refunded`
+- `ADR-0010-catalog-processing-foundation.md` — фундамент пайплайна обработки каталога
+- `ADR-0010-product-stock-became-available-event.md` — событие «товар снова в наличии»
+- `ADR-0011-dinamometricheskie-klyuchi.md` — отдельный `tool_type` для динамометрических ключей
+- `ADR-0012-attributeoption-slug-uniqueness.md` — уникальность slug у `AttributeOption`
+- `ADR-0013-b2b-vat-delivery-contract.md` — единый ценник, НДС в цене и контракт доставки
 
 ### 9.5 Что НЕ делаем сейчас (это путь «продукт на продажу»)
 

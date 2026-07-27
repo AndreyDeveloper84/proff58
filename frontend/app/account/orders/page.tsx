@@ -4,10 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, ClipboardList, RotateCcw } from "lucide-react";
+import { ChevronRight, ClipboardList, Clock3, RotateCcw, Star } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
+import { reservationState } from "@/components/order/ReservationNotice";
 import { getMe, getOrders } from "@/lib/auth";
-import { formatPrice, pluralize } from "@/lib/format";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { formatDate, formatDateTime, formatPrice, pluralize } from "@/lib/format";
 import { isCancelled, isDelivered, isInProgress, statusBadgeClass } from "@/lib/order-status";
 import type { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -30,17 +32,11 @@ function orderMatchesTab(order: Order, tab: OrderTab) {
   return isInProgress(order);
 }
 
-function orderDate(value: string) {
-  return new Date(value).toLocaleDateString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
 export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[] | null>(null);
+  // #574: сбой загрузки — своё состояние, иначе экран показывал «Заказов пока нет».
+  const [failed, setFailed] = useState(false);
   const [tab, setTab] = useState<OrderTab>("all");
 
   useEffect(() => {
@@ -51,7 +47,9 @@ export default function OrdersPage() {
         return;
       }
       getOrders().then((data) => {
-        if (active) setOrders(data);
+        if (!active) return;
+        if (data === "error") setFailed(true);
+        else setOrders(data);
       });
     });
     return () => {
@@ -85,33 +83,35 @@ export default function OrdersPage() {
           ))}
         </div>
 
-        {orders === null && (
-          <div
-            className="h-56 animate-pulse rounded-lg border border-line bg-surface"
-            aria-label="Загрузка заказов"
+        {failed && (
+          <ErrorState
+            title="Не удалось загрузить заказы"
+            description="Проверьте соединение и обновите страницу — заказы никуда не пропали."
           />
         )}
 
-        {orders !== null && visibleOrders.length === 0 && (
-          <section className="rounded-lg border border-line bg-surface px-5 py-12 text-center">
-            <ClipboardList className="mx-auto h-10 w-10 text-ink-3" aria-hidden />
-            <h2 className="mt-3 text-base font-semibold text-ink">
-              {orders.length === 0 ? "Заказов пока нет" : "В этой категории заказов нет"}
-            </h2>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-ink-3">
-              {orders.length === 0
+        {!failed && orders === null && <LoadingState label="Загружаем заказы…" />}
+
+        {!failed && orders !== null && visibleOrders.length === 0 && (
+          <EmptyState
+            icon={<ClipboardList className="h-10 w-10" aria-hidden />}
+            title={orders.length === 0 ? "Заказов пока нет" : "В этой категории заказов нет"}
+            description={
+              orders.length === 0
                 ? "Оформите первый заказ — здесь появятся его состав, сумма и статус."
-                : "Выберите другую вкладку, чтобы посмотреть остальные заказы."}
-            </p>
-            {orders.length === 0 && (
-              <Link
-                href="/catalog"
-                className="mt-5 inline-flex h-11 items-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
-              >
-                Перейти в каталог
-              </Link>
-            )}
-          </section>
+                : "Выберите другую вкладку, чтобы посмотреть остальные заказы."
+            }
+            action={
+              orders.length === 0 ? (
+                <Link
+                  href="/catalog"
+                  className="inline-flex h-11 items-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
+                >
+                  Перейти в каталог
+                </Link>
+              ) : undefined
+            }
+          />
         )}
 
         {visibleOrders.map((order) => (
@@ -123,7 +123,7 @@ export default function OrdersPage() {
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-4 sm:px-5">
               <div>
                 <h2 className="text-sm font-semibold text-ink">№ {order.order_number}</h2>
-                <p className="mt-1 text-[11px] text-ink-3">от {orderDate(order.created_at)}</p>
+                <p className="mt-1 text-[11px] text-ink-3">от {formatDate(order.created_at)}</p>
               </div>
               <span
                 className={cn(
@@ -147,11 +147,25 @@ export default function OrdersPage() {
                   </p>
                 </div>
                 {order.delivery_address && (
-                  <p className="max-w-md text-right text-xs leading-5 text-ink-3">
+                  <p className="max-w-md text-xs leading-5 text-ink-3 sm:text-right">
                     {order.delivery_address}
                   </p>
                 )}
               </div>
+
+              {/* #574: резерв виден и в списке. Раньше «ждём оплату» показывалось,
+                  а то, что резерв тикает или уже истёк, — только внутри заказа. */}
+              {reservationState(order) === "held" && (
+                <p className="mt-3 flex items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                  <Clock3 className="h-4 w-4 shrink-0" aria-hidden />
+                  Товар зарезервирован до {formatDateTime(order.reserved_until!)}
+                </p>
+              )}
+              {reservationState(order) === "expired" && (
+                <p className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+                  Время резерва истекло — наличие подтвердит менеджер.
+                </p>
+              )}
 
               {order.items.length > 0 && (
                 <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
@@ -189,15 +203,28 @@ export default function OrdersPage() {
                 {isDelivered(order) && (
                   <Link
                     href="/catalog"
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line px-4 text-sm font-semibold text-ink transition hover:bg-raised"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-line px-4 text-sm font-semibold text-ink transition hover:bg-raised sm:h-10"
                   >
                     <RotateCcw className="h-4 w-4" aria-hidden />
                     Повторить заказ
                   </Link>
                 )}
+                {/* #574: «Оставить отзыв» была только внутри заказа — из списка
+                    доставленных заказов путь к отзыву не просматривался.
+                    Форма живёт на странице заказа, поэтому ведём туда якорем.
+                    #573 B2B: юрлицам отзывы в Wave 1 недоступны — путь скрыт. */}
+                {isDelivered(order) && order.customer_type !== "b2b" && (
+                  <Link
+                    href={`/account/orders/${encodeURIComponent(order.order_number)}#review`}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-line px-4 text-sm font-semibold text-ink transition hover:bg-raised sm:h-10"
+                  >
+                    <Star className="h-4 w-4" aria-hidden />
+                    Оставить отзыв
+                  </Link>
+                )}
                 <Link
                   href={`/account/orders/${encodeURIComponent(order.order_number)}`}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink transition hover:brightness-110"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink transition hover:brightness-110 sm:h-10"
                 >
                   Открыть заказ
                   <ChevronRight className="h-4 w-4" aria-hidden />
