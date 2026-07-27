@@ -7,9 +7,9 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { Reveal } from "@/components/motion/Reveal";
 import type { Product } from "@/lib/types";
 
-type BestsellersProps = { products: Product[] };
+type BestsellersProps = { products: Product[]; maxHref?: string };
 
-export function Bestsellers({ products }: BestsellersProps) {
+export function Bestsellers({ products, maxHref }: BestsellersProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   if (!products.length) return null;
 
@@ -18,20 +18,22 @@ export function Bestsellers({ products }: BestsellersProps) {
   };
 
   return (
-    // #592: единый контейнер главной — 1400px, как header и остальные секции.
-    <section className="mx-auto max-w-[1400px] px-4 py-10 lg:py-12">
-      <div className="mb-5 flex items-end justify-between gap-4">
-        <h2 className="font-display text-2xl font-semibold uppercase tracking-wide text-ink">
+    <section className="mx-auto max-w-[1400px] px-4 pt-2.5">
+      <div className="mb-1.5 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <h2 className="font-sans text-lg font-bold text-ink">
           Хиты продаж
-        </h2>
-        <div className="flex items-center gap-2">
-          <Link href="/catalog" className="hidden text-sm text-ink-2 transition hover:text-accent sm:inline">
+          </h2>
+          <Link href="/catalog" className="hidden items-center gap-1 text-xs font-medium text-accent transition hover:opacity-80 sm:inline-flex">
             Смотреть все
+            <ArrowRight className="h-3 w-3" aria-hidden />
           </Link>
+        </div>
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => scrollBy(-1)}
-            className="grid h-8 w-8 place-items-center rounded-md border border-line text-ink-2 transition hover:bg-raised hover:text-ink"
+            className="grid h-7 w-7 place-items-center rounded-full border border-line text-ink-2 transition hover:border-accent hover:text-accent"
             aria-label="Прокрутить влево"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -39,7 +41,7 @@ export function Bestsellers({ products }: BestsellersProps) {
           <button
             type="button"
             onClick={() => scrollBy(1)}
-            className="grid h-8 w-8 place-items-center rounded-md border border-line text-ink-2 transition hover:bg-raised hover:text-ink"
+            className="grid h-7 w-7 place-items-center rounded-full border border-line text-ink-2 transition hover:border-accent hover:text-accent"
             aria-label="Прокрутить вправо"
           >
             <ChevronRight className="h-4 w-4" aria-hidden />
@@ -50,11 +52,14 @@ export function Bestsellers({ products }: BestsellersProps) {
       <Reveal>
         <div
           ref={trackRef}
-          className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {products.map((p) => (
-            <div key={p.id} className="w-[240px] shrink-0 snap-start">
-              <ProductCard product={p} />
+            <div
+              key={p.id}
+              className="w-[205px] shrink-0 snap-start lg:w-[calc((100%-50px)/6)]"
+            >
+              <ProductCard product={p} variant="home" maxHref={maxHref} />
             </div>
           ))}
         </div>
@@ -62,7 +67,7 @@ export function Bestsellers({ products }: BestsellersProps) {
 
       <Link
         href="/catalog"
-        className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-accent sm:hidden"
+        className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent sm:hidden"
       >
         Смотреть все
         <ArrowRight className="h-4 w-4" aria-hidden />

@@ -4,8 +4,8 @@ import { Inter, Oswald } from "next/font/google";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { THEME_INIT_SCRIPT } from "@/components/layout/ThemeToggle";
 import { getSiteTheme } from "@/lib/theme";
+import { resolveStorefront } from "@/lib/site";
 import "./globals.css";
 
 // Body / UI — Inter; display (заголовки/цена/спек-статы) — узкий Oswald.
@@ -35,10 +35,11 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const theme = await getSiteTheme();
+  const storefront = resolveStorefront(theme);
 
-  // #477/#586: светлая тема — по умолчанию (токены в :root). Тёмная — под классом
-  // .dark, управляется переключателем (ThemeToggle). Header следует за темой (#586),
-  // подвал пока тёмный до редизайна #591.
+  // #477: светлая тема — единственная пользовательская (утверждённый макет).
+  // Переключатель темы выведен из эксплуатации вместе с ThemeToggle; класс .dark
+  // остался только как локальная зона (фото-hero) и не вешается на <html>.
   return (
     <html
       lang="ru"
@@ -53,15 +54,12 @@ export default async function RootLayout({
       }
     >
       <body className="min-h-full antialiased">
-        {/* #586: применяем сохранённую тему ДО отрисовки — без вспышки светлой
-            темы у пользователей, выбравших тёмную. Должен идти первым в body. */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         {/* CartProvider — общее состояние корзины (счётчик Header, add-to-cart). */}
         <CartProvider>
           <div className="flex min-h-screen flex-col">
-            <Header logoUrl={theme.logo_url} siteName={theme.name} />
+            <Header logoUrl={theme.logo_url} siteName={theme.name} storefront={storefront} />
             <div className="flex-1">{children}</div>
-            <Footer />
+            <Footer logoUrl={theme.logo_url} siteName={theme.name} storefront={storefront} />
           </div>
         </CartProvider>
       </body>

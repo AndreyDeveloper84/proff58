@@ -21,8 +21,7 @@ export function PromoCodeField() {
   const applied = cart.promo_code;
   const serverError = cart.promo_code_error;
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = async () => {
     if (!code.trim() || busy) return;
     setBusy(true);
     setError(null);
@@ -68,23 +67,30 @@ export function PromoCodeField() {
           </button>
         </div>
       ) : (
-        <form onSubmit={submit} className="flex gap-2">
+        <div className="flex gap-2">
           <input
             type="text"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder="Промокод"
             aria-label="Промокод"
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void submit();
+              }
+            }}
             className="w-full rounded-md border border-line bg-canvas px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
           />
           <button
-            type="submit"
+            type="button"
+            onClick={() => void submit()}
             disabled={busy || !code.trim()}
             className="shrink-0 rounded-md border border-line px-3 py-2 text-sm font-semibold text-ink transition hover:border-accent disabled:opacity-50"
           >
             Применить
           </button>
-        </form>
+        </div>
       )}
       {error && <p className="text-xs text-danger">{error}</p>}
       {!error && serverError && <p className="text-xs text-danger">{serverError.message}</p>}

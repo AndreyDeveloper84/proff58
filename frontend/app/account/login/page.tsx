@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Bell, ClipboardList, FileText, Heart, ShieldCheck } from "lucide-react";
 import { login, otpLogin, register } from "@/lib/auth";
 import { MaxAuthFlow } from "@/components/account/MaxAuthFlow";
+import { SITE } from "@/lib/site";
 
 // Куда вернуть после входа (§16.7): ?next=<path> из URL, иначе профиль.
 function nextTarget(): string {
@@ -43,86 +46,155 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-6">
-      <h1 className="text-2xl font-bold mb-6">
-        {mode === "login" ? "Вход" : mode === "register" ? "Регистрация" : "Вход по коду MAX"}
-      </h1>
+    <main className="mx-auto w-full max-w-[1400px] px-4 pb-10 pt-5 sm:px-6 lg:px-8 lg:pt-7">
+      <nav aria-label="Хлебные крошки" className="mb-4 hidden items-center gap-2 text-xs text-ink-3 sm:flex">
+        <Link href="/" className="hover:text-accent">Главная</Link>
+        <span aria-hidden>›</span>
+        <span>Вход</span>
+      </nav>
 
-      {/* Вход/регистрация через MAX — заметный, но не единственный способ (§6). */}
-      <div className="mb-5">
-        <MaxAuthFlow mode="login" onCompleted={() => router.push(nextTarget())} />
-        <div className="my-4 flex items-center gap-3 text-xs text-gray-400">
-          <span className="h-px flex-1 bg-gray-200" />
-          или
-          <span className="h-px flex-1 bg-gray-200" />
-        </div>
+      <div className="mx-auto grid max-w-[920px] overflow-hidden rounded-lg border border-line bg-surface lg:grid-cols-[1.08fr_.92fr]">
+        <section className="p-5 sm:p-7 lg:p-8">
+          <h1 className="text-2xl font-semibold text-ink">
+            {mode === "login"
+              ? "Вход в личный кабинет"
+              : mode === "register"
+                ? "Регистрация"
+                : "Вход по коду MAX"}
+          </h1>
+          <p className="mt-1 text-sm text-ink-3">
+            Проверяйте заказы, счета и уведомления в одном месте.
+          </p>
+
+          <div className="mt-6">
+            <MaxAuthFlow mode="login" onCompleted={() => router.push(nextTarget())} />
+            <p className="mt-2 text-center text-xs text-ink-3">
+              Без пароля — подтвердите вход в приложении
+            </p>
+            <div className="my-4 flex items-center gap-3 text-xs text-ink-3">
+              <span className="h-px flex-1 bg-line" />
+              или
+              <span className="h-px flex-1 bg-line" />
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "register" && (
+              <label className="block text-sm text-ink-2">
+                Имя
+                <input
+                  type="text"
+                  placeholder="Алексей Петров"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1 h-11 w-full rounded-md border border-line bg-surface px-3 text-ink outline-none focus:border-accent"
+                />
+              </label>
+            )}
+            <label className="block text-sm text-ink-2">
+              Телефон
+              <input
+                type="tel"
+                placeholder="+7 (___) ___-__-__"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="mt-1 h-11 w-full rounded-md border border-line bg-surface px-3 text-ink outline-none focus:border-accent"
+                required
+              />
+            </label>
+
+            {mode !== "otp" && (
+              <label className="block text-sm text-ink-2">
+                Пароль
+                <input
+                  type="password"
+                  placeholder="Введите пароль"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="mt-1 h-11 w-full rounded-md border border-line bg-surface px-3 text-ink outline-none focus:border-accent"
+                  required
+                />
+              </label>
+            )}
+
+            {mode === "otp" && (
+              <label className="block text-sm text-ink-2">
+                Код из MAX
+                <input
+                  type="text"
+                  placeholder="4 цифры"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="mt-1 h-11 w-full rounded-md border border-line bg-surface px-3 text-ink outline-none focus:border-accent"
+                  required
+                  maxLength={4}
+                  inputMode="numeric"
+                />
+              </label>
+            )}
+
+            {error && <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="h-11 w-full rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink transition hover:brightness-95 disabled:opacity-50"
+            >
+              {loading ? "Подождите…" : mode === "register" ? "Зарегистрироваться" : "Войти"}
+            </button>
+          </form>
+
+          <div className="mt-5 space-y-2 border-t border-line pt-5 text-sm">
+            {mode !== "login" && (
+              <button onClick={() => setMode("login")} className="block font-medium text-accent hover:underline">Вход по паролю</button>
+            )}
+            {mode !== "register" && (
+              <button onClick={() => setMode("register")} className="block font-medium text-accent hover:underline">Нет аккаунта? Зарегистрироваться</button>
+            )}
+            {mode !== "otp" && (
+              <button onClick={() => setMode("otp")} className="block font-medium text-[#5146ed] hover:underline">Войти по коду из MAX</button>
+            )}
+          </div>
+        </section>
+
+        <aside className="border-t border-line bg-accent/5 p-5 sm:p-7 lg:border-l lg:border-t-0 lg:p-8">
+          <h2 className="text-lg font-semibold text-ink">В личном кабинете удобно</h2>
+          <div className="mt-6 space-y-5">
+            {[
+              [ClipboardList, "История и статусы заказов"],
+              [FileText, "Счета для организаций"],
+              [Heart, "Избранные товары"],
+              [Bell, "Уведомления в MAX"],
+            ].map(([Icon, label]) => {
+              const FeatureIcon = Icon as typeof ClipboardList;
+              return (
+                <div key={label as string} className="flex items-center gap-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface text-accent">
+                    <FeatureIcon className="h-5 w-5" aria-hidden />
+                  </div>
+                  <span className="text-sm font-semibold text-ink">{label as string}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-7 rounded-lg border border-line bg-surface p-4">
+            <p className="text-sm font-semibold text-ink">Нужна помощь со входом?</p>
+            <a
+              href={SITE.support.max.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex h-10 items-center justify-center rounded-md border border-[#6156f5] text-sm font-semibold text-[#5146ed]"
+            >
+              Написать в MAX
+            </a>
+          </div>
+          <p className="mt-5 flex items-center gap-2 text-xs text-ink-3">
+            <ShieldCheck className="h-5 w-5 text-accent" aria-hidden />
+            Данные передаются по защищённому соединению
+          </p>
+        </aside>
       </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="tel"
-          placeholder="Телефон"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="w-full border rounded px-3 py-2"
-          required
-        />
-
-        {mode !== "otp" && (
-          <input
-            type="password"
-            placeholder="Пароль"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border rounded px-3 py-2"
-            required
-          />
-        )}
-
-        {mode === "register" && (
-          <input
-            type="text"
-            placeholder="Имя"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full border rounded px-3 py-2"
-          />
-        )}
-
-        {mode === "otp" && (
-          <input
-            type="text"
-            placeholder="Код из MAX"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            className="w-full border rounded px-3 py-2"
-            required
-            maxLength={4}
-          />
-        )}
-
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-green-600 text-white rounded py-2 hover:bg-green-700 disabled:opacity-50"
-        >
-          {loading ? "..." : mode === "register" ? "Зарегистрироваться" : "Войти"}
-        </button>
-      </form>
-
-      <div className="mt-4 text-sm text-gray-600 space-y-1">
-        {mode !== "login" && (
-          <button onClick={() => setMode("login")} className="underline block">Вход по паролю</button>
-        )}
-        {mode !== "register" && (
-          <button onClick={() => setMode("register")} className="underline block">Регистрация</button>
-        )}
-        {mode !== "otp" && (
-          <button onClick={() => setMode("otp")} className="underline block">Вход по коду MAX</button>
-        )}
-      </div>
-    </div>
+    </main>
   );
 }

@@ -7,22 +7,43 @@ export const SITE = {
   phoneNote: "Бесплатно по России", // #586: подпись под телефоном в шапке
   schedule: "Пн–Вс 09:00–20:00",
   email: "info@proff58.ru", // TODO: SiteSettings
-  address: "г. Пенза, ул. Складская, 10", // TODO: SiteSettings
+  address: "г. Пенза, 1-й Онежский проезд, 12", // TODO: SiteSettings
 
   // #586: шапка по утверждённому макету главной.
   header: {
     tagline: "магазин инструментов", // подпись под логотипом
-    store: "Магазин на ул. Складская, 10", // адрес магазина в topbar (из SITE.address)
+    store: "Магазин на 1-м Онежском проезде, 12", // адрес магазина в topbar (из SITE.address)
     catalogLabel: "Каталог товаров",
     searchPlaceholder: "Поиск по каталогу",
-    // Инфо-пункты topbar. #592: страниц под них пока нет, поэтому Header
-    // рендерит их future-текстом (не ссылками). href появится вместе со
-    // статическими страницами.
+    // Инфо-пункты topbar. Страниц под них пока нет (не ссылки), но при наведении
+    // каждый раскрывает своё подменю с краткой информацией — сюда переехал контент
+    // сервисной полосы главной. href появится вместе со статическими страницами.
+    // Пункт «Контакты» рендерит данные из SiteSettings (storefront), menu пустой.
     topLinks: [
-      { label: "Сервис и ремонт" },
-      { label: "Доставка и оплата" },
-      { label: "Гарантии" },
-      { label: "Контакты" },
+      {
+        label: "Сервис и ремонт",
+        menu: [
+          { title: "Сервисный центр", text: "Диагностика и обслуживание инструмента" },
+          { title: "Проверим совместимость", text: "Оснастки и инструмента" },
+          { title: "Помощь в подборе", text: "Подберём лучшее решение под задачу" },
+        ],
+      },
+      {
+        label: "Доставка и оплата",
+        menu: [
+          { title: "Самовывоз сегодня", text: "При заказе до 15:00" },
+          { title: "Быстрая доставка", text: "По Пензе и области" },
+          { title: "Оплата", text: "Картой онлайн, наличными, безналичный расчёт (B2B)" },
+        ],
+      },
+      {
+        label: "Гарантии",
+        menu: [
+          { title: "Официальная гарантия", text: "На весь ассортимент магазина" },
+          { title: "Возврат за 14 дней", text: "Обмен и возврат без лишних вопросов" },
+        ],
+      },
+      { label: "Контакты", menu: [] },
     ],
   },
 
@@ -86,12 +107,50 @@ export const SITE = {
   footerAbout:
     "Профессиональный инструмент с экспертной поддержкой в Пензе. Подберём, доставим, обслужим.",
 
-  // Иконка — строковый ключ (маппинг в Footer): vk|telegram|youtube|whatsapp.
-  socials: [
-    { label: "ВКонтакте", href: "https://vk.com/", icon: "vk" }, // TODO
-    { label: "Telegram", href: "https://t.me/", icon: "telegram" },
-    { label: "YouTube", href: "https://youtube.com/", icon: "youtube" },
-  ],
-
   payments: ["Картой онлайн", "Наличными", "Безналичный (B2B)", "При получении"],
 } as const;
+
+export type ResolvedStorefront = {
+  region: string;
+  address: string;
+  store: string;
+  schedule: string;
+  email: string;
+  phone: { display: string; href: string };
+  phoneNote: string;
+  maxHref: string;
+};
+
+// SiteSettings.contacts — JSONField без жёсткой схемы. Поддерживаем только
+// перечисленные публичные строковые ключи; неизвестные значения не попадают в UI.
+export function resolveStorefront(input?: {
+  region?: string;
+  contacts?: Record<string, unknown>;
+}): ResolvedStorefront {
+  const contacts = input?.contacts ?? {};
+  const text = (...keys: string[]): string => {
+    for (const key of keys) {
+      const value = contacts[key];
+      if (typeof value === "string" && value.trim()) return value.trim();
+    }
+    return "";
+  };
+  const display = text("phone_display", "phone") || SITE.phone.display;
+  const digits = display.replace(/\D/g, "");
+  const inferredHref = digits ? `tel:+${digits.replace(/^8(?=\d{10}$)/, "7")}` : SITE.phone.href;
+  const address = text("address", "store_address") || SITE.address;
+
+  return {
+    region: input?.region?.trim() || SITE.region,
+    address,
+    store: text("store", "store_label") || `Магазин: ${address.replace(/^г\.\s*Пенза,\s*/i, "")}`,
+    schedule: text("schedule", "working_hours") || SITE.schedule,
+    email: text("email") || SITE.email,
+    phone: {
+      display,
+      href: text("phone_href") || inferredHref,
+    },
+    phoneNote: text("phone_note") || SITE.phoneNote,
+    maxHref: text("max_url", "max_href") || SITE.support.max.href,
+  };
+}

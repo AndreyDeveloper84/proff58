@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/states";
 import { useCart } from "@/components/cart/CartProvider";
@@ -265,17 +266,43 @@ export default function CheckoutPage() {
 
   if (loading || !cart || cart.lines.length === 0) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-10">
+      <main className="mx-auto min-h-[60vh] w-full max-w-[1400px] px-4 py-10 sm:px-6 lg:px-8">
         <LoadingState label="Готовим оформление заказа…" />
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="mb-6 font-display text-3xl font-semibold uppercase tracking-wide text-ink">
+    <main className="mx-auto w-full max-w-[1400px] px-4 pb-32 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-7">
+      <nav
+        aria-label="Хлебные крошки"
+        className="mb-4 hidden items-center gap-2 text-xs text-ink-3 sm:flex"
+      >
+        <Link href="/" className="hover:text-accent">Главная</Link>
+        <span aria-hidden>›</span>
+        <Link href="/cart" className="hover:text-accent">Корзина</Link>
+        <span aria-hidden>›</span>
+        <span>Оформление заказа</span>
+      </nav>
+      <h1 className="font-display text-2xl font-semibold text-ink lg:text-[30px]">
         Оформление заказа
       </h1>
+      <ol className="mb-5 mt-4 flex max-w-2xl items-center text-xs font-semibold sm:text-sm">
+        <li className="flex items-center gap-2 text-accent">
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-accent text-accent-ink">✓</span>
+          Корзина
+        </li>
+        <li className="mx-3 h-px flex-1 bg-accent sm:mx-5" aria-hidden />
+        <li className="flex items-center gap-2 text-accent">
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-accent text-accent-ink">2</span>
+          Оформление
+        </li>
+        <li className="mx-3 h-px flex-1 bg-line sm:mx-5" aria-hidden />
+        <li className="flex items-center gap-2 whitespace-nowrap text-ink-3">
+          <span className="grid h-6 w-6 place-items-center rounded-full border border-line">3</span>
+          Заказ принят
+        </li>
+      </ol>
 
       {/* #574: role="alert" + фокус. Баннер живёт вверху страницы, а кнопка
           сабмита — внизу: на мобильном ошибка оказывалась вне вьюпорта, и клик
@@ -291,7 +318,9 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="space-y-5">
         <fieldset className="space-y-3 rounded-lg border border-line bg-surface p-5">
           <legend className="px-2 font-display text-lg font-semibold uppercase text-ink">
             Покупатель
@@ -635,9 +664,12 @@ export default function CheckoutPage() {
           />
         </div>
 
+          </div>
+
+          <aside className="space-y-4 lg:sticky lg:top-24">
         <div className="rounded-lg border border-line bg-surface p-5">
           <h2 className="mb-3 font-display text-lg font-semibold uppercase text-ink">
-            Состав заказа
+            Ваш заказ
           </h2>
           <div className="mb-4">
             <PromoCodeField />
@@ -718,15 +750,23 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        <div className="flex justify-end">
+        <div className="fixed inset-x-0 bottom-0 z-50 flex h-[72px] items-center justify-between gap-3 border-t border-line bg-surface px-4 shadow-[0_-8px_24px_rgba(20,24,27,0.08)] lg:static lg:block lg:h-auto lg:border-0 lg:bg-transparent lg:px-0 lg:shadow-none">
+          <div className="lg:hidden">
+            <p className="text-[11px] text-ink-3">Предварительный итог</p>
+            <p className="text-lg font-bold text-ink">
+              {mixedCurrencies ? "—" : formatPrice(previewTotal, currency)}
+            </p>
+          </div>
           <Button
             type="submit"
             variant="accent"
             disabled={submitting || mixedCurrencies}
-            className="px-8 py-2.5 text-base"
+            className="h-11 px-5 lg:h-12 lg:w-full lg:px-8 lg:text-base"
           >
             {submitting ? "Оформляем…" : "Оформить заказ"}
           </Button>
+        </div>
+          </aside>
         </div>
       </form>
     </main>

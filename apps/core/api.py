@@ -1,4 +1,4 @@
-"""Публичный API ядра: тема оформления из SiteSettings (#76)."""
+"""Публичный API витрины: бренд и публичные контакты из SiteSettings."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from .models import SiteSettings
 
 
 class ThemeView(APIView):
-    """GET /api/core/theme/ — цвета и логотип для CSS-переменных витрины."""
+    """GET /api/core/theme/ — публичные настройки оформления витрины."""
 
     permission_classes = [AllowAny]
 
@@ -26,5 +26,7 @@ class ThemeView(APIView):
                 "primary_color": s.primary_color,
                 "accent_color": s.accent_color,
                 "logo_url": logo_url,
+                "region": s.region,
+                "contacts": s.contacts if isinstance(s.contacts, dict) else {},
             }
         )

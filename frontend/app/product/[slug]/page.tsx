@@ -63,32 +63,34 @@ export default async function ProductPage({ params }: Props) {
   return (
     // #574: нижний отступ под липкую панель покупки — иначе она перекрывала
     // последнюю карточку отзывов.
-    <div className="mx-auto max-w-6xl px-4 pb-28 pt-6">
+    <main className="mx-auto w-full max-w-[1400px] px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pt-7">
       <ProductJsonLd product={product} crumbs={crumbs} />
       <nav
         aria-label="Хлебные крошки"
-        className="mb-4 flex flex-wrap items-center gap-1 text-xs text-ink-3"
+        className="mb-4 flex flex-wrap items-center gap-1.5 text-xs text-ink-3"
       >
         {crumbs.map((b, i) => (
           <span key={`${b.href}-${i}`} className="flex items-center gap-1">
-            {i > 0 && <span aria-hidden>/</span>}
+            {i > 0 && <span aria-hidden>›</span>}
             <a href={b.href} className="hover:text-accent">
               {b.label}
             </a>
           </span>
         ))}
         <span className="flex items-center gap-1">
-          <span aria-hidden>/</span>
+          <span aria-hidden>›</span>
           <span className="text-ink-2">{product.name}</span>
         </span>
       </nav>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(420px,.92fr)] lg:gap-8">
         <ProductGallery images={product.images} name={product.name} />
 
         <div className="flex flex-col gap-4">
           {product.brand && <span className="text-sm text-ink-3">{product.brand}</span>}
-          <h1 className="font-display text-2xl font-semibold text-ink">{product.name}</h1>
+          <h1 className="font-display text-2xl font-semibold leading-tight text-ink lg:text-[30px]">
+            {product.name}
+          </h1>
           {/* #574: рейтинг рядом с названием — раньше отзывы были только внизу
               страницы, и понять «есть ли оценки» до скролла было нельзя. Блок
               скрыт при нулевом количестве (docs/design/pages/pdp.md: не рисуем
@@ -115,7 +117,7 @@ export default async function ProductPage({ params }: Props) {
           <ProductAvailability stock={product.stock} stockQty={product.stockQty} />
           <div
             id="buybox-anchor"
-            className="flex flex-wrap items-center gap-4 rounded-lg border border-line bg-surface p-4"
+            className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-line bg-surface p-4 lg:p-5"
           >
             <ProductPrice price={product.price} />
             <OrderCta
@@ -126,27 +128,62 @@ export default async function ProductPage({ params }: Props) {
             />
           </div>
 
-          {product.specs.length > 0 && (
-            <section aria-label="Характеристики">
-              <h2 className="mb-2 font-display text-lg font-semibold text-ink">Характеристики</h2>
-              {product.specs.length > 8 ? (
-                <Collapsible collapsedHeight={300}>{specsDl}</Collapsible>
-              ) : (
-                specsDl
-              )}
-            </section>
-          )}
         </div>
       </div>
 
-      {product.description && (
-        <section aria-label="Описание" className="mt-8">
-          <h2 className="mb-2 font-display text-lg font-semibold text-ink">Описание</h2>
-          {product.description.length > 600 ? (
-            <Collapsible collapsedHeight={200}>{descriptionBlock}</Collapsible>
-          ) : (
-            descriptionBlock
-          )}
+      {(product.specs.length > 0 || product.description) && (
+        <section className="mt-8 overflow-hidden rounded-lg border border-line bg-surface">
+          <nav
+            aria-label="Разделы карточки товара"
+            className="flex gap-6 overflow-x-auto border-b border-line px-4 text-sm font-semibold text-ink-2 sm:px-5"
+          >
+            {product.specs.length > 0 && (
+              <a
+                href="#characteristics"
+                className="min-h-12 shrink-0 border-b-2 border-accent py-3.5 text-ink"
+              >
+                Характеристики
+              </a>
+            )}
+            {product.description && (
+              <a href="#description" className="min-h-12 shrink-0 py-3.5 hover:text-accent">
+                Описание
+              </a>
+            )}
+            {product.compatible && (
+              <a href="#compatible" className="min-h-12 shrink-0 py-3.5 hover:text-accent">
+                Совместимые товары
+              </a>
+            )}
+            {reviews && (
+              <a href="#reviews" className="min-h-12 shrink-0 py-3.5 hover:text-accent">
+                Отзывы {reviews.summary.count || ""}
+              </a>
+            )}
+          </nav>
+
+          <div className="grid gap-6 p-4 sm:p-5 lg:grid-cols-[1.08fr_.92fr] lg:gap-8">
+            {product.specs.length > 0 && (
+              <div id="characteristics" className="scroll-mt-28">
+                <h2 className="mb-3 text-lg font-semibold text-ink">Характеристики</h2>
+                {product.specs.length > 8 ? (
+                  <Collapsible collapsedHeight={300}>{specsDl}</Collapsible>
+                ) : (
+                  specsDl
+                )}
+              </div>
+            )}
+            {product.description && (
+              <div id="description" className="scroll-mt-28">
+                <h2 className="mb-3 text-lg font-semibold text-ink">Описание</h2>
+                {product.description.length > 600 ? (
+                  <Collapsible collapsedHeight={240}>{descriptionBlock}</Collapsible>
+                ) : (
+                  descriptionBlock
+                )}
+              </div>
+            )}
+          </div>
         </section>
       )}
 
@@ -159,14 +196,14 @@ export default async function ProductPage({ params }: Props) {
         </section>
       )}
 
-      <div className="mt-10">
+      <div id="compatible" className="mt-8 scroll-mt-28">
         <CompatibilitySections sections={product.compatible} />
 
         {reviews && <ProductReviews slug={slug} initial={reviews} />}
       </div>
 
       <StickyBuyBar product={product} />
-    </div>
+    </main>
   );
 }
 
