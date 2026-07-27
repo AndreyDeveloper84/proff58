@@ -148,7 +148,7 @@ function MaxHelpCard({ maxHref }: { maxHref: string }) {
         target="_blank"
         rel="noopener noreferrer"
         data-event="home_max_help"
-        className="mt-2.5 inline-flex h-9 items-center justify-center gap-1.5 rounded-sm bg-[#6156f5] px-3 text-xs font-semibold text-white transition hover:bg-[#5147dc]"
+        className="mt-2.5 inline-flex h-9 items-center justify-center gap-1.5 self-start rounded-sm bg-[#6156f5] px-3 text-xs font-semibold text-white transition hover:bg-[#5147dc]"
       >
         <MessageSquareText className="h-4 w-4" aria-hidden />
         {m.cta}
