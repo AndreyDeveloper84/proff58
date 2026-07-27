@@ -21,7 +21,7 @@ from apps.catalog.rules_release import (
 )
 
 LEGACY_TAXONOMY_HASH = "b357be604801197e33182b84fde1755361e29653d98bd49429623b3ba604326b"
-CANONICAL_TAXONOMY_HASH = "fc13be7804b06713dccde5cd2888a437a1a7521772d5911acc7d9d93636714d8"
+CANONICAL_TAXONOMY_HASH = "524d4e317a804160548ebd5f4d0c590cb08a9b69910b23355df7558902616439"
 RULESET_SRC = Path(settings.BASE_DIR) / "data" / "catalog_processing_rules" / "tool_type.v2.json"
 
 
@@ -84,7 +84,7 @@ def test_inputs_bind_all_primary_hashes():
     tax = inputs["taxonomy_manifest"]
     assert tax["taxonomy_identity_hash"] == CANONICAL_TAXONOMY_HASH
     assert tax["manifest_semantic_hash"] == report["hashes"]["manifest_semantic_hash"]
-    assert tax["options"] == 328
+    assert tax["options"] == 329
     for key in ("ruleset", "corpus", "gate_sample", "labels", "taxonomy_manifest"):
         digest = inputs[key]["artifact_sha256"]
         assert isinstance(digest, str) and len(digest) == 64

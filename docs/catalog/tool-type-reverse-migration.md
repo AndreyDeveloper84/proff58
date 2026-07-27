@@ -47,7 +47,7 @@ H5 закрывает обе дыры **проверяемой** процеду�
     "schema_version": 1,
     "attribute_slug": "tool_type",
     "selector": {"kind": "explicit_ids", "value": [101, 102]},
-    "live_taxonomy_identity_hash": "fc13be78…",
+    "live_taxonomy_identity_hash": "524d4e31…",
     "rows_count": 2,
     "rows": [
       {"product_id": 101, "option_slug": "bury", "option_value": "Буры",

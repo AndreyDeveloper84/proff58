@@ -7,6 +7,10 @@
 > Дата: 2026-07-27. Ветка `dev`. План волны —
 > `docs/plans/2026-07-26-WAVE7_1_H3_H5_PLAN.md` §7.
 > Протокол окна приёмки — `scratchpad/wave7/wave7-acceptance-report.md`.
+>
+> **Post factum (TT-01, 2026-07-28):** canonical `taxonomy_identity_hash`
+> сменился `fc13be78…` → `524d4e31…` (добавлен `izm-areometry`, 329 options);
+> упоминания `fc13be78…` ниже — историческая запись состояния волны 7.1.
 
 ---
 

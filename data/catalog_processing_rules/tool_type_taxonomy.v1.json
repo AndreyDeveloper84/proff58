@@ -1011,6 +1011,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "izm-areometry",
+      "value": "Ареометры (денсиметры)",
+      "sort_order": 18,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step2 recheck + owner decision 2026-07-28",
+      "review_status": "approved",
+      "review_reason": "9 из 10 ареометров batch упираются в catch-all izm-analizatory — подходящего типа нет (перепроверка на всех 328 values, дельта ноль). Обоснование: §П6 scratchpad/phase8/phase8-step2-report.md",
+      "review_ref": "phase8-step2-p6",
+      "legacy_aliases": []
+    },
+    {
       "slug": "izm-dalnomery",
       "value": "Дальномеры",
       "sort_order": 3,
@@ -3650,6 +3661,6 @@
       "legacy_aliases": []
     }
   ],
-  "taxonomy_identity_hash": "fc13be7804b06713dccde5cd2888a437a1a7521772d5911acc7d9d93636714d8",
-  "manifest_semantic_hash": "d906be2f021bcf372dfbdb25d8ffb49f1bd7a5cd713f8a9cdd9699dad6277681"
+  "taxonomy_identity_hash": "524d4e317a804160548ebd5f4d0c590cb08a9b69910b23355df7558902616439",
+  "manifest_semantic_hash": "5ebbad744c0ecb212e85f3fc47167f9c1dad0bac02aac33c567735e4da07ac0e"
 }

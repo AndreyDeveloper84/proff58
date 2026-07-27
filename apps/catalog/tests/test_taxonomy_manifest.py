@@ -24,10 +24,12 @@ from apps.catalog.taxonomy_manifest import (
 V2_PATH = Path(settings.BASE_DIR) / "data" / "catalog_processing_rules" / "tool_type.v2.json"
 SEED_RULES_PATH = Path(settings.BASE_DIR) / "data" / "tool_type_rules.json"
 
-PINNED_IDENTITY_HASH = "fc13be7804b06713dccde5cd2888a437a1a7521772d5911acc7d9d93636714d8"
+# TT-01 (2026-07-28): добавлена опция izm-areometry (329 options) — identity и
+# semantic hash пересчитаны; разметка gate-sample не переразмечалась (2 строки).
+PINNED_IDENTITY_HASH = "524d4e317a804160548ebd5f4d0c590cb08a9b69910b23355df7558902616439"
 # H4: clean-taxonomy снял 15 pending_business_review (identity_hash не менялся —
 # slug/value не тронуты; semantic_hash покрывает origin/review metadata).
-PINNED_SEMANTIC_HASH = "d906be2f021bcf372dfbdb25d8ffb49f1bd7a5cd713f8a9cdd9699dad6277681"
+PINNED_SEMANTIC_HASH = "5ebbad744c0ecb212e85f3fc47167f9c1dad0bac02aac33c567735e4da07ac0e"
 
 BACKPORTED_SLUGS = {
     "bp-podgotovka-vozduha",
@@ -89,7 +91,7 @@ def _opt(slug, value, **kw):
 
 def test_committed_manifest_loads_and_matches_pins():
     m = load_manifest()
-    assert len(m.options) == 328
+    assert len(m.options) == 329
     assert m.identity_hash == PINNED_IDENTITY_HASH
     assert m.semantic_hash == PINNED_SEMANTIC_HASH
     assert m.schema_version == 1 and m.manifest_version == 1

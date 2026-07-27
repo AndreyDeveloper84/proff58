@@ -70,7 +70,9 @@ python manage.py catalog_rules_release_manifest --check
 ```
 
 С H4 замороженный 7D sample несёт **canonical** `taxonomy_hash`
-(`fc13be78…`), поэтому `--allow-legacy-taxonomy-hash` в штатном контуре не
+(`524d4e31…`; TT-01 2026-07-28 перевыпустил binding с `fc13be78…` при
+добавлении `izm-areometry`), поэтому `--allow-legacy-taxonomy-hash` в штатном
+контуре не
 нужен: `legacy_taxonomy_hash_allowed` в манифесте = `null`,
 `declared_mismatches` = `[]`. Флаг остаётся только для replay исторических
 артефактов с legacy DB-order binding.
