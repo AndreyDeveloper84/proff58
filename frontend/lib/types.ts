@@ -76,7 +76,13 @@ export type Facet = {
   group?: FacetGroupKind;
 };
 
-export type SortOption = "popular" | "price_asc" | "price_desc" | "new" | "rating";
+export type SortOption =
+  | "popular"
+  | "bestsellers"
+  | "price_asc"
+  | "price_desc"
+  | "new"
+  | "rating";
 export type RangeFilterValue = { min?: number; max?: number };
 
 // Режим показа фильтров категории (§3.4): broad — широкая (только базовые до выбора типа);

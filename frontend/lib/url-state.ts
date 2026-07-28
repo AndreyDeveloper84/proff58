@@ -16,7 +16,14 @@ import {
 } from "./constants";
 import type { ListingQuery, RangeFilterValue, SortOption } from "./types";
 
-const SORTS: SortOption[] = ["popular", "price_asc", "price_desc", "new", "rating"];
+const SORTS: SortOption[] = [
+  "popular",
+  "bestsellers",
+  "price_asc",
+  "price_desc",
+  "new",
+  "rating",
+];
 
 function num(v: string | null): number | undefined {
   if (v == null || v === "") return undefined;

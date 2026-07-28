@@ -56,6 +56,8 @@ type ApiProduct = {
   main_image?: string | null;
   short_description?: string | null;
   attributes?: ApiAttr[];
+  // Рейтинг продаж backend: товар в топе продаж за окно (apps.catalog.sales).
+  is_hit?: boolean;
 };
 
 type ApiImage = { url: string; alt?: string | null; is_main?: boolean };
@@ -181,8 +183,13 @@ export function apiProductToProduct(ap: ApiProduct): Product {
     },
     stock: mapStock(ap.stock_status),
     stockQty: ap.stock_qty ?? undefined,
-    // sale — из скидки (данные есть). new/hit — вне scope (нет надёжного признака новизны).
-    badges: hasDiscount ? ["sale"] : [],
+    // sale — из скидки, hit — из рейтинга продаж backend (apps.catalog.sales):
+    // бейдж «Хит» означает реальные продажи за окно, а не редакторскую пометку.
+    // new — по-прежнему вне scope: надёжного признака новизны нет.
+    badges: [
+      ...(ap.is_hit ? (["hit"] as const) : []),
+      ...(hasDiscount ? (["sale"] as const) : []),
+    ],
   };
 }
 
@@ -585,44 +592,40 @@ export async function fetchCategoryProductsFromApi(
 
 // «Хиты продаж»: курируемые slug'и (detail-эндпоинт, параллельно) → fallback ?sort=new.
 // Detail-ответ — надмножество list (ApiProduct), apiProductToProduct берёт нужное подмножество.
+/**
+ * Витрина главной: реальные хиты продаж, иначе — честно помеченные новинки.
+ *
+ * `kind` существует именно ради честности заголовка. Раньше блок «Хиты продаж»
+ * молча показывал `?sort=new`, то есть выдавал новинки за хиты. Теперь источник
+ * выдачи виден вызывающему, и подпись блока меняется вместе с ним.
+ */
 export async function fetchBestsellersFromApi(
   base: string,
-  slugs: string[],
   limit: number,
-): Promise<Product[]> {
+): Promise<{ products: Product[]; kind: "bestsellers" | "new" }> {
   const root = base.replace(/\/$/, "");
-  if (slugs.length) {
-    const settled = await Promise.all(
-      slugs.map(async (slug) => {
-        try {
-          const res = await fetch(`${root}/api/catalog/products/${encodeURIComponent(slug)}/`, {
-            cache: "no-store",
-            headers: SSR_HEADERS,
-            signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
-          });
-          if (!res.ok) return null;
-          return apiProductToProduct((await res.json()) as ApiProduct);
-        } catch {
-          return null;
-        }
-      }),
-    );
-    const found = settled.filter((p): p is Product => p != null);
-    if (found.length) return found;
-  }
-  // Fallback: свежие товары.
-  try {
-    const res = await fetch(`${root}/api/catalog/products/?sort=new&limit=${limit}`, {
-      cache: "no-store",
-      headers: SSR_HEADERS,
-      signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
-    });
-    if (!res.ok) return [];
-    const json = (await res.json()) as { results?: ApiProduct[] };
-    return (json.results ?? []).map(apiProductToProduct);
-  } catch {
-    return [];
-  }
+
+  const load = async (path: string): Promise<Product[]> => {
+    try {
+      const res = await fetch(`${root}${path}`, {
+        cache: "no-store",
+        headers: SSR_HEADERS,
+        signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
+      });
+      if (!res.ok) return [];
+      const json = (await res.json()) as { results?: ApiProduct[] };
+      return (json.results ?? []).map(apiProductToProduct);
+    } catch {
+      return [];
+    }
+  };
+
+  // Эндпоинт хитов отдаёт ТОЛЬКО товары с продажами за окно: пустой ответ здесь —
+  // это «продаж пока нет», а не сбой, и подменять его нечем.
+  const bestsellers = await load(`/api/catalog/bestsellers/?limit=${limit}`);
+  if (bestsellers.length) return { products: bestsellers, kind: "bestsellers" };
+
+  return { products: await load(`/api/catalog/products/?sort=new&limit=${limit}`), kind: "new" };
 }
 
 // #573: первая страница отзывов товара + агрегат — SSR напрямую в Django

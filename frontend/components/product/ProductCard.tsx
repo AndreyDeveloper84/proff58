@@ -32,7 +32,9 @@ function StatusLabel({ product, compact = false }: { product: Product; compact?:
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-semibold",
+        // whitespace-nowrap: рядом может стоять бейдж «Хит», и «В наличии»
+        // ломалось на две строки, задирая высоту шапки карточки.
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-semibold",
         compact ? "text-[10px]" : "text-xs",
         s.cls,
       )}
@@ -195,6 +197,14 @@ export function ProductCard({
     );
   }
 
+  // Бейдж «Хит» — из product.badges, куда его кладёт adapters по признаку
+  // is_hit backend (рейтинг продаж). Ручных пометок здесь нет и быть не должно.
+  const hitBadge = product.badges.includes("hit") ? (
+    <span className="shrink-0 rounded-full bg-[#ff8700] px-2 py-0.5 text-[10px] font-bold text-white">
+      Хит
+    </span>
+  ) : null;
+
   if (view === "list") {
     return (
       <article
@@ -208,7 +218,10 @@ export function ProductCard({
         <div className="w-40 shrink-0">{media}</div>
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="mb-1 flex items-start justify-between gap-2">
-            <StatusLabel product={product} />
+            <div className="flex min-w-0 items-center gap-1.5">
+              <StatusLabel product={product} />
+              {hitBadge}
+            </div>
             {heart}
           </div>
           <p className="text-xs text-ink-3">{product.brand}</p>
@@ -234,7 +247,10 @@ export function ProductCard({
       )}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
-        <StatusLabel product={product} />
+        <div className="flex min-w-0 items-center gap-1.5">
+          <StatusLabel product={product} />
+          {hitBadge}
+        </div>
         {showFavorite ? heart : null}
       </div>
       <div className="mb-3">{media}</div>

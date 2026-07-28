@@ -14,7 +14,7 @@ import { InquiryModal } from "./InquiryModal";
 
 type HomeInteractiveProps = {
   categories: CategoryNode[];
-  bestsellers: Product[];
+  bestsellers: { products: Product[]; kind: "bestsellers" | "new" };
   storefront: ResolvedStorefront;
 };
 
@@ -28,7 +28,11 @@ export function HomeInteractive({ categories, bestsellers, storefront }: HomeInt
       <HomeIntentGrid />
       {/* #589: порядок витрины по макету — хиты → категории (pill'ы) → бренды.
           Крупные плитки CategoryGrid на главной заменены pill-рядом. */}
-      <Bestsellers products={bestsellers} maxHref={storefront.maxHref} />
+      <Bestsellers
+        products={bestsellers.products}
+        kind={bestsellers.kind}
+        maxHref={storefront.maxHref}
+      />
       <PopularCategories categories={categories} />
       <PopularBrands />
       {/* #590: нижняя зона по макету — «почему покупают» + статьи + подписка +

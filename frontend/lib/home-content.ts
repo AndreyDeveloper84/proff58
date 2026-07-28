@@ -93,8 +93,6 @@ export const HOME_CONTENT = {
 
   // slug корневой категории → фон плитки (плейсхолдеры; дизайнер заменит). Дефолт — ниже.
   categoryAssets: {} as Record<string, string>,
-  // Курируемые «хиты»: slug'и товаров. Пусто → fallback на ?sort=new (см. lib/catalog.ts).
-  bestsellerSlugs: [] as string[],
   trust: [
     { icon: "ShieldCheck", title: "Официальная гарантия" },
     { icon: "Truck", title: "Быстрая доставка" },
