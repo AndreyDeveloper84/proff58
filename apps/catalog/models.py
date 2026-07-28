@@ -53,6 +53,7 @@ class Source(models.TextChoices):
     INFERRED = "inferred", _("Инференс по атрибутам")
     WEB = "web", _("Web-поиск")
     MARKETPLACE = "marketplace", _("Маркетплейс")
+    SCRAPER = "scraper", _("Парсер сайтов производителей")
 
 
 class Category(MP_Node):

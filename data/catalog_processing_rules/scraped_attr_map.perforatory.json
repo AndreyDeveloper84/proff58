@@ -1,0 +1,354 @@
+{
+  "schema_version": 1,
+  "category": "perforatory",
+  "target_category": {"id": 3, "slug": "elektroinstrument", "name": "Электроинструмент"},
+  "created": "2026-07-28",
+  "inputs": {
+    "exports": "scratchpad/parser-mvp/output/<source>.products.json (32 карточки Phase 2)",
+    "source_structure": "docs/parser-mvp/source-structure.md",
+    "roadmap": "docs/plans/2026-07-26-PARSER_ENRICHMENT_MVP_ROADMAP.md Phase 3"
+  },
+  "policy": {
+    "ranges": "Диапазоны как значения не сопоставляются. Исключение — no_load_speed: источники дают «0-N», где N — паспортный максимум оборотов х.х.; берётся верхняя граница (нормализатор range_upper_decimal), решение вынесено владельцу в phase3-report.md.",
+    "weight": "Вес не сопоставляется: у resanta/vihr «Вес, кг» — брутто с кейсом, у interskol — нетто, у zubr поля разделены. Атрибут веса к категории «Электроинструмент» не привязан. Все поля веса — в unmapped.",
+    "zubr_revers": "Значение «щеточный» в поле «Реверс» у zubr — мусор источника, НЕ тип двигателя. Поле в ignore, с motor_type не сопоставляется.",
+    "unmapped": "Поле без подходящего существующего Attribute — в unmapped с кандидатом; новые Attribute/AttributeOption не создаются."
+  },
+  "normalizers": {
+    "int": "первое целое число строки; «800» -> 800",
+    "decimal": "первое число строки, десятичная запятая -> точка; «2,8» -> 2.8, «10.0» -> 10.0",
+    "range_upper_decimal": "«A-B» -> B (верхняя граница, паспортный максимум); «0-1100» -> 1100, «230-550» -> 550; если диапазона нет — как decimal",
+    "voltage_first": "первое число строки (номинал сети); «220-230В, ~50 Гц» -> 220, «230/50» -> 230, «220-240/50» -> 220, «220/50» -> 220",
+    "summary_power_w": "regex (\\d+(?:[.,]\\d+)?)\\s*Вт по summary_raw, первое совпадение -> int; «SDS-Plus, 650 Вт, …» -> 650",
+    "option_map": "значение -> lower + strip -> словарь values; неизвестное значение -> drop_to_report"
+  },
+  "sources": {
+    "resanta": {
+      "fields": {
+        "Мощность, Вт": {
+          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
+          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "в таблице только у 2/8 карточек (75/3/5, 75/3/7); остальные — через fallback из summary_raw"
+        },
+        "Энергия удара, Дж": {
+          "action": "map", "attribute": "energy_impact", "attribute_type": "decimal", "unit": "Дж",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Частота вращения, об/мин": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "comment": "значения — диапазоны «0-N»; N совпадает со сводкой summary_raw («1100 об/мин»)"
+        },
+        "Напряжение питающей сети, В": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "voltage_first", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Тип хвостовика": {
+          "action": "map", "attribute": "chuck", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {"sds-plus": "sds-plus", "sds-max": "sds-max"},
+          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report"
+        },
+        "Бренд": {"action": "ignore", "reason": "дублирует поле brand карточки"},
+        "Гарантия": {"action": "ignore", "reason": "коммерческая информация, атрибута нет"},
+        "Габариты упаковки": {"action": "ignore", "reason": "габариты брутто-упаковки, атрибута нет"},
+        "Частота питающей сети, ГЦ": {"action": "ignore", "reason": "частота сети ~50 Гц, атрибута нет и не требуется"},
+        "Вес, кг": {
+          "action": "unmapped", "candidate_attribute": "weight_kg",
+          "reason": "у Ресанты это вес БРУТТО с кейсом (4.926 при нетто 2.7); атрибут веса не привязан к категории «Электроинструмент»"
+        },
+        "Частота ударов при ударно-вращательном режиме, уд/мин": {
+          "action": "unmapped", "candidate_attribute": "impact_rate",
+          "reason": "атрибута частоты ударов нет; stroke_rate — другая семантика (ходы пилы, ходов/мин)"
+        },
+        "Частота ударов, уд/мин": {
+          "action": "unmapped", "candidate_attribute": "impact_rate",
+          "reason": "вариант подписи у 75/3/13; значение «3750 —» с мусорным хвостом; атрибута нет"
+        },
+        "Максимальный диаметр сверления: сталь/бетон/дерево, мм": {
+          "action": "unmapped", "candidate_attribute": "max_drill_diameter_steel/concrete/wood",
+          "reason": "тройное значение «13/24/30» (по материалам, не диапазон); атрибутов диаметров сверления нет; раскладывать не во что"
+        },
+        "Макс. диаметр сверления (бетон), мм": {
+          "action": "unmapped", "candidate_attribute": "max_drill_diameter_concrete",
+          "reason": "атрибута нет (вариант подписи у 75/3/13)"
+        },
+        "Регулировка частоты вращения": {"action": "unmapped", "candidate_attribute": "speed_control", "reason": "атрибута нет"},
+        "Режим сверления": {"action": "unmapped", "candidate_attribute": "drill_mode", "reason": "атрибута нет"},
+        "Режим сверления с ударом": {"action": "unmapped", "candidate_attribute": "hammer_drill_mode", "reason": "атрибута нет"},
+        "Режим удара": {"action": "unmapped", "candidate_attribute": "impact_mode", "reason": "атрибута нет"},
+        "Режим реверса": {"action": "unmapped", "candidate_attribute": "reverse", "reason": "атрибута нет"},
+        "Реверс": {"action": "unmapped", "candidate_attribute": "reverse", "reason": "атрибута нет (вариант подписи у 75/3/13, значение «Нет»)"},
+        "Настройка углового положения инструмента": {"action": "unmapped", "candidate_attribute": "vario_lock", "reason": "атрибута нет"},
+        "Антивибрационная система": {"action": "unmapped", "candidate_attribute": "anti_vibration", "reason": "атрибута нет"}
+      },
+      "fallbacks": [
+        {
+          "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
+          "applies_when_missing": ["Мощность, Вт"],
+          "source_field": "summary_raw", "normalize": "summary_power_w",
+          "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "comment": "сводка — единственный носитель мощности у 6/8 карточек; перекрёстная сверка с таблицей там, где она есть: 75/3/5 (800=800), 75/3/7 (1600=1600)"
+        }
+      ],
+      "derived": [
+        {
+          "attribute": "power_source", "attribute_type": "select", "value": "mains",
+          "rule": "mains_if_voltage_field", "confidence": "high",
+          "comment": "есть поле «Напряжение питающей сети, В» -> сетевой инструмент"
+        }
+      ]
+    },
+    "vihr": {
+      "fields": {
+        "Мощность, Вт": {
+          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
+          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Энергия удара, Дж": {
+          "action": "map", "attribute": "energy_impact", "attribute_type": "decimal", "unit": "Дж",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Частота вращения, об/мин": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "comment": "диапазоны «0-N»; N совпадает со сводкой summary_raw"
+        },
+        "Напряжение питающей сети, В": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "voltage_first", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Тип хвостовика": {
+          "action": "map", "attribute": "chuck", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {"sds-plus": "sds-plus", "sds-max": "sds-max"},
+          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report"
+        },
+        "Бренд": {"action": "ignore", "reason": "дублирует поле brand карточки"},
+        "Гарантия": {"action": "ignore", "reason": "коммерческая информация, атрибута нет"},
+        "Габариты упаковки": {"action": "ignore", "reason": "габариты брутто-упаковки, атрибута нет"},
+        "Вес, кг": {
+          "action": "unmapped", "candidate_attribute": "weight_kg",
+          "reason": "вес БРУТТО с кейсом (4.6 при нетто ~3.4); атрибут веса не привязан к категории"
+        },
+        "Частота ударов при ударно-вращательном режиме, уд/мин": {
+          "action": "unmapped", "candidate_attribute": "impact_rate", "reason": "атрибута нет"
+        },
+        "Максимальный диаметр сверления: сталь/бетон/дерево, мм": {
+          "action": "unmapped", "candidate_attribute": "max_drill_diameter_steel/concrete/wood",
+          "reason": "тройное значение «13/30/40», бывает «-/40/-»; атрибутов диаметров нет"
+        },
+        "Регулировка частоты вращения": {"action": "unmapped", "candidate_attribute": "speed_control", "reason": "атрибута нет"},
+        "Режим сверления": {"action": "unmapped", "candidate_attribute": "drill_mode", "reason": "атрибута нет"},
+        "Режим сверления с ударом": {"action": "unmapped", "candidate_attribute": "hammer_drill_mode", "reason": "атрибута нет"},
+        "Режим удара": {"action": "unmapped", "candidate_attribute": "impact_mode", "reason": "атрибута нет"},
+        "Режим реверса": {"action": "unmapped", "candidate_attribute": "reverse", "reason": "атрибута нет"},
+        "Настройка углового положения инструмента": {"action": "unmapped", "candidate_attribute": "vario_lock", "reason": "атрибута нет"},
+        "Антивибрационная система": {"action": "unmapped", "candidate_attribute": "anti_vibration", "reason": "атрибута нет"},
+        "Съемный ключевой патрон": {"action": "unmapped", "candidate_attribute": "spare_chuck_included", "reason": "атрибута нет"}
+      },
+      "fallbacks": [],
+      "derived": [
+        {
+          "attribute": "power_source", "attribute_type": "select", "value": "mains",
+          "rule": "mains_if_voltage_field", "confidence": "high",
+          "comment": "есть поле «Напряжение питающей сети, В» -> сетевой инструмент"
+        }
+      ]
+    },
+    "interskol": {
+      "fields": {
+        "Мощность, Вт.": {
+          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
+          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Мощность": {
+          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
+          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "вариант подписи без единицы у карточки 160.1.4.40 (П-24/700АВС, старая верстка)"
+        },
+        "Max сила удара, Дж": {
+          "action": "map", "attribute": "energy_impact", "attribute_type": "decimal", "unit": "Дж",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "встречается десятичная запятая («1,2»)"
+        },
+        "Максимальная энергия единичного удара": {
+          "action": "map", "attribute": "energy_impact", "attribute_type": "decimal", "unit": "Дж",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "вариант подписи у 160.1.4.40"
+        },
+        "Частота вращения на холостом ходу, об/мин": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "comment": "диапазоны «0-N» и «230-550»; верхняя граница — паспортный максимум"
+        },
+        "Частота вращения": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "comment": "вариант подписи у 160.1.4.40"
+        },
+        "Частота тока": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "voltage_first", "confidence": "low", "on_ambiguous": "drop_to_report",
+          "comment": "подпись ошибочная: значение «220/50» — напряжение/частота, не частота тока; единственный носитель напряжения у Интерскола (1/8 карточек)"
+        },
+        "Тип хвостовика": {
+          "action": "map", "attribute": "chuck", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {"sds-plus": "sds-plus", "sds-max": "sds-max"},
+          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report"
+        },
+        "Система крепления оснастки": {
+          "action": "map", "attribute": "chuck", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {"sds plus": "sds-plus", "sds max": "sds-max"},
+          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report",
+          "comment": "вариант подписи у 160.1.4.40, значение «SDS Plus»"
+        },
+        "Тип двигателя": {
+          "action": "map", "attribute": "motor_type", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "щеточный": "brushed",
+            "щёточный": "brushed",
+            "однофазный, коллекторный": "brushed",
+            "бесщеточный": "brushless",
+            "бесщёточный": "brushless"
+          },
+          "values_confidence": {"однофазный, коллекторный": "medium"},
+          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report",
+          "comment": "коллекторный = щёточный (medium); единственный источник motor_type из четырёх"
+        },
+        "Комплектация": {"action": "ignore", "reason": "комплектация («чемодан/кейс»), атрибута нет"},
+        "Габариты без упаковки, мм": {"action": "ignore", "reason": "габариты, атрибута нет"},
+        "Габариты": {"action": "ignore", "reason": "габариты (вариант у 160.1.4.40), атрибута нет"},
+        "Легкий доступ к щеткам": {"action": "ignore", "reason": "сервисный флаг, атрибута нет"},
+        "Морозоустойчивый кабель": {"action": "ignore", "reason": "сервисный флаг, атрибута нет"},
+        "Вес, кг": {
+          "action": "unmapped", "candidate_attribute": "weight_kg",
+          "reason": "у Интерскола это вес НЕТТО — но атрибут веса не привязан к категории; смешивать с брутто других источников нельзя"
+        },
+        "Масса": {
+          "action": "unmapped", "candidate_attribute": "weight_kg",
+          "reason": "нетто (вариант подписи у 160.1.4.40); атрибута в категории нет"
+        },
+        "Частота ударов на холостом ходу, уд/мин": {"action": "unmapped", "candidate_attribute": "impact_rate", "reason": "атрибута нет; значения — диапазоны"},
+        "Частота ударов": {"action": "unmapped", "candidate_attribute": "impact_rate", "reason": "атрибута нет (вариант у 160.1.4.40)"},
+        "Количество режимов": {"action": "unmapped", "candidate_attribute": "mode_count", "reason": "атрибута нет"},
+        "Наличие режима долбления": {"action": "unmapped", "candidate_attribute": "chisel_mode", "reason": "атрибута нет"},
+        "Режим Vario-lock": {"action": "unmapped", "candidate_attribute": "vario_lock", "reason": "атрибута нет"},
+        "Реверс": {
+          "action": "unmapped", "candidate_attribute": "reverse",
+          "reason": "атрибута нет; ВНИМАНИЕ: у 4/8 карточек в поле лежит «щеточный» — мусор источника, не сопоставлять с motor_type; значения вне {есть, нет, да} отбрасывать"
+        },
+        "Регулировка частоты вращения": {"action": "unmapped", "candidate_attribute": "speed_control", "reason": "атрибута нет"},
+        "Предохранительная муфта": {"action": "unmapped", "candidate_attribute": "safety_clutch", "reason": "атрибута нет"},
+        "Виброзащита": {"action": "unmapped", "candidate_attribute": "anti_vibration", "reason": "атрибута нет"},
+        "Антивибрация": {"action": "unmapped", "candidate_attribute": "anti_vibration", "reason": "атрибута нет (вариант у 160.1.4.40)"},
+        "Длина кабеля, м": {"action": "unmapped", "candidate_attribute": "cable_length", "reason": "атрибута нет"},
+        "Длина сетевого шнура питания": {"action": "unmapped", "candidate_attribute": "cable_length", "reason": "атрибута нет (вариант у 160.1.4.40)"},
+        "Max диаметр сверления буром (бетон), мм": {"action": "unmapped", "candidate_attribute": "max_drill_diameter_concrete", "reason": "атрибута нет"},
+        "Max диаметр сверления буром (кирпич), мм": {"action": "unmapped", "candidate_attribute": "max_drill_diameter_brick", "reason": "атрибута нет"},
+        "Max диаметр сверления коронкой (кирпич), мм": {"action": "unmapped", "candidate_attribute": "max_core_diameter_brick", "reason": "атрибута нет"},
+        "Мах диаметр сверления (дерево), мм": {"action": "unmapped", "candidate_attribute": "max_drill_diameter_wood", "reason": "атрибута нет; «Мах» — опечатка источника"},
+        "Max диаметр сверления (металл), мм": {"action": "unmapped", "candidate_attribute": "max_drill_diameter_steel", "reason": "атрибута нет"},
+        "Диаметр сверления в бетоне": {"action": "unmapped", "candidate_attribute": "max_drill_diameter_concrete", "reason": "атрибута нет (вариант у 160.1.4.40)"},
+        "Диаметр сверления в стали": {"action": "unmapped", "candidate_attribute": "max_drill_diameter_steel", "reason": "атрибута нет (вариант у 160.1.4.40)"},
+        "Диаметр сверления в древесине": {"action": "unmapped", "candidate_attribute": "max_drill_diameter_wood", "reason": "атрибута нет (вариант у 160.1.4.40)"},
+        "Буровой коронкой в кирпиче": {"action": "unmapped", "candidate_attribute": "max_core_diameter_brick", "reason": "атрибута нет (вариант у 160.1.4.40)"},
+        "Перфоратор с вертикальным двигателем (бочка)": {"action": "unmapped", "candidate_attribute": "vertical_motor", "reason": "атрибута нет"},
+        "Сверлильный патрон в комплекте": {"action": "unmapped", "candidate_attribute": "drill_chuck_included", "reason": "атрибута нет"},
+        "Предустановка углового положения ударного инструмента": {"action": "unmapped", "candidate_attribute": "vario_lock", "reason": "атрибута нет (вариант у 160.1.4.40)"}
+      },
+      "fallbacks": [],
+      "derived": [
+        {
+          "attribute": "power_source", "attribute_type": "select", "value": "mains",
+          "rule": "category_context_mains", "confidence": "medium",
+          "comment": "вся выгрузка — сетевые перфораторы (раздел электроинструмента); поле напряжения у Интерскола структурно отсутствует. Аккумуляторные модели собираются другой категорией источника — для них правило неприменимо"
+        }
+      ]
+    },
+    "zubr": {
+      "fields": {
+        "Мощность, Вт": {
+          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
+          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Максимальная энергия удара, Дж": {
+          "action": "map", "attribute": "energy_impact", "attribute_type": "decimal", "unit": "Дж",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Частота вращения шпинделя, об/мин": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "comment": "диапазоны «0-N»; верхняя граница — паспортный максимум"
+        },
+        "Напряжение питания, В/Гц": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "voltage_first", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "«230/50» -> 230, «220-240/50» -> 220 (первое число)"
+        },
+        "Патрон": {
+          "action": "map", "attribute": "chuck", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {"sds plus": "sds-plus", "sds plus + бзп": "sds-plus", "sds max": "sds-max"},
+          "values_confidence": {"sds plus + бзп": "medium"},
+          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report",
+          "comment": "«SDS Plus + БЗП»: основной патрон SDS-plus, БЗП — сменный в комплекте (см. «Сменный патрон»)"
+        },
+        "Артикул": {"action": "ignore", "reason": "дублирует manufacturer_sku карточки (обозначение модели)"},
+        "Реверс": {
+          "action": "ignore",
+          "reason": "МУСОР ИСТОЧНИКА: во всех 8 карточках значение «щеточный» — перепутано с типом двигателя. НЕ сопоставлять с motor_type и ни с чем другим"
+        },
+        "Габариты, см": {"action": "ignore", "reason": "габариты, атрибута нет"},
+        "Кейс": {"action": "ignore", "reason": "комплектация, атрибута нет"},
+        "Перфоратор": {"action": "ignore", "reason": "строка комплектации (=1), атрибута нет"},
+        "Рукоятка дополнительная": {"action": "ignore", "reason": "строка комплектации (=1), атрибута нет"},
+        "Дополнительная рукоятка": {"action": "ignore", "reason": "комплектация, атрибута нет"},
+        "Глубиномер": {"action": "ignore", "reason": "строка комплектации (=1), атрибута нет"},
+        "Ограничитель глубины сверления": {"action": "ignore", "reason": "комплектация, атрибута нет"},
+        "Руководство по эксплуатации": {"action": "ignore", "reason": "строка комплектации (=1), атрибута нет"},
+        "Смазка для бура": {"action": "ignore", "reason": "строка комплектации (=1), атрибута нет"},
+        "Патрон SDS Plus": {"action": "ignore", "reason": "строка комплектации (=1), атрибута нет; тип патрона берётся из поля «Патрон»"},
+        "Патрон быстрозажимной": {"action": "ignore", "reason": "строка комплектации (=1), атрибута нет"},
+        "Индикатор включения в сеть": {"action": "ignore", "reason": "сервисный флаг, атрибута нет"},
+        "Индикатор износа щеток": {"action": "ignore", "reason": "сервисный флаг, атрибута нет"},
+        "Фиксация выключателя": {"action": "ignore", "reason": "сервисный флаг, атрибута нет"},
+        "Металлический корпус редуктора": {"action": "ignore", "reason": "конструктивный флаг, атрибута нет"},
+        "Быстрая замена щеток": {"action": "ignore", "reason": "сервисный флаг, атрибута нет"},
+        "Масса изделия, кг": {
+          "action": "unmapped", "candidate_attribute": "weight_kg",
+          "reason": "вес НЕТТО; атрибут веса не привязан к категории"
+        },
+        "Масса в упаковке, кг": {
+          "action": "unmapped", "candidate_attribute": "weight_gross_kg",
+          "reason": "вес БРУТТО; отдельного атрибута нет, с нетто не смешивать"
+        },
+        "Частота ударов, уд/мин": {"action": "unmapped", "candidate_attribute": "impact_rate", "reason": "атрибута нет; значения — диапазоны"},
+        "Макс. диаметр бурения (бетон), мм": {"action": "unmapped", "candidate_attribute": "max_drill_diameter_concrete", "reason": "атрибута нет"},
+        "Макс. диаметр бурения коронкой (бетон), мм": {"action": "unmapped", "candidate_attribute": "max_core_diameter_concrete", "reason": "атрибута нет"},
+        "Макс. диаметр сверления (дерево), мм": {"action": "unmapped", "candidate_attribute": "max_drill_diameter_wood", "reason": "атрибута нет"},
+        "Макс. диаметр сверления (сталь), мм": {"action": "unmapped", "candidate_attribute": "max_drill_diameter_steel", "reason": "атрибута нет"},
+        "Количество режимов": {"action": "unmapped", "candidate_attribute": "mode_count", "reason": "атрибута нет"},
+        "Режимы работы": {"action": "unmapped", "candidate_attribute": "work_modes", "reason": "атрибута нет; значение — список «сверление/ сверление с ударом/ удар»"},
+        "Сменный патрон": {"action": "unmapped", "candidate_attribute": "spare_chuck_included", "reason": "атрибута нет"},
+        "Регулировка частоты вращения/ударов": {"action": "unmapped", "candidate_attribute": "speed_control", "reason": "атрибута нет"},
+        "Виброзащита": {"action": "unmapped", "candidate_attribute": "anti_vibration", "reason": "атрибута нет"},
+        "Предохранительная муфта": {"action": "unmapped", "candidate_attribute": "safety_clutch", "reason": "атрибута нет"},
+        "Регулировка углового положения долота": {"action": "unmapped", "candidate_attribute": "vario_lock", "reason": "атрибута нет"},
+        "Поддержание оборотов под нагрузкой": {"action": "unmapped", "candidate_attribute": "constant_electronics", "reason": "атрибута нет"},
+        "Длина кабеля, м": {"action": "unmapped", "candidate_attribute": "cable_length", "reason": "атрибута нет"}
+      },
+      "fallbacks": [],
+      "derived": [
+        {
+          "attribute": "power_source", "attribute_type": "select", "value": "mains",
+          "rule": "mains_if_voltage_field", "confidence": "high",
+          "comment": "есть поле «Напряжение питания, В/Гц» -> сетевой инструмент"
+        }
+      ]
+    }
+  }
+}

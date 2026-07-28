@@ -50,6 +50,7 @@ SOURCE_CONFIDENCE = {
     Source.IMPORT_1C: 100,
     Source.REGEX: 100,
     Source.KEYWORD: 90,
+    Source.SCRAPER: 90,
     Source.LLM: 60,
 }
 
