@@ -237,6 +237,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "bp-leska",
+      "value": "Леска триммерная",
+      "sort_order": 17,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step3 + owner decision 2026-07-28 (TT-07)",
+      "review_status": "approved",
+      "review_reason": "193 SKU лески свалены в prochaya-osnastka (свалка, не тип); bp-trimmery — машины, bp-cepi — цепи пил, hoz-lezviya — металлические лезвия. Крупнейшая ниша пакета (214 SKU).",
+      "review_ref": "tt-07",
+      "legacy_aliases": []
+    },
+    {
       "slug": "bp-motobloki",
       "value": "Мотоблоки и культиваторы",
       "sort_order": 4,
@@ -577,6 +588,28 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "gaikoverty",
+      "value": "Гайковёрты",
+      "sort_order": 19,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step3 + owner decision 2026-07-28 (TT-07)",
+      "review_status": "approved",
+      "review_reason": "108 сетевых/аккумуляторных гайковёртов ошибочно лежат в dreli-shurupoverty (ударный механизм + квадрат под головку, не патрон под сверло); bp-pnevmogaikoverty — пневмо. Решение владельца: value без скобок — класс разводят соседние типы.",
+      "review_ref": "tt-07",
+      "legacy_aliases": []
+    },
+    {
+      "slug": "gaikoverty-ruchnye",
+      "value": "Гайковёрты ручные",
+      "sort_order": 20,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step3 + owner decision 2026-07-28 (TT-07)",
+      "review_status": "approved",
+      "review_reason": "Ручной гайковёрт — редуктор-мультипликатор (не гаечный ключ, не динамометрический, не вороток, не пневмо); spetsialnye-klyuchi — зонтик (ст. 3, товар 22). Ниша ~6 SKU.",
+      "review_ref": "tt-07",
       "legacy_aliases": []
     },
     {
@@ -3023,6 +3056,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "svar-katody",
+      "value": "Катоды (электроды) плазмотронов",
+      "sort_order": 11,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step3 + owner decision 2026-07-28 (TT-07)",
+      "review_status": "approved",
+      "review_reason": "Катод — эмиссионный элемент плазмотрона: не сопло (газодинамика), не цанга (TIG), не MMA-электрод (плавящийся). Модерация ст. 3 отклонила катод А141 в svar-sopla (товар 6798). Перебор всех 15 svar-* — §предложение TT-07.",
+      "review_ref": "tt-07",
+      "legacy_aliases": []
+    },
+    {
       "slug": "svar-klemmy",
       "value": "Клеммы, зажимы, кабели",
       "sort_order": 10,
@@ -3317,6 +3361,17 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "zap-boyki",
+      "value": "Бойки и ударники",
+      "sort_order": 21,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step3 + owner decision 2026-07-28 (TT-07)",
+      "review_status": "approved",
+      "review_reason": "Боек — свободный ударный элемент ударного механизма перфоратора: не шпиндель/вал/ствол (zap-shpindeli-valy), не поршневая группа, не оснастка (piki-dolota), не пневмо (bp-osnastka-pnevmomolotkov). Ниша ~17 SKU (ст. 3, товар 6503).",
+      "review_ref": "tt-07",
       "legacy_aliases": []
     },
     {
@@ -3661,6 +3716,6 @@
       "legacy_aliases": []
     }
   ],
-  "taxonomy_identity_hash": "524d4e317a804160548ebd5f4d0c590cb08a9b69910b23355df7558902616439",
-  "manifest_semantic_hash": "5ebbad744c0ecb212e85f3fc47167f9c1dad0bac02aac33c567735e4da07ac0e"
+  "taxonomy_identity_hash": "887eea5d442455fbb97c9eda888c0307f46a1f7e2e51bd56c2bd8a11d3949175",
+  "manifest_semantic_hash": "2911b659f3d1079ec5e6a2b1ad185b9cf39efb7c8bcfb7c10ba9227027404d4f"
 }
