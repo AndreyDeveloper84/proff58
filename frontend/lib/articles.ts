@@ -19,6 +19,9 @@ export type ArticleSection = {
   blocks: ArticleBlock[];
 };
 
+/** Ключ схемы-иллюстрации; сами компоненты — в components/articles/figures. */
+export type ArticleFigure = "sds-shank" | "battery-storage" | "torque-scale" | "disc-marking" | "duty-cycle" | "bur-wear";
+
 export type Article = {
   slug: string;
   title: string;
@@ -28,8 +31,11 @@ export type Article = {
   dateLabel: string;
   readingMinutes: number;
   tag: string;
+  /** Обложка для карточек в ленте и индексе (предметное фото категории). */
   image: string;
   imagePosition?: string;
+  /** Схема, которая открывает статью вместо фото: объясняет то, за чем пришли. */
+  figure: ArticleFigure;
   /** Раздел каталога, к которому ведёт статья (slug из дерева категорий). */
   catalog?: { slug: string; label: string };
   /** «Коротко» — выжимка в 3 пункта над текстом. */
@@ -47,6 +53,7 @@ export const ARTICLES: Article[] = [
     dateLabel: "20 июля 2026",
     readingMinutes: 5,
     tag: "Перфораторы",
+    figure: "sds-shank",
     image: "/catalog/categories/electroinstrument.webp",
     catalog: { slug: "elektroinstrument", label: "Перфораторы и электроинструмент" },
     summary: [
@@ -116,6 +123,7 @@ export const ARTICLES: Article[] = [
     dateLabel: "14 июля 2026",
     readingMinutes: 4,
     tag: "Аккумуляторы",
+    figure: "battery-storage",
     image: "/catalog/categories/zapchasti.webp",
     catalog: { slug: "zapchasti", label: "Аккумуляторы и зарядные устройства" },
     summary: [
@@ -178,6 +186,7 @@ export const ARTICLES: Article[] = [
     dateLabel: "8 июля 2026",
     readingMinutes: 5,
     tag: "Шуруповёрты",
+    figure: "torque-scale",
     image: "/catalog/categories/ruchnoy.webp",
     catalog: { slug: "elektroinstrument", label: "Дрели и шуруповёрты" },
     summary: [
@@ -243,6 +252,7 @@ export const ARTICLES: Article[] = [
     dateLabel: "2 июля 2026",
     readingMinutes: 6,
     tag: "Оснастка",
+    figure: "disc-marking",
     image: "/catalog/categories/stroitelnyy.webp",
     catalog: { slug: "osnastka", label: "Круги и оснастка для УШМ" },
     summary: [
@@ -302,6 +312,7 @@ export const ARTICLES: Article[] = [
     dateLabel: "25 июня 2026",
     readingMinutes: 5,
     tag: "Сварка",
+    figure: "duty-cycle",
     image: "/catalog/categories/svarochnaya.webp",
     catalog: { slug: "svarka", label: "Сварочное оборудование" },
     summary: [
@@ -364,6 +375,7 @@ export const ARTICLES: Article[] = [
     dateLabel: "18 июня 2026",
     readingMinutes: 4,
     tag: "Оснастка",
+    figure: "bur-wear",
     image: "/catalog/categories/osnastka.webp",
     catalog: { slug: "osnastka", label: "Буры и коронки" },
     summary: [

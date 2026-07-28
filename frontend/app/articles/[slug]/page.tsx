@@ -2,18 +2,34 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, CalendarDays, Clock, Info, MessageSquareText } from "lucide-react";
+import { BatteryStorageFigure } from "@/components/articles/figures/BatteryStorageFigure";
+import { BurWearFigure } from "@/components/articles/figures/BurWearFigure";
+import { DiscMarkingFigure } from "@/components/articles/figures/DiscMarkingFigure";
+import { DutyCycleFigure } from "@/components/articles/figures/DutyCycleFigure";
+import { SdsShankFigure } from "@/components/articles/figures/SdsShankFigure";
+import { TorqueScaleFigure } from "@/components/articles/figures/TorqueScaleFigure";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
-import { ARTICLES, getArticle, type ArticleBlock } from "@/lib/articles";
+import { ProductCard } from "@/components/product/ProductCard";
+import { ARTICLES, getArticle, type ArticleBlock, type ArticleFigure } from "@/lib/articles";
+import { getCategoryProducts } from "@/lib/catalog";
 import { SITE } from "@/lib/site";
 
 type Props = { params: Promise<{ slug: string }> };
 
-// Статьи лежат в модуле фронта, поэтому маршруты известны на сборке: страницы
-// пререндерятся, а неизвестный slug уходит в notFound() (loading.tsx у сегмента
-// нет — статус 404 выставляется честно).
-export function generateStaticParams() {
-  return ARTICLES.map((article) => ({ slug: article.slug }));
-}
+// Блок «подобрать по теме» показывает живые цены и наличие, поэтому страница
+// рендерится на запрос: пререндер зацементировал бы витрину на момент сборки.
+export const dynamic = "force-dynamic";
+
+// Схема открывает статью вместо фото: предметный снимок категории на всю ширину
+// ничего не объясняет, а чертёж отвечает ровно на вопрос, с которым пришли.
+const FIGURES: Record<ArticleFigure, React.ComponentType> = {
+  "sds-shank": SdsShankFigure,
+  "battery-storage": BatteryStorageFigure,
+  "torque-scale": TorqueScaleFigure,
+  "disc-marking": DiscMarkingFigure,
+  "duty-cycle": DutyCycleFigure,
+  "bur-wear": BurWearFigure,
+};
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
@@ -86,6 +102,8 @@ export default async function ArticlePage({ params }: Props) {
   if (!article) notFound();
 
   const more = ARTICLES.filter((item) => item.slug !== article.slug).slice(0, 3);
+  const Figure = FIGURES[article.figure];
+  const products = article.catalog ? await getCategoryProducts(article.catalog.slug, 3) : [];
 
   return (
     <main className="min-h-[70vh] bg-surface pb-20 lg:pb-0">
@@ -121,19 +139,9 @@ export default async function ArticlePage({ params }: Props) {
               </span>
             </p>
 
-            {/* Обложки — предметные фото категорий на светлом фоне: object-contain,
-                иначе кадрирование превращает их в бессмысленный фрагмент корпуса. */}
-            <span className="relative mt-3 block h-[190px] w-full overflow-hidden rounded-md bg-photo sm:h-[240px]">
-              <Image
-                src={article.image}
-                alt=""
-                fill
-                priority
-                sizes="(max-width: 1023px) 100vw, 1000px"
-                className="object-contain p-4"
-                aria-hidden
-              />
-            </span>
+            <div className="mt-3">
+              <Figure />
+            </div>
 
             <p className="mt-3 text-[14px] leading-[1.6] text-ink">{article.excerpt}</p>
 
@@ -163,7 +171,29 @@ export default async function ArticlePage({ params }: Props) {
               </section>
             ))}
 
-            {article.catalog && (
+            {/* Витрина по теме статьи: цены и наличие живые, из каталога. Пусто
+                (нет API или раздел не заполнен) — блок просто не рисуется. */}
+            {article.catalog && products.length > 0 && (
+              <section className="mt-6" aria-label="Товары по теме статьи">
+                <div className="mb-2 flex flex-wrap items-baseline gap-2">
+                  <h2 className="font-sans text-[17px] font-bold text-ink">Подобрать по теме</h2>
+                  <Link
+                    href={`/catalog/${article.catalog.slug}`}
+                    className="ml-auto inline-flex items-center gap-1 text-[12px] font-semibold text-accent transition hover:gap-1.5"
+                  >
+                    {article.catalog.label}
+                    <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {products.map((product) => (
+                    <ProductCard key={product.id} product={product} view="grid" />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {article.catalog && products.length === 0 && (
               <Link
                 href={`/catalog/${article.catalog.slug}`}
                 className="mt-6 flex items-center gap-3 rounded-md border border-line bg-surface px-4 py-3 transition hover:border-accent/60 hover:shadow-sm"

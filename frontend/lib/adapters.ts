@@ -562,6 +562,27 @@ export async function fetchCategoryTreeFromApi(base: string): Promise<CategoryNo
   }
 }
 
+// Товары раздела для блока «подобрать по теме» в статьях. Best-effort: сбой →
+// пустой список, блок просто не отрисуется (статья ценна и без витрины).
+export async function fetchCategoryProductsFromApi(
+  base: string,
+  category: string,
+  limit: number,
+): Promise<Product[]> {
+  const root = base.replace(/\/$/, "");
+  try {
+    const res = await fetch(
+      `${root}/api/catalog/products/?category=${encodeURIComponent(category)}&page_size=${limit}`,
+      { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(SSR_TIMEOUT_MS) },
+    );
+    if (!res.ok) return [];
+    const json = (await res.json()) as { results?: ApiProduct[] };
+    return (json.results ?? []).slice(0, limit).map(apiProductToProduct);
+  } catch {
+    return [];
+  }
+}
+
 // «Хиты продаж»: курируемые slug'и (detail-эндпоинт, параллельно) → fallback ?sort=new.
 // Detail-ответ — надмножество list (ApiProduct), apiProductToProduct берёт нужное подмножество.
 export async function fetchBestsellersFromApi(

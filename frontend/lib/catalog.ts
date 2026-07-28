@@ -10,6 +10,7 @@ import {
   fetchProductFromApi,
   fetchSearchFromApi,
   fetchCategoryTreeFromApi,
+  fetchCategoryProductsFromApi,
   fetchBestsellersFromApi,
   type CategoryNode,
 } from "./adapters";
@@ -103,6 +104,14 @@ export async function getCategoryLookup(slug: string): Promise<CategoryLookup> {
   if (!tree) return { status: "unavailable" };
   const found = findInTree(tree, slug);
   return found ? { status: "found", name: found.name } : { status: "missing" };
+}
+
+// Товары раздела для блока «подобрать по теме» в статье. Без API → пусто (блок скрыт).
+export async function getCategoryProducts(category: string, limit = 3): Promise<Product[]> {
+  if (API_BASE && !FORCE_FIXTURES) {
+    return await fetchCategoryProductsFromApi(API_BASE, category, limit);
+  }
+  return [];
 }
 
 // Корневые категории (depth==1) для блока главной. Нет данных → пусто (блок скрыт).
