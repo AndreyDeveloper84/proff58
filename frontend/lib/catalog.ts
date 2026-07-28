@@ -65,10 +65,50 @@ export async function getProduct(slug: string): Promise<ProductDetail | null> {
 
 export type { CategoryNode };
 
-// Корневые категории (depth==1) для блока главной. Без API → пусто (блок скрыт).
-export async function getCategoryTree(): Promise<CategoryNode[]> {
+// Дерево категорий для индекса каталога. null — API недоступен («каталог временно
+// недоступен»), [] — разделов нет. Без API_BASE/при фикстурах отдаём разделы, для
+// которых есть фикстура листинга, — чтобы ссылки на локальной сборке не вели в 404.
+export async function getCategoryTreeOrNull(): Promise<CategoryNode[] | null> {
   if (API_BASE && !FORCE_FIXTURES) {
     return await fetchCategoryTreeFromApi(API_BASE);
+  }
+  return Object.entries(FIXTURES).map(([slug, listing], index) => ({
+    id: -(index + 1),
+    name: listing.category.title,
+    slug,
+    sort_order: index,
+    children: [],
+  }));
+}
+
+function findInTree(nodes: CategoryNode[], slug: string): CategoryNode | null {
+  for (const node of nodes) {
+    if (node.slug === slug) return node;
+    const found = findInTree(node.children, slug);
+    if (found) return found;
+  }
+  return null;
+}
+
+export type CategoryLookup =
+  | { status: "found"; name: string }
+  | { status: "missing" }
+  | { status: "unavailable" };
+
+// Существует ли раздел и как он называется на витрине. Берём из дерева категорий:
+// оно дешевле фасетов. «Нет раздела» и «нет связи» различаем принципиально — при
+// недоступном API страница не должна превращаться в 404 для всего каталога.
+export async function getCategoryLookup(slug: string): Promise<CategoryLookup> {
+  const tree = await getCategoryTreeOrNull();
+  if (!tree) return { status: "unavailable" };
+  const found = findInTree(tree, slug);
+  return found ? { status: "found", name: found.name } : { status: "missing" };
+}
+
+// Корневые категории (depth==1) для блока главной. Нет данных → пусто (блок скрыт).
+export async function getCategoryTree(): Promise<CategoryNode[]> {
+  if (API_BASE && !FORCE_FIXTURES) {
+    return (await fetchCategoryTreeFromApi(API_BASE)) ?? [];
   }
   return [];
 }
