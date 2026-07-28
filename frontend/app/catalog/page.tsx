@@ -1,106 +1,45 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
-  Anvil,
-  Archive,
   ArrowRight,
-  BatteryCharging,
   Boxes,
-  CarFront,
-  Drill,
-  Flame,
-  Gauge,
-  Hammer,
-  HardHat,
-  Leaf,
-  Lightbulb,
-  Nut,
   PackageOpen,
-  Ruler,
-  Wrench,
-  type LucideIcon,
 } from "lucide-react";
-import { ConsultBanner } from "@/components/listing/ConsultBanner";
+import { WhyBuyStrip } from "@/components/home/HomeBottom";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SearchBar } from "@/components/layout/SearchBar";
-import type { CategoryNode } from "@/lib/catalog";
+import { getCategoryTreeOrNull, type CategoryNode } from "@/lib/catalog";
+import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
-// Категории берём из API в рантайме (slug'и из БД), без редиректа.
+// Категории берём из API в рантайме (slug'и из БД), без редиректа. Данные — через
+// lib/catalog.ts (единственная точка интеграции), fetch тут не дублируем.
 export const dynamic = "force-dynamic";
 
-async function getCategories(): Promise<CategoryNode[] | null> {
-  const base = process.env.INTERNAL_API_BASE_URL;
-  if (!base) {
-    // Локально/без API оставляем только существующую fixture-категорию:
-    // не рисуем каноническое дерево с неработающими ссылками.
-    return [
-      {
-        id: 0,
-        name: "Перфораторы (демо)",
-        slug: "perforatory",
-        sort_order: 0,
-        children: [],
-      },
-    ];
-  }
-  try {
-    const response = await fetch(`${base.replace(/\/$/, "")}/api/catalog/categories/`, {
-      cache: "no-store",
-      headers: { "X-Forwarded-Proto": "https" },
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (!response.ok) return null;
-    const tree = (await response.json()) as CategoryNode[];
-    return Array.isArray(tree) ? tree : null;
-  } catch {
-    return null;
-  }
-}
-
-type CategoryVisual = {
-  icon: LucideIcon;
-  accent: string;
-  surface: string;
-};
-
-const DEFAULT_VISUAL: CategoryVisual = {
-  icon: Boxes,
-  accent: "text-accent",
-  surface: "bg-accent/[0.07]",
-};
-
-// В API пока нет category.image. Иконка — только оформление реального узла;
-// она определяется по имени, но название, ссылка и подкатегории всегда серверные.
-function categoryVisual(name: string): CategoryVisual {
+// В API пока нет category.image. Фото — только оформление реального узла;
+// оно определяется по имени, но название, ссылка и подкатегории всегда серверные.
+// Для нового неизвестного раздела есть нейтральный fallback, поэтому расширение
+// дерева на backend не требует срочной правки frontend.
+function categoryArtwork(name: string): string | null {
   const value = name.toLocaleLowerCase("ru-RU");
-  const rules: Array<[RegExp, CategoryVisual]> = [
-    [
-      /оснаст|расход/,
-      { icon: PackageOpen, accent: "text-amber-600", surface: "bg-amber-50" },
-    ],
-    [/электроинструмент|перфоратор/, { ...DEFAULT_VISUAL, icon: Drill }],
-    [/ручн/, { icon: Wrench, accent: "text-sky-700", surface: "bg-sky-50" }],
-    [/авто|гараж/, { icon: CarFront, accent: "text-slate-700", surface: "bg-slate-100" }],
-    [/измер/, { icon: Ruler, accent: "text-amber-600", surface: "bg-amber-50" }],
-    [/крепёж|метиз/, { icon: Nut, accent: "text-slate-600", surface: "bg-slate-100" }],
-    [/электрик|освещ/, { icon: Lightbulb, accent: "text-amber-500", surface: "bg-amber-50" }],
-    [/спецодеж|сиз/, { icon: HardHat, accent: "text-orange-600", surface: "bg-orange-50" }],
-    [/садов/, { icon: Leaf, accent: "text-accent", surface: "bg-accent/[0.07]" }],
-    [
-      /силов|пневм|компресс/,
-      { icon: Gauge, accent: "text-sky-700", surface: "bg-sky-50" },
-    ],
-    [/свароч/, { icon: Flame, accent: "text-orange-600", surface: "bg-orange-50" }],
-    [/хранен|организац/, { icon: Archive, accent: "text-slate-700", surface: "bg-slate-100" }],
-    [/строитель|отделоч/, { icon: Hammer, accent: "text-sky-700", surface: "bg-sky-50" }],
-    [
-      /запчаст|аккумулятор|комплектующ/,
-      { icon: BatteryCharging, accent: "text-accent", surface: "bg-accent/[0.07]" },
-    ],
-    [/сварк|кузнеч/, { icon: Anvil, accent: "text-orange-600", surface: "bg-orange-50" }],
+  const rules: Array<[RegExp, string]> = [
+    [/оснаст|расход/, "/catalog/categories/osnastka.webp"],
+    [/электроинструмент|перфоратор/, "/catalog/categories/electroinstrument.webp"],
+    [/ручн/, "/catalog/categories/ruchnoy.webp"],
+    [/авто|гараж/, "/catalog/categories/avto-garage.webp"],
+    [/измер/, "/catalog/categories/izmeritelnyy.webp"],
+    [/крепёж|метиз/, "/catalog/categories/krepezh.webp"],
+    [/электрик|освещ/, "/catalog/categories/electrika.webp"],
+    [/спецодеж|сиз/, "/catalog/categories/siz.webp"],
+    [/садов/, "/catalog/categories/sadovaya.webp"],
+    [/силов|пневм|компресс/, "/catalog/categories/silovaya.webp"],
+    [/свароч/, "/catalog/categories/svarochnaya.webp"],
+    [/хранен|организац/, "/catalog/categories/hranenie.webp"],
+    [/строитель|отделоч/, "/catalog/categories/stroitelnyy.webp"],
+    [/запчаст|аккумулятор|комплектующ/, "/catalog/categories/zapchasti.webp"],
   ];
 
-  return rules.find(([pattern]) => pattern.test(value))?.[1] ?? DEFAULT_VISUAL;
+  return rules.find(([pattern]) => pattern.test(value))?.[1] ?? null;
 }
 
 function CategoryCard({
@@ -110,73 +49,117 @@ function CategoryCard({
   category: CategoryNode;
   featured: boolean;
 }) {
-  const visual = categoryVisual(category.name);
-  const Icon = visual.icon;
+  const artwork = categoryArtwork(category.name);
   const children = category.children.slice(0, 3);
 
   return (
     <Link
       href={`/catalog/${category.slug}`}
       className={cn(
-        "group relative flex min-h-[158px] overflow-hidden rounded-lg border border-line bg-surface p-4 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md sm:min-h-[176px]",
-        featured ? "lg:min-h-[188px] lg:p-5" : "lg:min-h-[132px] lg:p-4",
+        "group relative flex min-h-[132px] overflow-hidden rounded-md border border-line bg-surface p-3 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md",
+        featured ? "lg:min-h-[184px] lg:p-4" : "lg:min-h-[104px] lg:p-3",
       )}
     >
       <div
         className={cn(
-          "absolute -right-5 -top-5 grid h-28 w-28 place-items-center rounded-full transition duration-300 group-hover:scale-105 sm:h-32 sm:w-32",
-          visual.surface,
-          featured ? "lg:-right-4 lg:-top-4 lg:h-36 lg:w-36" : "lg:h-28 lg:w-28",
+          "pointer-events-none absolute inset-x-2 top-1 h-[78px] transition duration-300 group-hover:scale-[1.03]",
+          featured
+            ? "lg:inset-x-3 lg:top-1 lg:h-[124px]"
+            : "lg:bottom-1 lg:left-1 lg:right-auto lg:top-1 lg:h-[96px] lg:w-[112px]",
         )}
         aria-hidden
       >
-        <Icon
-          className={cn(
-            "h-14 w-14 stroke-[1.35] sm:h-16 sm:w-16",
-            visual.accent,
-            featured ? "lg:h-[76px] lg:w-[76px]" : "lg:h-14 lg:w-14",
-          )}
-        />
+        {artwork ? (
+          <Image
+            src={artwork}
+            alt=""
+            fill
+            loading="eager"
+            unoptimized
+            sizes={featured ? "(max-width: 1023px) 40vw, 280px" : "(max-width: 1023px) 40vw, 112px"}
+            className="object-contain"
+          />
+        ) : (
+          <span className="mx-auto grid h-full aspect-square place-items-center rounded-full bg-accent/[0.07] text-accent">
+            <Boxes className="h-10 w-10" strokeWidth={1.4} />
+          </span>
+        )}
       </div>
 
-      <div className="relative z-10 flex min-w-0 max-w-[78%] flex-1 flex-col justify-end sm:max-w-[72%]">
+      <div
+        className={cn(
+          "relative z-10 mt-auto flex min-w-0 flex-1 flex-col justify-end pt-[78px]",
+          featured ? "lg:pt-[124px]" : "lg:ml-[112px] lg:justify-center lg:pt-0",
+        )}
+      >
         <h2
           className={cn(
-            "text-sm font-semibold leading-snug text-ink transition group-hover:text-accent",
-            featured && "lg:text-base",
+            "line-clamp-3 pr-4 text-[11px] font-semibold leading-[1.25] text-ink transition group-hover:text-accent sm:text-sm lg:line-clamp-2",
+            featured ? "lg:text-[14px]" : "lg:text-[12px]",
           )}
         >
           {category.name}
         </h2>
 
         {children.length > 0 && (
-          <p className="mt-2 line-clamp-2 text-[11px] leading-4 text-ink-3">
+          <p className="mt-1 hidden line-clamp-2 text-[10px] leading-[1.35] text-ink-3 lg:block">
             {children.map((child) => child.name).join(", ")}
           </p>
         )}
-
-        <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-accent">
-          Смотреть
-          <ArrowRight
-            className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1"
-            aria-hidden
-          />
-        </span>
       </div>
+
+      <ArrowRight
+        className="absolute bottom-3 right-3 h-4 w-4 text-accent transition-transform group-hover:translate-x-1"
+        aria-hidden
+      />
     </Link>
   );
 }
 
+function CatalogConsultBanner() {
+  return (
+    <section className="mt-3 flex min-h-14 items-center gap-3 rounded-md border border-line bg-surface px-3 py-2 lg:px-4">
+      <Image
+        src="/brands/max-colored.png"
+        alt=""
+        width={32}
+        height={32}
+        className="h-8 w-8 shrink-0 object-contain"
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-[#6156f5]">Консультация в MAX</p>
+        <p className="truncate text-[11px] text-ink-2">
+          Подберём инструмент под вашу задачу и бюджет
+        </p>
+      </div>
+      <span className="hidden text-[11px] text-ink-3 lg:block">
+        Ответим в чате за 2–3 минуты
+      </span>
+      <a
+        href={SITE.support.max.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-event="catalog_max_click"
+        className="inline-flex h-9 shrink-0 items-center justify-center rounded-sm bg-[#6156f5] px-5 text-xs font-semibold text-white transition hover:bg-[#5147dc]"
+      >
+        Написать
+      </a>
+    </section>
+  );
+}
+
+// Суффикс «— Профессионал» дописывает шаблон title из app/layout.tsx.
 export async function generateMetadata() {
-  return { title: "Каталог — Профессионал" };
+  return { title: "Каталог" };
 }
 
 export default async function CatalogIndexPage() {
-  const categories = await getCategories();
+  const categories = await getCategoryTreeOrNull();
 
   return (
-    <main className="min-h-[70vh] bg-canvas pb-20 lg:pb-0">
-      <div className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+    <main className="min-h-[70vh] bg-surface pb-20 lg:pb-0">
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 lg:px-4 lg:py-5">
         <nav
           aria-label="Хлебные крошки"
           className="mb-3 flex items-center gap-2 text-xs text-ink-3"
@@ -188,12 +171,12 @@ export default async function CatalogIndexPage() {
           <span className="text-ink-2">Каталог</span>
         </nav>
 
-        <h1 className="font-display text-3xl font-semibold text-ink lg:text-[34px]">
+        <h1 className="font-display text-[28px] font-semibold text-ink lg:text-[32px]">
           Каталог товаров
         </h1>
 
         <SearchBar
-          className="mt-4 max-w-none [&_form]:h-11 lg:mt-5"
+          className="mt-3 max-w-none [&_input]:h-10 lg:mt-3"
           placeholder="Поиск по каталогу"
         />
 
@@ -221,7 +204,7 @@ export default async function CatalogIndexPage() {
           <>
             <section
               aria-label="Категории товаров"
-              className="mt-4 grid grid-cols-2 gap-3 lg:mt-5 lg:grid-cols-4"
+              className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-2.5"
             >
               {categories.map((category, index) => (
                 <CategoryCard
@@ -232,7 +215,10 @@ export default async function CatalogIndexPage() {
               ))}
             </section>
 
-            <ConsultBanner className="mt-5 bg-surface lg:px-5 lg:py-4" />
+            <CatalogConsultBanner />
+            <div className="mt-3 hidden lg:block">
+              <WhyBuyStrip />
+            </div>
           </>
         )}
       </div>

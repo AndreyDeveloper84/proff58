@@ -1,8 +1,10 @@
-// Скелетон страницы каталога (§11 loading): показывается во время SSR-навигации
-// сегмента. Skeleton для контента (hero/тулбар/сайдбар/карточки), без спиннера.
+// Скелетон страницы каталога (§11 loading): fallback Suspense-границы вокруг
+// листинга. Раньше лежал в loading.tsx, но фоллбэк сегмента начинал стриминг
+// до проверки категории, и notFound() уже не мог выставить 404 — теперь граница
+// стоит внутри страницы, ниже проверки раздела (см. app/catalog/[category]/page.tsx).
 import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
 
-export default function CatalogLoading() {
+export function CatalogSkeleton() {
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6" aria-busy aria-hidden>
       {/* breadcrumbs */}
