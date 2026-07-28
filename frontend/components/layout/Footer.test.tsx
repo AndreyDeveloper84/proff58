@@ -5,7 +5,17 @@ import { Footer } from "./Footer";
 import { SITE } from "@/lib/site";
 
 // #591: светлый подвал — только рабочие маршруты, контакты из SITE, MAX-карточка.
-const EXISTING_PREFIXES = ["/catalog", "/search", "/cart", "/account", "/", "tel:", "mailto:", "http"];
+const EXISTING_PREFIXES = [
+  "/catalog",
+  "/search",
+  "/cart",
+  "/account",
+  "/articles",
+  "/",
+  "tel:",
+  "mailto:",
+  "http",
+];
 
 describe("Footer (#591)", () => {
   it("все ссылки ведут на существующие маршруты или внешние адреса", () => {

@@ -2,7 +2,6 @@ import Image from "next/image";
 import {
   Award,
   BadgeRussianRuble,
-  CalendarDays,
   MessageSquareText,
   RotateCcw,
   ShieldCheck,
@@ -10,8 +9,10 @@ import {
   Wrench,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ARTICLES } from "@/lib/articles";
 import { HOME_CONTENT } from "@/lib/home-content";
 import { SITE } from "@/lib/site";
+import { ArticlesCarousel } from "./ArticlesCarousel";
 
 // #590: нижняя зона главной по макету — «Почему покупают у нас» + статьи +
 // email-подписка (левая колонка) и карточка MAX-помощи (правая колонка).
@@ -45,44 +46,6 @@ export function WhyBuyStrip() {
             </li>
           );
         })}
-      </ul>
-    </div>
-  );
-}
-
-function ArticlesPreview() {
-  const a = HOME_CONTENT.articles;
-  return (
-    <div className="min-w-0" aria-label={a.title}>
-      {/* «Читать все статьи» намеренно отсутствует: раздела статей на сайте нет,
-          битую ссылку не рисуем (появится раздел — добавим ссылку и кликабельность). */}
-      <h2 className="mb-2 font-sans text-sm font-bold text-ink">{a.title}</h2>
-      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        {a.items.map((item) => (
-          <li
-            key={item.title}
-            className="flex min-h-[64px] items-stretch overflow-hidden rounded-sm border border-line bg-surface"
-          >
-            <span className="relative w-[72px] shrink-0 bg-photo">
-              <Image
-                src={item.image}
-                alt=""
-                fill
-                sizes="72px"
-                className="object-cover"
-                style={{ objectPosition: item.imagePosition }}
-                aria-hidden
-              />
-            </span>
-            <span className="min-w-0 p-2">
-              <span className="line-clamp-2 block text-[11px] font-semibold leading-[1.3] text-ink">{item.title}</span>
-              <span className="mt-1 flex items-center gap-1 text-[10px] text-ink-3">
-                <CalendarDays className="h-3 w-3" aria-hidden />
-                {item.date}
-              </span>
-            </span>
-          </li>
-        ))}
       </ul>
     </div>
   );
@@ -164,8 +127,8 @@ export function HomeBottom({ maxHref = SITE.support.max.href }: { maxHref?: stri
         <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="flex min-w-0 flex-col gap-1.5">
             <WhyBuyStrip />
-            <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-[minmax(0,1fr)_435px]">
-              <ArticlesPreview />
+            <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-[minmax(0,1fr)_360px]">
+              <ArticlesCarousel articles={ARTICLES} />
               <SubscribeCard />
             </div>
           </div>

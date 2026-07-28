@@ -111,37 +111,8 @@ export const HOME_CONTENT = {
     { icon: "BadgeRussianRuble", title: "Выгодные цены", text: "честные цены и акции для наших клиентов" },
     { icon: "RotateCcw", title: "Гарантия и возврат", text: "официальная гарантия и простой возврат" },
   ] as ServiceItem[],
-  // #590: превью статей — раздела статей на сайте нет, поэтому карточки-заглушки
-  // БЕЗ ссылок (не делаем битых href); появится раздел — станут ссылками.
-  articles: {
-    title: "Полезные статьи и обзоры",
-    items: [
-      {
-        title: "Как выбрать шуруповёрт для дома и дачи",
-        date: "18 мая 2026",
-        image: "/home/hero/approved-tools-hero.png",
-        imagePosition: "48% 58%",
-      },
-      {
-        title: "Перфоратор или дрель: что выбрать?",
-        date: "12 мая 2026",
-        image: "/home/hero/approved-tools-hero.png",
-        imagePosition: "61% 58%",
-      },
-      {
-        title: "Топ-10 оснастки, которая должна быть у мастера",
-        date: "6 мая 2026",
-        image: "/home/hero/approved-tools-hero.png",
-        imagePosition: "75% 62%",
-      },
-      {
-        title: "Уход за инструментом: простые правила",
-        date: "28 апреля 2026",
-        image: "/home/hero/approved-tools-hero.png",
-        imagePosition: "91% 58%",
-      },
-    ],
-  },
+  // Статьи переехали в lib/articles.ts: раздел /articles появился, карточки стали
+  // настоящими ссылками, а заглушки с одинаковой картинкой больше не нужны.
   // #590: карточка MAX-помощи (правая колонка нижней зоны).
   maxHelp: {
     title: "Нужна помощь в подборе?",
