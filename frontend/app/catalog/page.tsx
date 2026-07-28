@@ -9,57 +9,41 @@ import { WhyBuyStrip } from "@/components/home/HomeBottom";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SearchBar } from "@/components/layout/SearchBar";
 import { getCategoryTreeOrNull, type CategoryNode } from "@/lib/catalog";
+import { categoryPhoto } from "@/lib/category-artwork";
 import { SITE } from "@/lib/site";
+import { cn } from "@/lib/utils";
 
 // Категории берём из API в рантайме (slug'и из БД), без редиректа. Данные — через
 // lib/catalog.ts (единственная точка интеграции), fetch тут не дублируем.
 export const dynamic = "force-dynamic";
 
-// В API пока нет category.image. Иллюстрация — только оформление реального узла;
-// она определяется по имени, но название, ссылка и подкатегории всегда серверные.
-// Для нового неизвестного раздела есть нейтральный fallback, поэтому расширение
-// дерева на backend не требует срочной правки frontend.
-//
-// Чертежи-скелетоны 1200×520 рисовались под этот блок: широкий кадр, объекты
-// по центру, размерные выноски акцентным цветом. Перфораторы стоят выше общего
-// правила «электроинструмент» — у них свой чертёж.
-function categoryArtwork(name: string): string | null {
-  const value = name.toLocaleLowerCase("ru-RU");
-  const rules: Array<[RegExp, string]> = [
-    [/перфоратор/, "/catalog/skeletons/perforatory.png"],
-    [/оснаст|расход/, "/catalog/skeletons/osnastka.png"],
-    [/электроинструмент/, "/catalog/skeletons/electroinstrument.png"],
-    [/ручн/, "/catalog/skeletons/ruchnoy.png"],
-    [/авто|гараж/, "/catalog/skeletons/avto-garage.png"],
-    [/измер/, "/catalog/skeletons/izmeritelnyy.png"],
-    [/крепёж|метиз/, "/catalog/skeletons/krepezh.png"],
-    [/электрик|освещ/, "/catalog/skeletons/electrika.png"],
-    [/спецодеж|сиз/, "/catalog/skeletons/siz.png"],
-    [/садов/, "/catalog/skeletons/sadovaya.png"],
-    [/силов|пневм|компресс/, "/catalog/skeletons/silovaya.png"],
-    [/свароч/, "/catalog/skeletons/svarochnaya.png"],
-    [/хранен|организац/, "/catalog/skeletons/hranenie.png"],
-    [/строитель|отделоч/, "/catalog/skeletons/stroitelnyy.png"],
-    [/запчаст|аккумулятор|комплектующ/, "/catalog/skeletons/zapchasti.png"],
-  ];
-
-  return rules.find(([pattern]) => pattern.test(value))?.[1] ?? null;
-}
-
-// Все карточки одного размера: чертёж в кадре 1200×520 сверху, под ним название
-// и состав раздела. Контраст линий поднят в самих файлах (гамма-коррекция при
-// подготовке ассетов) — рантайм-фильтр на полтора десятка растров стоил бы
-// заметной отрисовки на слабых машинах.
-function CategoryCard({ category }: { category: CategoryNode }) {
-  const artwork = categoryArtwork(category.name);
+function CategoryCard({
+  category,
+  featured,
+}: {
+  category: CategoryNode;
+  featured: boolean;
+}) {
+  const artwork = categoryPhoto(category.name);
   const children = category.children.slice(0, 3);
 
   return (
     <Link
       href={`/catalog/${category.slug}`}
-      className="group flex flex-col overflow-hidden rounded-md border border-line bg-surface transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md"
+      className={cn(
+        "group relative flex min-h-[132px] overflow-hidden rounded-md border border-line bg-surface p-3 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md",
+        featured ? "lg:min-h-[184px] lg:p-4" : "lg:min-h-[104px] lg:p-3",
+      )}
     >
-      <span className="relative block aspect-[1200/520] w-full overflow-hidden bg-raised/40">
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-2 top-1 h-[78px] transition duration-300 group-hover:scale-[1.03]",
+          featured
+            ? "lg:inset-x-3 lg:top-1 lg:h-[124px]"
+            : "lg:bottom-1 lg:left-1 lg:right-auto lg:top-1 lg:h-[96px] lg:w-[112px]",
+        )}
+        aria-hidden
+      >
         {artwork ? (
           <Image
             src={artwork}
@@ -67,34 +51,42 @@ function CategoryCard({ category }: { category: CategoryNode }) {
             fill
             loading="eager"
             unoptimized
-            sizes="(max-width: 639px) 46vw, (max-width: 1023px) 30vw, 330px"
-            className="object-contain p-1.5 transition duration-300 group-hover:scale-[1.04]"
-            aria-hidden
+            sizes={featured ? "(max-width: 1023px) 40vw, 280px" : "(max-width: 1023px) 40vw, 112px"}
+            className="object-contain"
           />
         ) : (
-          <span className="grid h-full place-items-center text-accent" aria-hidden>
-            <Boxes className="h-9 w-9" strokeWidth={1.4} />
+          <span className="mx-auto grid h-full aspect-square place-items-center rounded-full bg-accent/[0.07] text-accent">
+            <Boxes className="h-10 w-10" strokeWidth={1.4} />
           </span>
         )}
-      </span>
+      </div>
 
-      <span className="flex flex-1 flex-col border-t border-line px-3 py-2.5">
-        <span className="flex items-start gap-2">
-          <h2 className="line-clamp-2 min-w-0 flex-1 text-[12px] font-semibold leading-[1.3] text-ink transition group-hover:text-accent lg:text-[13px]">
-            {category.name}
-          </h2>
-          <ArrowRight
-            className="mt-0.5 h-4 w-4 shrink-0 text-accent transition-transform group-hover:translate-x-0.5"
-            aria-hidden
-          />
-        </span>
+      <div
+        className={cn(
+          "relative z-10 mt-auto flex min-w-0 flex-1 flex-col justify-end pt-[78px]",
+          featured ? "lg:pt-[124px]" : "lg:ml-[112px] lg:justify-center lg:pt-0",
+        )}
+      >
+        <h2
+          className={cn(
+            "line-clamp-3 pr-4 text-[11px] font-semibold leading-[1.25] text-ink transition group-hover:text-accent sm:text-sm lg:line-clamp-2",
+            featured ? "lg:text-[14px]" : "lg:text-[12px]",
+          )}
+        >
+          {category.name}
+        </h2>
 
         {children.length > 0 && (
-          <span className="mt-1 line-clamp-2 text-[10px] leading-[1.35] text-ink-3">
+          <p className="mt-1 hidden line-clamp-2 text-[10px] leading-[1.35] text-ink-3 lg:block">
             {children.map((child) => child.name).join(", ")}
-          </span>
+          </p>
         )}
-      </span>
+      </div>
+
+      <ArrowRight
+        className="absolute bottom-3 right-3 h-4 w-4 text-accent transition-transform group-hover:translate-x-1"
+        aria-hidden
+      />
     </Link>
   );
 }
@@ -185,14 +177,16 @@ export default async function CatalogIndexPage() {
           </section>
         ) : (
           <>
-            {/* На узком экране — одна колонка: в кадре шириной в пол-экрана чертёж
-                нечитаем, а названия рвутся посреди слова. */}
             <section
               aria-label="Категории товаров"
-              className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-2.5"
+              className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-2.5"
             >
-              {categories.map((category) => (
-                <CategoryCard key={category.id} category={category} />
+              {categories.map((category, index) => (
+                <CategoryCard
+                  key={category.id}
+                  category={category}
+                  featured={index < 4}
+                />
               ))}
             </section>
 

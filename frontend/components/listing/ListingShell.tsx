@@ -224,6 +224,12 @@ export function ListingShell({
           total={listing.total}
           variant="inline"
           className="w-full min-w-0 lg:col-start-2 lg:row-start-1"
+          // Хлебные крошки идут от корня, поэтому ближайший родитель — предпоследний;
+          // «Главная» и «Каталог» в подборе чертежа просто ни с чем не совпадут.
+          parentTitles={listing.category.breadcrumb
+            .slice(0, -1)
+            .map((crumb) => crumb.label)
+            .reverse()}
         />
       </div>
 
