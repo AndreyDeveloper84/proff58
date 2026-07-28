@@ -28,3 +28,7 @@ addopts = "--reuse-db"
 # форсит DEBUG=False). Нужно sourcing-капабилити: DummySource включается только при DEBUG.
 # Намеренный командный выбор: DEBUG=True в тестах.
 django_debug_mode = "keep"
+# parser/ — отдельный инструмент вне Django со своими зависимостями (pydantic,
+# playwright) и собственным parser/pytest.ini. В корневой прогон не входит:
+# его тесты гоняются из каталога parser/.
+norecursedirs = ["parser", "node_modules", "frontend"]
