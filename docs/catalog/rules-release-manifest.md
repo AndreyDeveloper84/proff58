@@ -70,7 +70,9 @@ python manage.py catalog_rules_release_manifest --check
 ```
 
 С H4 замороженный 7D sample несёт **canonical** `taxonomy_hash`
-(`524d4e31…`; TT-01 2026-07-28 перевыпустил binding с `fc13be78…` при
+(`887eea5d…`; TT-07 2026-07-28 перевыпустил binding с `524d4e31…` при
+добавлении пакета из 5 типов — `bp-leska`, `gaikoverty`, `gaikoverty-ruchnye`,
+`svar-katody`, `zap-boyki`; до этого TT-01 перевыпускал с `fc13be78…` при
 добавлении `izm-areometry`), поэтому `--allow-legacy-taxonomy-hash` в штатном
 контуре не
 нужен: `legacy_taxonomy_hash_allowed` в манифесте = `null`,
