@@ -51,9 +51,18 @@ describe("Header (#586)", () => {
     }
   });
 
-  it("не добавляет отсутствующий в утверждённом макете переключатель темы", () => {
+  // Переключатель темы вернули по запросу: место — между поиском и телефоном.
+  it("переключатель темы стоит между поиском и телефоном", () => {
     render(<Header />);
-    expect(screen.queryByRole("button", { name: /тёмную тему/i })).toBeNull();
+    const toggle = screen.getAllByRole("button", { name: /тёмную тему/i })[0];
+    expect(toggle).toBeInTheDocument();
+
+    const row = toggle.parentElement!;
+    const nodes = Array.from(row.children);
+    const search = row.querySelector('[data-testid="searchbar"]')!.closest("div")!;
+    const phone = row.querySelector(`a[href="${SITE.phone.href}"]`)!;
+    expect(nodes.indexOf(search)).toBeLessThan(nodes.indexOf(toggle));
+    expect(nodes.indexOf(toggle)).toBeLessThan(nodes.indexOf(phone));
   });
 
   it("телефон и график из макета отображаются", () => {

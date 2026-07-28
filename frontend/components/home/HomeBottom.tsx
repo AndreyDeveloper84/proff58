@@ -91,7 +91,7 @@ function MaxHelpCard({ maxHref }: { maxHref: string }) {
   const m = HOME_CONTENT.maxHelp;
   return (
     <div
-      className="flex h-full min-h-[150px] flex-col justify-between rounded-sm border border-line bg-[linear-gradient(135deg,#fff_0%,#f7f6ff_100%)] p-3.5"
+      className="flex h-full min-h-[150px] flex-col justify-between rounded-sm border border-line bg-[linear-gradient(135deg,var(--surface)_0%,var(--max-tint)_100%)] p-3.5"
       aria-label={m.title}
     >
       <div className="relative pr-14">

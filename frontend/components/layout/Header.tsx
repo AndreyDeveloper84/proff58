@@ -25,6 +25,7 @@ import {
 import { useCart } from "@/components/cart/CartProvider";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
 import { SearchBar } from "./SearchBar";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface HeaderProps {
   logoUrl?: string;
@@ -182,6 +183,8 @@ export function Header({
           />
         </div>
 
+        <ThemeToggle className="hidden lg:grid" />
+
         <a
           href={storefront.phone.href}
           className="hidden shrink-0 flex-col text-header-ink transition hover:text-accent xl:flex"
@@ -287,10 +290,13 @@ export function Header({
             {/* #592: инфо-пункты (сервис/доставка/гарантии/контакты) в мобильном
                 меню не показываем, пока нет страниц — некликабельные строки в
                 меню бесполезны, битые ссылки запрещены DoD эпика. */}
-            <div className="flex items-center py-2.5">
+            {/* Телефон и переключатель темы — в одной строке: на мобильном в
+                верхнем ряду места под ещё одну иконку нет. */}
+            <div className="flex items-center justify-between py-2.5">
               <a href={storefront.phone.href} className="text-sm font-semibold text-header-ink">
                 {storefront.phone.display}
               </a>
+              <ThemeToggle />
             </div>
           </nav>
         </div>

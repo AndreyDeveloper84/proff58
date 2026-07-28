@@ -210,7 +210,7 @@ export default async function ArticlePage({ params }: Props) {
           </article>
 
           <aside className="min-w-0 space-y-2.5 lg:sticky lg:top-4 lg:self-start">
-            <div className="rounded-md border border-line bg-[linear-gradient(135deg,#fff_0%,#f7f6ff_100%)] p-3.5">
+            <div className="rounded-md border border-line bg-[linear-gradient(135deg,var(--surface)_0%,var(--max-tint)_100%)] p-3.5">
               <div className="relative pr-12">
                 <Image
                   src="/brands/max-colored.png"
