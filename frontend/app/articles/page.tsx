@@ -34,17 +34,18 @@ export default function ArticlesIndexPage() {
         <section aria-label="Все статьи" className="mt-5 grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <Link
             href={`/articles/${lead.slug}`}
-            className="group flex flex-col overflow-hidden rounded-md border border-line bg-surface transition hover:border-accent/60 hover:shadow-md"
+            className="group flex flex-col overflow-hidden rounded-md border border-line bg-surface transition hover:border-accent/60 hover:shadow-md lg:self-start"
           >
-            <span className="relative block h-[200px] w-full bg-photo sm:h-[260px]">
+            {/* Предметное фото — contain на светлом фоне: кадрирование крупной
+                обложки оставило бы от инструмента непонятный фрагмент. */}
+            <span className="relative block h-[200px] w-full bg-photo sm:h-[240px]">
               <Image
                 src={lead.image}
                 alt=""
                 fill
                 priority
                 sizes="(max-width: 1023px) 100vw, 700px"
-                className="object-cover transition duration-300 group-hover:scale-[1.02]"
-                style={{ objectPosition: lead.imagePosition ?? "50% 50%" }}
+                className="object-contain p-4 transition duration-300 group-hover:scale-[1.02]"
                 aria-hidden
               />
             </span>
@@ -88,8 +89,7 @@ export default function ArticlesIndexPage() {
                       alt=""
                       fill
                       sizes="(max-width: 639px) 100vw, 340px"
-                      className="object-cover transition duration-300 group-hover:scale-[1.03]"
-                      style={{ objectPosition: article.imagePosition ?? "50% 50%" }}
+                      className="object-contain p-2 transition duration-300 group-hover:scale-[1.03]"
                       aria-hidden
                     />
                   </span>

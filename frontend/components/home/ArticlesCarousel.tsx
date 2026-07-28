@@ -117,13 +117,14 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
                 <span className="mt-0.5 line-clamp-2 block text-[11px] font-semibold leading-[1.3] text-ink transition group-hover:text-accent">
                   {article.title}
                 </span>
-                <span className="mt-auto flex items-center gap-2 pt-1 text-[10px] text-ink-3">
-                  <span className="inline-flex items-center gap-1">
-                    <CalendarDays className="h-3 w-3" aria-hidden />
+                {/* nowrap: в узкой карточке дата иначе ломается на «20 июля» / «2026». */}
+                <span className="mt-auto flex flex-wrap items-center gap-x-2 pt-1 text-[10px] text-ink-3">
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                    <CalendarDays className="h-3 w-3 shrink-0" aria-hidden />
                     {article.dateLabel}
                   </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="h-3 w-3" aria-hidden />
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                    <Clock className="h-3 w-3 shrink-0" aria-hidden />
                     {article.readingMinutes} мин
                   </span>
                 </span>

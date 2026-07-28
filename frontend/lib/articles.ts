@@ -178,8 +178,7 @@ export const ARTICLES: Article[] = [
     dateLabel: "8 июля 2026",
     readingMinutes: 5,
     tag: "Шуруповёрты",
-    image: "/catalog/categories/electroinstrument.webp",
-    imagePosition: "50% 45%",
+    image: "/catalog/categories/ruchnoy.webp",
     catalog: { slug: "elektroinstrument", label: "Дрели и шуруповёрты" },
     summary: [
       "До 20 Н·м хватает для мебели и лёгкого крепежа, 30–40 Н·м — универсальный бытовой уровень.",
@@ -244,7 +243,7 @@ export const ARTICLES: Article[] = [
     dateLabel: "2 июля 2026",
     readingMinutes: 6,
     tag: "Оснастка",
-    image: "/catalog/categories/osnastka.webp",
+    image: "/catalog/categories/stroitelnyy.webp",
     catalog: { slug: "osnastka", label: "Круги и оснастка для УШМ" },
     summary: [
       "Первая буква — абразив: A под сталь, C под камень и бетон.",
@@ -366,7 +365,6 @@ export const ARTICLES: Article[] = [
     readingMinutes: 4,
     tag: "Оснастка",
     image: "/catalog/categories/osnastka.webp",
-    imagePosition: "55% 50%",
     catalog: { slug: "osnastka", label: "Буры и коронки" },
     summary: [
       "Бур проворачивается в патроне — скруглились грани пазов, менять сразу.",

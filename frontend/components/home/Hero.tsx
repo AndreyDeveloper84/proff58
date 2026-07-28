@@ -69,22 +69,23 @@ export function Hero({ onConsult, maxHref = SITE.support.max.href }: HeroProps) 
                 })}
               </ul>
 
-              {/* Кнопки и MAX-пилюля — один блок: на десктопе он сжат по содержимому
-                  (w-fit), поэтому пилюля ровно повторяет ширину пары кнопок вместе
-                  с зазором; на мобильной кнопки идут столбиком во всю ширину колонки
-                  и пилюля выравнивается по ним же. */}
+              {/* Кнопки и MAX-пилюля — один блок одной ширины. На десктопе ширину
+                  блока задаёт самый широкий элемент (пилюля с подсказкой), а кнопки
+                  делят её поровну через flex-1 — иначе пилюля торчала бы правее
+                  кнопок. На мобильной блок занимает всю ширину колонки: кнопки идут
+                  столбиком, пилюля выравнивается по ним. */}
               <div className="mt-4 sm:w-fit">
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <button
                     type="button"
                     onClick={onConsult}
-                    className="inline-flex h-10 items-center justify-center rounded-sm bg-accent px-7 text-[13px] font-semibold text-accent-ink transition hover:brightness-110"
+                    className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-sm bg-accent px-7 text-[13px] font-semibold text-accent-ink transition hover:brightness-110 sm:flex-1"
                   >
                     {h.primaryCta.label}
                   </button>
                   <Link
                     href={h.secondaryCta.href}
-                    className="inline-flex h-10 items-center justify-center rounded-sm border border-white/80 bg-white px-8 text-[13px] font-semibold text-[#202326] transition hover:bg-white/90"
+                    className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-sm border border-white/80 bg-white px-8 text-[13px] font-semibold text-[#202326] transition hover:bg-white/90 sm:flex-1"
                   >
                     {h.secondaryCta.label}
                   </Link>

@@ -121,15 +121,16 @@ export default async function ArticlePage({ params }: Props) {
               </span>
             </p>
 
-            <span className="relative mt-3 block h-[190px] w-full overflow-hidden rounded-md bg-photo sm:h-[280px]">
+            {/* Обложки — предметные фото категорий на светлом фоне: object-contain,
+                иначе кадрирование превращает их в бессмысленный фрагмент корпуса. */}
+            <span className="relative mt-3 block h-[190px] w-full overflow-hidden rounded-md bg-photo sm:h-[240px]">
               <Image
                 src={article.image}
                 alt=""
                 fill
                 priority
                 sizes="(max-width: 1023px) 100vw, 1000px"
-                className="object-cover"
-                style={{ objectPosition: article.imagePosition ?? "50% 50%" }}
+                className="object-contain p-4"
                 aria-hidden
               />
             </span>
