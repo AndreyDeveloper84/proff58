@@ -114,9 +114,7 @@ def collect_product_urls(
 # --- внутреннее ------------------------------------------------------------
 
 
-def _collect_sitemap(
-    client: PoliteClient, source: str, mask: str, limit: int
-) -> list[str]:
+def _collect_sitemap(client: PoliteClient, source: str, mask: str, limit: int) -> list[str]:
     """URL из sitemap источника; у Интерскола — дедуп по product-slug."""
     xml_text = client.get_text(SITEMAP_URLS[source])
     urls = parse_sitemap(xml_text, mask)

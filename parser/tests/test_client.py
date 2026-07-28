@@ -233,7 +233,15 @@ def test_log_line_fields(tmp_path, clock):
     client.get_text("http://example.com/a")
     entries = read_log(tmp_path)
     assert entries, "журнал доступа пуст"
-    required = {"ts", "url", "final_url", "status", "bytes",
-                "elapsed_s", "throttle_wait_s", "cache_hit"}
+    required = {
+        "ts",
+        "url",
+        "final_url",
+        "status",
+        "bytes",
+        "elapsed_s",
+        "throttle_wait_s",
+        "cache_hit",
+    }
     for entry in entries:
         assert required <= set(entry), f"в строке журнала нет полей: {entry}"

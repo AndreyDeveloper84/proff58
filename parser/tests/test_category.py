@@ -22,9 +22,7 @@ from parser.category import (
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
-ZUBR_CATEGORY_URL = (
-    "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/"
-)
+ZUBR_CATEGORY_URL = "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/"
 # из fixture-листинга ЗУБРа (div.js-add-product, «Показать еще товар»)
 ZUBR_PAGE2_URL = (
     "https://zubr.ru/ajax/classifier_filter.php"
@@ -85,9 +83,12 @@ def test_parse_sitemap_mask_without_matches():
 
 
 def test_interskol_url_key_product_path():
-    assert interskol_url_key(
-        "https://www.interskol.ru/product/perforator-sds-plus-interskol-p-24-700er-interskol"
-    ) == "perforator-sds-plus-interskol-p-24-700er-interskol"
+    assert (
+        interskol_url_key(
+            "https://www.interskol.ru/product/perforator-sds-plus-interskol-p-24-700er-interskol"
+        )
+        == "perforator-sds-plus-interskol-p-24-700er-interskol"
+    )
 
 
 def test_interskol_url_key_catalog_path_same_product():
@@ -193,8 +194,7 @@ def test_collect_sitemap_sources_single_request(source, domain, filename):
 
 @pytest.mark.parametrize("source", ["resanta", "vihr", "interskol"])
 def test_collect_sitemap_limit_trims(source):
-    domain = {"resanta": "resanta.ru", "vihr": "vihr.su",
-              "interskol": "www.interskol.ru"}[source]
+    domain = {"resanta": "resanta.ru", "vihr": "vihr.su", "interskol": "www.interskol.ru"}[source]
     filename = "sitemap.xml" if source == "interskol" else "sitemap-shop.xml"
     xml_text = load_fixture(domain, filename)
     client = StubClient({SITEMAP_URLS[source]: xml_text})

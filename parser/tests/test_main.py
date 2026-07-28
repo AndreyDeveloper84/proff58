@@ -241,9 +241,7 @@ def test_source_all_writes_per_source_files_and_summary(tmp_path, capsys):
     stub = StubClient(pages)
     out_dir = tmp_path / "output"
     # дефолтные --category-url всех источников (пилот «перфораторы»)
-    exit_code = run_with_stub(
-        stub, ["--source", "all", "--limit", "5", "--output", str(out_dir)]
-    )
+    exit_code = run_with_stub(stub, ["--source", "all", "--limit", "5", "--output", str(out_dir)])
     assert exit_code == 0
     for source in ("resanta", "vihr", "interskol", "zubr"):
         products_path = out_dir / f"{source}.products.json"

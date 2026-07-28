@@ -56,10 +56,7 @@ DEFAULT_CATEGORY_URLS = {
     "vihr": "perforator-",
     # суженная маска: широкая «perforator» захватывает /news/… и /catalog/…
     "interskol": "product/perforator",
-    "zubr": (
-        "https://zubr.ru/mekhanizirovannye-instrumenty/"
-        "elektroinstrumenty/perforatory/"
-    ),
+    "zubr": ("https://zubr.ru/mekhanizirovannye-instrumenty/" "elektroinstrumenty/perforatory/"),
 }
 
 DEFAULT_CATEGORY_NAME = "Перфораторы"
@@ -197,9 +194,7 @@ def _default_client_factory(
             headless=headless,
             run_limit=run_limit,
         )
-    return PoliteClient(
-        cache_dir=cache_dir, fetch_log_path=fetch_log_path, throttle_s=throttle_s
-    )
+    return PoliteClient(cache_dir=cache_dir, fetch_log_path=fetch_log_path, throttle_s=throttle_s)
 
 
 def _run_bootstrap(profile_dir: Path) -> int:
@@ -230,9 +225,7 @@ def category_page_url(source: str, category_url: str) -> str:
     return SITEMAP_URLS[source]
 
 
-def run_source(
-    *, source: str, category_url: str, limit: int, client
-) -> SourceResult:
+def run_source(*, source: str, category_url: str, limit: int, client) -> SourceResult:
     """Конвейер одного источника: сбор URL → скачивание → извлечение.
 
     Карточка, упавшая с ProductParseError/прочей ошибкой, отклоняется
@@ -271,15 +264,11 @@ def run_source(
             result.limit_reached = True
             break
         except AccessDeniedError as exc:
-            result.errors.append(
-                ErrorRecord(source_url=url, stage="product", error=str(exc))
-            )
+            result.errors.append(ErrorRecord(source_url=url, stage="product", error=str(exc)))
             result.denied = True
             break  # 401/403/429/robots — остановиться и доложить
         except ProductParseError as exc:
-            result.errors.append(
-                ErrorRecord(source_url=url, stage="product", error=str(exc))
-            )
+            result.errors.append(ErrorRecord(source_url=url, stage="product", error=str(exc)))
         except Exception as exc:
             # сетевые и прочие ошибки карточки — отклоняем, прогон продолжается
             result.errors.append(
@@ -307,9 +296,7 @@ def _resolve_outputs(args: argparse.Namespace, source: str) -> tuple[Path, Path]
         out_dir = Path(args.output) if args.output else DEFAULT_OUTPUT_DIR
         return out_dir / f"{source}.products.json", out_dir / f"{source}.errors.json"
     products_path = (
-        Path(args.output)
-        if args.output
-        else DEFAULT_OUTPUT_DIR / f"{source}.products.json"
+        Path(args.output) if args.output else DEFAULT_OUTPUT_DIR / f"{source}.products.json"
     )
     if args.errors_output:
         errors_path = Path(args.errors_output)
@@ -359,9 +346,7 @@ def _print_source_stats(result: SourceResult) -> None:
 
 
 def _print_total_stats(results: list[SourceResult]) -> None:
-    rejected = sum(
-        1 for result in results for record in result.errors if record.stage == "product"
-    )
+    rejected = sum(1 for result in results for record in result.errors if record.stage == "product")
     category_errors = sum(
         1 for result in results for record in result.errors if record.stage == "category"
     )
@@ -399,9 +384,7 @@ def main(argv: list[str] | None = None, *, client_factory=None) -> int:
     if args.mode == "browser":
         limit = args.limit if args.limit is not None else BROWSER_DEFAULT_LIMIT
         if limit > BROWSER_MAX_LIMIT:
-            parser.error(
-                f"в режиме browser лимит не больше {BROWSER_MAX_LIMIT}: {limit}"
-            )
+            parser.error(f"в режиме browser лимит не больше {BROWSER_MAX_LIMIT}: {limit}")
     else:
         limit = args.limit if args.limit is not None else DEFAULT_LIMIT
 

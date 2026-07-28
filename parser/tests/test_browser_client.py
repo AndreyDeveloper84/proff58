@@ -22,9 +22,7 @@ from parser.browser_client import (
 from parser.client import AccessDeniedError
 
 PAGE_HTML = "<html><body><h1>Карточка товара</h1></body></html>"
-CHALLENGE_HTML = (
-    "<html><body>Подтвердите, что вы не робот</body></html>"
-)
+CHALLENGE_HTML = "<html><body>Подтвердите, что вы не робот</body></html>"
 
 
 class FakeRoute:
@@ -260,8 +258,16 @@ def test_log_line_fields_with_mode(tmp_path, monkeypatch):
     client.get_text("http://example.com/card/1")
     entries = read_log(tmp_path)
     assert entries, "журнал доступа пуст"
-    required = {"ts", "url", "final_url", "status", "bytes",
-                "elapsed_s", "throttle_wait_s", "cache_hit"}
+    required = {
+        "ts",
+        "url",
+        "final_url",
+        "status",
+        "bytes",
+        "elapsed_s",
+        "throttle_wait_s",
+        "cache_hit",
+    }
     for entry in entries:
         assert required <= set(entry), f"в строке журнала нет полей: {entry}"
         assert entry["mode"] == "browser"
@@ -372,9 +378,7 @@ def test_robots_not_fetched_after_limit_exhausted(tmp_path, monkeypatch):
 def test_robots_disallow_blocks_before_goto(tmp_path, monkeypatch):
     monkeypatch.setattr("parser.browser_client.time.sleep", lambda _s: None)
     context = FakeContext(results=[(200, PAGE_HTML)])
-    client, _ = make_client(
-        tmp_path, context, robots_text="User-agent: *\nDisallow: /private/\n"
-    )
+    client, _ = make_client(tmp_path, context, robots_text="User-agent: *\nDisallow: /private/\n")
     with pytest.raises(AccessDeniedError):
         client.get_text("http://example.com/private/secret")
     assert context.goto_count() == 0  # до goto дело не дошло
