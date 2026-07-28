@@ -7,21 +7,16 @@ import { cn } from "@/lib/utils";
 import type { Listing, ListingQuery, RangeFilterValue, SortOption } from "@/lib/types";
 import { serializeQuery } from "@/lib/url-state";
 import { humanizeToken, rangeChipLabel } from "@/lib/format";
-import { sidebarFacets } from "@/lib/listing";
+import { categoryNav, sidebarFacets } from "@/lib/listing";
 import { track } from "@/lib/analytics";
 import { PER_PAGE_OPTIONS, SORT_OPTIONS } from "@/lib/constants";
 import { ProductCard } from "@/components/product/ProductCard";
 import { FacetSidebar } from "@/components/filters/FacetSidebar";
-import { TypePanel } from "@/components/listing/TypePanel";
+import { CategoryNavPanel, CategoryNavStrip } from "@/components/listing/CategoryNav";
 import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
 import { CategoryHero } from "@/components/listing/CategoryHero";
 import { ConsultBanner } from "@/components/listing/ConsultBanner";
 import { MobileFilterDrawer } from "@/components/listing/MobileFilterDrawer";
-
-// Каноническая таксономия v2: верхний «Электроинструмент» навигируется второй осью
-// tool_type. Остальные разделы с реальными дочерними узлами используют дерево каталога
-// и не должны одновременно показывать дублирующий TypePanel.
-const TYPE_PANEL_ROOT_CATEGORIES = new Set(["elektroinstrument"]);
 
 // Презентационный shell: данные уже разрешены на сервере (getListing(query)).
 // Никакой клиентской фильтрации — изменение фильтра меняет URL (router.replace),
@@ -84,14 +79,12 @@ export function ListingShell({
   // reset all сбрасывает И тип, И все фильтры (§3.5), но НЕ трогает sort/view/per_page.
   const resetAll = () => push({ ...query, toolType: undefined, filters: {}, page: 1 });
 
-  // --- Навигация по типу (tool_type) ---
+  // --- Навигация раздела: подкатегории-ссылки либо типы инструмента (§3.1) ---
   const navFacet = listing.facets.find((f) => f.isNav);
-  const showSubcategoryNavigation =
-    listing.subcategories.length > 0 && !TYPE_PANEL_ROOT_CATEGORIES.has(query.category);
-  const visibleNavFacet = showSubcategoryNavigation ? undefined : navFacet;
+  const nav = categoryNav(listing, query.category, query.toolType);
   const activeFiltersCount = Object.keys(query.filters).length;
   // Подпись активного типа: из nav-фасета, иначе (тип «вымылся» прочими фильтрами, §14)
-  // humanizeToken(slug) — тот же фолбэк, что и в синтетической плитке TypePanel (N3).
+  // humanizeToken(slug) — тот же фолбэк, что и в синтетическом пункте categoryNav (N3).
   const activeToolTypeLabel = query.toolType
     ? (navFacet?.options?.find((o) => o.value === query.toolType)?.label ??
       humanizeToken(query.toolType))
@@ -235,7 +228,12 @@ export function ListingShell({
 
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
         <aside className="hidden lg:block">
-          <div className="sticky top-4">{sidebar}</div>
+          {/* Навигация раздела — отдельной карточкой НАД фильтрами: подкатегория
+              уводит на другую страницу, и путать её с фильтром не стоит. */}
+          <div className="sticky top-4 flex flex-col gap-4">
+            {nav && <CategoryNavPanel nav={nav} onSelect={onSelectType} />}
+            {sidebar}
+          </div>
         </aside>
 
         <div className="min-w-0">
@@ -251,24 +249,9 @@ export function ListingShell({
             </a>
           )}
 
-          {showSubcategoryNavigation && (
-            <nav aria-label="Подкатегории" className="mb-4">
-              <div className="flex flex-wrap gap-2">
-                {listing.subcategories.map((s) => (
-                  <a
-                    key={s.label}
-                    href={s.href}
-                    className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink-2 transition hover:border-accent hover:text-accent"
-                  >
-                    {s.label}
-                  </a>
-                ))}
-              </div>
-            </nav>
-          )}
-
-          {/* TypePanel — навигация по типу над выдачей (§3.1). Скрыта, если nav-фасета нет. */}
-          <TypePanel facet={visibleNavFacet} active={query.toolType} onSelect={onSelectType} />
+          {/* Мобильная навигация раздела: одна строка со свайпом (на lg+ то же самое
+              живёт вертикальным блоком в левой колонке). */}
+          {nav && <CategoryNavStrip nav={nav} onSelect={onSelectType} />}
 
           {/* Панель фильтров (§9.1): триггер сайдбара + сброс + активные чипы (зелёные). */}
           <div className="mb-4 flex flex-wrap items-center gap-3">

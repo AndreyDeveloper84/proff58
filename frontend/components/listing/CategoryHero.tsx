@@ -49,7 +49,9 @@ export function CategoryHero({
     <section
       className={cn(
         "relative overflow-hidden",
-        inline ? "min-h-[132px] lg:min-h-[156px]" : "mb-6 rounded-xl border border-line bg-surface",
+        // Высоту резервируем только там, где виден чертёж (lg+): на мобильном она
+        // обернулась бы пустой полосой между заголовком и разделами.
+        inline ? "lg:min-h-[156px]" : "mb-6 rounded-xl border border-line bg-surface",
         className,
       )}
     >

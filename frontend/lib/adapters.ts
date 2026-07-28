@@ -113,7 +113,7 @@ type ApiFacet = {
   name: string;
   type: string; // text|integer|decimal|boolean|select|multiselect
   unit?: string;
-  // Навигационный фасет (tool_type): рендерится TypePanel, выбор → верхнеуровневый ?tool_type=.
+  // Навигационный фасет (tool_type): рендерится блоком навигации, выбор → верхнеуровневый ?tool_type=.
   is_nav?: boolean;
   // Раздел сайдбара (§22.4, D1): "main"|"extra". Любая иная/пустая строка → main (дефолт).
   group?: string;
@@ -252,11 +252,11 @@ function brandFacet(brands?: ApiBrand[]): Facet | null {
 
 export function apiFacetToFacet(af: ApiFacet): Facet {
   // Классификация nav vs обычный фасет. tool_type (is_nav) — НАВИГАЦИЯ: код = bare slug
-  // (tool_type), выбор идёт верхнеуровневым ?tool_type=, рендер — TypePanel. Остальные EAV
+  // (tool_type), выбор идёт верхнеуровневым ?tool_type=, рендер — блок навигации. Остальные EAV
   // хранятся С префиксом attr_ — это имя query-параметра сайдбар-фильтра (attr_<slug>).
   const isNav = af.is_nav === true;
   const code = isNav ? af.slug : `attr_${af.slug}`;
-  // Гейтинг-класс (§3.3/§6): nav → TypePanel; базовый код (напр. attr_power_source) → base;
+  // Гейтинг-класс (§3.3/§6): nav → блок навигации; базовый код (напр. attr_power_source) → base;
   // прочие attr_* → tech (скрыты до выбора tool_type). По коду, не по названию.
   const kind: Facet["kind"] = isNav ? "nav" : BASE_CODES.has(code) ? "base" : "tech";
   // Группа сайдбара (§22.4, D2): доверяем только whitelisted "extra"; всё прочее (включая
