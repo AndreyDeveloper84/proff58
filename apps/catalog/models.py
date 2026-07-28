@@ -216,6 +216,16 @@ class CategoryAttribute(models.Model):
         default=False,
         help_text=_("На основе значений строятся посадочные страницы (вторая ось навигации)."),
     )
+    display_name = models.CharField(
+        _("Подпись в фильтре"),
+        max_length=255,
+        blank=True,
+        help_text=_(
+            "Переопределение названия характеристики для этой категории "
+            "(глобальный Attribute может делиться между разными категориями). "
+            "Пусто — используется название характеристики. Ключ фильтра (slug) не меняется."
+        ),
+    )
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
 
     class Meta:
