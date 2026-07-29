@@ -66,6 +66,8 @@ export function ProductCard({
 }) {
   const [fav, setFav] = useState(false);
   const href = `/product/${product.slug}`;
+  // Короткая форма из 1С; пока товар не прошёл нормализацию — витринное имя.
+  const title = product.cardName || product.name;
   const dimmed = product.stock === "out";
   const buyable = product.price.final != null && product.stock !== "out";
 
@@ -88,13 +90,13 @@ export function ProductCard({
   );
 
   const media = (
-    <a href={href} aria-label={product.name} className="relative block">
+    <a href={href} aria-label={title} className="relative block">
       {product.price.discountPct != null && (
         <span className="absolute left-2 top-2 z-10 rounded-md bg-danger px-1.5 py-0.5 text-[11px] font-bold text-white">
           −{product.price.discountPct}%
         </span>
       )}
-      <ProductImage src={product.image} alt={product.name} />
+      <ProductImage src={product.image} alt={title} />
     </a>
   );
 
@@ -151,10 +153,10 @@ export function ProductCard({
         )}
 
         <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 pt-1.5">
-          <a href={href} aria-label={product.name} className="block">
+          <a href={href} aria-label={title} className="block">
             <ProductImage
               src={product.image}
-              alt={product.name}
+              alt={title}
               sizes="220px"
               className="h-[88px] w-full aspect-auto rounded-none bg-surface"
             />
@@ -164,7 +166,7 @@ export function ProductCard({
             className="line-clamp-2 min-h-[29px] text-[11px] font-semibold leading-[1.25] text-ink hover:text-accent"
           >
             {product.brand ? `${product.brand} ` : ""}
-            {product.name}
+            {title}
           </a>
           <div className="mt-0.5 line-clamp-1 text-[10px] leading-tight text-ink-2">
             {product.specs?.slice(0, 3).map((s) => s.value).join(" · ")}
@@ -217,7 +219,7 @@ export function ProductCard({
           </div>
           <p className="text-xs text-ink-3">{product.brand}</p>
           <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
-            {product.name}
+            {title}
           </a>
           <div className="mt-1">
             <ProductSpecs specs={product.specs} />
@@ -247,7 +249,7 @@ export function ProductCard({
       <div className="mb-3">{media}</div>
       <p className="text-xs text-ink-3">{product.brand}</p>
       <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
-        {product.name}
+        {title}
       </a>
       <div className="mt-1">
         <ProductSpecs specs={product.specs} />
