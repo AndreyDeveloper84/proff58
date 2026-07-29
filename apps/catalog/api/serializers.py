@@ -68,12 +68,14 @@ class ProductListSerializer(serializers.ModelSerializer):
     attributes = serializers.SerializerMethodField()
     stock_qty = serializers.SerializerMethodField()
     is_hit = serializers.SerializerMethodField()
+    card_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = (
             "id",
             "name",
+            "card_name",
             "slug",
             "brand",
             "category",
@@ -88,6 +90,15 @@ class ProductListSerializer(serializers.ModelSerializer):
             "attributes",
             "is_hit",
         )
+
+    def get_card_name(self, obj) -> str:
+        """Название для плитки каталога — короткое, с сокращениями как в 1С.
+
+        Полное название («Круг алмазный отрезной 115х1,0…») в плитку не влезает:
+        там две строки мелким шрифтом. Пусто — товар ещё не проходил
+        normalize_product_names, показываем витринное имя как есть.
+        """
+        return obj.card_name or obj.name
 
     def get_is_hit(self, obj) -> bool:
         """Бейдж «Хит» — только по факту продаж (apps.catalog.sales).

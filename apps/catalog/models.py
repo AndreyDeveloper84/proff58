@@ -511,6 +511,15 @@ class Product(TimeStampedModel):
     )
     brand = models.CharField(_("Бренд"), max_length=100, blank=True, db_index=True)
     name = models.CharField(_("Название (витрина)"), max_length=512)
+    card_name = models.CharField(
+        _("Название (карточка)"),
+        max_length=512,
+        blank=True,
+        help_text=_(
+            "Короткая форма для плитки каталога. Пусто — показывается витринное "
+            "название. Заполняет команда normalize_product_names."
+        ),
+    )
     slug = models.SlugField(_("Slug"), max_length=512, unique=True, blank=True)
     description = models.TextField(_("Описание"), blank=True)
     short_description = models.CharField(_("Краткое описание"), max_length=512, blank=True)
