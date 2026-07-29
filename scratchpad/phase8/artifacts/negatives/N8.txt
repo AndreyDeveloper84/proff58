@@ -1,0 +1,1 @@
+CommandError: Run aa41cc90-ecac-410e-823a-66929c1fd2f8 не находится в status=running

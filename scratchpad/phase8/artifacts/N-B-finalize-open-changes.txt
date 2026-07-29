@@ -1,0 +1,8 @@
+CommandError: Финализация невозможна: items_not_final
+{
+  "run_id": "8cc21405-866e-4d0a-9276-3f5f2bd9f63f",
+  "status": "invalid",
+  "reason": "items_not_final",
+  "already_finalized": false,
+  "outcome": ""
+}

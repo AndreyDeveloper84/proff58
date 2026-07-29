@@ -1,0 +1,12 @@
+=== schema/contract validation (без расчёта precision/gate) ===
+validate_gate_labels violations: NONE
+sample audit: corpus_overlap_checked is True: True; collision_count strict int 0: True
+F-7: labels.sample_hash == canonical_hash(sample): True
+final distribution: {'correct': 102, 'unverifiable': 1}; total=103
+override applied: 31104 -> unverifiable
+file: scratchpad/phase7d/phase7d-labels.json
+byte sha256: 4cb05d36213d1183c9fe93956471118beb253042b5dd40a3454df9ad143928f1
+sample_hash: 888980e7209c27026c13f56152330e5264d8da7103345fefb685713f8635a6db
+ruleset_hash: 9bf0271a61e729a900cda57705bdf785b96496efc462448894b27650a04bf330
+matcher_version: 1.0
+reviewer_id: andrey; reviewed_at: 2026-07-22T20:36:13Z

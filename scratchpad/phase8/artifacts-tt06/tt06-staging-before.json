@@ -1,0 +1,95 @@
+selector=explicit_ids rows=11 taxonomy_identity=524d4e317a80… canonical_hash=b4bdca2caccec38b1fe95d765523e2651ed847adf945bda3a874f2021a2a8332
+written=/tmp/tt06-staging-before.json
+{
+  "canonical": {
+    "attribute_slug": "tool_type",
+    "live_taxonomy_identity_hash": "524d4e317a804160548ebd5f4d0c590cb08a9b69910b23355df7558902616439",
+    "rows": [
+      {
+        "attrs_cache_tool_type": null,
+        "option_slug": null,
+        "option_value": null,
+        "product_id": 4
+      },
+      {
+        "attrs_cache_tool_type": null,
+        "option_slug": null,
+        "option_value": null,
+        "product_id": 22
+      },
+      {
+        "attrs_cache_tool_type": null,
+        "option_slug": null,
+        "option_value": null,
+        "product_id": 123
+      },
+      {
+        "attrs_cache_tool_type": null,
+        "option_slug": null,
+        "option_value": null,
+        "product_id": 164
+      },
+      {
+        "attrs_cache_tool_type": null,
+        "option_slug": null,
+        "option_value": null,
+        "product_id": 179
+      },
+      {
+        "attrs_cache_tool_type": null,
+        "option_slug": null,
+        "option_value": null,
+        "product_id": 377
+      },
+      {
+        "attrs_cache_tool_type": null,
+        "option_slug": null,
+        "option_value": null,
+        "product_id": 422
+      },
+      {
+        "attrs_cache_tool_type": null,
+        "option_slug": null,
+        "option_value": null,
+        "product_id": 4944
+      },
+      {
+        "attrs_cache_tool_type": null,
+        "option_slug": null,
+        "option_value": null,
+        "product_id": 4945
+      },
+      {
+        "attrs_cache_tool_type": null,
+        "option_slug": null,
+        "option_value": null,
+        "product_id": 11232
+      },
+      {
+        "attrs_cache_tool_type": null,
+        "option_slug": null,
+        "option_value": null,
+        "product_id": 23606
+      }
+    ],
+    "rows_count": 11,
+    "schema_version": 1,
+    "selector": {
+      "kind": "explicit_ids",
+      "value": [
+        4,
+        22,
+        123,
+        164,
+        179,
+        377,
+        422,
+        4944,
+        4945,
+        11232,
+        23606
+      ]
+    }
+  },
+  "canonical_hash": "b4bdca2caccec38b1fe95d765523e2651ed847adf945bda3a874f2021a2a8332"
+}

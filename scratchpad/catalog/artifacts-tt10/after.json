@@ -1,0 +1,79 @@
+{
+  "canonical": {
+    "attribute_slug": "tool_type",
+    "live_taxonomy_identity_hash": "887eea5d442455fbb97c9eda888c0307f46a1f7e2e51bd56c2bd8a11d3949175",
+    "rows": [
+      {
+        "attrs_cache_tool_type": "Адаптеры и переходники",
+        "option_slug": "adaptery",
+        "option_value": "Адаптеры и переходники",
+        "product_id": 1109
+      },
+      {
+        "attrs_cache_tool_type": "Расходники для пайки",
+        "option_slug": "raskhodniki-pajki",
+        "option_value": "Расходники для пайки",
+        "product_id": 24866
+      },
+      {
+        "attrs_cache_tool_type": "Пневмостеплеры и нейлеры",
+        "option_slug": "bp-pnevmosteplery",
+        "option_value": "Пневмостеплеры и нейлеры",
+        "product_id": 28886
+      },
+      {
+        "attrs_cache_tool_type": "Пневмостеплеры и нейлеры",
+        "option_slug": "bp-pnevmosteplery",
+        "option_value": "Пневмостеплеры и нейлеры",
+        "product_id": 28887
+      },
+      {
+        "attrs_cache_tool_type": "Клеевые стержни",
+        "option_slug": "sterzhni-kleevye",
+        "option_value": "Клеевые стержни",
+        "product_id": 34643
+      },
+      {
+        "attrs_cache_tool_type": "Клеевые стержни",
+        "option_slug": "sterzhni-kleevye",
+        "option_value": "Клеевые стержни",
+        "product_id": 34644
+      },
+      {
+        "attrs_cache_tool_type": "Пассатижи и плоскогубцы",
+        "option_slug": "passatizhi",
+        "option_value": "Пассатижи и плоскогубцы",
+        "product_id": 35057
+      },
+      {
+        "attrs_cache_tool_type": "Пассатижи и плоскогубцы",
+        "option_slug": "passatizhi",
+        "option_value": "Пассатижи и плоскогубцы",
+        "product_id": 35058
+      },
+      {
+        "attrs_cache_tool_type": "Очки и щитки защитные",
+        "option_slug": "siz-ochki",
+        "option_value": "Очки и щитки защитные",
+        "product_id": 36379
+      }
+    ],
+    "rows_count": 9,
+    "schema_version": 1,
+    "selector": {
+      "kind": "explicit_ids",
+      "value": [
+        1109,
+        24866,
+        28886,
+        28887,
+        34643,
+        34644,
+        35057,
+        35058,
+        36379
+      ]
+    }
+  },
+  "canonical_hash": "2aa336163c2695e967d5a039fe9905d418a0533fd68f9fae4a2b45a218d45813"
+}
