@@ -208,12 +208,12 @@ export function ProductCard({
       >
         <div className="w-40 shrink-0">{media}</div>
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="mb-1 flex items-start justify-between gap-2">
+          <div className="mb-1 flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-1.5">
               <StatusLabel product={product} />
               {hitBadge}
             </div>
-            {heart}
+            <div className="-my-1.5">{heart}</div>
           </div>
           <p className="text-xs text-ink-3">{product.brand}</p>
           <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
@@ -237,12 +237,16 @@ export function ProductCard({
         dimmed && "opacity-70",
       )}
     >
-      <div className="mb-2 flex items-start justify-between gap-2">
+      {/* items-center, а не items-start: у сердца кнопка 44×44 с иконкой по
+          центру, и при выравнивании по верху текст статуса вставал заметно выше
+          иконки — строка выглядела съехавшей. -my-1.5 гасит лишнюю высоту
+          hit-area, чтобы она не раздвигала шапку карточки. */}
+      <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
           <StatusLabel product={product} />
           {hitBadge}
         </div>
-        {showFavorite ? heart : null}
+        {showFavorite ? <div className="-my-1.5">{heart}</div> : null}
       </div>
       <div className="mb-3">{media}</div>
       <p className="text-xs text-ink-3">{product.brand}</p>

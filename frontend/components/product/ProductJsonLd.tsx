@@ -1,4 +1,4 @@
-import { serializeJsonLd } from "@/lib/jsonld";
+import { absoluteUrl, serializeJsonLd } from "@/lib/jsonld";
 import type { ProductDetail } from "@/lib/types";
 
 // Серверная микроразметка для поисковиков: Product + Offer + BreadcrumbList.
@@ -16,7 +16,8 @@ export function ProductJsonLd({
     name: product.name,
   };
   if (product.brand) productLd.brand = { "@type": "Brand", name: product.brand };
-  if (product.images.length) productLd.image = product.images.map((i) => i.url);
+  // Картинки приходят относительными (`/media/…`) — поисковику нужен абсолютный URL.
+  if (product.images.length) productLd.image = product.images.map((i) => absoluteUrl(i.url));
   if (product.description) productLd.description = product.description;
   if (product.price.final != null) {
     productLd.offers = {

@@ -27,16 +27,24 @@ def _attr_dict(pav):
     }
 
 
-def _image_url(image, context) -> str | None:
-    """Абсолютный URL изображения; None если файла нет."""
+def _image_url(image, _context=None) -> str | None:
+    """URL изображения относительно корня сайта (``/media/…``); None если файла нет.
+
+    Раньше здесь стоял ``request.build_absolute_uri()``, и это ломало витрину:
+    Next.js рендерит страницы на сервере, ходит в Django по внутреннему адресу
+    ``http://web:8000`` — и в HTML уезжал ``https://web:8000/media/...``, который
+    браузер не может разрешить (битые фото во всём каталоге и на карточке
+    товара). Хост запрашивающего вообще не должен попадать в контент: витрина и
+    media отдаются одним nginx, поэтому относительный путь разрешается верно и
+    у браузера, и у SSR. Абсолютный URL нужен только разметке для поисковиков —
+    её достраивает фронт (components/product/ProductJsonLd.tsx).
+    """
     if not image:
         return None
     try:
-        url = image.image.url
+        return image.image.url
     except ValueError:
         return None
-    request = context.get("request") if context else None
-    return request.build_absolute_uri(url) if request is not None else url
 
 
 class CategoryRefSerializer(serializers.Serializer):
