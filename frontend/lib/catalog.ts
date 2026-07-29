@@ -113,14 +113,6 @@ export async function getCategoryProducts(category: string, limit = 3): Promise<
   return [];
 }
 
-// Корневые категории (depth==1) для блока главной. Нет данных → пусто (блок скрыт).
-export async function getCategoryTree(): Promise<CategoryNode[]> {
-  if (API_BASE && !FORCE_FIXTURES) {
-    return (await fetchCategoryTreeFromApi(API_BASE)) ?? [];
-  }
-  return [];
-}
-
 /**
  * Витрина главной. Возвращает и сами товары, и то, ЧЕМ они являются:
  * `bestsellers` — реальные продажи за окно (backend apps.catalog.sales),
