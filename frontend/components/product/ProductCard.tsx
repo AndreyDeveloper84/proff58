@@ -57,9 +57,13 @@ export function ProductCard({
   view = "grid",
   showFavorite = true,
   variant = "default",
+  className,
 }: {
   product: Product;
   view?: "grid" | "list";
+  // Ширина/растяжение задаются местом использования: в карусели главной
+  // карточка тянется на всю ячейку дорожки, чтобы ряд был ровным.
+  className?: string;
   // Избранное — Wave 2: сердце присутствует в шаблоне по референсу, но это ещё не
   // завершённая функция (локальное визуальное состояние, без бэкенда/персистентности).
   showFavorite?: boolean;
@@ -67,6 +71,8 @@ export function ProductCard({
 }) {
   const [fav, setFav] = useState(false);
   const href = `/product/${product.slug}`;
+  // Короткая форма из 1С; пока товар не прошёл нормализацию — витринное имя.
+  const title = product.cardName || product.name;
   const dimmed = product.stock === "out";
   const buyable = product.price.final != null && product.stock !== "out";
 
@@ -89,13 +95,13 @@ export function ProductCard({
   );
 
   const media = (
-    <a href={href} aria-label={product.name} className="relative block">
+    <a href={href} aria-label={title} className="relative block">
       {product.price.discountPct != null && (
         <span className="absolute left-2 top-2 z-10 rounded-md bg-danger px-1.5 py-0.5 text-[11px] font-bold text-white">
           −{product.price.discountPct}%
         </span>
       )}
-      <ProductImage src={product.image} alt={product.name} />
+      <ProductImage src={product.image} alt={title} />
     </a>
   );
 
@@ -127,11 +133,13 @@ export function ProductCard({
         data-event="product_card_click"
         data-product-id={product.id}
         className={cn(
-          // Высота без полосы «Консультация в MAX»: в ряду из восьми карточек она
-          // повторяла один и тот же CTA восемь раз и перебивала «В корзину».
-          // Канал MAX остался в hero главной и в подвале сайта.
-          "relative flex h-[192px] flex-col overflow-hidden rounded-sm border border-line bg-surface",
+          // min-h, а не жёсткая высота: при h-[192px] строка характеристик
+          // срезалась ровно посередине букв, а кнопка «Сообщить о поступлении»
+          // вылезала за нижнюю границу. Ряд выравнивается растяжением карточек
+          // (items-stretch у дорожки карусели), поэтому разной высоты не будет.
+          "relative flex min-h-[192px] flex-col overflow-hidden rounded-sm border border-line bg-surface",
           dimmed && "opacity-70",
+          className,
         )}
       >
         <div className="absolute left-2 top-2 z-10 flex gap-1">
@@ -152,10 +160,10 @@ export function ProductCard({
         )}
 
         <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 pt-1.5">
-          <a href={href} aria-label={product.name} className="block">
+          <a href={href} aria-label={title} className="block">
             <ProductImage
               src={product.image}
-              alt={product.name}
+              alt={title}
               sizes="220px"
               className="h-[88px] w-full aspect-auto rounded-none bg-surface"
             />
@@ -165,7 +173,7 @@ export function ProductCard({
             className="line-clamp-2 min-h-[29px] text-[11px] font-semibold leading-[1.25] text-ink hover:text-accent"
           >
             {product.brand ? `${product.brand} ` : ""}
-            {product.name}
+            {title}
           </a>
           <div className="mt-0.5 line-clamp-1 text-[10px] leading-tight text-ink-2">
             {product.specs?.slice(0, 3).map((s) => s.value).join(" · ")}
@@ -209,19 +217,19 @@ export function ProductCard({
       >
         <div className="w-40 shrink-0">{media}</div>
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="mb-1 flex items-start justify-between gap-2">
+          <div className="mb-1 flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-1.5">
               <StatusLabel product={product} />
               {hitBadge}
             </div>
-            <div className="flex items-center">
+            <div className="-my-1.5 flex items-center">
               <CompareButton slug={product.slug} />
               {heart}
             </div>
           </div>
           <p className="text-xs text-ink-3">{product.brand}</p>
           <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
-            {product.name}
+            {title}
           </a>
           <div className="mt-1">
             <ProductSpecs specs={product.specs} />
@@ -259,7 +267,7 @@ export function ProductCard({
       </div>
       <p className="text-xs text-ink-3">{product.brand}</p>
       <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
-        {product.name}
+        {title}
       </a>
       <div className="mt-1">
         <ProductSpecs specs={product.specs} />

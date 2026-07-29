@@ -145,11 +145,15 @@ export function Header({
               );
             })}
           </div>
-          <div className="flex items-center">
+          {/* Справа в topbar: часы работы и сразу за ними — переключатель темы.
+              В основной строке он стоял между поиском и телефоном и в этом ряду
+              «кнопок покупки» читался как ещё одно действие с товаром. */}
+          <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5">
               <Clock3 className="h-3.5 w-3.5" aria-hidden />
               {storefront.schedule}
             </span>
+            <ThemeToggle className="h-6 w-6 text-topbar-ink hover:text-accent [&_svg]:h-3.5 [&_svg]:w-3.5" />
           </div>
         </div>
       </div>
@@ -184,8 +188,6 @@ export function Header({
             placeholder={SITE.header.searchPlaceholder}
           />
         </div>
-
-        <ThemeToggle className="hidden lg:grid" />
 
         <a
           href={storefront.phone.href}

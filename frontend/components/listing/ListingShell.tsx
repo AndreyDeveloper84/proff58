@@ -272,22 +272,20 @@ export function ListingShell({
                 </span>
               )}
             </button>
-            {/* Десктоп-индикатор активных фильтров */}
-            <span className="hidden h-11 items-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold text-ink lg:inline-flex">
-              <SlidersHorizontal className="h-4 w-4" aria-hidden />
-              Фильтры
-              {chips.length > 0 && (
-                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-ink">
-                  {chips.length}
-                </span>
-              )}
-            </span>
+            {/* На десктопе плашки «Фильтры» нет: фасеты и так открыты в левой
+                колонке, открывать нечего — а выглядела она кнопкой и не
+                нажималась. Счётчик активных фильтров переехал к «Сбросить все»:
+                он нужен ровно там, где с ним что-то можно сделать. */}
             {chips.length > 0 && (
               <button
                 type="button"
                 onClick={resetAll}
-                className="text-sm font-medium text-accent hover:underline"
+                className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline"
               >
+                {/* На мобильном счётчик уже висит на кнопке «Фильтры» — не дублируем. */}
+                <span className="hidden h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-ink lg:grid">
+                  {chips.length}
+                </span>
                 Сбросить все
               </button>
             )}

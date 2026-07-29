@@ -124,6 +124,27 @@ def test_main_image_selection(client, tree):
 
 
 @pytest.mark.django_db
+def test_image_url_is_relative_regardless_of_request_host(client, tree):
+    """URL картинки не зависит от того, кто спросил.
+
+    Next.js рендерит витрину на сервере и ходит в Django по внутреннему адресу
+    (Host «web:8000»). Пока URL строился через build_absolute_uri, этот хост
+    уезжал в HTML — браузер такой адрес не резолвит, и фото были битыми во всём
+    каталоге. Проверяем оба входа: внутренний и публичный дают одинаковый путь.
+    """
+    _, _, leaf = tree
+    p = make_product(leaf, "Т", "img-host")
+    ProductImage.objects.create(product=p, image="products/a.jpg", is_main=True)
+
+    internal = client.get("/api/catalog/products/img-host/", HTTP_HOST="web:8000").json()
+    public = client.get("/api/catalog/products/img-host/", HTTP_HOST="testserver").json()
+
+    assert internal["main_image"] == "/media/products/a.jpg"
+    assert internal["main_image"] == public["main_image"]
+    assert [i["url"] for i in internal["images"]] == ["/media/products/a.jpg"]
+
+
+@pytest.mark.django_db
 def test_products_no_nplus1(client, tree, django_assert_max_num_queries):
     _, _, leaf = tree
     for i in range(5):
