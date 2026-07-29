@@ -58,9 +58,13 @@ export function AddToCartButton({
         className={cn(buttonVariants({ variant: "outline" }), wide, size)}
         data-event="notify_restock"
         data-product-id={productId}
+        // В плитке главной подпись сокращена до «Сообщить»: полная влезала
+        // только в две строки, вылезала за границу карточки и срезала строку
+        // характеристик над собой. Смысл кнопки раскрывает aria-label.
+        aria-label={compact ? "Сообщить о поступлении" : undefined}
       >
         <Bell className="h-4 w-4" aria-hidden />
-        Сообщить о поступлении
+        {compact ? "Сообщить" : "Сообщить о поступлении"}
       </Link>
     );
   }

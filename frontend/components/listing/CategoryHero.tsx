@@ -49,8 +49,10 @@ export function CategoryHero({
     <section
       className={cn(
         "relative overflow-hidden",
-        // Высоту резервируем только там, где виден чертёж (lg+): на мобильном она
-        // обернулась бы пустой полосой между заголовком и разделами.
+        // Чертёж стоит в собственной колонке grid, а не абсолютом поверх текста:
+        // при absolute он налезал на счётчик товаров («Автоинструмент и гаражное
+        // оборудование» + «305 товаров») и обрезался правым краем блока.
+        skeleton && "lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6",
         inline ? "lg:min-h-[156px]" : "mb-6 rounded-xl border border-line bg-surface",
         className,
       )}
@@ -64,26 +66,12 @@ export function CategoryHero({
         />
       )}
 
-      {/* Чертёж раздела справа от заголовка — вместо прежней абстрактной
-          заглушки. Для незнакомого раздела чертежа нет, и блок просто остаётся
-          без иллюстрации. На узких экранах прячем: места под него нет. */}
-      {skeleton && (
-        <Image
-          src={skeleton}
-          alt=""
-          width={600}
-          height={260}
-          unoptimized
-          priority
-          aria-hidden
-          className={cn(
-            "pointer-events-none absolute right-3 top-1/2 hidden w-auto max-w-[52%] -translate-y-1/2 object-contain lg:block",
-            inline ? "h-[96%]" : "h-[86%]",
-          )}
-        />
-      )}
-
-      <div className={cn("relative z-10 flex", inline ? "py-2 pr-4" : "gap-5 p-6 md:p-8")}>
+      <div
+        className={cn(
+          "relative z-10 flex lg:col-start-1 lg:row-start-1",
+          inline ? "py-2 pr-4" : "gap-5 p-6 md:p-8",
+        )}
+      >
         {!inline && (
           <div className="relative hidden w-4 shrink-0 md:block" aria-hidden>
             <span className="absolute bottom-1 left-1.5 top-1 w-px bg-accent/50" />
@@ -120,6 +108,28 @@ export function CategoryHero({
           </div>
         </div>
       </div>
+
+      {/* Чертёж раздела — вторая колонка, поэтому пересечься с заголовком он не
+          может физически. Своего чертежа нет у незнакомого раздела: тогда grid
+          не включается и блок просто остаётся без иллюстрации. На узких экранах
+          прячем — места под него нет. */}
+      {skeleton && (
+        <Image
+          src={skeleton}
+          alt=""
+          width={600}
+          height={260}
+          unoptimized
+          priority
+          aria-hidden
+          className={cn(
+            "pointer-events-none hidden w-auto justify-self-end object-contain lg:col-start-2 lg:row-start-1 lg:block",
+            // Ограничение по высоте, а не по доле ширины: у чертежей разное
+            // соотношение сторон, и «52 % ширины» одни обрезало, другие мельчило.
+            inline ? "max-h-[120px]" : "max-h-[150px]",
+          )}
+        />
+      )}
     </section>
   );
 }

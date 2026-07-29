@@ -173,4 +173,20 @@ describe("fetchBestsellersFromApi", () => {
     expect(products[0].badges).toContain("hit");
     expect(products[1].badges).not.toContain("hit");
   });
+
+  // Плитка каталога показывает телеграфную запись из 1С, страница товара —
+  // развёрнутую. Товары, ещё не прошедшие normalize_product_names, card_name не
+  // отдают: карточка не должна из-за этого остаться без названия.
+  it("короткое имя карточки: card_name из API, иначе витринное", async () => {
+    mockBestsellers([
+      { ...PRODUCT, name: "Круг алмазный отрезной 115х1,0", card_name: "Круг алмаз. отрез. 115х1,0" },
+      { ...PRODUCT, id: 2, slug: "bez-korotkogo", name: "Дрель ударная Makita" },
+    ]);
+
+    const { products } = await fetchBestsellersFromApi(BASE, 8);
+
+    expect(products[0].cardName).toBe("Круг алмаз. отрез. 115х1,0");
+    expect(products[0].name).toBe("Круг алмазный отрезной 115х1,0");
+    expect(products[1].cardName).toBe("Дрель ударная Makita");
+  });
 });

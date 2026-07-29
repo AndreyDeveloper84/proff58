@@ -1,7 +1,7 @@
 """Публичный read-only API каталога: дерево категорий, список, карточка, фасеты."""
 
 from django.contrib.postgres.search import TrigramSimilarity
-from django.db.models import Case, F, FloatField, Prefetch, Q, Value, When
+from django.db.models import Case, F, FloatField, IntegerField, Prefetch, Q, Value, When
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -155,28 +155,48 @@ class ProductListView(generics.ListAPIView):
         """
         return qs.annotate(effective_price=F("price"))
 
+    def _annotate_availability(self, qs):
+        """Аннотировать ``availability_rank`` для сортировки «сначала доступное».
+
+        В наличии (0) → под заказ (1) → нет в наличии (2). Нужен потому, что 87 %
+        каталога сейчас без остатка, и по любому порядку первые экраны состояли
+        из «Сообщить о поступлении». Позиции не скрываются и не исключаются из
+        выдачи — меняется только очерёдность; фасет «Наличие» работает как был.
+        """
+        return qs.annotate(
+            availability_rank=Case(
+                When(stock_status=StockStatus.IN_STOCK, then=Value(0)),
+                When(stock_status=StockStatus.ON_ORDER, then=Value(1)),
+                default=Value(2),
+                output_field=IntegerField(),
+            )
+        )
+
     def _apply_sort(self, qs):
         """Серверная сортировка (whitelist) ДО пагинации. Дефолт — алфавит.
 
+        Первым ключом везде идёт наличие (``availability_rank``) — выбранный
+        пользователем порядок применяется уже внутри доступных товаров.
         ``price_asc/desc`` — по ``Product.price`` (#430/M-06: единый ценник для всех).
         Товары без цены — в конец (nulls_last). ``bestsellers`` — по рейтингу продаж
         (apps.catalog.sales). Неизвестное/popular/rating → дефолт.
         """
         sort = self.request.query_params.get("sort")
+        qs = self._annotate_availability(qs)
         if sort in ("price_asc", "price_desc"):
             qs = self._annotate_effective_price(qs)
             ep = F("effective_price")
             order = ep.asc(nulls_last=True) if sort == "price_asc" else ep.desc(nulls_last=True)
-            return qs.order_by(order, "id")
+            return qs.order_by("availability_rank", order, "id")
         if sort == "new":
-            return qs.order_by("-created_at", "id")
+            return qs.order_by("availability_rank", "-created_at", "id")
         if sort == "bestsellers":
             # Рейтинг продаж (apps.catalog.sales). Товары без продаж — в конец:
             # сортировка ничего не скрывает, но и не выдаёт их за продаваемые.
             return qs.annotate(sales_rank=F("sales_stat__rank")).order_by(
-                F("sales_rank").asc(nulls_last=True), "id"
+                "availability_rank", F("sales_rank").asc(nulls_last=True), "id"
             )
-        return qs.order_by("name", "id")
+        return qs.order_by("availability_rank", "name", "id")
 
     def list(self, request, *args, **kwargs):
         """Считаем опт-цены ОДНИМ bulk-запросом по текущей странице (без N+1).
