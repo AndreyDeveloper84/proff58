@@ -237,26 +237,34 @@ export function Header({
           </Link>
         </div>
 
-        {/* Действия — mobile: поиск + корзина */}
-        <Link
-          href="/search"
-          className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-md text-header-ink transition hover:bg-header-ink/10 lg:hidden"
-          aria-label="Поиск"
-        >
-          <Search className="h-5 w-5" aria-hidden />
-        </Link>
-        <Link
-          href="/cart"
-          className="relative grid h-10 w-10 shrink-0 place-items-center rounded-md text-header-ink transition hover:bg-header-ink/10 lg:hidden"
-          aria-label={count > 0 ? `Корзина, товаров: ${count}` : "Корзина"}
-        >
-          <ShoppingCart className="h-5 w-5" aria-hidden />
-          {count > 0 && (
-            <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-ink">
-              {count > 99 ? "99+" : count}
-            </span>
-          )}
-        </Link>
+        {/* Действия — mobile/tablet: тема + поиск + корзина.
+            Переключатель стоит в самой шапке, а не в бургер-меню: пункт, до
+            которого надо сначала открыть меню, пользователь считает
+            несуществующим. Ниже 640px его прячем — там логотип и две иконки уже
+            занимают всю строку, третья вызывала бы горизонтальную прокрутку;
+            на телефонах переключатель остаётся в меню. */}
+        <div className="ml-auto flex shrink-0 items-center gap-2 lg:hidden">
+          <ThemeToggle className="hidden sm:grid" />
+          <Link
+            href="/search"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-md text-header-ink transition hover:bg-header-ink/10"
+            aria-label="Поиск"
+          >
+            <Search className="h-5 w-5" aria-hidden />
+          </Link>
+          <Link
+            href="/cart"
+            className="relative grid h-10 w-10 shrink-0 place-items-center rounded-md text-header-ink transition hover:bg-header-ink/10"
+            aria-label={count > 0 ? `Корзина, товаров: ${count}` : "Корзина"}
+          >
+            <ShoppingCart className="h-5 w-5" aria-hidden />
+            {count > 0 && (
+              <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-ink">
+                {count > 99 ? "99+" : count}
+              </span>
+            )}
+          </Link>
+        </div>
       </div>
 
       {/* Мобильное меню */}
@@ -290,14 +298,20 @@ export function Header({
             {/* #592: инфо-пункты (сервис/доставка/гарантии/контакты) в мобильном
                 меню не показываем, пока нет страниц — некликабельные строки в
                 меню бесполезны, битые ссылки запрещены DoD эпика. */}
-            {/* Телефон и переключатель темы — в одной строке: на мобильном в
-                верхнем ряду места под ещё одну иконку нет. */}
-            <div className="flex items-center justify-between py-2.5">
+            {/* Телефон и тема — в одной строке. Переключатель здесь только для
+                самых узких экранов (<640px), где в шапке места под него нет. */}
+            <div className="flex items-center justify-between py-2.5 sm:hidden">
               <a href={storefront.phone.href} className="text-sm font-semibold text-header-ink">
                 {storefront.phone.display}
               </a>
               <ThemeToggle />
             </div>
+            <a
+              href={storefront.phone.href}
+              className="hidden min-h-11 items-center py-2.5 text-sm font-semibold text-header-ink sm:flex"
+            >
+              {storefront.phone.display}
+            </a>
           </nav>
         </div>
       )}
