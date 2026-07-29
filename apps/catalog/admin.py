@@ -36,6 +36,7 @@ from .models import (
     ProductAttributeValue,
     ProductCompatibility,
     ProductImage,
+    ProductSalesStat,
     ProductStatus,
     SiteCategory,
     Source,
@@ -1249,6 +1250,31 @@ class CatalogChangeAdmin(admin.ModelAdmin):
             if result.status == "applied":
                 count += 1
         self.message_user(request, f"Применено: {count}", messages.SUCCESS)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ProductSalesStat)
+class ProductSalesStatAdmin(admin.ModelAdmin):
+    """Рейтинг продаж — только чтение.
+
+    Нужен, чтобы бейдж «Хит» на витрине можно было объяснить: сколько продано, за
+    какое окно и когда была последняя продажа. Руками рейтинг не правится — он
+    пересобирается задачей из фактов продаж (apps.catalog.sales).
+    """
+
+    list_display = ("rank", "product", "quantity", "days_with_sales", "last_sold_on", "is_hit")
+    list_filter = ("is_hit", "window_days")
+    search_fields = ("product__name", "product__article", "product__code_1c")
+    ordering = ("rank",)
+    list_select_related = ("product",)
 
     def has_add_permission(self, request):
         return False

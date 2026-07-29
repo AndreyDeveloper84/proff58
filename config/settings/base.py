@@ -122,6 +122,14 @@ FACETS_CACHE_TTL = env.int("FACETS_CACHE_TTL", default=0)
 # остатков). Фронт по нему показывает состояние «Мало осталось».
 CATALOG_LOW_STOCK_THRESHOLD = env.int("CATALOG_LOW_STOCK_THRESHOLD", default=5)
 
+# Рейтинг «хитов продаж» (apps.catalog.sales). Окно — скользящее: витрина должна
+# показывать то, что продаётся сейчас, а не вечных лидеров прошлого года.
+# SALES_HIT_MIN_QUANTITY страхует от «хита» с одной проданной штукой, пока
+# статистика не набралась.
+SALES_WINDOW_DAYS = env.int("SALES_WINDOW_DAYS", default=90)
+SALES_HIT_TOP_N = env.int("SALES_HIT_TOP_N", default=24)
+SALES_HIT_MIN_QUANTITY = env.int("SALES_HIT_MIN_QUANTITY", default=3)
+
 AUTH_USER_MODEL = "accounts.User"
 
 AUTH_PASSWORD_VALIDATORS = [

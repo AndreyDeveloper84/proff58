@@ -19,7 +19,7 @@ import traceback
 import uuid
 from dataclasses import dataclass
 from datetime import timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.db import transaction
@@ -27,7 +27,8 @@ from django.utils import timezone
 
 from apps.catalog import categorization
 from apps.catalog.facets import invalidate_facets_cache
-from apps.catalog.models import Product
+from apps.catalog.models import Product, SalesSource
+from apps.catalog.sales import SalesRow, record_sales_facts
 from apps.core.events import (
     EventSource,
     order_status_changed,
@@ -884,3 +885,77 @@ def confirm_orders(items: list[dict]) -> tuple[SyncLog, list[dict]]:
     sync_log.finished_at = timezone.now()
     sync_log.save()
     return sync_log, results
+
+
+# --- Продажи (витрина «Хиты продаж») ---
+
+
+def import_sales(raw_items: list[dict], *, source_file: str = "") -> tuple[SyncLog, ImportResult]:
+    """Принять выгрузку продаж из 1С и записать факты в каталог.
+
+    1С — источник истины по продажам магазина: сайт видит только собственные
+    заказы, а основной оборот идёт в рознице. Матчинг — общий с ценами/остатками
+    (code_1c, затем артикул); незнакомая номенклатура уходит в ``skipped``, а не
+    в ошибку: продажа товара, которого нет на сайте, — нормальная ситуация.
+
+    Идемпотентность: строки одного дня по одному товару складываются внутри
+    пачки, а запись в каталог перезаписывает день целиком. Повторная отправка
+    той же выгрузки не удваивает продажи.
+    """
+    sync_log = SyncLog.objects.create(
+        sync_type=SyncLog.SyncType.SALES,
+        source_file=source_file,
+        result=SyncLog.SyncResult.OK,
+    )
+    result = ImportResult()
+    error_lines: list[str] = []
+    maps = _build_maps(raw_items)
+
+    # (product_id, день) → количество: в выгрузке день может прийти несколькими
+    # строками (разные документы), для витрины это одна продажа за день.
+    per_day: dict[tuple[int, object], Decimal] = {}
+    for raw in raw_items:
+        ident = str(raw.get("code_1c") or raw.get("external_id") or raw.get("article") or "—")
+        try:
+            item = normalizers.normalize_item(raw)
+        except Exception:  # noqa: BLE001
+            result.errors += 1
+            _append_error_detail(error_lines, ident, "ошибка нормализации")
+            continue
+        if not item.has_identifier:
+            result.errors += 1
+            _append_error_detail(error_lines, ident, "нет идентификатора")
+            continue
+        match = matching.resolve_in_memory(item, maps)
+        if match.status == MatchStatus.CONFLICT:
+            result.errors += 1
+            _append_error_detail(error_lines, ident, match.reason)
+            continue
+        if match.status == MatchStatus.NEW:
+            result.skipped += 1  # номенклатуры нет на сайте — продажу привязать не к чему
+            continue
+        try:
+            quantity = Decimal(str(raw["quantity"]))
+            day = raw["date"]
+        except (KeyError, InvalidOperation, TypeError):
+            result.errors += 1
+            _append_error_detail(error_lines, ident, "некорректные дата/количество")
+            continue
+        if quantity <= 0:
+            result.skipped += 1
+            continue
+        key = (match.product.id, day)
+        per_day[key] = per_day.get(key, Decimal("0")) + quantity
+
+    if per_day:
+        record_sales_facts(
+            SalesSource.ONEC,
+            [
+                SalesRow(product_id=product_id, date=day, quantity=quantity)
+                for (product_id, day), quantity in per_day.items()
+            ],
+        )
+    result.updated += len(per_day)
+
+    _finalize(sync_log, result, error_lines)
+    return sync_log, result

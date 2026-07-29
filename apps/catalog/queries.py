@@ -223,7 +223,7 @@ def accessories_of(product: Product) -> list[CompatibilityItem]:
             target__is_active=True,
             target__status=ProductStatus.PUBLISHED,
         )
-        .select_related("target", "target__category")
+        .select_related("target", "target__category", "target__sales_stat")
         .prefetch_related("target__images", _attrs_prefetch("target"))
         .order_by("sort_order", "id")
     )
@@ -245,7 +245,7 @@ def fits_of(product: Product) -> list[CompatibilityItem]:
             source__is_active=True,
             source__status=ProductStatus.PUBLISHED,
         )
-        .select_related("source", "source__category")
+        .select_related("source", "source__category", "source__sales_stat")
         .prefetch_related("source__images", _attrs_prefetch("source"))
         .order_by("sort_order", "id")
     )
@@ -266,7 +266,14 @@ def compatible_of(product: Product) -> list[CompatibilityItem]:
             Q(source=product) | Q(target=product),
             kind=CompatibilityKind.COMPATIBLE,
         )
-        .select_related("source", "target", "source__category", "target__category")
+        .select_related(
+            "source",
+            "target",
+            "source__category",
+            "target__category",
+            "source__sales_stat",
+            "target__sales_stat",
+        )
         .prefetch_related(
             "source__images", "target__images", _attrs_prefetch("source"), _attrs_prefetch("target")
         )

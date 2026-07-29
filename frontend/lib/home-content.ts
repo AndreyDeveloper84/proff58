@@ -1,12 +1,11 @@
-// Контент главной страницы, которого НЕТ в API каталога: тексты, статистика, телефон,
-// промо, ссылки и визуальные ассеты категорий/hero. Перекраска/смена копий магазина —
-// правка ТОЛЬКО этого файла, без касания компонентов. Названия категорий и сами товары
-// приходят из API; здесь — лишь привязка slug→картинка и курируемый список «хитов».
+// Контент главной страницы, которого НЕТ в API каталога: тексты, промо, ссылки,
+// картинки сценарных карточек. Смена копий магазина — правка ТОЛЬКО этого файла,
+// без касания компонентов. Названия категорий и сами товары приходят из API.
 
 export type HomeStat = { value: number; suffix: string; label: string };
 export type TrustItem = { icon: string; title: string };
 export type HeroBullet = { icon: string; text: string };
-export type IntentCard = { icon: string; title: string; text: string; href: string };
+export type IntentCard = { image: string; title: string; text: string; href: string };
 export type ServiceItem = { icon: string; title: string; text: string };
 
 export const HOME_CONTENT = {
@@ -42,31 +41,31 @@ export const HOME_CONTENT = {
     title: "Что вы хотите сделать?",
     cards: [
       {
-        icon: "Home",
+        image: "/home/intent/home.webp",
         title: "Для дома",
         text: "Ремонт, сад, мебель, бытовые задачи",
         href: "/catalog/ruchnoy",
       },
       {
-        icon: "Paintbrush",
+        image: "/home/intent/renovation.webp",
         title: "Ремонт квартиры",
         text: "Отделка, электрика, сантехника",
         href: "/catalog/stroitelnyy",
       },
       {
-        icon: "Hammer",
+        image: "/home/intent/construction.webp",
         title: "Стройка и бетон",
         text: "Фундамент, стены, бетонные работы",
         href: "/catalog/elektroinstrument",
       },
       {
-        icon: "Briefcase",
+        image: "/home/intent/professional.webp",
         title: "Профессиональная работа",
         text: "Ежедневные нагрузки, интенсивное использование",
         href: "/catalog/silovaya",
       },
       {
-        icon: "Cog",
+        image: "/home/intent/consumables.webp",
         title: "Расходные материалы и оснастка",
         text: "Буры, диски, свёрла, расходники",
         href: "/catalog/osnastka",
@@ -91,10 +90,6 @@ export const HOME_CONTENT = {
     "Ресанта",
   ] as string[],
 
-  // slug корневой категории → фон плитки (плейсхолдеры; дизайнер заменит). Дефолт — ниже.
-  categoryAssets: {} as Record<string, string>,
-  // Курируемые «хиты»: slug'и товаров. Пусто → fallback на ?sort=new (см. lib/catalog.ts).
-  bestsellerSlugs: [] as string[],
   trust: [
     { icon: "ShieldCheck", title: "Официальная гарантия" },
     { icon: "Truck", title: "Быстрая доставка" },
@@ -111,43 +106,8 @@ export const HOME_CONTENT = {
     { icon: "BadgeRussianRuble", title: "Выгодные цены", text: "честные цены и акции для наших клиентов" },
     { icon: "RotateCcw", title: "Гарантия и возврат", text: "официальная гарантия и простой возврат" },
   ] as ServiceItem[],
-  // #590: превью статей — раздела статей на сайте нет, поэтому карточки-заглушки
-  // БЕЗ ссылок (не делаем битых href); появится раздел — станут ссылками.
-  articles: {
-    title: "Полезные статьи и обзоры",
-    items: [
-      {
-        title: "Как выбрать шуруповёрт для дома и дачи",
-        date: "18 мая 2026",
-        image: "/home/hero/approved-tools-hero.png",
-        imagePosition: "48% 58%",
-      },
-      {
-        title: "Перфоратор или дрель: что выбрать?",
-        date: "12 мая 2026",
-        image: "/home/hero/approved-tools-hero.png",
-        imagePosition: "61% 58%",
-      },
-      {
-        title: "Топ-10 оснастки, которая должна быть у мастера",
-        date: "6 мая 2026",
-        image: "/home/hero/approved-tools-hero.png",
-        imagePosition: "75% 62%",
-      },
-      {
-        title: "Уход за инструментом: простые правила",
-        date: "28 апреля 2026",
-        image: "/home/hero/approved-tools-hero.png",
-        imagePosition: "91% 58%",
-      },
-    ],
-  },
-  // #590: карточка MAX-помощи (правая колонка нижней зоны).
-  maxHelp: {
-    title: "Нужна помощь в подборе?",
-    text: "Напишите нам в MAX — подберём лучшее решение за 2–3 минуты",
-    cta: "Консультация в MAX",
-  },
+  // Статьи переехали в lib/articles.ts: раздел /articles появился, карточки стали
+  // настоящими ссылками, а заглушки с одинаковой картинкой больше не нужны.
   // #590: email-подписка — UI-заглушка (backend подписок нет, решение зафиксировано):
   // поле и кнопка отрисованы, отправка отключена до появления backend.
   subscribe: {
@@ -172,8 +132,3 @@ export const HOME_CONTENT = {
     ] as HomeStat[],
   },
 };
-
-// Фон плитки категории. Нет ассета для slug → нейтральный плейсхолдер.
-export function categoryAsset(slug: string): string {
-  return HOME_CONTENT.categoryAssets[slug] ?? "/home/categories/placeholder.svg";
-}

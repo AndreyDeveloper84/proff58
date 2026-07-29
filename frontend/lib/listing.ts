@@ -1,12 +1,77 @@
 // Контекстный гейтинг технических фильтров (Фаза 2, §3.3–3.4, §6–7).
 // Чистые функции поверх уже пришедших фасетов — НЕ дублировать эту логику в компонентах.
 
+import { humanizeToken } from "./format";
 import type { Facet, FacetGroupKind, Listing } from "./types";
+
+// Каноническая таксономия v2: верхний «Электроинструмент» навигируется второй осью
+// tool_type, а не деревом — его дочерние узлы в навигации не показываем.
+const TYPE_NAV_ROOT_CATEGORIES = new Set(["elektroinstrument"]);
+
+/** Пункт навигации раздела: ссылка (подкатегория) либо переключатель (тип инструмента). */
+export type CategoryNavItem = {
+  key: string;
+  label: string;
+  /** Есть только у типов инструмента — у подкатегорий счётчика API не отдаёт. */
+  count?: number;
+  /** Есть только у подкатегорий: переход на другую страницу, а не фильтр. */
+  href?: string;
+  active: boolean;
+};
+
+export type CategoryNav = {
+  title: string;
+  items: CategoryNavItem[];
+  /** true — ссылки-подкатегории, false — переключатели tool_type. */
+  isNavigation: boolean;
+};
+
+/**
+ * Единый источник пунктов «куда дальше» для страницы категории (§3.1, §13–14).
+ * Приоритет у дерева: если у раздела есть подкатегории — показываем их ссылками и
+ * НЕ дублируем типами. Иначе — nav-фасет tool_type: значения уже отсортированы API
+ * (value_option.sort_order), порядок стабилен, активный тип наверх не прыгает.
+ * Активный тип, «вымытый» прочими фильтрами (§14), добавляем синтетическим пунктом
+ * с count=0 — иначе пользователь не увидит, что фильтр применён. Подпись фолбэка —
+ * humanizeToken(slug), тот же, что у чипа в ListingShell (N3-консистентность).
+ */
+export function categoryNav(
+  listing: Listing,
+  category: string,
+  toolType?: string,
+): CategoryNav | null {
+  if (listing.subcategories.length > 0 && !TYPE_NAV_ROOT_CATEGORIES.has(category)) {
+    return {
+      title: "Разделы",
+      isNavigation: true,
+      items: listing.subcategories.map((s) => ({
+        key: s.href,
+        label: s.label,
+        href: s.href,
+        active: false,
+      })),
+    };
+  }
+
+  const nav = listing.facets.find((f) => f.isNav);
+  const items: CategoryNavItem[] = (nav?.options ?? []).map((o) => ({
+    key: o.value,
+    label: o.label,
+    count: o.count,
+    active: o.value === toolType,
+  }));
+  if (toolType != null && !items.some((i) => i.active)) {
+    items.push({ key: toolType, label: humanizeToken(toolType), count: 0, active: true });
+  }
+  if (items.length === 0) return null;
+
+  return { title: nav?.label ?? "Тип инструмента", isNavigation: false, items };
+}
 
 /**
  * Широкая ли категория (§3.4). Источник режима — поле API `category_filter_mode`
  * (`listing.filterMode`), если задано. Иначе авто-определение: категория широкая ⇔
- * TypePanel (nav-фасет tool_type) содержит БОЛЕЕ ОДНОГО значения с count > 0.
+ * nav-фасет tool_type содержит БОЛЕЕ ОДНОГО значения с count > 0.
  *
  * Нет nav-фасета или ровно один тип с count>0 → НЕ широкая: трактуем как листовую/
  * типизированную (один доминирующий тип), т.е. показываем полный набор фильтров сразу (§6).
@@ -23,7 +88,8 @@ export function isBroadCategory(listing: Listing): boolean {
  *  - широкая категория И тип не выбран → только базовые (kind === "base"), технические скрыты;
  *  - выбран tool_type ИЛИ листовая/типизированная → все пришедшие не-nav фасеты
  *    (drill-down на бэке уже отсёк пустые).
- * nav-фасет (tool_type) исключаем всегда — он рендерится TypePanel над выдачей.
+ * nav-фасет (tool_type) исключаем всегда — он рендерится отдельным блоком навигации
+ * (categoryNav → CategoryNavPanel), а не рядовым фасетом сайдбара.
  */
 export function sidebarFacets(listing: Listing, toolType?: string): Facet[] {
   const nonNav = listing.facets.filter((f) => !f.isNav);
@@ -53,7 +119,7 @@ const SECTION_LABEL: Record<FacetSectionKey, string> = {
  *    (kind == null) — деградация к видимой базовой секции, а не к их потере;
  *  - «Основные» — технические с group !== "extra" (дефолт);
  *  - «Дополнительные» — технические с group === "extra" (свёрнуты в UI).
- * nav-фасет (TypePanel) сюда не попадает — его отсекает sidebarFacets выше; на всякий
+ * nav-фасет сюда не попадает — его отсекает sidebarFacets выше; на всякий
  * случай исключаем kind === "nav" повторно (вход может прийти не через sidebarFacets).
  */
 export function groupSidebarFacets(facets: Facet[]): FacetSection[] {

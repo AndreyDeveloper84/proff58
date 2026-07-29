@@ -63,6 +63,10 @@
   --photo: #eef1f3;
   --photo-ink: #6b747c;
 
+  /* Лиловая подложка блоков MAX. Токен, а не хардкод #f7f6ff: карточки
+     переживают смену темы, иначе текст в тёмной ложился на белый градиент. */
+  --max-tint: #f7f6ff;
+
   --st-wait: #b7791f;
   --st-confirm: #2f6fb0;
   --st-assemble: #7a5fc0;
@@ -103,6 +107,8 @@
 
   --photo: #eef1f3;
   --photo-ink: #8b939a;
+
+  --max-tint: #1d1b2e;
 
   --st-wait: #e6b45a;
   --st-confirm: #74b6ee;

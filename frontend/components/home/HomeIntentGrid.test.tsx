@@ -24,5 +24,19 @@ describe("HomeIntentGrid (#588)", () => {
     expect(screen.getByText("Для дома")).toBeInTheDocument();
     expect(screen.getByText("Расходные материалы и оснастка")).toBeInTheDocument();
   });
+
+  // Смысл блока — узнать инструмент с одного взгляда; перекрашенная пиктограмма
+  // «шестерёнка» этого не даёт, поэтому у каждой карточки своё предметное фото.
+  it("у каждой карточки своё предметное фото", () => {
+    const { container } = render(<HomeIntentGrid />);
+    const srcs = Array.from(container.querySelectorAll("img")).map((img) =>
+      decodeURIComponent(img.getAttribute("src") ?? ""),
+    );
+
+    expect(srcs).toHaveLength(HOME_CONTENT.intent.cards.length);
+    for (const card of HOME_CONTENT.intent.cards) {
+      expect(srcs.some((src) => src.includes(card.image))).toBe(true);
+    }
+  });
 });
 

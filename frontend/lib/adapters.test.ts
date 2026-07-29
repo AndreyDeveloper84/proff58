@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { fetchCategoryTreeFromApi, fetchListingFromApi } from "./adapters";
+import {
+  fetchBestsellersFromApi,
+  fetchCategoryTreeFromApi,
+  fetchListingFromApi,
+} from "./adapters";
 import { parseQuery } from "./url-state";
 
 const BASE = "http://web:8000";
@@ -102,5 +106,71 @@ describe("fetchCategoryTreeFromApi", () => {
     global.fetch = vi.fn().mockResolvedValue(jsonResponse({ detail: "oops" })) as unknown as typeof fetch;
 
     await expect(fetchCategoryTreeFromApi(BASE)).resolves.toBeNull();
+  });
+});
+
+// Витрина главной обязана называть вещи своими именами: «хиты» — только при
+// реальных продажах, иначе честные новинки. Раньше блок всегда назывался
+// «Хиты продаж», а данные молча приходили из ?sort=new.
+describe("fetchBestsellersFromApi", () => {
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  const PRODUCT = {
+    id: 1,
+    name: "Перфоратор",
+    slug: "perforator",
+    price: "5000",
+    stock_status: "in_stock",
+  };
+
+  function mockBestsellers(bestsellers: unknown[], fresh: unknown[] = []) {
+    global.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/api/catalog/bestsellers/")) {
+        return jsonResponse({ count: bestsellers.length, results: bestsellers });
+      }
+      if (url.includes("sort=new")) {
+        return jsonResponse({ count: fresh.length, results: fresh });
+      }
+      throw new Error(`неожиданный запрос: ${url}`);
+    }) as unknown as typeof fetch;
+  }
+
+  it("есть продажи → отдаёт хиты", async () => {
+    mockBestsellers([{ ...PRODUCT, is_hit: true }]);
+
+    const result = await fetchBestsellersFromApi(BASE, 8);
+
+    expect(result.kind).toBe("bestsellers");
+    expect(result.products).toHaveLength(1);
+    expect(result.products[0].badges).toContain("hit");
+  });
+
+  it("продаж нет → новинки, помеченные как новинки", async () => {
+    mockBestsellers([], [PRODUCT]);
+
+    const result = await fetchBestsellersFromApi(BASE, 8);
+
+    expect(result.kind).toBe("new");
+    expect(result.products).toHaveLength(1);
+    // Новинка не притворяется хитом.
+    expect(result.products[0].badges).not.toContain("hit");
+  });
+
+  it("бейдж «Хит» ставится только по признаку backend", async () => {
+    mockBestsellers([
+      { ...PRODUCT, is_hit: true },
+      { ...PRODUCT, id: 2, slug: "drel", is_hit: false },
+    ]);
+
+    const { products } = await fetchBestsellersFromApi(BASE, 8);
+
+    expect(products[0].badges).toContain("hit");
+    expect(products[1].badges).not.toContain("hit");
   });
 });

@@ -58,7 +58,7 @@ export function MaxLinkCard() {
         </div>
       ) : (
         <div className="max-w-sm">
-          <p className="mb-2 text-sm text-gray-600">
+          <p className="mb-2 text-sm text-ink-2">
             Подключите MAX, чтобы входить без пароля и получать уведомления о заказах.
           </p>
           <MaxAuthFlow mode="link" ctaLabel="Подключить MAX" onCompleted={refresh} />

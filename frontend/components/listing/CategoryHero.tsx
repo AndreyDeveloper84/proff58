@@ -1,5 +1,7 @@
+import Image from "next/image";
 import { Wrench } from "lucide-react";
 
+import { categorySkeleton } from "@/lib/category-artwork";
 import { pluralize } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -7,7 +9,8 @@ import { cn } from "@/lib/utils";
 //   card   — отдельная карточка с рамкой, тех-линией и иконкой (самостоятельный блок);
 //   inline — без внешней карточки и левого отступа: H1/описание встают на одну
 //            вертикальную линию с тулбаром и сеткой товаров (правая колонка PLP).
-// Blueprint-чертёж инструмента справа — в обоих режимах. Единственный <h1> страницы.
+// Справа в обоих режимах — контурный чертёж раздела (lib/category-artwork).
+// Единственный <h1> страницы.
 
 type Hero = {
   image: string | null;
@@ -21,6 +24,8 @@ type CategoryHeroProps = {
   total?: number;
   variant?: "card" | "inline";
   className?: string;
+  /** Названия вышестоящих разделов — запасной чертёж для подкатегорий. */
+  parentTitles?: string[];
 };
 
 export function CategoryHero({
@@ -30,14 +35,23 @@ export function CategoryHero({
   total,
   variant = "card",
   className,
+  parentTitles = [],
 }: CategoryHeroProps) {
   const inline = variant === "inline";
+  // Свой чертёж есть не у каждой подкатегории: «Домкраты» берут чертёж
+  // «Автоинструмента» — это лучше, чем пустое место справа от заголовка.
+  const skeleton =
+    categorySkeleton(title) ??
+    parentTitles.map((parent) => categorySkeleton(parent)).find(Boolean) ??
+    null;
 
   return (
     <section
       className={cn(
         "relative overflow-hidden",
-        inline ? "min-h-[132px]" : "mb-6 rounded-xl border border-line bg-surface",
+        // Высоту резервируем только там, где виден чертёж (lg+): на мобильном она
+        // обернулась бы пустой полосой между заголовком и разделами.
+        inline ? "lg:min-h-[156px]" : "mb-6 rounded-xl border border-line bg-surface",
         className,
       )}
     >
@@ -50,21 +64,24 @@ export function CategoryHero({
         />
       )}
 
-      <svg
-        aria-hidden
-        viewBox="0 0 600 260"
-        className="pointer-events-none absolute right-0 top-0 hidden h-full w-1/2 text-ink-3/30 lg:block"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1"
-      >
-        <path d="M60 130 H540 M150 50 H470 M150 210 H470" />
-        <rect x="180" y="80" width="240" height="100" rx="14" />
-        <circle cx="150" cy="130" r="30" />
-        <circle cx="150" cy="130" r="10" />
-        <path d="M420 108 h70 l26 22 -26 22 h-70 z" />
-        <path d="M150 44 v12 M470 44 v12 M150 204 v12 M470 204 v12" />
-      </svg>
+      {/* Чертёж раздела справа от заголовка — вместо прежней абстрактной
+          заглушки. Для незнакомого раздела чертежа нет, и блок просто остаётся
+          без иллюстрации. На узких экранах прячем: места под него нет. */}
+      {skeleton && (
+        <Image
+          src={skeleton}
+          alt=""
+          width={600}
+          height={260}
+          unoptimized
+          priority
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute right-3 top-1/2 hidden w-auto max-w-[52%] -translate-y-1/2 object-contain lg:block",
+            inline ? "h-[96%]" : "h-[86%]",
+          )}
+        />
+      )}
 
       <div className={cn("relative z-10 flex", inline ? "py-2 pr-4" : "gap-5 p-6 md:p-8")}>
         {!inline && (

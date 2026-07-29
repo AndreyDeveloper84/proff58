@@ -17,6 +17,7 @@ urlpatterns = [
         name="category-facets",
     ),
     path("products/", views.ProductListView.as_view(), name="product-list"),
+    path("bestsellers/", views.BestsellersView.as_view(), name="bestsellers"),
     path(
         "search/suggest/",
         views.ProductSuggestView.as_view(),
