@@ -43,7 +43,7 @@ export function Bestsellers({ products, kind = "bestsellers" }: BestsellersProps
           <button
             type="button"
             onClick={() => scrollBy(-1)}
-            className="grid h-7 w-7 place-items-center rounded-full border border-line text-ink-2 transition hover:border-accent hover:text-accent"
+            className="grid h-11 w-11 place-items-center rounded-full border border-line sm:h-7 sm:w-7 text-ink-2 transition hover:border-accent hover:text-accent"
             aria-label="Прокрутить влево"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -51,7 +51,7 @@ export function Bestsellers({ products, kind = "bestsellers" }: BestsellersProps
           <button
             type="button"
             onClick={() => scrollBy(1)}
-            className="grid h-7 w-7 place-items-center rounded-full border border-line text-ink-2 transition hover:border-accent hover:text-accent"
+            className="grid h-11 w-11 place-items-center rounded-full border border-line sm:h-7 sm:w-7 text-ink-2 transition hover:border-accent hover:text-accent"
             aria-label="Прокрутить вправо"
           >
             <ChevronRight className="h-4 w-4" aria-hidden />
@@ -62,14 +62,14 @@ export function Bestsellers({ products, kind = "bestsellers" }: BestsellersProps
       <Reveal>
         <div
           ref={trackRef}
-          className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex snap-x snap-mandatory items-stretch gap-2.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {products.map((p) => (
             <div
               key={p.id}
-              className="w-[205px] shrink-0 snap-start lg:w-[calc((100%-50px)/6)]"
+              className="flex w-[205px] shrink-0 snap-start lg:w-[calc((100%-50px)/6)]"
             >
-              <ProductCard product={p} variant="home" />
+              <ProductCard product={p} variant="home" className="w-full" />
             </div>
           ))}
         </div>

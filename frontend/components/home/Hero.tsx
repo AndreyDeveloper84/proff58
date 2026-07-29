@@ -40,7 +40,11 @@ export function Hero({ onConsult, maxHref = SITE.support.max.href }: HeroProps) 
           />
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,10,.98)_0%,rgba(5,8,10,.91)_31%,rgba(5,8,10,.54)_51%,rgba(5,8,10,.08)_74%)]"
+            // На узком экране текст занимает всю ширину и ложится прямо на
+            // фотографию — горизонтальный градиент к правому краю прозрачен, и
+            // строки терялись на бликах металла. До sm затемняем сверху вниз,
+            // дальше остаётся исходная раскладка «текст слева, инструмент справа».
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(5,8,10,.95)_0%,rgba(5,8,10,.88)_55%,rgba(5,8,10,.78)_100%)] sm:bg-[linear-gradient(90deg,rgba(5,8,10,.98)_0%,rgba(5,8,10,.91)_31%,rgba(5,8,10,.54)_51%,rgba(5,8,10,.08)_74%)]"
           />
           <div className="relative flex min-h-[300px] items-center px-5 py-6 sm:px-8 lg:px-12 lg:py-6">
             <div className="w-full max-w-[620px]">
