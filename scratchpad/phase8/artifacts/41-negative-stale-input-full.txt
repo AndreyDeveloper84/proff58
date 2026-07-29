@@ -1,0 +1,26 @@
+{
+  "total": 1,
+  "created": 0,
+  "would_create": 0,
+  "existing": 0,
+  "skipped": 0,
+  "errors": 1,
+  "dry_run": true,
+  "result_checksum": "5b7bc1bbcbde83d8b83215dec2a384d415deb91a561d2278027379ee75c9a8ba",
+  "export_checksum": "165ecaf3d2fc3c49f83daf0a4f9486f1fdc1e49e47af633af05ceb8fc562f9a7"
+}
+Ошибки:
+  - product_ref 6: current input snapshot изменился
+Dry-run завершён
+{
+  "total": 1,
+  "created": 0,
+  "would_create": 0,
+  "existing": 0,
+  "skipped": 0,
+  "errors": 1,
+  "dry_run": true,
+  "result_checksum": "5b7bc1bbcbde83d8b83215dec2a384d415deb91a561d2278027379ee75c9a8ba",
+  "export_checksum": "165ecaf3d2fc3c49f83daf0a4f9486f1fdc1e49e47af633af05ceb8fc562f9a7"
+}
+EXIT=0

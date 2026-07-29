@@ -1,0 +1,218 @@
+{
+  "category": "elektroinstrument",
+  "tool_type": "perforatory",
+  "visible_perforatory": 140,
+  "total_products_facet": 140,
+  "coverage": {
+    "power": 110,
+    "energy_impact": 107,
+    "no_load_speed": 16,
+    "chuck": 114,
+    "motor_type": 7,
+    "power_source": 122,
+    "voltage": 10
+  },
+  "power_facet": {
+    "slug": "power",
+    "name": "Мощность",
+    "type": "decimal",
+    "unit": "Вт",
+    "is_nav": false,
+    "group": "main",
+    "values": [
+      {
+        "value": 440.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 500.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 600.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 620.0,
+        "count": 4,
+        "selected": false
+      },
+      {
+        "value": 650.0,
+        "count": 2,
+        "selected": false
+      },
+      {
+        "value": 710.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 720.0,
+        "count": 2,
+        "selected": false
+      },
+      {
+        "value": 730.0,
+        "count": 5,
+        "selected": false
+      },
+      {
+        "value": 750.0,
+        "count": 2,
+        "selected": false
+      },
+      {
+        "value": 780.0,
+        "count": 5,
+        "selected": false
+      },
+      {
+        "value": 790.0,
+        "count": 4,
+        "selected": false
+      },
+      {
+        "value": 800.0,
+        "count": 21,
+        "selected": false
+      },
+      {
+        "value": 830.0,
+        "count": 3,
+        "selected": false
+      },
+      {
+        "value": 850.0,
+        "count": 14,
+        "selected": false
+      },
+      {
+        "value": 880.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 900.0,
+        "count": 8,
+        "selected": false
+      },
+      {
+        "value": 950.0,
+        "count": 5,
+        "selected": false
+      },
+      {
+        "value": 980.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 1000.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 1050.0,
+        "count": 4,
+        "selected": false
+      },
+      {
+        "value": 1100.0,
+        "count": 5,
+        "selected": false
+      },
+      {
+        "value": 1150.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 1200.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 1250.0,
+        "count": 3,
+        "selected": false
+      },
+      {
+        "value": 1350.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 1400.0,
+        "count": 2,
+        "selected": false
+      },
+      {
+        "value": 1500.0,
+        "count": 5,
+        "selected": false
+      },
+      {
+        "value": 1600.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 1700.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 1800.0,
+        "count": 2,
+        "selected": false
+      },
+      {
+        "value": 2000.0,
+        "count": 1,
+        "selected": false
+      },
+      {
+        "value": 2100.0,
+        "count": 1,
+        "selected": false
+      }
+    ]
+  },
+  "chuck_facet": {
+    "slug": "chuck",
+    "name": "Тип патрона",
+    "type": "select",
+    "unit": "",
+    "is_nav": false,
+    "group": "main",
+    "values": [
+      {
+        "value": "SDS-max",
+        "count": 25,
+        "selected": false,
+        "slug": "sds-max"
+      },
+      {
+        "value": "SDS-plus",
+        "count": 89,
+        "selected": false,
+        "slug": "sds-plus"
+      }
+    ]
+  },
+  "facets_keys": [
+    "applied_filters",
+    "brands",
+    "category",
+    "facets",
+    "price",
+    "stock",
+    "subcategories",
+    "total_products"
+  ],
+  "power_800_1000_count": 54
+}

@@ -1,0 +1,60 @@
+ВИХРЬ: 13 моделей в каталоге источника (fixtures) -> ['ap20li4vkomplekte2akbizuvkeyse', 'p1000k', 'p1200km', 'p1350k', 'p1400kv', 'p2000km', 'p5a1000', 'p650k', 'p750', 'p800k', 'p850k', 'p900k', 'y']
+РЕСАНТА: 10 моделей в каталоге источника (fixtures) -> ['ap20li4vkomplekte2akbizuvkeyse', 'p24650k', 'p28800k', 'p30900k', 'p321000k', 'p321400kv', 'p401600km', 'p422000km', 'p80034a', 'y']
+ИНТЕРСКОЛ: 64 моделей в каталоге источника (fixtures) -> ['12vpa1212v', 'antivibracionnoysistemoypv501500ev', 'besschetochnyypa2418vmsventilnymdvigatelem', 'besschetochnyypa2618vmsventilnymdvigatelem', 'besschetochnyypa2818vmsventilnymdvigatelem', 'burdlyaa160x340200mmfelisatti1', 'burdlyaa200x340200mmfelisatti1', 'burdlyaa240x540400mmfelisatti1', 'burdlyaa260x340215mmfelisatti1', 'burdlyaa280x370250mmfelisatti1', 'burdlyaa350x570450mmfelisatti1', 'burdlyaa380x370250mmfelisatti1', 'burdlyaa400x370250mmfelisatti1', 'burdlyaa50x11045mmfelisattiexpert', 'modulpa14', 'p18450er', 'p20550er', 'p22620er', 'p23650er', 'p24650er', 'p24650er1', 'p24650er2', 'p24700avs', 'p24700er', 'p24700er2', 'p25750er', 'p26750ev', 'p26800avs', 'p26800er', 'p26800er1', 'p26800er2', 'p26800err', 'p26800errcopy', 'p28800ev', 'p28850er', 'p30900avs', 'p30900er', 'p30900er2', 'p30900erv2', 'p321000e', 'p321000ee', 'p321000ev2', 'p321000ev21', 'p321100avs', 'p32950ev', 'p351100e', 'p351100ev2', 'p351200ev', 'p381200ev', 'p401100ev', 'p401100ev2', 'p421200evantivibracionnoysistemoy', 'p451000e', 'p451400evsistemoy', 'p481300ev2', 'p501200e', 'p551700evssistemoyantivibracii', 'pa1818l2', 'pa2436vsbesschetochnymdvigatelemm', 'sbesschetochnymventilnymdvigatelempa2218v', 'sbesschetochnymventilnymdvigatelempa2418v', 'y', 'y1', 'yy']
+ЗУБР: 53 моделей в каталоге источника (fixtures) -> ['08242', '15167', '2906z01', '290710z02', '2907213z02', '290821312z02', '2908z02', '2909z02', '29626h', '319pksk', '36659z02', '38165', '38787', '59311', '70640125', '71306', 'ab80700', 'ab8070042', 'gb35042', 'gkl4040', 'krash204641', 'mb5500', 'npgt51500', 'p22650158', 'p24750', 'p2680015b', 'p28850', 'p30950m', 'p321200m', 'pb260', 'pb26042', 'psgm9220r', 'ptsb4040', 'skb2030', 'tab203121', 'ushmp1251600epst', 'ushmp1251800epst', 'vrb2020', 'zp18470', 'zp22650k', 'zp2470', 'zp24750k', 'zp26750ek', 'zp2680', 'zp26800k', 'zp28800k', 'zp28800km', 'zp2890m', 'zp2890ms', 'zp30900k', 'zp321100k', 'zpv30900vk', 'zsb125']
+
+   578 ЗУБР       art=PB-260           model=PB-260           key=pb260          -> pb260
+   579 ЗУБР       art=PB-260-42        model=PB-260-42        key=pb26042        -> pb26042
+   580 ИНТЕРСКОЛ  art=                 model=ПА-10/14,4Р      key=pa10144r       -> НЕТ
+ 44502 ВИХРЬ      art=                 model=П-1000к          key=p1000k         -> p1000k
+ 44503 ВИХРЬ      art=72/3/5           model=П-650к           key=p650k          -> p650k
+ 44504 ВИХРЬ      art=72/3/1           model=П-800к-в         key=p800kv         -> p800k (частично)
+ 44505 ВИХРЬ      art=                 model=П-900к           key=p900k          -> p900k
+ 44506 ИНТЕРСКОЛ  art=РСВ-140804       model=П-24/700ЭР       key=p24700er       -> p24700er
+ 44507 ИНТЕРСКОЛ  art=РСВ-559974       model=П-32/1100АВС     key=p321100avs     -> p321100avs
+ 44508 ВИХРЬ      art=РСВ-140807       model=П-1200к-м        key=p1200km        -> p1200km
+ 44509 ВИХРЬ      art=                 model=П-1400 к-в       key=p1400kv        -> p1400kv
+ 44510 ИНТЕРСКОЛ  art=РСВ-140807       model=П-26/800ЭР       key=p26800er       -> p26800er
+ 44511 ИНТЕРСКОЛ  art=РСВ-200930       model=П-26/800ЭР       key=p26800er       -> p26800er
+ 44512 ИНТЕРСКОЛ  art=рсв-140808       model=П-30/900ЭР       key=p30900er       -> p30900er
+ 44513 ИНТЕРСКОЛ  art=РСВ-200940       model=П-30/900ЭР       key=p30900er       -> p30900er
+ 44514 ВИХРЬ      art=                 model=П-800к           key=p800k          -> p800k
+ 44515 ВИХРЬ      art=РСВ-140807       model=П-900к-в         key=p900kv         -> p900k (частично)
+ 44518 ЗУБР       art=ЗП-26-750 ЭК     model=ЗП-26-750 ЭК     key=zp26750ek      -> zp26750ek
+ 44519 ЗУБР       art=ЗП-26-800        model=ЗП-26-800        key=zp26800        -> zp2680 (частично)
+ 44520 ЗУБР       art=ЗП-22-650 К      model=ЗП-22-650 К      key=zp22650k       -> zp22650k
+ 44521 ЗУБР       art=ЗП-24-750 К      model=ЗП-24-750 К      key=zp24750k       -> zp24750k
+ 44522 ЗУБР       art=ЗП-2470          model=ЗП-2470          key=zp2470         -> zp2470
+ 44523 ЗУБР       art=ЗП-26-800-К      model=ЗП-26-800-К      key=zp26800k       -> zp26800k
+ 44524 ЗУБР       art=ЗП-2680          model=ЗП-2680          key=zp2680         -> zp2680
+ 44525 ЗУБР       art=ЗП-28-800 К      model=ЗП-28-800 К      key=zp28800k       -> zp28800k
+ 44526 ЗУБР       art=ЗП-28-800 КМ     model=ЗП-28-800 КМ     key=zp28800km      -> zp28800km
+ 44527 ЗУБР       art=ЗП-2890 м        model=ЗП-2890 м        key=zp2890m        -> zp2890m
+ 44528 ЗУБР       art=ЗП-2890 мс       model=ЗП-2890 мс       key=zp2890ms       -> zp2890ms
+ 44529 ЗУБР       art=ЗП-30-900 К      model=ЗП-30-900 К      key=zp30900k       -> zp30900k
+ 44530 ЗУБР       art=ЗП-32-1100 К     model=ЗП-32-1100 К     key=zp321100k      -> zp321100k
+ 44531 ЗУБР       art=ЗП-470Э          model=ЗП-470Э          key=zp470e         -> НЕТ
+ 44532 ЗУБР       art=ЗПВ-32-1250 ЭВК  model=ЗПВ-32-1250 ЭВК  key=zpv321250evk   -> НЕТ
+ 44533 ЗУБР       art=ЗПМ-40-1100 ЭК   model=ЗПМ-40-1100 ЭК   key=zpm401100ek    -> НЕТ
+ 44534 ЗУБР       art=ЗПМ-40-1250 ЭВК  model=ЗПМ-40-1250 ЭВК  key=zpm401250evk   -> НЕТ
+ 44535 ЗУБР       art=ЗПМ-45-1350 ЭВ   model=ЗПМ-45-1350 ЭВ   key=zpm451350ev    -> НЕТ
+ 44536 ЗУБР       art=ЗПМ-50-1700-Э    model=ЗПМ-50-1700-Э    key=zpm501700e     -> НЕТ
+ 44537 ЗУБР       art=ЗПМ-52-1500-ЭК   model=ЗПМ-52-1500-ЭК   key=zpm521500ek    -> НЕТ
+ 44538 ЗУБР       art=П-22-650         model=П-22-650         key=p22650         -> zp22650k (частично)
+ 44539 ЗУБР       art=П-24-750         model=П-24-750         key=p24750         -> p24750
+ 44540 ЗУБР       art=П-26-800         model=П-26-800         key=p26800         -> zp26800k (частично)
+ 44541 ЗУБР       art=ПВ-32-1500 ЭВ    model=ПВ-32-1500 ЭВ    key=pv321500ev     -> НЕТ
+ 44542 РЕСАНТА    art=75/3/1           model=П-28-800К        key=p28800k        -> p28800k
+ 44543 РЕСАНТА    art=75/3/2           model=П-30-900к        key=p30900k        -> p30900k
+ 44544 РЕСАНТА    art=75/3/3           model=П-32-1000к       key=p321000k       -> p321000k
+ 44545 РЕСАНТА    art=75/3/6           model=П-32-1400КВ      key=p321400kv      -> p321400kv
+ 44546 РЕСАНТА    art=75/3/7           model=П-40-1600КМ      key=p401600km      -> p401600km
+ 44547 РЕСАНТА    art=75/3/13          model=П-42-2000КМ      key=p422000km      -> p422000km
+ 44550 ВИХРЬ      art=72/3/7           model=П-1000К          key=p1000k         -> p1000k
+ 44551 ИНТЕРСКОЛ  art=РСВ-242395       model=П-24/650 ЭР      key=p24650er       -> p24650er
+
+ИТОГО по брендам (найдено/всего в нашей выборке):
+  ВИХРЬ      9/9
+  РЕСАНТА    6/6
+  ИНТЕРСКОЛ  7/8
+  ЗУБР       18/26

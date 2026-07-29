@@ -1,0 +1,177 @@
+{
+  "canonical": {
+    "attribute_slug": "tool_type",
+    "live_taxonomy_identity_hash": "887eea5d442455fbb97c9eda888c0307f46a1f7e2e51bd56c2bd8a11d3949175",
+    "rows": [
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43798
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43799
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43800
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43801
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43802
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43803
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43804
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43805
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43806
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43807
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43808
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43809
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43810
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43811
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43812
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43813
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43814
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43815
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43816
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43817
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43818
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43819
+      },
+      {
+        "attrs_cache_tool_type": "Гайковёрты",
+        "option_slug": "gaikoverty",
+        "option_value": "Гайковёрты",
+        "product_id": 43820
+      }
+    ],
+    "rows_count": 23,
+    "schema_version": 1,
+    "selector": {
+      "kind": "explicit_ids",
+      "value": [
+        43798,
+        43799,
+        43800,
+        43801,
+        43802,
+        43803,
+        43804,
+        43805,
+        43806,
+        43807,
+        43808,
+        43809,
+        43810,
+        43811,
+        43812,
+        43813,
+        43814,
+        43815,
+        43816,
+        43817,
+        43818,
+        43819,
+        43820
+      ]
+    }
+  },
+  "canonical_hash": "b1fd94b9485243866c1d740ec81b5e4a20c5844deccc3a4440359945538e8b5f"
+}

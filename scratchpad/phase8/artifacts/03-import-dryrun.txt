@@ -1,0 +1,23 @@
+{
+  "total": 5,
+  "created": 0,
+  "would_create": 2,
+  "existing": 0,
+  "skipped": 3,
+  "errors": 0,
+  "dry_run": true,
+  "result_checksum": "df3950351cb25bb98984f3465fa28b0ceef24880eba7d49f2587473cbabd91d3",
+  "export_checksum": "b5dfb8655b555f05e90f0003496d3f3447c814acdfeed8e0b3fcba5e916bed01"
+}
+Dry-run завершён
+{
+  "total": 5,
+  "created": 0,
+  "would_create": 2,
+  "existing": 0,
+  "skipped": 3,
+  "errors": 0,
+  "dry_run": true,
+  "result_checksum": "df3950351cb25bb98984f3465fa28b0ceef24880eba7d49f2587473cbabd91d3",
+  "export_checksum": "b5dfb8655b555f05e90f0003496d3f3447c814acdfeed8e0b3fcba5e916bed01"
+}

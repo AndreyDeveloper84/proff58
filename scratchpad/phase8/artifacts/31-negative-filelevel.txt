@@ -1,0 +1,27 @@
+### n1-broken
+CommandError: Невалидный JSON: Expecting value: line 1 column 37 (char 36)
+EXIT=1
+### n2-badschema
+CommandError: JSON Schema: schema_version: '2.0' is not one of ['1.0']
+EXIT=1
+### n2b-missing-field
+CommandError: JSON Schema: <root>: 'export_checksum' is a required property
+EXIT=1
+### n4-ghost-run
+CommandError: Run 11111111-2222-3333-4444-555555555555 не найден
+EXIT=1
+### n11-bad-checksum
+CommandError: export_checksum не совпадает с последним export run
+EXIT=1
+### n12-changes-no-identity
+CommandError: items[0]: changes запрещены без identity.status=matched
+EXIT=1
+### n13-http-evidence
+CommandError: evidence.url должен быть абсолютным HTTPS URL: http://synthetic.invalid/ph8/n13
+EXIT=1
+### n14-duplicate-ref
+CommandError: items[1]: duplicate product_ref 1
+EXIT=1
+### n17-outside-inbox
+CommandError: Файл должен находиться внутри C:\Users\user\PycharmProjects\proff58\var\catalog-processing\inbox
+EXIT=1

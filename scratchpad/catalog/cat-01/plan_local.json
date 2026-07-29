@@ -1,0 +1,8677 @@
+{
+ "summary": {
+  "missing_attributes": [
+   "level_type",
+   "max_distance",
+   "measuring_range",
+   "readout_type",
+   "tape_length",
+   "tape_width",
+   "thread_pitch",
+   "thread_type"
+  ],
+  "scope_products": 12889,
+  "CREATE": 683,
+  "CREATE_pub": 391,
+  "UPDATE": 0,
+  "PRUNE": 347,
+  "SKIP_PRIORITY": 0,
+  "create_by_attr_tt": {
+   "chuck|perforatory": {
+    "n": 2,
+    "pub": 1
+   },
+   "energy_impact|perforatory": {
+    "n": 4,
+    "pub": 1
+   },
+   "length|izm-urovni": {
+    "n": 169,
+    "pub": 118
+   },
+   "max_distance|izm-dalnomery": {
+    "n": 17,
+    "pub": 13
+   },
+   "measuring_range|izm-mikrometry": {
+    "n": 37,
+    "pub": 21
+   },
+   "measuring_range|izm-shtangen": {
+    "n": 47,
+    "pub": 20
+   },
+   "motor_type|perforatory": {
+    "n": 3,
+    "pub": 3
+   },
+   "no_load_speed|perforatory": {
+    "n": 17,
+    "pub": 16
+   },
+   "size|izm-ugolniki": {
+    "n": 68,
+    "pub": 41
+   },
+   "tape_length|izm-ruletki": {
+    "n": 199,
+    "pub": 99
+   },
+   "tape_width|izm-ruletki": {
+    "n": 120,
+    "pub": 58
+   }
+  },
+  "update_by_attr_tt": {},
+  "prune_by_attr_tt": {
+   "diameter|koronki": {
+    "n": 2,
+    "pub": 1
+   },
+   "diameter|sverla": {
+    "n": 63,
+    "pub": 38
+   },
+   "disc_diameter|krugi-shlif": {
+    "n": 11,
+    "pub": 8
+   },
+   "motor_type|shlifmashiny": {
+    "n": 1,
+    "pub": 1
+   },
+   "size|golovki": {
+    "n": 64,
+    "pub": 23
+   },
+   "size|klyuchi-gaechnye": {
+    "n": 206,
+    "pub": 71
+   }
+  }
+ },
+ "plan": {
+  "create": [
+   {
+    "pid": 563,
+    "tt": "perforatory",
+    "attr": "chuck",
+    "val": "sds-plus",
+    "source": "keyword",
+    "pub": true,
+    "name": "Перф. аккум. DH14DSL; 14,4V, 2х3,0А/ч, Li-ion, SDS"
+   },
+   {
+    "pid": 569,
+    "tt": "perforatory",
+    "attr": "energy_impact",
+    "val": "1.9",
+    "source": "regex",
+    "pub": false,
+    "name": "Перф. аккум. Makita DHR 202RFE SDS plus, 18V, 1,9Д"
+   },
+   {
+    "pid": 10589,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "200",
+    "source": "regex",
+    "pub": true,
+    "name": "Глубиномер микрометрический ГМ 0-200мм"
+   },
+   {
+    "pid": 10590,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Глубиномер микрометрический ГМ 0-25мм"
+   },
+   {
+    "pid": 10592,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "20",
+    "source": "regex",
+    "pub": false,
+    "name": "Дальномер лаз. Bosch GLM 20; диапазон изм.0,15-20м"
+   },
+   {
+    "pid": 10594,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "30",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. Bosch GLM 30; диап. изм.0,15-30м, т"
+   },
+   {
+    "pid": 10598,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "50",
+    "source": "regex",
+    "pub": false,
+    "name": "Дальномер лаз. Bosch GLM 50C; диап. изм.0,05-50м/у"
+   },
+   {
+    "pid": 10601,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "20",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. Bosch ZAMO III SET; диапазон измерения  0,15 - 20м, точность +/- 0,3мм"
+   },
+   {
+    "pid": 10603,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "100",
+    "source": "regex",
+    "pub": false,
+    "name": "Дальномер лаз. CONDTROL XP3, дальность 0,05-100 м,"
+   },
+   {
+    "pid": 10604,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "40",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. Hitachi HDM40; 0.05-40м,точ±1.5мм,"
+   },
+   {
+    "pid": 10605,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "60",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. Hitachi HDM60; 0.05-60м,±1.5мм, к,"
+   },
+   {
+    "pid": 10606,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "80",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. Hitachi HDM80; 0.05-80м,±1.5мм, 635"
+   },
+   {
+    "pid": 10607,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "50",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. Hitachi UG50Y;  диап. изм. 0,05-50м"
+   },
+   {
+    "pid": 10608,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "100",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. KRAFTOOL LD-100, 0,05-100 м, точность 1,5мм"
+   },
+   {
+    "pid": 10609,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. KRAFTOOL LD-150, 0,05-150 м, точность 1,5 мм"
+   },
+   {
+    "pid": 10610,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "40",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. KRAFTOOL LD-40, 0,05-40 м, точность 1,5 мм"
+   },
+   {
+    "pid": 10612,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "60",
+    "source": "regex",
+    "pub": false,
+    "name": "Дальномер лаз. Leica Disto D110, 0,05-60 м +/-1,5"
+   },
+   {
+    "pid": 10613,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "60",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. Leica Disto D2 0,05-60 м  +/-1,5мм"
+   },
+   {
+    "pid": 10614,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "100",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. Leica Disto D3а 0,05-100 м., +/-1мм"
+   },
+   {
+    "pid": 10616,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "60",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. Mettro Condtrol 60  0,15-60 м  +/"
+   },
+   {
+    "pid": 10624,
+    "tt": "izm-dalnomery",
+    "attr": "max_distance",
+    "val": "30",
+    "source": "regex",
+    "pub": true,
+    "name": "Дальномер лаз. СПЕЦ-LASER ДЛ-30, 0,05-30м"
+   },
+   {
+    "pid": 10897,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-0-25 0,01"
+   },
+   {
+    "pid": 10900,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "100",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-100 кл.1  75-100/0,01 мм"
+   },
+   {
+    "pid": 10901,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "125",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-100-125 индикаторный"
+   },
+   {
+    "pid": 10902,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "125",
+    "source": "regex",
+    "pub": false,
+    "name": "Микрометр МК-125   100-125/0,01 КЛБ"
+   },
+   {
+    "pid": 10903,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "125",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-125  10 0-125/0,01 мм ЗУБР \"ЭКСПЕРТ"
+   },
+   {
+    "pid": 10905,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "175",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-150-175"
+   },
+   {
+    "pid": 10906,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "200",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-150-200 0,01мм индикаторный"
+   },
+   {
+    "pid": 10907,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "200",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-175-200"
+   },
+   {
+    "pid": 10908,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "225",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-200-225"
+   },
+   {
+    "pid": 10909,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Микрометр МК-25   0-25/0,01 КЛБ"
+   },
+   {
+    "pid": 10910,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Микрометр МК-25   0-25/0,01 КЛБ с поверкой"
+   },
+   {
+    "pid": 10911,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-25   0-25/0,01 мм ЗУБР \"ЭКСПЕРТ"
+   },
+   {
+    "pid": 10912,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Микрометр МК-25   0-25/0,01 ЧИЗ"
+   },
+   {
+    "pid": 10916,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-25 кл.1  0-25/0,01 мм"
+   },
+   {
+    "pid": 10917,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "275",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-250-275 0,01мм"
+   },
+   {
+    "pid": 10918,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-275-300 0,01мм"
+   },
+   {
+    "pid": 10919,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "50",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-50   25-50/0,01 мм ЗУБР \"ЭКСПЕРТ"
+   },
+   {
+    "pid": 10920,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "50",
+    "source": "regex",
+    "pub": false,
+    "name": "Микрометр МК-50  25-50/0,01 КЛБ"
+   },
+   {
+    "pid": 10921,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "50",
+    "source": "regex",
+    "pub": false,
+    "name": "Микрометр МК-50  25-50/0,01 ЧИЗ"
+   },
+   {
+    "pid": 10922,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "50",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-50 кл.1  25-50/0,01 мм"
+   },
+   {
+    "pid": 10923,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "500",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-500 450-500/0,01мм"
+   },
+   {
+    "pid": 10924,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "75",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-75   50-75/0,01 мм ЗУБР \"ЭКСПЕРТ"
+   },
+   {
+    "pid": 10927,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "75",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-75 50-75/0,01мм"
+   },
+   {
+    "pid": 10928,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "100",
+    "source": "regex",
+    "pub": true,
+    "name": "Микрометр МК-75-100мм"
+   },
+   {
+    "pid": 10932,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Микрометр нониусный 0-25 мм 0,01 мм WIEDERKRAFT"
+   },
+   {
+    "pid": 10933,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "50",
+    "source": "regex",
+    "pub": false,
+    "name": "Микрометр нониусный 25-50мм 0,01 мм WIEDERKRAFT"
+   },
+   {
+    "pid": 10936,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Микрометр цифровой 0-25мм Mitutoyo (с поверкой)"
+   },
+   {
+    "pid": 11199,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "35",
+    "source": "regex",
+    "pub": false,
+    "name": "Нутромер индикат. НИ  18-35"
+   },
+   {
+    "pid": 11200,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "50",
+    "source": "regex",
+    "pub": false,
+    "name": "Нутромер индикат. НИ  18-50 0.01 с поверкой ЧИЗ"
+   },
+   {
+    "pid": 11201,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "50",
+    "source": "regex",
+    "pub": false,
+    "name": "Нутромер индикат. НИ  18-50 0.01 ЧИЗ"
+   },
+   {
+    "pid": 11202,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "100",
+    "source": "regex",
+    "pub": false,
+    "name": "Нутромер индикат. НИ  50-100 0.01 ЧИЗ"
+   },
+   {
+    "pid": 11203,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "160",
+    "source": "regex",
+    "pub": false,
+    "name": "Нутромер индикат. НИ  50-160 0,01 КЛБ"
+   },
+   {
+    "pid": 11204,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "160",
+    "source": "regex",
+    "pub": false,
+    "name": "Нутромер индикат. НИ  50-160 0,01 с поверкой ЧИЗ"
+   },
+   {
+    "pid": 11205,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "160",
+    "source": "regex",
+    "pub": false,
+    "name": "Нутромер индикат. НИ 100-160 0,01КЛБ"
+   },
+   {
+    "pid": 11206,
+    "tt": "izm-mikrometry",
+    "attr": "measuring_range",
+    "val": "450",
+    "source": "regex",
+    "pub": true,
+    "name": "Нутромер индикат. НИ 250-450 0,01"
+   },
+   {
+    "pid": 11277,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  10 м (25 мм)  с тройным стопом Inforce"
+   },
+   {
+    "pid": 11277,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  10 м (25 мм)  с тройным стопом Inforce"
+   },
+   {
+    "pid": 11279,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "1",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  1м (6мм) брелок STAYER MINI"
+   },
+   {
+    "pid": 11279,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "6",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  1м (6мм) брелок STAYER MINI"
+   },
+   {
+    "pid": 11280,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "2",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  2 м (16 мм) синяя \"Стандарт\" FIT"
+   },
+   {
+    "pid": 11280,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  2 м (16 мм) синяя \"Стандарт\" FIT"
+   },
+   {
+    "pid": 11281,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "2",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  2 м (16мм) STAYER"
+   },
+   {
+    "pid": 11281,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  2 м (16мм) STAYER"
+   },
+   {
+    "pid": 11282,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "2",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  2 м (16мм) ЗУБР"
+   },
+   {
+    "pid": 11282,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  2 м (16мм) ЗУБР"
+   },
+   {
+    "pid": 11283,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "2",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  2м (16мм)  Профи Классик FIT"
+   },
+   {
+    "pid": 11283,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  2м (16мм)  Профи Классик FIT"
+   },
+   {
+    "pid": 11284,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м  Hitachi"
+   },
+   {
+    "pid": 11285,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м  RGK RW3"
+   },
+   {
+    "pid": 11286,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м \"Метка\" \"ЭНКОР\" 10105"
+   },
+   {
+    "pid": 11287,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м \"Наутилус\" \"ЭНКОР\""
+   },
+   {
+    "pid": 11288,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16 мм)  прорезиненный корпус GROSS Doppelhaken"
+   },
+   {
+    "pid": 11288,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16 мм)  прорезиненный корпус GROSS Doppelhaken"
+   },
+   {
+    "pid": 11289,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16 мм)  прорезиненный корпус KRAFTOOL AutoStop"
+   },
+   {
+    "pid": 11289,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16 мм)  прорезиненный корпус KRAFTOOL AutoStop"
+   },
+   {
+    "pid": 11290,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16 мм)  прорезиненный корпус с автос"
+   },
+   {
+    "pid": 11290,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16 мм)  прорезиненный корпус с автос"
+   },
+   {
+    "pid": 11291,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16 мм)  с магнитным захватом Gigant"
+   },
+   {
+    "pid": 11291,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16 мм)  с магнитным захватом Gigant"
+   },
+   {
+    "pid": 11292,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16 мм)  с обрез.пластик.корпус магнит KRAFTOOL GRAND"
+   },
+   {
+    "pid": 11292,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16 мм)  с обрез.пластик.корпус магнит KRAFTOOL GRAND"
+   },
+   {
+    "pid": 11293,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16 мм) RemoSpase REMOKOLOR"
+   },
+   {
+    "pid": 11293,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16 мм) RemoSpase REMOKOLOR"
+   },
+   {
+    "pid": 11294,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16 мм) ЗУБР АВТОСТОП рулетка с автостопом и ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11294,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16 мм) ЗУБР АВТОСТОП рулетка с автостопом и ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11295,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16 мм) прорезиненный корпус \"Хард\""
+   },
+   {
+    "pid": 11295,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16 мм) прорезиненный корпус \"Хард\""
+   },
+   {
+    "pid": 11296,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16 мм) прорезиненный корпус Стайл ПР"
+   },
+   {
+    "pid": 11296,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16 мм) прорезиненный корпус Стайл ПР"
+   },
+   {
+    "pid": 11297,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16 мм) синяя \"Стандарт\" FIT"
+   },
+   {
+    "pid": 11297,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16 мм) синяя \"Стандарт\" FIT"
+   },
+   {
+    "pid": 11298,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16 мм) ударостойкий обрезиненный корпус магнит. с двумя фиксаторами STAYER STABIL"
+   },
+   {
+    "pid": 11298,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16 мм) ударостойкий обрезиненный корпус магнит. с двумя фиксаторами STAYER STABIL"
+   },
+   {
+    "pid": 11299,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16мм) ''Т2'' обрезиненный корпус Hobbi"
+   },
+   {
+    "pid": 11299,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16мм) ''Т2'' обрезиненный корпус Hobbi"
+   },
+   {
+    "pid": 11300,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16мм) STAYER BlackMax"
+   },
+   {
+    "pid": 11300,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16мм) STAYER BlackMax"
+   },
+   {
+    "pid": 11301,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16мм) ЗУБР"
+   },
+   {
+    "pid": 11301,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16мм) ЗУБР"
+   },
+   {
+    "pid": 11302,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16мм) обрезин.корпус ВИХРЬ"
+   },
+   {
+    "pid": 11302,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (16мм) обрезин.корпус ВИХРЬ"
+   },
+   {
+    "pid": 11303,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16мм) обрезиненная с автостопом Info"
+   },
+   {
+    "pid": 11303,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16мм) обрезиненная с автостопом Info"
+   },
+   {
+    "pid": 11304,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16мм) с автостпом обрез.корпус AV St"
+   },
+   {
+    "pid": 11304,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (16мм) с автостпом обрез.корпус AV St"
+   },
+   {
+    "pid": 11305,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (18мм) MIRAX обрезиненная"
+   },
+   {
+    "pid": 11305,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "18",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (18мм) MIRAX обрезиненная"
+   },
+   {
+    "pid": 11306,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (19 мм)  с ударостойким обрезиненным корпусом KRAFTOOL"
+   },
+   {
+    "pid": 11306,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м (19 мм)  с ударостойким обрезиненным корпусом KRAFTOOL"
+   },
+   {
+    "pid": 11307,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (19мм) SKRAB"
+   },
+   {
+    "pid": 11307,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м (19мм) SKRAB"
+   },
+   {
+    "pid": 11308,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м 16мм двухкомпонентный корпус,автоматическая фиксация Matrix Autostop"
+   },
+   {
+    "pid": 11309,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м RGK RW3 с поверкой"
+   },
+   {
+    "pid": 11310,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м обрезиненный корпус"
+   },
+   {
+    "pid": 11311,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м с фиксатором Каучук \"ЭНКОР\""
+   },
+   {
+    "pid": 11312,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м УралИнструментИмпЭкс Р3У2П 2 кл.точ. с поверкой гост 7502-99 212072а"
+   },
+   {
+    "pid": 11313,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3 м х 12,5мм Top Tools"
+   },
+   {
+    "pid": 11314,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3 м х16мм ГОСТ 7502-88"
+   },
+   {
+    "pid": 11315,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3м (16мм)  ударостойкий обрезиненный корпус STAYER MASTER"
+   },
+   {
+    "pid": 11315,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3м (16мм)  ударостойкий обрезиненный корпус STAYER MASTER"
+   },
+   {
+    "pid": 11316,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3м (16мм) ЗУБР МАСТЕР с ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11316,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3м (16мм) ЗУБР МАСТЕР с ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11317,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3м (16мм) с ударостойким обрезиненным корпусом ЗУБР АВТОСТОП"
+   },
+   {
+    "pid": 11317,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3м (16мм) с ударостойким обрезиненным корпусом ЗУБР АВТОСТОП"
+   },
+   {
+    "pid": 11318,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3м (19мм) МАГНИТНАЯ с фиксатором УЛЬТРА К"
+   },
+   {
+    "pid": 11318,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  3м (19мм) МАГНИТНАЯ с фиксатором УЛЬТРА К"
+   },
+   {
+    "pid": 11319,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3м 16мм HK2010-03-3-16 Hanskonner"
+   },
+   {
+    "pid": 11320,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3м 16мм HK2010-06-3-16 Hanskonner"
+   },
+   {
+    "pid": 11321,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3м 16мм STURM автостоп"
+   },
+   {
+    "pid": 11322,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3м 16мм СОЮЗ обрезинен"
+   },
+   {
+    "pid": 11323,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3м Р5УЗД КЛБ с поверкой"
+   },
+   {
+    "pid": 11324,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  3м х 16 мм, пластиковый корпус Fine MATRI"
+   },
+   {
+    "pid": 11327,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м  Hitachi"
+   },
+   {
+    "pid": 11328,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (16 мм) синяя \"Стандарт\" FIT"
+   },
+   {
+    "pid": 11328,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "16",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (16 мм) синяя \"Стандарт\" FIT"
+   },
+   {
+    "pid": 11329,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  GROSS"
+   },
+   {
+    "pid": 11329,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  GROSS"
+   },
+   {
+    "pid": 11330,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  Rubber MATRIX"
+   },
+   {
+    "pid": 11330,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  Rubber MATRIX"
+   },
+   {
+    "pid": 11331,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  двухкомпонентный корпус,3 фиксации ленты Matrix"
+   },
+   {
+    "pid": 11331,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  двухкомпонентный корпус,3 фиксации ленты Matrix"
+   },
+   {
+    "pid": 11332,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  прорез.корпус \"Люкс\"(тройной"
+   },
+   {
+    "pid": 11332,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  прорез.корпус \"Люкс\"(тройной"
+   },
+   {
+    "pid": 11333,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм)  прорезиненный корпус \"Matrix"
+   },
+   {
+    "pid": 11333,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм)  прорезиненный корпус \"Matrix"
+   },
+   {
+    "pid": 11334,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм)  прорезиненный корпус \"Фьюжн\""
+   },
+   {
+    "pid": 11334,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм)  прорезиненный корпус \"Фьюжн\""
+   },
+   {
+    "pid": 11335,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм)  прорезиненный корпус \"Хард\""
+   },
+   {
+    "pid": 11335,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм)  прорезиненный корпус \"Хард\""
+   },
+   {
+    "pid": 11336,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  прорезиненный корпус с автос"
+   },
+   {
+    "pid": 11336,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  прорезиненный корпус с автос"
+   },
+   {
+    "pid": 11337,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм)  с обрез.пластик.корпус магнит KRAFTOOL GRAND"
+   },
+   {
+    "pid": 11337,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм)  с обрез.пластик.корпус магнит KRAFTOOL GRAND"
+   },
+   {
+    "pid": 11338,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  с тройным стопом Inforce"
+   },
+   {
+    "pid": 11338,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  с тройным стопом Inforce"
+   },
+   {
+    "pid": 11339,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм)  с ударостойким обрезиненным корпусом KRAFTOOL"
+   },
+   {
+    "pid": 11339,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм)  с ударостойким обрезиненным корпусом KRAFTOOL"
+   },
+   {
+    "pid": 11340,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  СИБИН"
+   },
+   {
+    "pid": 11340,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм)  СИБИН"
+   },
+   {
+    "pid": 11341,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм) RemoSpase REMOKOLOR"
+   },
+   {
+    "pid": 11341,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм) RemoSpase REMOKOLOR"
+   },
+   {
+    "pid": 11342,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм) STRONG обрезиненный корпус \"M"
+   },
+   {
+    "pid": 11342,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм) STRONG обрезиненный корпус \"M"
+   },
+   {
+    "pid": 11343,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм) ЗУБР АВТОСТОП рулетка с автостопом и ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11343,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм) ЗУБР АВТОСТОП рулетка с автостопом и ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11344,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм) прорезинен. корпус тройной ст"
+   },
+   {
+    "pid": 11344,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм) прорезинен. корпус тройной ст"
+   },
+   {
+    "pid": 11345,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм) прорезиненный корпус Стайл ПР"
+   },
+   {
+    "pid": 11345,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм) прорезиненный корпус Стайл ПР"
+   },
+   {
+    "pid": 11346,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм) ударостойкий обрезиненный корпус магнит. с двумя фиксаторами STAYER STABIL"
+   },
+   {
+    "pid": 11346,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19 мм) ударостойкий обрезиненный корпус магнит. с двумя фиксаторами STAYER STABIL"
+   },
+   {
+    "pid": 11347,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм), \"Ergonomisch\" магнитный обре"
+   },
+   {
+    "pid": 11347,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19 мм), \"Ergonomisch\" магнитный обре"
+   },
+   {
+    "pid": 11348,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19мм) Gigant"
+   },
+   {
+    "pid": 11348,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19мм) Gigant"
+   },
+   {
+    "pid": 11349,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19мм) STAYER"
+   },
+   {
+    "pid": 11349,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19мм) STAYER"
+   },
+   {
+    "pid": 11350,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19мм) STAYER BlackMax"
+   },
+   {
+    "pid": 11350,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19мм) STAYER BlackMax"
+   },
+   {
+    "pid": 11351,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19мм) ЗУБР"
+   },
+   {
+    "pid": 11351,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (19мм) ЗУБР"
+   },
+   {
+    "pid": 11352,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19мм) обрезиненный корпус Сибин"
+   },
+   {
+    "pid": 11352,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (19мм) обрезиненный корпус Сибин"
+   },
+   {
+    "pid": 11353,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25 мм)  KRAFTOOL ударопрочная метал корпус"
+   },
+   {
+    "pid": 11353,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25 мм)  KRAFTOOL ударопрочная метал корпус"
+   },
+   {
+    "pid": 11354,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм)  нейлоновое покрытие, обрезин"
+   },
+   {
+    "pid": 11354,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм)  нейлоновое покрытие, обрезин"
+   },
+   {
+    "pid": 11355,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25 мм)  прорезиненный корпус \"Хард\""
+   },
+   {
+    "pid": 11355,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25 мм)  прорезиненный корпус \"Хард\""
+   },
+   {
+    "pid": 11356,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм)  с нейлоновым покрытием KRAFT"
+   },
+   {
+    "pid": 11356,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм)  с нейлоновым покрытием KRAFT"
+   },
+   {
+    "pid": 11357,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25 мм)  с обрез.пластик.корпус магнит KRAFTOOL GRAND"
+   },
+   {
+    "pid": 11357,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25 мм)  с обрез.пластик.корпус магнит KRAFTOOL GRAND"
+   },
+   {
+    "pid": 11358,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм)  с обрез.пластик.корпус магнит MAX Stanley"
+   },
+   {
+    "pid": 11358,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм)  с обрез.пластик.корпус магнит MAX Stanley"
+   },
+   {
+    "pid": 11359,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм)  с тройным стопом Inforce"
+   },
+   {
+    "pid": 11359,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм)  с тройным стопом Inforce"
+   },
+   {
+    "pid": 11360,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25 мм)  с ударостойким обрезиненным корпусом KRAFTOOL"
+   },
+   {
+    "pid": 11360,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25 мм)  с ударостойким обрезиненным корпусом KRAFTOOL"
+   },
+   {
+    "pid": 11361,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25 мм) ЗУБР АВТОСТОП рулетка с автостопом и ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11361,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25 мм) ЗУБР АВТОСТОП рулетка с автостопом и ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11362,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм) ударостойкий обрезиненный корпус магнит. с двумя фиксаторами STAYER STABIL"
+   },
+   {
+    "pid": 11362,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм) ударостойкий обрезиненный корпус магнит. с двумя фиксаторами STAYER STABIL"
+   },
+   {
+    "pid": 11363,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм), \"Ergonomisch\" магнитный обре"
+   },
+   {
+    "pid": 11363,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм), \"Ergonomisch\" магнитный обре"
+   },
+   {
+    "pid": 11364,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм), Komfortabel обрезиненный кор"
+   },
+   {
+    "pid": 11364,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м (25 мм), Komfortabel обрезиненный кор"
+   },
+   {
+    "pid": 11365,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25мм) ''Т1'' пластик корпус Hobbi"
+   },
+   {
+    "pid": 11365,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25мм) ''Т1'' пластик корпус Hobbi"
+   },
+   {
+    "pid": 11366,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25мм) ''Т2'' обрезиненный корпус Hobbi"
+   },
+   {
+    "pid": 11366,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (25мм) ''Т2'' обрезиненный корпус Hobbi"
+   },
+   {
+    "pid": 11367,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (27 мм)  Hanskonner автостоп, супермощный магнит"
+   },
+   {
+    "pid": 11367,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "27",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (27 мм)  Hanskonner автостоп, супермощный магнит"
+   },
+   {
+    "pid": 11368,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (32 мм)  Hanskonner автостоп, магнит до 2кг"
+   },
+   {
+    "pid": 11368,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "32",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (32 мм)  Hanskonner автостоп, магнит до 2кг"
+   },
+   {
+    "pid": 11369,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (32 мм)  нейлоновое покрытие, ударостойкая, крюк с магнитом KRAFTOOL EXTREM"
+   },
+   {
+    "pid": 11369,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "32",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м (32 мм)  нейлоновое покрытие, ударостойкая, крюк с магнитом KRAFTOOL EXTREM"
+   },
+   {
+    "pid": 11370,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м 19vv MATRIX"
+   },
+   {
+    "pid": 11371,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м 25 мм Профи сине-желтая Модерн (двойн"
+   },
+   {
+    "pid": 11372,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м 25 мм Стайл Профи прорезиненный корпу"
+   },
+   {
+    "pid": 11373,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м 25мм двухкомпонентный корпус,автоматическая фиксация Matrix Autostop"
+   },
+   {
+    "pid": 11374,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м карманная противоударная  Wurth."
+   },
+   {
+    "pid": 11375,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5 м обрезиненный корпус"
+   },
+   {
+    "pid": 11376,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м Р5УЗД КЛБ с поверкой"
+   },
+   {
+    "pid": 11377,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м СОРОКИН"
+   },
+   {
+    "pid": 11378,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5 м/25мм STAYER"
+   },
+   {
+    "pid": 11379,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5м (18мм) MIRAX обрезиненная"
+   },
+   {
+    "pid": 11379,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "18",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5м (18мм) MIRAX обрезиненная"
+   },
+   {
+    "pid": 11380,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм)  ударостойкий обрезиненный корпус STAYER MASTER"
+   },
+   {
+    "pid": 11380,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм)  ударостойкий обрезиненный корпус STAYER MASTER"
+   },
+   {
+    "pid": 11381,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм)  ударостойкий обрезиненный корпус STAYER TopTape"
+   },
+   {
+    "pid": 11381,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм)  ударостойкий обрезиненный корпус STAYER TopTape"
+   },
+   {
+    "pid": 11382,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм) VIRA"
+   },
+   {
+    "pid": 11382,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм) VIRA"
+   },
+   {
+    "pid": 11383,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм) ЗУБР МАСТЕР с ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11383,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм) ЗУБР МАСТЕР с ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11384,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм) с автостопом в ударостойком обрезиненном корпусе Stayer"
+   },
+   {
+    "pid": 11384,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм) с автостопом в ударостойком обрезиненном корпусе Stayer"
+   },
+   {
+    "pid": 11385,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм) с магнит. крюком Gigant"
+   },
+   {
+    "pid": 11385,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм) с магнит. крюком Gigant"
+   },
+   {
+    "pid": 11386,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм) с ударостойким обрезиненным корпусом ЗУБР НЕЙЛОН"
+   },
+   {
+    "pid": 11386,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "19",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (19мм) с ударостойким обрезиненным корпусом ЗУБР НЕЙЛОН"
+   },
+   {
+    "pid": 11387,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (25 мм) с фиксатором selflock, защелка"
+   },
+   {
+    "pid": 11387,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (25 мм) с фиксатором selflock, защелка"
+   },
+   {
+    "pid": 11388,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (25 мм) стальная лента NEO"
+   },
+   {
+    "pid": 11388,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (25 мм) стальная лента NEO"
+   },
+   {
+    "pid": 11389,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (25мм) ЗУБР АВТОСТОП профессиональная с ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11389,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (25мм) ЗУБР АВТОСТОП профессиональная с ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11390,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5м (25мм) магнит, автостоп, МАНГО ЦИ"
+   },
+   {
+    "pid": 11390,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5м (25мм) магнит, автостоп, МАНГО ЦИ"
+   },
+   {
+    "pid": 11391,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5м (25мм) МАГНИТНАЯ с фиксатором УЛЬТРА К"
+   },
+   {
+    "pid": 11391,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5м (25мм) МАГНИТНАЯ с фиксатором УЛЬТРА К"
+   },
+   {
+    "pid": 11392,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5м (25мм) с лазерным уровнем FIT"
+   },
+   {
+    "pid": 11392,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5м (25мм) с лазерным уровнем FIT"
+   },
+   {
+    "pid": 11393,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (25мм) с магнит. крюком Gigant"
+   },
+   {
+    "pid": 11393,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (25мм) с магнит. крюком Gigant"
+   },
+   {
+    "pid": 11394,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (32мм) Denzel  автоматич. фиксац., нейлон. покрытие, магнит. зацеп, двухстор. разметка"
+   },
+   {
+    "pid": 11394,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "32",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м (32мм) Denzel  автоматич. фиксац., нейлон. покрытие, магнит. зацеп, двухстор. разметка"
+   },
+   {
+    "pid": 11395,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5м (32мм) МАГНИТНАЯ с фиксатором УЛЬТРА-Ч"
+   },
+   {
+    "pid": 11395,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "32",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5м (32мм) МАГНИТНАЯ с фиксатором УЛЬТРА-Ч"
+   },
+   {
+    "pid": 11396,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м 19мм STURM с 2-х сторон шкалой"
+   },
+   {
+    "pid": 11397,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м 25мм HK2010-01-5-25 Hanskonner"
+   },
+   {
+    "pid": 11398,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м 25мм HK2010-03-5-25 Hanskonner"
+   },
+   {
+    "pid": 11399,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м Р5УЗД КЛБ с поверкой"
+   },
+   {
+    "pid": 11400,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  5м с лазерным дальномером 40М Дело Техники"
+   },
+   {
+    "pid": 11401,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5м ЭНКОР КАУЧУК с фиксатором"
+   },
+   {
+    "pid": 11402,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  5м/19мм \"RemoCosmo\"//Remocolor"
+   },
+   {
+    "pid": 11403,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7 м (24мм) Elastica"
+   },
+   {
+    "pid": 11403,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "24",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7 м (24мм) Elastica"
+   },
+   {
+    "pid": 11404,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7 м (25мм) STAYER"
+   },
+   {
+    "pid": 11404,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7 м (25мм) STAYER"
+   },
+   {
+    "pid": 11405,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  7,5 м (25 мм) RemoSpase REMOKOLOR"
+   },
+   {
+    "pid": 11405,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  7,5 м (25 мм) RemoSpase REMOKOLOR"
+   },
+   {
+    "pid": 11406,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  7,5 м (25мм) ''Т2'' обрезиненный корпус Hobbi"
+   },
+   {
+    "pid": 11406,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  7,5 м (25мм) ''Т2'' обрезиненный корпус Hobbi"
+   },
+   {
+    "pid": 11407,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  7,5 м (25мм) ''Т21\" Hobbi"
+   },
+   {
+    "pid": 11407,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  7,5 м (25мм) ''Т21\" Hobbi"
+   },
+   {
+    "pid": 11408,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7,5м (25мм)  ударостойкий обрезиненный корпус STAYER MASTER"
+   },
+   {
+    "pid": 11408,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7,5м (25мм)  ударостойкий обрезиненный корпус STAYER MASTER"
+   },
+   {
+    "pid": 11409,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7,5м (25мм) ЗУБР МАСТЕР с ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11409,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7,5м (25мм) ЗУБР МАСТЕР с ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11410,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  7,5м (25мм) МАГНИТНАЯ с фиксатором УЛЬТРА"
+   },
+   {
+    "pid": 11410,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  7,5м (25мм) МАГНИТНАЯ с фиксатором УЛЬТРА"
+   },
+   {
+    "pid": 11411,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7,5м 25мм STURM автостоп"
+   },
+   {
+    "pid": 11412,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  7,5м Condtrol автомат"
+   },
+   {
+    "pid": 11413,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  7,5м Стайл Профи прорезиненный корпус шир"
+   },
+   {
+    "pid": 11414,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7,5м х 25 мм, двухкомпонентный корпус MAT"
+   },
+   {
+    "pid": 11415,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7,5м ЭНКОР КАУЧУК с фиксатором"
+   },
+   {
+    "pid": 11416,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7,5м, обрез. поверка"
+   },
+   {
+    "pid": 11418,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7.5 м (25мм) Inforce"
+   },
+   {
+    "pid": 11418,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  7.5 м (25мм) Inforce"
+   },
+   {
+    "pid": 11419,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "7.5",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  7.5 м 25 мм Профи сине-желтая Модерн"
+   },
+   {
+    "pid": 11420,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "8",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  8 м  Hitachi"
+   },
+   {
+    "pid": 11421,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "8",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  8 м (25 мм)  с обрез.пластик.корпус магнит KRAFTOOL GRAND"
+   },
+   {
+    "pid": 11421,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  8 м (25 мм)  с обрез.пластик.корпус магнит KRAFTOOL GRAND"
+   },
+   {
+    "pid": 11422,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "8",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  8 м (25 мм)  с ударостойким обрезиненным корпусом KRAFTOOL"
+   },
+   {
+    "pid": 11422,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  8 м (25 мм)  с ударостойким обрезиненным корпусом KRAFTOOL"
+   },
+   {
+    "pid": 11423,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "8",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  8 м (25 мм) ЗУБР АВТОСТОП рулетка с автостопом и ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11423,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  8 м (25 мм) ЗУБР АВТОСТОП рулетка с автостопом и ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11424,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "8",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  8м (25мм) ЗУБР АВТОСТОП"
+   },
+   {
+    "pid": 11424,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка  8м (25мм) ЗУБР АВТОСТОП"
+   },
+   {
+    "pid": 11425,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "9",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  9 м (25 мм)  с ударостойким обрезиненным"
+   },
+   {
+    "pid": 11425,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка  9 м (25 мм)  с ударостойким обрезиненным"
+   },
+   {
+    "pid": 11426,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25 мм)  GROSS"
+   },
+   {
+    "pid": 11426,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25 мм)  GROSS"
+   },
+   {
+    "pid": 11427,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25 мм)  обрезиненный корпус Gross Ergonomisch"
+   },
+   {
+    "pid": 11427,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25 мм)  обрезиненный корпус Gross Ergonomisch"
+   },
+   {
+    "pid": 11428,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25 мм)  обрезиненный корпус Sparta"
+   },
+   {
+    "pid": 11428,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25 мм)  обрезиненный корпус Sparta"
+   },
+   {
+    "pid": 11429,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25 мм)  обрезиненный корпус STAYER"
+   },
+   {
+    "pid": 11429,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25 мм)  обрезиненный корпус STAYER"
+   },
+   {
+    "pid": 11430,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (25 мм)  с нейлоновым покрытием KRAFT"
+   },
+   {
+    "pid": 11430,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (25 мм)  с нейлоновым покрытием KRAFT"
+   },
+   {
+    "pid": 11431,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (25 мм)  с обрез.пластик.корпус магнит KRAFTOOL GRAND"
+   },
+   {
+    "pid": 11431,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (25 мм)  с обрез.пластик.корпус магнит KRAFTOOL GRAND"
+   },
+   {
+    "pid": 11432,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (25 мм)  с ударостойким обрезиненным корпусом KRAFTOOL"
+   },
+   {
+    "pid": 11432,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (25 мм)  с ударостойким обрезиненным корпусом KRAFTOOL"
+   },
+   {
+    "pid": 11433,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25 мм)  СИБИН"
+   },
+   {
+    "pid": 11433,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25 мм)  СИБИН"
+   },
+   {
+    "pid": 11434,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (25 мм) ЗУБР АВТОСТОП рулетка с автостопом и ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11434,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (25 мм) ЗУБР АВТОСТОП рулетка с автостопом и ударостойким обрезиненным корпусом"
+   },
+   {
+    "pid": 11435,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25 мм), Komfortabel обрезиненный кор"
+   },
+   {
+    "pid": 11435,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25 мм), Komfortabel обрезиненный кор"
+   },
+   {
+    "pid": 11436,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (25мм) ''Т2'' обрезиненный корпус Hobbi"
+   },
+   {
+    "pid": 11436,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (25мм) ''Т2'' обрезиненный корпус Hobbi"
+   },
+   {
+    "pid": 11437,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (25мм) \"RemoSpase\"//Remocolor"
+   },
+   {
+    "pid": 11437,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (25мм) \"RemoSpase\"//Remocolor"
+   },
+   {
+    "pid": 11438,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25мм) STAYER BlackMax"
+   },
+   {
+    "pid": 11438,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м (25мм) STAYER BlackMax"
+   },
+   {
+    "pid": 11439,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (32 мм)  нейлоновое покрытие, ударостойкая, крюк с магнитом KRAFTOOL EXTREM"
+   },
+   {
+    "pid": 11439,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "32",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м (32 мм)  нейлоновое покрытие, ударостойкая, крюк с магнитом KRAFTOOL EXTREM"
+   },
+   {
+    "pid": 11440,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м 25 мм прорезиненный корпус \"Фьюжн\""
+   },
+   {
+    "pid": 11441,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м 25 мм прорезиненный корпус \"Хард\""
+   },
+   {
+    "pid": 11442,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10 м 25 мм Стайл Профи прорезиненный корпу"
+   },
+   {
+    "pid": 11443,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м Р10УЗД КЛБ с поверкой"
+   },
+   {
+    "pid": 11444,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10 м с фиксатором \"ЭНКОР\" 6828"
+   },
+   {
+    "pid": 11445,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "13",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 100 м фибергласовая , открытый корпус 13 м"
+   },
+   {
+    "pid": 11447,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10м (25мм)  Профи , эласт.корпус , нейлон."
+   },
+   {
+    "pid": 11447,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10м (25мм)  Профи , эласт.корпус , нейлон."
+   },
+   {
+    "pid": 11448,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10м (25мм) с 3 фиксаторами в обрезин.корпу"
+   },
+   {
+    "pid": 11448,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "25",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10м (25мм) с 3 фиксаторами в обрезин.корпу"
+   },
+   {
+    "pid": 11449,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10м 25мм HK2010-01-10-25 Hanskonner"
+   },
+   {
+    "pid": 11450,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 10м Р10УЗД КЛБ с поверкой"
+   },
+   {
+    "pid": 11451,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10м стальная лента"
+   },
+   {
+    "pid": 11452,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10м фиброглассовая лента"
+   },
+   {
+    "pid": 11453,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "10",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 10м/25мм \"RemoCosmo\"//Remocolor"
+   },
+   {
+    "pid": 11457,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "20",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 20 м 13 мм фибергласовая Hobbi"
+   },
+   {
+    "pid": 11458,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "20",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 20 м геодезийная лента STAYER"
+   },
+   {
+    "pid": 11459,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "20",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 20 м фибергласовая ЗУБР"
+   },
+   {
+    "pid": 11460,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "20",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 20м Р20УЗК КЛБ с поверкой"
+   },
+   {
+    "pid": 11461,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "20",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 20м стальная лента STAYER"
+   },
+   {
+    "pid": 11462,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "20",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 20м стальная лента землемерная"
+   },
+   {
+    "pid": 11464,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "30",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 30 м геодезийная лента STAYER"
+   },
+   {
+    "pid": 11465,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "30",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 30 м фибергласовая Hobbi"
+   },
+   {
+    "pid": 11466,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "30",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 30м стальная лента"
+   },
+   {
+    "pid": 11467,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "30",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 30м стальная лента STAYER"
+   },
+   {
+    "pid": 11468,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "30",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 30м стальная лента землемерная"
+   },
+   {
+    "pid": 11469,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "30",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 30м фиброглассовая лента"
+   },
+   {
+    "pid": 11470,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "30",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 30м ЭНКОР"
+   },
+   {
+    "pid": 11472,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 3м для измерения диаметра Talmeter"
+   },
+   {
+    "pid": 11473,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "50",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 50 м фибергласовая Hobbi"
+   },
+   {
+    "pid": 11474,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "50",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 50 м фибергласовая ЗУБР 34155-50_z01"
+   },
+   {
+    "pid": 11475,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "50",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 50м с открытым корпусом  ЭНКОР"
+   },
+   {
+    "pid": 11476,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "50",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 50м стальная лента STAYER"
+   },
+   {
+    "pid": 11477,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "50",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 50м стальная лента землемерная"
+   },
+   {
+    "pid": 11478,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "50",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка 50м фиброглассовая лента"
+   },
+   {
+    "pid": 11479,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "50",
+    "source": "regex",
+    "pub": false,
+    "name": "Рулетка 50м ЭНКОР"
+   },
+   {
+    "pid": 11482,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "2",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка-брелок 2 м (8 мм), обрезиненный корпус"
+   },
+   {
+    "pid": 11482,
+    "tt": "izm-ruletki",
+    "attr": "tape_width",
+    "val": "8",
+    "source": "regex",
+    "pub": true,
+    "name": "Рулетка-брелок 2 м (8 мм), обрезиненный корпус"
+   },
+   {
+    "pid": 11611,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "145",
+    "source": "regex",
+    "pub": true,
+    "name": "Транспортир из нержавеющей стали 145мм KRAFTOOL"
+   },
+   {
+    "pid": 11613,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "200",
+    "source": "regex",
+    "pub": false,
+    "name": "Транспортир с линейкой 200мм Inforce"
+   },
+   {
+    "pid": 11614,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "200",
+    "source": "regex",
+    "pub": true,
+    "name": "Транспортир угломер электронный 200мм KRAFTOOL DPM-20"
+   },
+   {
+    "pid": 11615,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Транспортир угломер электронный 300мм ЗУБР ПРОФ"
+   },
+   {
+    "pid": 11616,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "200",
+    "source": "regex",
+    "pub": true,
+    "name": "Транспортир-угломер электронный, 200 мм, Диапазон 0-360°, Точность 0,3°, Фиксация угла, ЗУБР Професс"
+   },
+   {
+    "pid": 11628,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Угломер-шаблон (малка) 300мм"
+   },
+   {
+    "pid": 11629,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "350",
+    "source": "regex",
+    "pub": false,
+    "name": "Уголок 350 мм HAMMER"
+   },
+   {
+    "pid": 11630,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "20",
+    "source": "regex",
+    "pub": false,
+    "name": "Уголок мебельный  усиленный, 2,0 мм, 20х20х16 мм,"
+   },
+   {
+    "pid": 11631,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "250",
+    "source": "regex",
+    "pub": true,
+    "name": "Уголок столярный 250мм алюминевый литой MATRIX"
+   },
+   {
+    "pid": 11632,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "250",
+    "source": "regex",
+    "pub": true,
+    "name": "Уголок столярный 250мм, гравированная шкала, нержавеющее полотно 37мм,  STAYER \"PROFI\""
+   },
+   {
+    "pid": 11633,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": false,
+    "name": "Уголок столярный 300мм ЗУБР ПРОФЕССИОНАЛ с уровнем"
+   },
+   {
+    "pid": 11634,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Уголок столярный 300мм, гравированная шкала, нержавеющее полотно 37мм,  STAYER \"PROFI\""
+   },
+   {
+    "pid": 11635,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": false,
+    "name": "Уголок столярный 300х200мм ЗУБР \"ЭКСПЕРТ\" цельноме"
+   },
+   {
+    "pid": 11636,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "350",
+    "source": "regex",
+    "pub": true,
+    "name": "Уголок столярный 350 мм металлический/ Hobbi"
+   },
+   {
+    "pid": 11637,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "350",
+    "source": "regex",
+    "pub": true,
+    "name": "Уголок столярный 350мм алюминевый литой MATRIX"
+   },
+   {
+    "pid": 11638,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "350",
+    "source": "regex",
+    "pub": true,
+    "name": "Уголок столярный 350мм, гравированная шкала, нержавеющее полотно 37мм,  STAYER \"PROFI\""
+   },
+   {
+    "pid": 11639,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уголок столярный 400мм, гравированная шкала, нержавеющее полотно 37мм,  STAYER \"PROFI\""
+   },
+   {
+    "pid": 11640,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "450",
+    "source": "regex",
+    "pub": true,
+    "name": "Уголок столярный 450мм алюминевый литой MATRIX"
+   },
+   {
+    "pid": 11641,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "500",
+    "source": "regex",
+    "pub": true,
+    "name": "Уголок столярный 500 мм аллюминиевый/ Remocolor"
+   },
+   {
+    "pid": 11642,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "500",
+    "source": "regex",
+    "pub": true,
+    "name": "Уголок столярный 500мм, гравированная шкала, нержавеющее полотно 37мм,  STAYER \"PROFI\""
+   },
+   {
+    "pid": 11643,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уголок столярный 600мм ЗУБР ПРОФЕССИОНАЛ с уровнем"
+   },
+   {
+    "pid": 11644,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уголок столярный 600х400мм STAYER цельнометалличес"
+   },
+   {
+    "pid": 11645,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уголок столярный 600х400мм ЗУБР \"ЭКСПЕРТ\" цельноме"
+   },
+   {
+    "pid": 11646,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "160",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник 160х100 УП-1-160 Буревестник"
+   },
+   {
+    "pid": 11647,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "200",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник 200х300mm Stanley"
+   },
+   {
+    "pid": 11648,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "200",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник 200х300mm цельнометаллический Matrix"
+   },
+   {
+    "pid": 11649,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "250",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник 250 мм Startul"
+   },
+   {
+    "pid": 11650,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "250",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник 250мм стальной STURM"
+   },
+   {
+    "pid": 11651,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник 300мм с уровенем FIT"
+   },
+   {
+    "pid": 11652,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник 400х180 ммстолярный Профи IT"
+   },
+   {
+    "pid": 11653,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "250",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник Swanson Speed Square, 250 мм, метрический"
+   },
+   {
+    "pid": 11655,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "170",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник кровельный 170мм высокоточный KRAFTOOL"
+   },
+   {
+    "pid": 11656,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "250",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник кровельный 250мм высокоточный KRAFTOOL"
+   },
+   {
+    "pid": 11657,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "170",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник кровельный пластик универсальный 170мм STAYER"
+   },
+   {
+    "pid": 11658,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "305",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник кровельный пластик универсальный 305мм STAYER"
+   },
+   {
+    "pid": 11660,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "85",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник магнитный 85х85х12 11кг на отрыв"
+   },
+   {
+    "pid": 11676,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "20",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник переходной с внутр.резьбой 20х1/2\", белый"
+   },
+   {
+    "pid": 11677,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник плотницкий цельнометалический 1000х400мм"
+   },
+   {
+    "pid": 11678,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "250",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник поверочный УШ 250х160 кл.1 с пов. СТИЗ"
+   },
+   {
+    "pid": 11679,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "200",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник позиционирующий 200мм ЗУБР ПУ-200"
+   },
+   {
+    "pid": 11680,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "400",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник слесарный 400х600 мм Inforce"
+   },
+   {
+    "pid": 11681,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "200",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник слесарный цельно-металлический 200 х 300"
+   },
+   {
+    "pid": 11682,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "200",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник слесарный цельно-металлический 200х300 мм"
+   },
+   {
+    "pid": 11683,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник слесарный цельно-металлический 400 x 600"
+   },
+   {
+    "pid": 11684,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник слесарный цельно-металлический 400 x 600"
+   },
+   {
+    "pid": 11685,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "250",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник столярный 250ммх37мм, гравированная шкала, алюминиевая рукоятка, нержавеющее полотно"
+   },
+   {
+    "pid": 11686,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник столярный 300 мм с усиленным алюминиевым полотном STAYER HERCULES"
+   },
+   {
+    "pid": 11687,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник столярный 300мм двухсторонняя шкала MIRAX"
+   },
+   {
+    "pid": 11688,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник столярный 300ммх37мм, гравированная шкала, алюминиевая рукоятка, нержавеющее полотно"
+   },
+   {
+    "pid": 11689,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник столярный 300х200мм цельнометаллический STAYER MASTER"
+   },
+   {
+    "pid": 11690,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник столярный 400мм KRAFTOOL SR-40 высокоточный разметочный"
+   },
+   {
+    "pid": 11691,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "400",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник столярный 400мм ЗУБР Профессионал"
+   },
+   {
+    "pid": 11692,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник столярный 400ммх37мм, гравированная шкала, алюминиевая рукоятка, нержавеющее полотно ЗУБР \""
+   },
+   {
+    "pid": 11693,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "500",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник столярный 500ммх37мм, гравированная шкала, алюминиевая рукоятка, нержавеющее полотно ЗУБР \""
+   },
+   {
+    "pid": 11694,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "500",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник столярный 500х37 ЗУБР ПРОФЕССИОНАЛ, нерж"
+   },
+   {
+    "pid": 11695,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник столярный 600х400мм цельнометаллический STAYER MASTER"
+   },
+   {
+    "pid": 11696,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "250",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник столярный стальной 250мм STAYER \"MASTER\""
+   },
+   {
+    "pid": 11698,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник столярный стальной 300мм STAYER \"MASTER\""
+   },
+   {
+    "pid": 11699,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "350",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник столярный стальной 350мм STAYER \"MASTER\""
+   },
+   {
+    "pid": 11701,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "500",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник строительный 500 мм алюминиевый TOPEX"
+   },
+   {
+    "pid": 11702,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник титановый с алюминевой рукояткой 300мм Gi"
+   },
+   {
+    "pid": 11703,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник цельнометаллический STAYER 1000х370мм"
+   },
+   {
+    "pid": 11704,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник-рейсмус разметочный 300мм ЗУБР ПРО"
+   },
+   {
+    "pid": 11705,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Угольник-рейсмус разметочный 400мм ЗУБР ПРО"
+   },
+   {
+    "pid": 11706,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": false,
+    "name": "Угольник, 300х130 мм, металлический// Sparta"
+   },
+   {
+    "pid": 11710,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "50",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень   50мм.KRAFTOOL MINI BILLET магнитный брусковый"
+   },
+   {
+    "pid": 11711,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "76",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень   76мм KRAFTOOL компактный литоой магнитный"
+   },
+   {
+    "pid": 11713,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "200",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  200мм KRAFTOOL КОМПАКТ-200 магнитный усиленный профиль"
+   },
+   {
+    "pid": 11714,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "220",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  220 мм. KRAFTOOL Director магнитный компактный"
+   },
+   {
+    "pid": 11715,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "225",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  225 мм Торпедо пластиковый магнитный"
+   },
+   {
+    "pid": 11716,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "225",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  225мм STAYER TORPEDO"
+   },
+   {
+    "pid": 11717,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "230",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  230 мм ЗУБР КОМПАКТ"
+   },
+   {
+    "pid": 11718,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "230",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  230 мм Торпедо пластиковый магнитный"
+   },
+   {
+    "pid": 11719,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "250",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  250 мм. KRAFTOOL PROCAST-M магнитный литой"
+   },
+   {
+    "pid": 11720,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "250",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  250 мм. KRAFTOOL коробч. 2 ампулы"
+   },
+   {
+    "pid": 11721,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  300 мм 3 глазка СИБРТЕХ"
+   },
+   {
+    "pid": 11722,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "300",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  300 мм алюминиевый TOTAL"
+   },
+   {
+    "pid": 11723,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  300мм KRAFTOOL магнитный компактный с зеркальным глазком"
+   },
+   {
+    "pid": 11724,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  300мм для водных работ KRAFTOOL"
+   },
+   {
+    "pid": 11727,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  400 мм антиударный магнитный Sturm зеркал"
+   },
+   {
+    "pid": 11728,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  400 мм ЗУБР М50"
+   },
+   {
+    "pid": 11729,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400 мм Профи серия 99А Heavy duty 2глазка"
+   },
+   {
+    "pid": 11730,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400 мм. KRAFTOOL PROCAST литой"
+   },
+   {
+    "pid": 11731,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400 мм. KRAFTOOL PROCAST-M магнитный литой"
+   },
+   {
+    "pid": 11732,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400 мм. KRAFTOOL PROKRAFT-M коробч.магнит"
+   },
+   {
+    "pid": 11733,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400 мм. KRAFTOOL коробч. 2 ампулы"
+   },
+   {
+    "pid": 11734,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  400 мм. КАПРО"
+   },
+   {
+    "pid": 11735,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400 мм. КАПРО для кафеля PLUMBSITE SHARK"
+   },
+   {
+    "pid": 11736,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  400мм HK2015-02-0400 Hanskonner"
+   },
+   {
+    "pid": 11737,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм KRAFTOOL с зеркальным глазком"
+   },
+   {
+    "pid": 11738,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм KRAFTOOL с зеркальным глазком, магнитный"
+   },
+   {
+    "pid": 11739,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм OPTI-VISION КАПРО"
+   },
+   {
+    "pid": 11740,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  400мм STABILA 1 верт., 1 гориз., точн. 0,"
+   },
+   {
+    "pid": 11741,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм алюминиевый фрезер. 3 глазка ВИХРЬ"
+   },
+   {
+    "pid": 11742,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм ЗУБР \"МАСТЕР\" двутавровый, усиленный, 3 глазка (один поворотный)"
+   },
+   {
+    "pid": 11743,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм КАПРО (пламбсайт дженезис) (2гл.) P"
+   },
+   {
+    "pid": 11744,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм КАПРО 705 EAGLE (2 колбы)"
+   },
+   {
+    "pid": 11745,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм КАПРО 787 (2 колбы, гарантия 10 лет"
+   },
+   {
+    "pid": 11746,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм КАПРО 787 2 колбы"
+   },
+   {
+    "pid": 11747,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм КАПРО 977 NEPTUNE"
+   },
+   {
+    "pid": 11748,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм коробчатый KRAFTOOL 2 ампулы"
+   },
+   {
+    "pid": 11749,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм ЛИДЕР Л14"
+   },
+   {
+    "pid": 11750,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  400мм магнитный КАПРО PLUMBSITE GENESIS"
+   },
+   {
+    "pid": 11751,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  400мм цифровой ProLevel 40 ADA"
+   },
+   {
+    "pid": 11752,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  400мм. STAYER магнитный усиленный"
+   },
+   {
+    "pid": 11754,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "460",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  460 мм, магнитный, 3 глазка MATRIX"
+   },
+   {
+    "pid": 11755,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "500",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  500 мм. КАПРО для кафеля PLUMBSITE SHARK"
+   },
+   {
+    "pid": 11756,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "500",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  500мм 3 глазка/линейка красный,фрезерован"
+   },
+   {
+    "pid": 11757,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "500",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  500мм Профи art. 96В \"Heavy duty\" корпус"
+   },
+   {
+    "pid": 11759,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  600 мм ЗУБР АТЛАНТ усилег профиль"
+   },
+   {
+    "pid": 11760,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600 мм Профи серия 99А Heavy duty 2глазка"
+   },
+   {
+    "pid": 11761,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600 мм. KRAFTOOL A-RATE CONDTROL магнитный с двумя ручками"
+   },
+   {
+    "pid": 11762,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600 мм. KRAFTOOL A-RATE CONDTROL с двумя ручками"
+   },
+   {
+    "pid": 11763,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600 мм. KRAFTOOL A-RATE Control SHARK с глазком литой"
+   },
+   {
+    "pid": 11764,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600 мм. KRAFTOOL PROCAST литой"
+   },
+   {
+    "pid": 11765,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600 мм. KRAFTOOL PROCAST-M магнитный литой"
+   },
+   {
+    "pid": 11766,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600 мм. КАПРО для кафеля PLUMBSITE SHARK"
+   },
+   {
+    "pid": 11767,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  600мм , строительный MIRAX"
+   },
+   {
+    "pid": 11768,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм KRAFTOOL с зеркальным глазком"
+   },
+   {
+    "pid": 11769,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм KRAFTOOL с зеркальным глазком, магнитный"
+   },
+   {
+    "pid": 11770,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм STAYER GRADIENT усилен корпус с выемкой для труб, с линейкой, глазки с уклоном"
+   },
+   {
+    "pid": 11771,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм алюминиевый фрезер. 3 глазка ВИХРЬ"
+   },
+   {
+    "pid": 11772,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм ЗУБР \"МАСТЕР\" двутавровый, усиленный, 3 глазка (один поворотный)"
+   },
+   {
+    "pid": 11773,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм ЗУБР ПРО-М усиленный магнитный уровень, 3 глазка"
+   },
+   {
+    "pid": 11774,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  600мм КАПРО"
+   },
+   {
+    "pid": 11775,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм КАПРО (дженезис) PLUMBSITE GENESIS"
+   },
+   {
+    "pid": 11776,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм КАПРО (пламбсайт ГЕРКУЛЕС)"
+   },
+   {
+    "pid": 11777,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм КАПРО (пламбсайт дженезис) (2гл.) PLUMBSITE GENESIS"
+   },
+   {
+    "pid": 11778,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм КАПРО (пламбсайт дженезис) (3гл.) P"
+   },
+   {
+    "pid": 11779,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм КАПРО 705 EAGLE (2 колбы)"
+   },
+   {
+    "pid": 11780,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм КАПРО 787 (2 колбы, гарантия 10 лет"
+   },
+   {
+    "pid": 11781,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм КАПРО 787 (2 колбы, гарантия 10 лет"
+   },
+   {
+    "pid": 11782,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм КАПРО 977 NEPTUNE"
+   },
+   {
+    "pid": 11783,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм ЛИДЕР Л14"
+   },
+   {
+    "pid": 11784,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  600мм магнитный КАПРО (пламбсайт дженезис) (2гл.) PLUMBSITE GENESIS"
+   },
+   {
+    "pid": 11785,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  600мм сверхпрочный уровень с зеркальным г"
+   },
+   {
+    "pid": 11793,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  800 мм алюмиевый корпус, 3 глазка Yellow"
+   },
+   {
+    "pid": 11794,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800 мм Профи  Модерн art. 99Т фигурный пр"
+   },
+   {
+    "pid": 11795,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800 мм, алюминиевый, 3амп., RED//Hobbi"
+   },
+   {
+    "pid": 11796,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  800 мм. KRAFTOOL A-RATE CONDTROL магнитный с двумя ручками"
+   },
+   {
+    "pid": 11797,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800 мм. KRAFTOOL A-RATE CONDTROL с двумя ручками"
+   },
+   {
+    "pid": 11798,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800 мм. KRAFTOOL PROCAST литой"
+   },
+   {
+    "pid": 11799,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800 мм. КАПРО для кафеля PLUMBSITE SHARK"
+   },
+   {
+    "pid": 11800,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  800мм , магнитный MIRAX"
+   },
+   {
+    "pid": 11801,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  800мм HK2015-01-0800 Hanskonner магнит"
+   },
+   {
+    "pid": 11802,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень  800мм HK2015-02-0800 Hanskonner"
+   },
+   {
+    "pid": 11803,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм KRAFTOOL с зеркальным глазком"
+   },
+   {
+    "pid": 11804,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм KRAFTOOL с зеркальным глазком, магнитный"
+   },
+   {
+    "pid": 11805,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм OPTI-VISION КАПРО"
+   },
+   {
+    "pid": 11806,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм алюминиевый фрезер. 3 глазка ВИХРЬ"
+   },
+   {
+    "pid": 11807,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм ЗУБР \"МАСТЕР\" двутавровый, усиленный, 3 глазка (один поворотный)"
+   },
+   {
+    "pid": 11808,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм КАПРО (пламбсайт ГЕРКУЛЕС)"
+   },
+   {
+    "pid": 11809,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм КАПРО (пламбсайт дженезис) (2гл.) P"
+   },
+   {
+    "pid": 11810,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм КАПРО (пламбсайт дженезис) (2гл.) PLUMBSITE GENESIS"
+   },
+   {
+    "pid": 11811,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм КАПРО (пламбсайт дженезис) (3гл.) P"
+   },
+   {
+    "pid": 11812,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм КАПРО (пламбсайт дженезис) (3гл.) P"
+   },
+   {
+    "pid": 11813,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм КАПРО 705 EAGLE (2 колбы)"
+   },
+   {
+    "pid": 11814,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм КАПРО 787 (2 колбы, гарантия 10 лет"
+   },
+   {
+    "pid": 11815,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм КАПРО 787 (2 колбы, гарантия 10 лет"
+   },
+   {
+    "pid": 11816,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм КАПРО 977 NEPTUNE"
+   },
+   {
+    "pid": 11817,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм ЛИДЕР Л14"
+   },
+   {
+    "pid": 11818,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм магнитный КАПРО (пламбсайт дженезис) (2гл.) PLUMBSITE GENESIS"
+   },
+   {
+    "pid": 11819,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень  800мм. двутавровый 3 ампулы, измерительна"
+   },
+   {
+    "pid": 11824,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1000 мм алюминиевый, магнит., фрезеров., 3"
+   },
+   {
+    "pid": 11825,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000 мм Профи  Модерн art. 99Т фигурный профиль 3 глазка глазок с увеличит. действием синий"
+   },
+   {
+    "pid": 11826,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000 мм. KRAFTOOL A-RATE CONDTROL с двумя ручками"
+   },
+   {
+    "pid": 11827,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1000мм 3 глазка  магнитный Vira"
+   },
+   {
+    "pid": 11828,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000мм KRAFTOOL с зеркальным глазком"
+   },
+   {
+    "pid": 11829,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000мм KRAFTOOL с зеркальным глазком, магнитный"
+   },
+   {
+    "pid": 11830,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1000мм алюминиевый магнитный Inforce PROFl"
+   },
+   {
+    "pid": 11831,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000мм алюминиевый фрезер. 3 глазка ВИХРЬ"
+   },
+   {
+    "pid": 11832,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1000мм ЗУБР ПРО-М усиленный магнитный уровень, 3 глазка"
+   },
+   {
+    "pid": 11833,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000мм КАПРО (пламбсайт дженезис) (2гл.) PLUMBSITE GENESIS"
+   },
+   {
+    "pid": 11834,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1000мм КАПРО 3 глазка PLUMBSITE HERCULES"
+   },
+   {
+    "pid": 11835,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000мм КАПРО 705 EAGLE (2 колбы)"
+   },
+   {
+    "pid": 11836,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000мм КАПРО 787 (2 колбы, гарантия 10 лет"
+   },
+   {
+    "pid": 11837,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000мм КАПРО 977 NEPTUNE"
+   },
+   {
+    "pid": 11838,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1000мм коробчатый усиленный, фрезерованный, 3 противоударных ампулы, STAYER \"PROFI\" \"PROFIL"
+   },
+   {
+    "pid": 11839,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000мм ЛИДЕР Л14"
+   },
+   {
+    "pid": 11840,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000мм магнитный КАПРО (пламбсайт дженезис) (2гл.) PLUMBSITE GENESIS"
+   },
+   {
+    "pid": 11841,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000мм Профи 2 глазка"
+   },
+   {
+    "pid": 11842,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1000мм Профи art. 96В \"Heavy duty\" корпус"
+   },
+   {
+    "pid": 11843,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1000мм УС-1, 0-1000, фрезерованный, 3 глазка, рукоятки, 1000 мм Сибртех"
+   },
+   {
+    "pid": 11846,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1200 мм 3 глазка СИБРТЕХ"
+   },
+   {
+    "pid": 11847,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1200 мм Профи  Модерн art. 99Т фигурный пр"
+   },
+   {
+    "pid": 11848,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1200 мм, 3 глазка/линейка красный,фрезеров"
+   },
+   {
+    "pid": 11849,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1200 мм, алюминиевый, 3амп., RED//Hobbi"
+   },
+   {
+    "pid": 11850,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1200мм  магнитный Inforce"
+   },
+   {
+    "pid": 11851,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1200мм HK2015-02-1200Hanskonner"
+   },
+   {
+    "pid": 11852,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1200мм KRAFTOOL с зеркальным глазком"
+   },
+   {
+    "pid": 11853,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1200мм KRAFTOOL с зеркальным глазком, магнитный"
+   },
+   {
+    "pid": 11854,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1200мм КАПРО"
+   },
+   {
+    "pid": 11855,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1200мм КАПРО (пламбсайт дженезис) (2гл.) P"
+   },
+   {
+    "pid": 11856,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1200мм КАПРО 787 (2 колбы, гарантия 10 лет"
+   },
+   {
+    "pid": 11857,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1200мм КАПРО 977 NEPTUNE"
+   },
+   {
+    "pid": 11858,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1200мм магнитный КАПРО (пламбсайт дженезис) (2гл.) PLUMBSITE GENESIS"
+   },
+   {
+    "pid": 11859,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1200",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1200мм. двутавровый 3 ампулы, измерительна"
+   },
+   {
+    "pid": 11863,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1500",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1500 мм алюминиевый, 3 глазка, желтый, линейка// Sparta"
+   },
+   {
+    "pid": 11865,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1500",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1500мм KRAFTOOL с зеркальным глазком"
+   },
+   {
+    "pid": 11866,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1500",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1500мм KRAFTOOL с зеркальным глазком, магнитный"
+   },
+   {
+    "pid": 11867,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1500",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1500мм КАПРО (пламбсайт дженезис) (2гл.) PLUMBSITE GENESIS"
+   },
+   {
+    "pid": 11868,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1500",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1500мм КАПРО 787 2 колбы"
+   },
+   {
+    "pid": 11869,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1500",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1500мм коробчатый KRAFTOOL 2 ампулы"
+   },
+   {
+    "pid": 11870,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1500",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1500мм коробчатый усиленный, фрезерованный, 3 противоударных ампулы, STAYER \"PROFI\" \"PROFIL"
+   },
+   {
+    "pid": 11871,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1500",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 1500мм. двутавровый 3 ампулы, измерительна"
+   },
+   {
+    "pid": 11875,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1800",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 1800мм  магнитный Inforce"
+   },
+   {
+    "pid": 11880,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "2000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 2000мм KRAFTOOL с зеркальным глазком"
+   },
+   {
+    "pid": 11881,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "2000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 2000мм КАПРО (пламбсайт дженезис)  PLUMBSITE GENESIS"
+   },
+   {
+    "pid": 11882,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "2000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 2000мм КАПРО PLUMBSITE HERCULESS"
+   },
+   {
+    "pid": 11883,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "2000",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 2000мм коробчатый усиленный, фрезерованный, 3 противоударных ампулы, STAYER \"PROFI\" \"PROFIL"
+   },
+   {
+    "pid": 11884,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "2000",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 2000мм Профи art. 96В \"Heavy duty\" корпус"
+   },
+   {
+    "pid": 11890,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "230",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 230мм алюминиевый GW230 Gigant"
+   },
+   {
+    "pid": 11891,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 400мм ЗУБР \"МАСТЕР\" коробчатый, крашеный, 3 ампулы, фрезерованная базовая поверхность"
+   },
+   {
+    "pid": 11892,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 400мм ЗУБР ПРО-М усиленный магнитный уровень, 3 глазка"
+   },
+   {
+    "pid": 11894,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 600 мм алюминиевый, литой, 2 глазка (1 фронтальный.), ударная площадка Matrix"
+   },
+   {
+    "pid": 11895,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 600 мм алюминиевый, магнит., фрезеров., 3 глазка (1 зеркал.), 2 комп. рукоятки, Matrix"
+   },
+   {
+    "pid": 11896,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 600мм  магнитный Inforce"
+   },
+   {
+    "pid": 11897,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 600мм (ватерпас) , 3 глазка, алюм., усиленный, с магнитом, серия \"Алмаз\" TDM (SQ1022-0102"
+   },
+   {
+    "pid": 11898,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 600мм , коробчатый, 2 противоударных ампулы, линейка STAYER"
+   },
+   {
+    "pid": 11899,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 600мм алюминиевый Gigant"
+   },
+   {
+    "pid": 11900,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 600мм ЗУБР \"МАСТЕР\" коробчатый, крашеный, 3 ампулы, фрезерованная базовая поверхность"
+   },
+   {
+    "pid": 11902,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 800 мм алюминиевый, 3 глазка, желтый, линейка// Sparta"
+   },
+   {
+    "pid": 11903,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 800мм  магнитный Inforce"
+   },
+   {
+    "pid": 11904,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 800мм , коробчатый, 2 противоударных ампулы, линейка STAYER"
+   },
+   {
+    "pid": 11905,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень 800мм алюминиевый магнитный Inforce"
+   },
+   {
+    "pid": 11906,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень 800мм ЗУБР \"МАСТЕР\" коробчатый, крашеный, 3 ампулы, фрезерованная базовая поверхность"
+   },
+   {
+    "pid": 11907,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "200",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень брусковый 200мм цена деления 0,02мм"
+   },
+   {
+    "pid": 11908,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "250",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень брусковый 250мм цена деления 0,05мм"
+   },
+   {
+    "pid": 11909,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "300",
+    "source": "regex",
+    "pub": false,
+    "name": "Уровень брусковый 300мм цена деления 0,02мм"
+   },
+   {
+    "pid": 11934,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "500",
+    "source": "regex",
+    "pub": true,
+    "name": "Уровень-угломер складной ЗУБР 500мм"
+   },
+   {
+    "pid": 11963,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "125",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 125мм СИБИН"
+   },
+   {
+    "pid": 11964,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "125",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 125мм тип 1, 0,1мм металлический"
+   },
+   {
+    "pid": 11965,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 150 мм 0,01мм электронный, композитные материалы"
+   },
+   {
+    "pid": 11966,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 150 мм 0,01мм электронный, нерж.ста"
+   },
+   {
+    "pid": 11967,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 150 мм 0,02 мм"
+   },
+   {
+    "pid": 11968,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 150 мм 0,02мм СЕБ"
+   },
+   {
+    "pid": 11969,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 150 мм 0,05мм Inforce"
+   },
+   {
+    "pid": 11970,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 150 мм 0,05мм нерж сталь GROSS"
+   },
+   {
+    "pid": 11971,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 150 мм Gigant"
+   },
+   {
+    "pid": 11972,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 150 мм Jonnesway MTC1150"
+   },
+   {
+    "pid": 11973,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 150 мм KRAFTOOL электронный металический"
+   },
+   {
+    "pid": 11974,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 150 мм NEO Tools"
+   },
+   {
+    "pid": 11975,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 150 мм STAYER \"PROFI\", метрическая"
+   },
+   {
+    "pid": 11976,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 150 мм STAYER STANDARD пластмассовый,"
+   },
+   {
+    "pid": 11977,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 150 мм TOPEX"
+   },
+   {
+    "pid": 11978,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 150 мм СЕБ электронный"
+   },
+   {
+    "pid": 11979,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 150 мм СЕБ электронный аккумуляторный"
+   },
+   {
+    "pid": 11980,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 150 мм СОРОКИН"
+   },
+   {
+    "pid": 11981,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 150 мм стрелочный,MATRIX"
+   },
+   {
+    "pid": 11982,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 150 мм цифровой  металический, 0,01"
+   },
+   {
+    "pid": 11983,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 150 мм цифровой МЕГЕОН"
+   },
+   {
+    "pid": 11984,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 150 мм электронный,MATRIX"
+   },
+   {
+    "pid": 11985,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 150 мм, нониусный ШЦ-I-150-0,05, сб"
+   },
+   {
+    "pid": 11986,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 150мм цена деления 0,02 с глубиноме"
+   },
+   {
+    "pid": 11987,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "200",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 200 мм , нониусный ШЦ-1-150-0,05"
+   },
+   {
+    "pid": 11988,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "200",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 200 мм , нониусный ШЦ-1-200-0,05"
+   },
+   {
+    "pid": 11989,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "200",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 200 мм 0,02мм СЕБ"
+   },
+   {
+    "pid": 11990,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "200",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 200 мм KRAFTOOL электронный металический"
+   },
+   {
+    "pid": 11991,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "200",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 200 мм TOPEX"
+   },
+   {
+    "pid": 11992,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "200",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 200 мм электронный TOPEX"
+   },
+   {
+    "pid": 11993,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "200",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 200 мм электронный нерж. сталь, 0,01 Зубр"
+   },
+   {
+    "pid": 11994,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "250",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 250 мм 0,01 ЧИЗ  электронный"
+   },
+   {
+    "pid": 11995,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "250",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 250 мм 0,02мм СЕБ"
+   },
+   {
+    "pid": 11996,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "250",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль 250мм цена деления 0,02 с глубиноме"
+   },
+   {
+    "pid": 11997,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 300 мм 0,02мм СЕБ"
+   },
+   {
+    "pid": 11998,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "300",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль 300 мм, цена деления 0,02 мм, метал"
+   },
+   {
+    "pid": 12000,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль металлический 2 кл. 150 мм  РОС"
+   },
+   {
+    "pid": 12059,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "60",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль ШЦ-2-160 0,05губ 60мм КЛБ"
+   },
+   {
+    "pid": 12060,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "60",
+    "source": "regex",
+    "pub": true,
+    "name": "Штангенциркуль ШЦ-2-200 0,02 губки 60мм"
+   },
+   {
+    "pid": 12062,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "60",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль ШЦ-2-250 0,05губ 60мм КЛБ"
+   },
+   {
+    "pid": 12066,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "60",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль ШЦ-2-300 0,05  губ. 60мм дв.шк. МИК"
+   },
+   {
+    "pid": 12074,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль ШЦ-3-500 0.05 губ. 150 мм с поверко"
+   },
+   {
+    "pid": 12078,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "200",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль ШЦ-3-800 0.1 гкбки 200 мм ЧИЗ с поверкой"
+   },
+   {
+    "pid": 12079,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "100",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль ШЦ-III-250 0,05 губ. 100мм"
+   },
+   {
+    "pid": 12081,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "40",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль ШЦК-1-150 0,01 губ. 40мм"
+   },
+   {
+    "pid": 12083,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "40",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль ШЦК-1-150 0,02 губ. 40мм"
+   },
+   {
+    "pid": 12098,
+    "tt": "izm-shtangen",
+    "attr": "measuring_range",
+    "val": "150",
+    "source": "regex",
+    "pub": false,
+    "name": "Штангенциркуль электронный, нерж сталь, 150мм STAYER PROFESSIONAL"
+   },
+   {
+    "pid": 12170,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "3",
+    "source": "regex",
+    "pub": true,
+    "name": "яяРулетка  3м ЭНКОР КАУЧУК с фиксатором"
+   },
+   {
+    "pid": 12174,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "20",
+    "source": "regex",
+    "pub": true,
+    "name": "яяРулетка 20м фиберглассовая (60) БИБЕР"
+   },
+   {
+    "pid": 12175,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "30",
+    "source": "regex",
+    "pub": true,
+    "name": "яяРулетка 30м стальная (60) БИБЕР"
+   },
+   {
+    "pid": 12176,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "30",
+    "source": "regex",
+    "pub": true,
+    "name": "яяРулетка 30м фиберглассовая (60) БИБЕР"
+   },
+   {
+    "pid": 12177,
+    "tt": "izm-ruletki",
+    "attr": "tape_length",
+    "val": "50",
+    "source": "regex",
+    "pub": true,
+    "name": "яяРулетка 50м фиберглассовая (30) БИБЕР"
+   },
+   {
+    "pid": 12179,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "430",
+    "source": "regex",
+    "pub": true,
+    "name": "яяУгломер электронный CONDTROL A-Tronix, 430мм, уг"
+   },
+   {
+    "pid": 12180,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "яяУголок столярный 400мм нержавеющая сталь, гравир"
+   },
+   {
+    "pid": 12181,
+    "tt": "izm-ugolniki",
+    "attr": "size",
+    "val": "300",
+    "source": "regex",
+    "pub": false,
+    "name": "яяУгольник столярный 300мм ЗУБР \"ЭКСПЕРТ\"жесткое п"
+   },
+   {
+    "pid": 12182,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "1000",
+    "source": "regex",
+    "pub": true,
+    "name": "яяУровень 1000 мм, алюминиевый, скелетный,3амп.,ма"
+   },
+   {
+    "pid": 12187,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "400",
+    "source": "regex",
+    "pub": true,
+    "name": "яяУровень 400 мм, алюминиевый, скелетный,3амп.,маг"
+   },
+   {
+    "pid": 12189,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "600",
+    "source": "regex",
+    "pub": true,
+    "name": "яяУровень 600 мм, алюминиевый, скелетный,3амп.,маг"
+   },
+   {
+    "pid": 12190,
+    "tt": "izm-urovni",
+    "attr": "length",
+    "val": "800",
+    "source": "regex",
+    "pub": true,
+    "name": "яяУровень 800 мм, алюминиевый, скелетный,3амп.,маг"
+   },
+   {
+    "pid": 44410,
+    "tt": "perforatory",
+    "attr": "energy_impact",
+    "val": "5.9",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. Bosch GBH 5-38D; 1050Вт, SDS-MAX, 5,9ж, 340о"
+   },
+   {
+    "pid": 44424,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "1050",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. DH24PH2; 730Вт, SDS plus, 2,7Дж, 3реж, 0-1050об/мин, 0-3950уд/мин, 2,8 кг  HiKoki"
+   },
+   {
+    "pid": 44431,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "1100",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. DH28PCY2; 850Вт, SDS plus, 3,4 Дж,3 реж, 0-1100об/мин, 0-4300уд/мин, антивибр., 2,9к"
+   },
+   {
+    "pid": 44436,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "620",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. DH40MC; 1100Вт, SDS-max, 10,5Дж, 620об/мин, 2800уд/мин, 7,1кг"
+   },
+   {
+    "pid": 44437,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "500",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. DH40MEY; 1150Вт, SDS-max, 11Дж, 250-500об/мин, 1430-2850уд/мин, антивибр., 7,5кг"
+   },
+   {
+    "pid": 44441,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "310",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. DH45ME; бесщ., 1500Вт, SDS-max, 13,4Дж 310об/мин, 2950уд/мин, 9кг"
+   },
+   {
+    "pid": 44441,
+    "tt": "perforatory",
+    "attr": "motor_type",
+    "val": "brushless",
+    "source": "keyword",
+    "pub": true,
+    "name": "Перф. DH45ME; бесщ., 1500Вт, SDS-max, 13,4Дж 310об/мин, 2950уд/мин, 9кг"
+   },
+   {
+    "pid": 44442,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "310",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. DH45MEY; бесщ., 1500Вт, SDS-max, 120-310об/мин, 1200-2950уд/мин, 9,5кг"
+   },
+   {
+    "pid": 44442,
+    "tt": "perforatory",
+    "attr": "motor_type",
+    "val": "brushless",
+    "source": "keyword",
+    "pub": true,
+    "name": "Перф. DH45MEY; бесщ., 1500Вт, SDS-max, 120-310об/мин, 1200-2950уд/мин, 9,5кг"
+   },
+   {
+    "pid": 44444,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "230",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. DH50MR 1400Вт, SDS-max, 20Дж, 110-230об/мин,"
+   },
+   {
+    "pid": 44445,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "230",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. DH50MRY 1400Вт, SDS-max, 20Дж, 110-230об/мин"
+   },
+   {
+    "pid": 44446,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "280",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. DH52ME бесщ., 1500Вт, SDS-max, 22Дж, 0-110/0-280об/мин, 1000-2400уд/мин, кейс, 11кг"
+   },
+   {
+    "pid": 44446,
+    "tt": "perforatory",
+    "attr": "motor_type",
+    "val": "brushless",
+    "source": "keyword",
+    "pub": true,
+    "name": "Перф. DH52ME бесщ., 1500Вт, SDS-max, 22Дж, 0-110/0-280об/мин, 1000-2400уд/мин, кейс, 11кг"
+   },
+   {
+    "pid": 44469,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "305",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. Hanskonner HRH1652M SDS-MAX 1600Вт, 52мм, 2-15Дж, 150-305об/мин"
+   },
+   {
+    "pid": 44471,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "220",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. Hanskonner HRH1855M SDS-MAX 1800Вт, 55мм, 5-19Дж, 100-220об/мин"
+   },
+   {
+    "pid": 44472,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "550",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. Hanskonner HRH2145MVE SDS-MAX 2100Вт, 52мм, 20Дж, 320-550об/мин"
+   },
+   {
+    "pid": 44476,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "1100",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф. Makita HR2470; 780Вт, SDS plus, 2,7Дж, 3 реж, 0-1100об/мин, 0-4500уд/мин, 2,6кг"
+   },
+   {
+    "pid": 44482,
+    "tt": "perforatory",
+    "attr": "energy_impact",
+    "val": "2.9",
+    "source": "regex",
+    "pub": false,
+    "name": "Перф. Makita HR2800; D-обр., 800Вт, SDS plus, 2,9Д"
+   },
+   {
+    "pid": 44487,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "500",
+    "source": "regex",
+    "pub": false,
+    "name": "Перф. Makita HR4003C; 1100 Вт, SDS max, 11,4Дж, 250-500об/мин, 1450-2900уд/мин, 6,2кг"
+   },
+   {
+    "pid": 44497,
+    "tt": "perforatory",
+    "attr": "chuck",
+    "val": "sds-plus",
+    "source": "keyword",
+    "pub": false,
+    "name": "Перф. RSDS800K Ryobi"
+   },
+   {
+    "pid": 44523,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "1200",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф.ЗУБР ЗП-26-800 SDS+,800Вт, 3,2Дж, 0-1200об/мин, 0-4800у уд/мин ЗУБР Профессионал"
+   },
+   {
+    "pid": 44531,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "1500",
+    "source": "regex",
+    "pub": true,
+    "name": "Перф.ЗУБР ЗП470Э, SDS+, реверс,1,4Дж, 0-1500об/мин"
+   },
+   {
+    "pid": 44532,
+    "tt": "perforatory",
+    "attr": "energy_impact",
+    "val": "3.5",
+    "source": "regex",
+    "pub": false,
+    "name": "Перф.ЗУБР ЗПВ-32-1250 ЭВК SDS+, вертикальный, 3,5Д"
+   },
+   {
+    "pid": 45584,
+    "tt": "perforatory",
+    "attr": "no_load_speed",
+    "val": "510",
+    "source": "regex",
+    "pub": true,
+    "name": "яяПерф. DH38MS; 950Вт, SDS-max, 9,0Дж, 510об/мин,"
+   }
+  ],
+  "update": [],
+  "prune": [
+   {
+    "pid": 3958,
+    "tt": "koronki",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 3977,
+    "tt": "koronki",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 12405,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 12753,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 12862,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 12863,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 12940,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 13007,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 13379,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 13896,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 13906,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 13907,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 13909,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 13925,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 16811,
+    "tt": "krugi-shlif",
+    "attr": "disc_diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 17099,
+    "tt": "krugi-shlif",
+    "attr": "disc_diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 17100,
+    "tt": "krugi-shlif",
+    "attr": "disc_diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 17101,
+    "tt": "krugi-shlif",
+    "attr": "disc_diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 17102,
+    "tt": "krugi-shlif",
+    "attr": "disc_diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 17103,
+    "tt": "krugi-shlif",
+    "attr": "disc_diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 17155,
+    "tt": "krugi-shlif",
+    "attr": "disc_diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 18201,
+    "tt": "krugi-shlif",
+    "attr": "disc_diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 18202,
+    "tt": "krugi-shlif",
+    "attr": "disc_diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 18203,
+    "tt": "krugi-shlif",
+    "attr": "disc_diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 18204,
+    "tt": "krugi-shlif",
+    "attr": "disc_diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 20770,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 20868,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 20869,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21097,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 21183,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21184,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21185,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21186,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21187,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 21188,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21189,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21190,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21191,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21192,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21193,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21194,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21195,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21196,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21197,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21198,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 21199,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21200,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21201,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21202,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21203,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21204,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21205,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21206,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21207,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21208,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21209,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21217,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21219,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21224,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21837,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 21838,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21839,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 21937,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22135,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22137,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22139,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22142,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22145,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22146,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22147,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22148,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22149,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22150,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22151,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22152,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22155,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22157,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22158,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22159,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22160,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22161,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22162,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22163,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22164,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22168,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22254,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22272,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22280,
+    "tt": "sverla",
+    "attr": "diameter",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22504,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22516,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22518,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22519,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22520,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22524,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22526,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22537,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22542,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22543,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22545,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22546,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22547,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22549,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22553,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22562,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22564,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22565,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22566,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22567,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22568,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22569,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22571,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22572,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22573,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22575,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22577,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22580,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22582,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22587,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22594,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22598,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22600,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22603,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22604,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22606,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22609,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22610,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22611,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22613,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22614,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22616,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22618,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22619,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22624,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 22629,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 22630,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23003,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23006,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23008,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23009,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23010,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23011,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23012,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23015,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23018,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23019,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23020,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23025,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23027,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23029,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23030,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23032,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23033,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23034,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23035,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23036,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23037,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23038,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23039,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23043,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23051,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23058,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23060,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23061,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23064,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23065,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23066,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23067,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23068,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23069,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23070,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23071,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23072,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23073,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23074,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23075,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23076,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23077,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23078,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23079,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23080,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23081,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23082,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23083,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23085,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23086,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23087,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23088,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23089,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23092,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23093,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23094,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23095,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23096,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23097,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23101,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23102,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23103,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23104,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23105,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23106,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23108,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23109,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23110,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23111,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23112,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23113,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23114,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23115,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23116,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23117,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23118,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23119,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23120,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23121,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23123,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23124,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23125,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23126,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23127,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23128,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23132,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23133,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23134,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23137,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23138,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23139,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23140,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23143,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23145,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23147,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23148,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23149,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23150,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23151,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23152,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23153,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23154,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23155,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23156,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23158,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23159,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23162,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23163,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23165,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23166,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23167,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23168,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23169,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23170,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23188,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23189,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23190,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23191,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23193,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23195,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23196,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23197,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23198,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23199,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23200,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23201,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23208,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23209,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23245,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23246,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23247,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23265,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23291,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23297,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23389,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23390,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23392,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23394,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23396,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23398,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23400,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23402,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23403,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23404,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23405,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23406,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23407,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23408,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23409,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23410,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23414,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23415,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23416,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23421,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23422,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23423,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23424,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23425,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23426,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23427,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23429,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23433,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23434,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23437,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23438,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23454,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23458,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23459,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23460,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23465,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23467,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23468,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23470,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23471,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23474,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23475,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23476,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23477,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23485,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23521,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23528,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23529,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23531,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23534,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23535,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23536,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23537,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23542,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23545,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23546,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 23561,
+    "tt": "golovki",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23573,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23574,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23576,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 23601,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 32416,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 32417,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 32435,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 32442,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 32456,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 32471,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 32549,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 32550,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 32551,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 32552,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 32553,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 35012,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": false
+   },
+   {
+    "pid": 35401,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 35405,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 35406,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 35408,
+    "tt": "klyuchi-gaechnye",
+    "attr": "size",
+    "source": "regex",
+    "pub": true
+   },
+   {
+    "pid": 45431,
+    "tt": "shlifmashiny",
+    "attr": "motor_type",
+    "source": "keyword",
+    "pub": true
+   }
+  ],
+  "skip_priority": []
+ }
+}
