@@ -4,6 +4,7 @@ import { Inter, Oswald } from "next/font/google";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { THEME_INIT_SCRIPT } from "@/components/layout/ThemeToggle";
 import { getSiteTheme } from "@/lib/theme";
 import { resolveStorefront } from "@/lib/site";
 import "./globals.css";
@@ -22,13 +23,28 @@ const oswald = Oswald({
   display: "swap",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://proff58.ru";
+const DESCRIPTION = "Профессиональный инструмент и оборудование: каталог, наличие, цены.";
+
+// metadataBase нужен, чтобы og:image ушёл абсолютным URL — мессенджеры и соцсети
+// относительный путь не разворачивают и превью не покажут. Сама картинка
+// подхватывается по файловому соглашению из app/opengraph-image.png.
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Профессионал — территория инструмента",
     template: "%s — Профессионал",
   },
-  description:
-    "Профессиональный инструмент и оборудование: каталог, наличие, цены.",
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    siteName: "Профессионал",
+    title: "Профессионал — территория инструмента",
+    description: DESCRIPTION,
+    url: SITE_URL,
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default async function RootLayout({
@@ -37,12 +53,15 @@ export default async function RootLayout({
   const theme = await getSiteTheme();
   const storefront = resolveStorefront(theme);
 
-  // #477: светлая тема — единственная пользовательская (утверждённый макет).
-  // Переключатель темы выведен из эксплуатации вместе с ThemeToggle; класс .dark
-  // остался только как локальная зона (фото-hero) и не вешается на <html>.
+  // Тема: светлая по макету (#477) — она же серверный рендер. Реальную тему
+  // посетителя (сохранённый выбор либо системная) ставит THEME_INIT_SCRIPT в
+  // <head> до первой отрисовки, поэтому <html> помечен suppressHydrationWarning:
+  // атрибут в DOM к моменту гидрации намеренно отличается от серверного.
   return (
     <html
       lang="ru"
+      data-theme="light"
+      suppressHydrationWarning
       className={`${inter.variable} ${oswald.variable} h-full`}
       style={
         {
@@ -53,6 +72,9 @@ export default async function RootLayout({
         } as React.CSSProperties
       }
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-full antialiased">
         {/* CartProvider — общее состояние корзины (счётчик Header, add-to-cart). */}
         <CartProvider>

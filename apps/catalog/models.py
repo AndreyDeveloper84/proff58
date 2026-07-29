@@ -1196,3 +1196,97 @@ class CatalogChange(models.Model):
 
     def __str__(self) -> str:
         return f"Change {self.target_kind} [{self.status}]"
+
+
+class SalesSource(models.TextChoices):
+    """Откуда пришёл факт продажи.
+
+    Разделение источников принципиально: заказы сайта пересчитываются из
+    ``orders`` при каждом прогоне (идемпотентно), а выгрузка 1С приходит
+    порциями и накапливается — стирать её пересчётом сайта нельзя.
+    """
+
+    SITE = "site", _("Заказы сайта")
+    ONEC = "1c", _("Продажи 1С")
+
+
+class ProductSalesFact(models.Model):
+    """Сколько штук товара продано за один день по одному источнику.
+
+    Сырьё для рейтинга «хитов»: агрегат по дням, а не по документам — на
+    витрине важна динамика, а не первичка. Скользящее окно считается по этим
+    строкам (см. ``apps.catalog.sales.rebuild_sales_stats``), поэтому «хит»
+    всегда можно объяснить конкретными продажами.
+    """
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="sales_facts",
+        verbose_name=_("Товар"),
+    )
+    source = models.CharField(_("Источник"), max_length=8, choices=SalesSource.choices)
+    date = models.DateField(_("Дата продажи"))
+    quantity = models.DecimalField(_("Продано"), max_digits=12, decimal_places=3)
+    updated_at = models.DateTimeField(_("Обновлён"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("Продажи товара за день")
+        verbose_name_plural = _("Продажи товаров по дням")
+        constraints = [
+            # Идемпотентность: повторная выгрузка того же дня перезаписывает
+            # количество, а не удваивает его.
+            models.UniqueConstraint(
+                fields=["product", "source", "date"], name="catalog_salesfact_unique_day"
+            ),
+            models.CheckConstraint(
+                name="catalog_salesfact_quantity_positive", check=models.Q(quantity__gt=0)
+            ),
+        ]
+        indexes = [
+            # Основной запрос пересчёта: «все продажи за окно, сгруппировать по товару».
+            models.Index(fields=["date", "product"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.product_id} · {self.date} · {self.quantity} ({self.source})"
+
+
+class ProductSalesStat(models.Model):
+    """Готовый рейтинг продаж товара за скользящее окно.
+
+    Денормализация ради витрины: сортировать выдачу и рисовать бейдж «Хит»
+    по агрегату фактов на лету — это seq scan на каждый запрос. Строка есть
+    ТОЛЬКО у товаров с продажами за окно: отсутствие строки означает «не
+    продавался», и такой товар в «хиты» не попадёт даже случайно.
+    """
+
+    product = models.OneToOneField(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="sales_stat",
+        verbose_name=_("Товар"),
+    )
+    quantity = models.DecimalField(_("Продано за окно"), max_digits=14, decimal_places=3)
+    days_with_sales = models.PositiveIntegerField(_("Дней с продажами"), default=0)
+    window_days = models.PositiveIntegerField(_("Окно, дней"))
+    rank = models.PositiveIntegerField(_("Место в рейтинге"))
+    is_hit = models.BooleanField(
+        _("Хит продаж"),
+        default=False,
+        help_text=_("Топ рейтинга при достаточном числе продаж — источник бейджа «Хит»."),
+    )
+    last_sold_on = models.DateField(_("Последняя продажа"), null=True, blank=True)
+    computed_at = models.DateTimeField(_("Пересчитан"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("Рейтинг продаж товара")
+        verbose_name_plural = _("Рейтинг продаж товаров")
+        ordering = ["rank"]
+        indexes = [
+            models.Index(fields=["-quantity"]),
+            models.Index(fields=["is_hit", "rank"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"#{self.rank} · {self.product_id} · {self.quantity}"

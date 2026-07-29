@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Header по утверждённому макету — каталог/поиск/корзина работают,
@@ -51,9 +51,41 @@ describe("Header (#586)", () => {
     }
   });
 
-  it("не добавляет отсутствующий в утверждённом макете переключатель темы", () => {
+  // Переключатель темы вернули по запросу: место — между поиском и телефоном.
+  it("переключатель темы стоит между поиском и телефоном", () => {
     render(<Header />);
-    expect(screen.queryByRole("button", { name: /тёмную тему/i })).toBeNull();
+    const toggle = screen.getAllByRole("button", { name: /тёмную тему/i })[0];
+    expect(toggle).toBeInTheDocument();
+
+    const row = toggle.parentElement!;
+    const nodes = Array.from(row.children);
+    const search = row.querySelector('[data-testid="searchbar"]')!.closest("div")!;
+    const phone = row.querySelector(`a[href="${SITE.phone.href}"]`)!;
+    expect(nodes.indexOf(search)).toBeLessThan(nodes.indexOf(toggle));
+    expect(nodes.indexOf(toggle)).toBeLessThan(nodes.indexOf(phone));
+  });
+
+  // Основная строка шапки видна всегда, бургер-меню — нет. Переключатель, до
+  // которого надо сначала открыть меню, пользователь считает несуществующим,
+  // поэтому на планшетах и узких десктопных окнах он стоит в ряду иконок.
+  it("на узких ширинах переключатель темы стоит в шапке, а не только в меню", () => {
+    render(<Header />);
+    const inHeaderRow = screen
+      .getAllByRole("button", { name: /тему/i })
+      .find((b) => b.parentElement?.className.includes("lg:hidden"));
+
+    expect(inHeaderRow).toBeDefined();
+    expect(inHeaderRow!.className).toContain("sm:grid");
+  });
+
+  // На телефоне (<640px) логотип и две иконки занимают строку целиком — третья
+  // вызывала бы горизонтальную прокрутку, поэтому там переключатель в меню.
+  it("на телефоне переключатель темы остаётся в бургер-меню", () => {
+    render(<Header />);
+    fireEvent.click(screen.getByRole("button", { name: "Меню" }));
+
+    const inMenu = within(screen.getByRole("navigation")).getByRole("button", { name: /тему/i });
+    expect(inMenu.parentElement!.className).toContain("sm:hidden");
   });
 
   it("телефон и график из макета отображаются", () => {

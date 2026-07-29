@@ -10,10 +10,10 @@ import {
   fetchProductFromApi,
   fetchSearchFromApi,
   fetchCategoryTreeFromApi,
+  fetchCategoryProductsFromApi,
   fetchBestsellersFromApi,
   type CategoryNode,
 } from "./adapters";
-import { HOME_CONTENT } from "./home-content";
 import { applyListing } from "./filtering";
 import type { Listing, ListingQuery, Product, ProductDetail } from "./types";
 
@@ -105,18 +105,25 @@ export async function getCategoryLookup(slug: string): Promise<CategoryLookup> {
   return found ? { status: "found", name: found.name } : { status: "missing" };
 }
 
-// Корневые категории (depth==1) для блока главной. Нет данных → пусто (блок скрыт).
-export async function getCategoryTree(): Promise<CategoryNode[]> {
+// Товары раздела для блока «подобрать по теме» в статье. Без API → пусто (блок скрыт).
+export async function getCategoryProducts(category: string, limit = 3): Promise<Product[]> {
   if (API_BASE && !FORCE_FIXTURES) {
-    return (await fetchCategoryTreeFromApi(API_BASE)) ?? [];
+    return await fetchCategoryProductsFromApi(API_BASE, category, limit);
   }
   return [];
 }
 
-// «Хиты продаж» для главной. Без API → пусто (блок скрыт).
-export async function getBestsellers(limit = 8): Promise<Product[]> {
+/**
+ * Витрина главной. Возвращает и сами товары, и то, ЧЕМ они являются:
+ * `bestsellers` — реальные продажи за окно (backend apps.catalog.sales),
+ * `new` — продаж пока нет, показываем новинки под честным заголовком.
+ * Без API → пусто (блок скрыт).
+ */
+export async function getBestsellers(
+  limit = 8,
+): Promise<{ products: Product[]; kind: "bestsellers" | "new" }> {
   if (API_BASE && !FORCE_FIXTURES) {
-    return await fetchBestsellersFromApi(API_BASE, HOME_CONTENT.bestsellerSlugs, limit);
+    return await fetchBestsellersFromApi(API_BASE, limit);
   }
-  return [];
+  return { products: [], kind: "new" };
 }

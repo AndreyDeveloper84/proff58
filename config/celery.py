@@ -63,4 +63,20 @@ app.conf.beat_schedule = {
         "task": "apps.notifications.tasks.cleanup_old_notifications",
         "schedule": crontab(hour=4, minute=15),
     },
+    # «Хиты продаж»: сначала заказы сайта отдают свои продажи в каталог, затем
+    # каталог пересобирает рейтинг — уже с учётом и выгрузки 1С за сутки.
+    # Порядок держим разносом по времени: задачи независимы, общий результат
+    # даёт следующий прогон, поэтому гонка ничего не портит.
+    "publish-sales-facts": {
+        "task": "apps.orders.tasks.publish_sales_facts",
+        "schedule": crontab(hour=4, minute=30),
+    },
+    "rebuild-sales-stats": {
+        "task": "apps.catalog.tasks.rebuild_sales_stats",
+        "schedule": crontab(hour=4, minute=45),
+    },
+    "purge-old-sales-facts": {
+        "task": "apps.catalog.tasks.purge_old_sales_facts",
+        "schedule": crontab(hour=5, minute=0),
+    },
 }

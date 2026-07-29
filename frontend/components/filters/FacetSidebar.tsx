@@ -38,7 +38,7 @@ function FacetBlock({
 }
 
 export function FacetSidebar({ facets, filters, onToggle, onRange }: Props) {
-  // tool_type (isNav) — навигация, рендерится TypePanel над выдачей, а НЕ в сайдбаре (§3.1, §23.5).
+  // tool_type (isNav) — навигация, рендерится отдельным блоком CategoryNavPanel, а НЕ фасетом (§3.1, §23.5).
   const visibleFacets = facets.filter((f) => !f.isNav);
   const sections = groupSidebarFacets(visibleFacets);
 

@@ -89,12 +89,4 @@ describe("слой категорий", () => {
 
     await expect(getCategoryLookup("avto")).resolves.toEqual({ status: "unavailable" });
   });
-
-  // Блок главной деградирует мягко: недоступный API — просто пустой ряд категорий.
-  it("getCategoryTree отдаёт пустой массив, когда API недоступен", async () => {
-    global.fetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED")) as unknown as typeof fetch;
-    const { getCategoryTree } = await loadCatalog("http://web:8000");
-
-    await expect(getCategoryTree()).resolves.toEqual([]);
-  });
 });

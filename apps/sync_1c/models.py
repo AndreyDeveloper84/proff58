@@ -152,6 +152,7 @@ class SyncLog(models.Model):
         PRICES = "prices", _("Цены")
         STOCK = "stock", _("Остатки")
         ORDERS = "orders", _("Заказы")
+        SALES = "sales", _("Продажи")
 
     class SyncResult(models.TextChoices):
         RUNNING = "running", _("Выполняется")
