@@ -66,6 +66,8 @@ export function ProductCard({
 }) {
   const [fav, setFav] = useState(false);
   const href = `/product/${product.slug}`;
+  // Короткая форма из 1С; пока товар не прошёл нормализацию — витринное имя.
+  const title = product.cardName || product.name;
   const dimmed = product.stock === "out";
   const buyable = product.price.final != null && product.stock !== "out";
 
@@ -88,13 +90,13 @@ export function ProductCard({
   );
 
   const media = (
-    <a href={href} aria-label={product.name} className="relative block">
+    <a href={href} aria-label={title} className="relative block">
       {product.price.discountPct != null && (
         <span className="absolute left-2 top-2 z-10 rounded-md bg-danger px-1.5 py-0.5 text-[11px] font-bold text-white">
           −{product.price.discountPct}%
         </span>
       )}
-      <ProductImage src={product.image} alt={product.name} />
+      <ProductImage src={product.image} alt={title} />
     </a>
   );
 
@@ -151,10 +153,10 @@ export function ProductCard({
         )}
 
         <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 pt-1.5">
-          <a href={href} aria-label={product.name} className="block">
+          <a href={href} aria-label={title} className="block">
             <ProductImage
               src={product.image}
-              alt={product.name}
+              alt={title}
               sizes="220px"
               className="h-[88px] w-full aspect-auto rounded-none bg-surface"
             />
@@ -164,7 +166,7 @@ export function ProductCard({
             className="line-clamp-2 min-h-[29px] text-[11px] font-semibold leading-[1.25] text-ink hover:text-accent"
           >
             {product.brand ? `${product.brand} ` : ""}
-            {product.name}
+            {title}
           </a>
           <div className="mt-0.5 line-clamp-1 text-[10px] leading-tight text-ink-2">
             {product.specs?.slice(0, 3).map((s) => s.value).join(" · ")}
@@ -208,16 +210,16 @@ export function ProductCard({
       >
         <div className="w-40 shrink-0">{media}</div>
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="mb-1 flex items-start justify-between gap-2">
+          <div className="mb-1 flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-1.5">
               <StatusLabel product={product} />
               {hitBadge}
             </div>
-            {heart}
+            <div className="-my-1.5">{heart}</div>
           </div>
           <p className="text-xs text-ink-3">{product.brand}</p>
           <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
-            {product.name}
+            {title}
           </a>
           <div className="mt-1">
             <ProductSpecs specs={product.specs} />
@@ -237,17 +239,21 @@ export function ProductCard({
         dimmed && "opacity-70",
       )}
     >
-      <div className="mb-2 flex items-start justify-between gap-2">
+      {/* items-center, а не items-start: у сердца кнопка 44×44 с иконкой по
+          центру, и при выравнивании по верху текст статуса вставал заметно выше
+          иконки — строка выглядела съехавшей. -my-1.5 гасит лишнюю высоту
+          hit-area, чтобы она не раздвигала шапку карточки. */}
+      <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
           <StatusLabel product={product} />
           {hitBadge}
         </div>
-        {showFavorite ? heart : null}
+        {showFavorite ? <div className="-my-1.5">{heart}</div> : null}
       </div>
       <div className="mb-3">{media}</div>
       <p className="text-xs text-ink-3">{product.brand}</p>
       <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
-        {product.name}
+        {title}
       </a>
       <div className="mt-1">
         <ProductSpecs specs={product.specs} />
