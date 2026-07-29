@@ -241,17 +241,22 @@ export function ProductCard({
         dimmed && "opacity-70",
       )}
     >
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <StatusLabel product={product} />
-          {hitBadge}
-        </div>
-        <div className="flex items-center">
-          <CompareButton slug={product.slug} />
+      {/* В шапке — только статус и бейдж. Кнопки отсюда убраны: в плитке
+          шириной ~165px «Нет в наличии» плюс две круглые кнопки в строку не
+          помещаются, и сравнение наезжало на текст статуса. */}
+      <div className="mb-2 flex min-w-0 items-center gap-1.5">
+        <StatusLabel product={product} />
+        {hitBadge}
+      </div>
+      {/* Избранное и сравнение — поверх фото, в правом верхнем углу: там место
+          есть при любой ширине плитки, а скидочный бейдж живёт в левом. */}
+      <div className="relative mb-3">
+        {media}
+        <div className="absolute right-0 top-0 z-10 flex flex-col items-center rounded-full bg-surface/85 backdrop-blur-sm">
           {showFavorite ? heart : null}
+          <CompareButton slug={product.slug} />
         </div>
       </div>
-      <div className="mb-3">{media}</div>
       <p className="text-xs text-ink-3">{product.brand}</p>
       <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
         {product.name}

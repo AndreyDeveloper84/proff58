@@ -72,7 +72,7 @@ export function CompareButton({
       data-event="compare_toggle"
       className={cn(
         // #478: на мобильном hit-area ≥44px, на десктопе кнопка компактная.
-        "grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors sm:h-8 sm:w-8",
+        "grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors sm:h-7 sm:w-7",
         active ? "text-accent" : "text-ink-3 hover:text-accent",
         rejected && "text-danger",
         className,
