@@ -5,6 +5,7 @@ import { Clock, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
+import { CompareButton } from "./CompareButton";
 import { ProductImage } from "./ProductImage";
 import { ProductPrice } from "./ProductPrice";
 import { ProductSpecs } from "./ProductSpecs";
@@ -213,7 +214,10 @@ export function ProductCard({
               <StatusLabel product={product} />
               {hitBadge}
             </div>
-            {heart}
+            <div className="flex items-center">
+              <CompareButton slug={product.slug} />
+              {heart}
+            </div>
           </div>
           <p className="text-xs text-ink-3">{product.brand}</p>
           <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
@@ -242,7 +246,10 @@ export function ProductCard({
           <StatusLabel product={product} />
           {hitBadge}
         </div>
-        {showFavorite ? heart : null}
+        <div className="flex items-center">
+          <CompareButton slug={product.slug} />
+          {showFavorite ? heart : null}
+        </div>
       </div>
       <div className="mb-3">{media}</div>
       <p className="text-xs text-ink-3">{product.brand}</p>

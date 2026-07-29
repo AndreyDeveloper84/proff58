@@ -23,6 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
+import { useCompare } from "@/lib/compare";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
 import { SearchBar } from "./SearchBar";
 import { ThemeToggle } from "./ThemeToggle";
@@ -40,15 +41,16 @@ const TOP_LINK_ICONS: Record<string, LucideIcon> = {
   Контакты: Phone,
 };
 
-// Компактная двухуровневая шапка по утверждённому desktop-макету. Данные
-// корзины реальные; сравнение и информационные страницы не превращаем в
-// фиктивные ссылки, пока соответствующих backend-модулей/маршрутов нет.
+// Компактная двухуровневая шапка по утверждённому desktop-макету. Корзина и
+// сравнение — рабочие; информационные страницы не превращаем в фиктивные
+// ссылки, пока соответствующих маршрутов нет.
 export function Header({
   logoUrl,
   siteName = "Профессионал",
   storefront = resolveStorefront(),
 }: HeaderProps) {
   const { count } = useCart();
+  const { count: compareCount } = useCompare();
   const [open, setOpen] = useState(false);
 
   const logo = logoUrl ? (
@@ -203,15 +205,23 @@ export function Header({
             <Heart className="h-5 w-5" aria-hidden />
             <span className="text-[11px]">Избранное</span>
           </Link>
-          {/* Сравнение — Wave 2, страницы пока нет: неактивно, без мёртвой ссылки. */}
-          <span
-            className="flex w-[68px] cursor-default flex-col items-center gap-0.5 rounded-md py-1 text-topbar-ink/60"
-            aria-disabled="true"
-            title="Скоро"
+          <Link
+            href="/compare"
+            className="relative flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
+            aria-label={
+              compareCount > 0 ? `Сравнение, товаров: ${compareCount}` : "Сравнение"
+            }
           >
-            <BarChart3 className="h-5 w-5" aria-hidden />
+            <span className="relative">
+              <BarChart3 className="h-5 w-5" aria-hidden />
+              {compareCount > 0 && (
+                <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-ink">
+                  {compareCount}
+                </span>
+              )}
+            </span>
             <span className="text-[11px]">Сравнение</span>
-          </span>
+          </Link>
           <Link
             href="/cart"
             className="relative flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"

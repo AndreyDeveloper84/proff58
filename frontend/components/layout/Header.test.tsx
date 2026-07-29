@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Header по утверждённому макету — каталог/поиск/корзина работают,
-// сравнение остаётся без мёртвой ссылки.
+// Header по утверждённому макету: каталог, поиск, корзина и сравнение работают,
+// инфо-страницы остаются без мёртвых ссылок.
 vi.mock("@/components/cart/CartProvider", () => ({
   useCart: () => ({ count: 3 }),
 }));
@@ -12,11 +12,15 @@ vi.mock("./SearchBar", () => ({
 }));
 
 import { Header } from "./Header";
+import { COMPARE_STORAGE_KEY } from "@/lib/compare";
 import { SITE } from "@/lib/site";
 
 describe("Header (#586)", () => {
   beforeEach(() => {
     document.documentElement.classList.remove("dark");
+    // Список сравнения живёт в localStorage: без очистки счётчик протекал бы
+    // из предыдущего теста.
+    localStorage.clear();
   });
 
   it("каталог, корзина и избранное — рабочие ссылки", () => {
@@ -33,12 +37,23 @@ describe("Header (#586)", () => {
     expect(within(cart).getByText("3")).toBeInTheDocument();
   });
 
-  it("«Сравнение» показано, но без ссылки (Wave 2, страницы нет)", () => {
+  // Раньше здесь стояла серая нерабочая плашка «Скоро»: страницы сравнения не
+  // существовало. Теперь это обычная ссылка со счётчиком выбранного.
+  it("«Сравнение» — рабочая ссылка со счётчиком выбранного", () => {
+    localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(["bosch", "makita"]));
     render(<Header />);
-    const compare = screen.getByText("Сравнение");
-    // Не ссылка и не ведёт в никуда — просто future-плашка.
-    expect(compare.closest("a")).toBeNull();
-    expect(screen.queryByRole("link", { name: /Сравнение/ })).toBeNull();
+
+    const compare = screen.getByRole("link", { name: /Сравнение, товаров: 2/ });
+    expect(compare).toHaveAttribute("href", "/compare");
+    expect(within(compare).getByText("2")).toBeInTheDocument();
+  });
+
+  it("пустое сравнение — ссылка без счётчика", () => {
+    render(<Header />);
+
+    const compare = screen.getByRole("link", { name: "Сравнение" });
+    expect(compare).toHaveAttribute("href", "/compare");
+    expect(within(compare).queryByText("0")).toBeNull();
   });
 
   // #592: инфо-страниц (/service, /delivery, …) не существует — пункты topbar
