@@ -51,18 +51,18 @@ describe("Header (#586)", () => {
     }
   });
 
-  // Переключатель темы вернули по запросу: место — между поиском и телефоном.
-  it("переключатель темы стоит между поиском и телефоном", () => {
+  // Переключатель темы переехал в topbar, к часам работы: в основной строке он
+  // стоял среди корзины/избранного и читался как действие с товаром.
+  it("переключатель темы стоит в topbar справа от часов работы", () => {
     render(<Header />);
     const toggle = screen.getAllByRole("button", { name: /тёмную тему/i })[0];
-    expect(toggle).toBeInTheDocument();
-
     const row = toggle.parentElement!;
+    const schedule = within(row).getByText(SITE.schedule);
+
     const nodes = Array.from(row.children);
-    const search = row.querySelector('[data-testid="searchbar"]')!.closest("div")!;
-    const phone = row.querySelector(`a[href="${SITE.phone.href}"]`)!;
-    expect(nodes.indexOf(search)).toBeLessThan(nodes.indexOf(toggle));
-    expect(nodes.indexOf(toggle)).toBeLessThan(nodes.indexOf(phone));
+    expect(nodes.indexOf(schedule.closest("span")!)).toBeLessThan(nodes.indexOf(toggle));
+    // Именно topbar (h-8), а не основная строка шапки (h-14).
+    expect(row.parentElement!.className).toContain("h-8");
   });
 
   // Основная строка шапки видна всегда, бургер-меню — нет. Переключатель, до
