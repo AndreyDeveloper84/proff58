@@ -11,7 +11,6 @@ type BestsellersProps = {
   products: Product[];
   /** Что именно в блоке: реальные продажи или новинки. Определяет подпись. */
   kind?: "bestsellers" | "new";
-  maxHref?: string;
 };
 
 // Подпись обязана соответствовать данным: пока продаж нет, блок называет себя
@@ -22,7 +21,7 @@ const TITLE: Record<"bestsellers" | "new", string> = {
   new: "Новинки каталога",
 };
 
-export function Bestsellers({ products, kind = "bestsellers", maxHref }: BestsellersProps) {
+export function Bestsellers({ products, kind = "bestsellers" }: BestsellersProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   if (!products.length) return null;
 
@@ -70,7 +69,7 @@ export function Bestsellers({ products, kind = "bestsellers", maxHref }: Bestsel
               key={p.id}
               className="w-[205px] shrink-0 snap-start lg:w-[calc((100%-50px)/6)]"
             >
-              <ProductCard product={p} variant="home" maxHref={maxHref} />
+              <ProductCard product={p} variant="home" />
             </div>
           ))}
         </div>

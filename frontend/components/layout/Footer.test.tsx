@@ -45,6 +45,15 @@ describe("Footer (#591)", () => {
     expect(max).toHaveAttribute("target", "_blank");
   });
 
+  // Раньше в карточке стояла иконка lucide `QrCode`: выглядела как код, но
+  // камерой не читалась. Теперь код настоящий — рисуется из той же ссылки.
+  it("QR в карточке мессенджеров — сканируемая графика, а не иконка", () => {
+    render(<Footer />);
+    const qr = screen.getByRole("img", { name: /QR-код/ });
+    expect(qr.tagName.toLowerCase()).toBe("svg");
+    expect(qr.querySelector("path")?.getAttribute("d")).toMatch(/^M0 0h7v1h-7z/);
+  });
+
   it("группы ссылок из конфига отрисованы", () => {
     render(<Footer />);
     for (const col of SITE.footerColumns) {

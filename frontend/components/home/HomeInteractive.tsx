@@ -26,17 +26,13 @@ export function HomeInteractive({ bestsellers, storefront }: HomeInteractiveProp
       {/* Ряд «Популярные категории» убран: популярности за ним не стояло —
           это были первые семь корневых категорий в алфавитном порядке, из-за
           чего в магазине электроинструмента не было электроинструмента. */}
-      <Bestsellers
-        products={bestsellers.products}
-        kind={bestsellers.kind}
-        maxHref={storefront.maxHref}
-      />
+      <Bestsellers products={bestsellers.products} kind={bestsellers.kind} />
       <PopularBrands />
-      {/* #590: нижняя зона по макету — «почему покупают» + статьи + подписка +
-          MAX-карточка. TrustBadges/ConsultBlock/AboutStats с главной убраны:
-          в макете их нет (их роль выполняют hero-CTA и WhyBuy), компоненты
-          остаются в кодовой базе для других страниц. */}
-      <HomeBottom maxHref={storefront.maxHref} />
+      {/* #590: нижняя зона по макету — «почему покупают» + статьи + подписка.
+          TrustBadges/ConsultBlock/AboutStats с главной убраны: в макете их нет
+          (их роль выполняют hero-CTA и WhyBuy), компоненты остаются в кодовой
+          базе для других страниц. */}
+      <HomeBottom />
       <InquiryModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );

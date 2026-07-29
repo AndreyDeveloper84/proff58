@@ -9,7 +9,6 @@ import { ProductImage } from "./ProductImage";
 import { ProductPrice } from "./ProductPrice";
 import { ProductSpecs } from "./ProductSpecs";
 import { AddToCartButton } from "./AddToCartButton";
-import { SITE } from "@/lib/site";
 
 // Статус-лейбл карточки по макету: цветной текст сверху-слева. Комбинирует наличие и
 // наличие цены (нет цены → «Цена уточняется» вне зависимости от остатка).
@@ -57,7 +56,6 @@ export function ProductCard({
   view = "grid",
   showFavorite = true,
   variant = "default",
-  maxHref = SITE.support.max.href,
 }: {
   product: Product;
   view?: "grid" | "list";
@@ -65,7 +63,6 @@ export function ProductCard({
   // завершённая функция (локальное визуальное состояние, без бэкенда/персистентности).
   showFavorite?: boolean;
   variant?: "default" | "home";
-  maxHref?: string;
 }) {
   const [fav, setFav] = useState(false);
   const href = `/product/${product.slug}`;
@@ -129,7 +126,10 @@ export function ProductCard({
         data-event="product_card_click"
         data-product-id={product.id}
         className={cn(
-          "relative flex h-[212px] flex-col overflow-hidden rounded-sm border border-line bg-surface",
+          // Высота без полосы «Консультация в MAX»: в ряду из восьми карточек она
+          // повторяла один и тот же CTA восемь раз и перебивала «В корзину».
+          // Канал MAX остался в hero главной и в подвале сайта.
+          "relative flex h-[192px] flex-col overflow-hidden rounded-sm border border-line bg-surface",
           dimmed && "opacity-70",
         )}
       >
@@ -150,7 +150,7 @@ export function ProductCard({
           <div className="absolute right-1 top-0.5 z-10 scale-75">{heart}</div>
         )}
 
-        <div className="flex min-h-0 flex-1 flex-col px-2 pt-1.5">
+        <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 pt-1.5">
           <a href={href} aria-label={product.name} className="block">
             <ProductImage
               src={product.image}
@@ -184,15 +184,6 @@ export function ProductCard({
           </div>
         </div>
 
-        <a
-          href={maxHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex h-6 shrink-0 items-center justify-center border-t border-line text-[10px] font-medium text-[#6156f5] hover:bg-[#f7f6ff]"
-          aria-label={`Консультация в MAX по товару ${product.name}`}
-        >
-          Консультация в MAX
-        </a>
       </article>
     );
   }

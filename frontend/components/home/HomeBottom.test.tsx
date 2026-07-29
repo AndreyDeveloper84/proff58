@@ -4,9 +4,8 @@ import { describe, expect, it } from "vitest";
 import { HomeBottom } from "./HomeBottom";
 import { ARTICLES } from "@/lib/articles";
 import { HOME_CONTENT } from "@/lib/home-content";
-import { SITE } from "@/lib/site";
 
-// #590: нижняя зона — почему покупают, лента статей, подписка-заглушка, MAX.
+// #590: нижняя зона — почему покупают, лента статей, подписка-заглушка.
 describe("HomeBottom (#590)", () => {
   it("показывает 6 причин «почему покупают у нас»", () => {
     render(<HomeBottom />);
@@ -43,11 +42,13 @@ describe("HomeBottom (#590)", () => {
     expect(screen.getByText(HOME_CONTENT.subscribe.note)).toBeInTheDocument();
   });
 
-  it("MAX-карточка ведёт на внешний канал в новой вкладке", () => {
+  // Карточка MAX-помощи убрана: она дублировала подвал, который идёт сразу под
+  // ней, и hero-кнопку той же страницы. В нижней зоне ссылок на MAX быть не должно.
+  it("не зовёт в MAX: канал остался в hero и подвале", () => {
     render(<HomeBottom />);
-    const link = screen.getByRole("link", { name: new RegExp(HOME_CONTENT.maxHelp.cta) });
-    expect(link).toHaveAttribute("href", SITE.support.max.href);
-    expect(link).toHaveAttribute("target", "_blank");
-    expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    expect(screen.queryByText(/MAX/)).not.toBeInTheDocument();
+    for (const link of screen.getAllByRole("link")) {
+      expect(link.getAttribute("href")).not.toContain("max.ru");
+    }
   });
 });
