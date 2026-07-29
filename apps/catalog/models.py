@@ -106,6 +106,14 @@ class Category(MP_Node):
     def __str__(self) -> str:
         return self.name
 
+    def get_absolute_url(self) -> str:
+        """Адрес категории на витрине (Next.js `/catalog/[category]`).
+
+        Нужен кнопке «Смотреть на сайте» в админке: витрина и админка живут за
+        одним nginx на одном хосте, поэтому путь относительный.
+        """
+        return f"/catalog/{self.slug}"
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name, allow_unicode=True)
@@ -623,6 +631,15 @@ class Product(TimeStampedModel):
     def is_visible(self) -> bool:
         """Виден ли товар на витрине."""
         return self.is_active and self.status == ProductStatus.PUBLISHED
+
+    def get_absolute_url(self) -> str:
+        """Адрес товара на витрине (Next.js `/product/[slug]`).
+
+        Нужен кнопке «Смотреть на сайте» в админке. Витрина отдаёт только
+        опубликованное (`visible_products()`), поэтому для черновика ссылка
+        приведёт на 404 — предпросмотр черновиков отдельная задача (C1).
+        """
+        return f"/product/{self.slug}"
 
     def missing_required_attributes(self) -> list[str]:
         """Имена обязательных характеристик категории, у которых нет значения.

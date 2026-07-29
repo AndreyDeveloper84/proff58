@@ -28,6 +28,15 @@ _TRANSITIONS: dict[str, set[str]] = {
 }
 
 
+def allowed_transitions(old: str) -> set[str]:
+    """Куда можно перевести заказ из статуса ``old`` (без same→same).
+
+    Нужна интерфейсам, которые объясняют человеку, что именно допустимо, —
+    в отличие от ``can_transition``, отвечающей «да/нет» по конкретной паре.
+    """
+    return set(_TRANSITIONS.get(old, set()))
+
+
 def can_transition(old: str, new: str) -> bool:
     """Допустим ли переход обработки old → new.
 

@@ -17,6 +17,7 @@ class SEOPageAdmin(admin.ModelAdmin):
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
+    save_on_top = True
     list_display = ["title", "status", "published_at", "created_at"]
     list_filter = ["status"]
     search_fields = ["title", "slug"]
