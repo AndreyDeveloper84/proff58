@@ -9,7 +9,6 @@ import { ProductImage } from "./ProductImage";
 import { ProductPrice } from "./ProductPrice";
 import { ProductSpecs } from "./ProductSpecs";
 import { AddToCartButton } from "./AddToCartButton";
-import { SITE } from "@/lib/site";
 
 // Статус-лейбл карточки по макету: цветной текст сверху-слева. Комбинирует наличие и
 // наличие цены (нет цены → «Цена уточняется» вне зависимости от остатка).
@@ -32,7 +31,9 @@ function StatusLabel({ product, compact = false }: { product: Product; compact?:
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-semibold",
+        // whitespace-nowrap: рядом может стоять бейдж «Хит», и «В наличии»
+        // ломалось на две строки, задирая высоту шапки карточки.
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-semibold",
         compact ? "text-[10px]" : "text-xs",
         s.cls,
       )}
@@ -55,7 +56,6 @@ export function ProductCard({
   view = "grid",
   showFavorite = true,
   variant = "default",
-  maxHref = SITE.support.max.href,
 }: {
   product: Product;
   view?: "grid" | "list";
@@ -63,7 +63,6 @@ export function ProductCard({
   // завершённая функция (локальное визуальное состояние, без бэкенда/персистентности).
   showFavorite?: boolean;
   variant?: "default" | "home";
-  maxHref?: string;
 }) {
   const [fav, setFav] = useState(false);
   const href = `/product/${product.slug}`;
@@ -127,7 +126,10 @@ export function ProductCard({
         data-event="product_card_click"
         data-product-id={product.id}
         className={cn(
-          "relative flex h-[212px] flex-col overflow-hidden rounded-sm border border-line bg-surface",
+          // Высота без полосы «Консультация в MAX»: в ряду из восьми карточек она
+          // повторяла один и тот же CTA восемь раз и перебивала «В корзину».
+          // Канал MAX остался в hero главной и в подвале сайта.
+          "relative flex h-[192px] flex-col overflow-hidden rounded-sm border border-line bg-surface",
           dimmed && "opacity-70",
         )}
       >
@@ -148,7 +150,7 @@ export function ProductCard({
           <div className="absolute right-1 top-0.5 z-10 scale-75">{heart}</div>
         )}
 
-        <div className="flex min-h-0 flex-1 flex-col px-2 pt-1.5">
+        <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 pt-1.5">
           <a href={href} aria-label={product.name} className="block">
             <ProductImage
               src={product.image}
@@ -182,18 +184,17 @@ export function ProductCard({
           </div>
         </div>
 
-        <a
-          href={maxHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex h-6 shrink-0 items-center justify-center border-t border-line text-[10px] font-medium text-[#6156f5] hover:bg-[#f7f6ff]"
-          aria-label={`Консультация в MAX по товару ${product.name}`}
-        >
-          Консультация в MAX
-        </a>
       </article>
     );
   }
+
+  // Бейдж «Хит» — из product.badges, куда его кладёт adapters по признаку
+  // is_hit backend (рейтинг продаж). Ручных пометок здесь нет и быть не должно.
+  const hitBadge = product.badges.includes("hit") ? (
+    <span className="shrink-0 rounded-full bg-[#ff8700] px-2 py-0.5 text-[10px] font-bold text-white">
+      Хит
+    </span>
+  ) : null;
 
   if (view === "list") {
     return (
@@ -208,7 +209,10 @@ export function ProductCard({
         <div className="w-40 shrink-0">{media}</div>
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="mb-1 flex items-start justify-between gap-2">
-            <StatusLabel product={product} />
+            <div className="flex min-w-0 items-center gap-1.5">
+              <StatusLabel product={product} />
+              {hitBadge}
+            </div>
             {heart}
           </div>
           <p className="text-xs text-ink-3">{product.brand}</p>
@@ -234,7 +238,10 @@ export function ProductCard({
       )}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
-        <StatusLabel product={product} />
+        <div className="flex min-w-0 items-center gap-1.5">
+          <StatusLabel product={product} />
+          {hitBadge}
+        </div>
         {showFavorite ? heart : null}
       </div>
       <div className="mb-3">{media}</div>

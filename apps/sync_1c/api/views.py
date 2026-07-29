@@ -37,6 +37,7 @@ from .serializers import (
     OrderConfirmItemSerializer,
     PriceItemSerializer,
     ProductImportItemSerializer,
+    SalesItemSerializer,
     StockItemSerializer,
     envelope_for,
 )
@@ -167,6 +168,24 @@ def stocks_update(request):
     if error:
         return error
     sync_log, result = use_cases.update_stocks(items, source_file="api:stocks/update")
+    return _import_response(sync_log, result)
+
+
+@api_view(["POST"])
+@permission_classes([HasOneCApiKey])
+@renderer_classes([OneCJSONRenderer])
+@parser_classes([OneCJSONParser])
+@throttle_classes([OneCRateThrottle])
+def sales_upload(request):
+    """Приём продаж магазина из 1С — источник данных для «Хитов продаж».
+
+    Синхронно, как цены и остатки: объём выгрузки того же порядка, а витрине
+    полезно сразу получить счётчики принятого.
+    """
+    items, error = _validate_items(request, SalesItemSerializer)
+    if error:
+        return error
+    sync_log, result = use_cases.import_sales(items, source_file="api:sales/upload")
     return _import_response(sync_log, result)
 
 

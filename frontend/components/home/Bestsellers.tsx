@@ -7,9 +7,21 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { Reveal } from "@/components/motion/Reveal";
 import type { Product } from "@/lib/types";
 
-type BestsellersProps = { products: Product[]; maxHref?: string };
+type BestsellersProps = {
+  products: Product[];
+  /** Что именно в блоке: реальные продажи или новинки. Определяет подпись. */
+  kind?: "bestsellers" | "new";
+};
 
-export function Bestsellers({ products, maxHref }: BestsellersProps) {
+// Подпись обязана соответствовать данным: пока продаж нет, блок называет себя
+// новинками, а не «хитами». Раньше здесь всегда стояло «Хиты продаж», хотя
+// приходила выдача ?sort=new — витрина вводила покупателя в заблуждение.
+const TITLE: Record<"bestsellers" | "new", string> = {
+  bestsellers: "Хиты продаж",
+  new: "Новинки каталога",
+};
+
+export function Bestsellers({ products, kind = "bestsellers" }: BestsellersProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   if (!products.length) return null;
 
@@ -21,9 +33,7 @@ export function Bestsellers({ products, maxHref }: BestsellersProps) {
     <section className="mx-auto max-w-[1400px] px-4 pt-2.5">
       <div className="mb-1.5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <h2 className="font-sans text-lg font-bold text-ink">
-          Хиты продаж
-          </h2>
+          <h2 className="font-sans text-lg font-bold text-ink">{TITLE[kind]}</h2>
           <Link href="/catalog" className="hidden items-center gap-1 text-xs font-medium text-accent transition hover:opacity-80 sm:inline-flex">
             Смотреть все
             <ArrowRight className="h-3 w-3" aria-hidden />
@@ -59,7 +69,7 @@ export function Bestsellers({ products, maxHref }: BestsellersProps) {
               key={p.id}
               className="w-[205px] shrink-0 snap-start lg:w-[calc((100%-50px)/6)]"
             >
-              <ProductCard product={p} variant="home" maxHref={maxHref} />
+              <ProductCard product={p} variant="home" />
             </div>
           ))}
         </div>

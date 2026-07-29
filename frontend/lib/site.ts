@@ -99,6 +99,7 @@ export const SITE = {
       links: [
         { label: "Поиск по каталогу", href: "/search" },
         { label: "Подбор инструмента", href: "/catalog" },
+        { label: "Статьи и обзоры", href: "/articles" },
       ],
     },
   ],

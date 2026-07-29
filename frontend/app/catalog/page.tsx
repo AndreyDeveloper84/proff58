@@ -9,38 +9,13 @@ import { WhyBuyStrip } from "@/components/home/HomeBottom";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SearchBar } from "@/components/layout/SearchBar";
 import { getCategoryTreeOrNull, type CategoryNode } from "@/lib/catalog";
+import { categoryPhoto } from "@/lib/category-artwork";
 import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 // Категории берём из API в рантайме (slug'и из БД), без редиректа. Данные — через
 // lib/catalog.ts (единственная точка интеграции), fetch тут не дублируем.
 export const dynamic = "force-dynamic";
-
-// В API пока нет category.image. Фото — только оформление реального узла;
-// оно определяется по имени, но название, ссылка и подкатегории всегда серверные.
-// Для нового неизвестного раздела есть нейтральный fallback, поэтому расширение
-// дерева на backend не требует срочной правки frontend.
-function categoryArtwork(name: string): string | null {
-  const value = name.toLocaleLowerCase("ru-RU");
-  const rules: Array<[RegExp, string]> = [
-    [/оснаст|расход/, "/catalog/categories/osnastka.webp"],
-    [/электроинструмент|перфоратор/, "/catalog/categories/electroinstrument.webp"],
-    [/ручн/, "/catalog/categories/ruchnoy.webp"],
-    [/авто|гараж/, "/catalog/categories/avto-garage.webp"],
-    [/измер/, "/catalog/categories/izmeritelnyy.webp"],
-    [/крепёж|метиз/, "/catalog/categories/krepezh.webp"],
-    [/электрик|освещ/, "/catalog/categories/electrika.webp"],
-    [/спецодеж|сиз/, "/catalog/categories/siz.webp"],
-    [/садов/, "/catalog/categories/sadovaya.webp"],
-    [/силов|пневм|компресс/, "/catalog/categories/silovaya.webp"],
-    [/свароч/, "/catalog/categories/svarochnaya.webp"],
-    [/хранен|организац/, "/catalog/categories/hranenie.webp"],
-    [/строитель|отделоч/, "/catalog/categories/stroitelnyy.webp"],
-    [/запчаст|аккумулятор|комплектующ/, "/catalog/categories/zapchasti.webp"],
-  ];
-
-  return rules.find(([pattern]) => pattern.test(value))?.[1] ?? null;
-}
 
 function CategoryCard({
   category,
@@ -49,7 +24,7 @@ function CategoryCard({
   category: CategoryNode;
   featured: boolean;
 }) {
-  const artwork = categoryArtwork(category.name);
+  const artwork = categoryPhoto(category.name);
   const children = category.children.slice(0, 3);
 
   return (

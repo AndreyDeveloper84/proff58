@@ -5,6 +5,8 @@
 и валидируется по типам.
 """
 
+from decimal import Decimal
+
 from django.conf import settings
 from rest_framework import serializers
 
@@ -66,6 +68,18 @@ class StockItemSerializer(_IdentifiedItem):
                 "Нужно хотя бы одно поле остатка: stock / reserved / available_stock."
             )
         return attrs
+
+
+class SalesItemSerializer(_IdentifiedItem):
+    """Строка выгрузки продаж из 1С: сколько штук товара продано в конкретный день.
+
+    День, а не документ: витрине нужна динамика продаж, первичка учёта остаётся
+    в 1С. Количество строго положительное — «продано 0» не факт продажи, а шум,
+    возвраты 1С шлёт отдельной корректировкой того же дня (последняя выигрывает).
+    """
+
+    date = serializers.DateField()
+    quantity = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal("0"))
 
 
 class OrderConfirmItemSerializer(serializers.Serializer):

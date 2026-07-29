@@ -32,7 +32,7 @@ def products_by_ids_for_cards(ids) -> dict[int, Product]:
     return {
         p.id: p
         for p in Product.objects.filter(id__in=list(ids))
-        .select_related("category")
+        .select_related("category", "sales_stat")
         .prefetch_related(
             "images",
             Prefetch(

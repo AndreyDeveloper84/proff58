@@ -56,6 +56,8 @@ type ApiProduct = {
   main_image?: string | null;
   short_description?: string | null;
   attributes?: ApiAttr[];
+  // Рейтинг продаж backend: товар в топе продаж за окно (apps.catalog.sales).
+  is_hit?: boolean;
 };
 
 type ApiImage = { url: string; alt?: string | null; is_main?: boolean };
@@ -113,7 +115,7 @@ type ApiFacet = {
   name: string;
   type: string; // text|integer|decimal|boolean|select|multiselect
   unit?: string;
-  // Навигационный фасет (tool_type): рендерится TypePanel, выбор → верхнеуровневый ?tool_type=.
+  // Навигационный фасет (tool_type): рендерится блоком навигации, выбор → верхнеуровневый ?tool_type=.
   is_nav?: boolean;
   // Раздел сайдбара (§22.4, D1): "main"|"extra". Любая иная/пустая строка → main (дефолт).
   group?: string;
@@ -181,8 +183,13 @@ export function apiProductToProduct(ap: ApiProduct): Product {
     },
     stock: mapStock(ap.stock_status),
     stockQty: ap.stock_qty ?? undefined,
-    // sale — из скидки (данные есть). new/hit — вне scope (нет надёжного признака новизны).
-    badges: hasDiscount ? ["sale"] : [],
+    // sale — из скидки, hit — из рейтинга продаж backend (apps.catalog.sales):
+    // бейдж «Хит» означает реальные продажи за окно, а не редакторскую пометку.
+    // new — по-прежнему вне scope: надёжного признака новизны нет.
+    badges: [
+      ...(ap.is_hit ? (["hit"] as const) : []),
+      ...(hasDiscount ? (["sale"] as const) : []),
+    ],
   };
 }
 
@@ -252,11 +259,11 @@ function brandFacet(brands?: ApiBrand[]): Facet | null {
 
 export function apiFacetToFacet(af: ApiFacet): Facet {
   // Классификация nav vs обычный фасет. tool_type (is_nav) — НАВИГАЦИЯ: код = bare slug
-  // (tool_type), выбор идёт верхнеуровневым ?tool_type=, рендер — TypePanel. Остальные EAV
+  // (tool_type), выбор идёт верхнеуровневым ?tool_type=, рендер — блок навигации. Остальные EAV
   // хранятся С префиксом attr_ — это имя query-параметра сайдбар-фильтра (attr_<slug>).
   const isNav = af.is_nav === true;
   const code = isNav ? af.slug : `attr_${af.slug}`;
-  // Гейтинг-класс (§3.3/§6): nav → TypePanel; базовый код (напр. attr_power_source) → base;
+  // Гейтинг-класс (§3.3/§6): nav → блок навигации; базовый код (напр. attr_power_source) → base;
   // прочие attr_* → tech (скрыты до выбора tool_type). По коду, не по названию.
   const kind: Facet["kind"] = isNav ? "nav" : BASE_CODES.has(code) ? "base" : "tech";
   // Группа сайдбара (§22.4, D2): доверяем только whitelisted "extra"; всё прочее (включая
@@ -562,46 +569,63 @@ export async function fetchCategoryTreeFromApi(base: string): Promise<CategoryNo
   }
 }
 
-// «Хиты продаж»: курируемые slug'и (detail-эндпоинт, параллельно) → fallback ?sort=new.
-// Detail-ответ — надмножество list (ApiProduct), apiProductToProduct берёт нужное подмножество.
-export async function fetchBestsellersFromApi(
+// Товары раздела для блока «подобрать по теме» в статьях. Best-effort: сбой →
+// пустой список, блок просто не отрисуется (статья ценна и без витрины).
+export async function fetchCategoryProductsFromApi(
   base: string,
-  slugs: string[],
+  category: string,
   limit: number,
 ): Promise<Product[]> {
   const root = base.replace(/\/$/, "");
-  if (slugs.length) {
-    const settled = await Promise.all(
-      slugs.map(async (slug) => {
-        try {
-          const res = await fetch(`${root}/api/catalog/products/${encodeURIComponent(slug)}/`, {
-            cache: "no-store",
-            headers: SSR_HEADERS,
-            signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
-          });
-          if (!res.ok) return null;
-          return apiProductToProduct((await res.json()) as ApiProduct);
-        } catch {
-          return null;
-        }
-      }),
-    );
-    const found = settled.filter((p): p is Product => p != null);
-    if (found.length) return found;
-  }
-  // Fallback: свежие товары.
   try {
-    const res = await fetch(`${root}/api/catalog/products/?sort=new&limit=${limit}`, {
-      cache: "no-store",
-      headers: SSR_HEADERS,
-      signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
-    });
+    const res = await fetch(
+      `${root}/api/catalog/products/?category=${encodeURIComponent(category)}&page_size=${limit}`,
+      { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(SSR_TIMEOUT_MS) },
+    );
     if (!res.ok) return [];
     const json = (await res.json()) as { results?: ApiProduct[] };
-    return (json.results ?? []).map(apiProductToProduct);
+    return (json.results ?? []).slice(0, limit).map(apiProductToProduct);
   } catch {
     return [];
   }
+}
+
+// «Хиты продаж»: курируемые slug'и (detail-эндпоинт, параллельно) → fallback ?sort=new.
+// Detail-ответ — надмножество list (ApiProduct), apiProductToProduct берёт нужное подмножество.
+/**
+ * Витрина главной: реальные хиты продаж, иначе — честно помеченные новинки.
+ *
+ * `kind` существует именно ради честности заголовка. Раньше блок «Хиты продаж»
+ * молча показывал `?sort=new`, то есть выдавал новинки за хиты. Теперь источник
+ * выдачи виден вызывающему, и подпись блока меняется вместе с ним.
+ */
+export async function fetchBestsellersFromApi(
+  base: string,
+  limit: number,
+): Promise<{ products: Product[]; kind: "bestsellers" | "new" }> {
+  const root = base.replace(/\/$/, "");
+
+  const load = async (path: string): Promise<Product[]> => {
+    try {
+      const res = await fetch(`${root}${path}`, {
+        cache: "no-store",
+        headers: SSR_HEADERS,
+        signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
+      });
+      if (!res.ok) return [];
+      const json = (await res.json()) as { results?: ApiProduct[] };
+      return (json.results ?? []).map(apiProductToProduct);
+    } catch {
+      return [];
+    }
+  };
+
+  // Эндпоинт хитов отдаёт ТОЛЬКО товары с продажами за окно: пустой ответ здесь —
+  // это «продаж пока нет», а не сбой, и подменять его нечем.
+  const bestsellers = await load(`/api/catalog/bestsellers/?limit=${limit}`);
+  if (bestsellers.length) return { products: bestsellers, kind: "bestsellers" };
+
+  return { products: await load(`/api/catalog/products/?sort=new&limit=${limit}`), kind: "new" };
 }
 
 // #573: первая страница отзывов товара + агрегат — SSR напрямую в Django

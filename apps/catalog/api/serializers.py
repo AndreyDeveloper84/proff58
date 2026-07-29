@@ -59,6 +59,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     price_type = serializers.SerializerMethodField()
     attributes = serializers.SerializerMethodField()
     stock_qty = serializers.SerializerMethodField()
+    is_hit = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -77,7 +78,18 @@ class ProductListSerializer(serializers.ModelSerializer):
             "main_image",
             "short_description",
             "attributes",
+            "is_hit",
         )
+
+    def get_is_hit(self, obj) -> bool:
+        """Бейдж «Хит» — только по факту продаж (apps.catalog.sales).
+
+        Строки рейтинга у большинства товаров нет, поэтому обращаемся осторожно:
+        OneToOne без записи бросает исключение, а не отдаёт None. Запрос не
+        добавляем — sales_stat приходит через select_related выдачи.
+        """
+        stat = getattr(obj, "sales_stat", None)
+        return bool(stat and stat.is_hit)
 
     def get_stock_qty(self, obj):
         """Остаток для сигнала «мало осталось» (#488).

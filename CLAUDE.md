@@ -103,6 +103,7 @@ docker-compose.prod.yml # prod-стек (+ nginx, см. docker/nginx, docs/DEPLO
 | `stocks/update` | POST | только остатки (**синхронно**) | 200 + счётчики |
 | `orders/new` | GET | 1С забирает новые заказы (`sync_1c_status=pending`) | 200 + items |
 | `orders/confirm` | POST | подтверждение приёма/резерва + движение `fulfillment_status` | 200 + per-item |
+| `sales/upload` | POST | продажи магазина за день (источник «Хитов продаж», **синхронно**) | 200 + счётчики |
 
 Важные детали реализации:
 
@@ -211,7 +212,8 @@ docker compose run --rm web pytest   # альтернатива: всё внут
 ## 10. Публичные API (для фронта)
 
 - `/api/catalog/` — `categories/`, `categories/<slug>/facets/`, `products/`,
-  `products/<slug>/`, `products/<slug>/compatible/`, `search/suggest/`
+  `products/<slug>/`, `products/<slug>/compatible/`, `search/suggest/`,
+  `bestsellers/` (товары с реальными продажами за окно — см. `apps/catalog/sales.py`)
 - `/api/ai/products/<slug>/recommendations/`
 - `/api/` — `cart/`, `cart/items/`, `orders/`, `orders/<number>/`
 - `/api/1c/` — обмен с 1С (см. §5)
