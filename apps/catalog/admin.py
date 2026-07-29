@@ -603,7 +603,21 @@ class ProductAdmin(admin.ModelAdmin):
     fieldsets = (
         (
             None,
-            {"fields": ("moderation_reason_detail", "name", "slug", "status", "is_active")},
+            {
+                "description": _(
+                    "«Название (карточка)» — короткая форма для плитки каталога; пусто — "
+                    "показывается витринное название. Заполняет normalize_product_names, "
+                    "руками правится здесь."
+                ),
+                "fields": (
+                    "moderation_reason_detail",
+                    "name",
+                    "card_name",
+                    "slug",
+                    "status",
+                    "is_active",
+                ),
+            },
         ),
         (
             _("Категория сайта"),
