@@ -23,13 +23,28 @@ const oswald = Oswald({
   display: "swap",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://proff58.ru";
+const DESCRIPTION = "Профессиональный инструмент и оборудование: каталог, наличие, цены.";
+
+// metadataBase нужен, чтобы og:image ушёл абсолютным URL — мессенджеры и соцсети
+// относительный путь не разворачивают и превью не покажут. Сама картинка
+// подхватывается по файловому соглашению из app/opengraph-image.png.
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Профессионал — территория инструмента",
     template: "%s — Профессионал",
   },
-  description:
-    "Профессиональный инструмент и оборудование: каталог, наличие, цены.",
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    siteName: "Профессионал",
+    title: "Профессионал — территория инструмента",
+    description: DESCRIPTION,
+    url: SITE_URL,
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default async function RootLayout({

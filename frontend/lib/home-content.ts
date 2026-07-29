@@ -1,12 +1,11 @@
-// Контент главной страницы, которого НЕТ в API каталога: тексты, статистика, телефон,
-// промо, ссылки и визуальные ассеты категорий/hero. Перекраска/смена копий магазина —
-// правка ТОЛЬКО этого файла, без касания компонентов. Названия категорий и сами товары
-// приходят из API; здесь — лишь привязка slug→картинка и курируемый список «хитов».
+// Контент главной страницы, которого НЕТ в API каталога: тексты, промо, ссылки,
+// картинки сценарных карточек. Смена копий магазина — правка ТОЛЬКО этого файла,
+// без касания компонентов. Названия категорий и сами товары приходят из API.
 
 export type HomeStat = { value: number; suffix: string; label: string };
 export type TrustItem = { icon: string; title: string };
 export type HeroBullet = { icon: string; text: string };
-export type IntentCard = { icon: string; title: string; text: string; href: string };
+export type IntentCard = { image: string; title: string; text: string; href: string };
 export type ServiceItem = { icon: string; title: string; text: string };
 
 export const HOME_CONTENT = {
@@ -42,31 +41,31 @@ export const HOME_CONTENT = {
     title: "Что вы хотите сделать?",
     cards: [
       {
-        icon: "Home",
+        image: "/home/intent/home.webp",
         title: "Для дома",
         text: "Ремонт, сад, мебель, бытовые задачи",
         href: "/catalog/ruchnoy",
       },
       {
-        icon: "Paintbrush",
+        image: "/home/intent/renovation.webp",
         title: "Ремонт квартиры",
         text: "Отделка, электрика, сантехника",
         href: "/catalog/stroitelnyy",
       },
       {
-        icon: "Hammer",
+        image: "/home/intent/construction.webp",
         title: "Стройка и бетон",
         text: "Фундамент, стены, бетонные работы",
         href: "/catalog/elektroinstrument",
       },
       {
-        icon: "Briefcase",
+        image: "/home/intent/professional.webp",
         title: "Профессиональная работа",
         text: "Ежедневные нагрузки, интенсивное использование",
         href: "/catalog/silovaya",
       },
       {
-        icon: "Cog",
+        image: "/home/intent/consumables.webp",
         title: "Расходные материалы и оснастка",
         text: "Буры, диски, свёрла, расходники",
         href: "/catalog/osnastka",
@@ -91,8 +90,6 @@ export const HOME_CONTENT = {
     "Ресанта",
   ] as string[],
 
-  // slug корневой категории → фон плитки (плейсхолдеры; дизайнер заменит). Дефолт — ниже.
-  categoryAssets: {} as Record<string, string>,
   trust: [
     { icon: "ShieldCheck", title: "Официальная гарантия" },
     { icon: "Truck", title: "Быстрая доставка" },
@@ -141,8 +138,3 @@ export const HOME_CONTENT = {
     ] as HomeStat[],
   },
 };
-
-// Фон плитки категории. Нет ассета для slug → нейтральный плейсхолдер.
-export function categoryAsset(slug: string): string {
-  return HOME_CONTENT.categoryAssets[slug] ?? "/home/categories/placeholder.svg";
-}
