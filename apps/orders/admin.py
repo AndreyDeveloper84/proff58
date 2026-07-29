@@ -41,6 +41,13 @@ class OrderAdmin(admin.ModelAdmin):
     )
     list_filter = ("fulfillment_status", "payment_status", "sync_1c_status", "customer_type")
     search_fields = ("order_number", "customer_name", "customer_phone", "inn")
+    # «Заказы за сегодня» без этого было нечем отфильтровать.
+    date_hierarchy = "created_at"
+    save_on_top = True
+    # user — autocomplete (UserAdmin.search_fields есть), слот — raw_id
+    # (у DeliverySlotAdmin поиска нет). Оба поля рендерили полный селект.
+    autocomplete_fields = ("user",)
+    raw_id_fields = ("delivery_slot",)
     inlines = [OrderItemInline]
     readonly_fields = ("display_status", "created_at", "updated_at")
 
@@ -81,6 +88,8 @@ class B2BInvoiceAdmin(admin.ModelAdmin):
 class CartItemInline(admin.TabularInline):
     model = CartItem
     extra = 0
+    # Без raw_id каждая строка корзины рендерила селект со ВСЕМ каталогом.
+    raw_id_fields = ("product",)
 
 
 @admin.register(Cart)
