@@ -404,16 +404,23 @@ export async function fetchListingFromApi(
   };
 
   // Фасеты + метаданные категории — best-effort: упал эндпоинт → страница всё равно рендерится.
+  // Исключение — 404: этот эндпоинт отдаёт его только когда категории с таким slug нет
+  // (или она снята с публикации), и это единственный признак несуществующего раздела —
+  // products/?category=<мусор> отвечает 200 с пустым списком. Без него страница
+  // превращалась бы в soft-404: HTTP 200 с пустым листингом и заголовком из slug.
   let facets: Facet[] = [];
   let categoryBlock: ApiCategoryBlock | undefined;
   let subcategories: { label: string; href: string }[] = [];
   let filterMode: FilterMode | undefined;
+  let categoryMissing = false;
   try {
     const facetsRes = await fetch(
-      `${root}/api/catalog/categories/${query.category}/facets/?${buildFacetParams(query).toString()}`,
+      `${root}/api/catalog/categories/${encodeURIComponent(query.category)}/facets/?${buildFacetParams(query).toString()}`,
       { cache: "no-store", headers: SSR_HEADERS },
     );
-    if (facetsRes.ok) {
+    if (facetsRes.status === 404) {
+      categoryMissing = true;
+    } else if (facetsRes.ok) {
       const fj = (await facetsRes.json()) as ApiFacetsResponse;
       const attrFacets = (fj.facets ?? []).map(apiFacetToFacet);
       // Порядок макета: Цена → Наличие → Бренд → атрибутные фасеты.
@@ -433,6 +440,7 @@ export async function fetchListingFromApi(
   } catch {
     facets = [];
   }
+  if (categoryMissing) return null; // → notFound() в page.tsx
 
   const products = productsJson.results.map(apiProductToProduct);
   const categoryName =
@@ -535,9 +543,10 @@ export type CategoryNode = {
   children: CategoryNode[];
 };
 
-// Дерево категорий для блока «Категории» главной. Best-effort: сбой/невалид → пустой массив
-// (главная деградирует мягко, в отличие от PLP). Возвращаем как есть — корни возьмёт хелпер.
-export async function fetchCategoryTreeFromApi(base: string): Promise<CategoryNode[]> {
+// Дерево категорий (корни + потомки). null — API недоступен или ответил невалидом;
+// [] — категорий нет. Разницу использует индекс каталога («временно недоступен» vs
+// «разделы не заполнены»); главная обе ситуации деградирует одинаково — скрывает блок.
+export async function fetchCategoryTreeFromApi(base: string): Promise<CategoryNode[] | null> {
   const root = base.replace(/\/$/, "");
   try {
     const res = await fetch(`${root}/api/catalog/categories/`, {
@@ -545,11 +554,11 @@ export async function fetchCategoryTreeFromApi(base: string): Promise<CategoryNo
       headers: SSR_HEADERS,
       signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
     });
-    if (!res.ok) return [];
+    if (!res.ok) return null;
     const json = (await res.json()) as CategoryNode[];
-    return Array.isArray(json) ? json : [];
+    return Array.isArray(json) ? json : null;
   } catch {
-    return [];
+    return null;
   }
 }
 
