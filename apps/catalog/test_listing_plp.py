@@ -142,6 +142,41 @@ def test_invalid_sort_falls_back_to_name(client, tree):
     assert order == ["a", "b"]  # дефолт — по name
 
 
+@pytest.mark.django_db
+def test_availability_leads_every_sort(client, tree):
+    """Наличие — первый ключ любой сортировки; сама сортировка работает внутри групп.
+
+    87 % каталога сейчас без остатка, и по алфавиту/цене первые экраны состояли
+    из «Сообщить о поступлении». Товары не скрыты — они просто ниже.
+    """
+    _, leaf = tree
+    make_product(leaf, "a-out", price=100, stock=StockStatus.OUT_OF_STOCK)
+    make_product(leaf, "b-order", price=200, stock=StockStatus.ON_ORDER)
+    make_product(leaf, "c-in", price=300, stock=StockStatus.IN_STOCK)
+
+    default = [r["slug"] for r in results(client, "category=perforatory")]
+    assert default == ["c-in", "b-order", "a-out"]  # хотя по алфавиту было бы наоборот
+
+    # Даже «сначала дешёвые» не поднимает отсутствующий товар выше доступного.
+    asc = [r["slug"] for r in results(client, "category=perforatory&sort=price_asc")]
+    assert asc == ["c-in", "b-order", "a-out"]
+
+    # Ничего не пропало: все три позиции в выдаче и остаются кликабельными.
+    assert len(default) == 3
+
+
+@pytest.mark.django_db
+def test_sort_still_applies_within_available(client, tree):
+    """Внутри одной группы наличия порядок задаёт именно ?sort."""
+    _, leaf = tree
+    make_product(leaf, "in-expensive", price=900, stock=StockStatus.IN_STOCK)
+    make_product(leaf, "in-cheap", price=100, stock=StockStatus.IN_STOCK)
+    make_product(leaf, "out-cheapest", price=1, stock=StockStatus.OUT_OF_STOCK)
+
+    order = [r["slug"] for r in results(client, "category=perforatory&sort=price_asc")]
+    assert order == ["in-cheap", "in-expensive", "out-cheapest"]
+
+
 # --- фасеты price/brand/stock + category-блок ---
 
 

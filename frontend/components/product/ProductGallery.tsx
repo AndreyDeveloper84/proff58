@@ -6,6 +6,11 @@ import type { ProductImageData } from "@/lib/types";
 import { ProductImage } from "./ProductImage";
 import { Lightbox } from "./Lightbox";
 
+// На десктопе главное фото ограничено по высоте, а не квадратом во всю колонку:
+// квадрат 700×700 был выше всей правой колонки с ценой, и под ней оставалась
+// пустая полоса в пол-экрана. На мобильном квадрат сохраняется — там колонка одна.
+const MAIN_PHOTO_SIZE = "lg:aspect-auto lg:h-[520px]";
+
 // Галерея PDP: главное фото (приоритетная загрузка — LCP) + миниатюры с выбором.
 // Главное фото открывается на весь экран (Lightbox); листание — стрелками/свайпом.
 // Пустой images → ProductImage сам покажет плейсхолдер. Одна картинка → без миниатюр.
@@ -49,10 +54,15 @@ export function ProductGallery({ images, name }: { images: ProductImageData[]; n
             touchX.current = null;
           }}
         >
-          <ProductImage src={current?.url} alt={current?.alt || name} priority />
+          <ProductImage
+            src={current?.url}
+            alt={current?.alt || name}
+            priority
+            className={MAIN_PHOTO_SIZE}
+          />
         </button>
       ) : (
-        <ProductImage src={undefined} alt={name} priority />
+        <ProductImage src={undefined} alt={name} priority className={MAIN_PHOTO_SIZE} />
       )}
 
       {images.length > 1 && (
