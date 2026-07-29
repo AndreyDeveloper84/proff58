@@ -12,10 +12,15 @@ import { ProductReviews } from "@/components/product/ProductReviews";
 import { StickyBuyBar } from "@/components/product/StickyBuyBar";
 import { ProductJsonLd } from "@/components/product/ProductJsonLd";
 import { Collapsible } from "@/components/product/Collapsible";
+import { CompareButton } from "@/components/product/CompareButton";
 import { ShareButton } from "@/components/product/ShareButton";
 import { ProductVideo } from "@/components/product/ProductVideo";
 
 type Props = { params: Promise<{ slug: string }> };
+
+// Сколько характеристик показываем в выжимке рядом с ценой: больше — и блок
+// начинает конкурировать с полной таблицей ниже.
+const KEY_SPECS_LIMIT = 6;
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
@@ -77,7 +82,10 @@ export default async function ProductPage({ params }: Props) {
             </a>
           </span>
         ))}
-        <span className="flex items-center gap-1">
+        {/* Название товара в крошках — только с sm. На телефоне оно занимало
+            две строки из четырёх и дублировало заголовок, который идёт следом;
+            в разметке для поисковиков (ProductJsonLd) цепочка остаётся полной. */}
+        <span className="hidden items-center gap-1 sm:flex">
           <span aria-hidden>›</span>
           <span className="text-ink-2">{product.name}</span>
         </span>
@@ -112,7 +120,10 @@ export default async function ProductPage({ params }: Props) {
           )}
           <div className="flex items-center justify-between gap-3">
             <ProductBadges badges={product.badges} discountPct={product.price.discountPct} />
-            <ShareButton title={product.name} />
+            <div className="flex items-center gap-2">
+              <CompareButton slug={product.slug} variant="wide" />
+              <ShareButton title={product.name} />
+            </div>
           </div>
           <ProductAvailability stock={product.stock} stockQty={product.stockQty} />
           <div
@@ -128,6 +139,32 @@ export default async function ProductPage({ params }: Props) {
             />
           </div>
 
+          {/* Ключевые характеристики рядом с ценой. Галерея занимает высоту
+              всего экрана, а правая колонка заканчивалась на кнопке «В корзину»
+              — под ней зияла пустота в пол-экрана. Здесь короткая выжимка,
+              полный список остаётся ниже во вкладке (на мобильном он идёт сразу
+              следом, поэтому там выжимку не показываем). */}
+          {product.specs.length > 0 && (
+            <div className="hidden lg:block">
+              <h2 className="mb-2 text-sm font-semibold text-ink">Коротко о товаре</h2>
+              <dl className="divide-y divide-line rounded-lg border border-line">
+                {product.specs.slice(0, KEY_SPECS_LIMIT).map((s, i) => (
+                  <div key={`key-${s.label}-${i}`} className="flex gap-3 px-3 py-2 text-sm">
+                    <dt className="w-1/2 text-ink-3">{s.label}</dt>
+                    <dd className="w-1/2 text-ink-2">{s.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              {product.specs.length > KEY_SPECS_LIMIT && (
+                <a
+                  href="#characteristics"
+                  className="mt-2 inline-block text-sm font-medium text-accent hover:underline"
+                >
+                  Все характеристики ({product.specs.length})
+                </a>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

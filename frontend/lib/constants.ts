@@ -64,3 +64,7 @@ export const CHUCK_SLUGS: Record<string, string> = {
   "SDS-Plus": "sds-plus",
   "SDS-Max": "sds-max",
 };
+
+// Сколько товаров помещается в таблицу сравнения. Пятая колонка уже вынуждает
+// таблицу прокручиваться вбок — сравнивать в ней невозможно.
+export const COMPARE_LIMIT = 4;

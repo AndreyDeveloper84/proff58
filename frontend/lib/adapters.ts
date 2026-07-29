@@ -45,6 +45,8 @@ type ApiAttr = { name: string; slug: string; unit?: string; value: unknown };
 type ApiProduct = {
   id: number;
   name: string;
+  // Короткая форма для плитки; backend отдаёт витринное имя, если она не задана.
+  card_name?: string | null;
   slug: string;
   brand?: string | null;
   category?: { name?: string; slug?: string } | null;
@@ -167,6 +169,7 @@ export function apiProductToProduct(ap: ApiProduct): Product {
     id: ap.id,
     slug: ap.slug,
     name: ap.name,
+    cardName: ap.card_name || ap.name,
     brand: ap.brand ?? "",
     image: ap.main_image ?? undefined,
     specs: attrs

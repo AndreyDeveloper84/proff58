@@ -13,6 +13,21 @@
 //
 // Результат остаётся валидным JSON: браузерный парсер JSON-LD читает исходные
 // символы обратно, а HTML-парсер литерального </script> уже не видит.
+// Публичный адрес витрины — тот же источник, что у metadataBase в app/layout.tsx.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://proff58.ru";
+
+/**
+ * Абсолютный URL для микроразметки.
+ *
+ * API отдаёт медиа относительным путём (`/media/…`) — так ссылка не зависит от
+ * того, кто спросил: браузер и SSR разрешают её от своего origin. Разметке для
+ * поисковиков этого мало: Google требует абсолютные ссылки на изображения
+ * товара, поэтому origin достраиваем здесь.
+ */
+export function absoluteUrl(path: string): string {
+  return /^https?:\/\//i.test(path) ? path : new URL(path, SITE_URL).toString();
+}
+
 export function serializeJsonLd(data: unknown): string {
   return JSON.stringify(data)
     .replace(/</g, "\\u003c")
