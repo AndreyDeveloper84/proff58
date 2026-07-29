@@ -56,9 +56,13 @@ export function ProductCard({
   view = "grid",
   showFavorite = true,
   variant = "default",
+  className,
 }: {
   product: Product;
   view?: "grid" | "list";
+  // Ширина/растяжение задаются местом использования: в карусели главной
+  // карточка тянется на всю ячейку дорожки, чтобы ряд был ровным.
+  className?: string;
   // Избранное — Wave 2: сердце присутствует в шаблоне по референсу, но это ещё не
   // завершённая функция (локальное визуальное состояние, без бэкенда/персистентности).
   showFavorite?: boolean;
@@ -128,11 +132,13 @@ export function ProductCard({
         data-event="product_card_click"
         data-product-id={product.id}
         className={cn(
-          // Высота без полосы «Консультация в MAX»: в ряду из восьми карточек она
-          // повторяла один и тот же CTA восемь раз и перебивала «В корзину».
-          // Канал MAX остался в hero главной и в подвале сайта.
-          "relative flex h-[192px] flex-col overflow-hidden rounded-sm border border-line bg-surface",
+          // min-h, а не жёсткая высота: при h-[192px] строка характеристик
+          // срезалась ровно посередине букв, а кнопка «Сообщить о поступлении»
+          // вылезала за нижнюю границу. Ряд выравнивается растяжением карточек
+          // (items-stretch у дорожки карусели), поэтому разной высоты не будет.
+          "relative flex min-h-[192px] flex-col overflow-hidden rounded-sm border border-line bg-surface",
           dimmed && "opacity-70",
+          className,
         )}
       >
         <div className="absolute left-2 top-2 z-10 flex gap-1">

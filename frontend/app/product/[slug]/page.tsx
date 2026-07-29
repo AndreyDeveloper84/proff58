@@ -81,7 +81,10 @@ export default async function ProductPage({ params }: Props) {
             </a>
           </span>
         ))}
-        <span className="flex items-center gap-1">
+        {/* Название товара в крошках — только с sm. На телефоне оно занимало
+            две строки из четырёх и дублировало заголовок, который идёт следом;
+            в разметке для поисковиков (ProductJsonLd) цепочка остаётся полной. */}
+        <span className="hidden items-center gap-1 sm:flex">
           <span aria-hidden>›</span>
           <span className="text-ink-2">{product.name}</span>
         </span>
