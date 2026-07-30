@@ -25,7 +25,9 @@ ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 INSTALLED_APPS = [
     # Современная тема админки (должна идти перед django.contrib.admin).
     "jazzmin",
-    "django.contrib.admin",
+    # Вместо django.contrib.admin — свой AdminConfig: он подменяет admin.site на
+    # ProffAdminSite со стартовым экраном «Сегодня» (config/admin_site.py).
+    "config.admin_site.ProffAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -152,20 +154,164 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Тема админки django-jazzmin. Бренд «Профессионал».
+#
+# Меню собрано под одного человека-универсала без технического бэкграунда:
+# сверху то, что он делает каждый день, служебные журналы — в конец, а часть
+# моделей скрыта совсем (URL при этом остаются рабочими — hide_models убирает
+# только пункт из сайдбара, доступ разработчика по прямой ссылке сохраняется).
 JAZZMIN_SETTINGS = {
     "site_title": "Профессионал — админка",
     "site_header": "Профессионал",
     "site_brand": "Профессионал",
-    "welcome_sign": "Панель управления «Профессионал»",
+    "welcome_sign": "Что нужно сделать сегодня",
     "copyright": "Профессионал",
-    "search_model": ["catalog.Product", "catalog.Category"],
+    # Глобальный поиск в шапке: товар, категория и заказ — по ним ищут чаще всего.
+    "search_model": ["catalog.Product", "catalog.SiteCategory", "orders.Order"],
     "show_ui_builder": False,
     "related_modal_active": True,
+    # Порядок разделов = порядок рабочего дня. Django сортирует приложения по
+    # алфавиту, из-за чего «Заказы» оказывались между «Доставкой» и «Заявками».
+    "order_with_respect_to": [
+        "orders",
+        "catalog",
+        "leads",
+        "reviews",
+        "content",
+        "promotions",
+        "delivery",
+        "accounts",
+        "core",
+        # ниже — служебное, им пользуются редко
+        "sync_1c",
+        "pricing",
+        "notifications",
+        "ai",
+        "analytics",
+        "payments",
+        "auth",
+    ],
+    # Служебные журналы и внутренняя кухня: нужны, но не наравне с «Товарами».
+    "hide_models": [
+        "catalog.productattributevalue",  # правится внутри карточки товара
+        "catalog.enrichmentlog",
+        "catalog.importrun",
+        "catalog.catalogprocessingrun",
+        "catalog.catalogprocessingitem",
+        "catalog.catalogchange",
+        "catalog.onecgroup",
+        "catalog.groupcategorymapping",
+        "catalog.productsalesstat",
+        "catalog.productavailabilitysubscription",
+        "catalog.moderationproduct",
+        "catalog.category",  # полное дерево с легаси-узлами 1С; рабочее — SiteCategory
+        "orders.cart",  # корзины покупателей — диагностика, не рабочий раздел
+        "sync_1c.nomenclaturestaging",
+        "sync_1c.stockrecord",
+        "notifications.notification",
+        "notifications.notificationlog",
+        "analytics.analyticsevent",
+        "ai.aicalllog",
+        "ai.contentfinding",
+        "ai.externalcall",
+        "auth.group",  # прав пока одна роль — суперпользователь
+    ],
+    "icons": {
+        "orders.order": "fas fa-shopping-cart",
+        "orders.b2binvoice": "fas fa-file-invoice",
+        "orders.cart": "fas fa-shopping-basket",
+        "catalog.product": "fas fa-box-open",
+        "catalog.sitecategory": "fas fa-sitemap",
+        "catalog.category": "fas fa-folder-tree",
+        "catalog.attribute": "fas fa-ruler-combined",
+        "catalog.categorymappingrule": "fas fa-shuffle",
+        "leads.productinquiry": "fas fa-comment-dots",
+        "reviews.review": "fas fa-star",
+        "content.article": "fas fa-newspaper",
+        "content.banner": "fas fa-image",
+        "content.promotion": "fas fa-bullhorn",
+        "content.seopage": "fas fa-file-lines",
+        "promotions.promotion": "fas fa-percent",
+        "delivery.deliveryzone": "fas fa-map-location-dot",
+        "delivery.pickuppoint": "fas fa-store",
+        "delivery.deliveryslot": "fas fa-clock",
+        "accounts.user": "fas fa-user",
+        "core.sitesettings": "fas fa-sliders",
+        "payments.payment": "fas fa-credit-card",
+        "payments.refund": "fas fa-rotate-left",
+        "sync_1c.synclog": "fas fa-arrows-rotate",
+        "pricing.pricerecord": "fas fa-tags",
+        "notifications.usernotificationpreference": "fas fa-bell",
+    },
+    # Ссылки в шапке — на очереди, а не на разделы: человек попадает сразу в работу.
+    "topmenu_links": [
+        {"name": "Сегодня", "url": "admin:index", "icon": "fas fa-house"},
+        {
+            "name": "Новые заказы",
+            "url": "/admin/orders/order/?fulfillment_status__exact=new",
+            "icon": "fas fa-bell",
+        },
+        {
+            "name": "Товары на проверку",
+            "url": "/admin/catalog/product/?moderation=attention",
+            "icon": "fas fa-triangle-exclamation",
+        },
+        {
+            "name": "Смотреть сайт",
+            "url": "/",
+            "new_window": True,
+            "icon": "fas fa-arrow-up-right-from-square",
+        },
+    ],
+    # «Полки» — готовые выборки под разделами. Человеку не нужно собирать фильтр:
+    # он открывает полку и работает, пока она не опустеет.
+    "custom_links": {
+        "catalog": [
+            {
+                "name": "Требуют внимания",
+                "url": "/admin/catalog/product/?moderation=attention",
+                "icon": "fas fa-triangle-exclamation",
+            },
+            {
+                "name": "Без категории",
+                "url": "/admin/catalog/product/?categorized=no",
+                "icon": "fas fa-folder-minus",
+            },
+            {
+                "name": "Без фото",
+                "url": "/admin/catalog/product/?content=no_image",
+                "icon": "fas fa-camera",
+            },
+            {
+                "name": "Без описания",
+                "url": "/admin/catalog/product/?content=no_description",
+                "icon": "fas fa-align-left",
+            },
+        ],
+        "orders": [
+            {
+                "name": "Новые",
+                "url": "/admin/orders/order/?fulfillment_status__exact=new",
+                "icon": "fas fa-bell",
+            },
+            {
+                "name": "Ждут оплаты",
+                "url": "/admin/orders/order/?payment_status__exact=pending",
+                "icon": "fas fa-hourglass-half",
+            },
+            {
+                "name": "Не ушли в 1С",
+                "url": "/admin/orders/order/?sync_1c_status__exact=pending",
+                "icon": "fas fa-arrows-rotate",
+            },
+        ],
+    },
 }
 
 JAZZMIN_UI_TWEAKS = {
     "theme": "flatly",
-    "dark_mode_theme": "darkly",
+    # dark_mode_theme в jazzmin 3.x объявлен устаревшим и игнорировался — тёмная
+    # тема просто не работала. Теперь она следует настройке системы.
+    "default_theme_mode": "auto",
     "navbar_fixed": True,
     "sidebar_fixed": True,
     "sidebar": "sidebar-dark-primary",

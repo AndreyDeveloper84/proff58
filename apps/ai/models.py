@@ -90,6 +90,8 @@ class ExternalCall(models.Model):
     finished_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        verbose_name = _("Внешний вызов")
+        verbose_name_plural = _("Внешние вызовы")
         constraints = [
             models.UniqueConstraint(fields=["run", "adapter"], name="uniq_externalcall_run_adapter")
         ]
@@ -133,6 +135,8 @@ class ContentFinding(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = _("Находка по контенту")
+        verbose_name_plural = _("Находки по контенту")
         constraints = [
             models.UniqueConstraint(
                 fields=["product_ref", "target_kind", "attribute_slug", "normalized_hash"],
