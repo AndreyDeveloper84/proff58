@@ -1202,6 +1202,7 @@ def test_attribute_coverage_command_counts():
     assert "товаров 1" in report
     assert "voltage" in report and "100%" in report
 
+
 # --- CAT-10 якорь: svar-electrody / str-valiki / str-kisti ------------------
 
 
@@ -1218,8 +1219,16 @@ def _by_slug_for(rules: AttributeRules, tt: str, name: str):
         ("str-valiki", "Валик  70мм велюровый мини FIT", Decimal("70")),
         ("str-valiki", "Валик 100мм меховой FIT", Decimal("100")),
         ("str-valiki", "Валик 100х15мм СИНТЕКС ЗУБР мастер", Decimal("100")),
-        ("str-kisti", "Кисть круглая  30мм STAYER UNIVERSAL светлая щетина, дерев ручка", Decimal("30")),
-        ("str-kisti", "Кисть круглая  70мм STAYER UNIVERSAL светлая щетина, дерев ручка", Decimal("70")),
+        (
+            "str-kisti",
+            "Кисть круглая  30мм STAYER UNIVERSAL светлая щетина, дерев ручка",
+            Decimal("30"),
+        ),
+        (
+            "str-kisti",
+            "Кисть круглая  70мм STAYER UNIVERSAL светлая щетина, дерев ручка",
+            Decimal("70"),
+        ),
         ("str-kisti", "Кисть круглая №  4 ф25мм, натуральная светлая щетина FIT", Decimal("25")),
     ],
 )
