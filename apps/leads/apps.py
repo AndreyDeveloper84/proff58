@@ -4,7 +4,7 @@ from django.apps import AppConfig
 class LeadsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.leads"
-    verbose_name = "Заявки"
+    verbose_name = "Заявки покупателей"
 
     def ready(self):
         from apps.core.events import product_inquiry_created

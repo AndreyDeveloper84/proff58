@@ -1,0 +1,76 @@
+{% extends "admin/index.html" %}
+
+{% comment %}
+Стартовый экран «Сегодня». Список приложений jazzmin остаётся ниже — он никуда
+не девается, просто перестаёт быть первым, что видит человек.
+{% endcomment %}
+
+{% block content_title %}Что нужно сделать сегодня{% endblock %}
+
+{% block content %}
+<style>
+  .today-group { margin-bottom: 1.25rem; }
+  .today-group__title {
+    font-size: .78rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; opacity: .55; margin: 0 0 .5rem;
+  }
+  .today-cards { display: flex; flex-wrap: wrap; gap: .75rem; }
+  .today-card {
+    display: block; min-width: 13rem; flex: 1 1 13rem; max-width: 22rem;
+    padding: .85rem 1rem; border-radius: .5rem; text-decoration: none;
+    border: 1px solid rgba(128, 128, 128, .25);
+    border-left: 4px solid var(--today-accent, #17a2b8);
+    background: rgba(128, 128, 128, .05);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .today-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 .25rem .6rem rgba(0, 0, 0, .12);
+    text-decoration: none;
+  }
+  .today-card--danger  { --today-accent: #dc3545; }
+  .today-card--warning { --today-accent: #f0ad4e; }
+  .today-card--info    { --today-accent: #17a2b8; }
+  .today-card__count { font-size: 1.7rem; font-weight: 700; line-height: 1.1; }
+  .today-card__label { font-weight: 600; margin-top: .1rem; }
+  .today-card__hint { font-size: .8rem; opacity: .65; margin-top: .15rem; }
+  .today-empty {
+    padding: 1rem 1.15rem; border-radius: .5rem;
+    border: 1px solid rgba(128, 128, 128, .25); background: rgba(40, 167, 69, .08);
+  }
+  .today-quick { margin: 0 0 1.5rem; font-size: .9rem; }
+  .today-quick a { margin-right: 1rem; white-space: nowrap; }
+</style>
+
+{% if today_groups %}
+  {% for group in today_groups %}
+  <div class="today-group">
+    <p class="today-group__title">{{ group.title }}</p>
+    <div class="today-cards">
+      {% for card in group.cards %}
+      <a class="today-card today-card--{{ card.tone }}" href="{{ card.url }}">
+        <div class="today-card__count">{{ card.count }}</div>
+        <div class="today-card__label">{{ card.label }}</div>
+        {% if card.hint %}<div class="today-card__hint">{{ card.hint }}</div>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="today-empty">
+    <b>Всё разобрано.</b> Новых заказов, заявок и товаров на проверку нет.
+  </div>
+{% endif %}
+
+<p class="today-quick">
+  <b>Быстрые действия:</b>
+  <a href="/admin/content/banner/add/">＋ баннер</a>
+  <a href="/admin/content/article/add/">＋ статья</a>
+  <a href="/admin/promotions/promotion/add/">＋ скидка или промокод</a>
+  <a href="/admin/catalog/product/">Все товары</a>
+  <a href="/admin/orders/order/">Все заказы</a>
+</p>
+
+{{ block.super }}
+{% endblock %}

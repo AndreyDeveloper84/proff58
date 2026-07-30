@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
 from django.db import transaction
-from django.db.models import Count, IntegerField, OuterRef, Q, Subquery, Value
+from django.db.models import Count, IntegerField, OuterRef, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils.html import format_html, format_html_join
@@ -16,7 +16,7 @@ from apps.core.events import EventSource, product_created, product_updated
 from apps.pricing.models import PriceRecord
 from apps.pricing.services import WHOLESALE, price_for
 
-from . import processing
+from . import processing, queues
 from .availability_subscriptions import ProductAvailabilitySubscription
 from .models import (
     Attribute,
@@ -42,6 +42,7 @@ from .models import (
     Source,
 )
 from .read_models import rebuild_attrs_cache
+from .readiness import product_checks, readiness_percent
 
 
 class AttributeOptionInline(admin.TabularInline):
@@ -385,7 +386,7 @@ class UncategorizedFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() == "no":
-            return queryset.filter(category__isnull=True)
+            return queues.without_category(queryset)
         if self.value() == "yes":
             return queryset.filter(category__isnull=False)
         return queryset
@@ -417,13 +418,35 @@ class ModerationQueueFilter(admin.SimpleListFilter):
         if value == "imported":
             return queryset.filter(status=ProductStatus.IMPORTED)
         if value == "attention":
-            # Не опубликован И (без категории ИЛИ статус imported/needs_review).
-            # Точную нехватку обязательных характеристик на уровне SQL не ловим —
-            # её видно в колонке moderation_reason.
-            return queryset.exclude(status=ProductStatus.PUBLISHED).filter(
-                Q(category__isnull=True)
-                | Q(status__in=[ProductStatus.IMPORTED, ProductStatus.NEEDS_REVIEW])
-            )
+            return queues.needs_attention(queryset)
+        return queryset
+
+
+class ContentGapFilter(admin.SimpleListFilter):
+    """Чего товару не хватает для витрины — фото, описания, цены.
+
+    Это «полки»: человек не собирает фильтр, а открывает готовую выборку и
+    работает, пока она не опустеет. Ссылки на них лежат в меню (custom_links).
+    """
+
+    title = _("Чего не хватает")
+    parameter_name = "content"
+
+    def lookups(self, request, model_admin):
+        return [
+            ("no_image", _("Нет фото")),
+            ("no_description", _("Нет описания")),
+            ("no_price", _("Нет цены")),
+        ]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == "no_image":
+            return queues.without_image(queryset)
+        if value == "no_description":
+            return queues.without_description(queryset)
+        if value == "no_price":
+            return queues.without_price(queryset)
         return queryset
 
 
@@ -453,14 +476,38 @@ class BrandFilter(admin.SimpleListFilter):
 
 
 class ProductImageInline(admin.TabularInline):
+    """Фото товара с миниатюрой: без превью не видно, какое фото главное и какое битое."""
+
     model = ProductImage
     extra = 1
+    fields = ("preview", "image", "alt", "is_main", "sort_order")
+    readonly_fields = ("preview",)
+
+    @admin.display(description=_("Превью"))
+    def preview(self, obj):
+        if not obj or not obj.image:
+            return "—"
+        return format_html(
+            '<img src="{}" alt="" style="max-height:70px;max-width:110px;'
+            'border-radius:4px;object-fit:contain;background:#f4f4f4;">',
+            obj.image.url,
+        )
 
 
 class ProductAttributeValueInline(admin.TabularInline):
+    """Характеристики товара.
+
+    Список характеристик сужен до тех, что назначены категории товара: иначе
+    человек выбирает из всего справочника каталога и заполняет «Диаметр диска»
+    у перфоратора. Если категория не задана — показываем весь справочник, иначе
+    у неразобранного товара выбор был бы пустым.
+    """
+
     model = ProductAttributeValue
     extra = 0
-    autocomplete_fields = ["attribute"]
+    # attribute НЕ в autocomplete_fields сознательно: автокомплит тянет варианты
+    # через AJAX у AttributeAdmin и сужённый queryset формы игнорирует. Обычный
+    # select это уважает, а после сужения по категории в нём десяток пунктов.
     # value_option — raw_id, как и в ProductAttributeValueAdmin: обычный селект
     # рендерил бы ВСЕ варианты характеристик каталога в КАЖДОЙ строке инлайна,
     # а это самая частая страница админки.
@@ -475,6 +522,21 @@ class ProductAttributeValueInline(admin.TabularInline):
         "source",
         "confidence",
     )
+
+    def get_formset(self, request, obj=None, **kwargs):
+        # Родительский товар в formfield_for_foreignkey не приходит — запоминаем его
+        # здесь (ModelAdmin живёт на процесс, поэтому кладём на request, не на self).
+        request._product_for_attrs = obj
+        return super().get_formset(request, obj, **kwargs)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "attribute":
+            product = getattr(request, "_product_for_attrs", None)
+            if product is not None and product.category_id:
+                kwargs["queryset"] = Attribute.objects.filter(
+                    category_attributes__category_id=product.category_id
+                ).distinct()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class CurrentPriceInline(admin.TabularInline):
@@ -557,6 +619,7 @@ class ProductAdmin(admin.ModelAdmin):
     # приходится прокручивать всю страницу.
     save_on_top = True
     list_display = (
+        "thumbnail",
         "name",
         "article",
         "brand",
@@ -572,6 +635,7 @@ class ProductAdmin(admin.ModelAdmin):
         "status",
         ModerationQueueFilter,
         UncategorizedFilter,
+        ContentGapFilter,
         "stock_status",
         "is_active",
         BrandFilter,
@@ -589,13 +653,26 @@ class ProductAdmin(admin.ModelAdmin):
             return True
         return super().lookup_allowed(lookup, value, request)
 
+    # Всё, что ведёт 1С, — только для чтения. Не «не трогай», а «нельзя»: раньше
+    # цену и остаток можно было исправить руками, правка молча терялась при
+    # следующей синхронизации, и человек считал, что админка врёт.
     readonly_fields = (
+        "readiness",
         "moderation_reason_detail",
         "code_1c",
         "original_name",
         "source_group",
         "matched_rule",
         "pricing_summary",
+        "price",
+        "old_price",
+        "currency",
+        "unit",
+        "is_active_1c",
+        "stock_quantity",
+        "reserved_quantity",
+        "available_quantity",
+        "stock_status",
         "price_updated_at",
         "stock_updated_at",
         "attrs_cache",
@@ -618,6 +695,7 @@ class ProductAdmin(admin.ModelAdmin):
                     "руками правится здесь."
                 ),
                 "fields": (
+                    "readiness",
                     "moderation_reason_detail",
                     "name",
                     "card_name",
@@ -639,28 +717,15 @@ class ProductAdmin(admin.ModelAdmin):
                 "fields": ("category", "category_is_manual", "matched_rule"),
             },
         ),
+        (_("Бренд и описание"), {"fields": ("brand", "short_description", "description")}),
         (
-            _("Данные из 1С"),
-            {
-                "fields": (
-                    "code_1c",
-                    "article",
-                    "barcode",
-                    "original_name",
-                    "source_group",
-                    "unit",
-                    "is_active_1c",
-                )
-            },
-        ),
-        (_("Бренд и контент"), {"fields": ("brand", "short_description", "description")}),
-        (
-            _("Цена и наличие"),
+            _("Цена и наличие — ведёт 1С"),
             {
                 "description": _(
-                    "«Цена» — кэш розницы из 1С (источник истины — 1С, ручная правка "
-                    "перезатрётся при следующей синхронизации). Что увидит покупатель — "
-                    "ниже в «Расчёт цены»; опт ведётся в «Цены 1С (текущие)»."
+                    "Эти поля приходят из 1С и здесь не редактируются: правка всё равно "
+                    "перезапишется при следующей синхронизации. Менять цену и остаток нужно "
+                    "в 1С. «Расчёт цены» показывает, что увидит покупатель; опт — в блоке "
+                    "«Цены 1С (текущие)» ниже."
                 ),
                 "fields": (
                     "pricing_summary",
@@ -673,6 +738,21 @@ class ProductAdmin(admin.ModelAdmin):
                     "stock_status",
                     "price_updated_at",
                     "stock_updated_at",
+                ),
+            },
+        ),
+        (
+            _("Данные из 1С (справочно)"),
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "code_1c",
+                    "article",
+                    "barcode",
+                    "original_name",
+                    "source_group",
+                    "unit",
+                    "is_active_1c",
                 ),
             },
         ),
@@ -703,13 +783,14 @@ class ProductAdmin(admin.ModelAdmin):
         ).values("value")[:1]
         # select_related("category") + prefetch значений характеристик: чтобы
         # колонка moderation_reason (publication_errors / missing_required_attributes)
-        # не плодила N+1 на категории и на attribute_values.
+        # не плодила N+1 на категории и на attribute_values. "images" — для колонки
+        # с миниатюрой: без префетча она делала бы запрос на каждую строку списка.
         return (
             super()
             .get_queryset(request)
             .annotate(_wholesale_price=Subquery(wholesale))
             .select_related("category")
-            .prefetch_related("attribute_values__attribute")
+            .prefetch_related("attribute_values__attribute", "images")
         )
 
     # Решение по N+1 в колонке moderation_reason:
@@ -733,6 +814,69 @@ class ProductAdmin(admin.ModelAdmin):
                 ).select_related("attribute")
             )
         return cache[category_id]
+
+    @admin.display(description=_("Готовность"))
+    def readiness(self, obj):
+        """Чек-лист «что осталось сделать» вверху карточки.
+
+        Человеку без опыта нужен не список ошибок, а понятный прогресс и
+        конкретные шаги. Логика — в apps.catalog.readiness, здесь только вывод.
+        """
+        if obj is None or obj.pk is None:
+            return _("Появится после сохранения товара")
+
+        checks = product_checks(obj)
+        percent = readiness_percent(checks)
+        colour = "#28a745" if percent == 100 else "#f0ad4e" if percent >= 60 else "#dc3545"
+
+        rows = format_html_join(
+            "",
+            '<li style="margin:.15rem 0;list-style:none;">'
+            '<span style="color:{};font-weight:700;">{}</span> {}{}</li>',
+            (
+                (
+                    "#28a745" if c.ok else "#dc3545",
+                    "✓" if c.ok else "✕",
+                    c.label,
+                    (
+                        format_html('<span style="opacity:.6;"> — {}</span>', c.hint)
+                        if c.hint and not c.ok
+                        else ""
+                    ),
+                )
+                for c in checks
+            ),
+        )
+        return format_html(
+            '<div style="max-width:44rem;">'
+            '<div style="font-weight:700;margin-bottom:.35rem;">Готовность товара: '
+            '<span style="color:{};">{}%</span></div>'
+            '<div style="height:6px;border-radius:3px;background:rgba(128,128,128,.2);'
+            'margin-bottom:.5rem;"><div style="height:6px;border-radius:3px;width:{}%;'
+            'background:{};"></div></div>'
+            '<ul style="margin:0;padding:0;">{}</ul></div>',
+            colour,
+            percent,
+            percent,
+            colour,
+            rows,
+        )
+
+    @admin.display(description=_("Фото"))
+    def thumbnail(self, obj):
+        """Миниатюра в списке: без неё не видно, у какого товара нет фото."""
+        image = next((i for i in obj.images.all() if i.is_main), None) or next(
+            iter(obj.images.all()), None
+        )
+        if image is None or not image.image:
+            # mark_safe, а не format_html: строка константная, а format_html без
+            # аргументов в Django 6 удаляют.
+            return mark_safe('<span style="opacity:.35;">нет фото</span>')  # noqa: S308
+        return format_html(
+            '<img src="{}" alt="" style="height:38px;width:52px;object-fit:contain;'
+            'border-radius:3px;background:#f4f4f4;">',
+            image.image.url,
+        )
 
     @admin.display(description=_("Причина в очереди"))
     def moderation_reason(self, obj):
@@ -1048,7 +1192,8 @@ class OneCGroupAdmin(admin.ModelAdmin):
         from apps.catalog.models import ONEC_TREE_SEP
 
         depth = (obj.tree_path or "").count(ONEC_TREE_SEP)
-        prefix = format_html("".join(["&nbsp;&nbsp;&nbsp;&nbsp;"] * depth))
+        # mark_safe вместо format_html: аргументов нет, а такой вызов в Django 6 убирают.
+        prefix = mark_safe("&nbsp;&nbsp;&nbsp;&nbsp;" * depth)  # noqa: S308
         return format_html("{}{}{}", prefix, "└ " if depth else "", obj.name)
 
 
