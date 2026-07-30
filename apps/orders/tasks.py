@@ -13,6 +13,7 @@ from django.utils import timezone
 
 from .models import Order, PaymentStatus, ReservationStatus
 from .reservation import release_reservation
+from .services import sold_quantities
 
 logger = logging.getLogger(__name__)
 
@@ -56,3 +57,25 @@ def expire_b2b_invoices(limit: int = 500) -> int:
     from .invoice_lifecycle import expire_due_invoices
 
     return expire_due_invoices(limit=limit)
+
+
+@shared_task(name="apps.orders.tasks.publish_sales_facts")
+def publish_sales_facts() -> dict[str, int]:
+    """Опубликовать продажи сайта в рейтинг каталога.
+
+    Направление orders → catalog (а не наоборот): каталог не имеет права читать
+    таблицы заказов, поэтому объёмы отдаёт сервис заказов, а пишет их сервис
+    каталога. Окно пересчитывается целиком — отменённый задним числом заказ
+    обязан исчезнуть из статистики.
+    """
+    from apps.catalog.models import SalesSource
+    from apps.catalog.sales import SalesRow, record_sales_facts, sales_window
+
+    since, until = sales_window()
+    rows = [
+        SalesRow(product_id=product_id, date=day, quantity=quantity)
+        for product_id, day, quantity in sold_quantities(since, until)
+    ]
+    result = record_sales_facts(SalesSource.SITE, rows, replace_window=(since, until))
+    logger.info("publish_sales_facts: %s", result)
+    return result

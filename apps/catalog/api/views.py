@@ -1,7 +1,7 @@
 """Публичный read-only API каталога: дерево категорий, список, карточка, фасеты."""
 
 from django.contrib.postgres.search import TrigramSimilarity
-from django.db.models import Case, F, FloatField, Prefetch, Q, Value, When
+from django.db.models import Case, F, FloatField, IntegerField, Prefetch, Q, Value, When
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -22,6 +22,7 @@ from ..availability_subscriptions import (
 )
 from ..filters import ProductFilter, visible_products
 from ..models import Category, ProductAttributeValue, StockStatus
+from ..sales import bestsellers_queryset
 from ..services import (
     FacetError,
     apply_product_attr_filters,
@@ -113,6 +114,21 @@ def parse_attr_params(params) -> tuple[dict[str, list[str]], dict[str, tuple]]:
     return filters, {slug: (b[0], b[1]) for slug, b in ranges_acc.items()}
 
 
+def with_card_prefetch(qs):
+    """Догрузить всё, что нужно карточке товара, без N+1 по странице выдачи.
+
+    Общая для списка каталога и витрины хитов: расхождение в prefetch между ними
+    оборачивалось бы лишними запросами на одном из маршрутов.
+    """
+    return qs.select_related("category", "sales_stat").prefetch_related(
+        "images",
+        Prefetch(
+            "attribute_values",
+            queryset=ProductAttributeValue.objects.select_related("attribute", "value_option"),
+        ),
+    )
+
+
 class ProductListView(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = ProductListSerializer
@@ -122,20 +138,7 @@ class ProductListView(generics.ListAPIView):
         # При поиске (?search=, len>=2) ordering по релевантности задаёт
         # ProductFilter.filter_search (.order_by("-_rank", ...)); _rank существует
         # только тогда. Без поиска — серверная сортировка (?sort=) / алфавит.
-        qs = (
-            visible_products()
-            .select_related("category")
-            .prefetch_related(
-                "images",
-                # specs на карточке: атрибуты товара одним prefetch (без N+1 по странице).
-                Prefetch(
-                    "attribute_values",
-                    queryset=ProductAttributeValue.objects.select_related(
-                        "attribute", "value_option"
-                    ),
-                ),
-            )
-        )
+        qs = with_card_prefetch(visible_products())
         attr_filters, attr_ranges = parse_attr_params(self.request.query_params)
         qs = apply_product_attr_filters(qs, attr_filters, attr_ranges)
         q = (self.request.query_params.get("search") or "").strip()
@@ -152,21 +155,48 @@ class ProductListView(generics.ListAPIView):
         """
         return qs.annotate(effective_price=F("price"))
 
+    def _annotate_availability(self, qs):
+        """Аннотировать ``availability_rank`` для сортировки «сначала доступное».
+
+        В наличии (0) → под заказ (1) → нет в наличии (2). Нужен потому, что 87 %
+        каталога сейчас без остатка, и по любому порядку первые экраны состояли
+        из «Сообщить о поступлении». Позиции не скрываются и не исключаются из
+        выдачи — меняется только очерёдность; фасет «Наличие» работает как был.
+        """
+        return qs.annotate(
+            availability_rank=Case(
+                When(stock_status=StockStatus.IN_STOCK, then=Value(0)),
+                When(stock_status=StockStatus.ON_ORDER, then=Value(1)),
+                default=Value(2),
+                output_field=IntegerField(),
+            )
+        )
+
     def _apply_sort(self, qs):
         """Серверная сортировка (whitelist) ДО пагинации. Дефолт — алфавит.
 
+        Первым ключом везде идёт наличие (``availability_rank``) — выбранный
+        пользователем порядок применяется уже внутри доступных товаров.
         ``price_asc/desc`` — по ``Product.price`` (#430/M-06: единый ценник для всех).
-        Товары без цены — в конец (nulls_last). Неизвестное/popular/rating → дефолт.
+        Товары без цены — в конец (nulls_last). ``bestsellers`` — по рейтингу продаж
+        (apps.catalog.sales). Неизвестное/popular/rating → дефолт.
         """
         sort = self.request.query_params.get("sort")
+        qs = self._annotate_availability(qs)
         if sort in ("price_asc", "price_desc"):
             qs = self._annotate_effective_price(qs)
             ep = F("effective_price")
             order = ep.asc(nulls_last=True) if sort == "price_asc" else ep.desc(nulls_last=True)
-            return qs.order_by(order, "id")
+            return qs.order_by("availability_rank", order, "id")
         if sort == "new":
-            return qs.order_by("-created_at", "id")
-        return qs.order_by("name", "id")
+            return qs.order_by("availability_rank", "-created_at", "id")
+        if sort == "bestsellers":
+            # Рейтинг продаж (apps.catalog.sales). Товары без продаж — в конец:
+            # сортировка ничего не скрывает, но и не выдаёт их за продаваемые.
+            return qs.annotate(sales_rank=F("sales_stat__rank")).order_by(
+                "availability_rank", F("sales_rank").asc(nulls_last=True), "id"
+            )
+        return qs.order_by("availability_rank", "name", "id")
 
     def list(self, request, *args, **kwargs):
         """Считаем опт-цены ОДНИМ bulk-запросом по текущей странице (без N+1).
@@ -183,6 +213,21 @@ class ProductListView(generics.ListAPIView):
         if page is not None:
             return self.get_paginated_response(serializer.data)
         return Response(serializer.data)
+
+
+class BestsellersView(ProductListView):
+    """Товары с реальными продажами за окно — витрина «Хиты продаж».
+
+    Отдельный маршрут, а не ``?sort=bestsellers``, именно из-за честности: здесь
+    выдача ОГРАНИЧЕНА товарами, у которых есть продажи. Пустой ответ означает
+    «продаж пока нет» — подменять его новинками или ручным списком нельзя, это и
+    была прежняя неправда витрины. Фильтры каталога тут не применяются.
+    """
+
+    filterset_class = None
+
+    def get_queryset(self):
+        return with_card_prefetch(bestsellers_queryset())
 
 
 SUGGEST_LIMIT = 10

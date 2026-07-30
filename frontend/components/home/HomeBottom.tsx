@@ -1,20 +1,18 @@
-import Image from "next/image";
 import {
   Award,
   BadgeRussianRuble,
-  CalendarDays,
-  MessageSquareText,
   RotateCcw,
   ShieldCheck,
   Users,
   Wrench,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ARTICLES } from "@/lib/articles";
 import { HOME_CONTENT } from "@/lib/home-content";
-import { SITE } from "@/lib/site";
+import { ArticlesCarousel } from "./ArticlesCarousel";
 
 // #590: нижняя зона главной по макету — «Почему покупают у нас» + статьи +
-// email-подписка (левая колонка) и карточка MAX-помощи (правая колонка).
+// email-подписка.
 const WHY_ICONS: Record<string, LucideIcon> = {
   Award,
   ShieldCheck,
@@ -24,7 +22,7 @@ const WHY_ICONS: Record<string, LucideIcon> = {
   RotateCcw,
 };
 
-function WhyBuyStrip() {
+export function WhyBuyStrip() {
   return (
     <div className="rounded-sm border border-line bg-surface px-3 py-2.5" aria-label="Почему покупают у нас">
       <h2 className="mb-2 font-sans text-sm font-bold text-ink">
@@ -45,44 +43,6 @@ function WhyBuyStrip() {
             </li>
           );
         })}
-      </ul>
-    </div>
-  );
-}
-
-function ArticlesPreview() {
-  const a = HOME_CONTENT.articles;
-  return (
-    <div className="min-w-0" aria-label={a.title}>
-      {/* «Читать все статьи» намеренно отсутствует: раздела статей на сайте нет,
-          битую ссылку не рисуем (появится раздел — добавим ссылку и кликабельность). */}
-      <h2 className="mb-2 font-sans text-sm font-bold text-ink">{a.title}</h2>
-      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        {a.items.map((item) => (
-          <li
-            key={item.title}
-            className="flex min-h-[64px] items-stretch overflow-hidden rounded-sm border border-line bg-surface"
-          >
-            <span className="relative w-[72px] shrink-0 bg-photo">
-              <Image
-                src={item.image}
-                alt=""
-                fill
-                sizes="72px"
-                className="object-cover"
-                style={{ objectPosition: item.imagePosition }}
-                aria-hidden
-              />
-            </span>
-            <span className="min-w-0 p-2">
-              <span className="line-clamp-2 block text-[11px] font-semibold leading-[1.3] text-ink">{item.title}</span>
-              <span className="mt-1 flex items-center gap-1 text-[10px] text-ink-3">
-                <CalendarDays className="h-3 w-3" aria-hidden />
-                {item.date}
-              </span>
-            </span>
-          </li>
-        ))}
       </ul>
     </div>
   );
@@ -124,52 +84,17 @@ function SubscribeCard() {
   );
 }
 
-function MaxHelpCard({ maxHref }: { maxHref: string }) {
-  const m = HOME_CONTENT.maxHelp;
-  return (
-    <div
-      className="flex h-full min-h-[150px] flex-col justify-between rounded-sm border border-line bg-[linear-gradient(135deg,#fff_0%,#f7f6ff_100%)] p-3.5"
-      aria-label={m.title}
-    >
-      <div className="relative pr-14">
-        <Image
-          src="/brands/max-colored.png"
-          alt=""
-          width={58}
-          height={58}
-          className="absolute right-0 top-0 h-12 w-12 object-contain"
-          aria-hidden
-        />
-        <h2 className="font-sans text-sm font-bold leading-tight text-ink">{m.title}</h2>
-        <p className="mt-1 text-[11px] leading-[1.35] text-ink-2">{m.text}</p>
-      </div>
-      <a
-        href={maxHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        data-event="home_max_help"
-        className="mt-2.5 inline-flex h-9 items-center justify-center gap-1.5 self-start rounded-sm bg-[#6156f5] px-3 text-xs font-semibold text-white transition hover:bg-[#5147dc]"
-      >
-        <MessageSquareText className="h-4 w-4" aria-hidden />
-        {m.cta}
-      </a>
-    </div>
-  );
-}
-
-export function HomeBottom({ maxHref = SITE.support.max.href }: { maxHref?: string } = {}) {
+// Карточка MAX-помощи из правой колонки убрана: она дублировала подвал, который
+// начинается сразу под ней («Мы в мессенджерах»), и hero-кнопку на той же
+// странице. Канал MAX остался в hero и в подвале — по одному касанию на этап.
+export function HomeBottom() {
   return (
     <section className="bg-surface">
-      <div className="mx-auto max-w-[1400px] px-4 pb-2.5 pt-2">
-        <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="flex min-w-0 flex-col gap-1.5">
-            <WhyBuyStrip />
-            <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-[minmax(0,1fr)_435px]">
-              <ArticlesPreview />
-              <SubscribeCard />
-            </div>
-          </div>
-          <MaxHelpCard maxHref={maxHref} />
+      <div className="mx-auto flex max-w-[1400px] min-w-0 flex-col gap-1.5 px-4 pb-2.5 pt-2">
+        <WhyBuyStrip />
+        <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <ArticlesCarousel articles={ARTICLES} />
+          <SubscribeCard />
         </div>
       </div>
     </section>

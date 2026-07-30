@@ -1,0 +1,79 @@
+=== OVERALL (основной KPI) ===
+rows=103 correct=102 non-correct=1
+observed precision (unrounded) = 102/103 = 0.9902912621359223
+Wilson 95% CI = [0.947042, 0.998284]
+gate: PRECISION_GATE=0.99, MIN_ROWS_GATE=100, gate_passed=true (по выводу команды)
+=== DECISION DISTRIBUTION ===
+  correct: 102
+  unverifiable: 1
+=== PER-RULE (attribution по rule_refs; multi-строка у каждого ref) ===
+  rule_ref                                       sup  cor nonc  precision Wilson95
+  tt-adaptery-universal                            2    2    0   1.000000 [0.3424, 1.0000]
+  tt-bp-gazonokosilki-gazonokosilka                8    8    0   1.000000 [0.6756, 1.0000]
+  tt-bp-kompressory-avto                           3    3    0   1.000000 [0.4385, 1.0000]
+  tt-bp-pnevmosteplery-gvozde                      2    2    0   1.000000 [0.3424, 1.0000]
+  tt-bp-podgotovka-vozduha-vlagootdelitel          1    1    0   1.000000 [0.2065, 1.0000]
+  tt-bp-trimmery-akkum                             0    0    0          — — (zero support)
+  tt-bp-vozdukhoduvki-akkum                        1    1    0   1.000000 [0.2065, 1.0000]
+  tt-dinamometricheskie-klyuchi-klyuch             4    4    0   1.000000 [0.5101, 1.0000]
+  tt-fonari-akkum                                  3    3    0   1.000000 [0.4385, 1.0000]
+  tt-hoz-izolenta-izolenta                        10   10    0   1.000000 [0.7225, 1.0000]
+  tt-hoz-lenty-malyarnaya                          3    3    0   1.000000 [0.4385, 1.0000]
+  tt-izm-kolesa-dorozhnoe                          1    1    0   1.000000 [0.2065, 1.0000]
+  tt-izm-ruletki-mernaya-lenta                     0    0    0          — — (zero support)
+  tt-izm-shtativy-derzhatel                        1    1    0   1.000000 [0.2065, 1.0000]
+  tt-kobury-dlya-instrumenta-kobura                1    1    0   1.000000 [0.2065, 1.0000]
+  tt-krep-shplinty-nabor                           0    0    0          — — (zero support)
+  tt-krep-takelazh-styazhka                        8    8    0   1.000000 [0.6756, 1.0000]
+  tt-lomy-gvozdodery-lom                           9    9    0   1.000000 [0.7009, 1.0000]
+  tt-nabory-instrumenta-dielektr                   0    0    0          — — (zero support)
+  tt-nabory-instrumenta-zvezdochki                 3    3    0   1.000000 [0.4385, 1.0000]
+  tt-obor-mebel-verstak                            2    2    0   1.000000 [0.3424, 1.0000]
+  tt-obor-nasosy-nasos                            14   14    0   1.000000 [0.7847, 1.0000]
+  tt-obor-pena-shampun                             1    1    0   1.000000 [0.2065, 1.0000]
+  tt-passatizhi-tonkonosy                          2    2    0   1.000000 [0.3424, 1.0000]
+  tt-payalniki-elektro                             3    3    0   1.000000 [0.4385, 1.0000]
+  tt-puskovye-provoda-startovye                    1    1    0   1.000000 [0.2065, 1.0000]
+  tt-raskhodniki-pajki-pripoy                      3    3    0   1.000000 [0.4385, 1.0000]
+  tt-siz-izveshchateli-gromkogovoritel             1    1    0   1.000000 [0.2065, 1.0000]
+  tt-siz-ochki-shitok                              3    3    0   1.000000 [0.4385, 1.0000]
+  tt-siz-ochki-zashchitnye                         3    3    0   1.000000 [0.4385, 1.0000]
+  tt-siz-pozh-inventar-polotno                     1    1    0   1.000000 [0.2065, 1.0000]
+  tt-sterzhni-kleevye-kleevye                      4    4    0   1.000000 [0.5101, 1.0000]
+  tt-sumki-poyasnye-podsumok                       0    0    0          — — (zero support)
+  tt-svar-apparaty-truby                           2    2    0   1.000000 [0.3424, 1.0000]
+  tt-svar-reduktory-regulyator                     1    0    1   0.000000 [0.0000, 0.7935]
+  tt-yashchiki-sumki-benzopila                     2    2    0   1.000000 [0.3424, 1.0000]
+  tt-yashchiki-sumki-keys-prochee                  2    2    0   1.000000 [0.3424, 1.0000]
+  tt-zap-svechi-zazhiganiya                        1    1    0   1.000000 [0.2065, 1.0000]
+  attributions total = 106 (103 строки + 3 extra от multi); overall denominator = 103
+=== MONITORING GROUP ===
+  tt-svar-apparaty-truby                        sup=2 correct=2 precision=1.000000 [0.3424, 1.0000]
+  tt-bp-vozdukhoduvki-akkum                     sup=1 correct=1 precision=1.000000 [0.2065, 1.0000]
+  tt-obor-mebel-verstak                         sup=2 correct=2 precision=1.000000 [0.3424, 1.0000]
+  tt-izm-kolesa-dorozhnoe                       sup=1 correct=1 precision=1.000000 [0.2065, 1.0000]
+  tt-yashchiki-sumki-benzopila                  sup=2 correct=2 precision=1.000000 [0.3424, 1.0000]
+  tt-siz-pozh-inventar-polotno                  sup=1 correct=1 precision=1.000000 [0.2065, 1.0000]
+  tt-siz-izveshchateli-gromkogovoritel          sup=1 correct=1 precision=1.000000 [0.2065, 1.0000]
+  tt-siz-ochki-shitok                           sup=3 correct=3 precision=1.000000 [0.4385, 1.0000]
+  MONITORING AGGREGATE: sup=13 correct=13 precision=1.000000 Wilson95=[0.7719, 1.0000]
+=== SUPPORT BUCKETS (по sample support правила; attribution-based) ===
+  bucket 1-4: rules=28 attributions=57 correct=56 precision=0.982456 Wilson95=[0.9071, 0.9969]
+    rules: ['tt-adaptery-universal', 'tt-bp-kompressory-avto', 'tt-bp-pnevmosteplery-gvozde', 'tt-bp-podgotovka-vozduha-vlagootdelitel', 'tt-bp-vozdukhoduvki-akkum', 'tt-dinamometricheskie-klyuchi-klyuch', 'tt-fonari-akkum', 'tt-hoz-lenty-malyarnaya', 'tt-izm-kolesa-dorozhnoe', 'tt-izm-shtativy-derzhatel', 'tt-kobury-dlya-instrumenta-kobura', 'tt-nabory-instrumenta-zvezdochki', 'tt-obor-mebel-verstak', 'tt-obor-pena-shampun', 'tt-passatizhi-tonkonosy', 'tt-payalniki-elektro', 'tt-puskovye-provoda-startovye', 'tt-raskhodniki-pajki-pripoy', 'tt-siz-izveshchateli-gromkogovoritel', 'tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye', 'tt-siz-pozh-inventar-polotno', 'tt-sterzhni-kleevye-kleevye', 'tt-svar-apparaty-truby', 'tt-svar-reduktory-regulyator', 'tt-yashchiki-sumki-benzopila', 'tt-yashchiki-sumki-keys-prochee', 'tt-zap-svechi-zazhiganiya']
+  bucket 5-9: rules=3 attributions=25 correct=25 precision=1.000000 Wilson95=[0.8668, 1.0000]
+    rules: ['tt-bp-gazonokosilki-gazonokosilka', 'tt-krep-takelazh-styazhka', 'tt-lomy-gvozdodery-lom']
+  bucket 10+: rules=2 attributions=24 correct=24 precision=1.000000 Wilson95=[0.8620, 1.0000]
+    rules: ['tt-hoz-izolenta-izolenta', 'tt-obor-nasosy-nasos']
+=== ZERO-SUPPORT RULES (нет строк в sample) ===
+  5: ['tt-bp-trimmery-akkum', 'tt-izm-ruletki-mernaya-lenta', 'tt-krep-shplinty-nabor', 'tt-nabory-instrumenta-dielektr', 'tt-sumki-poyasnye-podsumok']
+=== РАЗБОР 31104 ===
+  product_id=31104 slug=svar-reduktory refs=['tt-svar-reduktory-regulyator']
+  name=Регулятор расхода газа А-90-5 азотный 90л/мин 1,0М | sg=Сварочное оборудование | art=ПТК-А905
+  decision=unverifiable (reviewer override; analyst был correct)
+  rationale: По разрешённым источникам подтверждается, что товар является регулятором расхода азота и относится к сварочному оборудованию, но недостаточно данных, чтобы независимо подтвердить его принадлежность именно к slug «Газовые редукторы», а не к отдельной категории регуляторов расхода. Внешний поиск запрещён, поэтому классификация отмечается как unverifiable.
+  влияние: единственная не-correct строка; precision 102/103=0.990291… ≥ 0.99 — gate пройден ровно на границе допуска (1 не-correct из 103).
+=== WARNING (обязательное, по авторизации) ===
+  Per-rule CI при малом n (support 1–4) очень широки и НЕ доказывают rule-level precision ≥ 0.99;
+  они являются observational evidence, а не статистическим подтверждением правил.
+  Same-slug multi строки (36301, 36307, 36310): одна классификация на строку; overall denominator=103;
+  в per-rule attribution строка учтена у каждого связанного rule_ref.

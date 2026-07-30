@@ -75,6 +75,14 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements/dev.txt
+      # Ловит два класса дефектов, которые не видят ни линтеры, ни тесты:
+      # 1) модель изменилась, а миграции нет (так `Source.SCRAPER` покрыл
+      #    productattributevalue.source, но не catalogchange.source — PR #612);
+      # 2) ветвление миграций: две ветки создали по узлу 0028 и Django
+      #    отказывается стартовать на двух листьях (слияние с GitLab, PR #613).
+      # Шаг стоит до migrate — падает раньше и дешевле полного прогона.
+      - name: Дрейф моделей и миграций
+        run: python manage.py makemigrations --check --dry-run
       - name: Миграции
         run: python manage.py migrate --noinput
       - name: Тесты

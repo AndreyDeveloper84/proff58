@@ -27,16 +27,24 @@ def _attr_dict(pav):
     }
 
 
-def _image_url(image, context) -> str | None:
-    """Абсолютный URL изображения; None если файла нет."""
+def _image_url(image, _context=None) -> str | None:
+    """URL изображения относительно корня сайта (``/media/…``); None если файла нет.
+
+    Раньше здесь стоял ``request.build_absolute_uri()``, и это ломало витрину:
+    Next.js рендерит страницы на сервере, ходит в Django по внутреннему адресу
+    ``http://web:8000`` — и в HTML уезжал ``https://web:8000/media/...``, который
+    браузер не может разрешить (битые фото во всём каталоге и на карточке
+    товара). Хост запрашивающего вообще не должен попадать в контент: витрина и
+    media отдаются одним nginx, поэтому относительный путь разрешается верно и
+    у браузера, и у SSR. Абсолютный URL нужен только разметке для поисковиков —
+    её достраивает фронт (components/product/ProductJsonLd.tsx).
+    """
     if not image:
         return None
     try:
-        url = image.image.url
+        return image.image.url
     except ValueError:
         return None
-    request = context.get("request") if context else None
-    return request.build_absolute_uri(url) if request is not None else url
 
 
 class CategoryRefSerializer(serializers.Serializer):
@@ -59,12 +67,15 @@ class ProductListSerializer(serializers.ModelSerializer):
     price_type = serializers.SerializerMethodField()
     attributes = serializers.SerializerMethodField()
     stock_qty = serializers.SerializerMethodField()
+    is_hit = serializers.SerializerMethodField()
+    card_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = (
             "id",
             "name",
+            "card_name",
             "slug",
             "brand",
             "category",
@@ -77,7 +88,27 @@ class ProductListSerializer(serializers.ModelSerializer):
             "main_image",
             "short_description",
             "attributes",
+            "is_hit",
         )
+
+    def get_card_name(self, obj) -> str:
+        """Название для плитки каталога — короткое, с сокращениями как в 1С.
+
+        Полное название («Круг алмазный отрезной 115х1,0…») в плитку не влезает:
+        там две строки мелким шрифтом. Пусто — товар ещё не проходил
+        normalize_product_names, показываем витринное имя как есть.
+        """
+        return obj.card_name or obj.name
+
+    def get_is_hit(self, obj) -> bool:
+        """Бейдж «Хит» — только по факту продаж (apps.catalog.sales).
+
+        Строки рейтинга у большинства товаров нет, поэтому обращаемся осторожно:
+        OneToOne без записи бросает исключение, а не отдаёт None. Запрос не
+        добавляем — sales_stat приходит через select_related выдачи.
+        """
+        stat = getattr(obj, "sales_stat", None)
+        return bool(stat and stat.is_hit)
 
     def get_stock_qty(self, obj):
         """Остаток для сигнала «мало осталось» (#488).

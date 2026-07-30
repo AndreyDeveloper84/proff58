@@ -64,23 +64,31 @@ def _category_filter_attributes(category) -> list:
     chain_ids = [category.pk, *[c.pk for c in reversed(ancestors)]]  # ближайшая первой
     pos = {pk: i for i, pk in enumerate(chain_ids)}
 
-    best: dict[int, tuple] = {}  # attribute_id -> (pos, sort_order, attribute, group)
+    best: dict[int, tuple] = {}  # attribute_id -> (pos, sort_order, attribute, group, display_name)
     qs = CategoryAttribute.objects.filter(
         category_id__in=chain_ids, is_filter=True, attribute__is_filterable=True
     ).select_related("attribute")
     for ca in qs:
         key = (pos[ca.category_id], ca.sort_order)
         if ca.attribute_id not in best or key < best[ca.attribute_id][:2]:
-            best[ca.attribute_id] = (pos[ca.category_id], ca.sort_order, ca.attribute, ca.group)
+            best[ca.attribute_id] = (
+                pos[ca.category_id],
+                ca.sort_order,
+                ca.attribute,
+                ca.group,
+                ca.display_name,
+            )
 
-    # Группу фасета (D1, §22.4) берём из той же ближайшей строки CategoryAttribute, что
-    # выиграла closest-wins по (pos, sort_order) — кладём транзиентно на Attribute, чтобы
-    # не менять тип возврата (список Attribute) и не плодить запросы. Потребители, которым
-    # группа не нужна (coverage_report, range_filter_attributes), её просто игнорируют.
+    # Группу фасета (D1, §22.4) и переопределение подписи берём из той же ближайшей строки
+    # CategoryAttribute, что выиграла closest-wins по (pos, sort_order) — кладём транзиентно
+    # на Attribute, чтобы не менять тип возврата (список Attribute) и не плодить запросы.
+    # Потребители, которым они не нужны (coverage_report, range_filter_attributes), их просто
+    # игнорируют. Пустой display_name → fallback на Attribute.name у потребителя.
     ordered = sorted(best.values(), key=lambda t: (t[0], t[1]))
     result = []
-    for _pos, _sort_order, attribute, group in ordered:
+    for _pos, _sort_order, attribute, group, display_name in ordered:
         attribute._facet_group = group
+        attribute._display_name = display_name
         result.append(attribute)
     return result
 
@@ -215,7 +223,7 @@ def accessories_of(product: Product) -> list[CompatibilityItem]:
             target__is_active=True,
             target__status=ProductStatus.PUBLISHED,
         )
-        .select_related("target", "target__category")
+        .select_related("target", "target__category", "target__sales_stat")
         .prefetch_related("target__images", _attrs_prefetch("target"))
         .order_by("sort_order", "id")
     )
@@ -237,7 +245,7 @@ def fits_of(product: Product) -> list[CompatibilityItem]:
             source__is_active=True,
             source__status=ProductStatus.PUBLISHED,
         )
-        .select_related("source", "source__category")
+        .select_related("source", "source__category", "source__sales_stat")
         .prefetch_related("source__images", _attrs_prefetch("source"))
         .order_by("sort_order", "id")
     )
@@ -258,7 +266,14 @@ def compatible_of(product: Product) -> list[CompatibilityItem]:
             Q(source=product) | Q(target=product),
             kind=CompatibilityKind.COMPATIBLE,
         )
-        .select_related("source", "target", "source__category", "target__category")
+        .select_related(
+            "source",
+            "target",
+            "source__category",
+            "target__category",
+            "source__sales_stat",
+            "target__sales_stat",
+        )
         .prefetch_related(
             "source__images", "target__images", _attrs_prefetch("source"), _attrs_prefetch("target")
         )

@@ -10,6 +10,8 @@ export const LOW_STOCK_THRESHOLD = 5;
 
 export const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "popular", label: "По умолчанию" },
+  // Реальный рейтинг продаж за окно (backend apps.catalog.sales), не «популярность вообще».
+  { value: "bestsellers", label: "Сначала популярные" },
   { value: "price_asc", label: "Сначала дешёвые" },
   { value: "price_desc", label: "Сначала дорогие" },
   { value: "new", label: "Новинки" },
@@ -62,3 +64,7 @@ export const CHUCK_SLUGS: Record<string, string> = {
   "SDS-Plus": "sds-plus",
   "SDS-Max": "sds-max",
 };
+
+// Сколько товаров помещается в таблицу сравнения. Пятая колонка уже вынуждает
+// таблицу прокручиваться вбок — сравнивать в ней невозможно.
+export const COMPARE_LIMIT = 4;

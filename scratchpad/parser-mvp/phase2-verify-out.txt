@@ -1,0 +1,20 @@
+[1] resanta: products=8 errors=0 category='Перфораторы' url=https://resanta.ru/sitemap-shop.xml
+[1] vihr: products=8 errors=0 category='Перфораторы' url=https://vihr.su/sitemap-shop.xml
+[1] interskol: products=8 errors=0 category='Перфораторы' url=https://www.interskol.ru/sitemap.xml
+[1] zubr: products=8 errors=0 category='Перфораторы' url=https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/
+[1] ИТОГО карточек: 32 (порог >= 20: OK)
+[3] строк журнала: 40
+[3] interskol.ru: запросов 10 (сетевых 10, cache_hit 0), статусы {'200': 10}, мин. интервал по ts 2 с, суммарный throttle_wait 19.9 с
+[3] resanta.ru: запросов 10 (сетевых 10, cache_hit 0), статусы {'200': 10}, мин. интервал по ts 2 с, суммарный throttle_wait 9.2 с
+[3] vihr.su: запросов 10 (сетевых 10, cache_hit 0), статусы {'200': 10}, мин. интервал по ts 2 с, суммарный throttle_wait 13.7 с
+[3] zubr.ru: запросов 10 (сетевых 10, cache_hit 0), статусы {'200': 10}, мин. интервал по ts 2 с, суммарный throttle_wait 8.8 с
+[3] ответов 401/403/429: 0 (OK)
+[5] .tmp-файлов в output: 0 (OK)
+[7] примеры сырых значений:
+    resanta | Перфоратор Ресанта П-24-650К | Напряжение питающей сети, В = '220-230В, ~50 Гц'
+    resanta | Перфоратор Ресанта П-28-800К | Частота вращения, об/мин = '0-1100'
+    resanta | Перфоратор Ресанта П-28-800К | Напряжение питающей сети, В = '220-230В, ~50 Гц'
+    resanta | Перфоратор Ресанта П-30-900К | Частота вращения, об/мин = '0-1100'
+    resanta | Перфоратор Ресанта П-30-900К | Напряжение питающей сети, В = '220-230В, ~50 Гц'
+    resanta | Перфоратор Ресанта П-32-1000К | Частота вращения, об/мин = '0-1100'
+[8] интерскол: карточек 8, дублей (name, sku) с разными URL: 0 (OK)

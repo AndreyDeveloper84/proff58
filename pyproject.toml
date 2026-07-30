@@ -7,11 +7,14 @@ requires-python = ">=3.11"
 [tool.black]
 line-length = 100
 target-version = ["py311"]
+# scratchpad — одноразовые драйверы и замеры рабочих окон, они хранятся как
+# доказательная база операций, а не как код проекта, и стилю не подчиняются.
+extend-exclude = "/(scratchpad)/"
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["migrations"]
+extend-exclude = ["migrations", "scratchpad"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "DJ"]
@@ -31,4 +34,4 @@ django_debug_mode = "keep"
 # parser/ — отдельный инструмент вне Django со своими зависимостями (pydantic,
 # playwright) и собственным parser/pytest.ini. В корневой прогон не входит:
 # его тесты гоняются из каталога parser/.
-norecursedirs = ["parser", "node_modules", "frontend"]
+norecursedirs = ["parser", "node_modules", "frontend", ".*"]

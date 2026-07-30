@@ -9,6 +9,12 @@ export type Product = {
   id: number;
   slug: string;
   name: string;
+  // Короткая форма названия для плитки каталога: в 1С товары записаны телеграфно
+  // («Круг алмаз. отрез. 115х1,0»), и в двух строках карточки помещается именно
+  // она. Полное развёрнутое название живёт в name — на странице товара.
+  // Необязательное: пока товар не прошёл normalize_product_names, карточка
+  // показывает витринное имя.
+  cardName?: string;
   brand: string;
   image?: string;
   rating?: number;
@@ -49,7 +55,7 @@ export type FacetOption = {
   selected: boolean;
 };
 
-// Класс фасета для контекстного гейтинга (§3.3–3.4, §6): nav — TypePanel над выдачей;
+// Класс фасета для контекстного гейтинга (§3.3–3.4, §6): nav — блок навигации раздела;
 // base — базовые фильтры (Наличие/Бренд/Цена/Тип питания), видны всегда; tech — технические,
 // видны только после выбора tool_type или на листовой/типизированной категории.
 export type FacetKind = "nav" | "base" | "tech";
@@ -65,7 +71,7 @@ export type Facet = {
   min?: number;
   max?: number;
   unit?: string;
-  // Навигационный фасет (tool_type): рендерится TypePanel над выдачей, а НЕ в сайдбаре.
+  // Навигационный фасет (tool_type): рендерится блоком навигации раздела, а НЕ фасетом.
   // Маппится из ApiFacet.is_nav. Выбор идёт верхнеуровневым ?tool_type=, не attr_*.
   isNav?: boolean;
   // Класс для гейтинга сайдбара (классифицируется в adapters при маппинге).
@@ -76,12 +82,18 @@ export type Facet = {
   group?: FacetGroupKind;
 };
 
-export type SortOption = "popular" | "price_asc" | "price_desc" | "new" | "rating";
+export type SortOption =
+  | "popular"
+  | "bestsellers"
+  | "price_asc"
+  | "price_desc"
+  | "new"
+  | "rating";
 export type RangeFilterValue = { min?: number; max?: number };
 
 // Режим показа фильтров категории (§3.4): broad — широкая (только базовые до выбора типа);
 // typed — доминирует один тип; leaf — листовая (полный набор сразу). Источник — поле API
-// category_filter_mode, если есть; иначе авто-определение по TypePanel (см. lib/listing.ts).
+// category_filter_mode, если есть; иначе авто-определение по nav-фасету (см. lib/listing.ts).
 export type FilterMode = "broad" | "typed" | "leaf";
 
 export type ListingQuery = {
@@ -108,7 +120,7 @@ export type Listing = {
   };
   promo?: { title: string; subtitle: string; href: string };
   subcategories: { label: string; href: string }[];
-  // Режим гейтинга фильтров (§3.4). undefined → авто-определение по TypePanel (lib/listing.ts).
+  // Режим гейтинга фильтров (§3.4). undefined → авто-определение по nav-фасету (lib/listing.ts).
   filterMode?: FilterMode;
   facets: Facet[];
   sort: { value: SortOption; label: string }[];

@@ -1,0 +1,772 @@
+{
+  "code_sha": "unknown",
+  "collisions": [],
+  "command": {
+    "args": {
+      "corpus": "/app/data/catalog_processing_rules/applied_corpus_tool_type.v1.json",
+      "force": false,
+      "gate_sample_out": "/app/logs/phase7b-gate-sample.json",
+      "out": "/app/logs/phase7b-shadow-report.json",
+      "pool": "in-stock",
+      "replay_corpus": null,
+      "ruleset": "/app/data/catalog_processing_rules/tool_type.v1.json",
+      "sample_size": 100,
+      "seed": 20260721,
+      "skip_corpus_overlap_check": false
+    },
+    "name": "catalog_rules_shadow"
+  },
+  "counts": {
+    "collisions": 0,
+    "excluded_existing_tool_type": 5683,
+    "no_match": 169,
+    "predictions": 19,
+    "regression_tier_collisions": 0,
+    "regression_tier_hits": 0
+  },
+  "duration_seconds": 0.713,
+  "finished_at": "2026-07-22T15:50:48.550210+00:00",
+  "generated_at": "2026-07-22T15:50:48.550210+00:00",
+  "input_universe_hash": "6c91d37a414c641c2a96917749c1d84304efd2f7a63ebddfe165f7beec6050ea",
+  "matcher_version": "1.0",
+  "per_rule": {
+    "tt-adaptery-universal": {
+      "collision_hits": 0,
+      "coverage_share": 0.016,
+      "prediction_hits": 3,
+      "raw_hits": 3,
+      "same_slug_multi_hits": 0,
+      "tier": "candidate"
+    },
+    "tt-bp-pnevmosteplery-gvozde": {
+      "collision_hits": 0,
+      "coverage_share": 0.0053,
+      "prediction_hits": 1,
+      "raw_hits": 1,
+      "same_slug_multi_hits": 0,
+      "tier": "candidate"
+    },
+    "tt-dinamometricheskie-klyuchi-klyuch": {
+      "collision_hits": 0,
+      "coverage_share": 0.016,
+      "prediction_hits": 3,
+      "raw_hits": 3,
+      "same_slug_multi_hits": 0,
+      "tier": "candidate"
+    },
+    "tt-hoz-lenty-malyarnaya": {
+      "collision_hits": 0,
+      "coverage_share": 0.016,
+      "prediction_hits": 3,
+      "raw_hits": 3,
+      "same_slug_multi_hits": 0,
+      "tier": "candidate"
+    },
+    "tt-izm-shtativy-derzhatel": {
+      "collision_hits": 0,
+      "coverage_share": 0.0053,
+      "prediction_hits": 1,
+      "raw_hits": 1,
+      "same_slug_multi_hits": 0,
+      "tier": "candidate"
+    },
+    "tt-krep-shplinty-nabor": {
+      "collision_hits": 0,
+      "coverage_share": 0.0053,
+      "prediction_hits": 1,
+      "raw_hits": 1,
+      "same_slug_multi_hits": 0,
+      "tier": "candidate"
+    },
+    "tt-nabory-instrumenta-dielektr": {
+      "collision_hits": 0,
+      "coverage_share": 0.0,
+      "prediction_hits": 0,
+      "raw_hits": 0,
+      "same_slug_multi_hits": 0,
+      "tier": "candidate"
+    },
+    "tt-puskovye-provoda-startovye": {
+      "collision_hits": 0,
+      "coverage_share": 0.0,
+      "prediction_hits": 0,
+      "raw_hits": 0,
+      "same_slug_multi_hits": 0,
+      "tier": "candidate"
+    },
+    "tt-siz-ochki-zashchitnye": {
+      "collision_hits": 0,
+      "coverage_share": 0.0266,
+      "prediction_hits": 5,
+      "raw_hits": 5,
+      "same_slug_multi_hits": 0,
+      "tier": "candidate"
+    },
+    "tt-svar-reduktory-regulyator": {
+      "collision_hits": 0,
+      "coverage_share": 0.0,
+      "prediction_hits": 0,
+      "raw_hits": 0,
+      "same_slug_multi_hits": 0,
+      "tier": "candidate"
+    },
+    "tt-yashchiki-sumki-keys-prochee": {
+      "collision_hits": 0,
+      "coverage_share": 0.0106,
+      "prediction_hits": 2,
+      "raw_hits": 2,
+      "same_slug_multi_hits": 0,
+      "tier": "candidate"
+    }
+  },
+  "pool": {
+    "excluded_existing_tool_type": 5683,
+    "name": "in-stock",
+    "rewrite_attempts": 0,
+    "size": 188,
+    "typed_eligible_universe": 5683
+  },
+  "pool_filter_version": "1.0",
+  "predictions": [
+    {
+      "evidence": {
+        "facts": {
+          "article": "40309-MB",
+          "brand": "",
+          "name": "Адаптер-переходник для инструмента MAKITA с аккум BOSCH",
+          "original_name": "Адаптер-переходник для инструмента MAKITA с аккум BOSCH",
+          "source_group": "Аккумуляторы и зарядные устройства"
+        },
+        "facts_hash": "7390b734e0d3f0d72a12bea2c3fcf349c5608bed8d47e45241709fcefc1a2e1c",
+        "match": {
+          "tt-adaptery-universal": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "адаптер"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "adaptery",
+      "product_id": 1112,
+      "rule_refs": [
+        "tt-adaptery-universal"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "40309-MD",
+          "brand": "",
+          "name": "Адаптер-переходник для инструмента MAKITA с аккум DEWALT",
+          "original_name": "Адаптер-переходник для инструмента MAKITA с аккум DEWALT",
+          "source_group": "Аккумуляторы и зарядные устройства"
+        },
+        "facts_hash": "e7fd078bf50cd609148701e0dcc2a68843fdd0fe8c9af651f35e64838654e8fe",
+        "match": {
+          "tt-adaptery-universal": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "адаптер"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "adaptery",
+      "product_id": 1113,
+      "rule_refs": [
+        "tt-adaptery-universal"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "792-131",
+          "brand": "",
+          "name": "Адаптер для подключения пылесоса резиновый 32/35/38/41мм ПУЛЬСАР",
+          "original_name": "Адаптер для подключения пылесоса резиновый 32/35/38/41мм ПУЛЬСАР",
+          "source_group": "Запасные части"
+        },
+        "facts_hash": "3eaf9c4bcb4ffc062fc6a9f1a6927257a25edcda8ef162008d3b3718da2c3a35",
+        "match": {
+          "tt-adaptery-universal": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "адаптер"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "adaptery",
+      "product_id": 6683,
+      "rule_refs": [
+        "tt-adaptery-universal"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "34706",
+          "brand": "",
+          "name": "Держатель с микролифтом KRAFTOOL MM1",
+          "original_name": "Держатель с микролифтом KRAFTOOL MM1",
+          "source_group": "Измерительный инструмент"
+        },
+        "facts_hash": "4e4f5cc3d2972619250255669dd89cc77b71e053435f8aaab18379f134ca0f46",
+        "match": {
+          "tt-izm-shtativy-derzhatel": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "держатель"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "izm-shtativy",
+      "product_id": 10633,
+      "rule_refs": [
+        "tt-izm-shtativy-derzhatel"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "64093-110",
+          "brand": "",
+          "name": "Ключ динамометрический  3/8\",  7 -105 Нм, +/- 4% ЗУБР",
+          "original_name": "Ключ динамометрический  3/8\",  7 -105 Нм, +/- 4% ЗУБР",
+          "source_group": "Ключи, головки, воротки, удлинители"
+        },
+        "facts_hash": "983dcef6082ba585efc4ab1b534e9e1c7ffdad073b32bfcd76492676caa5d932",
+        "match": {
+          "tt-dinamometricheskie-klyuchi-klyuch": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "ключ динамометрический"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "dinamometricheskie-klyuchi",
+      "product_id": 12956,
+      "rule_refs": [
+        "tt-dinamometricheskie-klyuchi-klyuch"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "64094-210",
+          "brand": "",
+          "name": "Ключ динамометрический, 1/2\", 28 - 210 Нм, ЗУБР Профессионал",
+          "original_name": "Ключ динамометрический, 1/2\", 28 - 210 Нм, ЗУБР Профессионал",
+          "source_group": "Ключи, головки, воротки, удлинители"
+        },
+        "facts_hash": "07a23d376545a916976aef2617c474e3464bd91e51e2075076afe9f8d3901830",
+        "match": {
+          "tt-dinamometricheskie-klyuchi-klyuch": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "ключ динамометрический"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "dinamometricheskie-klyuchi",
+      "product_id": 13002,
+      "rule_refs": [
+        "tt-dinamometricheskie-klyuchi-klyuch"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "64091-025",
+          "brand": "",
+          "name": "Ключ динамометрический, 1/4\", 2 - 24 Нм, ЗУБР Профессионал",
+          "original_name": "Ключ динамометрический, 1/4\", 2 - 24 Нм, ЗУБР Профессионал",
+          "source_group": "Ключи, головки, воротки, удлинители"
+        },
+        "facts_hash": "ba16c1a92ffee498a2c1a09f560822d7afa7253a60ef79c4c65304efa72195ab",
+        "match": {
+          "tt-dinamometricheskie-klyuchi-klyuch": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "ключ динамометрический"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "dinamometricheskie-klyuchi",
+      "product_id": 13004,
+      "rule_refs": [
+        "tt-dinamometricheskie-klyuchi-klyuch"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "47612",
+          "brand": "",
+          "name": "Набор штифтов с головкой и отверстием под шплинт 60 пр.//СИБРТЕХ",
+          "original_name": "Набор штифтов с головкой и отверстием под шплинт 60 пр.//СИБРТЕХ",
+          "source_group": "Оснастка"
+        },
+        "facts_hash": "c4dc50a696170f96c4d19cf24125259f07fb05a9595917b34d34c814e347ab5d",
+        "match": {
+          "tt-krep-shplinty-nabor": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "шплинт"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "krep-shplinty",
+      "product_id": 26867,
+      "rule_refs": [
+        "tt-krep-shplinty-nabor"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "31915",
+          "brand": "",
+          "name": "Пневмонейлер ЗУБР для барабанных гвоздей 65-100мм",
+          "original_name": "Пневмонейлер ЗУБР для барабанных гвоздей 65-100мм",
+          "source_group": "Пневмоинструмент"
+        },
+        "facts_hash": "b1842db78d2dd1d70c2fdaeb2deeeb09df37594be86599bf649ce49ebe2cb3fd",
+        "match": {
+          "tt-bp-pnevmosteplery-gvozde": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "пневмонейлер"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "bp-pnevmosteplery",
+      "product_id": 28894,
+      "rule_refs": [
+        "tt-bp-pnevmosteplery-gvozde"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "332420",
+          "brand": "",
+          "name": "Кейс пластиковый Hitachi (Лобзик)",
+          "original_name": "Кейс пластиковый Hitachi (Лобзик)",
+          "source_group": "Прочее"
+        },
+        "facts_hash": "a49c9f545dbf66aff79fc0e918c25b99b23c324cbf0b42a413061cc7613f97ed",
+        "match": {
+          "tt-yashchiki-sumki-keys-prochee": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "кейс"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "yashchiki-sumki",
+      "product_id": 30226,
+      "rule_refs": [
+        "tt-yashchiki-sumki-keys-prochee"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "321188",
+          "brand": "",
+          "name": "Кейс пластиковый Hitachi (пила)",
+          "original_name": "Кейс пластиковый Hitachi (пила)",
+          "source_group": "Прочее"
+        },
+        "facts_hash": "9cd9f89ad77d0ab7dad9e7d7685645ba83ab27a05db96335154f45d79901cd5b",
+        "match": {
+          "tt-yashchiki-sumki-keys-prochee": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "кейс"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "yashchiki-sumki",
+      "product_id": 30229,
+      "rule_refs": [
+        "tt-yashchiki-sumki-keys-prochee"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "110855",
+          "brand": "",
+          "name": "Маска щиток защитный лицевой ЗУБР ЗАСЛОН-С экран ячеистой сетки 190 х 339 мм, для крепления на каске",
+          "original_name": "Маска щиток защитный лицевой ЗУБР ЗАСЛОН-С экран ячеистой сетки 190 х 339 мм, для крепления на каске",
+          "source_group": "Средства индивидуальной защиты"
+        },
+        "facts_hash": "dd968e538a877518b4b817ed99fd531929888b03742445f1817e39b0fd17d213",
+        "match": {
+          "tt-siz-ochki-zashchitnye": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "маска щиток"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "siz-ochki",
+      "product_id": 36303,
+      "rule_refs": [
+        "tt-siz-ochki-zashchitnye"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "110851",
+          "brand": "",
+          "name": "Маска щиток защитный лицевой ЗУБР СЕКТОР-С экран из ячеистой сетки 190 х 339 мм, с храповиком",
+          "original_name": "Маска щиток защитный лицевой ЗУБР СЕКТОР-С экран из ячеистой сетки 190 х 339 мм, с храповиком",
+          "source_group": "Средства индивидуальной защиты"
+        },
+        "facts_hash": "138060bcbf6da19fe96778d842deca4c4b51f18d4543d83e260e97859e1a1023",
+        "match": {
+          "tt-siz-ochki-zashchitnye": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "маска щиток"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "siz-ochki",
+      "product_id": 36305,
+      "rule_refs": [
+        "tt-siz-ochki-zashchitnye"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "РСВ-376639",
+          "brand": "",
+          "name": "Маска щиток защитный лицевой НБТ ЭКОНОМ 300",
+          "original_name": "Маска щиток защитный лицевой НБТ ЭКОНОМ 300",
+          "source_group": "Средства индивидуальной защиты"
+        },
+        "facts_hash": "bd24a99507692427ebd5b38ae4f071b55e1016ff140e04082bb26bab0e224bb2",
+        "match": {
+          "tt-siz-ochki-zashchitnye": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "маска щиток"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "siz-ochki",
+      "product_id": 36308,
+      "rule_refs": [
+        "tt-siz-ochki-zashchitnye"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "11089",
+          "brand": "",
+          "name": "Маска щиток защитный лицевой СИБИН с экраном из поликарбоната",
+          "original_name": "Маска щиток защитный лицевой СИБИН с экраном из поликарбоната",
+          "source_group": "Средства индивидуальной защиты"
+        },
+        "facts_hash": "4eb41044e54c99f6c9d759e543a3b56423ed9033ebe996da51ca9cddbbd1445b",
+        "match": {
+          "tt-siz-ochki-zashchitnye": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "маска щиток"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "siz-ochki",
+      "product_id": 36310,
+      "rule_refs": [
+        "tt-siz-ochki-zashchitnye"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "110233",
+          "brand": "",
+          "name": "Очки защитные панорамные ЗУБР ПАНОРАМА ЩИТ, монолинза, закрытого типа с неп вентил  со щитком",
+          "original_name": "Очки защитные панорамные ЗУБР ПАНОРАМА ЩИТ, монолинза, закрытого типа с неп вентил  со щитком",
+          "source_group": "Средства индивидуальной защиты"
+        },
+        "facts_hash": "a6622c6d9e47916dc72db77cc26a1c6c9a342fa59bb88111558958b624a4c1e8",
+        "match": {
+          "tt-siz-ochki-zashchitnye": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "очки защитные"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "siz-ochki",
+      "product_id": 36403,
+      "rule_refs": [
+        "tt-siz-ochki-zashchitnye"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "12115-30",
+          "brand": "",
+          "name": "Лента малярная креповая 30ммх50м ЗУБР ЭКСПЕРТ",
+          "original_name": "Лента малярная креповая 30ммх50м ЗУБР ЭКСПЕРТ",
+          "source_group": "Строительно-отделочный инструмент"
+        },
+        "facts_hash": "d0a79138bf71a51ed2da792916c58e727e570911067432448affb1294a7a009f",
+        "match": {
+          "tt-hoz-lenty-malyarnaya": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "лента малярная"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "hoz-lenty",
+      "product_id": 37271,
+      "rule_refs": [
+        "tt-hoz-lenty-malyarnaya"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "12115-38",
+          "brand": "",
+          "name": "Лента малярная креповая 38ммх50м ЗУБР ЭКСПЕРТ",
+          "original_name": "Лента малярная креповая 38ммх50м ЗУБР ЭКСПЕРТ",
+          "source_group": "Строительно-отделочный инструмент"
+        },
+        "facts_hash": "20638f0c826651e7f809656c4ddc2fc2a4dfaa671b70bae71a627655fb36b93c",
+        "match": {
+          "tt-hoz-lenty-malyarnaya": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "лента малярная"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "hoz-lenty",
+      "product_id": 37272,
+      "rule_refs": [
+        "tt-hoz-lenty-malyarnaya"
+      ]
+    },
+    {
+      "evidence": {
+        "facts": {
+          "article": "12115-50",
+          "brand": "",
+          "name": "Лента малярная креповая 48ммх50м ЗУБР ЭКСПЕРТ",
+          "original_name": "Лента малярная креповая 48ммх50м ЗУБР ЭКСПЕРТ",
+          "source_group": "Строительно-отделочный инструмент"
+        },
+        "facts_hash": "cf2b162fc70a938f0565e59b886be4f0119f775c37812a1ac110ca2f65afea87",
+        "match": {
+          "tt-hoz-lenty-malyarnaya": {
+            "dimensions": [
+              "original_name_keywords_any",
+              "source_group_any"
+            ],
+            "keywords": {
+              "original_name": [
+                "лента малярная"
+              ]
+            },
+            "matched": true,
+            "vetoed_by": ""
+          }
+        }
+      },
+      "option_slug": "hoz-lenty",
+      "product_id": 37273,
+      "rule_refs": [
+        "tt-hoz-lenty-malyarnaya"
+      ]
+    }
+  ],
+  "predictions_share": 0.1011,
+  "report_schema_version": "1.0",
+  "ruleset_hash": "51b3bbad7c65565637711e5bf9ee74eb7b477ff71b9e25183095ede9cb1044bd",
+  "ruleset_id": "tool_type.v1",
+  "sample": {
+    "product_ids": [
+      37272,
+      26867,
+      37273,
+      36403,
+      30229,
+      36303,
+      37271,
+      36308,
+      28894,
+      36305,
+      6683,
+      12956,
+      36310,
+      1113,
+      10633,
+      30226,
+      13002,
+      13004,
+      1112
+    ],
+    "seed": 20260721,
+    "size": 19
+  },
+  "snapshot_isolation": "repeatable_read_read_only",
+  "started_at": "2026-07-22T15:50:47.837288+00:00",
+  "taxonomy_hash": "b357be604801197e33182b84fde1755361e29653d98bd49429623b3ba604326b"
+}

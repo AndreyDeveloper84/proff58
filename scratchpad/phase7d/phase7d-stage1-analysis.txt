@@ -1,0 +1,47 @@
+=== 1.3(a) REPLAY DETERMINISM (same seed 20260722) ===
+  normalized full report diff: EMPTY
+  sample byte sha256: official=a23e794d6fe15636… replay=a23e794d6fe15636… equal=True
+  sample canonical hash equal: True (455f49cfa1536bf0…)
+  counts equal: True
+  predictions ordered equal: True
+  per_rule counters (4×38) equal: True
+=== 1.3(b) UNIVERSE vs Phase 7C reference (4c1f39d3…) ===
+  counts: official={'collisions': 0, 'excluded_existing_tool_type': 18123, 'no_match': 1268, 'predictions': 325, 'regression_tier_collisions': 0, 'regression_tier_hits': 0}
+  counts equal 7C: True
+  ordered predictions product_id→slug equal 7C: True (n=325)
+  per_rule counters equal 7C (38 rules): True
+  ruleset_hash == pin: True
+  taxonomy_hash == pin: True
+  input_universe_hash == pin: True (82536a4698688c92…)
+  rewrite_attempts == 0: True
+  corpus_overlap_checked (sample): True; collision_count strict int 0: True
+  [info] sample∩sample7C: 31 ids: [197, 313, 326, 429, 677, 1857, 12980, 22670, 22677, 24855, 28894, 29035, 30229, 31974, 35061, 35062, 37015, 37019, 37020, 37271]…
+=== 1.4 MONITORING COVERAGE (random core 100) ===
+  tt-svar-apparaty-truby: random=2 (solo=2, multi=0); report_total=10
+  tt-bp-vozdukhoduvki-akkum: random=0 (solo=0, multi=0); report_total=4
+  tt-obor-mebel-verstak: random=2 (solo=2, multi=0); report_total=4
+  tt-izm-kolesa-dorozhnoe: random=1 (solo=1, multi=0); report_total=4
+  tt-yashchiki-sumki-benzopila: random=2 (solo=2, multi=0); report_total=4
+  tt-siz-pozh-inventar-polotno: random=0 (solo=0, multi=0); report_total=3
+  tt-siz-izveshchateli-gromkogovoritel: random=0 (solo=0, multi=0); report_total=3
+  tt-siz-ochki-shitok: random=3 (solo=0, multi=3); report_total=15
+  missing refs: ['tt-bp-vozdukhoduvki-akkum', 'tt-siz-pozh-inventar-polotno', 'tt-siz-izveshchateli-gromkogovoritel']
+=== AMENDMENT BUILD (D-1 minimal, greedy by ascending product_id) ===
+  uncovered after amendment: none
+  amendment rows: 3; unique product_ids: 3
+   {'product_id': 422, 'added_for_rule_refs': ['tt-bp-vozdukhoduvki-akkum'], 'option_slug': 'bp-vozdukhoduvki', 'same_slug_multi': False, 'reason': 'rule_ref(s) absent from random core; minimal product_id'}
+   {'product_id': 29557, 'added_for_rule_refs': ['tt-siz-izveshchateli-gromkogovoritel'], 'option_slug': 'siz-izveshchateli', 'same_slug_multi': False, 'reason': 'rule_ref(s) absent from random core; minimal product_id'}
+   {'product_id': 29733, 'added_for_rule_refs': ['tt-siz-pozh-inventar-polotno'], 'option_slug': 'siz-pozh-inventar', 'same_slug_multi': False, 'reason': 'rule_ref(s) absent from random core; minimal product_id'}
+=== SAMPLE-ROW MAPPING FIDELITY (vs command construction) ===
+  random rows reproduced verbatim from report predictions: 100/100
+  amendment rows verbatim vs report: True
+=== validate_gate_sample(official) ===
+  violations: NONE
+  unique product_ids: True (total=103)
+  collision_count strict int 0: True; corpus_overlap_checked: True
+  all 8 monitoring refs covered: True
+=== 1.5 FREEZE ===
+  file: scratchpad/phase7d/phase7d-gate-sample-official.json
+  byte sha256: 873ee2a19e7dedbc322357f8ff4108690b4e3f6a25889571e13c5f7191bfdeb8
+  canonical_hash: 888980e7209c27026c13f56152330e5264d8da7103345fefb685713f8635a6db
+  composition: random=100 + amendment=3 = total unique=103

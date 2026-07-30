@@ -36,6 +36,7 @@ from .models import (
     ProductAttributeValue,
     ProductCompatibility,
     ProductImage,
+    ProductSalesStat,
     ProductStatus,
     SiteCategory,
     Source,
@@ -53,7 +54,15 @@ class CategoryAttributeInline(admin.TabularInline):
     model = CategoryAttribute
     extra = 1
     autocomplete_fields = ["attribute"]
-    fields = ("attribute", "is_filter", "group", "is_seo_facet", "is_required", "sort_order")
+    fields = (
+        "attribute",
+        "display_name",
+        "is_filter",
+        "group",
+        "is_seo_facet",
+        "is_required",
+        "sort_order",
+    )
 
 
 class CategoryAdminForm(movenodeform_factory(Category)):
@@ -77,6 +86,7 @@ class CategoryAdminForm(movenodeform_factory(Category)):
 @admin.register(Category)
 class CategoryAdmin(TreeAdmin):
     form = CategoryAdminForm
+    save_on_top = True
     # Крупный заголовок с именем редактируемой категории (вместо общего «Категории»).
     change_form_template = "admin/catalog/category/change_form.html"
     list_display = (
@@ -417,6 +427,31 @@ class ModerationQueueFilter(admin.SimpleListFilter):
         return queryset
 
 
+class BrandFilter(admin.SimpleListFilter):
+    """Топ-брендов вместо полного списка.
+
+    ``brand`` — CharField, поэтому штатный фильтр по полю рендерил бы в сайдбаре
+    ВСЕ различающиеся бренды каталога. Показываем только самые массовые; редкий
+    бренд ищется поиском (он есть в search_fields).
+    """
+
+    title = _("Бренд")
+    parameter_name = "brand"
+    TOP_N = 20
+
+    def lookups(self, request, model_admin):
+        top = (
+            Product.objects.exclude(brand="")
+            .values_list("brand")
+            .annotate(c=Count("pk"))
+            .order_by("-c")[: self.TOP_N]
+        )
+        return [(brand, f"{brand} ({count})") for brand, count in top]
+
+    def queryset(self, request, queryset):
+        return queryset.filter(brand=self.value()) if self.value() else queryset
+
+
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
     extra = 1
@@ -426,6 +461,10 @@ class ProductAttributeValueInline(admin.TabularInline):
     model = ProductAttributeValue
     extra = 0
     autocomplete_fields = ["attribute"]
+    # value_option — raw_id, как и в ProductAttributeValueAdmin: обычный селект
+    # рендерил бы ВСЕ варианты характеристик каталога в КАЖДОЙ строке инлайна,
+    # а это самая частая страница админки.
+    raw_id_fields = ("value_option",)
     fields = (
         "attribute",
         "value_text",
@@ -514,6 +553,9 @@ class ProductActionForm(ActionForm):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     action_form = ProductActionForm
+    # Карточка — 7 блоков и 5 инлайнов: без кнопок сверху до «Сохранить»
+    # приходится прокручивать всю страницу.
+    save_on_top = True
     list_display = (
         "name",
         "article",
@@ -532,7 +574,7 @@ class ProductAdmin(admin.ModelAdmin):
         UncategorizedFilter,
         "stock_status",
         "is_active",
-        "brand",
+        BrandFilter,
     )
     search_fields = ("name", "original_name", "article", "code_1c", "slug")
     prepopulated_fields = {"slug": ("name",)}
@@ -569,7 +611,21 @@ class ProductAdmin(admin.ModelAdmin):
     fieldsets = (
         (
             None,
-            {"fields": ("moderation_reason_detail", "name", "slug", "status", "is_active")},
+            {
+                "description": _(
+                    "«Название (карточка)» — короткая форма для плитки каталога; пусто — "
+                    "показывается витринное название. Заполняет normalize_product_names, "
+                    "руками правится здесь."
+                ),
+                "fields": (
+                    "moderation_reason_detail",
+                    "name",
+                    "card_name",
+                    "slug",
+                    "status",
+                    "is_active",
+                ),
+            },
         ),
         (
             _("Категория сайта"),
@@ -1241,6 +1297,31 @@ class CatalogChangeAdmin(admin.ModelAdmin):
             if result.status == "applied":
                 count += 1
         self.message_user(request, f"Применено: {count}", messages.SUCCESS)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ProductSalesStat)
+class ProductSalesStatAdmin(admin.ModelAdmin):
+    """Рейтинг продаж — только чтение.
+
+    Нужен, чтобы бейдж «Хит» на витрине можно было объяснить: сколько продано, за
+    какое окно и когда была последняя продажа. Руками рейтинг не правится — он
+    пересобирается задачей из фактов продаж (apps.catalog.sales).
+    """
+
+    list_display = ("rank", "product", "quantity", "days_with_sales", "last_sold_on", "is_hit")
+    list_filter = ("is_hit", "window_days")
+    search_fields = ("product__name", "product__article", "product__code_1c")
+    ordering = ("rank",)
+    list_select_related = ("product",)
 
     def has_add_permission(self, request):
         return False

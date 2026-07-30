@@ -10,10 +10,10 @@ import {
   fetchProductFromApi,
   fetchSearchFromApi,
   fetchCategoryTreeFromApi,
+  fetchCategoryProductsFromApi,
   fetchBestsellersFromApi,
   type CategoryNode,
 } from "./adapters";
-import { HOME_CONTENT } from "./home-content";
 import { applyListing } from "./filtering";
 import type { Listing, ListingQuery, Product, ProductDetail } from "./types";
 
@@ -65,18 +65,65 @@ export async function getProduct(slug: string): Promise<ProductDetail | null> {
 
 export type { CategoryNode };
 
-// Корневые категории (depth==1) для блока главной. Без API → пусто (блок скрыт).
-export async function getCategoryTree(): Promise<CategoryNode[]> {
+// Дерево категорий для индекса каталога. null — API недоступен («каталог временно
+// недоступен»), [] — разделов нет. Без API_BASE/при фикстурах отдаём разделы, для
+// которых есть фикстура листинга, — чтобы ссылки на локальной сборке не вели в 404.
+export async function getCategoryTreeOrNull(): Promise<CategoryNode[] | null> {
   if (API_BASE && !FORCE_FIXTURES) {
     return await fetchCategoryTreeFromApi(API_BASE);
+  }
+  return Object.entries(FIXTURES).map(([slug, listing], index) => ({
+    id: -(index + 1),
+    name: listing.category.title,
+    slug,
+    sort_order: index,
+    children: [],
+  }));
+}
+
+function findInTree(nodes: CategoryNode[], slug: string): CategoryNode | null {
+  for (const node of nodes) {
+    if (node.slug === slug) return node;
+    const found = findInTree(node.children, slug);
+    if (found) return found;
+  }
+  return null;
+}
+
+export type CategoryLookup =
+  | { status: "found"; name: string }
+  | { status: "missing" }
+  | { status: "unavailable" };
+
+// Существует ли раздел и как он называется на витрине. Берём из дерева категорий:
+// оно дешевле фасетов. «Нет раздела» и «нет связи» различаем принципиально — при
+// недоступном API страница не должна превращаться в 404 для всего каталога.
+export async function getCategoryLookup(slug: string): Promise<CategoryLookup> {
+  const tree = await getCategoryTreeOrNull();
+  if (!tree) return { status: "unavailable" };
+  const found = findInTree(tree, slug);
+  return found ? { status: "found", name: found.name } : { status: "missing" };
+}
+
+// Товары раздела для блока «подобрать по теме» в статье. Без API → пусто (блок скрыт).
+export async function getCategoryProducts(category: string, limit = 3): Promise<Product[]> {
+  if (API_BASE && !FORCE_FIXTURES) {
+    return await fetchCategoryProductsFromApi(API_BASE, category, limit);
   }
   return [];
 }
 
-// «Хиты продаж» для главной. Без API → пусто (блок скрыт).
-export async function getBestsellers(limit = 8): Promise<Product[]> {
+/**
+ * Витрина главной. Возвращает и сами товары, и то, ЧЕМ они являются:
+ * `bestsellers` — реальные продажи за окно (backend apps.catalog.sales),
+ * `new` — продаж пока нет, показываем новинки под честным заголовком.
+ * Без API → пусто (блок скрыт).
+ */
+export async function getBestsellers(
+  limit = 8,
+): Promise<{ products: Product[]; kind: "bestsellers" | "new" }> {
   if (API_BASE && !FORCE_FIXTURES) {
-    return await fetchBestsellersFromApi(API_BASE, HOME_CONTENT.bestsellerSlugs, limit);
+    return await fetchBestsellersFromApi(API_BASE, limit);
   }
-  return [];
+  return { products: [], kind: "new" };
 }

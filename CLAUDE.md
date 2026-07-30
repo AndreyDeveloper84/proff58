@@ -93,6 +93,18 @@ docker-compose.yml · docker-compose.prod.yml
 - Проверка живого API: `python scripts/smoke_1c.py --base <url> --key <ключ>`
   (**пишет в БД — только staging**); симулятор round-trip: `manage.py demo_1c_orders`.
 
+| Эндпоинт | Метод | Назначение | Ответ |
+|---|---|---|---|
+| `snapshot/` | GET | снимок позиций (code_1c+цена+остатки) для дельта-обмена; offset/keyset пагинация | 200 |
+| `products/import` | POST | загрузка/создание номенклатуры (**асинхронно**) | 202 + `batch_uid` |
+| `products/update` | POST | обновление существующих (новые не создаются, **асинхронно**) | 202 + `batch_uid` |
+| `sync/<batch_uid>` | GET | опрос статуса фонового импорта | 200 / 404 |
+| `prices/update` | POST | только цены (**синхронно**) | 200 + счётчики |
+| `stocks/update` | POST | только остатки (**синхронно**) | 200 + счётчики |
+| `orders/new` | GET | 1С забирает новые заказы (`sync_1c_status=pending`) | 200 + items |
+| `orders/confirm` | POST | подтверждение приёма/резерва + движение `fulfillment_status` | 200 + per-item |
+| `sales/upload` | POST | продажи магазина за день (источник «Хитов продаж», **синхронно**) | 200 + счётчики |
+
 ## 6. Статусы заказа
 
 Три независимые оси (`docs/order-lifecycle.md` — источник истины):
@@ -201,7 +213,17 @@ exec bit). Любое третье падение — регрессия.
 
 Скилл `characterize-subgroup` — плейбук расстановки характеристик подгрупп.
 
-## 10. Поток работы и стиль
+## 10. Публичный API
+
+- `/api/catalog/` — `categories/`, `categories/<slug>/facets/`, `products/`,
+  `products/<slug>/`, `products/<slug>/compatible/`, `search/suggest/`,
+  `bestsellers/` (товары с реальными продажами за окно — см. `apps/catalog/sales.py`)
+- `/api/ai/products/<slug>/recommendations/`
+- `/api/` — `cart/`, `cart/items/`, `orders/`, `orders/<number>/`
+- `/api/1c/` — обмен с 1С (см. §5)
+- `/healthz/` — health (БД + Redis)
+
+## 11. Поток работы и стиль
 
 - Ветки: `main` (прод), `dev` (интеграция); рабочие — от `dev`:
   `feature/<area>-<кратко>`, `fix/…`, `chore/…`, `design/…`. PR в `dev` (1 ревью +
@@ -213,7 +235,7 @@ exec bit). Любое третье падение — регрессия.
 > Рабочая ветка задаётся заданием сессии. Не пушить в чужие ветки без явного
 > разрешения. **Push и PR — только по явной просьбе.**
 
-## 11. Внешние наборы Claude Code
+## 12. Внешние наборы Claude Code
 
 Плагины, агенты и скиллы (superpowers, ECC, gstack, agency-agents) — в
 [`.claude/EXTRAS.md`](.claude/EXTRAS.md). Для фронта — отдельная `frontend/CLAUDE.md`.

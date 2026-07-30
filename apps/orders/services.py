@@ -8,12 +8,13 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field, replace
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from apps.accounts.models import CustomerType
@@ -758,3 +759,38 @@ def get_guest_order_by_token(order_number: str, access_token: str) -> Order | No
     if order is None or is_guest_token_expired(order):
         return None
     return order
+
+
+# --- Продажи для рейтинга каталога (блок «Хиты продаж») ---
+
+# Продажей считаем только то, что реально ушло покупателю: заказ отгружен или
+# выполнен. NEW/CONFIRMED/ASSEMBLING — намерение, его ещё могут отменить, а
+# витрина не должна называть хитом то, что не продалось. Возврат снимает продажу.
+SOLD_FULFILLMENT_STATUSES = (FulfillmentStatus.SHIPPED, FulfillmentStatus.COMPLETED)
+REFUNDED_PAYMENT_STATUSES = (PaymentStatus.REFUNDED,)
+
+
+def sold_quantities(since: date, until: date) -> list[tuple[int, date, Decimal]]:
+    """Продажи сайта за период: (product_id, день, количество).
+
+    Единственная точка, где кто-то извне узнаёт объёмы продаж заказов — каталог
+    сам в orders не ходит (ADR-0004). Строки без товара (product обнулён при
+    удалении номенклатуры) пропускаем: привязать продажу не к чему.
+
+    День берём по дате оформления заказа: это момент продажи с точки зрения
+    покупателя, а отгрузка может уехать на неделю.
+    """
+    rows = (
+        OrderItem.objects.filter(
+            product__isnull=False,
+            order__fulfillment_status__in=SOLD_FULFILLMENT_STATUSES,
+            order__created_at__date__gte=since,
+            order__created_at__date__lte=until,
+        )
+        .exclude(order__payment_status__in=REFUNDED_PAYMENT_STATUSES)
+        .annotate(day=TruncDate("order__created_at"))
+        .values("product_id", "day")
+        .annotate(quantity=models.Sum("quantity"))
+        .order_by()
+    )
+    return [(r["product_id"], r["day"], Decimal(r["quantity"])) for r in rows]

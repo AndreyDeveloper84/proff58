@@ -5,6 +5,7 @@
     "manual": 100,
     "rules": 90,
     "import_1c": 60,
+    "scraper": 50,
     "regex": 40,
     "keyword": 30,
     "web": 25,

@@ -1,0 +1,33 @@
+--- N2 · guard: _schema_validation (JSON Schema draft-07)
+    guard ВКЛЮЧЁН: CommandError | JSON Schema: <root>: 'items' is a required property
+    guard СНЯТ   : KeyError | 'items'
+    ВЕРДИКТ: GUARD ДОКАЗАН
+
+--- N5 · guard: allowed_options — словарь tool_type
+    guard ВКЛЮЧЁН: OK(exit0) | {"created": 0, "would_create": 1, "errors": 1, "skipped": 3} || item-errors: - product_ref 1: unknown option ph8-syn-fake-tool-type
+    guard СНЯТ   : OK(exit0) | {"created": 0, "would_create": 2, "errors": 0, "skipped": 3}
+    ВЕРДИКТ: GUARD ДОКАЗАН
+
+--- N16 · guard: _domain_validation (identity gate)
+    guard ВКЛЮЧЁН: CommandError | items[0]: changes запрещены без identity.status=matched
+    guard СНЯТ   : OK(exit0) | {"created": 0, "would_create": 1, "errors": 1, "skipped": 3} || item-errors: - product_ref 1: changes при identity.status='partial'
+    ВЕРДИКТ: GUARD ДОКАЗАН
+
+--- N13 · guard: сверка export_checksum с run.stats.last_export_checksum
+    guard ВКЛЮЧЁН: CommandError | export_checksum не совпадает с последним export run
+    guard СНЯТ   : OK(exit0) | {"created": 0, "would_create": 2, "errors": 0, "skipped": 3}
+    ВЕРДИКТ: GUARD ДОКАЗАН
+
+--- N15 · guard: сверка item.input_hash со снимком в result
+    guard ВКЛЮЧЁН: OK(exit0) | {"created": 0, "would_create": 1, "errors": 1, "skipped": 3} || item-errors: - product_ref 1: input_hash не совпадает
+    guard СНЯТ   : OK(exit0) | {"created": 0, "would_create": 1, "errors": 1, "skipped": 3} || item-errors: - product_ref 1: current input snapshot изменился
+    ВЕРДИКТ: GUARD ДОКАЗАН
+
+--- N14 · guard: сверка taxonomy_hash result ↔ run ↔ живой словарь
+    guard ВКЛЮЧЁН: CommandError | taxonomy_hash result не совпадает с run
+    guard СНЯТ   : OK(exit0) | {"created": 0, "would_create": 2, "errors": 0, "skipped": 3}
+    ВЕРДИКТ: GUARD ДОКАЗАН
+
+МУТАЦИИ ЗАВЕРШЕНЫ — все изменения БД откатаны
+контроль состояния run: b357be604801197e33182b84fde1755361e29653d98bd49429623b3ba604326b
+контроль input_hash item1: c237e32c1e778537effd5a79817c4ecf53ebe2d1fdd76ec223eec4fc788cc21c
