@@ -20,6 +20,7 @@ from apps.catalog.models import (
     ProductStatus,
 )
 from apps.catalog.processing import canonical_hash
+from apps.catalog.taxonomy_manifest import load_manifest
 
 
 @pytest.fixture
@@ -57,13 +58,28 @@ def _tool_type_attr():
         slug="tool_type",
         defaults={"name": "Тип инструмента", "attribute_type": AttributeType.SELECT},
     )
+    _seed_manifest_options(attr)
     return attr
 
 
+def _seed_manifest_options(attr):
+    """Синхронизировать опции tool_type в тестовой БД с canonical manifest.
+
+    Очередь привязана к canonical taxonomy (TT-13/G6): create/export/import
+    fail-closed при расхождении состава опций БД с manifest.
+    """
+    manifest = load_manifest()
+    AttributeOption.objects.bulk_create(
+        [
+            AttributeOption(attribute=attr, slug=option.slug, value=option.value)
+            for option in manifest.options
+        ],
+        ignore_conflicts=True,
+    )
+
+
 def _option(attr, value, slug):
-    return AttributeOption.objects.get_or_create(
-        attribute=attr, value=value, defaults={"slug": slug}
-    )[0]
+    return AttributeOption.objects.get(attribute=attr, slug=slug)
 
 
 def _result_item(item, option_slug, source="web", confidence=95):
@@ -112,12 +128,20 @@ def _write_result(path: Path, run_id: str, items: list, export_data: dict):
     return data
 
 
-def _import_result(path: Path, *, commit: bool = False, run_id: str | None = None):
+def _import_result(
+    path: Path,
+    *,
+    commit: bool = False,
+    run_id: str | None = None,
+    allow_name_mismatch: bool = False,
+):
     args = ["catalog_queue_import", "--file", str(path), "--allow-external-path"]
     if commit:
         args.append("--commit")
     if run_id:
         args.extend(["--run", run_id])
+    if allow_name_mismatch:
+        args.append("--allow-name-mismatch")
     return call_command(*args)
 
 
@@ -234,7 +258,7 @@ def test_import_dry_run_does_not_create_changes(feature_enabled, tmp_path):
     run = CatalogProcessingRun.objects.get(pk=run_id)
     item = run.items.first()
     export_data = _export_run(run_id, tmp_path)
-    result_path = tmp_path / "result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [_result_item(item, drill.slug)], export_data)
 
     result = json.loads(_import_result(result_path))
@@ -262,7 +286,7 @@ def test_import_commit_creates_proposed_changes(feature_enabled, tmp_path):
     run = CatalogProcessingRun.objects.get(pk=run_id)
     item = run.items.first()
     export_data = _export_run(run_id, tmp_path)
-    result_path = tmp_path / "result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [_result_item(item, drill.slug)], export_data)
 
     result = json.loads(_import_result(result_path, commit=True))
@@ -293,7 +317,7 @@ def test_import_rejects_unknown_option(feature_enabled, tmp_path):
     run = CatalogProcessingRun.objects.get(pk=run_id)
     item = run.items.first()
     export_data = _export_run(run_id, tmp_path)
-    result_path = tmp_path / "result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [_result_item(item, "no-such-option")], export_data)
 
     result = json.loads(_import_result(result_path, commit=True))
@@ -324,7 +348,7 @@ def test_import_rejects_changed_input_hash(feature_enabled, tmp_path):
     run = CatalogProcessingRun.objects.get(pk=run_id)
     item = run.items.first()
     export_data = _export_run(run_id, tmp_path)
-    result_path = tmp_path / "result.json"
+    result_path = tmp_path / f"{run_id}.json"
     bad_item = _result_item(item, drill.slug)
     bad_item["input_hash"] = "0" * 64
     _write_result(result_path, run_id, [bad_item], export_data)
@@ -374,7 +398,7 @@ def test_import_same_file_twice_is_idempotent(feature_enabled, tmp_path):
     run = CatalogProcessingRun.objects.get(pk=run_id)
     item = run.items.get()
     export_data = _export_run(run_id, tmp_path)
-    result_path = tmp_path / "repeat.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [_result_item(item, drill.slug)], export_data)
 
     first = json.loads(_import_result(result_path, commit=True))
@@ -403,7 +427,7 @@ def test_import_rejects_untrusted_manual_source(feature_enabled, tmp_path):
     run = CatalogProcessingRun.objects.get(pk=run_id)
     export_data = _export_run(run_id, tmp_path)
     item_data = _result_item(run.items.get(), drill.slug, source="manual")
-    result_path = tmp_path / "manual.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [item_data], export_data)
 
     with pytest.raises(CommandError, match="JSON Schema"):
@@ -430,7 +454,7 @@ def test_import_requires_matched_identity(feature_enabled, tmp_path):
     export_data = _export_run(run_id, tmp_path)
     item_data = _result_item(run.items.get(), drill.slug)
     item_data["identity"]["status"] = "partial"
-    result_path = tmp_path / "identity.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [item_data], export_data)
 
     with pytest.raises(CommandError, match="identity.status=matched"):
@@ -455,7 +479,7 @@ def test_import_rejects_taxonomy_or_export_mismatch(feature_enabled, tmp_path):
     )
     run = CatalogProcessingRun.objects.get(pk=run_id)
     export_data = _export_run(run_id, tmp_path)
-    result_path = tmp_path / "taxonomy.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     result = _write_result(
         result_path, run_id, [_result_item(run.items.get(), drill.slug)], export_data
     )
@@ -485,7 +509,7 @@ def test_import_rejects_stale_current_input(feature_enabled, tmp_path):
     run = CatalogProcessingRun.objects.get(pk=run_id)
     export_data = _export_run(run_id, tmp_path)
     item = run.items.get()
-    result_path = tmp_path / "stale.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [_result_item(item, drill.slug)], export_data)
     product.original_name = "Изменённое название после export"
     product.save(update_fields=["original_name"])
@@ -516,7 +540,7 @@ def test_import_rolls_back_whole_item_on_invalid_second_change(feature_enabled, 
     invalid_change = dict(item_data["changes"][0])
     invalid_change["proposed_value"] = {"option_slug": "no-such-option"}
     item_data["changes"].append(invalid_change)
-    result_path = tmp_path / "atomic.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [item_data], export_data)
 
     stats = json.loads(_import_result(result_path, commit=True))
@@ -541,7 +565,7 @@ def test_import_rejects_run_override_mismatch(feature_enabled, tmp_path):
     )
     run = CatalogProcessingRun.objects.get(pk=run_id)
     export_data = _export_run(run_id, tmp_path)
-    result_path = tmp_path / "run-mismatch.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [_result_item(run.items.get(), drill.slug)], export_data)
 
     with pytest.raises(CommandError, match="не совпадает"):
@@ -597,9 +621,10 @@ def test_reexport_rejects_changed_taxonomy(feature_enabled, tmp_path):
         "test-export-taxonomy-change",
     )
     _export_run(run_id, tmp_path)
-    _option(attr, "Перфораторы", "perforatory")
+    # Опция вне canonical manifest: состав БД расходится с manifest.
+    AttributeOption.objects.create(attribute=attr, slug="no-such-canonical", value="Несуществующая")
 
-    with pytest.raises(CommandError, match="Taxonomy изменилась"):
+    with pytest.raises(CommandError, match="canonical taxonomy manifest"):
         call_command(
             "catalog_queue_export",
             "--run",
@@ -642,7 +667,7 @@ def test_import_review_without_changes_marks_needs_review(feature_enabled, tmp_p
     run = CatalogProcessingRun.objects.get(pk=run_id)
     item = run.items.get()
     export_data = _export_run(run_id, tmp_path)
-    result_path = tmp_path / "review.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [_abstain_item(item)], export_data)
 
     result = json.loads(_import_result(result_path, commit=True))
@@ -664,7 +689,7 @@ def test_import_review_dry_run_writes_nothing(feature_enabled, tmp_path):
     run = CatalogProcessingRun.objects.get(pk=run_id)
     item = run.items.get()
     export_data = _export_run(run_id, tmp_path)
-    result_path = tmp_path / "review.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [_abstain_item(item)], export_data)
 
     result = json.loads(_import_result(result_path))
@@ -685,7 +710,7 @@ def test_import_review_commit_replay_is_idempotent(feature_enabled, tmp_path):
     run = CatalogProcessingRun.objects.get(pk=run_id)
     item = run.items.get()
     export_data = _export_run(run_id, tmp_path)
-    result_path = tmp_path / "review.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [_abstain_item(item)], export_data)
 
     first = json.loads(_import_result(result_path, commit=True))
@@ -708,7 +733,7 @@ def test_import_researched_without_changes_is_contract_error(feature_enabled, tm
     item = run.items.get()
     export_data = _export_run(run_id, tmp_path)
     item_data = _abstain_item(item, status="researched")
-    result_path = tmp_path / "researched.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [item_data], export_data)
 
     result = json.loads(_import_result(result_path, commit=True))
@@ -730,7 +755,7 @@ def test_import_unknown_with_changes_rejected(feature_enabled, tmp_path):
     export_data = _export_run(run_id, tmp_path)
     item_data = _result_item(item, drill.slug)
     item_data["status"] = "unknown"
-    result_path = tmp_path / "unknown.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [item_data], export_data)
 
     result = json.loads(_import_result(result_path, commit=True))
@@ -752,7 +777,7 @@ def test_import_identity_failed_with_changes_rejected(feature_enabled, tmp_path)
     export_data = _export_run(run_id, tmp_path)
     item_data = _result_item(item, drill.slug)
     item_data["status"] = "identity_failed"
-    result_path = tmp_path / "identity_failed.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [item_data], export_data)
 
     result = json.loads(_import_result(result_path, commit=True))
@@ -782,7 +807,7 @@ def test_import_changes_with_unmatched_identity_rejected(
     export_data = _export_run(run_id, tmp_path)
     item_data = _result_item(item, drill.slug)
     item_data["identity"]["status"] = identity_status
-    result_path = tmp_path / f"identity-{identity_status}.result.json"
+    result_path = tmp_path / f"{run_id}.json"
     _write_result(result_path, run_id, [item_data], export_data)
 
     with pytest.raises(CommandError, match="identity.status=matched"):
@@ -795,6 +820,7 @@ def test_import_changes_with_unmatched_identity_rejected(
 
 @pytest.mark.django_db
 def test_queue_finalize_command_success(feature_enabled, tmp_path):
+    _tool_type_attr()
     run_id = _make_run("test-queue-finalize-success")
     run = CatalogProcessingRun.objects.get(pk=run_id)
     item = run.items.get()
@@ -812,7 +838,156 @@ def test_queue_finalize_command_success(feature_enabled, tmp_path):
 
 @pytest.mark.django_db
 def test_queue_finalize_command_rejects_pending(feature_enabled):
+    _tool_type_attr()
     run_id = _make_run("test-queue-finalize-pending")
 
     with pytest.raises(CommandError, match="items_not_final"):
         call_command("catalog_queue_finalize", "--run", str(run_id))
+
+
+# --- TT-13 / G1: имя файла сверяется с run_id из JSON ---
+
+
+def _prepare_importable(feature_enabled, tmp_path, idem_key):
+    attr = _tool_type_attr()
+    drill = _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
+    run_id = _make_run(idem_key)
+    run = CatalogProcessingRun.objects.get(pk=run_id)
+    item = run.items.get()
+    export_data = _export_run(run_id, tmp_path)
+    result_path = tmp_path / f"{run_id}.json"
+    _write_result(result_path, run_id, [_result_item(item, drill.slug)], export_data)
+    return run, item, result_path
+
+
+@pytest.mark.django_db
+def test_import_rejects_file_name_mismatch(feature_enabled, tmp_path):
+    """G1: имя файла обязано совпадать с run_id из JSON (fail-closed)."""
+    run, item, result_path = _prepare_importable(feature_enabled, tmp_path, "test-g1-name-mismatch")
+    wrong_path = tmp_path / "wrong-name.json"
+    wrong_path.write_text(result_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    with pytest.raises(CommandError, match="не совпадает с run_id"):
+        _import_result(wrong_path, commit=True)
+
+    assert not CatalogChange.objects.filter(item__run=run).exists()
+
+
+@pytest.mark.django_db
+def test_import_allow_name_mismatch_leaves_trace(feature_enabled, tmp_path):
+    """G1 escape-hatch: --allow-name-mismatch пропускает, но оставляет след."""
+    run, item, result_path = _prepare_importable(
+        feature_enabled, tmp_path, "test-g1-name-mismatch-allow"
+    )
+    wrong_path = tmp_path / "renamed-by-operator.json"
+    wrong_path.write_text(result_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    stats = json.loads(_import_result(wrong_path, commit=True, allow_name_mismatch=True))
+
+    assert stats["created"] == 1
+    assert stats["file_name_mismatch"] == {
+        "file_stem": "renamed-by-operator",
+        "run_id": str(run.pk),
+    }
+    run.refresh_from_db()
+    last_import = run.stats["recent_imports"][-1]
+    assert last_import["file_name_mismatch"] == "renamed-by-operator"
+
+
+# --- TT-13 / G6: очередь привязана к canonical taxonomy manifest ---
+
+
+@pytest.mark.django_db
+def test_create_writes_canonical_taxonomy_identity(feature_enabled, tmp_path):
+    """G6: новый run получает canonical identity_hash манифеста, а не пересчёт от БД."""
+    attr = _tool_type_attr()
+    _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
+
+    run_id = _make_run("test-g6-canonical-identity")
+
+    run = CatalogProcessingRun.objects.get(pk=run_id)
+    manifest = load_manifest()
+    assert run.taxonomy_hash == manifest.identity_hash
+    assert run.taxonomy_hash.startswith("887eea5d")
+    export_data = _export_run(run_id, tmp_path)
+    assert export_data["taxonomy_hash"] == manifest.identity_hash
+
+
+@pytest.mark.django_db
+def test_create_fails_when_db_options_diverge_from_manifest(feature_enabled):
+    """G6: create fail-closed при расхождении состава опций БД с manifest."""
+    attr = _tool_type_attr()
+    AttributeOption.objects.create(attribute=attr, slug="no-such-canonical", value="Несуществующая")
+
+    with pytest.raises(CommandError, match="canonical taxonomy manifest"):
+        _make_run("test-g6-create-diverged")
+
+    assert not CatalogProcessingRun.objects.filter(
+        idempotency_key="test-g6-create-diverged"
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_import_fails_when_db_options_diverge_from_manifest(feature_enabled, tmp_path):
+    """G6: import fail-closed, если состав опций БД изменился после export."""
+    attr = _tool_type_attr()
+    drill = _option(attr, "Дрели и шуруповёрты", "dreli-shurupoverty")
+    run_id = _make_run("test-g6-import-diverged")
+    run = CatalogProcessingRun.objects.get(pk=run_id)
+    item = run.items.get()
+    export_data = _export_run(run_id, tmp_path)
+    result_path = tmp_path / f"{run_id}.json"
+    _write_result(result_path, run_id, [_result_item(item, drill.slug)], export_data)
+    AttributeOption.objects.create(attribute=attr, slug="no-such-canonical", value="Несуществующая")
+
+    with pytest.raises(CommandError, match="canonical taxonomy manifest"):
+        _import_result(result_path, commit=True)
+
+    assert not CatalogChange.objects.filter(item__run=run).exists()
+
+
+# --- Старые проверки не ослабли ---
+
+
+@pytest.mark.django_db
+def test_import_rejects_export_checksum_mismatch(feature_enabled, tmp_path):
+    """export_checksum из файла сверяется с последним export run."""
+    run, item, result_path = _prepare_importable(
+        feature_enabled, tmp_path, "test-guard-export-checksum"
+    )
+    data = json.loads(result_path.read_text(encoding="utf-8"))
+    data["export_checksum"] = "0" * 64
+    result_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+    with pytest.raises(CommandError, match="export_checksum"):
+        _import_result(result_path, commit=True)
+
+    assert not CatalogChange.objects.filter(item__run=run).exists()
+
+
+@pytest.mark.django_db
+def test_import_rejects_non_running_run(feature_enabled, tmp_path):
+    """Импорт разрешён только в status=running."""
+    run, item, result_path = _prepare_importable(
+        feature_enabled, tmp_path, "test-guard-not-running"
+    )
+    item.status = CatalogProcessingItemStatus.COMPLETED
+    item.save(update_fields=["status"])
+    call_command("catalog_queue_finalize", "--run", str(run.pk))
+
+    with pytest.raises(CommandError, match="status=running"):
+        _import_result(result_path, commit=True)
+
+    assert not CatalogChange.objects.filter(item__run=run).exists()
+
+
+@pytest.mark.django_db
+def test_import_rejects_path_traversal(feature_enabled):
+    """Path traversal запрещён независимо от прочих флагов."""
+    with pytest.raises(CommandError, match="Path traversal"):
+        call_command(
+            "catalog_queue_import",
+            "--file",
+            "../outside.json",
+            "--allow-external-path",
+        )
