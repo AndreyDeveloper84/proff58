@@ -101,8 +101,12 @@ class Category(MP_Node):
     node_order_by = ["sort_order", "name"]
 
     class Meta:
-        verbose_name = _("Категория")
-        verbose_name_plural = _("Категории")
+        # Полное дерево, включая легаси-узлы, зеркалящие группы 1С. Рабочее
+        # дерево витрины — SiteCategory («Категории»), оно и стоит в меню;
+        # это остаётся в служебном разделе (на staging тут ~136 легаси-узлов,
+        # в которых ещё висят товары, поэтому убрать совсем нельзя).
+        verbose_name = _("Категория (все узлы, вкл. 1С)")
+        verbose_name_plural = _("Категории: все узлы (вкл. 1С)")
 
     def __str__(self) -> str:
         return self.name
@@ -301,8 +305,8 @@ class CategoryMappingRule(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = _("Правило сопоставления")
-        verbose_name_plural = _("Правила сопоставления")
+        verbose_name = _("Правило автораскладки")
+        verbose_name_plural = _("Автораскладка товаров по категориям")
         ordering = ["priority", "id"]
 
     def __str__(self) -> str:
@@ -407,8 +411,9 @@ class SiteCategory(Category):
 
     class Meta:
         proxy = True
-        verbose_name = _("Категория (сайт)")
-        verbose_name_plural = _("Категории (сайт)")
+        # Рабочее дерево витрины — именно оно называется «Категории» в меню.
+        verbose_name = _("Категория")
+        verbose_name_plural = _("Категории")
 
 
 class ProductStatus(models.TextChoices):
@@ -984,8 +989,8 @@ class ModerationProduct(Product):
 
     class Meta:
         proxy = True
-        verbose_name = _("Товар на модерации")
-        verbose_name_plural = _("Очередь модерации обогащения")
+        verbose_name = _("Товар с AI-описанием")
+        verbose_name_plural = _("Проверить AI-описания")
 
 
 # #517: ProductAvailabilitySubscription вынесена в отдельный модуль (прецедент —
