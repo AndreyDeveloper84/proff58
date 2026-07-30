@@ -1201,3 +1201,32 @@ def test_attribute_coverage_command_counts():
     report = out.getvalue()
     assert "товаров 1" in report
     assert "voltage" in report and "100%" in report
+
+# --- CAT-10 якорь: svar-electrody / str-valiki / str-kisti ------------------
+
+
+def _by_slug_for(rules: AttributeRules, tt: str, name: str):
+    return {v.slug: v for v in rules.extract(tt, name)}
+
+
+@pytest.mark.parametrize(
+    "tt,name,expected",
+    [
+        ("svar-electrody", "Электрод вольфрамовый WC-20 ф 2,0/175", Decimal("2.0")),
+        ("svar-electrody", "Электрод вольфрамовый WC-20 ф 2,4/175 синий", Decimal("2.4")),
+        ("svar-electrody", "Электрод вольфрамовый WL-20 ф 3,2", Decimal("3.2")),
+        ("str-valiki", "Валик  70мм велюровый мини FIT", Decimal("70")),
+        ("str-valiki", "Валик 100мм меховой FIT", Decimal("100")),
+        ("str-valiki", "Валик 100х15мм СИНТЕКС ЗУБР мастер", Decimal("100")),
+        ("str-kisti", "Кисть круглая  30мм STAYER UNIVERSAL светлая щетина, дерев ручка", Decimal("30")),
+        ("str-kisti", "Кисть круглая  70мм STAYER UNIVERSAL светлая щетина, дерев ручка", Decimal("70")),
+        ("str-kisti", "Кисть круглая №  4 ф25мм, натуральная светлая щетина FIT", Decimal("25")),
+    ],
+)
+def test_cat10_rescued_rules_extract_numbers(rules, tt, name, expected):
+    assert tt in {"svar-electrody", "str-valiki", "str-kisti"}
+    attr = {"svar-electrody": "diameter", "str-valiki": "length", "str-kisti": "diameter"}[tt]
+    found = _by_slug_for(rules, tt, name)
+    value = found.get(attr)
+    assert value is not None, f"{attr} not extracted from {name!r}"
+    assert value.number == expected
