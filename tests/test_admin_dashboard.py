@@ -50,7 +50,8 @@ def test_товар_без_категории_попадает_в_очередь
     catalog = next(g for g in groups if g["title"] == "Товары")
     labels = {c["label"] for c in catalog["cards"]}
 
-    assert "Требуют внимания" in labels
+    # Карточка ведёт не в список, а в конвейер разбора — это и есть работа.
+    assert "Разобрать каталог" in labels
     assert "Без категории" in labels
 
 
