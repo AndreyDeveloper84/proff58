@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
 from django.db import transaction
-from django.db.models import Count, IntegerField, OuterRef, Q, Subquery, Value
+from django.db.models import Count, IntegerField, OuterRef, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils.html import format_html, format_html_join
@@ -16,7 +16,7 @@ from apps.core.events import EventSource, product_created, product_updated
 from apps.pricing.models import PriceRecord
 from apps.pricing.services import WHOLESALE, price_for
 
-from . import processing
+from . import processing, queues
 from .availability_subscriptions import ProductAvailabilitySubscription
 from .models import (
     Attribute,
@@ -377,7 +377,7 @@ class UncategorizedFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() == "no":
-            return queryset.filter(category__isnull=True)
+            return queues.without_category(queryset)
         if self.value() == "yes":
             return queryset.filter(category__isnull=False)
         return queryset
@@ -409,13 +409,35 @@ class ModerationQueueFilter(admin.SimpleListFilter):
         if value == "imported":
             return queryset.filter(status=ProductStatus.IMPORTED)
         if value == "attention":
-            # Не опубликован И (без категории ИЛИ статус imported/needs_review).
-            # Точную нехватку обязательных характеристик на уровне SQL не ловим —
-            # её видно в колонке moderation_reason.
-            return queryset.exclude(status=ProductStatus.PUBLISHED).filter(
-                Q(category__isnull=True)
-                | Q(status__in=[ProductStatus.IMPORTED, ProductStatus.NEEDS_REVIEW])
-            )
+            return queues.needs_attention(queryset)
+        return queryset
+
+
+class ContentGapFilter(admin.SimpleListFilter):
+    """Чего товару не хватает для витрины — фото, описания, цены.
+
+    Это «полки»: человек не собирает фильтр, а открывает готовую выборку и
+    работает, пока она не опустеет. Ссылки на них лежат в меню (custom_links).
+    """
+
+    title = _("Чего не хватает")
+    parameter_name = "content"
+
+    def lookups(self, request, model_admin):
+        return [
+            ("no_image", _("Нет фото")),
+            ("no_description", _("Нет описания")),
+            ("no_price", _("Нет цены")),
+        ]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == "no_image":
+            return queues.without_image(queryset)
+        if value == "no_description":
+            return queues.without_description(queryset)
+        if value == "no_price":
+            return queues.without_price(queryset)
         return queryset
 
 
@@ -564,6 +586,7 @@ class ProductAdmin(admin.ModelAdmin):
         "status",
         ModerationQueueFilter,
         UncategorizedFilter,
+        ContentGapFilter,
         "stock_status",
         "is_active",
         BrandFilter,

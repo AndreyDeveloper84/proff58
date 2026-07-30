@@ -96,8 +96,11 @@ class Promotion(TimeStampedModel):
     )
 
     class Meta:
-        verbose_name = _("Акция")
-        verbose_name_plural = _("Акции")
+        # Дубль-ловушка: скидочная механика — это promotions.Promotion («Скидки и
+        # промокоды»). Здесь только страница-рассказ об акции на витрине, ценами
+        # она не управляет — поэтому в названии это сказано прямо.
+        verbose_name = _("Страница акции")
+        verbose_name_plural = _("Страницы акций (без скидок)")
         ordering = ["-starts_at", "-created_at"]
 
     def __str__(self) -> str:

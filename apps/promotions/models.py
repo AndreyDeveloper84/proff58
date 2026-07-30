@@ -79,8 +79,9 @@ class Promotion(TimeStampedModel):
     )
 
     class Meta:
-        verbose_name = _("Акция")
-        verbose_name_plural = _("Акции")
+        # См. content.Promotion — там страница про акцию. Здесь настоящая скидка.
+        verbose_name = _("Скидка / промокод")
+        verbose_name_plural = _("Скидки и промокоды")
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(

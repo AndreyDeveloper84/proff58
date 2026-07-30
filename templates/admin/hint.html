@@ -1,0 +1,9 @@
+{% comment %}
+Плашка-объяснение над списком: что это за раздел и что здесь делать.
+Подключается из change_list.html конкретной модели через
+{% include "admin/hint.html" with title="…" text="…" %}
+{% endcomment %}
+<div class="callout callout-info" style="margin: 0 0 1rem; border-left-width: 4px;">
+  {% if title %}<h6 style="margin: 0 0 .35rem; font-weight: 700;">{{ title }}</h6>{% endif %}
+  <div style="font-size: .9rem; line-height: 1.45;">{{ text|safe }}</div>
+</div>
