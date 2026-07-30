@@ -640,6 +640,21 @@ class ProductAdmin(admin.ModelAdmin):
     autocomplete_fields = ["category"]
     list_select_related = ("category",)
 
+    def response_change(self, request, obj):
+        """Кнопка «Сохранить и следующий →»: правка потоком, без возврата в список."""
+        if "_save_and_next" in request.POST:
+            nxt = moderation.next_after(obj)
+            if nxt is None:
+                self.message_user(
+                    request,
+                    f"Сохранено: {obj.name}. Это был последний товар.",
+                    level=messages.INFO,
+                )
+                return redirect("admin:catalog_product_changelist")
+            self.message_user(request, f"Сохранено: {obj.name}", level=messages.SUCCESS)
+            return redirect("admin:catalog_product_change", nxt.pk)
+        return super().response_change(request, obj)
+
     def get_urls(self):
         return [
             path(

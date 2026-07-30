@@ -53,6 +53,18 @@ def next_product(after_id: int | None = None) -> Product | None:
     return qs.first()
 
 
+def next_after(product: Product) -> Product | None:
+    """Следующий товар для потоковой правки в обычной карточке.
+
+    Если товар сейчас в очереди разбора — ведём по очереди (это и есть работа).
+    Иначе просто следующий по номеру: человек может править и опубликованные,
+    и прыгать его в чужую очередь было бы неожиданно.
+    """
+    if queue().filter(pk=product.pk).exists():
+        return next_product(after_id=product.pk)
+    return Product.objects.filter(pk__gt=product.pk).order_by("pk").first()
+
+
 def attribute_field(category_attribute: CategoryAttribute) -> forms.Field:
     """Поле формы под тип характеристики."""
     attribute = category_attribute.attribute
