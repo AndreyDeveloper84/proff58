@@ -365,6 +365,36 @@
         "tt-kobury-dlya-instrumenta-kobura"
       ],
       "source_group": "Средства индивидуальной защиты"
+    },
+    {
+      "article": "PXC Impaxxo 18/400",
+      "fixture_ref": "fix-dreli-shurupoverty-gaikovert-434",
+      "name": "Гайковерт аккумуляторный Einhell PXC Impaxxo 18/400, 18В, 400Нм без АКБ и ЗУ",
+      "note": "product_id=434; гайковёрт в sg=Аккумуляторный инструмент — keyword 'гайковерт' не покрывается правилом 'шуруп/дрель/винтоверт'.",
+      "rule_refs": [
+        "tt-dreli-shurupoverty-shurupovert"
+      ],
+      "source_group": "Аккумуляторный инструмент"
+    },
+    {
+      "article": "34161",
+      "fixture_ref": "fix-molotki-otvertka-34161",
+      "name": "Отвертка шоферская под молоток с дер. щечками 160м",
+      "note": "product_id=34161; 'отвёртка под молоток' — отвёртка, не молоток; исключается negative keyword 'отвертк'.",
+      "rule_refs": [
+        "tt-molotki-molotok"
+      ],
+      "source_group": "Слесарно-столярный инструмент"
+    },
+    {
+      "article": "10631",
+      "fixture_ref": "fix-izm-niveliry-derzhatel-10631",
+      "name": "Держатель клипса универсальный шарнирный KRAFTOOL MM2",
+      "note": "product_id=10631; держатель в sg=Измерительный инструмент без токена 'нивелир'.",
+      "rule_refs": [
+        "tt-izm-niveliry-nivelir"
+      ],
+      "source_group": "Измерительный инструмент"
     }
   ],
   "note": "approved 2026-07-22, Phase 7C Stage 2.7 per-rule review (27/29 rules accepted, incl. 1 modified); base tool_type.v1 + 27 new rules",
@@ -507,7 +537,8 @@
       "note": "Держатели KRAFTOOL в sg=Измерительный инструмент (provenance = applied changes).",
       "option_slug": "izm-shtativy",
       "rule_ref": "tt-izm-shtativy-derzhatel",
-      "tier": "candidate"
+      "tier": "candidate",
+      "negative_keywords": ["нивелир"]
     },
     {
       "derived_from": [
@@ -617,7 +648,8 @@
       "note": "Ломы (Хозтовары) + гвоздодёры (Строительно-отделочный) → один tool_type.",
       "option_slug": "lomy-gvozdodery",
       "rule_ref": "tt-lomy-gvozdodery-lom",
-      "tier": "candidate"
+      "tier": "candidate",
+      "negative_keywords": ["молоток"]
     },
     {
       "derived_from": [
@@ -690,7 +722,8 @@
       "note": "Аккумуляторные фонари.",
       "option_slug": "fonari",
       "rule_ref": "tt-fonari-akkum",
-      "tier": "candidate"
+      "tier": "candidate",
+      "negative_keywords": ["шуруп", "дрель", "винтоверт", "яяшуруп"]
     },
     {
       "derived_from": [
@@ -1071,6 +1104,40 @@
       "note": "Кобуры для шуруповёртов; буквальное соответствие slug.",
       "option_slug": "kobury-dlya-instrumenta",
       "rule_ref": "tt-kobury-dlya-instrumenta-kobura",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [777, 778],
+      "match": {
+        "original_name_keywords_any": ["шуруп", "дрель", "винтоверт"],
+        "source_group_any": ["Электроинструмент", "Аккумуляторный инструмент"]
+      },
+      "note": "Дрели, шуруповёрты и винтоверты. 'гайковерт' и 'отвертк' исключены — у них свои типы (TT-08).",
+      "option_slug": "dreli-shurupoverty",
+      "rule_ref": "tt-dreli-shurupoverty-shurupovert",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [37445, 37446],
+      "match": {
+        "original_name_keywords_any": ["молоток"],
+        "source_group_any": ["Слесарно-столярный инструмент", "Строительно-отделочный инструмент"]
+      },
+      "negative_keywords": ["отб", "пневмо", "отвертк"],
+      "note": "Молотки столярные/слесарные. Отбойные и пневмомолотки исключены negative keywords; 'отвертк' отсекает 'отвёртка под молоток'.",
+      "option_slug": "molotki",
+      "rule_ref": "tt-molotki-molotok",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [11141, 11156],
+      "match": {
+        "original_name_keywords_any": ["нивелир"],
+        "source_group_any": ["Измерительный инструмент"]
+      },
+      "note": "Лазерные и оптические нивелиры.",
+      "option_slug": "izm-niveliry",
+      "rule_ref": "tt-izm-niveliry-nivelir",
       "tier": "candidate"
     }
   ],

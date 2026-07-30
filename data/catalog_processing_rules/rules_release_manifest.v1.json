@@ -33,20 +33,20 @@
         "path": "data/catalog_processing_rules/applied_corpus_tool_type.v1.json"
       },
       "gate_sample": {
-        "artifact_sha256": "1442deeae498d657388330cc28961e8d036445b8663de468ba5097a4b7067e9f",
+        "artifact_sha256": "5980c80b67c2eab7cadcc0bdda1a6e35804baebefb84158a5ed14dd93358bb63",
         "path": "apps/catalog/tests/fixtures/phase7d-gate-sample-official.json",
         "rows": 103
       },
       "labels": {
-        "artifact_sha256": "8b1a0d30b24617119482284084e62e381a22b3a9109c8e1f2087e0ba5a8829a6",
+        "artifact_sha256": "28bcb6227af76662d7c3875afc57ac71056d8442d5ab51f5bd9bcddcd73e4cba",
         "labels": 103,
         "path": "apps/catalog/tests/fixtures/phase7d-labels.json"
       },
       "ruleset": {
-        "artifact_sha256": "ff449701939e993e6bf3e0d68de20d07a672884a54df602c7b2807316f8728ec",
+        "artifact_sha256": "41fecb39e71f2a545bd473bc0751a609d58784ceac7f540cee669f8d8d97ca6f",
         "path": "data/catalog_processing_rules/tool_type.v2.json",
-        "rules": 38,
-        "ruleset_hash": "9bf0271a61e729a900cda57705bdf785b96496efc462448894b27650a04bf330",
+        "rules": 41,
+        "ruleset_hash": "6231d84309f538b1aa0fa82991bc4e9a0b6c304a714c8bab817f128d944f31cc",
         "ruleset_id": "tool_type.v2",
         "version": 1
       },
@@ -62,5 +62,5 @@
     "matcher_version": "1.0",
     "schema_version": 1
   },
-  "canonical_hash": "a9963c7d59a175d1ed85a8ad9373b1b0f3fe7ab40623778aaeb7b0a94af01e62"
+  "canonical_hash": "e54943cb2ca0ac7ac4c7dca07d55d6231fc0997056016cee334ac99b0f076e9b"
 }
