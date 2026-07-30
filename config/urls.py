@@ -18,6 +18,7 @@ urlpatterns = [
     ),  # #521
     path("api/1c/", include("apps.sync_1c.api.urls")),
     path("api/catalog/", include("apps.catalog.api.urls")),
+    path("api/content/", include("apps.content.api.urls")),
     path("api/payments/", include("apps.payments.urls")),
     path("api/max/", include("apps.integration_max.urls")),
     path("api/", include("apps.integration_max.api.urls")),

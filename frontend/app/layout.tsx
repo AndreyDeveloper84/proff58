@@ -5,6 +5,7 @@ import { CartProvider } from "@/components/cart/CartProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { THEME_INIT_SCRIPT } from "@/components/layout/ThemeToggle";
+import { getInfoPageLinks } from "@/lib/info-pages";
 import { getSiteTheme } from "@/lib/theme";
 import { resolveStorefront } from "@/lib/site";
 import "./globals.css";
@@ -50,7 +51,9 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const theme = await getSiteTheme();
+  // Тема и список инфо-страниц — независимые запросы, поэтому параллельно:
+  // последовательные добавили бы задержку к КАЖДОЙ странице сайта.
+  const [theme, infoPages] = await Promise.all([getSiteTheme(), getInfoPageLinks()]);
   const storefront = resolveStorefront(theme);
 
   // Тема: светлая по макету (#477) — она же серверный рендер. Реальную тему
@@ -81,7 +84,12 @@ export default async function RootLayout({
           <div className="flex min-h-screen flex-col">
             <Header logoUrl={theme.logo_url} siteName={theme.name} storefront={storefront} />
             <div className="flex-1">{children}</div>
-            <Footer logoUrl={theme.logo_url} siteName={theme.name} storefront={storefront} />
+            <Footer
+              logoUrl={theme.logo_url}
+              siteName={theme.name}
+              storefront={storefront}
+              infoPages={infoPages}
+            />
           </div>
         </CartProvider>
       </body>

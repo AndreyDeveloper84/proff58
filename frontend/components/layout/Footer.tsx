@@ -8,6 +8,7 @@ import {
   MessageSquareText,
   Phone,
 } from "lucide-react";
+import type { InfoPageLink } from "@/lib/info-pages";
 import { qrSvgPath } from "@/lib/qr";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
 
@@ -19,10 +20,14 @@ export function Footer({
   logoUrl,
   siteName = SITE.brand.name,
   storefront = resolveStorefront(),
+  infoPages = [],
 }: {
   logoUrl?: string;
   siteName?: string;
   storefront?: ResolvedStorefront;
+  /** Страницы из админки («Доставка», «О компании»). Пусто — раздела нет:
+      правило подвала «не подменять отсутствующие разделы решёткой» сохраняется. */
+  infoPages?: InfoPageLink[];
 }) {
   // Генерируем из той же ссылки, по которой ведёт карточка: статичной картинке в
   // public пришлось бы помнить о смене max_url в SiteSettings — она бы протухла.
@@ -77,6 +82,23 @@ export function Footer({
             </ul>
           </nav>
         ))}
+
+        {/* Информационные страницы — ведутся в админке, поэтому колонка
+            появляется, только когда там что-то опубликовано. */}
+        {infoPages.length > 0 && (
+          <nav aria-label="Информация">
+            <h2 className="mb-2 font-sans text-xs font-bold text-ink">Информация</h2>
+            <ul className="space-y-1 text-[11px] leading-[1.35]">
+              {infoPages.map((page) => (
+                <li key={page.slug} className="leading-[1.35]">
+                  <Link href={`/info/${page.slug}`} className="text-ink-2 hover:text-accent">
+                    {page.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
 
         {/* Контакты + «Мы в мессенджерах» */}
         <div>
