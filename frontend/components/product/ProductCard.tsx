@@ -5,6 +5,7 @@ import { Clock, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
+import { CompareButton } from "./CompareButton";
 import { ProductImage } from "./ProductImage";
 import { ProductPrice } from "./ProductPrice";
 import { ProductSpecs } from "./ProductSpecs";
@@ -56,9 +57,13 @@ export function ProductCard({
   view = "grid",
   showFavorite = true,
   variant = "default",
+  className,
 }: {
   product: Product;
   view?: "grid" | "list";
+  // Ширина/растяжение задаются местом использования: в карусели главной
+  // карточка тянется на всю ячейку дорожки, чтобы ряд был ровным.
+  className?: string;
   // Избранное — Wave 2: сердце присутствует в шаблоне по референсу, но это ещё не
   // завершённая функция (локальное визуальное состояние, без бэкенда/персистентности).
   showFavorite?: boolean;
@@ -128,11 +133,13 @@ export function ProductCard({
         data-event="product_card_click"
         data-product-id={product.id}
         className={cn(
-          // Высота без полосы «Консультация в MAX»: в ряду из восьми карточек она
-          // повторяла один и тот же CTA восемь раз и перебивала «В корзину».
-          // Канал MAX остался в hero главной и в подвале сайта.
-          "relative flex h-[192px] flex-col overflow-hidden rounded-sm border border-line bg-surface",
+          // min-h, а не жёсткая высота: при h-[192px] строка характеристик
+          // срезалась ровно посередине букв, а кнопка «Сообщить о поступлении»
+          // вылезала за нижнюю границу. Ряд выравнивается растяжением карточек
+          // (items-stretch у дорожки карусели), поэтому разной высоты не будет.
+          "relative flex min-h-[192px] flex-col overflow-hidden rounded-sm border border-line bg-surface",
           dimmed && "opacity-70",
+          className,
         )}
       >
         <div className="absolute left-2 top-2 z-10 flex gap-1">
@@ -215,7 +222,10 @@ export function ProductCard({
               <StatusLabel product={product} />
               {hitBadge}
             </div>
-            <div className="-my-1.5">{heart}</div>
+            <div className="-my-1.5 flex items-center">
+              <CompareButton slug={product.slug} />
+              {heart}
+            </div>
           </div>
           <p className="text-xs text-ink-3">{product.brand}</p>
           <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
@@ -239,18 +249,22 @@ export function ProductCard({
         dimmed && "opacity-70",
       )}
     >
-      {/* items-center, а не items-start: у сердца кнопка 44×44 с иконкой по
-          центру, и при выравнивании по верху текст статуса вставал заметно выше
-          иконки — строка выглядела съехавшей. -my-1.5 гасит лишнюю высоту
-          hit-area, чтобы она не раздвигала шапку карточки. */}
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <StatusLabel product={product} />
-          {hitBadge}
-        </div>
-        {showFavorite ? <div className="-my-1.5">{heart}</div> : null}
+      {/* В шапке — только статус и бейдж. Кнопки отсюда убраны: в плитке
+          шириной ~165px «Нет в наличии» плюс две круглые кнопки в строку не
+          помещаются, и сравнение наезжало на текст статуса. */}
+      <div className="mb-2 flex min-w-0 items-center gap-1.5">
+        <StatusLabel product={product} />
+        {hitBadge}
       </div>
-      <div className="mb-3">{media}</div>
+      {/* Избранное и сравнение — поверх фото, в правом верхнем углу: там место
+          есть при любой ширине плитки, а скидочный бейдж живёт в левом. */}
+      <div className="relative mb-3">
+        {media}
+        <div className="absolute right-0 top-0 z-10 flex flex-col items-center rounded-full bg-surface/85 backdrop-blur-sm">
+          {showFavorite ? heart : null}
+          <CompareButton slug={product.slug} />
+        </div>
+      </div>
       <p className="text-xs text-ink-3">{product.brand}</p>
       <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
         {title}

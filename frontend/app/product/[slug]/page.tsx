@@ -12,6 +12,7 @@ import { ProductReviews } from "@/components/product/ProductReviews";
 import { StickyBuyBar } from "@/components/product/StickyBuyBar";
 import { ProductJsonLd } from "@/components/product/ProductJsonLd";
 import { Collapsible } from "@/components/product/Collapsible";
+import { CompareButton } from "@/components/product/CompareButton";
 import { ShareButton } from "@/components/product/ShareButton";
 import { ProductVideo } from "@/components/product/ProductVideo";
 
@@ -81,7 +82,10 @@ export default async function ProductPage({ params }: Props) {
             </a>
           </span>
         ))}
-        <span className="flex items-center gap-1">
+        {/* Название товара в крошках — только с sm. На телефоне оно занимало
+            две строки из четырёх и дублировало заголовок, который идёт следом;
+            в разметке для поисковиков (ProductJsonLd) цепочка остаётся полной. */}
+        <span className="hidden items-center gap-1 sm:flex">
           <span aria-hidden>›</span>
           <span className="text-ink-2">{product.name}</span>
         </span>
@@ -116,7 +120,10 @@ export default async function ProductPage({ params }: Props) {
           )}
           <div className="flex items-center justify-between gap-3">
             <ProductBadges badges={product.badges} discountPct={product.price.discountPct} />
-            <ShareButton title={product.name} />
+            <div className="flex items-center gap-2">
+              <CompareButton slug={product.slug} variant="wide" />
+              <ShareButton title={product.name} />
+            </div>
           </div>
           <ProductAvailability stock={product.stock} stockQty={product.stockQty} />
           <div

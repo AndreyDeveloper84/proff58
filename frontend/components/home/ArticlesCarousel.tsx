@@ -69,7 +69,7 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
             onClick={() => scrollBy(-1)}
             disabled={atStart}
             aria-label="Предыдущие статьи"
-            className="grid h-6 w-6 place-items-center rounded-sm border border-line bg-surface text-ink-2 transition hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink-2"
+            className="grid h-11 w-11 place-items-center rounded-sm border border-line bg-surface sm:h-6 sm:w-6 text-ink-2 transition hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink-2"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
           </button>
@@ -78,7 +78,7 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
             onClick={() => scrollBy(1)}
             disabled={atEnd}
             aria-label="Следующие статьи"
-            className="grid h-6 w-6 place-items-center rounded-sm border border-line bg-surface text-ink-2 transition hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink-2"
+            className="grid h-11 w-11 place-items-center rounded-sm border border-line bg-surface sm:h-6 sm:w-6 text-ink-2 transition hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink-2"
           >
             <ChevronRight className="h-4 w-4" aria-hidden />
           </button>

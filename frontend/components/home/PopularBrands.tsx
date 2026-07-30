@@ -2,16 +2,20 @@ import Link from "next/link";
 import { HOME_CONTENT } from "@/lib/home-content";
 import { cn } from "@/lib/utils";
 
+// Wordmark'и брендов: фирменный цвет для светлой темы и осветлённый — для
+// тёмной. Без второго тёмные марки (#111 у AEG и Stanley, глубокий бирюзовый у
+// Makita) на чёрном фоне сливались с ним и блок читался наполовину пустым.
 const BRAND_STYLES: Record<string, string> = {
-  Makita: "font-black italic tracking-[-0.06em] text-[#173c48]",
-  Bosch: "font-black tracking-[-0.04em] text-[#e1262f]",
-  DeWALT: "font-black tracking-[-0.06em] text-[#111] [text-shadow:2px_0_0_#ffd400]",
-  Metabo: "font-black tracking-[-0.06em] text-[#264f45]",
-  AEG: "font-black tracking-[-0.05em] text-[#111]",
-  Milwaukee: "font-bold italic tracking-[-0.08em] text-[#e32329]",
-  Hilti: "font-black tracking-[-0.03em] text-[#df2c2c]",
-  Stanley: "font-black tracking-[-0.03em] text-[#111]",
-  Ресанта: "font-black tracking-[-0.05em] text-[#e12d2d]",
+  Makita: "font-black italic tracking-[-0.06em] text-[#173c48] dark:text-[#3ea9cf]",
+  Bosch: "font-black tracking-[-0.04em] text-[#e1262f] dark:text-[#f4525a]",
+  DeWALT:
+    "font-black tracking-[-0.06em] text-[#111] [text-shadow:2px_0_0_#ffd400] dark:text-[#ffd400] dark:[text-shadow:none]",
+  Metabo: "font-black tracking-[-0.06em] text-[#264f45] dark:text-[#4fae8b]",
+  AEG: "font-black tracking-[-0.05em] text-[#111] dark:text-[#f2f2f2]",
+  Milwaukee: "font-bold italic tracking-[-0.08em] text-[#e32329] dark:text-[#f4595e]",
+  Hilti: "font-black tracking-[-0.03em] text-[#df2c2c] dark:text-[#f0585a]",
+  Stanley: "font-black tracking-[-0.03em] text-[#111] dark:text-[#f2f2f2]",
+  Ресанта: "font-black tracking-[-0.05em] text-[#e12d2d] dark:text-[#f2585a]",
 };
 
 // Отдельного backend-маршрута бренда нет, поэтому рабочий путь остаётся
