@@ -14,8 +14,14 @@ import pytest
 from django.contrib.admin.sites import AdminSite
 from django.utils import timezone
 
-from apps.content.admin import NOT_WIRED_TEMPLATE, ArticleAdmin, BannerAdmin
+from apps.content.admin import (
+    NOT_WIRED_TEMPLATE,
+    ArticleAdmin,
+    BannerAdmin,
+)
+from apps.content.admin import PromotionAdmin as SEOPromoAdmin
 from apps.content.models import Article, Banner
+from apps.content.models import Promotion as ContentPromotion
 from apps.promotions.admin import PromotionAdmin
 from apps.promotions.models import DiscountType, PromoScope, Promotion
 
@@ -78,7 +84,16 @@ def test_автоматическая_и_кодовая_различимы(ад�
     assert "SALE10" in админ.kind(_promo(promo_code="sale10"))
 
 
-@pytest.mark.parametrize("admin_cls,model", [(ArticleAdmin, Article), (BannerAdmin, Banner)])
+@pytest.mark.parametrize(
+    "admin_cls,model", [(BannerAdmin, Banner), (SEOPromoAdmin, ContentPromotion)]
+)
 def test_неподключённый_контент_предупреждает(admin_cls, model):
-    """Витрина apps.content не читает — человек не должен заполнять его вслепую."""
+    """Баннеры и промо-страницы витрина по-прежнему не читает — человек не
+    должен заполнять их вслепую."""
     assert admin_cls(model, AdminSite()).change_list_template == NOT_WIRED_TEMPLATE
+
+
+def test_статьи_больше_не_предупреждают():
+    """Статьи подключены к витрине (/api/content/articles/) — предупреждение
+    стало бы неправдой и мешало бы работать."""
+    assert ArticleAdmin(Article, AdminSite()).change_list_template != NOT_WIRED_TEMPLATE

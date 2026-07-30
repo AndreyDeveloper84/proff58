@@ -9,4 +9,6 @@ _SLUG = r"(?P<slug>[-\w]+)"  # как в catalog/reviews: кириллическ
 urlpatterns = [
     path("pages/", views.InfoPageListView.as_view(), name="info-pages"),
     re_path(rf"^pages/{_SLUG}/$", views.InfoPageDetailView.as_view(), name="info-page"),
+    path("articles/", views.ArticleListView.as_view(), name="articles"),
+    re_path(rf"^articles/{_SLUG}/$", views.ArticleDetailView.as_view(), name="article"),
 ]
