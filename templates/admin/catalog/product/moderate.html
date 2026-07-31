@@ -1,0 +1,110 @@
+{% extends "admin/base_site.html" %}
+
+{% comment %}
+Конвейер модерации: один товар, только нужные поля, три кнопки и сразу
+следующий. Цель — убрать навигацию из самой объёмной ручной работы проекта.
+{% endcomment %}
+
+{% block content %}
+<style>
+  .mod-wrap { max-width: 58rem; }
+  .mod-head { display:flex; align-items:baseline; gap:.75rem; flex-wrap:wrap; margin-bottom:.75rem; }
+  .mod-left { font-size:.85rem; opacity:.6; }
+  .mod-card { border:1px solid rgba(128,128,128,.25); border-radius:.5rem; padding:1rem 1.15rem; }
+  .mod-photos { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.9rem; }
+  .mod-photos img { height:96px; width:130px; object-fit:contain; background:#f4f4f4; border-radius:4px; }
+  .mod-nophoto { padding:1.5rem; border:1px dashed rgba(128,128,128,.4); border-radius:4px; opacity:.55; font-size:.9rem; }
+  .mod-src { font-size:.85rem; opacity:.7; margin-bottom:.9rem; }
+  .mod-row { margin-bottom:.7rem; }
+  .mod-row label { display:block; font-weight:600; margin-bottom:.15rem; }
+  .mod-row input[type=text], .mod-row input[type=number], .mod-row select, .mod-row textarea { width:100%; max-width:32rem; }
+  .mod-attrs { border-top:1px solid rgba(128,128,128,.2); margin-top:1rem; padding-top:.9rem; }
+  .mod-actions { margin-top:1.2rem; display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
+  .mod-checks { margin:0 0 1rem; padding:0; list-style:none; font-size:.9rem; }
+  .mod-bar { height:6px; border-radius:3px; background:rgba(128,128,128,.2); margin:.3rem 0 .8rem; }
+  .mod-bar div { height:6px; border-radius:3px; }
+</style>
+
+<div class="mod-wrap">
+{% if not product %}
+  <div class="mod-card" style="background:rgba(40,167,69,.08);">
+    <h2 style="margin-top:0;">Очередь пуста</h2>
+    <p>Все товары разобраны — категории проставлены, обязательные характеристики заполнены.</p>
+    <a class="button default" href="{% url 'admin:catalog_product_changelist' %}">К списку товаров</a>
+  </div>
+{% else %}
+  <div class="mod-head">
+    <h2 style="margin:0;">{{ product.name }}</h2>
+    <span class="mod-left">осталось разобрать: {{ left }}</span>
+  </div>
+
+  {% if publish_errors %}
+  <div class="callout callout-danger" style="border-left-width:4px;">
+    <b>Опубликовать пока нельзя:</b>
+    <ul style="margin:.3rem 0 0 1.1rem;">{% for e in publish_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+
+  <div class="mod-card">
+    <div class="mod-photos">
+      {% for image in product.images.all %}
+        <img src="{{ image.image.url }}" alt="">
+      {% empty %}
+        <div class="mod-nophoto">Фотографий нет</div>
+      {% endfor %}
+    </div>
+
+    <div class="mod-src">
+      Артикул {{ product.article|default:"—" }} · код 1С {{ product.code_1c|default:"—" }} ·
+      цена {{ product.price|default:"—" }} {{ product.currency }} ·
+      из 1С: «{{ product.original_name|default:product.name }}»
+    </div>
+
+    <div class="mod-bar"><div style="width:{{ percent }}%;background:{% if percent == 100 %}#28a745{% elif percent >= 60 %}#f0ad4e{% else %}#dc3545{% endif %};"></div></div>
+    <ul class="mod-checks">
+      {% for check in checks %}
+      <li>
+        <span style="color:{% if check.ok %}#28a745{% else %}#dc3545{% endif %};font-weight:700;">{% if check.ok %}✓{% else %}✕{% endif %}</span>
+        {{ check.label }}{% if check.hint and not check.ok %}<span style="opacity:.6;"> — {{ check.hint }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="product_id" value="{{ product.pk }}">
+
+      <div class="mod-row">{{ form.category.label_tag }}{{ form.category }}</div>
+      <div class="mod-row">{{ form.card_name.label_tag }}{{ form.card_name }}</div>
+      <div class="mod-row">{{ form.short_description.label_tag }}{{ form.short_description }}</div>
+
+      {% if form.attribute_fields %}
+      <div class="mod-attrs">
+        <b>Характеристики</b>
+        <div style="font-size:.85rem;opacity:.6;margin-bottom:.6rem;">
+          Помеченные звёздочкой обязательны — без них товар не опубликуется.
+        </div>
+        {% for field in form.attribute_fields %}
+          <div class="mod-row">{{ field.label_tag }}{{ field }}</div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="mod-attrs" style="opacity:.65;font-size:.9rem;">
+        Выберите категорию и сохраните — появятся её характеристики.
+      </div>
+      {% endif %}
+
+      <div class="mod-actions">
+        <button type="submit" name="action" value="publish" class="default">Опубликовать</button>
+        <button type="submit" name="action" value="save">Сохранить</button>
+        <button type="submit" name="action" value="review">На доработку</button>
+        <button type="submit" name="action" value="skip" style="opacity:.75;">Пропустить</button>
+        <a href="{% url 'admin:catalog_product_change' product.pk %}" style="margin-left:auto;font-size:.9rem;">
+          Открыть полную карточку
+        </a>
+      </div>
+    </form>
+  </div>
+{% endif %}
+</div>
+{% endblock %}

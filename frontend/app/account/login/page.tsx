@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Bell, ClipboardList, FileText, Heart, ShieldCheck } from "lucide-react";
 import { login, otpLogin, register } from "@/lib/auth";
 import { MaxAuthFlow } from "@/components/account/MaxAuthFlow";
-import { SITE } from "@/lib/site";
 
 // Куда вернуть после входа (§16.7): ?next=<path> из URL, иначе профиль.
 function nextTarget(): string {
@@ -37,7 +36,9 @@ export default function LoginPage() {
       } else {
         await otpLogin(phone, otp);
       }
-      router.push(nextTarget());
+      // replace: после успешного входа «Назад» не должен возвращать на форму
+      // входа — вошедшему она не нужна и выглядит как «меня опять разлогинило».
+      router.replace(nextTarget());
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Ошибка");
     } finally {
@@ -46,7 +47,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-[1400px] px-4 pb-10 pt-5 sm:px-6 lg:px-8 lg:pt-7">
+    <main className="mx-auto w-full max-w-[1480px] px-4 pb-10 pt-5 sm:px-6 lg:px-8 lg:pt-7">
       <nav aria-label="Хлебные крошки" className="mb-4 hidden items-center gap-2 text-xs text-ink-3 sm:flex">
         <Link href="/" className="hover:text-accent">Главная</Link>
         <span aria-hidden>›</span>
@@ -178,17 +179,6 @@ export default function LoginPage() {
             })}
           </div>
 
-          <div className="mt-7 rounded-lg border border-line bg-surface p-4">
-            <p className="text-sm font-semibold text-ink">Нужна помощь со входом?</p>
-            <a
-              href={SITE.support.max.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 flex h-10 items-center justify-center rounded-md border border-[#6156f5] text-sm font-semibold text-[#5146ed]"
-            >
-              Написать в MAX
-            </a>
-          </div>
           <p className="mt-5 flex items-center gap-2 text-xs text-ink-3">
             <ShieldCheck className="h-5 w-5 text-accent" aria-hidden />
             Данные передаются по защищённому соединению

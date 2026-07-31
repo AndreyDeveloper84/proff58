@@ -68,7 +68,7 @@ export default async function ProductPage({ params }: Props) {
   return (
     // #574: нижний отступ под липкую панель покупки — иначе она перекрывала
     // последнюю карточку отзывов.
-    <main className="mx-auto w-full max-w-[1400px] px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pt-7">
+    <main className="mx-auto w-full max-w-[1480px] px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pt-7">
       <ProductJsonLd product={product} crumbs={crumbs} />
       <nav
         aria-label="Хлебные крошки"

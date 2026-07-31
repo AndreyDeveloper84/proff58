@@ -4,19 +4,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const pushMock = vi.fn();
 // Стабильная ссылка (как настоящий useRouter()) — иначе [router, loadPage] в
 // useEffect видел бы новый router каждый рендер и гонял эффект по кругу.
-const routerMock = { push: pushMock };
+const replaceMock = vi.fn();
+const routerMock = { push: pushMock, replace: replaceMock };
 vi.mock("next/navigation", () => ({
   useRouter: () => routerMock,
   usePathname: () => "/account/notifications",
 }));
-vi.mock("@/lib/auth", () => ({ getMe: vi.fn() }));
+vi.mock("@/lib/auth", () => ({
+  checkAuth: vi.fn(),
+  loginHref: (next?: string) => (next ? `/account/login?next=${encodeURIComponent(next)}` : "/account/login"),
+}));
 vi.mock("@/lib/notifications", () => ({
   getNotificationHistory: vi.fn(),
   markAllNotificationsRead: vi.fn(),
   markNotificationRead: vi.fn(),
 }));
 
-import { getMe } from "@/lib/auth";
+import { checkAuth } from "@/lib/auth";
 import {
   getNotificationHistory,
   markAllNotificationsRead,
@@ -25,7 +29,7 @@ import {
 import type { NotificationItem } from "@/lib/types";
 import NotificationsPage from "./page";
 
-const mockedGetMe = getMe as unknown as ReturnType<typeof vi.fn>;
+const mockedGetMe = checkAuth as unknown as ReturnType<typeof vi.fn>;
 const mockedHistory = getNotificationHistory as unknown as ReturnType<typeof vi.fn>;
 const mockedMarkAll = markAllNotificationsRead as unknown as ReturnType<typeof vi.fn>;
 const mockedMarkOne = markNotificationRead as unknown as ReturnType<typeof vi.fn>;
@@ -48,6 +52,7 @@ function item(overrides: Partial<NotificationItem> = {}): NotificationItem {
 describe("NotificationsPage", () => {
   beforeEach(() => {
     pushMock.mockReset();
+    replaceMock.mockReset();
     mockedGetMe.mockReset();
     mockedHistory.mockReset();
     mockedMarkAll.mockReset();
@@ -56,9 +61,9 @@ describe("NotificationsPage", () => {
   });
 
   it("неавторизованного гостя редиректит на логин", async () => {
-    mockedGetMe.mockResolvedValueOnce(null);
+    mockedGetMe.mockResolvedValueOnce("anonymous");
     render(<NotificationsPage />);
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/account/login"));
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/account/login?next=%2Faccount%2Fnotifications"));
   });
 
   it("показывает пустое состояние, если уведомлений нет", async () => {

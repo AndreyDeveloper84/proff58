@@ -3,19 +3,21 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight, Heart, LoaderCircle, Trash2 } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import {
-  getMe,
+  checkAuth,
   getWishlist,
+  loginHref,
   removeWishlistItem,
   type WishlistItem,
 } from "@/lib/auth";
 
 export default function WishlistPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [items, setItems] = useState<WishlistItem[] | null>(null);
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [failed, setFailed] = useState(false);
@@ -23,9 +25,14 @@ export default function WishlistPage() {
 
   useEffect(() => {
     let active = true;
-    getMe().then((user) => {
-      if (!user) {
-        router.push("/account/login");
+    checkAuth().then((user) => {
+      if (!active) return;
+      if (user === "anonymous") {
+        router.replace(loginHref(pathname));
+        return;
+      }
+      if (user === "error") {
+        setFailed(true);
         return;
       }
       getWishlist().then((data) => {
@@ -38,7 +45,7 @@ export default function WishlistPage() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [router, pathname]);
 
   const removeItem = async (item: WishlistItem) => {
     if (removingId !== null || items === null) return;

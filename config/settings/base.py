@@ -251,9 +251,9 @@ JAZZMIN_SETTINGS = {
             "icon": "fas fa-bell",
         },
         {
-            "name": "Товары на проверку",
-            "url": "/admin/catalog/product/?moderation=attention",
-            "icon": "fas fa-triangle-exclamation",
+            "name": "Разбор каталога",
+            "url": "/admin/catalog/product/moderate/",
+            "icon": "fas fa-wand-magic-sparkles",
         },
         {
             "name": "Смотреть сайт",
@@ -266,6 +266,11 @@ JAZZMIN_SETTINGS = {
     # он открывает полку и работает, пока она не опустеет.
     "custom_links": {
         "catalog": [
+            {
+                "name": "Разбор каталога →",
+                "url": "/admin/catalog/product/moderate/",
+                "icon": "fas fa-wand-magic-sparkles",
+            },
             {
                 "name": "Требуют внимания",
                 "url": "/admin/catalog/product/?moderation=attention",

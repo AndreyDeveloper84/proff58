@@ -2,7 +2,8 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const pushMock = vi.fn();
-const routerMock = { push: pushMock };
+const replaceMock = vi.fn();
+const routerMock = { push: pushMock, replace: replaceMock };
 
 vi.mock("next/navigation", () => ({
   useRouter: () => routerMock,
@@ -10,10 +11,13 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/lib/auth", () => ({
   changePhone: vi.fn(),
+  checkAuth: vi.fn(),
   deleteAccount: vi.fn(),
   getMe: vi.fn(),
   getOrders: vi.fn(),
   getWishlist: vi.fn(),
+  loginHref: (next?: string) =>
+    next ? `/account/login?next=${encodeURIComponent(next)}` : "/account/login",
   logout: vi.fn(),
   updateMe: vi.fn(),
 }));
@@ -24,10 +28,10 @@ vi.mock("@/components/account/NotificationPreferencesCard", () => ({
   NotificationPreferencesCard: () => <div>Настройки уведомлений</div>,
 }));
 
-import { deleteAccount, getMe, getOrders, getWishlist, updateMe } from "@/lib/auth";
+import { deleteAccount, checkAuth, getOrders, getWishlist, updateMe } from "@/lib/auth";
 import ProfilePage from "./page";
 
-const mockedGetMe = getMe as unknown as ReturnType<typeof vi.fn>;
+const mockedGetMe = checkAuth as unknown as ReturnType<typeof vi.fn>;
 const mockedGetOrders = getOrders as unknown as ReturnType<typeof vi.fn>;
 const mockedGetWishlist = getWishlist as unknown as ReturnType<typeof vi.fn>;
 const mockedUpdateMe = updateMe as unknown as ReturnType<typeof vi.fn>;
@@ -36,6 +40,7 @@ const mockedDeleteAccount = deleteAccount as unknown as ReturnType<typeof vi.fn>
 describe("ProfilePage dashboard", () => {
   beforeEach(() => {
     pushMock.mockReset();
+    replaceMock.mockReset();
     mockedGetMe.mockReset();
     mockedGetOrders.mockReset();
     mockedGetWishlist.mockReset();
@@ -91,10 +96,10 @@ describe("ProfilePage dashboard", () => {
   });
 
   it("неавторизованного пользователя отправляет на вход", async () => {
-    mockedGetMe.mockResolvedValueOnce(null);
+    mockedGetMe.mockResolvedValueOnce("anonymous");
     render(<ProfilePage />);
 
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/account/login"));
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/account/login?next=%2Faccount%2Fprofile"));
   });
 
   it("редактирует профиль и сразу обновляет данные на странице", async () => {

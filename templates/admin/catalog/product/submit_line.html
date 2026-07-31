@@ -1,0 +1,15 @@
+{% extends "admin/submit_line.html" %}
+
+{% comment %}
+«Сохранить и следующий» — для потоковой правки: человек правит товар за товаром
+и не возвращается каждый раз в список. Django ищет submit_line.html сначала по
+пути admin/<app>/<model>/, поэтому кнопка появляется только у товаров.
+{% endcomment %}
+
+{% block extra-actions %}
+{% if original %}
+<input type="submit" name="_save_and_next" value="Сохранить и следующий →"
+       class="btn btn-sm btn-primary"
+       title="Сохранить этот товар и сразу открыть следующий из очереди разбора">
+{% endif %}
+{% endblock %}
