@@ -16,7 +16,7 @@ export default async function ArticlesIndexPage() {
 
   return (
     <main className="min-h-[70vh] bg-surface pb-20 lg:pb-0">
-      <div className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 lg:px-4">
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 lg:px-8">
         <nav aria-label="Хлебные крошки" className="mb-3 flex items-center gap-2 text-xs text-ink-3">
           <Link href="/" className="transition hover:text-accent">
             Главная

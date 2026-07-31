@@ -82,7 +82,7 @@ export function Header({
     <header className="sticky top-0 z-40 border-b border-header-line bg-header text-header-ink">
       {/* Topbar — только desktop */}
       <div className="hidden border-b border-header-line bg-header lg:block">
-        <div className="mx-auto flex h-8 max-w-[1400px] items-center justify-between px-4 text-[11px] text-topbar-ink">
+        <div className="mx-auto flex h-8 w-full max-w-[1680px] items-center justify-between px-4 text-[11px] text-topbar-ink sm:px-6 xl:px-8">
           <div className="flex items-center gap-5">
             <span className="flex items-center gap-1.5 font-medium">
               <MapPin className="h-3.5 w-3.5 text-accent" aria-hidden />
@@ -159,7 +159,7 @@ export function Header({
       </div>
 
       {/* Основная строка */}
-      <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center gap-2 px-4 lg:gap-4">
+      <div className="mx-auto flex h-14 w-full max-w-[1680px] items-center gap-2 px-4 sm:px-6 lg:gap-4 xl:px-8">
         <button
           type="button"
           className="grid h-10 w-10 shrink-0 place-items-center rounded-md text-header-ink hover:bg-header-ink/10 lg:hidden"
@@ -282,7 +282,7 @@ export function Header({
       {/* Мобильное меню */}
       {open && (
         <div className="border-t border-header-line bg-header lg:hidden">
-          <nav className="mx-auto flex max-w-[1400px] flex-col px-4 py-2">
+          <nav className="mx-auto flex w-full max-w-[1680px] flex-col px-4 py-2 sm:px-6">
             <Link
               href="/catalog"
               className="flex min-h-11 items-center gap-2 border-b border-header-line py-2.5 text-sm font-semibold text-header-ink hover:text-accent"

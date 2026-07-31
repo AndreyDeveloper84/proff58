@@ -88,7 +88,7 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
       <ul
         ref={trackRef}
         onScroll={sync}
-        className="-mx-1 flex snap-x snap-mandatory gap-2.5 overflow-x-auto scroll-smooth px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {articles.map((article) => (
           <li
@@ -97,7 +97,7 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
           >
             <Link
               href={`/articles/${article.slug}`}
-              className="group flex h-full min-h-[92px] items-stretch overflow-hidden rounded-sm border border-line bg-surface transition hover:border-accent/60 hover:shadow-sm"
+              className="group flex h-full min-h-[104px] items-stretch overflow-hidden rounded-sm border border-line bg-surface transition hover:border-accent/60 hover:shadow-sm"
             >
               <span className="relative w-[86px] shrink-0 bg-photo">
                 <Image

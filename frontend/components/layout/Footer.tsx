@@ -9,8 +9,8 @@ import {
   Phone,
 } from "lucide-react";
 import type { InfoPageLink } from "@/lib/info-pages";
-import { qrSvgPath } from "@/lib/qr";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
+import { cn } from "@/lib/utils";
 
 // Компактный подвал по макету. Состав навигации намеренно определяется только
 // существующими маршрутами — отсутствующие backend-разделы не подменяются "#".
@@ -29,13 +29,20 @@ export function Footer({
       правило подвала «не подменять отсутствующие разделы решёткой» сохраняется. */
   infoPages?: InfoPageLink[];
 }) {
-  // Генерируем из той же ссылки, по которой ведёт карточка: статичной картинке в
-  // public пришлось бы помнить о смене max_url в SiteSettings — она бы протухла.
-  const maxQr = qrSvgPath(storefront.maxHref);
-
   return (
     <footer className="border-t border-line bg-surface">
-      <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-6 px-4 py-6 sm:grid-cols-2 lg:grid-cols-[1.35fr_1.05fr_.9fr_.85fr_1.05fr_1.05fr]">
+      <div
+        className={cn(
+          // Колонок в подвале 6 (или 7 с «Информацией»). При grid-cols-4 второй
+          // ряд оставался наполовину пустым на 1280–1440 — самых ходовых
+          // десктопных ширинах. Поэтому до xl раскладываем по 3 (ровно два
+          // ряда), а с xl разворачиваем в одну строку.
+          "mx-auto grid w-full max-w-[1680px] grid-cols-1 gap-6 px-4 py-6 sm:grid-cols-2 sm:px-6 lg:grid-cols-3 xl:px-8",
+          infoPages.length > 0
+            ? "xl:grid-cols-[1.3fr_1fr_.9fr_.85fr_.75fr_1.15fr_1.15fr]"
+            : "xl:grid-cols-[1.35fr_1.05fr_.9fr_.85fr_1.05fr_1.15fr]",
+        )}
+      >
         {/* Левый блок: лого + описание */}
         <div>
           <span className="flex items-center gap-2">
@@ -133,28 +140,9 @@ export function Footer({
             target="_blank"
             rel="noopener noreferrer"
             data-event="footer_max"
-            // На десктопе QR встаёт над текстом: колонка подвала узкая, и рядом
-            // с кодом подпись ломалась на шесть строк.
-            className="flex items-center gap-3 rounded-sm border border-line bg-surface p-2.5 transition hover:border-[#6156f5] lg:flex-col lg:items-start lg:gap-2"
+            className="flex items-center gap-3 rounded-sm border border-line bg-surface p-2.5 transition hover:border-[#6156f5]"
           >
-            {/* Десктоп — сканируемый QR (за компьютером в мессенджер иначе не
-                попасть). Раньше здесь была декоративная иконка lucide: выглядела
-                как код, но камерой не читалась — хуже, чем ничего.
-                Белая подложка и тёмные модули заданы литералами намеренно: QR
-                обязан оставаться контрастным и в тёмной теме. */}
-            <span className="hidden h-20 w-20 shrink-0 place-items-center rounded-sm border border-line bg-white p-1 lg:grid">
-              <svg
-                viewBox={`0 0 ${maxQr.size} ${maxQr.size}`}
-                className="h-full w-full"
-                shapeRendering="crispEdges"
-                role="img"
-                aria-label="QR-код: чат с нами в MAX"
-              >
-                <path d={maxQr.path} fill="#0b0d0f" />
-              </svg>
-            </span>
-            {/* Мобильный — лого канала: свой же экран не сканируют, там работает тап. */}
-            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-sm border border-line bg-surface lg:hidden">
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-sm bg-[var(--max-tint)]">
               <Image
                 src="/brands/max-colored.png"
                 alt=""
@@ -169,13 +157,8 @@ export function Footer({
                 <MessageSquareText className="h-3.5 w-3.5 text-[#6156f5]" aria-hidden />
                 Мы в мессенджерах
               </span>
-              {/* Где есть код — зовём его отсканировать; где кода нет (мобильный) —
-                  работает тап по самой карточке. */}
-              <span className="mt-0.5 block text-[11px] leading-snug text-ink-2 lg:hidden">
+              <span className="mt-0.5 block text-[11px] leading-snug text-ink-2">
                 Напишите нам в MAX для консультации
-              </span>
-              <span className="mt-0.5 hidden text-[11px] leading-snug text-ink-2 lg:block">
-                Наведите камеру телефона на код — откроется чат в MAX
               </span>
             </span>
           </a>
@@ -185,7 +168,7 @@ export function Footer({
       {/* Нижняя строка. Политика/соглашение появятся вместе с юр. страницами —
           битые ссылки не рисуем (#591). */}
       <div className="border-t border-line">
-        <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-4 py-3 text-[11px] text-ink-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-2 px-4 py-3 text-[11px] text-ink-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 xl:px-8">
           <span>© 2014–2026 {siteName}. Все права защищены.</span>
           <div className="flex flex-wrap gap-3">
             {SITE.payments.map((p) => (

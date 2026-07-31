@@ -1,7 +1,5 @@
 import { HomeInteractive } from "@/components/home/HomeInteractive";
 import { getBestsellers } from "@/lib/catalog";
-import { resolveStorefront } from "@/lib/site";
-import { getSiteTheme } from "@/lib/theme";
 
 // Хиты продаж и тема берутся из API в рантайме. Без этого Next 16 пререндерит
 // главную на этапе build, где INTERNAL_API_BASE_URL ещё нет (переменная приходит
@@ -12,10 +10,10 @@ import { getSiteTheme } from "@/lib/theme";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [bestsellers, theme] = await Promise.all([getBestsellers(), getSiteTheme()]);
+  const bestsellers = await getBestsellers();
   return (
     <main className="bg-surface">
-      <HomeInteractive bestsellers={bestsellers} storefront={resolveStorefront(theme)} />
+      <HomeInteractive bestsellers={bestsellers} />
     </main>
   );
 }

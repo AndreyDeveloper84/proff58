@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRef } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductCard } from "@/components/product/ProductCard";
-import { Reveal } from "@/components/motion/Reveal";
 import type { Product } from "@/lib/types";
 
 type BestsellersProps = {
@@ -30,7 +29,7 @@ export function Bestsellers({ products, kind = "bestsellers" }: BestsellersProps
   };
 
   return (
-    <section className="mx-auto max-w-[1400px] px-4 pt-2.5">
+    <section className="mx-auto w-full max-w-[1680px] px-4 pt-3 sm:px-6 xl:px-8">
       <div className="mb-1.5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <h2 className="font-sans text-lg font-bold text-ink">{TITLE[kind]}</h2>
@@ -59,21 +58,19 @@ export function Bestsellers({ products, kind = "bestsellers" }: BestsellersProps
         </div>
       </div>
 
-      <Reveal>
-        <div
-          ref={trackRef}
-          className="flex snap-x snap-mandatory items-stretch gap-2.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {products.map((p) => (
-            <div
-              key={p.id}
-              className="flex w-[205px] shrink-0 snap-start lg:w-[calc((100%-50px)/6)]"
-            >
-              <ProductCard product={p} variant="home" className="w-full" />
-            </div>
-          ))}
-        </div>
-      </Reveal>
+      <div
+        ref={trackRef}
+        className="flex snap-x snap-mandatory items-stretch gap-2.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {products.map((p) => (
+          <div
+            key={p.id}
+            className="flex w-[205px] shrink-0 snap-start lg:w-[calc((100%-30px)/4)] xl:w-[calc((100%-40px)/5)] 2xl:w-[calc((100%-50px)/6)]"
+          >
+            <ProductCard product={p} variant="home" className="w-full" />
+          </div>
+        ))}
+      </div>
 
       <Link
         href="/catalog"

@@ -26,7 +26,7 @@ export function PopularBrands() {
 
   return (
     <section className="bg-surface" aria-labelledby="popular-brands-title">
-      <div className="mx-auto max-w-[1400px] px-4 pt-1.5">
+      <div className="mx-auto w-full max-w-[1680px] px-4 pt-2 sm:px-6 xl:px-8">
         <h2
           id="popular-brands-title"
           className="mb-2 font-sans text-lg font-bold text-ink"

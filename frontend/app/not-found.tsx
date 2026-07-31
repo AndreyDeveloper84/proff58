@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 // в тупик. Здесь тот же тупик превращён в развилку: поиск и живые разделы.
 export default function NotFound() {
   return (
-    <main className="mx-auto w-full max-w-[1400px] px-4 py-12 lg:py-20">
+    <main className="mx-auto w-full max-w-[1200px] px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
       <div className="mx-auto max-w-2xl text-center">
         <SearchX className="mx-auto h-12 w-12 text-ink-3" strokeWidth={1.25} aria-hidden />
         <p className="mt-4 font-display text-5xl font-bold text-ink">404</p>

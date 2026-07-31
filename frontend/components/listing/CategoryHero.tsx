@@ -49,11 +49,11 @@ export function CategoryHero({
     <section
       className={cn(
         "relative overflow-hidden",
-        // Чертёж стоит в собственной колонке grid, а не абсолютом поверх текста:
-        // при absolute он налезал на счётчик товаров («Автоинструмент и гаражное
-        // оборудование» + «305 товаров») и обрезался правым краем блока.
-        skeleton && "lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6",
-        inline ? "lg:min-h-[156px]" : "mb-6 rounded-xl border border-line bg-surface",
+        // В карточном варианте чертёж стоит в собственной grid-колонке.
+        !inline && skeleton && "lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6",
+        inline
+          ? "border-b border-line/80 lg:min-h-[280px]"
+          : "mb-6 rounded-xl border border-line bg-surface",
         className,
       )}
     >
@@ -69,7 +69,9 @@ export function CategoryHero({
       <div
         className={cn(
           "relative z-10 flex lg:col-start-1 lg:row-start-1",
-          inline ? "py-2 pr-4" : "gap-5 p-6 md:p-8",
+          inline
+            ? "py-5 lg:min-h-[280px] lg:items-center lg:py-7 lg:pr-[44%]"
+            : "gap-5 p-6 md:p-8",
         )}
       >
         {!inline && (
@@ -90,7 +92,14 @@ export function CategoryHero({
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-                <h1 className="font-display text-3xl font-bold text-ink md:text-4xl">{title}</h1>
+                <h1
+                  className={cn(
+                    "font-display text-3xl font-bold text-ink md:text-4xl",
+                    inline && "lg:text-[42px] lg:leading-none",
+                  )}
+                >
+                  {title}
+                </h1>
 
                 {total != null && total > 0 && (
                   <span className="pb-1 text-sm font-semibold text-accent">
@@ -109,11 +118,28 @@ export function CategoryHero({
         </div>
       </div>
 
-      {/* Чертёж раздела — вторая колонка, поэтому пересечься с заголовком он не
-          может физически. Своего чертежа нет у незнакомого раздела: тогда grid
-          не включается и блок просто остаётся без иллюстрации. На узких экранах
-          прячем — места под него нет. */}
-      {skeleton && (
+      {/* В inline-hero все чертежи помещаются в одну и ту же чистую правую
+          половину полотна. Поэтому даже широкий перфоратор не пересечёт H1.
+          На узких экранах иллюстрацию прячем — места под неё нет. */}
+      {skeleton && inline && (
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 z-[1] hidden w-1/2 overflow-hidden lg:block"
+          aria-hidden
+        >
+          <Image
+            src={skeleton}
+            alt=""
+            fill
+            sizes="50vw"
+            unoptimized
+            priority
+            aria-hidden
+            className="object-contain object-right opacity-65 contrast-125 dark:invert dark:opacity-70"
+          />
+        </div>
+      )}
+
+      {skeleton && !inline && (
         <Image
           src={skeleton}
           alt=""
@@ -122,12 +148,7 @@ export function CategoryHero({
           unoptimized
           priority
           aria-hidden
-          className={cn(
-            "pointer-events-none hidden w-auto justify-self-end object-contain lg:col-start-2 lg:row-start-1 lg:block",
-            // Ограничение по высоте, а не по доле ширины: у чертежей разное
-            // соотношение сторон, и «52 % ширины» одни обрезало, другие мельчило.
-            inline ? "max-h-[120px]" : "max-h-[150px]",
-          )}
+          className="pointer-events-none hidden h-auto max-h-[190px] w-[420px] max-w-[34vw] justify-self-end object-contain opacity-80 contrast-125 lg:col-start-2 lg:row-start-1 lg:block 2xl:w-[480px] dark:invert dark:opacity-70"
         />
       )}
     </section>
