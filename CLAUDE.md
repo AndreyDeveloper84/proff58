@@ -146,9 +146,9 @@ code команды = статус джобы.
   `backfill_option_slugs` не создают типы вне манифеста.
 - Gate не доверяет самодекларированным полям артефактов — всё пересчитывается
   (`docs/catalog/rules-gate-h2.md`).
-- `taxonomy_identity_hash` = `887eea5d…` (canonical; с TT-07 2026-07-28 —
-  334 options, пакет из 5 типов: `bp-leska`, `gaikoverty`, `gaikoverty-ruchnye`,
-  `svar-katody`, `zap-boyki`; до этого `524d4e31…` TT-01, `fc13be78…`). Legacy DB-order hash
+- `taxonomy_identity_hash` = `7ac7a9a2…` (canonical; с TT-14 2026-07-31 —
+  336 options, пакет из 2 типов: `bp-golovki-trimmernye`, `hoz-voronki`;
+  до этого `887eea5d…` TT-07 — 334 options, `524d4e31…` TT-01, `fc13be78…`). Legacy DB-order hash
   `b357be60…` допустим только явным `--allow-legacy-taxonomy-hash` и в штатном
   контуре не используется: с Wave 7.1 H4 замороженный gate-sample перевыпущен на
   canonical binding, CI гоняет гейт без поблажки.
