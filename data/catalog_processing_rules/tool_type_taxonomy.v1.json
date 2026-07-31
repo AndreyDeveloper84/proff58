@@ -215,6 +215,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "bp-golovki-trimmernye",
+      "value": "Головки триммерные",
+      "sort_order": 23,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step4 niches + owner decision 2026-07-31 (TT-14)",
+      "review_status": "approved",
+      "review_reason": "93 SKU триммерных головок свалены в prochaya-osnastka (свалка, не тип); bp-trimmery — машины, bp-leska — леска (TT-07), golovki — торцевые ключи, golovki-shlif — шлифовальные. Крупнейшая дыра словаря ступени 4 (108 SKU).",
+      "review_ref": "tt-14",
+      "legacy_aliases": []
+    },
+    {
       "slug": "bp-kompressory",
       "value": "Компрессоры",
       "sort_order": 17,
@@ -1019,6 +1030,17 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "hoz-voronki",
+      "value": "Воронки",
+      "sort_order": 36,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step4 niches + owner decision 2026-07-31 (TT-14)",
+      "review_status": "approved",
+      "review_reason": "19 SKU воронок без типа, 16 из 21 в группе 1С «Хозтовары, сад, огород»; в словаре воронок нет, ближайшие hoz-* — ёмкости/инструмент других ниш.",
+      "review_ref": "tt-14",
       "legacy_aliases": []
     },
     {
@@ -3716,6 +3738,6 @@
       "legacy_aliases": []
     }
   ],
-  "taxonomy_identity_hash": "887eea5d442455fbb97c9eda888c0307f46a1f7e2e51bd56c2bd8a11d3949175",
-  "manifest_semantic_hash": "2911b659f3d1079ec5e6a2b1ad185b9cf39efb7c8bcfb7c10ba9227027404d4f"
+  "taxonomy_identity_hash": "7ac7a9a26eeffcb6360993b3c1a5942ddee4da7c80b8e31ad9b47853e2a06ef9",
+  "manifest_semantic_hash": "9958cfcd520475572b346ecfcfd98cae005d4da8f0e00a8f179fda120b8f353d"
 }
