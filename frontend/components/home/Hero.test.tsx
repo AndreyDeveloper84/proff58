@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { Hero } from "./Hero";
 import { HOME_CONTENT } from "@/lib/home-content";
-import { SITE } from "@/lib/site";
 
 // #587: hero-фотобаннер — заголовок, преимущества и рабочие CTA.
 describe("Hero (#587)", () => {
@@ -27,11 +26,8 @@ describe("Hero (#587)", () => {
     );
   });
 
-  it("плашка MAX ведёт на внешний канал в новой вкладке", () => {
+  it("не дублирует единый MAX-блок из подвала", () => {
     render(<Hero onConsult={() => {}} />);
-    const max = screen.getByRole("link", { name: /Консультация в MAX/ });
-    expect(max).toHaveAttribute("href", SITE.support.max.href);
-    expect(max).toHaveAttribute("target", "_blank");
-    expect(max).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    expect(screen.queryByText(/MAX/)).not.toBeInTheDocument();
   });
 });

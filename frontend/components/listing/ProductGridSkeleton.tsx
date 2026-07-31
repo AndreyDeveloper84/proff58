@@ -18,7 +18,7 @@ export function ProductGridSkeleton({ view = "grid", count = 12 }: Props) {
     );
   }
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6" aria-hidden>
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6" aria-hidden>
       {cards.map((_, i) => (
         <div
           key={i}

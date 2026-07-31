@@ -48,7 +48,7 @@ export default function ThanksPage() {
     order?.items.reduce((sum, item) => sum + (Number(item.line_total) || 0), 0) ?? 0;
 
   return (
-    <main className="mx-auto w-full max-w-[1400px] px-4 pb-10 pt-5 sm:px-6 lg:px-8 lg:pt-7">
+    <main className="mx-auto w-full max-w-[1480px] px-4 pb-10 pt-5 sm:px-6 lg:px-8 lg:pt-7">
       <ol className="mx-auto mb-5 flex max-w-2xl items-center text-xs font-semibold sm:text-sm">
         {["Корзина", "Оформление", "Заказ принят"].map((label, index) => (
           <li key={label} className="contents">

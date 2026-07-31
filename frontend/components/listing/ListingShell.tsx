@@ -15,7 +15,6 @@ import { FacetSidebar } from "@/components/filters/FacetSidebar";
 import { CategoryNavPanel, CategoryNavStrip } from "@/components/listing/CategoryNav";
 import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
 import { CategoryHero } from "@/components/listing/CategoryHero";
-import { ConsultBanner } from "@/components/listing/ConsultBanner";
 import { MobileFilterDrawer } from "@/components/listing/MobileFilterDrawer";
 
 // Презентационный shell: данные уже разрешены на сервере (getListing(query)).
@@ -192,7 +191,7 @@ export function ListingShell({
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-6">
+    <div className="mx-auto w-full max-w-[1680px] px-4 py-6 sm:px-6 xl:px-8">
       <nav aria-label="Хлебные крошки" className="mb-3 flex flex-wrap items-center gap-1 text-xs text-ink-3">
         {listing.category.breadcrumb.map((b, i) => (
           <span key={`${b.href}-${i}`} className="flex items-center gap-1">
@@ -204,39 +203,87 @@ export function ListingShell({
         ))}
       </nav>
 
-      {/* Верхняя композиция (§P0): консультация — в левой колонке (260px, над
-          фасетами), CategoryHero inline — в правой, выровнен по левому краю с тулбаром.
-          На мобильном grid схлопывается в последовательность: консультация → H1 → описание. */}
-      <div className="mb-5 grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6">
-        <ConsultBanner className="w-full max-w-full lg:col-start-1 lg:row-start-1" />
-
-        <CategoryHero
-          title={listing.category.title}
-          intro={listing.category.intro}
-          hero={listing.category.hero}
-          total={listing.total}
-          variant="inline"
-          className="w-full min-w-0 lg:col-start-2 lg:row-start-1"
-          // Хлебные крошки идут от корня, поэтому ближайший родитель — предпоследний;
-          // «Главная» и «Каталог» в подборе чертежа просто ни с чем не совпадут.
-          parentTitles={listing.category.breadcrumb
-            .slice(0, -1)
-            .map((crumb) => crumb.label)
-            .reverse()}
-        />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
         <aside className="hidden lg:block">
-          {/* Навигация раздела — отдельной карточкой НАД фильтрами: подкатегория
-              уводит на другую страницу, и путать её с фильтром не стоит. */}
-          <div className="sticky top-4 flex flex-col gap-4">
-            {nav && <CategoryNavPanel nav={nav} onSelect={onSelectType} />}
-            {sidebar}
+          {/* Единый «пульт подбора»: шапка, активные условия, навигация и фасеты
+              начинаются сразу под хлебными крошками. Панель следует за пользователем
+              от нижнего края шапки до конца всей каталожной колонки. */}
+          <div className="sticky top-[104px] max-h-[calc(100vh-120px)] divide-y divide-line overflow-x-hidden overflow-y-auto rounded-xl border border-line border-t-2 border-t-accent bg-raised/60 shadow-sm">
+            <div className="bg-surface/80 px-5 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
+                    <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                  </span>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <h2 className="font-display text-lg font-semibold text-ink">Фильтры</h2>
+                    {chips.length > 0 && (
+                      <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-ink">
+                        {chips.length}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {chips.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={resetAll}
+                    className="shrink-0 text-xs font-medium text-accent hover:underline"
+                  >
+                    Сбросить
+                  </button>
+                )}
+              </div>
+
+              <p className="mt-2 text-xs leading-relaxed text-ink-3">
+                Подберите инструмент по нужным параметрам
+              </p>
+
+              {chips.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Активные фильтры">
+                  {chips.map((chip) => (
+                    <button
+                      key={chip.key}
+                      type="button"
+                      onClick={chip.onRemove}
+                      title={`Убрать: ${chip.label}`}
+                      className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-accent/30 bg-accent/5 px-2 py-1 text-xs text-accent transition hover:border-accent"
+                    >
+                      <span className="truncate">{chip.label}</span>
+                      <X className="h-3 w-3 shrink-0" aria-hidden />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {nav && <CategoryNavPanel nav={nav} onSelect={onSelectType} connected />}
+            <FacetSidebar
+              facets={visibleFacets}
+              filters={query.filters}
+              onToggle={toggleCheckbox}
+              onRange={setRange}
+              connected
+            />
           </div>
         </aside>
 
         <div className="min-w-0">
+          <CategoryHero
+            title={listing.category.title}
+            intro={listing.category.intro}
+            hero={listing.category.hero}
+            total={listing.total}
+            variant="inline"
+            className="mb-5 w-full min-w-0"
+            // Хлебные крошки идут от корня, поэтому ближайший родитель — предпоследний;
+            // «Главная» и «Каталог» в подборе чертежа просто ни с чем не совпадут.
+            parentTitles={listing.category.breadcrumb
+              .slice(0, -1)
+              .map((crumb) => crumb.label)
+              .reverse()}
+          />
+
           {listing.promo && (
             <a
               href={listing.promo.href}
@@ -254,7 +301,7 @@ export function ListingShell({
           {nav && <CategoryNavStrip nav={nav} onSelect={onSelectType} />}
 
           {/* Панель фильтров (§9.1): триггер сайдбара + сброс + активные чипы (зелёные). */}
-          <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="mb-4 flex flex-wrap items-center gap-3 lg:hidden">
             {/* Мобильный триггер drawer'а фильтров (§4) */}
             <button
               ref={filterBtnRef}
@@ -272,20 +319,12 @@ export function ListingShell({
                 </span>
               )}
             </button>
-            {/* На десктопе плашки «Фильтры» нет: фасеты и так открыты в левой
-                колонке, открывать нечего — а выглядела она кнопкой и не
-                нажималась. Счётчик активных фильтров переехал к «Сбросить все»:
-                он нужен ровно там, где с ним что-то можно сделать. */}
             {chips.length > 0 && (
               <button
                 type="button"
                 onClick={resetAll}
                 className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline"
               >
-                {/* На мобильном счётчик уже висит на кнопке «Фильтры» — не дублируем. */}
-                <span className="hidden h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-ink lg:grid">
-                  {chips.length}
-                </span>
                 Сбросить все
               </button>
             )}
@@ -302,13 +341,17 @@ export function ListingShell({
             ))}
           </div>
 
-          {/* Строка результатов: сортировка + счётчик показанных + вид списка. */}
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          {/* Строка результатов: сортировка + счётчик показанных + вид списка.
+              На телефоне это grid из двух строк («сортировка + вид», под ними
+              счётчик и размер страницы) — раскладка в три ряда съедала пол-экрана
+              до первого товара. С sm раскладка снова flex: сортировка слева,
+              остальное прижато вправо через ml-auto. */}
+          <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex sm:flex-wrap sm:gap-3 lg:min-h-[68px] lg:rounded-xl lg:border lg:border-line lg:bg-surface lg:px-4 lg:py-3 lg:shadow-sm">
             <select
               value={query.sort}
               onChange={(e) => setSort(e.target.value as SortOption)}
               aria-label="Сортировка"
-              className="h-11 rounded-md border border-line bg-surface px-3 text-sm text-ink"
+              className="row-start-1 h-11 w-full min-w-0 rounded-md border border-line bg-surface px-3 text-sm text-ink sm:w-auto"
             >
               {sortOptions.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -317,7 +360,7 @@ export function ListingShell({
               ))}
             </select>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="col-span-2 row-start-2 flex items-center justify-between gap-2 sm:ml-auto sm:justify-start sm:gap-3">
               <span
                 aria-live="polite"
                 className={cn(
@@ -341,37 +384,37 @@ export function ListingShell({
                   ))}
                 </select>
               </label>
+            </div>
 
-              <div
-                className="flex items-center overflow-hidden rounded-md border border-line"
-                role="group"
-                aria-label="Вид списка"
+            <div
+              className="col-start-2 row-start-1 flex items-center overflow-hidden rounded-md border border-line"
+              role="group"
+              aria-label="Вид списка"
+            >
+              <button
+                type="button"
+                aria-label="Сеткой"
+                aria-pressed={query.view === "grid"}
+                onClick={() => setView("grid")}
+                className={cn(
+                  "grid h-9 w-9 place-items-center",
+                  query.view === "grid" ? "bg-accent text-accent-ink" : "text-ink-3",
+                )}
               >
-                <button
-                  type="button"
-                  aria-label="Сеткой"
-                  aria-pressed={query.view === "grid"}
-                  onClick={() => setView("grid")}
-                  className={cn(
-                    "grid h-9 w-9 place-items-center",
-                    query.view === "grid" ? "bg-accent text-accent-ink" : "text-ink-3",
-                  )}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Списком"
-                  aria-pressed={query.view === "list"}
-                  onClick={() => setView("list")}
-                  className={cn(
-                    "grid h-9 w-9 place-items-center",
-                    query.view === "list" ? "bg-accent text-accent-ink" : "text-ink-3",
-                  )}
-                >
-                  <List className="h-4 w-4" />
-                </button>
-              </div>
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                aria-label="Списком"
+                aria-pressed={query.view === "list"}
+                onClick={() => setView("list")}
+                className={cn(
+                  "grid h-9 w-9 place-items-center",
+                  query.view === "list" ? "bg-accent text-accent-ink" : "text-ink-3",
+                )}
+              >
+                <List className="h-4 w-4" />
+              </button>
             </div>
           </div>
 
@@ -418,7 +461,7 @@ export function ListingShell({
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {listing.products.map((p) => (
                 <ProductCard key={p.id} product={p} view="grid" />
               ))}

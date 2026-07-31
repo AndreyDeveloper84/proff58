@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, CalendarDays, Clock, Info, MessageSquareText } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock, Info } from "lucide-react";
 import { BatteryStorageFigure } from "@/components/articles/figures/BatteryStorageFigure";
 import { BurWearFigure } from "@/components/articles/figures/BurWearFigure";
 import { DiscMarkingFigure } from "@/components/articles/figures/DiscMarkingFigure";
@@ -13,7 +13,6 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { type ArticleBlock, type ArticleFigure } from "@/lib/articles";
 import { getArticleBySlug, getArticleCards } from "@/lib/articles-source";
 import { getCategoryProducts } from "@/lib/catalog";
-import { SITE } from "@/lib/site";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -110,7 +109,7 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <main className="min-h-[70vh] bg-surface pb-20 lg:pb-0">
-      <div className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 lg:px-4">
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 lg:px-8">
         <nav aria-label="Хлебные крошки" className="mb-3 flex flex-wrap items-center gap-2 text-xs text-ink-3">
           <Link href="/" className="transition hover:text-accent">
             Главная
@@ -213,35 +212,6 @@ export default async function ArticlePage({ params }: Props) {
           </article>
 
           <aside className="min-w-0 space-y-2.5 lg:sticky lg:top-4 lg:self-start">
-            <div className="rounded-md border border-line bg-[linear-gradient(135deg,var(--surface)_0%,var(--max-tint)_100%)] p-3.5">
-              <div className="relative pr-12">
-                <Image
-                  src="/brands/max-colored.png"
-                  alt=""
-                  width={48}
-                  height={48}
-                  className="absolute right-0 top-0 h-10 w-10 object-contain"
-                  aria-hidden
-                />
-                <h2 className="font-sans text-sm font-bold leading-tight text-ink">
-                  Остались вопросы по выбору?
-                </h2>
-                <p className="mt-1 text-[11px] leading-[1.35] text-ink-2">
-                  Опишите задачу в MAX — подберём модель под материал, объём и бюджет.
-                </p>
-              </div>
-              <a
-                href={SITE.support.max.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-event="article_max_click"
-                className="mt-2.5 inline-flex h-9 items-center justify-center gap-1.5 rounded-sm bg-[#6156f5] px-3 text-xs font-semibold text-white transition hover:bg-[#5147dc]"
-              >
-                <MessageSquareText className="h-4 w-4" aria-hidden />
-                Консультация в MAX
-              </a>
-            </div>
-
             <div className="rounded-md border border-line bg-surface p-3.5">
               <h2 className="font-sans text-sm font-bold text-ink">Читайте также</h2>
               <ul className="mt-2 space-y-2">

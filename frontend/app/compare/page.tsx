@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function ComparePage() {
   return (
-    <main className="mx-auto w-full max-w-[1400px] px-4 py-6">
+    <main className="mx-auto w-full max-w-[1680px] px-4 py-6 sm:px-6 lg:px-8">
       <nav aria-label="Хлебные крошки" className="mb-3 flex items-center gap-1 text-xs text-ink-3">
         <Link href="/" className="hover:text-accent">
           Главная

@@ -266,14 +266,14 @@ export default function CheckoutPage() {
 
   if (loading || !cart || cart.lines.length === 0) {
     return (
-      <main className="mx-auto min-h-[60vh] w-full max-w-[1400px] px-4 py-10 sm:px-6 lg:px-8">
+      <main className="mx-auto min-h-[60vh] w-full max-w-[1480px] px-4 py-10 sm:px-6 lg:px-8">
         <LoadingState label="Готовим оформление заказа…" />
       </main>
     );
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1400px] px-4 pb-32 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-7">
+    <main className="mx-auto w-full max-w-[1480px] px-4 pb-32 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-7">
       <nav
         aria-label="Хлебные крошки"
         className="mb-4 hidden items-center gap-2 text-xs text-ink-3 sm:flex"
