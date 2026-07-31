@@ -36,7 +36,9 @@ export default function LoginPage() {
       } else {
         await otpLogin(phone, otp);
       }
-      router.push(nextTarget());
+      // replace: после успешного входа «Назад» не должен возвращать на форму
+      // входа — вошедшему она не нужна и выглядит как «меня опять разлогинило».
+      router.replace(nextTarget());
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Ошибка");
     } finally {

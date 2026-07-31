@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Clock3, Download, FileText } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
-import { getMe } from "@/lib/auth";
+import { checkAuth, loginHref } from "@/lib/auth";
 import { formatDateTime, formatPrice } from "@/lib/format";
 import { getInvoices, type B2BInvoice } from "@/lib/invoices";
 import { cn } from "@/lib/utils";
@@ -95,6 +95,7 @@ function InvoiceCard({ invoice }: { invoice: B2BInvoice }) {
 
 export default function InvoicesPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [invoices, setInvoices] = useState<B2BInvoice[]>([]);
   const [isB2B, setIsB2B] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -102,10 +103,16 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     let active = true;
-    getMe()
+    checkAuth()
       .then(async (user) => {
-        if (!user) {
-          router.push("/account/login");
+        if (!active) return;
+        if (user === "anonymous") {
+          router.replace(loginHref(pathname));
+          return;
+        }
+        if (user === "error") {
+          setFailed(true);
+          setLoading(false);
           return;
         }
         const data = await getInvoices();
@@ -122,7 +129,7 @@ export default function InvoicesPage() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [router, pathname]);
 
   if (loading) {
     return (

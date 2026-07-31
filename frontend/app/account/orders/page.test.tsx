@@ -4,16 +4,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // #574: список заказов показывает резерв и путь к отзыву, а сбой загрузки
 // не выдаётся за «заказов пока нет».
 const pushMock = vi.fn();
+const replaceMock = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, replace: replaceMock }),
   usePathname: () => "/account/orders",
 }));
-vi.mock("@/lib/auth", () => ({ getMe: vi.fn(), getOrders: vi.fn() }));
+vi.mock("@/lib/auth", () => ({
+  checkAuth: vi.fn(), getOrders: vi.fn(),
+  loginHref: (next?: string) => (next ? `/account/login?next=${encodeURIComponent(next)}` : "/account/login"),
+}));
 
-import { getMe, getOrders } from "@/lib/auth";
+import { checkAuth, getOrders } from "@/lib/auth";
 import OrdersPage from "./page";
 
-const mockedGetMe = getMe as unknown as ReturnType<typeof vi.fn>;
+const mockedGetMe = checkAuth as unknown as ReturnType<typeof vi.fn>;
 const mockedGetOrders = getOrders as unknown as ReturnType<typeof vi.fn>;
 
 const HOUR_AHEAD = new Date(Date.now() + 3_600_000).toISOString();
@@ -40,6 +44,7 @@ function order(overrides: Record<string, unknown> = {}) {
 describe("OrdersPage (#574)", () => {
   beforeEach(() => {
     pushMock.mockReset();
+    replaceMock.mockReset();
     mockedGetMe.mockReset();
     mockedGetOrders.mockReset();
     mockedGetMe.mockResolvedValue({ id: 1, customer_type: "b2c" });

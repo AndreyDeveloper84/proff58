@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Building2,
   CheckCircle2,
@@ -29,13 +29,16 @@ import { MaxLinkCard } from "@/components/account/MaxLinkCard";
 import { NotificationPreferencesCard } from "@/components/account/NotificationPreferencesCard";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { ErrorState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
 import {
   changePhone,
+  checkAuth,
   deleteAccount,
   getMe,
   getOrders,
   getWishlist,
+  loginHref,
   logout,
   updateMe,
   type AccountUser,
@@ -82,7 +85,10 @@ type ProfileForm = {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<AccountUser | null>(null);
+  // Сбой связи/сервера при проверке доступа — это не «пользователь не вошёл».
+  const [loadFailed, setLoadFailed] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersFailed, setOrdersFailed] = useState(false);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
@@ -111,10 +117,18 @@ export default function ProfilePage() {
 
   useEffect(() => {
     let active = true;
-    getMe()
+    checkAuth()
       .then(async (data) => {
-        if (!data) {
-          router.push("/account/login");
+        if (!active) return;
+        if (data === "anonymous") {
+          // replace, а не push: «Назад» с формы входа возвращал сюда, страница
+          // снова уводила на вход — из петли выбирались только закрытием вкладки.
+          router.replace(loginHref(pathname));
+          return;
+        }
+        if (data === "error") {
+          setLoadFailed(true);
+          setLoading(false);
           return;
         }
         const [orderData, wishlistData] = await Promise.all([getOrders(), getWishlist()]);
@@ -132,7 +146,7 @@ export default function ProfilePage() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [router, pathname]);
 
   const openProfileEditor = () => {
     if (!user) return;
@@ -215,7 +229,9 @@ export default function ProfilePage() {
     setPhoneError("");
     try {
       await changePhone(normalizePhone(newPhone), currentPassword);
-      const updated = await getMe();
+      // Телефон уже изменён; не сумели перечитать профиль — это не повод
+      // показывать ошибку смены. Экран обновится при следующей загрузке.
+      const updated = await getMe().catch(() => null);
       if (updated) setUser(updated);
       setPhoneOpen(false);
       setNewPhone("");
@@ -248,6 +264,25 @@ export default function ProfilePage() {
   }, [orders]);
 
   if (loading) return <DashboardLoading />;
+  if (loadFailed) {
+    return (
+      <AccountShell title="Личный кабинет">
+        <ErrorState
+          title="Не удалось открыть кабинет"
+          description="Сервис временно недоступен. Обновите страницу через минуту — выходить из аккаунта не нужно."
+          action={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex h-11 items-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
+            >
+              Обновить
+            </button>
+          }
+        />
+      </AccountShell>
+    );
+  }
   if (!user) return null;
 
   const displayName = user.full_name || "Покупатель";
