@@ -10,7 +10,8 @@ import { SdsShankFigure } from "@/components/articles/figures/SdsShankFigure";
 import { TorqueScaleFigure } from "@/components/articles/figures/TorqueScaleFigure";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { ProductCard } from "@/components/product/ProductCard";
-import { ARTICLES, getArticle, type ArticleBlock, type ArticleFigure } from "@/lib/articles";
+import { type ArticleBlock, type ArticleFigure } from "@/lib/articles";
+import { getArticleBySlug, getArticleCards } from "@/lib/articles-source";
 import { getCategoryProducts } from "@/lib/catalog";
 import { SITE } from "@/lib/site";
 
@@ -33,7 +34,7 @@ const FIGURES: Record<ArticleFigure, React.ComponentType> = {
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const article = getArticle(slug);
+  const article = await getArticleBySlug(slug);
   if (!article) return { title: "Статья не найдена" };
   return { title: article.title, description: article.excerpt };
 }
@@ -98,10 +99,12 @@ function Block({ block }: { block: ArticleBlock }) {
 
 export default async function ArticlePage({ params }: Props) {
   const { slug } = await params;
-  const article = getArticle(slug);
+  const article = await getArticleBySlug(slug);
   if (!article) notFound();
 
-  const more = ARTICLES.filter((item) => item.slug !== article.slug).slice(0, 3);
+  const more = (await getArticleCards())
+    .filter((item) => item.slug !== article.slug)
+    .slice(0, 3);
   const Figure = FIGURES[article.figure];
   const products = article.catalog ? await getCategoryProducts(article.catalog.slug, 3) : [];
 

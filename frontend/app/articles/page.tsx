@@ -3,12 +3,16 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, Clock } from "lucide-react";
 import { WhyBuyStrip } from "@/components/home/HomeBottom";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
-import { ARTICLES } from "@/lib/articles";
+import { getArticleCards } from "@/lib/articles-source";
 
 export const metadata = { title: "Статьи и обзоры" };
 
-export default function ArticlesIndexPage() {
-  const [lead, ...rest] = ARTICLES;
+// Статьи ведутся в админке — пререндер зацементировал бы ленту до следующей
+// сборки.
+export const dynamic = "force-dynamic";
+
+export default async function ArticlesIndexPage() {
+  const [lead, ...rest] = await getArticleCards();
 
   return (
     <main className="min-h-[70vh] bg-surface pb-20 lg:pb-0">
