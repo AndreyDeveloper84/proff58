@@ -2,10 +2,13 @@ from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, IntegerField, OuterRef, Subquery, Value
 from django.db.models.functions import Coalesce
-from django.urls import reverse
+from django.shortcuts import redirect
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
@@ -16,7 +19,7 @@ from apps.core.events import EventSource, product_created, product_updated
 from apps.pricing.models import PriceRecord
 from apps.pricing.services import WHOLESALE, price_for
 
-from . import processing, queues
+from . import moderation, processing, queues
 from .availability_subscriptions import ProductAvailabilitySubscription
 from .models import (
     Attribute,
@@ -636,6 +639,106 @@ class ProductAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     autocomplete_fields = ["category"]
     list_select_related = ("category",)
+
+    def response_change(self, request, obj):
+        """Кнопка «Сохранить и следующий →»: правка потоком, без возврата в список."""
+        if "_save_and_next" in request.POST:
+            nxt = moderation.next_after(obj)
+            if nxt is None:
+                self.message_user(
+                    request,
+                    f"Сохранено: {obj.name}. Это был последний товар.",
+                    level=messages.INFO,
+                )
+                return redirect("admin:catalog_product_changelist")
+            self.message_user(request, f"Сохранено: {obj.name}", level=messages.SUCCESS)
+            return redirect("admin:catalog_product_change", nxt.pk)
+        return super().response_change(request, obj)
+
+    def get_urls(self):
+        return [
+            path(
+                "moderate/",
+                self.admin_site.admin_view(self.moderate_view),
+                name="catalog_product_moderate",
+            ),
+            *super().get_urls(),
+        ]
+
+    def moderate_view(self, request):
+        """Конвейер модерации: один товар, нужные поля, три кнопки.
+
+        Разбор каталога в обычном списке — это навигация: открыть, проскроллить,
+        сохранить, вернуться, найти следующий. Здесь навигации нет.
+        """
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        product_id = request.POST.get("product_id") or request.GET.get("product")
+        product = Product.objects.filter(pk=product_id).first() if product_id else None
+        if product is None:
+            product = moderation.next_product()
+
+        if product is None:  # очередь пуста — показывать нечего
+            return TemplateResponse(
+                request,
+                "admin/catalog/product/moderate.html",
+                {
+                    **self.admin_site.each_context(request),
+                    "title": "Разбор каталога",
+                    "product": None,
+                    "left": 0,
+                    "opts": self.model._meta,
+                },
+            )
+
+        errors: list[str] = []
+        if request.method == "POST":
+            action = request.POST.get("action", "")
+            if action == "skip":
+                return redirect(self._moderate_next_url(product.pk))
+
+            form = moderation.ModerationForm(request.POST, product=product)
+            if form.is_valid():
+                product = form.apply()
+                if action == "publish":
+                    errors = moderation.publish(product, actor_id=request.user.pk)
+                    if not errors:
+                        self.message_user(
+                            request, f"Опубликован: {product.name}", level=messages.SUCCESS
+                        )
+                        return redirect(self._moderate_next_url(product.pk))
+                elif action == "review":
+                    moderation.send_to_review(product)
+                    self.message_user(request, "Отложен на доработку.", level=messages.INFO)
+                    return redirect(self._moderate_next_url(product.pk))
+                else:
+                    self.message_user(request, "Сохранено.", level=messages.SUCCESS)
+                    product.refresh_from_db()
+                    # Категория могла смениться — перестраиваем форму под новый
+                    # набор характеристик, иначе человек увидит поля прежней.
+                    form = moderation.ModerationForm(product=product)
+        else:
+            form = moderation.ModerationForm(product=product)
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Разбор каталога",
+            "product": product,
+            "form": form,
+            "publish_errors": errors,
+            "checks": product_checks(product),
+            "percent": readiness_percent(product_checks(product)),
+            "left": moderation.queue().count(),
+            "opts": self.model._meta,
+        }
+        return TemplateResponse(request, "admin/catalog/product/moderate.html", context)
+
+    @staticmethod
+    def _moderate_next_url(after_id: int) -> str:
+        nxt = moderation.next_product(after_id=after_id)
+        base = reverse("admin:catalog_product_moderate")
+        return f"{base}?product={nxt.pk}" if nxt else base
 
     def lookup_allowed(self, lookup, value, request=None):
         # Drill-down из списка категорий: ссылка по поддереву (?category__path__startswith=<path>)

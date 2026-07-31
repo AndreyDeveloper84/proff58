@@ -61,11 +61,11 @@ def _catalog_group():
         "title": "Товары",
         "cards": [
             _card(
-                "Требуют внимания",
+                "Разобрать каталог",
                 queues.needs_attention().count(),
-                f"{base}?moderation=attention",
+                "/admin/catalog/product/moderate/",
                 tone="danger",
-                hint="Не попадут на сайт, пока не доделать",
+                hint="Открыть конвейер: один товар — заполнить — опубликовать",
             ),
             _card(
                 "Без категории",
