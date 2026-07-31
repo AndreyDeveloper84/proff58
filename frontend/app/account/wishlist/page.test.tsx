@@ -2,28 +2,31 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const pushMock = vi.fn();
-const routerMock = { push: pushMock };
+const replaceMock = vi.fn();
+const routerMock = { push: pushMock, replace: replaceMock };
 
 vi.mock("next/navigation", () => ({
   useRouter: () => routerMock,
   usePathname: () => "/account/wishlist",
 }));
 vi.mock("@/lib/auth", () => ({
-  getMe: vi.fn(),
+  checkAuth: vi.fn(),
+  loginHref: (next?: string) => (next ? `/account/login?next=${encodeURIComponent(next)}` : "/account/login"),
   getWishlist: vi.fn(),
   removeWishlistItem: vi.fn(),
 }));
 
-import { getMe, getWishlist, removeWishlistItem } from "@/lib/auth";
+import { checkAuth, getWishlist, removeWishlistItem } from "@/lib/auth";
 import WishlistPage from "./page";
 
-const mockedGetMe = getMe as unknown as ReturnType<typeof vi.fn>;
+const mockedGetMe = checkAuth as unknown as ReturnType<typeof vi.fn>;
 const mockedGetWishlist = getWishlist as unknown as ReturnType<typeof vi.fn>;
 const mockedRemove = removeWishlistItem as unknown as ReturnType<typeof vi.fn>;
 
 describe("WishlistPage", () => {
   beforeEach(() => {
     pushMock.mockReset();
+    replaceMock.mockReset();
     mockedGetMe.mockReset();
     mockedGetWishlist.mockReset();
     mockedRemove.mockReset();

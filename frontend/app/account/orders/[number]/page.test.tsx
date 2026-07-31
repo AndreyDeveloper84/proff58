@@ -2,26 +2,29 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const pushMock = vi.fn();
+const replaceMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ number: "P-2026-0010" }),
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, replace: replaceMock }),
   usePathname: () => "/account/orders/P-2026-0010",
 }));
 vi.mock("@/lib/auth", () => ({
-  getMe: vi.fn(),
+  checkAuth: vi.fn(),
+  loginHref: (next?: string) => (next ? `/account/login?next=${encodeURIComponent(next)}` : "/account/login"),
   getOrder: vi.fn(),
 }));
 
-import { getMe, getOrder } from "@/lib/auth";
+import { checkAuth, getOrder } from "@/lib/auth";
 import OrderDetailsPage from "./page";
 
-const mockedGetMe = getMe as unknown as ReturnType<typeof vi.fn>;
+const mockedGetMe = checkAuth as unknown as ReturnType<typeof vi.fn>;
 const mockedGetOrder = getOrder as unknown as ReturnType<typeof vi.fn>;
 
 describe("OrderDetailsPage", () => {
   beforeEach(() => {
     pushMock.mockReset();
+    replaceMock.mockReset();
     mockedGetMe.mockReset();
     mockedGetOrder.mockReset();
     mockedGetMe.mockResolvedValue({ id: 1 });

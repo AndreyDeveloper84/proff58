@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import {
   Building2,
   ChevronLeft,
@@ -24,7 +24,7 @@ import { EmptyState, ErrorState } from "@/components/ui/states";
 import { ReservationNotice, reservationState } from "@/components/order/ReservationNotice";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { StarDisplay } from "@/components/reviews/StarRating";
-import { getMe, getOrder } from "@/lib/auth";
+import { checkAuth, getOrder, loginHref } from "@/lib/auth";
 import {
   formatDateTime,
   formatDeliverySlot,
@@ -87,6 +87,7 @@ function OrderLoading() {
 
 export default function OrderDetailsPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const params = useParams<{ number: string }>();
   const orderNumber = params.number;
   const [order, setOrder] = useState<Order | null>(null);
@@ -98,10 +99,14 @@ export default function OrderDetailsPage() {
 
   useEffect(() => {
     let active = true;
-    getMe()
+    checkAuth()
       .then((user) => {
-        if (!user) {
-          router.push("/account/login");
+        if (user === "anonymous") {
+          router.replace(loginHref(pathname));
+          return null;
+        }
+        if (user === "error") {
+          setError("Сервис временно недоступен. Попробуйте повторить через минуту.");
           return null;
         }
         return getOrder(orderNumber);
@@ -125,7 +130,7 @@ export default function OrderDetailsPage() {
     return () => {
       active = false;
     };
-  }, [orderNumber, router]);
+  }, [orderNumber, router, pathname]);
 
   const itemsTotal = useMemo(
     () =>

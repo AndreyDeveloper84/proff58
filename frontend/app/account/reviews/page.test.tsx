@@ -2,11 +2,15 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const pushMock = vi.fn();
+const replaceMock = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, replace: replaceMock }),
   usePathname: () => "/account/reviews",
 }));
-vi.mock("@/lib/auth", () => ({ getMe: vi.fn() }));
+vi.mock("@/lib/auth", () => ({
+  checkAuth: vi.fn(),
+  loginHref: (next?: string) => (next ? `/account/login?next=${encodeURIComponent(next)}` : "/account/login"),
+}));
 vi.mock("@/lib/reviews", () => ({
   getMyReviews: vi.fn(),
   // #574: статусы теперь берутся из общего словаря, а не из status_display бэка.
@@ -17,11 +21,11 @@ vi.mock("@/lib/reviews", () => ({
   },
 }));
 
-import { getMe } from "@/lib/auth";
+import { checkAuth } from "@/lib/auth";
 import { getMyReviews } from "@/lib/reviews";
 import MyReviewsPage from "./page";
 
-const mockedGetMe = getMe as unknown as ReturnType<typeof vi.fn>;
+const mockedGetMe = checkAuth as unknown as ReturnType<typeof vi.fn>;
 const mockedGetMyReviews = getMyReviews as unknown as ReturnType<typeof vi.fn>;
 
 function review(overrides: Record<string, unknown> = {}) {
@@ -43,6 +47,7 @@ function review(overrides: Record<string, unknown> = {}) {
 describe("MyReviewsPage (#573)", () => {
   beforeEach(() => {
     pushMock.mockReset();
+    replaceMock.mockReset();
     mockedGetMe.mockReset();
     mockedGetMyReviews.mockReset();
     mockedGetMe.mockResolvedValue({ id: 1, customer_type: "b2c" });
@@ -79,8 +84,8 @@ describe("MyReviewsPage (#573)", () => {
   });
 
   it("гость уводится на логин", async () => {
-    mockedGetMe.mockResolvedValue(null);
+    mockedGetMe.mockResolvedValue("anonymous");
     render(<MyReviewsPage />);
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/account/login"));
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/account/login?next=%2Faccount%2Freviews"));
   });
 });

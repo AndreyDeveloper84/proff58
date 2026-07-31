@@ -2,18 +2,22 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const pushMock = vi.fn();
+const replaceMock = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, replace: replaceMock }),
   usePathname: () => "/account/invoices",
 }));
-vi.mock("@/lib/auth", () => ({ getMe: vi.fn() }));
+vi.mock("@/lib/auth", () => ({
+  checkAuth: vi.fn(),
+  loginHref: (next?: string) => (next ? `/account/login?next=${encodeURIComponent(next)}` : "/account/login"),
+}));
 vi.mock("@/lib/invoices", () => ({ getInvoices: vi.fn() }));
 
-import { getMe } from "@/lib/auth";
+import { checkAuth } from "@/lib/auth";
 import { getInvoices } from "@/lib/invoices";
 import InvoicesPage from "./page";
 
-const mockedGetMe = getMe as unknown as ReturnType<typeof vi.fn>;
+const mockedGetMe = checkAuth as unknown as ReturnType<typeof vi.fn>;
 const mockedGetInvoices = getInvoices as unknown as ReturnType<typeof vi.fn>;
 
 const B2B_USER = {
@@ -51,6 +55,7 @@ function invoice(overrides: Record<string, unknown> = {}) {
 describe("InvoicesPage (#560)", () => {
   beforeEach(() => {
     pushMock.mockReset();
+    replaceMock.mockReset();
     mockedGetMe.mockReset();
     mockedGetInvoices.mockReset();
     mockedGetMe.mockResolvedValue(B2B_USER);
@@ -97,10 +102,10 @@ describe("InvoicesPage (#560)", () => {
   });
 
   it("гость уводится на логин", async () => {
-    mockedGetMe.mockResolvedValue(null);
+    mockedGetMe.mockResolvedValue("anonymous");
     mockedGetInvoices.mockResolvedValue([]);
     render(<InvoicesPage />);
 
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/account/login"));
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/account/login?next=%2Faccount%2Finvoices"));
   });
 });

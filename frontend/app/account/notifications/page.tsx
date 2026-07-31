@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Bell, Check } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
-import { getMe } from "@/lib/auth";
+import { checkAuth, loginHref } from "@/lib/auth";
 import {
   getNotificationHistory,
   markAllNotificationsRead,
@@ -22,6 +22,7 @@ const PAGE_SIZE = 20;
 // откатом при ошибке (тот же паттерн, что NotificationPreferencesCard).
 export default function NotificationsPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [items, setItems] = useState<NotificationItem[] | null>(null);
   // Явный счётчик "сколько уже запрошено", а не items.length: под конкурентную
   // вставку нового уведомления между подгрузками страниц (обычное дело для
@@ -42,10 +43,14 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     let active = true;
-    getMe().then((user) => {
+    checkAuth().then((user) => {
       if (!active) return;
-      if (!user) {
-        router.push("/account/login");
+      if (user === "anonymous") {
+        router.replace(loginHref(pathname));
+        return;
+      }
+      if (user === "error") {
+        setError("Не удалось загрузить уведомления.");
         return;
       }
       loadPage(0).catch(() => {
@@ -55,7 +60,7 @@ export default function NotificationsPage() {
     return () => {
       active = false;
     };
-  }, [router, loadPage]);
+  }, [router, pathname, loadPage]);
 
   async function handleLoadMore() {
     setLoadingMore(true);
