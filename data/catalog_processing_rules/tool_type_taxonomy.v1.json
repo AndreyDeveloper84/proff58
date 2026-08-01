@@ -558,6 +558,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "drovokoly",
+      "value": "Дровоколы",
+      "sort_order": 4,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-3)",
+      "review_status": "approved",
+      "review_reason": "1 SKU (43994, STURM WSE15374): силовая садовая техника, ниша пуста (без типа). sort_order 4 — рядом с bp-motobloki (садово-силовое оборудование).",
+      "review_ref": "tt-new-types-batch-3",
+      "legacy_aliases": []
+    },
+    {
       "slug": "elektronozhnitsy",
       "value": "Электроножницы по металлу",
       "sort_order": 18,
@@ -841,6 +852,17 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "hoz-motygi",
+      "value": "Мотыги и тяпки",
+      "sort_order": 4,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-3)",
+      "review_status": "approved",
+      "review_reason": "1 SKU (40910, мотыга прямая большая): базовый ручной садовый инвентарь, ниша пуста. sort_order 4 — рядом с hoz-vily (семейство ручного садового инвентаря).",
+      "review_ref": "tt-new-types-batch-3",
       "legacy_aliases": []
     },
     {
@@ -3694,6 +3716,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "zap-ognetushiteley",
+      "value": "Запчасти для огнетушителей (шланги, сетки)",
+      "sort_order": 11,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-3)",
+      "review_status": "approved",
+      "review_reason": "3 SKU (29877, 29878, 29954 — сетки всасывающие СВ-50/СВ-80, шланг с распылителем), сняты с siz-pozh-inventar: запчасти водопенного оборудования — не пожарный инвентарь и не сам огнетушитель. sort_order 11 — рядом с krepleniya-ognetushiteley / siz-ognetushiteli (batch-2).",
+      "review_ref": "tt-new-types-batch-3",
+      "legacy_aliases": []
+    },
+    {
       "slug": "zap-platy-bloki",
       "value": "Платы и блоки управления",
       "sort_order": 16,
@@ -3925,6 +3958,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "zerkala-dosmotrovye",
+      "value": "Зеркала досмотровые",
+      "sort_order": 15,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-3)",
+      "review_status": "approved",
+      "review_reason": "1 SKU (168, зеркало досмотра на магните телескопическое): автомобильный спецынструмент, разделён с магнитами (№22, отложено). sort_order 15 — рядом с kompressometry (автоспецдиагностика/спецынструмент из batch-2).",
+      "review_ref": "tt-new-types-batch-3",
+      "legacy_aliases": []
+    },
+    {
       "slug": "zubila",
       "value": "Зубила, керны, пробойники",
       "sort_order": 12,
@@ -3947,6 +3991,6 @@
       "legacy_aliases": []
     }
   ],
-  "taxonomy_identity_hash": "8eba9631ad083d4d96e718c37c31726a8811e1562d5b1f6f12fa65c738cd1b9e",
-  "manifest_semantic_hash": "ed1b2a14caa0c128b00a19d0b8ce048865eb6da0603a9f9447009f2363add205"
+  "taxonomy_identity_hash": "f7b73846bf984917b1fae2c775ae0b6ce1cf91609361529c57f4e64adebb6fde",
+  "manifest_semantic_hash": "0a9cb707179b1c09411f1b231691c1c24f52937e4e4ee9e085e2f3c867aedbbe"
 }
