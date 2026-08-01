@@ -61,6 +61,28 @@
       "legacy_aliases": []
     },
     {
+      "slug": "aksessuary-sharnirno-gubcevogo-instrumenta",
+      "value": "Аксессуары шарнирно-губцевого инструмента",
+      "sort_order": 92,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step5 rejected + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH)",
+      "review_status": "approved",
+      "review_reason": "4 SKU накладок Kraftool (33251-33254) — объединение разлёта из zap-remkomplekty / aksessuary-dlya-klyuchey / prochaya-osnastka; владелец выбрал широкий вариант (2026-08-01). sort_order 92 — рядом с aksessuary-dlya-klyuchey.",
+      "review_ref": "tt-new-types-batch",
+      "legacy_aliases": []
+    },
+    {
+      "slug": "apparaty-svarki-plastikovyh-trub",
+      "value": "Аппараты сварки пластиковых труб",
+      "sort_order": 4,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step5 rejected + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH)",
+      "review_status": "approved",
+      "review_reason": "3 SKU (43691, 43692, 43693), сняты с svar-apparaty: сварка пластика ≠ инвертор по металлу. svar-apparaty остаётся для сварки металла. sort_order 4 — рядом с svar-apparaty.",
+      "review_ref": "tt-new-types-batch",
+      "legacy_aliases": []
+    },
+    {
       "slug": "armiruyushchie-lenty-binty",
       "value": "Армирующие ленты и бинты",
       "sort_order": 102,
@@ -1288,6 +1310,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "kleshchi-prosechnye",
+      "value": "Клещи просечные",
+      "sort_order": 6,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step5 rejected + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH)",
+      "review_status": "approved",
+      "review_reason": "1 SKU револьверного дырокола (32025), снят с zubila: не ударный инструмент. Slug нормализован из владельческого klehchi-prosechnye (опечатка транслитерации). sort_order 6 — рядом с passatizhi (шарнирно-губцевый инструмент).",
+      "review_ref": "tt-new-types-batch",
+      "legacy_aliases": []
+    },
+    {
       "slug": "klyuchi-gaechnye",
       "value": "Гаечные ключи",
       "sort_order": 1,
@@ -1633,6 +1666,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "machete-i-sekachi",
+      "value": "Мачете и секачи",
+      "sort_order": 16,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step5 rejected + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH)",
+      "review_status": "approved",
+      "review_reason": "3 SKU: мачете 40820 и секач 42072 (сняты с topory), секач 42071 (снят с hoz-nozhi; уточнение владельца 2026-08-01: 42071 вместо ошибочно указанного 42134). sort_order 16 — рядом с topory.",
+      "review_ref": "tt-new-types-batch",
+      "legacy_aliases": []
+    },
+    {
       "slug": "meshki-pylesos",
       "value": "Мешки для пылесосов",
       "sort_order": 39,
@@ -1754,6 +1798,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "nabory-klyuchey-imbusovyh",
+      "value": "Наборы имбусовых ключей",
+      "sort_order": 32,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step5 rejected + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH)",
+      "review_status": "approved",
+      "review_reason": "4 SKU Г-образных наборов (22671, 22672, 22673, 22674), сняты с nabory-instrumenta: разгрузка больших слесарных чемоданов. sort_order 32 — рядом с nabory-instrumenta.",
+      "review_ref": "tt-new-types-batch",
+      "legacy_aliases": []
+    },
+    {
       "slug": "nabory-koronok",
       "value": "Наборы коронок",
       "sort_order": 9,
@@ -1872,6 +1927,17 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "nozhi-gazonokosilok",
+      "value": "Ножи для газонокосилок",
+      "sort_order": 2,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step5 rejected + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH)",
+      "review_status": "approved",
+      "review_reason": "1 SKU ножа газонокосилки Bosch (44885), снят с hoz-lezviya: расходник садовой техники, не канцелярское лезвие. sort_order 2 — рядом с bp-gazonokosilki.",
+      "review_ref": "tt-new-types-batch",
       "legacy_aliases": []
     },
     {
@@ -2050,6 +2116,17 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "osnastka-stroitelnogo-oborudovaniya",
+      "value": "Оснастка строительного оборудования",
+      "sort_order": 31,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step5 rejected + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH)",
+      "review_status": "approved",
+      "review_reason": "2 SKU вибронаконечников (38365, 38367), сняты с vibratory-betona: комплектующая, не вибратор. Вибраторы остаются в vibratory-betona, шпиндели/валы — в zap-shpindeli-valy. sort_order 31 — рядом с vibratory-betona.",
+      "review_ref": "tt-new-types-batch",
       "legacy_aliases": []
     },
     {
@@ -2726,6 +2803,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "stanki-derevoobrabatyvayushchie",
+      "value": "Станки деревообрабатывающие",
+      "sort_order": 27,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step5 rejected + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH)",
+      "review_status": "approved",
+      "review_reason": "2 SKU стационарных станков: рейсмусовый 44910 (снят с rubanki), распиловочный 44908 (снят с pily) — станки не смешиваем с ручным инструментом. sverlilnye-stanki и stanki-zatochnye — отдельные типы. sort_order 27 — рядом с sverlilnye-stanki.",
+      "review_ref": "tt-new-types-batch",
+      "legacy_aliases": []
+    },
+    {
       "slug": "stanki-zatochnye",
       "value": "Станки заточные",
       "sort_order": 29,
@@ -3298,6 +3386,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "trubogiby",
+      "value": "Трубогибы",
+      "sort_order": 26,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 step5 rejected + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH)",
+      "review_status": "approved",
+      "review_reason": "2 SKU: трубогиб Зубр 35081 (снят с truborezy — инверсия функции: гнёт, не режет) и безтиповой трубогиб KRAFTOOL EXPERT MINI 35079 (no_option_in_taxonomy). sort_order 26 — рядом с truborezy.",
+      "review_ref": "tt-new-types-batch",
+      "legacy_aliases": []
+    },
+    {
       "slug": "truborezy",
       "value": "Труборезы",
       "sort_order": 26,
@@ -3738,6 +3837,6 @@
       "legacy_aliases": []
     }
   ],
-  "taxonomy_identity_hash": "7ac7a9a26eeffcb6360993b3c1a5942ddee4da7c80b8e31ad9b47853e2a06ef9",
-  "manifest_semantic_hash": "9958cfcd520475572b346ecfcfd98cae005d4da8f0e00a8f179fda120b8f353d"
+  "taxonomy_identity_hash": "ea65486c3c74aded2020f62827b0f53b09092c27e96e5b705bc81f4f6d6a9482",
+  "manifest_semantic_hash": "1d2195a1ed4b43de2534924a951acc0dc49286979896941861a019e2075ee0e5"
 }
