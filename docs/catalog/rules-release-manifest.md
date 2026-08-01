@@ -70,8 +70,13 @@ python manage.py catalog_rules_release_manifest --check
 ```
 
 С H4 замороженный 7D sample несёт **canonical** `taxonomy_hash`
-(`ea65486c…`; TT-NEW-TYPES-BATCH 2026-08-01 перевыпустил binding с `7ac7a9a2…`
-при добавлении пакета из 9 типов Ступени 5 — `trubogiby`, `machete-i-sekachi`,
+(`8eba9631…`; TT-NEW-TYPES-BATCH-2 2026-08-01 перевыпустил binding с `ea65486c…`
+при добавлении пакета из 10 типов — `shtifty`, `nabory-uplotnitelnyh-kolets`,
+`nagruzochnye-vilki`, `krepleniya-ognetushiteley`, `kompressometry`,
+`zap-tarelki-opornye`, `prosekateli-profiley-gkl`, `shilya`, `izm-shchupy`,
+`siz-kremy-zashchitnye` (`voronki` не создан — дубликат `hoz-voronki` из TT-14);
+до этого TT-NEW-TYPES-BATCH 2026-08-01 перевыпускал с `7ac7a9a2…` при
+добавлении пакета из 9 типов Ступени 5 — `trubogiby`, `machete-i-sekachi`,
 `nabory-klyuchey-imbusovyh`, `kleshchi-prosechnye`, `nozhi-gazonokosilok`,
 `stanki-derevoobrabatyvayushchie`, `apparaty-svarki-plastikovyh-trub`,
 `osnastka-stroitelnogo-oborudovaniya`, `aksessuary-sharnirno-gubcevogo-instrumenta`;
