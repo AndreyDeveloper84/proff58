@@ -107,11 +107,12 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements/dev.txt
-      # H4: sample перевыпущен на canonical taxonomy binding (TT-NEW-TYPES-BATCH-2
-      # 2026-08-01: 8eba9631…, до этого ea65486c… (TT-NEW-TYPES-BATCH), 7ac7a9a2…
-      # (TT-14), 887eea5d… (TT-07), 524d4e31… (TT-01) и fc13be78…),
-      # поблажка --allow-legacy-taxonomy-hash снята из обоих шагов. Джоба
-      # проходит только на canonical identity — зелёный CI = полное доказательство.
+      # H4: sample перевыпущен на canonical taxonomy binding (TT-NEW-TYPES-BATCH-3
+      # 2026-08-01: f7b73846…, до этого 8eba9631… (TT-NEW-TYPES-BATCH-2), ea65486c…
+      # (TT-NEW-TYPES-BATCH), 7ac7a9a2… (TT-14), 887eea5d… (TT-07), 524d4e31…
+      # (TT-01) и fc13be78…), поблажка --allow-legacy-taxonomy-hash снята из
+      # обоих шагов. Джоба проходит только на canonical identity — зелёный CI =
+      # полное доказательство.
       - name: Gate — frozen 7D sample против default ruleset
         run: |
           python manage.py catalog_rules_gate_validate \

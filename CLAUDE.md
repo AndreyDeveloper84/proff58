@@ -146,9 +146,11 @@ code команды = статус джобы.
   `backfill_option_slugs` не создают типы вне манифеста.
 - Gate не доверяет самодекларированным полям артефактов — всё пересчитывается
   (`docs/catalog/rules-gate-h2.md`).
-- `taxonomy_identity_hash` = `8eba9631…` (canonical; с TT-NEW-TYPES-BATCH-2
-  2026-08-01 — 355 options, пакет из 10 типов: `shtifty`,
-  `nabory-uplotnitelnyh-kolets`, `nagruzochnye-vilki`,
+- `taxonomy_identity_hash` = `f7b73846…` (canonical; с TT-NEW-TYPES-BATCH-3
+  2026-08-01 — 359 options, пакет из 4 типов P2: `drovokoly`, `hoz-motygi`,
+  `zerkala-dosmotrovye`, `zap-ognetushiteley`;
+  до этого `8eba9631…` TT-NEW-TYPES-BATCH-2 — 355 options, пакет из 10 типов:
+  `shtifty`, `nabory-uplotnitelnyh-kolets`, `nagruzochnye-vilki`,
   `krepleniya-ognetushiteley`, `kompressometry`, `zap-tarelki-opornye`,
   `prosekateli-profiley-gkl`, `shilya`, `izm-shchupy`, `siz-kremy-zashchitnye`;
   `voronki` не создан — дубликат `hoz-voronki` из TT-14;
