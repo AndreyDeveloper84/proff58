@@ -1233,6 +1233,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "izm-shchupy",
+      "value": "Щупы измерительные",
+      "sort_order": 12,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-2)",
+      "review_status": "approved",
+      "review_reason": "2 SKU по индексу: измерительные щупы — контроль зазоров, инструмент поверки. sort_order 12 — рядом с izm-kalibry.",
+      "review_ref": "tt-new-types-batch-2",
+      "legacy_aliases": []
+    },
+    {
       "slug": "izm-shtangen",
       "value": "Штангенциркули и глубиномеры",
       "sort_order": 4,
@@ -1340,6 +1351,17 @@
       "review_status": "approved",
       "review_reason": "v2-required backport (blocker A Wave 7)",
       "review_ref": "wave7-inventory",
+      "legacy_aliases": []
+    },
+    {
+      "slug": "kompressometry",
+      "value": "Компрессометры",
+      "sort_order": 15,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-2)",
+      "review_status": "approved",
+      "review_reason": "4 SKU по индексу: компрессометр — измерительный прибор (компрессия в цилиндрах). sort_order 15 — рядом с izm-analizatory.",
+      "review_ref": "tt-new-types-batch-2",
       "legacy_aliases": []
     },
     {
@@ -1576,6 +1598,17 @@
       "legacy_aliases": [
         "hoz-zamki"
       ]
+    },
+    {
+      "slug": "krepleniya-ognetushiteley",
+      "value": "Кронштейны и подставки для огнетушителей",
+      "sort_order": 11,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-2)",
+      "review_status": "approved",
+      "review_reason": "13 SKU по индексу, сняты с siz-ognetushiteli / siz-pozh-inventar: кронштейн и подставка — крепление, не сам огнетушитель и не пожарный инвентарь. sort_order 11 — рядом с siz-ognetushiteli.",
+      "review_ref": "tt-new-types-batch-2",
+      "legacy_aliases": []
     },
     {
       "slug": "krugi-almaznye",
@@ -1886,6 +1919,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "nabory-uplotnitelnyh-kolets",
+      "value": "Наборы уплотнительных колец (o-ring)",
+      "sort_order": 14,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-2)",
+      "review_status": "approved",
+      "review_reason": "45 SKU по индексу; сняты с zap-uplotneniya / prochaya-osnastka и безтиповых: набор o-ring — комплект, а не одиночная прокладка. sort_order 14 — рядом с zap-uplotneniya.",
+      "review_ref": "tt-new-types-batch-2",
+      "legacy_aliases": []
+    },
+    {
       "slug": "nadfili-shlif",
       "value": "Надфили",
       "sort_order": 23,
@@ -1894,6 +1938,17 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "nagruzochnye-vilki",
+      "value": "Вилки нагрузочные",
+      "sort_order": 8,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-2)",
+      "review_status": "approved",
+      "review_reason": "8 SKU по индексу, сняты с avtomaty-predohraniteli (грубая ошибка): нагрузочная вилка — измерительный прибор для АКБ, не защитный аппарат. sort_order 8 — рядом с izm-multimetry.",
+      "review_ref": "tt-new-types-batch-2",
       "legacy_aliases": []
     },
     {
@@ -2363,6 +2418,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "prosekateli-profiley-gkl",
+      "value": "Просекатели для профилей",
+      "sort_order": 19,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-2)",
+      "review_status": "approved",
+      "review_reason": "2 SKU по индексу, сняты с zaklepochniki / steplery-i-zaklepochniki: просекатель профилей ГКЛ — не заклёпочник. Решение владельца 2026-08-01: НЕ сливать с kleshchi-prosechnye, оставить оба типа. sort_order 19 — рядом с zaklepochniki.",
+      "review_ref": "tt-new-types-batch-2",
+      "legacy_aliases": []
+    },
+    {
       "slug": "protyazhki-uzk",
       "value": "Протяжки для кабеля (УЗК)",
       "sort_order": 19,
@@ -2517,6 +2583,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "shilya",
+      "value": "Шилья",
+      "sort_order": 12,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-2)",
+      "review_status": "approved",
+      "review_reason": "2 SKU по индексу: шильо — разметочный инструмент, не зубило. sort_order 12 — рядом с zubila.",
+      "review_ref": "tt-new-types-batch-2",
+      "legacy_aliases": []
+    },
+    {
       "slug": "shlifmashiny",
       "value": "Шлифовальные машины",
       "sort_order": 33,
@@ -2525,6 +2602,17 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "shtifty",
+      "value": "Штифты",
+      "sort_order": 8,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-2)",
+      "review_status": "approved",
+      "review_reason": "41 SKU по индексу phase8 taxonomy-gaps; серия собирается с zap-krepezh / prochaya-osnastka / zap-stopornye-koltsa / krep-shplinty: штифт — самостоятельный крепёж, не шплинт и не стопорное кольцо. sort_order 8 — рядом с krep-shplinty.",
+      "review_ref": "tt-new-types-batch-2",
       "legacy_aliases": []
     },
     {
@@ -2580,6 +2668,17 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "siz-kremy-zashchitnye",
+      "value": "Кремы защитные (дерматологические СИЗ)",
+      "sort_order": 19,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-2)",
+      "review_status": "approved",
+      "review_reason": "3 SKU по индексу, сняты с hoz-himiya: дерматологическое СИЗ, не бытовая химия. sort_order 19 — следующий свободный слот siz-* семейства (после siz-stekla=18).",
+      "review_ref": "tt-new-types-batch-2",
       "legacy_aliases": []
     },
     {
@@ -3749,6 +3848,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "zap-tarelki-opornye",
+      "value": "Тарелки опорные (подошвы) шлифмашин",
+      "sort_order": 29,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-01 (TT-NEW-TYPES-BATCH-2)",
+      "review_status": "approved",
+      "review_reason": "3 SKU по индексу (безтиповые 7269, 7271, 7272): опорная тарелка — оснастка шлифмашины, отдельный расходник. sort_order 29 — следующий свободный слот zap-* семейства (после zap-krepezh=28).",
+      "review_ref": "tt-new-types-batch-2",
+      "legacy_aliases": []
+    },
+    {
       "slug": "zap-uplotneniya",
       "value": "Уплотнения и прокладки",
       "sort_order": 14,
@@ -3837,6 +3947,6 @@
       "legacy_aliases": []
     }
   ],
-  "taxonomy_identity_hash": "ea65486c3c74aded2020f62827b0f53b09092c27e96e5b705bc81f4f6d6a9482",
-  "manifest_semantic_hash": "1d2195a1ed4b43de2534924a951acc0dc49286979896941861a019e2075ee0e5"
+  "taxonomy_identity_hash": "8eba9631ad083d4d96e718c37c31726a8811e1562d5b1f6f12fa65c738cd1b9e",
+  "manifest_semantic_hash": "ed1b2a14caa0c128b00a19d0b8ce048865eb6da0603a9f9447009f2363add205"
 }

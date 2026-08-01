@@ -107,9 +107,9 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements/dev.txt
-      # H4: sample перевыпущен на canonical taxonomy binding (TT-NEW-TYPES-BATCH
-      # 2026-08-01: ea65486c…, до этого 7ac7a9a2… (TT-14), 887eea5d… (TT-07),
-      # 524d4e31… (TT-01) и fc13be78…),
+      # H4: sample перевыпущен на canonical taxonomy binding (TT-NEW-TYPES-BATCH-2
+      # 2026-08-01: 8eba9631…, до этого ea65486c… (TT-NEW-TYPES-BATCH), 7ac7a9a2…
+      # (TT-14), 887eea5d… (TT-07), 524d4e31… (TT-01) и fc13be78…),
       # поблажка --allow-legacy-taxonomy-hash снята из обоих шагов. Джоба
       # проходит только на canonical identity — зелёный CI = полное доказательство.
       - name: Gate — frozen 7D sample против default ruleset
