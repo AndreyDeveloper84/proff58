@@ -24,13 +24,13 @@ from apps.catalog.taxonomy_manifest import (
 V2_PATH = Path(settings.BASE_DIR) / "data" / "catalog_processing_rules" / "tool_type.v2.json"
 SEED_RULES_PATH = Path(settings.BASE_DIR) / "data" / "tool_type_rules.json"
 
-# TT-14 (2026-07-31): пакет из 2 опций (bp-golovki-trimmernye, hoz-voronki;
-# 336 options) — identity и semantic hash пересчитаны;
-# разметка gate-sample не переразмечалась (2 строки, как в TT-07/TT-01).
-PINNED_IDENTITY_HASH = "7ac7a9a26eeffcb6360993b3c1a5942ddee4da7c80b8e31ad9b47853e2a06ef9"
+# TT-NEW-TYPES-BATCH (2026-08-01): пакет из 9 опций (phase8 step5 rejected;
+# 345 options) — identity и semantic hash пересчитаны;
+# разметка gate-sample не переразмечалась (2 строки, как в TT-14/TT-07/TT-01).
+PINNED_IDENTITY_HASH = "ea65486c3c74aded2020f62827b0f53b09092c27e96e5b705bc81f4f6d6a9482"
 # H4: clean-taxonomy снял 15 pending_business_review (identity_hash не менялся —
 # slug/value не тронуты; semantic_hash покрывает origin/review metadata).
-PINNED_SEMANTIC_HASH = "9958cfcd520475572b346ecfcfd98cae005d4da8f0e00a8f179fda120b8f353d"
+PINNED_SEMANTIC_HASH = "1d2195a1ed4b43de2534924a951acc0dc49286979896941861a019e2075ee0e5"
 
 BACKPORTED_SLUGS = {
     "bp-podgotovka-vozduha",
@@ -92,7 +92,7 @@ def _opt(slug, value, **kw):
 
 def test_committed_manifest_loads_and_matches_pins():
     m = load_manifest()
-    assert len(m.options) == 336
+    assert len(m.options) == 345
     assert m.identity_hash == PINNED_IDENTITY_HASH
     assert m.semantic_hash == PINNED_SEMANTIC_HASH
     assert m.schema_version == 1 and m.manifest_version == 1
