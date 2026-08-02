@@ -46,15 +46,74 @@ class SEOPage(TimeStampedModel):
         return self.status == PublishStatus.PUBLISHED
 
 
+class ArticleFigure(models.TextChoices):
+    """Схема-иллюстрация, которой открывается статья.
+
+    Ключи совпадают с компонентами витрины (frontend/components/articles/figures):
+    рисованный чертёж объясняет то, за чем пришли, лучше предметного фото.
+    Добавлять сюда значение можно только вместе с компонентом на фронте.
+    """
+
+    NONE = "", _("Без схемы")
+    SDS_SHANK = "sds-shank", _("Хвостовик SDS")
+    BATTERY_STORAGE = "battery-storage", _("Хранение аккумуляторов")
+    TORQUE_SCALE = "torque-scale", _("Шкала момента")
+    DISC_MARKING = "disc-marking", _("Маркировка дисков")
+    DUTY_CYCLE = "duty-cycle", _("Режим работы ПВ")
+    BUR_WEAR = "bur-wear", _("Износ бура")
+
+
 class Article(TimeStampedModel):
-    """Новость или статья."""
+    """Новость или статья.
+
+    Содержимое пишется простой разметкой (см. apps.content.article_markup) и
+    разбирается в секции с блоками — ту же структуру рендерит витрина. Хранить
+    её в JSON-поле и заставлять человека набивать JSON в админке значит не дать
+    ему писать статьи.
+    """
 
     slug = models.SlugField(_("Slug"), max_length=150, unique=True)
     title = models.CharField(_("Заголовок"), max_length=255)
     meta_title = models.CharField(_("meta title"), max_length=255, blank=True)
     meta_description = models.TextField(_("meta description"), blank=True)
     excerpt = models.TextField(_("Анонс"), blank=True)
-    body = models.TextField(_("Содержимое"), blank=True)
+    body = models.TextField(
+        _("Содержимое"),
+        blank=True,
+        help_text=_(
+            "«## » — заголовок раздела, «- » — пункт списка, «> » — врезка, "
+            "строка из «|» — таблица (первая строка = шапка). Остальное — абзацы."
+        ),
+    )
+    summary = models.TextField(
+        _("Коротко"),
+        blank=True,
+        help_text=_("Выжимка над текстом: по одному пункту на строку, обычно три."),
+    )
+    tag = models.CharField(
+        _("Раздел"), max_length=64, blank=True, help_text=_("Подпись-ярлык: «Перфораторы».")
+    )
+    figure = models.CharField(
+        _("Схема-иллюстрация"),
+        max_length=32,
+        choices=ArticleFigure.choices,
+        blank=True,
+        default=ArticleFigure.NONE,
+    )
+    catalog_category = models.ForeignKey(
+        "catalog.Category",
+        verbose_name=_("Раздел каталога"),
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="articles",
+        help_text=_("Блок «подобрать по теме» под статьёй."),
+    )
+    reading_minutes = models.PositiveSmallIntegerField(
+        _("Время чтения, мин"),
+        default=0,
+        help_text=_("0 — посчитать автоматически по объёму текста."),
+    )
     cover = models.ImageField(_("Обложка"), upload_to="articles/", blank=True)
     published_at = models.DateTimeField(_("Дата публикации"), null=True, blank=True)
     status = models.CharField(

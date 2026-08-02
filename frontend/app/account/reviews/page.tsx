@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Star } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { StarDisplay } from "@/components/reviews/StarRating";
-import { getMe } from "@/lib/auth";
+import { checkAuth, loginHref } from "@/lib/auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { formatDate } from "@/lib/format";
 import { REVIEW_STATUS_LABEL, getMyReviews } from "@/lib/reviews";
@@ -21,6 +21,7 @@ const STATUS_BADGE: Record<ReviewStatus, string> = {
 
 export default function MyReviewsPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [items, setItems] = useState<MyReview[]>([]);
   const [disabled, setDisabled] = useState(false);
   // #574: сбой загрузки отличаем от «отзывов пока нет».
@@ -29,10 +30,16 @@ export default function MyReviewsPage() {
 
   useEffect(() => {
     let active = true;
-    getMe()
+    checkAuth()
       .then(async (user) => {
-        if (!user) {
-          router.push("/account/login");
+        if (!active) return;
+        if (user === "anonymous") {
+          router.replace(loginHref(pathname));
+          return;
+        }
+        if (user === "error") {
+          setFailed(true);
+          setLoading(false);
           return;
         }
         const data = await getMyReviews();
@@ -48,7 +55,7 @@ export default function MyReviewsPage() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [router, pathname]);
 
   if (loading) {
     return (

@@ -28,19 +28,32 @@ export function StickyBuyBar({
 }: {
   product: Pick<Product, "id" | "slug" | "name" | "price" | "stock">;
 }) {
-  const [shown, setShown] = useState(false);
+  const [passedBuybox, setPassedBuybox] = useState(false);
+  const [atFooter, setAtFooter] = useState(false);
 
   useEffect(() => {
     const anchor = document.getElementById("buybox-anchor");
     if (!anchor) return;
-    const obs = new IntersectionObserver(([entry]) => setShown(!entry.isIntersecting), {
+    const obs = new IntersectionObserver(([entry]) => setPassedBuybox(!entry.isIntersecting), {
       threshold: 0,
     });
     obs.observe(anchor);
     return () => obs.disconnect();
   }, []);
 
-  if (!shown) return null;
+  // У подвала панель убирается: она фиксирована снизу и накрывала последнюю
+  // строку контактов и копирайт — телефон и режим работы дочитать было нельзя.
+  useEffect(() => {
+    const footer = document.querySelector("footer");
+    if (!footer) return;
+    const obs = new IntersectionObserver(([entry]) => setAtFooter(entry.isIntersecting), {
+      threshold: 0,
+    });
+    obs.observe(footer);
+    return () => obs.disconnect();
+  }, []);
+
+  if (!passedBuybox || atFooter) return null;
 
   return (
     <div

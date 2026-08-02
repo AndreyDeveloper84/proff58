@@ -61,13 +61,44 @@ export async function logout() {
   await apiFetch<void>("/api/account/logout/", { method: "POST" });
 }
 
+/**
+ * Профиль текущего пользователя; null — не вошёл (401/403).
+ *
+ * Любая другая беда (сервер отдал 500, лимит запросов, обрыв связи) — это НЕ
+ * «пользователь не вошёл»: раньше здесь возвращался null на любую ошибку, и
+ * кабинет выкидывал на форму входа человека с живой сессией, стоило сети моргнуть.
+ * Такие случаи пробрасываются вызывающему — см. {@link checkAuth}.
+ */
 export async function getMe(): Promise<AccountUser | null> {
   try {
     return await apiFetch<AccountUser>("/api/account/me/", { method: "GET" });
   } catch (e) {
-    if (e instanceof ApiError) return null;
+    if (e instanceof ApiError && (e.status === 401 || e.status === 403)) return null;
     throw e;
   }
+}
+
+/** Итог проверки доступа в кабинет: сам пользователь, гость или сбой связи/сервера. */
+export type AuthCheck = AccountUser | "anonymous" | "error";
+
+/**
+ * Проверка доступа для страниц кабинета. Три исхода вместо двух: гостя уводим на
+ * вход, а при сбое показываем «сервис недоступен» — выгонять из кабинета за чужую
+ * ошибку нельзя, сессия-то цела.
+ */
+export async function checkAuth(): Promise<AuthCheck> {
+  try {
+    return (await getMe()) ?? "anonymous";
+  } catch {
+    return "error";
+  }
+}
+
+/** Адрес формы входа с запоминанием, куда человек шёл (форма вернёт его туда). */
+export function loginHref(next?: string): string {
+  return next && next.startsWith("/")
+    ? `/account/login?next=${encodeURIComponent(next)}`
+    : "/account/login";
 }
 
 export async function updateMe(data: AccountUserPatch): Promise<AccountUser> {

@@ -21,6 +21,8 @@ type Props = {
   nav: Nav;
   /** Клик по переключателю типа; для подкатегорий не вызывается — там обычная ссылка. */
   onSelect: (key: string, label: string) => void;
+  /** Встроить в общую карточку с фасетами без собственной рамки и радиуса. */
+  connected?: boolean;
 };
 
 /** Свернуть длинный список, но активный пункт показывать всегда (§13–14). */
@@ -41,7 +43,7 @@ function Count({ value, active }: { value: number; active: boolean }) {
   );
 }
 
-export function CategoryNavPanel({ nav, onSelect }: Props) {
+export function CategoryNavPanel({ nav, onSelect, connected = false }: Props) {
   const { visible, hiddenCount, expanded, setExpanded } = useVisibleItems(
     nav.items,
     COLLAPSED_COUNT,
@@ -56,7 +58,15 @@ export function CategoryNavPanel({ nav, onSelect }: Props) {
     );
 
   return (
-    <nav aria-label={nav.title} className="rounded-lg border border-line bg-surface p-4">
+    <nav
+      aria-label={nav.title}
+      className={cn(
+        "p-4",
+        connected
+          ? "rounded-none border-0 bg-transparent px-5"
+          : "rounded-lg border border-line bg-surface",
+      )}
+    >
       <details open className="group">
         <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-ink">
           {nav.title}

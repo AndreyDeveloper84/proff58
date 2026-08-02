@@ -13,6 +13,8 @@ type Props = {
   filters: ListingQuery["filters"];
   onToggle: (code: string, value: string) => void;
   onRange: (code: string, val: { min?: number; max?: number }) => void;
+  /** Встроить в общую карточку с навигацией раздела. */
+  connected?: boolean;
 };
 
 // Сворачиваемый блок фасета с заголовком и шевроном (по макету). По умолчанию открыт;
@@ -37,7 +39,13 @@ function FacetBlock({
   );
 }
 
-export function FacetSidebar({ facets, filters, onToggle, onRange }: Props) {
+export function FacetSidebar({
+  facets,
+  filters,
+  onToggle,
+  onRange,
+  connected = false,
+}: Props) {
   // tool_type (isNav) — навигация, рендерится отдельным блоком CategoryNavPanel, а НЕ фасетом (§3.1, §23.5).
   const visibleFacets = facets.filter((f) => !f.isNav);
   const sections = groupSidebarFacets(visibleFacets);
@@ -63,7 +71,13 @@ export function FacetSidebar({ facets, filters, onToggle, onRange }: Props) {
   // «Фильтры/Сбросить все» вынесены в тулбар над выдачей — в сайдбаре только сами фасеты.
   // Секция «extra» (§7.2) — свёрнута по умолчанию.
   return (
-    <div className="rounded-lg border border-line bg-surface p-4">
+    <div
+      className={
+        connected
+          ? "rounded-none border-0 bg-transparent px-5 py-4"
+          : "rounded-lg border border-line bg-surface p-4"
+      }
+    >
       {sections.map((section) =>
         section.facets.map((f) => renderFacet(f, section.key !== "extra")),
       )}

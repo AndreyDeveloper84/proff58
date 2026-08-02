@@ -16,8 +16,10 @@ vi.mock("@/lib/api", async () => {
 import { ApiError, apiFetch } from "@/lib/api";
 import {
   changePhone,
+  checkAuth,
   deleteAccount,
   getMe,
+  loginHref,
   getOrder,
   getOrders,
   login,
@@ -46,9 +48,39 @@ describe("auth client (M-11)", () => {
     );
   });
 
-  it("getMe возвращает null при ApiError (не пробрасывает)", async () => {
+  it("getMe возвращает null, когда пользователь не вошёл (401/403)", async () => {
     mockedFetch.mockRejectedValueOnce(new ApiError("401", 401));
     expect(await getMe()).toBeNull();
+  });
+
+  // Раньше здесь тоже возвращался null — и кабинет выкидывал на форму входа
+  // человека с живой сессией, стоило серверу ответить 500 или сети моргнуть.
+  it("getMe пробрасывает сбой сервера — это не «пользователь не вошёл»", async () => {
+    mockedFetch.mockRejectedValueOnce(new ApiError("500", 500));
+    await expect(getMe()).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it("checkAuth различает гостя и сбой", async () => {
+    mockedFetch.mockRejectedValueOnce(new ApiError("403", 403));
+    expect(await checkAuth()).toBe("anonymous");
+
+    // ApiError со статусом 0 — так apiFetch сообщает про обрыв связи.
+    mockedFetch.mockRejectedValueOnce(new ApiError("нет связи", 0));
+    expect(await checkAuth()).toBe("error");
+
+    mockedFetch.mockRejectedValueOnce(new ApiError("лимит", 429));
+    expect(await checkAuth()).toBe("error");
+
+    const user = { id: 1, phone: "+79001112233" };
+    mockedFetch.mockResolvedValueOnce(user);
+    expect(await checkAuth()).toEqual(user);
+  });
+
+  it("loginHref запоминает, куда человек шёл", () => {
+    expect(loginHref("/account/invoices")).toBe("/account/login?next=%2Faccount%2Finvoices");
+    expect(loginHref()).toBe("/account/login");
+    // Чужой абсолютный адрес в next не пропускаем — это открытый редирект.
+    expect(loginHref("https://evil.example/phish")).toBe("/account/login");
   });
 
   // #574: сбой возвращает "error", а не [] — иначе экран заказов показывал

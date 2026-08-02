@@ -3,11 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight, ClipboardList, Clock3, RotateCcw, Star } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { reservationState } from "@/components/order/ReservationNotice";
-import { getMe, getOrders } from "@/lib/auth";
+import { checkAuth, getOrders, loginHref } from "@/lib/auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { formatDate, formatDateTime, formatPrice, pluralize } from "@/lib/format";
 import { isCancelled, isDelivered, isInProgress, statusBadgeClass } from "@/lib/order-status";
@@ -34,6 +34,7 @@ function orderMatchesTab(order: Order, tab: OrderTab) {
 
 export default function OrdersPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [orders, setOrders] = useState<Order[] | null>(null);
   // #574: сбой загрузки — своё состояние, иначе экран показывал «Заказов пока нет».
   const [failed, setFailed] = useState(false);
@@ -41,9 +42,16 @@ export default function OrdersPage() {
 
   useEffect(() => {
     let active = true;
-    getMe().then((user) => {
-      if (!user) {
-        router.push("/account/login");
+    checkAuth().then((user) => {
+      if (!active) return;
+      // replace, а не push: иначе «Назад» с формы входа возвращает сюда, страница
+      // снова выкидывает на вход — и человек застревает в петле.
+      if (user === "anonymous") {
+        router.replace(loginHref(pathname));
+        return;
+      }
+      if (user === "error") {
+        setFailed(true);
         return;
       }
       getOrders().then((data) => {
@@ -55,7 +63,7 @@ export default function OrdersPage() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [router, pathname]);
 
   const visibleOrders = useMemo(
     () => (orders ?? []).filter((order) => orderMatchesTab(order, tab)),

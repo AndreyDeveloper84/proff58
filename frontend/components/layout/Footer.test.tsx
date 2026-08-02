@@ -45,13 +45,13 @@ describe("Footer (#591)", () => {
     expect(max).toHaveAttribute("target", "_blank");
   });
 
-  // Раньше в карточке стояла иконка lucide `QrCode`: выглядела как код, но
-  // камерой не читалась. Теперь код настоящий — рисуется из той же ссылки.
-  it("QR в карточке мессенджеров — сканируемая графика, а не иконка", () => {
-    render(<Footer />);
-    const qr = screen.getByRole("img", { name: /QR-код/ });
-    expect(qr.tagName.toLowerCase()).toBe("svg");
-    expect(qr.querySelector("path")?.getAttribute("d")).toMatch(/^M0 0h7v1h-7z/);
+  it("в карточке мессенджеров показан фирменный логотип MAX", () => {
+    const { container } = render(<Footer />);
+    expect(container.querySelector('a[data-event="footer_max"] img')).toHaveAttribute(
+      "src",
+      expect.stringContaining("max-colored.png"),
+    );
+    expect(screen.queryByRole("img", { name: /QR-код/ })).not.toBeInTheDocument();
   });
 
   it("группы ссылок из конфига отрисованы", () => {
