@@ -117,6 +117,13 @@ docker-compose.yml · docker-compose.prod.yml
 
 Детерминированный rules-engine, предлагающий `tool_type` для товаров из 1С.
 
+⚠️ **Две таксономии каталога** (дерево сайта vs 1С-таксономия в ключах
+`data/tool_type_rules.json`) расходятся по именам верхних категорий и ломают
+`enrich_tool_type` — карта соответствия и грабли в [`docs/catalog_trees.md`](docs/catalog_trees.md).
+С PR #628 часть расхождений закрыта слоем алиасов (`apps/catalog/tool_type_aliases.py`),
+но **только в `--dry-run`/`--report-only`**; боевая запись (`_handle_write`) алиасы
+не применяет и ведёт себя как раньше.
+
 | Артефакт / модуль | Роль |
 |---|---|
 | `data/catalog_processing_rules/tool_type_taxonomy.v1.json` | **canonical manifest**, 328 options — единственный источник правды по словарю типов |
