@@ -257,6 +257,28 @@
           "source": "name_keywords"
         },
         {
+          "tool_type": "Аппараты сварки пластиковых труб",
+          "slug": "apparaty-svarki-plastikovyh-trub",
+          "match_keywords": [
+            "аппарат для сварки пласт",
+            "сварки пластиковых труб",
+            "сварки пласт.труб",
+            "аспт-"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Ножи для газонокосилок",
+          "slug": "nozhi-gazonokosilok",
+          "match_keywords": [
+            "нож для газонокос",
+            "нож газонокосилк",
+            "сменный нож для arm",
+            "для arm 34"
+          ],
+          "source": "name_keywords"
+        },
+        {
           "tool_type": "⚠ В категорию «Сварка»",
           "slug": "_recat_weld",
           "match_keywords": [
@@ -375,6 +397,27 @@
             "машина для заточки",
             "заточной станок",
             "станок заточн"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Станки деревообрабатывающие",
+          "slug": "stanki-derevoobrabatyvayushchie",
+          "match_keywords": [
+            "станок распиловочн",
+            "распиловочный станок",
+            "станок рейсмусов",
+            "рейсмусовый станок",
+            "фуговальный станок",
+            "строгальный станок"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Дровоколы",
+          "slug": "drovokoly",
+          "match_keywords": [
+            "дровокол"
           ],
           "source": "name_keywords"
         },
@@ -553,6 +596,24 @@
           "source": "name_keywords"
         },
         {
+          "tool_type": "Аксессуары шарнирно-губцевого инструмента",
+          "slug": "aksessuary-sharnirno-gubcevogo-instrumenta",
+          "match_keywords": [
+            "накладки для клещей",
+            "накладка для клещей",
+            "накладки защитные сменные"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Клещи просечные",
+          "slug": "kleshchi-prosechnye",
+          "match_keywords": [
+            "дырокол"
+          ],
+          "source": "name_keywords"
+        },
+        {
           "tool_type": "Бокорезы и кусачки",
           "slug": "bokorezy",
           "match_keywords": [
@@ -617,6 +678,14 @@
             "керн",
             "пробойник",
             "бородок"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Шилья",
+          "slug": "shilya",
+          "match_keywords": [
+            "шило"
           ],
           "source": "name_keywords"
         },
@@ -690,6 +759,27 @@
           "source": "name_keywords"
         },
         {
+          "tool_type": "Просекатели для профилей",
+          "slug": "prosekateli-profiley-gkl",
+          "match_keywords": [
+            "просекатель для профил"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Наборы уплотнительных колец (o-ring)",
+          "slug": "nabory-uplotnitelnyh-kolets",
+          "match_keywords": [
+            "набор уплотнительных колец",
+            "набор колец уплотнительных",
+            "набор резиновых уплотнительных",
+            "набор колец резинометаллич",
+            "набор o-ring",
+            "o-ring набор"
+          ],
+          "source": "name_keywords"
+        },
+        {
           "tool_type": "Адаптеры и переходники",
           "slug": "adaptery",
           "match_keywords": [
@@ -741,6 +831,14 @@
           "slug": "pintsety",
           "match_keywords": [
             "пинцет"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Трубогибы",
+          "slug": "trubogiby",
+          "match_keywords": [
+            "трубогиб"
           ],
           "source": "name_keywords"
         },
@@ -800,6 +898,15 @@
             "монтировка",
             "ломик",
             "лом-"
+          ],
+          "source": "name_keywords"
+        },
+        {
+          "tool_type": "Наборы имбусовых ключей",
+          "slug": "nabory-klyuchey-imbusovyh",
+          "match_keywords": [
+            "набор звездочек",
+            "набор ключей г-образных"
           ],
           "source": "name_keywords"
         },
@@ -1159,6 +1266,8 @@
         { "tool_type": "Шестерни и зубчатые колёса", "slug": "zap-shesterni", "match_keywords": ["шестерн", "зубчат", "косозуб"], "source": "name_keywords" },
         { "tool_type": "Двигатели", "slug": "zap-dvigateli", "match_keywords": ["двигатель", "электродвигатель", "электромотор", "мотор в сборе", "мотор для", "мотор пылесос"], "source": "name_keywords" },
         { "tool_type": "Ремни приводные", "slug": "zap-remni", "match_keywords": ["ремень", "ремни "], "source": "name_keywords" },
+        { "tool_type": "Наборы уплотнительных колец (o-ring)", "slug": "nabory-uplotnitelnyh-kolets", "match_keywords": ["набор уплотнительных колец", "набор колец уплотнительных", "набор резиновых уплотнительных", "набор колец резинометаллич", "набор o-ring", "o-ring набор"], "source": "name_keywords" },
+        { "tool_type": "Штифты", "slug": "shtifty", "match_keywords": ["штифт"], "source": "name_keywords" },
         { "tool_type": "Уплотнения и прокладки", "slug": "zap-uplotneniya", "match_keywords": ["сальник", "манжет", "прокладка", "уплотнительн", "уплотнение"], "source": "name_keywords" },
         { "tool_type": "Стопорные и опорные кольца", "slug": "zap-stopornye-koltsa", "match_keywords": ["стопорное", "стопорн", "разжимное кольц", "кольцо разжим", "кольцо опорн", "кольцо пружинн"], "source": "name_keywords" },
         { "tool_type": "Платы и блоки управления", "slug": "zap-platy-bloki", "match_keywords": ["блок управлен", "блок плавн", "блок розжиг", "блок электрон", "плата ", "электронн", "модуль управлен", "регулятор оборот"], "source": "name_keywords" },
@@ -1186,6 +1295,10 @@
         { "tool_type": "Секаторы и сучкорезы", "slug": "hoz-sekatory", "match_keywords": ["секатор", "сучкорез"], "source": "name_keywords" },
         { "tool_type": "Грабли", "slug": "hoz-grabli", "match_keywords": ["грабли"], "source": "name_keywords" },
         { "tool_type": "Вилы", "slug": "hoz-vily", "match_keywords": ["вилы"], "source": "name_keywords" },
+        { "tool_type": "Мотыги и тяпки", "slug": "hoz-motygi", "match_keywords": ["мотыга", "тяпка"], "source": "name_keywords" },
+        { "tool_type": "Мачете и секачи", "slug": "machete-i-sekachi", "match_keywords": ["мачете", "секач"], "source": "name_keywords" },
+        { "tool_type": "Шилья", "slug": "shilya", "match_keywords": ["шило"], "source": "name_keywords" },
+        { "tool_type": "Кремы защитные (дерматологические СИЗ)", "slug": "siz-kremy-zashchitnye", "match_keywords": ["крем"], "source": "name_keywords" },
         { "tool_type": "Лопаты и движки снеговые", "slug": "hoz-lopaty", "match_keywords": ["лопата", "совок", "движок снегов", "скрепер снег", "ледоруб", "ледоколот"], "source": "name_keywords" },
         { "tool_type": "Тачки и тележки", "slug": "hoz-tachki", "match_keywords": ["тачка", "тележка"], "source": "name_keywords" },
         { "tool_type": "Мётлы, веники, черенки", "slug": "hoz-metly", "match_keywords": ["метла", "метелка", "веник", "черенок"], "source": "name_keywords" },
@@ -1345,6 +1458,7 @@
         { "tool_type": "Токоизмерительные клещи", "slug": "izm-kleshchi", "match_keywords": ["клещи"], "source": "name_keywords" },
         { "tool_type": "Термометры, пирометры, тепловизоры", "slug": "izm-termometry", "match_keywords": ["термометр", "пирометр", "термогигрометр", "тепловизор", "гигрометр"], "source": "name_keywords" },
         { "tool_type": "Индикаторы, детекторы, пробники", "slug": "izm-indikatory", "match_keywords": ["индикатор", "детектор", "детоектор", "искатель", "пробник", "отвертка-индикатор", "отвертка индикатор"], "source": "name_keywords" },
+        { "tool_type": "Щупы измерительные", "slug": "izm-shchupy", "match_keywords": ["щуп"], "source": "name_keywords" },
         { "tool_type": "Калибры", "slug": "izm-kalibry", "match_keywords": ["калибр", "щуп", "скоба калибр"], "source": "name_keywords" },
         { "tool_type": "Клейма и шаблоны", "slug": "izm-kleyma", "match_keywords": ["клеймо", "клейма", "шаблон", "набор шаблон"], "source": "name_keywords" },
         { "tool_type": "Штативы, отражатели, держатели", "slug": "izm-shtativy", "match_keywords": ["штатив", "отражатель", "веха", "нивелирная рейка", "третья рука"], "source": "name_keywords" },
