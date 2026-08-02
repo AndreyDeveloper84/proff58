@@ -1,0 +1,41 @@
+{
+  "pav_total": 38895,
+  "taxonomy_identity": "7ac7a9a26eeffcb6360993b3c1a5942ddee4da7c80b8e31ad9b47853e2a06ef9",
+  "affected_counts": {
+    "avtomaty-predohraniteli": 34,
+    "bp-golovki-trimmernye": 108,
+    "bp-trimmery": 107,
+    "hoz-voronki": 15,
+    "izm-multimetry": 183,
+    "krep-bolty": 429,
+    "krep-gaiki": 138,
+    "obor-smazka": 150,
+    "prochaya-osnastka": 1487,
+    "svar-sopla": 37
+  },
+  "yaya": {
+    "total": 4550,
+    "active": 0
+  },
+  "suffix266": 266,
+  "dup": {
+    "groups": 17,
+    "cards": 34,
+    "classes": {
+      "same_article": 17
+    }
+  },
+  "findings_by_run": {
+    "aa9b1df5-41c5-4b10-a6d8-957c2ff57aa9": 36,
+    "3afffd16-005a-4f73-95fd-d068aa725391": 2,
+    "3b11e43d-53c4-4fc7-bb4c-b4e66591aef3": 12,
+    "9a26366e-678e-4abb-b6ef-d9aaac4a6f65": 4,
+    "f7fe5b29-9e2c-4dfb-898c-22859a0dcf35": 15,
+    "0f8a6599-734f-4e3d-9118-1433e76d01b5": 44
+  },
+  "findings_by_status": {
+    "rejected": 2,
+    "applied": 111
+  },
+  "untouchable_all": "a8d79785be86e7ed632da6733836dc3387fedae7fc238f23017cfb0c735952a9"
+}
