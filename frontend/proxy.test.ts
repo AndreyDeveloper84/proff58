@@ -5,7 +5,8 @@ import { config, proxy } from "./proxy";
 
 // Кабинет — клиентский и предрендеренный, поэтому без серверной отсечки гость
 // успевал увидеть чужой «Личный кабинет» на 1,5–7 секунд, прежде чем браузер
-// уводил его на вход. Здесь проверяем саму отсечку.
+// уводил его на вход. Здесь проверяем быстрый отсев; настоящую проверку делает
+// layout кабинета (lib/server-auth.ts).
 
 function request(path: string, cookie?: string) {
   return new NextRequest(new URL(`https://proff58.ru${path}`), {
@@ -30,11 +31,27 @@ describe("proxy: доступ в личный кабинет", () => {
     expect(location.searchParams.get("next")).toBe("/account/orders?tab=delivered");
   });
 
-  it("с cookie сессии пропускает дальше", () => {
+  it("с маркером входа пропускает дальше", () => {
+    const res = proxy(request("/account/profile", "auth=1"));
+
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.status).toBe(200);
+  });
+
+  it("гостевую сессию корзины пропускает — но решать будет layout", () => {
+    // Сама по себе `sessionid` входом не является: Django выдаёт её и анониму.
+    // Раньше по ней proxy пускал внутрь, и гость видел разметку кабинета.
+    // Пропуск здесь оставлен ради тех, кто вошёл до появления маркера.
     const res = proxy(request("/account/profile", "sessionid=abc123"));
 
     expect(res.headers.get("location")).toBeNull();
     expect(res.status).toBe(200);
+  });
+
+  it("передаёт адрес в x-pathname — layout вернёт человека туда после входа", () => {
+    const res = proxy(request("/account/invoices?page=2", "auth=1"));
+
+    expect(res.headers.get("x-middleware-request-x-pathname")).toBe("/account/invoices");
   });
 
   it("сама форма входа исключена из matcher", () => {

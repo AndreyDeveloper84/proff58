@@ -162,7 +162,9 @@ export type AppliedPromotion = {
 };
 
 export type Cart = {
-  id: number;
+  // null — пустая корзина гостя: её не заводят в БД, пока в неё нечего класть
+  // (иначе чтение корзины выдавало бы сессию каждому посетителю).
+  id: number | null;
   status: string;
   lines: CartLine[];
   total: string;

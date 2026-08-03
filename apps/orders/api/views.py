@@ -13,6 +13,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
@@ -102,13 +104,39 @@ def _cart_response(request, cart: Cart) -> Response:
     return Response(CartViewSerializer(view).data)
 
 
+def _empty_cart_view() -> services.CartView:
+    """Нейтральный снимок пустой корзины — без записи в БД и без сессии.
+
+    Нужен, чтобы чтение корзины не заводило гостю сессию: считать в пустой
+    корзине нечего, а несохранённый Cart нельзя спрашивать о строках.
+    """
+    from apps.core.features import is_enabled
+
+    return services.CartView(
+        cart=Cart(status=CartStatus.ACTIVE),
+        lines=[],
+        total=Decimal("0.00"),
+        currency="RUB",
+        promotions_enabled=is_enabled("promotions"),
+    )
+
+
 class CartView(APIView):
-    """GET /api/cart/ — текущая корзина."""
+    """GET /api/cart/ — текущая корзина.
+
+    Чтение НЕ создаёт ни корзину, ни сессию: CartProvider зовёт этот эндпоинт на
+    каждой странице сайта, и раньше любой посетитель получал cookie `sessionid`
+    просто за факт захода. По этой cookie фронт считал человека вошедшим и
+    пускал в кабинет, откуда его тут же выбрасывало на форму входа. Сессия
+    заводится там, где она действительно нужна, — при добавлении товара.
+    """
 
     permission_classes = [AllowAny]
 
     def get(self, request):
-        cart = _get_or_create_active_cart(request)
+        cart = _get_active_cart(request)
+        if cart is None:
+            return Response(CartViewSerializer(_empty_cart_view()).data)
         return _cart_response(request, cart)
 
 
