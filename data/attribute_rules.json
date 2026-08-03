@@ -1905,8 +1905,9 @@
       ]
     },
     {
-      "tool_type": "metchiki",
-      "category": "Метчики",
+      "tool_type": "metchiki-plashki",
+      "category": "Метчики и плашки",
+      "_note": "CAT-14B: единый блок вместо metchiki/plashki (на старых слагах 0 товаров, все 399 — на metchiki-plashki). skip_if: у держателей/воротков/наборов нет одного диаметра и шага — правило не применяется целиком. Диапазон «М 6-М24» не ловится regex (якорь «М dхp»), отдельный skip_if_regex не требуется. В alloy добавлен вариант «9хc» с латинской c (встречается в названиях 1С).",
       "attributes": [
         {
           "slug": "diameter",
@@ -1917,6 +1918,7 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
+          "skip_if": ["набор", "держател", "ворот"],
           "regex": [
             "(?:^|\\s)м\\s*(\\d{1,2})\\s*[хx]\\s*\\d",
             "м[/.]р\\.?\\s*(\\d{1,2})\\s*[хx]\\s*\\d"
@@ -1930,6 +1932,7 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
+          "skip_if": ["набор", "держател", "ворот"],
           "regex": [
             "(?:^|\\s)м\\s*\\d{1,2}\\s*[хx]\\s*(\\d(?:[.,]\\d+)?)",
             "м[/.]р\\.?\\s*\\d{1,2}\\s*[хx]\\s*(\\d(?:[.,]\\d+)?)"
@@ -1939,6 +1942,7 @@
           "slug": "thread_type",
           "name": "Тип резьбы",
           "kind": "select",
+          "skip_if": ["набор", "держател", "ворот"],
           "source": "keyword",
           "priority": 30,
           "is_filter": true,
@@ -1959,82 +1963,40 @@
           "slug": "material",
           "name": "Материал",
           "kind": "select",
+          "skip_if": ["набор", "держател", "ворот"],
           "source": "keyword",
           "priority": 30,
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
             {"value": "Быстрорез (HSS)", "slug": "hss", "keywords": ["hss", "р6м5", "р18", "быстрорез"]},
-            {"value": "Легированная сталь", "slug": "alloy", "keywords": ["9хс", "хвг", "легированн"]},
+            {"value": "Легированная сталь", "slug": "alloy", "keywords": ["9хс", "9хc", "хвг", "легированн"]},
             {"value": "Твердосплав", "slug": "carbide", "keywords": ["твердоспл", "тв.спл", "карбид", "вк8"]}
           ]
-        }
-      ]
-    },
-    {
-      "tool_type": "plashki",
-      "category": "Плашки",
-      "attributes": [
-        {
-          "slug": "diameter",
-          "name": "Диаметр",
-          "kind": "number",
-          "unit": "мм",
-          "source": "regex",
-          "priority": 40,
-          "is_filter": true,
-          "is_seo_facet": true,
-          "regex": [
-            "(?:^|\\s)м\\s*(\\d{1,2})\\s*[хx]\\s*\\d",
-            "м[/.]р\\.?\\s*(\\d{1,2})\\s*[хx]\\s*\\d"
-          ]
         },
         {
-          "slug": "thread_pitch",
-          "name": "Шаг резьбы",
-          "kind": "number",
-          "unit": "мм",
-          "source": "regex",
-          "priority": 40,
-          "is_filter": true,
-          "regex": [
-            "(?:^|\\s)м\\s*\\d{1,2}\\s*[хx]\\s*(\\d(?:[.,]\\d+)?)",
-            "м[/.]р\\.?\\s*\\d{1,2}\\s*[хx]\\s*(\\d(?:[.,]\\d+)?)"
-          ]
-        },
-        {
-          "slug": "thread_type",
-          "name": "Тип резьбы",
+          "slug": "tool_kind",
+          "name": "Вид инструмента",
           "kind": "select",
           "source": "keyword",
           "priority": 30,
           "is_filter": true,
           "is_seo_facet": true,
+          "_note": "Порядок важен: «плашкодержатель»/«метчикодержатель» содержат «плашк»/«метчик» — держатель/вороток/набор проверяются раньше. unknown не матчится ключевыми словами, выставляется derive-фолбэком.",
           "options": [
-            {"value": "Дюймовая", "slug": "inch", "keywords": ["bsw", "bsf", "unf", "unc", "unef", "uns", "дюймов", "ниток", "уитворт"]},
-            {"value": "Трубная", "slug": "pipe", "keywords": ["g 1/", "g 3/", "g 1 ", "g1/", "g3/", "трубн", "bspt", "bspp"]},
-            {"value": "Метрическая", "slug": "metric", "keywords": ["din 352", "din352", "din 371", "din371", "din 376", "din376", "метрическ"]}
+            {"value": "Держатель", "slug": "derzhatel", "keywords": ["держател"]},
+            {"value": "Вороток", "slug": "vorotok", "keywords": ["ворот"]},
+            {"value": "Набор", "slug": "nabor", "keywords": ["набор"]},
+            {"value": "Плашка", "slug": "plashka", "keywords": ["плашк"]},
+            {"value": "Метчик", "slug": "metchik", "keywords": ["метчик"]},
+            {"value": "Не определён", "slug": "unknown", "keywords": []}
           ],
           "derive": {
             "source": "inferred",
-            "set_option": "metric",
-            "requires_present": ["diameter"],
+            "set_option": "unknown",
+            "requires_present": [],
             "requires_absent": []
           }
-        },
-        {
-          "slug": "material",
-          "name": "Материал",
-          "kind": "select",
-          "source": "keyword",
-          "priority": 30,
-          "is_filter": true,
-          "is_seo_facet": true,
-          "options": [
-            {"value": "Быстрорез (HSS)", "slug": "hss", "keywords": ["hss", "р6м5", "р18", "быстрорез"]},
-            {"value": "Легированная сталь", "slug": "alloy", "keywords": ["9хс", "хвг", "легированн"]},
-            {"value": "Твердосплав", "slug": "carbide", "keywords": ["твердоспл", "тв.спл", "карбид", "вк8"]}
-          ]
         }
       ]
     },
@@ -2352,6 +2314,69 @@
       ]
     },
     {
+      "tool_type": "krep-bolty",
+      "category": "Болты и винты",
+      "_note": "CAT-14B: размеры — только явный формат «Мd×L». «Винт 4х55» без буквы «М» и размер в артикуле («B800A06X008») не угадываем — в backlog CAT-15. «Винт» — подтип внутри типа, учитывается в head_type.",
+      "attributes": [
+        {
+          "slug": "thread_diameter",
+          "name": "Диаметр резьбы",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "skip_if": ["набор"],
+          "regex": [
+            "(?:^|\\s)[мm]\\s*(\\d{1,2})\\s*[хx]\\s*\\d{1,3}"
+          ]
+        },
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": false,
+          "skip_if": ["набор"],
+          "regex": [
+            "(?:^|\\s)[мm]\\s*\\d{1,2}\\s*[хx]\\s*(\\d{1,3})"
+          ]
+        },
+        {
+          "slug": "head_type",
+          "name": "Тип головки",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {"value": "Шестигранная", "slug": "hex", "keywords": ["шестигр"]},
+            {"value": "Потай", "slug": "countersunk", "keywords": ["потай"]},
+            {"value": "Полукруглая", "slug": "round", "keywords": ["полукруг"]},
+            {"value": "С фланцем", "slug": "flange", "keywords": ["фланц"]}
+          ]
+        },
+        {
+          "slug": "coating",
+          "name": "Покрытие",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {"value": "Цинк", "slug": "zinc", "keywords": ["цинк"]},
+            {"value": "Чёрное", "slug": "black", "keywords": ["черн", "оксидирован"]}
+          ]
+        }
+      ]
+    },
+    {
       "tool_type": "otvertki",
       "category": "Ручной инструмент",
       "attributes": [
@@ -2431,6 +2456,60 @@
             "(\\d{1,3})\\s*шт",
             "(\\d{1,3})\\s*пр\\b",
             "(\\d{1,3})\\s*в\\s*1\\b"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "nabory-instrumenta",
+      "category": "Наборы инструмента",
+      "_note": "CAT-14B: piece_count — только «N пр/предметов/шт», модельные коды (латиница) не ловятся. drive — комбинированные приводы отдельными значениями, перебор по порядку: комбо раньше одиночных. Число предметов и привод не пересекаются (якоря «пр/предмет» vs «1/4»).",
+      "attributes": [
+        {
+          "slug": "piece_count",
+          "name": "Предметов в наборе",
+          "kind": "number",
+          "unit": "шт",
+          "source": "regex",
+          "priority": 20,
+          "is_filter": true,
+          "regex": [
+            "(\\d{1,3})\\s*предмет",
+            "(\\d{1,3})\\s*предм",
+            "(\\d{1,3})\\s*пр\\.?(?=[\\s,.;:!]|$)",
+            "(\\d{1,3})\\s*шт"
+          ]
+        },
+        {
+          "slug": "drive",
+          "name": "Привод",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "options": [
+            {"value": "1/4\" + 3/8\" + 1/2\"", "slug": "d-1-4-3-8-1-2", "keywords": ["1/4, 3/8, 1/2", "1/4\", 3/8\", 1/2"]},
+            {"value": "1/4\" + 1/2\"", "slug": "d-1-4-1-2", "keywords": ["1/4, 1/2", "1/4\", 1/2", "1/2, 1/4", "1/2\", 1/4"]},
+            {"value": "1/4\"", "slug": "d-1-4", "keywords": ["1/4"]},
+            {"value": "3/8\"", "slug": "d-3-8", "keywords": ["3/8"]},
+            {"value": "1/2\"", "slug": "d-1-2", "keywords": ["1/2"]}
+          ]
+        },
+        {
+          "slug": "set_kind",
+          "name": "Состав набора",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": false,
+          "options": [
+            {"value": "Экстракторы", "slug": "extractors", "keywords": ["экстрактор", "шпильковерт"]},
+            {"value": "Выколотки", "slug": "punches", "keywords": ["выколоток"]},
+            {"value": "Торцевые головки и ключи", "slug": "sockets", "keywords": ["торцевых", "головок"]},
+            {"value": "Биты", "slug": "bits", "keywords": ["набор бит"]},
+            {"value": "Универсальный", "slug": "universal", "keywords": ["набор инструмент"]}
           ]
         }
       ]
@@ -2991,6 +3070,70 @@
           "regex": [
             "ф\\.?\\s*(\\d{2,3})\\s*мм",
             "кисть\\s+круглая\\s+(?:№\\s*\\d+\\s+)?(\\d{2,3})\\s*мм"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "zap-shchetki-ugolnye",
+      "category": "Запчасти к инструменту",
+      "_note": "CAT-14B: габариты — только формат AxBxCмм (линейка «АНАЛОГ»), три отдельных числа; запись «7*13*23» без «мм» не ловится осознанно. skip_if: щётки пылесосов и аксессуары (держатель/крышка) — не угольные щётки, ничего не извлекаем. analog_code (вида «13-102») движком не выражается (number требует Decimal) — вопрос владельцу, в отчёт CAT-14B.",
+      "attributes": [
+        {
+          "slug": "dim_a",
+          "name": "Габарит A",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": false,
+          "skip_if": ["пылесос", "держател", "крышк"],
+          "regex": [
+            "(\\d+(?:[.,]\\d+)?)\\s*[хx]\\s*\\d+(?:[.,]\\d+)?\\s*[хx]\\s*\\d+(?:[.,]\\d+)?\\s*мм"
+          ]
+        },
+        {
+          "slug": "dim_b",
+          "name": "Габарит B",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": false,
+          "skip_if": ["пылесос", "держател", "крышк"],
+          "regex": [
+            "\\d+(?:[.,]\\d+)?\\s*[хx]\\s*(\\d+(?:[.,]\\d+)?)\\s*[хx]\\s*\\d+(?:[.,]\\d+)?\\s*мм"
+          ]
+        },
+        {
+          "slug": "dim_c",
+          "name": "Габарит C",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "is_seo_facet": false,
+          "skip_if": ["пылесос", "держател", "крышк"],
+          "regex": [
+            "\\d+(?:[.,]\\d+)?\\s*[хx]\\s*\\d+(?:[.,]\\d+)?\\s*[хx]\\s*(\\d+(?:[.,]\\d+)?)\\s*мм"
+          ]
+        },
+        {
+          "slug": "compat_brand",
+          "name": "Совместимый бренд",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": true,
+          "skip_if": ["пылесос", "держател", "крышк"],
+          "options": [
+            {"value": "HITACHI", "slug": "hitachi", "keywords": ["hitachi", "хитачи"]},
+            {"value": "MAKITA", "slug": "makita", "keywords": ["makita", "макита"]},
+            {"value": "BOSCH", "slug": "bosch", "keywords": ["bosch", "бош"]}
           ]
         }
       ]

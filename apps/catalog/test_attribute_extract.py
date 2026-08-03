@@ -957,12 +957,13 @@ def test_nabory_otvertok_piece_count_ignores_model_codes(rules):
     assert "piece_count" not in f
 
 
-# --- Метчики / Плашки (tool_type=metchiki/plashki): Ø + шаг + тип резьбы + материал ---
+# --- Метчики и плашки (tool_type=metchiki-plashki): Ø + шаг + тип резьбы + материал ---
+# CAT-14B: единый блок вместо metchiki/plashki (на старых слагах 0 товаров).
 
 
 def test_metchiki_metric_full(rules):
     # Метрический винтовой: Ø + шаг из «М 6х1,0», материал HSS, тип резьбы выведен (derive).
-    f = {v.slug: v for v in rules.extract("metchiki", "Метчик винтовой М 6х1,0 HSS STV")}
+    f = {v.slug: v for v in rules.extract("metchiki-plashki", "Метчик винтовой М 6х1,0 HSS STV")}
     assert f["diameter"].number == Decimal("6")
     assert f["thread_pitch"].number == Decimal("1.0")
     assert f["material"].option_slug == "hss"
@@ -973,7 +974,7 @@ def test_metchiki_metric_full(rules):
 
 def test_metchiki_metric_keyword_din(rules):
     # DIN371 — keyword-метрическая (не derive); шаг с дробью; р6м5к5 → HSS.
-    f = {v.slug: v for v in rules.extract("metchiki", "Метчик М 8х1,25 DIN371 р6м5к5")}
+    f = {v.slug: v for v in rules.extract("metchiki-plashki", "Метчик М 8х1,25 DIN371 р6м5к5")}
     assert f["diameter"].number == Decimal("8")
     assert f["thread_pitch"].number == Decimal("1.25")
     assert f["thread_type"].option_slug == "metric"
@@ -983,7 +984,7 @@ def test_metchiki_metric_keyword_din(rules):
 
 def test_metchiki_machine_hand_format(rules):
     # Машинно-ручной «м/р 10х1,5» (без префикса М) — Ø/шаг ловятся вторым паттерном; 9ХС → легированная.
-    f = {v.slug: v for v in rules.extract("metchiki", "Метчик м/р 10х1,5 9ХС")}
+    f = {v.slug: v for v in rules.extract("metchiki-plashki", "Метчик м/р 10х1,5 9ХС")}
     assert f["diameter"].number == Decimal("10")
     assert f["thread_pitch"].number == Decimal("1.5")
     assert f["material"].option_slug == "alloy"
@@ -991,21 +992,308 @@ def test_metchiki_machine_hand_format(rules):
 
 def test_plashki_inch_thread(rules):
     # Дюймовая резьба по ключам UNF/ниток; метрического Ø нет.
-    f = {v.slug: v for v in rules.extract("plashki", 'Плашка 9/16" UNF 18 ниток STV')}
+    f = {v.slug: v for v in rules.extract("metchiki-plashki", 'Плашка 9/16" UNF 18 ниток STV')}
     assert f["thread_type"].option_slug == "inch"
     assert "diameter" not in f
 
 
 def test_plashki_pipe_thread(rules):
-    f = {v.slug: v for v in rules.extract("plashki", "Плашка G 1/2 трубная")}
+    f = {v.slug: v for v in rules.extract("metchiki-plashki", "Плашка G 1/2 трубная")}
     assert f["thread_type"].option_slug == "pipe"
 
 
 def test_metchiki_inch_has_no_metric_diameter(rules):
     # Дюймовый BSW не должен получить ложный метрический Ø/шаг.
-    f = {v.slug: v for v in rules.extract("metchiki", "Метчик дюймовый BSW 1/2 12ниток к-т 2шт")}
+    f = {
+        v.slug: v
+        for v in rules.extract("metchiki-plashki", "Метчик дюймовый BSW 1/2 12ниток к-т 2шт")
+    }
     assert "diameter" not in f
     assert f["thread_type"].option_slug == "inch"
+
+
+# --- CAT-14B: metchiki-plashki — держатели/наборы/воротки, tool_kind ---------------
+
+MP = "metchiki-plashki"
+
+
+def _mp(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(MP, name)}
+
+
+def test_old_metchiki_plashki_blocks_removed(rules):
+    # Владелец запретил состояние «две схемы на одну сущность»: старых блоков нет.
+    assert rules.rules_for("metchiki") == []
+    assert rules.rules_for("plashki") == []
+
+
+@pytest.mark.parametrize(
+    "name,diameter,pitch",
+    [
+        ("Метчик м/р М27х3,0 к-т  сталь Р6М5 ГОСТ 3266-81", "27", "3.0"),
+        ("Плашка М 16х1,0  класс точности 6g, сталь Р6М5, ГО", "16", "1.0"),
+        ("Метчик м/р М 6х0,5 к-т сталь 9ХC ГОСТ 3266-81", "6", "0.5"),
+        ("Плашка М 30х1,5  класс точности 6g, сталь Р6М5, ГОСТ 9740-71", "30", "1.5"),
+        ("Метчики ручные (комплект 2 шт) М6х1,0 ЗУБР 9ХС", "6", "1.0"),
+        ("Метчик м/р М14х1,25  сталь Р6М5 ГОСТ 3266-81", "14", "1.25"),
+    ],
+)
+def test_mp_metric_size(rules, name, diameter, pitch):
+    f = _mp(rules, name)
+    assert f["diameter"].number == Decimal(diameter)
+    assert f["thread_pitch"].number == Decimal(pitch)
+    # «Метрическая» выводится из наличия diameter (derive, источник inferred).
+    assert f["thread_type"].option_slug == "metric"
+    assert f["thread_type"].source == "inferred"
+
+
+def test_mp_latin_c_steel_grade(rules):
+    # «9ХC» с латинской C — реальный вариант написания в 1С → легированная.
+    f = _mp(rules, "Метчик м/р М 6х0,5 к-т сталь 9ХC ГОСТ 3266-81")
+    assert f["material"].option_slug == "alloy"
+
+
+@pytest.mark.parametrize(
+    "name,thread",
+    [
+        ("Плашка G  1/4 для трубной цилиндр резьбы, сталь 9Х", "pipe"),
+        ("Метчик трубный ручной K 1/2 конический сталь Р6М5, ГОСТ 6227", "pipe"),
+        ("Метчик трубный ручной G 1/2 к-т сталь Р6М5, ГОСТ 3", "pipe"),
+        ("Плашка K 1  для дюймовой конической резьбы, сталь 9ХС, ГОСТ 6228-80", "inch"),
+    ],
+)
+def test_mp_pipe_inch_thread(rules, name, thread):
+    f = _mp(rules, name)
+    assert f["thread_type"].option_slug == thread
+    assert "diameter" not in f  # трубная/дюймовая — без метрического Ø
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Метчикодержатель М 6-М24",
+        "Метчикодержатель М 3-М 8",
+        "Плашкодержатель М 16-М 20 (45х18 мм)",
+    ],
+)
+def test_mp_holder_range_no_size(rules, name):
+    # Держатель с диапазоном «М6-М24»: одного Ø/шага нет — правила не применяются.
+    f = _mp(rules, name)
+    assert "diameter" not in f
+    assert "thread_pitch" not in f
+    assert "thread_type" not in f
+    assert "material" not in f
+    assert f["tool_kind"].option_slug == "derzhatel"
+
+
+def test_mp_set_no_size(rules):
+    # Набор без единого значения — пропуск размерных правил.
+    f = _mp(rules, "Набор метчиков и плашек Станкоимпорт")
+    assert "diameter" not in f and "thread_pitch" not in f
+    assert f["tool_kind"].option_slug == "nabor"
+
+
+def test_mp_vorotok_no_size(rules):
+    f = _mp(rules, "Вороток для метчиков М 6-М 20")
+    assert "diameter" not in f and "thread_pitch" not in f
+    assert f["tool_kind"].option_slug == "vorotok"
+
+
+def test_mp_tool_kind_unknown_via_derive(rules):
+    # unknown ключевыми словами не матчится — только derive-фолбэк.
+    f = _mp(rules, "Приспособление универсальное 45х12")
+    assert f["tool_kind"].option_slug == "unknown"
+    assert f["tool_kind"].source == "inferred"
+
+
+# --- CAT-14B: Наборы инструмента (nabory-instrumenta) ----------------------------
+
+NI = "nabory-instrumenta"
+
+
+def _ni(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(NI, name)}
+
+
+@pytest.mark.parametrize(
+    "name,pieces",
+    [
+        ("Набор инструмента 142 пр  Force", 142),
+        ("Набор экстракторов F-63006: шпильковертов 8пр. FOR", 8),
+        ('Набор инструмента 115 предметов 1/4, 1/2", GROSS', 115),
+        ('Набор инструмента  94 предмета, 1/2", 1/4",ТРЕК', 94),
+        ('Набор инструмента  25 пр, 1/4" HiKoki', 25),
+        ("Набор инструмента  77пр  СЕРВИС КЛЮЧ", 77),
+        ("Набор торцевых ключей F-5074, 7пр.  6мм-19мм", 7),
+        ("Набор выколоток 6 предметов KING TONY 1006PR", 6),
+    ],
+)
+def test_ni_piece_count(rules, name, pieces):
+    v = _ni(rules, name).get("piece_count")
+    assert v is not None and v.number == Decimal(pieces)
+
+
+def test_ni_piece_count_ignores_latin_model_code(rules):
+    # «1006PR» — латиница, не «пр»: число предметов берётся только из «6 предметов».
+    f = _ni(rules, "Набор выколоток 6 предметов KING TONY 1006PR")
+    assert f["piece_count"].number == Decimal(6)
+
+
+@pytest.mark.parametrize(
+    "name,drive",
+    [
+        ('Набор инструмента 115 предметов 1/4, 1/2", GROSS', "d-1-4-1-2"),
+        ('Набор инструмента  94 предмета, 1/2", 1/4",ТРЕК', "d-1-4-1-2"),
+        ('Набор инструмента  25 пр, 1/4" HiKoki', "d-1-4"),
+        ('Набор инструмента  29 предметов 1/4", STELS', "d-1-4"),
+    ],
+)
+def test_ni_drive(rules, name, drive):
+    assert _ni(rules, name)["drive"].option_slug == drive
+
+
+def test_ni_pieces_and_drive_do_not_overlap(rules):
+    # Число предметов не попадает в привод, дробь привода — не в число предметов.
+    f = _ni(rules, "Набор инструмента 142 пр  Force")
+    assert "drive" not in f
+    f = _ni(rules, 'Набор инструмента  25 пр, 1/4" HiKoki')
+    assert f["piece_count"].number == Decimal(25)  # не 14 из «1/4»
+
+
+@pytest.mark.parametrize(
+    "name,kind",
+    [
+        ("Набор экстракторов F-63006: шпильковертов 8пр. FOR", "extractors"),
+        ("Набор выколоток чехле  6 предметов ЗУБР Профессионал", "punches"),
+        ("Набор торцевых ключей F-5074, 7пр.  6мм-19мм", "sockets"),
+        ("Набор инструмента 142 пр  Force", "universal"),
+    ],
+)
+def test_ni_set_kind(rules, name, kind):
+    assert _ni(rules, name)["set_kind"].option_slug == kind
+
+
+# --- CAT-14B: Болты и винты (krep-bolty) -----------------------------------------
+
+KB = "krep-bolty"
+
+
+def _kb(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(KB, name)}
+
+
+@pytest.mark.parametrize(
+    "name,diam,length",
+    [
+        ("Болт М 6х 55 шестигр.головка", "6", "55"),
+        ("Болт М12х 20 шестигр.головка", "12", "20"),
+        ("Болт М20х80 шестигр. головка", "20", "80"),
+        ("Болт специальный M6X20 942808", "6", "20"),
+        ("Фиксирующий болт М4Х10 949812", "4", "10"),
+    ],
+)
+def test_kb_size(rules, name, diam, length):
+    f = _kb(rules, name)
+    assert f["thread_diameter"].number == Decimal(diam)
+    assert f["length"].number == Decimal(length)
+
+
+def test_kb_article_code_no_size(rules):
+    # Размер, зашитый в артикул «B800A06X008», не угадываем (backlog CAT-15).
+    f = _kb(rules, "Болт крепежный с фланцем B800A06X008")
+    assert "thread_diameter" not in f
+    assert "length" not in f
+    assert f["head_type"].option_slug == "flange"
+
+
+@pytest.mark.parametrize(
+    "name,head",
+    [
+        ("Винт 4х55 потай.цинк", "countersunk"),
+        ("Винт 5х45 полукруг.цинк ГОСТ 17473", "round"),
+        ("Винт 5х30 потай.цинк DIN 965", "countersunk"),
+    ],
+)
+def test_kb_vint_head_coating_no_size(rules, name, head):
+    # «Винт 4х55» без буквы «М» — размер не назначаем (строгое «Мd×L»);
+    # головка и покрытие извлекаются — они от размера не зависят.
+    f = _kb(rules, name)
+    assert "thread_diameter" not in f
+    assert "length" not in f
+    assert f["head_type"].option_slug == head
+    assert f["coating"].option_slug == "zinc"
+
+
+def test_kb_set_no_size(rules):
+    f = _kb(rules, "Набор для выворачивания сломаных болтов и шпилек 2")
+    assert "thread_diameter" not in f
+    assert "length" not in f
+
+
+# --- CAT-14B: Угольные щётки (zap-shchetki-ugolnye) -------------------------------
+
+ZU = "zap-shchetki-ugolnye"
+
+
+def _zu(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(ZU, name)}
+
+
+@pytest.mark.parametrize(
+    "name,a,b,c",
+    [
+        ("Щетки угольные АНАЛОГ 6.5х9х17мм 13-102 HITACHI 999088", "6.5", "9", "17"),
+        ("Щетки угольные АНАЛОГ 5х8х11мм 18-102 MAKITA CB51", "5", "8", "11"),
+        ("Щетки угольные АНАЛОГ 6х12х20мм 02-101 SPARKY 2001", "6", "12", "20"),
+        ("Щетки угольные АНАЛОГ 5х8х20мм 21-108 РИТМ МЭС-450, МЭП-500", "5", "8", "20"),
+    ],
+)
+def test_zu_dims(rules, name, a, b, c):
+    f = _zu(rules, name)
+    assert f["dim_a"].number == Decimal(a)
+    assert f["dim_b"].number == Decimal(b)
+    assert f["dim_c"].number == Decimal(c)
+
+
+@pytest.mark.parametrize(
+    "name,brand",
+    [
+        ("Щетки угольные АНАЛОГ 6.5х9х17мм 13-102 HITACHI 999088", "hitachi"),
+        ("Угольные щетки BOSCH 1607000V37", "bosch"),
+        ("Угольные щетки CB-155 MAKITA", "makita"),
+    ],
+)
+def test_zu_compat_brand(rules, name, brand):
+    assert _zu(rules, name)["compat_brand"].option_slug == brand
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Щетка для пылесоса Hitachi; d=36мм, 290мм, д/сбора",
+        "Щетка для пылесоса Hitachi; d=36мм, маленькая, д/у",
+    ],
+)
+def test_zu_vacuum_brush_skipped(rules, name):
+    # Щётка пылесоса — не угольная: ни габаритов, ни бренда совместимости.
+    f = _zu(rules, name)
+    assert "dim_a" not in f and "dim_b" not in f and "dim_c" not in f
+    assert "compat_brand" not in f
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Держатель угольных щеток 323164",
+        "Крышка угольных щеток 935829",
+    ],
+)
+def test_zu_accessories_skipped(rules, name):
+    assert _zu(rules, name) == {}
+
+
+def test_zu_bare_name_no_values(rules):
+    assert _zu(rules, "Угольные щетки") == {}
 
 
 # --- Измерительный: рулетки (длина/ширина ленты) и уровни (длина) -----------------
