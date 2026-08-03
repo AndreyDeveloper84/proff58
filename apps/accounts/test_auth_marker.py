@@ -46,7 +46,9 @@ def test_login_sets_marker(client, user):
     assert resp.status_code == 200
     marker = resp.cookies[AUTH_MARKER_COOKIE]
     assert marker.value == "1"
-    assert marker["httponly"]
+    # Намеренно читаемо для JS: по маркеру шапка решает, вести гостя в кабинет
+    # или сразу на форму входа. Доступа он не даёт — его даёт только сессия.
+    assert not marker["httponly"]
 
 
 @pytest.mark.django_db
