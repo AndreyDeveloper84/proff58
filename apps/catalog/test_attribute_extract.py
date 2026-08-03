@@ -1207,21 +1207,56 @@ def test_kb_article_code_no_size(rules):
 
 
 @pytest.mark.parametrize(
-    "name,head",
+    "name,diam,length,head",
     [
-        ("Винт 4х55 потай.цинк", "countersunk"),
-        ("Винт 5х45 полукруг.цинк ГОСТ 17473", "round"),
-        ("Винт 5х30 потай.цинк DIN 965", "countersunk"),
+        ("Винт 4х55 потай.цинк", "4", "55", "countersunk"),
+        ("Винт 4x55 потай.цинк", "4", "55", "countersunk"),
+        ("Винт 6х14 потай.цинк", "6", "14", "countersunk"),
+        ("Винт 5х45 полукруг.цинк ГОСТ 17473", "5", "45", "round"),
+        ("Винт 5х30 потай.цинк DIN 965", "5", "30", "countersunk"),
+        ("Винт 4х25 полукруг.цинк ГОСТ 17473", "4", "25", "round"),
     ],
 )
-def test_kb_vint_head_coating_no_size(rules, name, head):
-    # «Винт 4х55» без буквы «М» — размер не назначаем (строгое «Мd×L»);
-    # головка и покрытие извлекаются — они от размера не зависят.
+def test_kb_vint_bare_size(rules, name, diam, length, head):
+    # CAT-14C (решение 5): «Винт 4х55» без буквы «М» принимается внутри krep-bolty;
+    # первое число → диаметр, второе → длина; [хx] — кириллица и латиница.
+    f = _kb(rules, name)
+    assert f["thread_diameter"].number == Decimal(diam)
+    assert f["length"].number == Decimal(length)
+    assert f["head_type"].option_slug == head
+    assert f["coating"].option_slug == "zinc"
+
+
+@pytest.mark.parametrize(
+    "name,diam,length",
+    [
+        ("Болт М6х55", "6", "55"),
+        ("Болт М6x55", "6", "55"),
+    ],
+)
+def test_kb_m_format_compact(rules, name, diam, length):
+    # Точный формат «Мd×L» (без пробелов, обе буквы [хx]) — первый паттерн.
+    f = _kb(rules, name)
+    assert f["thread_diameter"].number == Decimal(diam)
+    assert f["length"].number == Decimal(length)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Винт 6х9х12",  # тройка размеров — не пара Ø×L
+        "Болт 10х20х30",
+        "Винт 2х25",  # Ø 2 вне ряда метизов
+        "Винт 7х50",  # Ø 7 вне ряда
+        "Болт 30х300",  # Ø 30 вне ряда
+        "Винт 5х5",  # длина < 6
+        "Винт 5х400",  # длина > 300 (и не «40» — хвост цифры запрещён)
+    ],
+)
+def test_kb_bare_size_rejected(rules, name):
     f = _kb(rules, name)
     assert "thread_diameter" not in f
     assert "length" not in f
-    assert f["head_type"].option_slug == head
-    assert f["coating"].option_slug == "zinc"
 
 
 def test_kb_set_no_size(rules):
@@ -1294,6 +1329,200 @@ def test_zu_accessories_skipped(rules, name):
 
 def test_zu_bare_name_no_values(rules):
     assert _zu(rules, "Угольные щетки") == {}
+
+
+# --- CAT-14C: Перчатки и рукавицы (siz-perchatki) — material/coating ---------
+
+SP = "siz-perchatki"
+
+
+def _sp(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(SP, name)}
+
+
+@pytest.mark.parametrize(
+    "name,material",
+    [
+        ("Перчатки х/б с ПВХ 10/5-нит (протектор) БЕЛЫЕ (10/400)", "hb"),
+        ("Перчатки ANSELL ЭКСТРА 87-950 мт. латекс", "lateks"),
+        ("Рукавицы брезентовые с двойным наладонником (520 г", "brezent"),
+        (
+            "Перчатки KRAFTOOL NEOPREN неопреновые индустриальные противокислотные р-р XXL",
+            "neopren",
+        ),
+        ("Перчатки п/ш черные (полушерст)", "psh"),
+        ("Перчатки комбинированные STAYER искусственная кожа, зеленые", "kozha"),
+        ("Перчатки нитриловые одноразовые", "nitril"),
+    ],
+)
+def test_sp_material(rules, name, material):
+    assert _sp(rules, name)["material"].option_slug == material
+
+
+def test_sp_material_base_before_coating_material(rules):
+    # «полиэстер с нитриловым обливом»: нитрил — материал облива, не основы;
+    # базовые материалы стоят раньше латекса/нитрила/пвх (первый матч выигрывает).
+    assert (
+        _sp(rules, "Перчатки садовые из полиэстера с нитриловым обливо")["material"].option_slug
+        == "poliester"
+    )
+
+
+@pytest.mark.parametrize(
+    "name,coating",
+    [
+        ("Перчатки х/б с ПВХ 10/5-нит (протектор) БЕЛЫЕ (10/400)", "protektor"),
+        ("Перчатки х/б черные с ПВХ (точка) 10 кл.5-ти нитка (10/300)", "tochka"),
+        ("Перчатки ЗУБР ЗАЩИТА с двойным латексным обливом р-р S-M", "chastichny-obliv"),
+        ("Перчатки садовые из полиэстера с нитриловым обливо", "chastichny-obliv"),
+    ],
+)
+def test_sp_coating(rules, name, coating):
+    assert _sp(rules, name)["coating"].option_slug == coating
+
+
+def test_sp_coating_full_dip_before_partial(rules):
+    # «полный облив» обязан стоять раньше «облив» — иначе проиграет подстроке.
+    assert (
+        _sp(rules, "Перчатки ЗУБР МЕХАНИК+ маслобензостойкие тонкие полный облив р-р XL")[
+            "coating"
+        ].option_slug
+        == "polny-obliv"
+    )
+
+
+@pytest.mark.parametrize("name", ["Перчатки одноразовые", "Перчатки КЩС-2"])
+def test_sp_no_material_no_coating(rules, name):
+    f = _sp(rules, name)
+    assert "material" not in f
+    assert "coating" not in f
+
+
+# --- CAT-14C часть B: ждёт CODE-02 (word_boundary / kind: text) ---------------
+# Правила заведены в attribute_rules.json; движок их поддержит в CODE-02.
+# После rebase на CODE-02: снять skip-маркер CODE02 и прогнать валидацию
+# (статус зафиксирован в scratchpad/cat14/cat-14c-rules-report.md).
+
+CODE02 = pytest.mark.skip(
+    reason="CAT-14C часть B: валидация после rebase на CODE-02 (word_boundary / kind: text)"
+)
+
+
+@CODE02
+@pytest.mark.parametrize(
+    "name,size",
+    [
+        ("Перчатки садовые GRINDA бело-зеленые S", "s"),
+        ("Перчатки садовые GRINDA M", "m"),
+        ("Перчатки латексные экстратонкие, S, STAYER", "s"),
+        ("Перчатки ЗУБР FLEX красные комбинированные работа с сенсор экранами р.L", "l"),
+        ("Перчатки ЗУБР МЕХАНИК+ маслобензостойкие тонкие полный облив р-р XL", "xl"),
+        ("Перчатки KRAFTOOL NEOPREN неопреновые индустриальные противокислотные р-р XXL", "xxl"),
+        ("Перчатки ЗУБР ТОЧНАЯ РАБОТА с полиуретан покрытие размер XL", "xl"),
+        ("Перчатки ЗУБР ЗАЩИТА с двойным латексным обливом р-р S-M", "s-m"),
+        ("Перчатки садовые р-р L-XL", "l-xl"),
+    ],
+)
+def test_sp_size_letters(rules, name, size):
+    # word_boundary (обе границы): «S» в «, S,» — размер; диапазоны S-M/L-XL —
+    # самостоятельные значения и стоят раньше одиночных букв.
+    assert _sp(rules, name)["size"].option_slug == size
+
+
+@CODE02
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Перчатки STELS",  # «s» внутри бренда — не размер
+        "Перчатки ANSELL ЭКСТРА 87-950 мт. латекс",  # «l» внутри ANSELL
+        "Перчатки х/б с ПВХ 10/5-нит (протектор) БЕЛЫЕ (10/400)",
+        "Перчатки КЩС-2",
+    ],
+)
+def test_sp_size_letters_no_false_positive(rules, name):
+    assert "size" not in _sp(rules, name)
+
+
+@CODE02
+def test_sp_size_from_article_suffix_in_name(rules):
+    # «11299-L» внутри названия: дефис — граница слова, «l» матчится. У ЗУБР/
+    # KRAFTOOL суффикс артикула дублирует размер (11279-XL ↔ р-р XL), поэтому
+    # значение корректно, но артикул источником размера не считается (таблица §3).
+    name = "Перчатки KRAFTOOL ULTIMATE комбинированные, работа с сенсор экранами (арт. 11299-L)"
+    assert _sp(rules, name)["size"].option_slug == "l"
+
+
+@CODE02
+@pytest.mark.parametrize(
+    "name,num",
+    [
+        ("Перчатки ANSELL ALPHATEC 87-900 зел.-жел, р-р 11", "11"),
+        ("Перчатки х/б р-р 6", "6"),
+        ("Перчатки х/б р-р 13", "13"),
+        ("Перчатки размер 10", "10"),
+    ],
+)
+def test_sp_size_num_anchor(rules, name, num):
+    # Числовой размер 6–13 — только при якоре «р-р»/«размер»/«р.».
+    assert _sp(rules, name)["size_num"].number == Decimal(num)
+
+
+@CODE02
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Перчатки ANSELL ЭКСТРА 87-950 мт. латекс",  # модель — не размер
+        "Перчатки х/б с ПВХ 10/5-нит (протектор) БЕЛЫЕ (10/400)",  # нити/упаковка
+        "Перчатки х/б черные с ПВХ (точка) 10 кл.5-ти нитка (10/300)",  # класс вязки
+        "Перчатки КЩС-2",  # модель
+        "Перчатки х/б р-р 5",  # вне диапазона 6–13
+        "Перчатки х/б р-р 14",
+    ],
+)
+def test_sp_size_num_rejected(rules, name):
+    assert "size_num" not in _sp(rules, name)
+
+
+@CODE02
+@pytest.mark.parametrize(
+    "name,code",
+    [
+        ("Щетки угольные АНАЛОГ 6.5х9х17мм 13-102 HITACHI 999088", "13-102"),
+        ("Щетки угольные АНАЛОГ 5х8х11мм 18-102 MAKITA CB51", "18-102"),
+        ("Угольные щетки CB-155 MAKITA", "cb-155"),
+        ("Щетки угольные АНАЛОГ 5х10х14мм 18-120 MAKITA CB325", "18-120"),
+    ],
+)
+def test_zu_analog_code(rules, name, code):
+    # kind: text — значение из нормализованного текста (lower), поле v.text.
+    assert _zu(rules, name)["analog_code"].text == code
+
+
+@CODE02
+def test_zu_analog_code_cb_without_hyphen(rules):
+    # «CB325» без дефиса — тоже код (паттерн 2), если нет кода линейки «АНАЛОГ».
+    assert _zu(rules, "Угольные щетки CB325 MAKITA")["analog_code"].text == "cb325"
+
+
+@CODE02
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Угольные щетки BOSCH 1607000V37",
+        "Угольные щетки",
+        "Угольные щетки Hitachi (арт. 999016*)",
+    ],
+)
+def test_zu_analog_code_absent(rules, name):
+    assert "analog_code" not in _zu(rules, name)
+
+
+@CODE02
+def test_zu_analog_code_separate_from_dims(rules):
+    # Код аналога хранится отдельно от габаритов dim_a/b/c (решение 3).
+    f = _zu(rules, "Щетки угольные АНАЛОГ 6.5х9х17мм 13-102 HITACHI 999088")
+    assert f["dim_a"].number == Decimal("6.5")
+    assert f["analog_code"].text == "13-102"
 
 
 # --- Измерительный: рулетки (длина/ширина ленты) и уровни (длина) -----------------
