@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import {
   ShieldCheck,
   Truck,
@@ -24,18 +25,22 @@ const BULLET_ICONS: Record<string, LucideIcon> = {
 // сгенерированная фотография используется только как декоративный фон.
 export function Hero({ onConsult }: HeroProps) {
   const h = HOME_CONTENT.hero;
+  const [imageLoaded, setImageLoaded] = useState(false);
   return (
     <section className="bg-surface">
       <div className="mx-auto w-full max-w-[1680px] px-4 pt-2 sm:px-6 xl:px-8">
         <div className="dark relative min-h-[300px] overflow-hidden rounded-md bg-header xl:min-h-[340px]">
           <Image
-            src="/home/hero/approved-tools-hero.png"
+            src="/home/hero/approved-tools-hero.webp"
             alt=""
             width={1881}
             height={836}
             priority
             sizes="(max-width: 768px) 700px, 1100px"
-            className="absolute right-0 top-1/2 h-full w-auto max-w-none -translate-y-1/2 object-contain opacity-95 sm:h-[155%] xl:h-[180%]"
+            onLoad={() => setImageLoaded(true)}
+            className={`absolute right-0 top-1/2 h-full w-auto max-w-none -translate-y-1/2 object-contain transition-opacity duration-300 sm:h-[155%] xl:h-[180%] ${
+              imageLoaded ? "opacity-95" : "opacity-0"
+            }`}
             aria-hidden
           />
           <div
