@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
 import {
   ShieldCheck,
@@ -12,8 +11,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { HOME_CONTENT } from "@/lib/home-content";
 
-type HeroProps = { onConsult: () => void };
-
 const BULLET_ICONS: Record<string, LucideIcon> = {
   ShieldCheck,
   Truck,
@@ -21,9 +18,13 @@ const BULLET_ICONS: Record<string, LucideIcon> = {
   Wrench,
 };
 
-// Первый экран по утверждённому макету. Текст и действия остаются HTML, а
-// сгенерированная фотография используется только как декоративный фон.
-export function Hero({ onConsult }: HeroProps) {
+// Первый экран по утверждённому макету. Текст остаётся HTML, а сгенерированная
+// фотография используется только как декоративный фон.
+//
+// Кнопок здесь нет: «Подобрать инструмент» и «Перейти в каталог» убраны по
+// решению команды. Переход в каталог остаётся зелёной кнопкой в шапке — она
+// видна на каждой странице, а не только на первом экране.
+export function Hero() {
   const h = HOME_CONTENT.hero;
   const [imageLoaded, setImageLoaded] = useState(false);
   return (
@@ -77,26 +78,6 @@ export function Hero({ onConsult }: HeroProps) {
                   );
                 })}
               </ul>
-
-              {/* Основные действия первого экрана. Единая общая точка перехода
-                  в MAX находится в подвале сайта. */}
-              <div className="mt-4 sm:w-fit">
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={onConsult}
-                    className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-sm bg-accent px-7 text-[13px] font-semibold text-accent-ink transition hover:brightness-110 sm:flex-1"
-                  >
-                    {h.primaryCta.label}
-                  </button>
-                  <Link
-                    href={h.secondaryCta.href}
-                    className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-sm border border-white/80 bg-white px-8 text-[13px] font-semibold text-[#202326] transition hover:bg-white/90 sm:flex-1"
-                  >
-                    {h.secondaryCta.label}
-                  </Link>
-                </div>
-              </div>
             </div>
           </div>
         </div>

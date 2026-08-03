@@ -60,4 +60,23 @@ describe("Footer (#591)", () => {
       expect(screen.getByRole("navigation", { name: col.title })).toBeInTheDocument();
     }
   });
+  // Колонка «Покупателям» ведёт в кабинет: гостю — сразу на форму входа, иначе
+  // его развернёт серверный гвард уже после смены адреса (пустая страница).
+  it("гостю ссылки кабинета ведут на форму входа с возвратом", () => {
+    render(<Footer authState="anonymous" />);
+
+    expect(screen.getByRole("link", { name: "Избранное" })).toHaveAttribute(
+      "href",
+      "/account/login?next=%2Faccount%2Fwishlist",
+    );
+  });
+
+  it("вошедшему — прямо в кабинет", () => {
+    render(<Footer authState="authenticated" />);
+
+    expect(screen.getByRole("link", { name: "Избранное" })).toHaveAttribute(
+      "href",
+      "/account/wishlist",
+    );
+  });
 });

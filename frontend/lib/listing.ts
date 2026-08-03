@@ -89,7 +89,7 @@ export function isBroadCategory(listing: Listing): boolean {
  *  - выбран tool_type ИЛИ листовая/типизированная → все пришедшие не-nav фасеты
  *    (drill-down на бэке уже отсёк пустые).
  * nav-фасет (tool_type) исключаем всегда — он рендерится отдельным блоком навигации
- * (categoryNav → CategoryNavPanel), а не рядовым фасетом сайдбара.
+ * (categoryNav → CategoryNavStrip), а не рядовым фасетом сайдбара.
  */
 export function sidebarFacets(listing: Listing, toolType?: string): Facet[] {
   const nonNav = listing.facets.filter((f) => !f.isNav);

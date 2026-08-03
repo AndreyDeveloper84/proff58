@@ -22,8 +22,9 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import { useAuthState } from "@/components/auth/AuthStateProvider";
 import { useCart } from "@/components/cart/CartProvider";
-import { accountLinkHref, useHasAuthMarker } from "@/lib/auth-marker";
+import { accountLinkHref } from "@/lib/auth-state";
 import { useCompare } from "@/lib/compare";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
 import { SearchBar } from "./SearchBar";
@@ -54,10 +55,11 @@ export function Header({
   const { count: compareCount } = useCompare();
   const [open, setOpen] = useState(false);
   // Гостя ведём сразу на форму входа: иначе он попадал в кабинет, откуда его
-  // разворачивал серверный гвард, — со скачком адреса и пустой страницей.
-  const authMarker = useHasAuthMarker();
-  const profileHref = accountLinkHref("/account/profile", authMarker);
-  const wishlistHref = accountLinkHref("/account/wishlist", authMarker);
+  // разворачивал серверный гвард, — со скачком адреса и пустой страницей. При
+  // «может быть вошёл» ссылка идёт по назначению — см. lib/auth-state.
+  const authState = useAuthState();
+  const profileHref = accountLinkHref("/account/profile", authState);
+  const wishlistHref = accountLinkHref("/account/wishlist", authState);
 
   const logo = logoUrl ? (
     <Image

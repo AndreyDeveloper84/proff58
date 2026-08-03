@@ -1,82 +1,59 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { ChevronRight, Heart, LoaderCircle, Trash2 } from "lucide-react";
+import { Heart } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
+import { ProductCard } from "@/components/product/ProductCard";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
-import {
-  checkAuth,
-  getWishlist,
-  loginHref,
-  removeWishlistItem,
-  type WishlistItem,
-} from "@/lib/auth";
+import { useWishlist } from "@/components/wishlist/WishlistProvider";
+import type { Product } from "@/lib/types";
+import { fetchWishlistProducts } from "@/lib/wishlist-products";
 
+// Избранное покупателя. Доступ проверяет серверный гвард кабинета
+// (app/account/(guarded)/layout.tsx) ещё до отдачи разметки — здесь остаётся
+// только показать сохранённое.
+//
+// Карточки — обычные ProductCard: цена, наличие, «в корзину» и то же сердечко,
+// что на витрине. Оно и снимает товар из избранного, поэтому отдельной кнопки
+// удаления нет: две кнопки с одним смыслом на одной карточке путают.
 export default function WishlistPage() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const [items, setItems] = useState<WishlistItem[] | null>(null);
-  const [removingId, setRemovingId] = useState<number | null>(null);
+  const { ids, loaded } = useWishlist();
+  const [products, setProducts] = useState<Product[] | null>(null);
   const [failed, setFailed] = useState(false);
-  const [error, setError] = useState("");
+
+  // Список идентификаторов ведёт провайдер (он же обновляет его при клике по
+  // сердечку), а карточки догружаем один раз — по мере появления новых id.
+  // Строкой, а не Set: иначе effect перезапускался бы на каждый рендер.
+  const idsKey = [...ids].sort((a, b) => a - b).join(",");
 
   useEffect(() => {
+    // Пустое избранное грузить незачем — это видно по самому списку id.
+    if (!loaded || !idsKey) return;
     let active = true;
-    checkAuth().then((user) => {
-      if (!active) return;
-      if (user === "anonymous") {
-        router.replace(loginHref(pathname));
-        return;
-      }
-      if (user === "error") {
-        setFailed(true);
-        return;
-      }
-      getWishlist().then((data) => {
-        if (!active) return;
-        // #574: сбой загрузки не выдаём за «в избранном пока пусто».
-        if (data === "error") setFailed(true);
-        else setItems(data);
+    fetchWishlistProducts(idsKey.split(",").map(Number))
+      .then((rows) => {
+        if (active) setProducts(rows);
+      })
+      .catch(() => {
+        if (active) setFailed(true);
       });
-    });
     return () => {
       active = false;
     };
-  }, [router, pathname]);
+  }, [idsKey, loaded]);
 
-  const removeItem = async (item: WishlistItem) => {
-    if (removingId !== null || items === null) return;
-    const previousItems = items;
-    setError("");
-    setRemovingId(item.product_id);
-    setItems((current) =>
-      current?.filter((entry) => entry.product_id !== item.product_id) ?? current,
-    );
-    try {
-      await removeWishlistItem(item.product_id);
-    } catch (caught) {
-      setItems(previousItems);
-      setError(caught instanceof Error ? caught.message : "Не удалось удалить товар.");
-    } finally {
-      setRemovingId(null);
-    }
-  };
+  // Что показываем: null — ещё грузим. Снятое сердечко убирает карточку сразу,
+  // не дожидаясь перезагрузки списка.
+  const visible = !loaded
+    ? null
+    : ids.size === 0
+      ? []
+      : (products?.filter((product) => ids.has(product.id)) ?? null);
 
   return (
     <AccountShell title="Избранное" mobileBackHref="/account/profile">
       <div className="space-y-4">
-        {error && (
-          <p
-            role="alert"
-            className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger"
-          >
-            {error}
-          </p>
-        )}
-
         {failed && (
           <ErrorState
             title="Не удалось загрузить избранное"
@@ -84,9 +61,11 @@ export default function WishlistPage() {
           />
         )}
 
-        {!failed && items === null && <LoadingState label="Загружаем избранное…" />}
+        {!failed && (!loaded || visible === null) && (
+          <LoadingState label="Загружаем избранное…" />
+        )}
 
-        {!failed && items !== null && items.length === 0 && (
+        {!failed && visible !== null && visible.length === 0 && (
           <EmptyState
             icon={<Heart className="h-10 w-10" aria-hidden />}
             title="В избранном пока пусто"
@@ -102,54 +81,10 @@ export default function WishlistPage() {
           />
         )}
 
-        {items !== null && items.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {items.map((item) => (
-              <article
-                key={item.product_id}
-                className="group relative overflow-hidden rounded-lg border border-line bg-surface transition hover:-translate-y-0.5 hover:shadow-md"
-              >
-                <Link
-                  href={`/product/${item.product_slug}`}
-                  aria-label={`Открыть товар «${item.product_name}»`}
-                  className="block"
-                >
-                  <div className="grid aspect-[4/3] place-items-center bg-photo">
-                    <Image
-                      src="/sample-tool.svg"
-                      alt=""
-                      width={160}
-                      height={160}
-                      className="h-32 w-32 object-contain transition group-hover:scale-105"
-                    />
-                  </div>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => void removeItem(item)}
-                  disabled={removingId !== null}
-                  aria-label={`Удалить «${item.product_name}» из избранного`}
-                  className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full border border-line bg-surface text-danger shadow-sm transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-60"
-                >
-                  {removingId === item.product_id ? (
-                    <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
-                  ) : (
-                    <Trash2 className="h-4 w-4" aria-hidden />
-                  )}
-                </button>
-                <Link
-                  href={`/product/${item.product_slug}`}
-                  className="flex items-center gap-3 p-4"
-                >
-                  <p className="min-w-0 flex-1 text-sm font-semibold text-ink">
-                    {item.product_name}
-                  </p>
-                  <ChevronRight
-                    className="h-4 w-4 shrink-0 text-ink-3 transition group-hover:text-accent"
-                    aria-hidden
-                  />
-                </Link>
-              </article>
+        {visible !== null && visible.length > 0 && (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+            {visible.map((product) => (
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}

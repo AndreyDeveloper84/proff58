@@ -105,12 +105,9 @@ export async function checkAuth(): Promise<AuthCheck> {
   }
 }
 
-/** Адрес формы входа с запоминанием, куда человек шёл (форма вернёт его туда). */
-export function loginHref(next?: string): string {
-  return next && next.startsWith("/")
-    ? `/account/login?next=${encodeURIComponent(next)}`
-    : "/account/login";
-}
+// loginHref переехал в lib/auth-state (модуль без зависимостей — его импортирует
+// и proxy.ts). Реэкспорт оставлен, чтобы не переписывать импорты по всему фронту.
+export { loginHref } from "@/lib/auth-state";
 
 export async function updateMe(data: AccountUserPatch): Promise<AccountUser> {
   return apiFetch<AccountUser>("/api/account/me/", {

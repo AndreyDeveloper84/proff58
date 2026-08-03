@@ -29,9 +29,6 @@ export const HOME_CONTENT = {
       { icon: "Users", text: "Помощь экспертов в подборе" },
       { icon: "Wrench", text: "Сервисный центр в Пензе" },
     ] as HeroBullet[],
-    // primaryCta открывает модалку подбора (InquiryModal); secondary ведёт в каталог.
-    primaryCta: { label: "Подобрать инструмент" },
-    secondaryCta: { label: "Перейти в каталог", href: "/catalog" },
     maxPill: { title: "Консультация в MAX", note: "Подбор инструмента в чате за 2–3 минуты" },
   },
   // #588: сценарный вход «Что вы хотите сделать?» — помогает выбрать по задаче,

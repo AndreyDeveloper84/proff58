@@ -7,7 +7,8 @@ import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReservationNotice } from "@/components/order/ReservationNotice";
 import { TrackOrderInMaxCta } from "@/components/order/TrackOrderInMaxCta";
-import { accountLinkHref, useHasAuthMarker } from "@/lib/auth-marker";
+import { useAuthState } from "@/components/auth/AuthStateProvider";
+import { accountLinkHref } from "@/lib/auth-state";
 import { formatDeliverySlot, formatPrice } from "@/lib/format";
 import { readStashedOrder } from "@/lib/order-storage";
 import type { Order } from "@/lib/types";
@@ -44,7 +45,7 @@ export default function ThanksPage() {
   const order = useSyncExternalStore(subscribe, getSnapshot, () => null);
   // Заказ часто оформляют без входа, поэтому «в личном кабинете» для гостя ведёт
   // на форму входа — оттуда его вернут в заказы.
-  const ordersHref = accountLinkHref("/account/orders", useHasAuthMarker());
+  const ordersHref = accountLinkHref("/account/orders", useAuthState());
 
   // Сумма товаров из снимка строк: order.total включает доставку, а отдельного
   // поля «товары» бэк не отдаёт.

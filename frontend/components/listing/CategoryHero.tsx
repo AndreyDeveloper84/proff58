@@ -11,6 +11,13 @@ import { cn } from "@/lib/utils";
 //            вертикальную линию с тулбаром и сеткой товаров (правая колонка PLP).
 // Справа в обоих режимах — контурный чертёж раздела (lib/category-artwork).
 // Единственный <h1> страницы.
+//
+// inline намеренно НЕвысокий: раньше он занимал 280px и вместе с тулбаром съедал
+// первый экран — до товаров приходилось прокручивать. Заголовок здесь служебный,
+// человек пришёл за выдачей, поэтому высота задаётся содержимым.
+//
+// `children` — слот под шапкой (капсулы разделов): они часть навигации по
+// разделу и стоят рядом с его названием, а не в фильтрах.
 
 type Hero = {
   image: string | null;
@@ -26,6 +33,8 @@ type CategoryHeroProps = {
   className?: string;
   /** Названия вышестоящих разделов — запасной чертёж для подкатегорий. */
   parentTitles?: string[];
+  /** Навигация по разделу под заголовком (капсулы подкатегорий и типов). */
+  children?: React.ReactNode;
 };
 
 export function CategoryHero({
@@ -36,6 +45,7 @@ export function CategoryHero({
   variant = "card",
   className,
   parentTitles = [],
+  children,
 }: CategoryHeroProps) {
   const inline = variant === "inline";
   // Свой чертёж есть не у каждой подкатегории: «Домкраты» берут чертёж
@@ -52,7 +62,10 @@ export function CategoryHero({
         // В карточном варианте чертёж стоит в собственной grid-колонке.
         !inline && skeleton && "lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6",
         inline
-          ? "border-b border-line/80 lg:min-h-[280px]"
+          // Небольшой минимум только ради чертежа справа: он тянется на всю
+          // высоту секции, и в листовой категории (заголовок без капсул)
+          // сжимался бы в полоску. Против прежних 280px это всё равно вдвое ниже.
+          ? "border-b border-line/80 lg:min-h-[124px]"
           : "mb-6 rounded-xl border border-line bg-surface",
         className,
       )}
@@ -70,7 +83,7 @@ export function CategoryHero({
         className={cn(
           "relative z-10 flex lg:col-start-1 lg:row-start-1",
           inline
-            ? "py-5 lg:min-h-[280px] lg:items-center lg:py-7 lg:pr-[44%]"
+            ? "flex-col py-4 lg:py-5 lg:pr-[38%]"
             : "gap-5 p-6 md:p-8",
         )}
       >
@@ -95,7 +108,7 @@ export function CategoryHero({
                 <h1
                   className={cn(
                     "font-display text-3xl font-bold text-ink md:text-4xl",
-                    inline && "lg:text-[42px] lg:leading-none",
+                    inline && "text-2xl md:text-[28px] lg:text-[30px] lg:leading-tight",
                   )}
                 >
                   {title}
@@ -109,13 +122,22 @@ export function CategoryHero({
               </div>
 
               {intro && (
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-2 md:text-base">
+                <p
+                  className={cn(
+                    "mt-2 max-w-2xl text-sm leading-relaxed text-ink-2",
+                    // В inline описание — служебная строка над выдачей: держим
+                    // её в две строки, иначе шапка снова разрастается.
+                    inline ? "line-clamp-2" : "mt-3 md:text-base",
+                  )}
+                >
                   {intro}
                 </p>
               )}
             </div>
           </div>
         </div>
+
+        {children}
       </div>
 
       {/* В inline-hero все чертежи помещаются в одну и ту же чистую правую
