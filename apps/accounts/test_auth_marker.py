@@ -23,7 +23,9 @@ def client():
 
 @pytest.fixture
 def user(db):
-    return User.objects.create_user(phone="+79005550011", password="StrongPass2026", full_name="Ю")
+    return User.objects.create_user(
+        email="marker@proff58.ru", password="StrongPass2026", full_name="Ю"
+    )
 
 
 @pytest.mark.django_db
@@ -37,7 +39,7 @@ def test_guest_gets_no_marker(client):
 def test_login_sets_marker(client, user):
     resp = client.post(
         "/api/account/login/",
-        {"phone": user.phone, "password": "StrongPass2026"},
+        {"email": user.email, "password": "StrongPass2026"},
         format="json",
     )
 
@@ -52,7 +54,7 @@ def test_marker_is_not_reissued_on_every_request(client, user):
     """Уже есть — не трогаем: лишний Set-Cookie на каждый запрос ни к чему."""
     client.post(
         "/api/account/login/",
-        {"phone": user.phone, "password": "StrongPass2026"},
+        {"email": user.email, "password": "StrongPass2026"},
         format="json",
     )
 
@@ -66,7 +68,7 @@ def test_marker_is_not_reissued_on_every_request(client, user):
 def test_logout_clears_marker(client, user):
     client.post(
         "/api/account/login/",
-        {"phone": user.phone, "password": "StrongPass2026"},
+        {"email": user.email, "password": "StrongPass2026"},
         format="json",
     )
 

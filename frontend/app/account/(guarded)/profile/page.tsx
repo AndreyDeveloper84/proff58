@@ -77,6 +77,9 @@ function DashboardLoading() {
 type ProfileForm = {
   full_name: string;
   email: string;
+  // Тип покупателя правится здесь же: человек, зарегистрировавшийся частным
+  // лицом, начинает покупать от организации — раньше это умел только менеджер.
+  customer_type: "b2c" | "b2b";
   company_name: string;
   inn: string;
   kpp: string;
@@ -100,6 +103,7 @@ export default function ProfilePage() {
   const [profileForm, setProfileForm] = useState<ProfileForm>({
     full_name: "",
     email: "",
+    customer_type: "b2c",
     company_name: "",
     inn: "",
     kpp: "",
@@ -153,6 +157,7 @@ export default function ProfilePage() {
     setProfileForm({
       full_name: user.full_name,
       email: user.email,
+      customer_type: user.customer_type,
       company_name: user.profile?.company_name ?? "",
       inn: user.profile?.inn ?? "",
       kpp: user.profile?.kpp ?? "",
@@ -173,15 +178,22 @@ export default function ProfilePage() {
       setEditError("Проверьте адрес электронной почты.");
       return;
     }
-    if (user.customer_type === "b2b" && inn && !isValidInn(inn)) {
+    // Проверяем по ВЫБРАННОМУ типу: при переходе в организацию реквизиты
+    // обязательны, иначе кабинет юрлица окажется пустым, а счёт не из чего выпустить.
+    const becomesCompany = profileForm.customer_type === "b2b";
+    if (becomesCompany && !profileForm.company_name.trim()) {
+      setEditError("Укажите название организации.");
+      return;
+    }
+    if (becomesCompany && !isValidInn(inn)) {
       setEditError("ИНН должен содержать 10 или 12 цифр.");
       return;
     }
-    if (user.customer_type === "b2b" && kpp && !isValidKpp(kpp)) {
+    if (becomesCompany && kpp && !isValidKpp(kpp)) {
       setEditError("КПП должен содержать 9 цифр.");
       return;
     }
-    if (user.customer_type === "b2b" && isLegalEntityInn(inn) && !kpp) {
+    if (becomesCompany && isLegalEntityInn(inn) && !kpp) {
       setEditError("Для организации с ИНН из 10 цифр укажите КПП.");
       return;
     }
@@ -192,7 +204,8 @@ export default function ProfilePage() {
       const updated = await updateMe({
         full_name: profileForm.full_name.trim(),
         email,
-        ...(user.customer_type === "b2b"
+        customer_type: profileForm.customer_type,
+        ...(becomesCompany
           ? {
               profile: {
                 company_name: profileForm.company_name.trim(),
@@ -682,7 +695,44 @@ export default function ProfilePage() {
             </Field>
           </div>
 
-          {user.customer_type === "b2b" && (
+          {/* Тип покупателя правится здесь: раньше он был неизменяем, и физлицо,
+              начавшее покупать от компании, могло сменить его только через
+              менеджера. Реквизиты появляются сразу — их требует и сервер. */}
+          <fieldset className="border-t border-line pt-5">
+            <legend className="text-sm font-semibold text-ink">Покупаю как</legend>
+            <div className="mt-3 grid gap-2 sm:max-w-md sm:grid-cols-2">
+              {(
+                [
+                  ["b2c", "Частное лицо"],
+                  ["b2b", "Организация"],
+                ] as const
+              ).map(([value, label]) => (
+                <label
+                  key={value}
+                  className={cn(
+                    "flex min-h-11 cursor-pointer items-center justify-center rounded-md border px-3 text-sm font-medium transition",
+                    profileForm.customer_type === value
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-line text-ink-2 hover:border-accent/50",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="profile-customer-type"
+                    value={value}
+                    checked={profileForm.customer_type === value}
+                    onChange={() =>
+                      setProfileForm((current) => ({ ...current, customer_type: value }))
+                    }
+                    className="sr-only"
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          {profileForm.customer_type === "b2b" && (
             <div className="border-t border-line pt-5">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
                 <Building2 className="h-4 w-4 text-accent" aria-hidden />
