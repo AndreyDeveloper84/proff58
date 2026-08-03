@@ -33,13 +33,13 @@ describe("HomeBottom (#590)", () => {
     expect(dots).toHaveLength(ARTICLES.length);
   });
 
-  it("подписка — UI-заглушка: поле и кнопка неактивны, причина видна", () => {
+  // Карточка подписки убрана вместе с планами на рассылку: неактивная форма
+  // выглядела рабочей и молча ничего не делала.
+  it("не показывает форму подписки", () => {
     render(<HomeBottom />);
-    expect(screen.getByLabelText("E-mail для подписки")).toBeDisabled();
-    expect(
-      screen.getByRole("button", { name: new RegExp(HOME_CONTENT.subscribe.cta) }),
-    ).toBeDisabled();
-    expect(screen.getByText(HOME_CONTENT.subscribe.note)).toBeInTheDocument();
+    expect(screen.queryByLabelText("E-mail для подписки")).toBeNull();
+    expect(screen.queryByText(/Подпишитесь/)).toBeNull();
+    expect(screen.queryByRole("button", { name: /Подписаться/ })).toBeNull();
   });
 
   // Карточка MAX-помощи убрана: она дублировала подвал, который идёт сразу под
