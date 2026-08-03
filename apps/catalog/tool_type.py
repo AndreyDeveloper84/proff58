@@ -9,7 +9,10 @@
 
 * ``priority_keyword`` — приоритетный матч по ключевым словам в названии.
   Название приводится к нижнему регистру, ``ё`` → ``е``; правила перебираются
-  ПО ПОРЯДКУ, выигрывает первое, чьё любое ключевое слово — подстрока названия.
+  ПО ПОРЯДКУ, выигрывает первое, чьё любое ключевое слово — подстрока названия,
+  начинающаяся на границе слова (``match_keywords``). Ключи из
+  ``match_keywords_word`` дополнительно обязаны ЗАКАНЧИВАТЬСЯ на границе слова —
+  для коротких корней вроде «вал», которые иначе захватили бы «валик»/«вальцы».
   Правило с ``action == "recategorize"`` помечает «товар не в той категории»
   и tool_type НЕ присваивает.
 * ``inherit_1c_subgroup`` — tool_type берётся из подгруппы 1С (она уже
@@ -119,6 +122,36 @@ def find_keyword_match(norm_name: str, keywords: tuple[str, ...]) -> str | None:
     return None
 
 
+def _keyword_ends_at_word_boundary(norm_name: str, end: int) -> bool:
+    if end >= len(norm_name):
+        return True
+    return not _WORD_CHAR.match(norm_name[end])
+
+
+def find_word_keyword_match(norm_name: str, keywords: tuple[str, ...]) -> str | None:
+    """Как ``find_keyword_match``, но матч обязан ЗАКАНЧИВАТЬСЯ на границе слова.
+
+    Для ключей ``match_keywords_word`` (TT-17): короткий корень ловится только
+    как отдельное слово — «вал» совпадает с «Вал гибкий», но не с «валик»,
+    «вальцы» или «интервал». Словоформы («валы», «валу», «валом») задаются
+    отдельными ключами явно — движок ничего не стеммит.
+    """
+    for kw in keywords:
+        norm_kw = normalize(kw)
+        if not norm_kw:
+            continue
+        idx = norm_name.find(norm_kw)
+        while idx != -1:
+            if (
+                _keyword_starts_at_word_boundary(norm_name, idx)
+                and _keyword_ends_at_word_boundary(norm_name, idx + len(norm_kw))
+                and not _is_accessory_or_purpose_context(norm_name, idx, norm_kw)
+            ):
+                return kw
+            idx = norm_name.find(norm_kw, idx + 1)
+    return None
+
+
 # Транслитерация кириллицы для ЧПУ-слугов (латиница, как у слугов категорий):
 # tool_type/категория → /catalog/elektroinstrument/, а не /catalog/электроинструмент/.
 _TRANSLIT = {
@@ -175,6 +208,9 @@ class Rule:
     tool_type: str
     slug: str
     match_keywords: tuple[str, ...] = ()
+    # Ключи с границей слова С ОБЕИХ сторон (TT-17) — только priority_keyword;
+    # в inherit-override не участвуют.
+    match_keywords_word: tuple[str, ...] = ()
     action: str | None = None  # None | "recategorize"
     subgroup: str = ""  # для inherit-override: ключевые слова применяются только в этой подгруппе
 
@@ -221,6 +257,7 @@ class ToolTypeRules:
                     tool_type=r["tool_type"],
                     slug=r["slug"],
                     match_keywords=tuple(r.get("match_keywords", [])),
+                    match_keywords_word=tuple(r.get("match_keywords_word", [])),
                     action=r.get("action"),
                     subgroup=r.get("subgroup", ""),
                 )
@@ -289,6 +326,8 @@ class ToolTypeRules:
         norm_name = normalize(name)
         for rule in cat.rules:
             matched = find_keyword_match(norm_name, rule.match_keywords)
+            if matched is None:
+                matched = find_word_keyword_match(norm_name, rule.match_keywords_word)
             if matched is not None:
                 if rule.is_recategorize:
                     return Extraction(
