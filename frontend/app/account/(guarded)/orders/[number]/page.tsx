@@ -33,6 +33,7 @@ import {
   pluralize,
 } from "@/lib/format";
 import { isDelivered, statusBadgeClass } from "@/lib/order-status";
+import { decodeRouteParam } from "@/lib/route-params";
 import { getMyReviewForOrder, reviewStatusText } from "@/lib/reviews";
 import type { MyReview } from "@/lib/types";
 import type { Order, OrderItem } from "@/lib/types";
@@ -89,7 +90,9 @@ export default function OrderDetailsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams<{ number: string }>();
-  const orderNumber = params.number;
+  // Номер заказа кириллический («П-20260803-CC74CA»), а сегмент маршрута приходит
+  // закодированным — без decode он кодировался повторно и API отвечал 404.
+  const orderNumber = decodeRouteParam(params.number);
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

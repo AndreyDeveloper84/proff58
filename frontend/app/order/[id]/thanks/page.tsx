@@ -9,6 +9,7 @@ import { ReservationNotice } from "@/components/order/ReservationNotice";
 import { TrackOrderInMaxCta } from "@/components/order/TrackOrderInMaxCta";
 import { formatDeliverySlot, formatPrice } from "@/lib/format";
 import { readStashedOrder } from "@/lib/order-storage";
+import { decodeRouteParam } from "@/lib/route-params";
 import type { Order } from "@/lib/types";
 
 const DELIVERY_LABELS: Record<string, string> = {
@@ -23,7 +24,9 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 export default function ThanksPage() {
   const params = useParams<{ id: string }>();
-  const orderNumber = params.id;
+  // Ключ снимка в sessionStorage — обычный номер заказа (его пишет checkout), а
+  // сегмент маршрута приходит закодированным: без decode снимок не находился.
+  const orderNumber = decodeRouteParam(params.id);
 
   // Снимок из sessionStorage (сохранён на checkout) — внешнее хранилище: читаем через
   // useSyncExternalStore (корректный SSR: сервер отдаёт null, клиент — реальный снимок).
