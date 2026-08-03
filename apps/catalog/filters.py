@@ -11,15 +11,37 @@ from functools import reduce
 
 import django_filters
 from django.contrib.postgres.search import TrigramSimilarity
-from django.db.models import Case, FloatField, Prefetch, Q, Value, When
+from django.db.models import Case, FloatField, IntegerField, Prefetch, Q, Value, When
 
 from .brand_slugs import resolve_brand_tokens
-from .models import Category, Product, ProductAttributeValue, ProductStatus
+from .models import Category, Product, ProductAttributeValue, ProductStatus, StockStatus
 
 
 def visible_products():
     """Товары, видимые на витрине (is_visible нельзя использовать в queryset)."""
     return Product.objects.filter(is_active=True, status=ProductStatus.PUBLISHED)
+
+
+#: Потолок точечной выборки по id (?ids=). Избранное столько не набирает, а
+#: длинный список превратил бы публичный маршрут в способ выгрузить каталог.
+MAX_IDS_FILTER = 200
+
+
+def availability_rank():
+    """Ключ сортировки «сначала доступное»: в наличии (0) → под заказ (1) → нет (2).
+
+    Один и тот же ключ у каталога, поиска и подсказок. Раньше он был только в
+    листинге: поиск сортировал по чистой релевантности, и первые экраны выдачи
+    состояли из позиций «Нет в наличии» — то есть один и тот же товар вёл себя
+    по-разному в зависимости от того, как до него дошли. Позиции не скрываются,
+    меняется только очерёдность.
+    """
+    return Case(
+        When(stock_status=StockStatus.IN_STOCK, then=Value(0)),
+        When(stock_status=StockStatus.ON_ORDER, then=Value(1)),
+        default=Value(2),
+        output_field=IntegerField(),
+    )
 
 
 def products_by_ids_for_cards(ids) -> dict[int, Product]:
@@ -55,6 +77,9 @@ class ProductFilter(django_filters.FilterSet):
     price_max = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
     # Поиск по каталогу (#52): index-accelerated lookups + trigram (typo-tolerance).
     search = django_filters.CharFilter(method="filter_search")
+    # Точечная выборка по id (comma-list) — избранное берёт карточки сохранённых
+    # товаров ОДНИМ запросом вместо запроса на каждое сердечко.
+    ids = django_filters.CharFilter(method="filter_ids")
 
     class Meta:
         model = Product
@@ -94,6 +119,18 @@ class ProductFilter(django_filters.FilterSet):
             return queryset.filter(stock_quantity__gt=0)
         return queryset
 
+    def filter_ids(self, queryset, name, value):
+        """comma-list id → ровно эти товары (и только видимые: базовый qs не ослабляем).
+
+        Мусор и пустой список дают пустую выдачу, а не весь каталог: явно
+        заданный фильтр, который ничего не выбрал, обязан вернуть ничего.
+        """
+        tokens = [token.strip() for token in (value or "").split(",")]
+        ids = [int(token) for token in tokens if token.isdigit()]
+        if not ids:
+            return queryset.none()
+        return queryset.filter(id__in=ids[:MAX_IDS_FILTER])
+
     def filter_search(self, queryset, name, value):
         """Поиск по name/article/brand/code_1c (#52), trigram V1.
 
@@ -104,6 +141,11 @@ class ProductFilter(django_filters.FilterSet):
         Ранг — взвешенный (Case/When по типу совпадения + сходство имени);
         аннотируется ДО фильтра. Ordering задаётся здесь же при len(q) >= 2,
         чтобы во view не было ссылки на _rank, которой может не быть.
+
+        Первый ключ порядка — наличие (``availability_rank``), как в каталоге:
+        релевантность решает уже внутри доступных товаров. Аннотацию ставим
+        здесь же, а не полагаемся на вьюху, — фильтром пользуются и другие
+        вызывающие, и ссылка на чужую аннотацию сломала бы им запрос.
         """
         q = (value or "").strip()
         if len(q) < 2:
@@ -118,7 +160,7 @@ class ProductFilter(django_filters.FilterSet):
             output_field=FloatField(),
         ) + TrigramSimilarity("name", q)
         return (
-            queryset.annotate(_rank=rank)
+            queryset.annotate(_rank=rank, _availability=availability_rank())
             .filter(
                 Q(name__icontains=q)
                 | Q(name__trigram_similar=q)
@@ -133,7 +175,7 @@ class ProductFilter(django_filters.FilterSet):
                 | Q(code_1c__iexact=q)
                 | Q(code_1c__istartswith=q)
             )
-            .order_by("-_rank", "name", "id")
+            .order_by("_availability", "-_rank", "name", "id")
         )
 
 

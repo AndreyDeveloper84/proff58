@@ -1,7 +1,7 @@
 """Публичный read-only API каталога: дерево категорий, список, карточка, фасеты."""
 
 from django.contrib.postgres.search import TrigramSimilarity
-from django.db.models import Case, F, FloatField, IntegerField, Prefetch, Q, Value, When
+from django.db.models import Case, F, FloatField, Prefetch, Q, Value, When
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -20,7 +20,7 @@ from ..availability_subscriptions import (
     subscribe,
     unsubscribe,
 )
-from ..filters import ProductFilter, visible_products
+from ..filters import ProductFilter, availability_rank, visible_products
 from ..models import Category, ProductAttributeValue, StockStatus
 from ..sales import bestsellers_queryset
 from ..services import (
@@ -162,15 +162,11 @@ class ProductListView(generics.ListAPIView):
         каталога сейчас без остатка, и по любому порядку первые экраны состояли
         из «Сообщить о поступлении». Позиции не скрываются и не исключаются из
         выдачи — меняется только очерёдность; фасет «Наличие» работает как был.
+
+        Сам ключ живёт в filters.availability_rank() — им же пользуются поиск и
+        подсказки, чтобы порядок не расходился между маршрутами.
         """
-        return qs.annotate(
-            availability_rank=Case(
-                When(stock_status=StockStatus.IN_STOCK, then=Value(0)),
-                When(stock_status=StockStatus.ON_ORDER, then=Value(1)),
-                default=Value(2),
-                output_field=IntegerField(),
-            )
-        )
+        return qs.annotate(availability_rank=availability_rank())
 
     def _apply_sort(self, qs):
         """Серверная сортировка (whitelist) ДО пагинации. Дефолт — алфавит.
@@ -238,6 +234,10 @@ class ProductSuggestView(APIView):
 
     Только видимые товары, ранжированы по сходству имени (trigram), не более
     SUGGEST_LIMIT. Запрос короче 2 символов → пустой список.
+
+    Порядок — как в каталоге и поиске: сначала то, что есть в наличии. Десять
+    подсказок из позиций «Нет в наличии» уводили покупателя в тупик ещё до
+    выдачи, хотя доступный товар по тому же запросу существовал.
     """
 
     permission_classes = [AllowAny]
@@ -255,7 +255,7 @@ class ProductSuggestView(APIView):
         ) + TrigramSimilarity("name", q)
         rows = (
             visible_products()
-            .annotate(_rank=rank)
+            .annotate(_rank=rank, _availability=availability_rank())
             .filter(
                 Q(name__icontains=q)
                 | Q(name__trigram_similar=q)
@@ -264,7 +264,7 @@ class ProductSuggestView(APIView):
                 | Q(brand__icontains=q)
                 | Q(code_1c__istartswith=q)
             )
-            .order_by("-_rank", "name")
+            .order_by("_availability", "-_rank", "name")
             .values("id", "name", "slug")[:SUGGEST_LIMIT]
         )
         return Response(list(rows))

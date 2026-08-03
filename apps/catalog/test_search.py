@@ -3,7 +3,7 @@
 import pytest
 from rest_framework.test import APIClient
 
-from apps.catalog.models import Category, Product, ProductStatus
+from apps.catalog.models import Category, Product, ProductStatus, StockStatus
 
 
 @pytest.fixture
@@ -220,3 +220,80 @@ def test_suggest_ranked_exact_prefix_first(client, tree):
     rows = client.get("/api/catalog/search/suggest/?q=перфоратор").json()
     slugs = [r["slug"] for r in rows]
     assert slugs.index("sgr-exact") < slugs.index("sgr-partial")
+
+
+# --- Порядок выдачи: сначала то, что есть в наличии ----------------------------
+
+
+@pytest.mark.django_db
+def test_search_available_first_even_if_less_relevant(client, tree):
+    """Наличие важнее релевантности: точное совпадение без остатка уступает.
+
+    Раньше поиск сортировал по чистой релевантности, и первые экраны состояли из
+    «Нет в наличии», хотя по тому же запросу доступный товар существовал.
+    """
+    _, leaf = tree
+    make_product(leaf, "Перфоратор", "sa-exact-out", stock_status=StockStatus.OUT_OF_STOCK)
+    make_product(
+        leaf,
+        "Большой перфоратор для бетона",
+        "sa-partial-in",
+        stock_status=StockStatus.IN_STOCK,
+        stock_quantity=5,
+    )
+    slugs = [
+        r["slug"] for r in client.get("/api/catalog/products/?search=перфоратор").json()["results"]
+    ]
+    assert slugs == ["sa-partial-in", "sa-exact-out"]
+
+
+@pytest.mark.django_db
+def test_search_on_order_between_in_stock_and_out(client, tree):
+    _, leaf = tree
+    make_product(leaf, "Перфоратор A", "so-out", stock_status=StockStatus.OUT_OF_STOCK)
+    make_product(leaf, "Перфоратор B", "so-order", stock_status=StockStatus.ON_ORDER)
+    make_product(leaf, "Перфоратор C", "so-in", stock_status=StockStatus.IN_STOCK)
+    slugs = [
+        r["slug"] for r in client.get("/api/catalog/products/?search=перфоратор").json()["results"]
+    ]
+    assert slugs == ["so-in", "so-order", "so-out"]
+
+
+@pytest.mark.django_db
+def test_suggest_available_first(client, tree):
+    _, leaf = tree
+    make_product(leaf, "Перфоратор", "sga-exact-out", stock_status=StockStatus.OUT_OF_STOCK)
+    make_product(
+        leaf, "Большой перфоратор для бетона", "sga-partial-in", stock_status=StockStatus.IN_STOCK
+    )
+    slugs = [r["slug"] for r in client.get("/api/catalog/search/suggest/?q=перфоратор").json()]
+    assert slugs == ["sga-partial-in", "sga-exact-out"]
+
+
+# --- Точечная выборка по id (карточки избранного) ------------------------------
+
+
+@pytest.mark.django_db
+def test_ids_filter_returns_exactly_requested(client, tree):
+    _, leaf = tree
+    a = make_product(leaf, "Товар А", "ids-a")
+    b = make_product(leaf, "Товар Б", "ids-b")
+    make_product(leaf, "Товар В", "ids-c")
+    assert _slugs(client.get(f"/api/catalog/products/?ids={a.id},{b.id}")) == {"ids-a", "ids-b"}
+
+
+@pytest.mark.django_db
+def test_ids_filter_skips_invisible(client, tree):
+    """Выключенный товар не всплывает даже по прямому запросу id."""
+    _, leaf = tree
+    visible = make_product(leaf, "Товар видимый", "idsv-1")
+    hidden = make_product(leaf, "Товар выключен", "idsv-2", is_active=False)
+    assert _slugs(client.get(f"/api/catalog/products/?ids={visible.id},{hidden.id}")) == {"idsv-1"}
+
+
+@pytest.mark.django_db
+def test_ids_filter_garbage_returns_nothing(client, tree):
+    """Явный фильтр, который ничего не выбрал, отдаёт пустоту, а не весь каталог."""
+    _, leaf = tree
+    make_product(leaf, "Товар А", "idsg-a")
+    assert client.get("/api/catalog/products/?ids=abc,,").json()["count"] == 0
