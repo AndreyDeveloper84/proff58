@@ -1,72 +1,97 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const pushMock = vi.fn();
-const replaceMock = vi.fn();
-const routerMock = { push: pushMock, replace: replaceMock };
-
 vi.mock("next/navigation", () => ({
-  useRouter: () => routerMock,
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   usePathname: () => "/account/wishlist",
 }));
-vi.mock("@/lib/auth", () => ({
-  checkAuth: vi.fn(),
-  loginHref: (next?: string) => (next ? `/account/login?next=${encodeURIComponent(next)}` : "/account/login"),
-  getWishlist: vi.fn(),
-  removeWishlistItem: vi.fn(),
+
+const toggleMock = vi.fn();
+let wishlistState = { ids: new Set<number>(), loaded: true };
+
+vi.mock("@/components/wishlist/WishlistProvider", () => ({
+  useWishlist: () => ({
+    ids: wishlistState.ids,
+    loaded: wishlistState.loaded,
+    has: (id: number) => wishlistState.ids.has(id),
+    toggle: toggleMock,
+    pendingId: null,
+  }),
 }));
 
-import { checkAuth, getWishlist, removeWishlistItem } from "@/lib/auth";
+vi.mock("@/lib/wishlist-products", () => ({ fetchWishlistProducts: vi.fn() }));
+
+// Карточка тянет корзину — здесь проверяется избранное, а не «в корзину».
+vi.mock("@/components/cart/CartProvider", () => ({
+  useCart: () => ({ count: 0, addItem: vi.fn(), lines: [] }),
+}));
+
+import { fetchWishlistProducts } from "@/lib/wishlist-products";
 import WishlistPage from "./page";
 
-const mockedGetMe = checkAuth as unknown as ReturnType<typeof vi.fn>;
-const mockedGetWishlist = getWishlist as unknown as ReturnType<typeof vi.fn>;
-const mockedRemove = removeWishlistItem as unknown as ReturnType<typeof vi.fn>;
+const mockedFetch = fetchWishlistProducts as unknown as ReturnType<typeof vi.fn>;
+
+function product(id: number, name: string) {
+  return {
+    id,
+    slug: `p-${id}`,
+    name,
+    cardName: name,
+    brand: "Bosch",
+    price: { final: 1000, currency: "RUB" as const },
+    stock: "in" as const,
+    stockQty: 5,
+    specs: [],
+    badges: [],
+  };
+}
 
 describe("WishlistPage", () => {
   beforeEach(() => {
-    pushMock.mockReset();
-    replaceMock.mockReset();
-    mockedGetMe.mockReset();
-    mockedGetWishlist.mockReset();
-    mockedRemove.mockReset();
-    mockedGetMe.mockResolvedValue({ id: 1 });
-    mockedGetWishlist.mockResolvedValue([
-      {
-        product_id: 7,
-        product_name: "Дрель аккумуляторная",
-        product_slug: "drel-akkumulyatornaya",
-      },
-    ]);
+    toggleMock.mockReset();
+    mockedFetch.mockReset();
+    wishlistState = { ids: new Set<number>(), loaded: true };
   });
 
-  it("удаляет товар отдельной кнопкой и показывает пустое состояние", async () => {
-    mockedRemove.mockResolvedValue(undefined);
+  it("показывает карточки сохранённых товаров", async () => {
+    wishlistState = { ids: new Set([7]), loaded: true };
+    mockedFetch.mockResolvedValue([product(7, "Дрель аккумуляторная")]);
+
     render(<WishlistPage />);
 
-    await screen.findByText("Дрель аккумуляторная");
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Удалить «Дрель аккумуляторная» из избранного",
-      }),
-    );
+    expect(await screen.findByText("Дрель аккумуляторная")).toBeInTheDocument();
+    expect(mockedFetch).toHaveBeenCalledWith([7]);
+  });
 
-    await waitFor(() => expect(mockedRemove).toHaveBeenCalledWith(7));
+  it("пустое избранное — предложение перейти в каталог", async () => {
+    render(<WishlistPage />);
+
     expect(await screen.findByText("В избранном пока пусто")).toBeInTheDocument();
+    expect(mockedFetch).not.toHaveBeenCalled();
   });
 
-  it("возвращает карточку при ошибке удаления", async () => {
-    mockedRemove.mockRejectedValue(new Error("Сервис недоступен."));
+  it("сбой загрузки карточек не выдаём за пустое избранное", async () => {
+    wishlistState = { ids: new Set([7]), loaded: true };
+    mockedFetch.mockRejectedValue(new Error("нет связи"));
+
     render(<WishlistPage />);
 
-    await screen.findByText("Дрель аккумуляторная");
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Удалить «Дрель аккумуляторная» из избранного",
-      }),
-    );
+    expect(await screen.findByText("Не удалось загрузить избранное")).toBeInTheDocument();
+    expect(screen.queryByText("В избранном пока пусто")).not.toBeInTheDocument();
+  });
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Сервис недоступен.");
-    expect(screen.getByText("Дрель аккумуляторная")).toBeInTheDocument();
+  it("товар, снятый из избранного, исчезает со страницы сразу", async () => {
+    wishlistState = { ids: new Set([7, 8]), loaded: true };
+    mockedFetch.mockResolvedValue([product(7, "Дрель"), product(8, "Перфоратор")]);
+
+    const view = render(<WishlistPage />);
+    await screen.findByText("Дрель");
+
+    // Провайдер убрал id — карточка обязана уйти, не дожидаясь новой загрузки.
+    wishlistState = { ids: new Set([8]), loaded: true };
+    view.rerender(<WishlistPage />);
+
+    expect(screen.queryByText("Дрель")).not.toBeInTheDocument();
+    expect(screen.getByText("Перфоратор")).toBeInTheDocument();
   });
 });
