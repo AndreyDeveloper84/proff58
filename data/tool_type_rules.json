@@ -1277,7 +1277,7 @@
         { "tool_type": "Топливные баки", "slug": "zap-baki", "match_keywords": ["бак топлив", "бак с вод", "топливный бак", "бензобак"], "source": "name_keywords" },
         { "tool_type": "Шланги и рукава", "slug": "zap-shlangi", "match_keywords": ["шланг", "рукав"], "source": "name_keywords" },
         { "tool_type": "Муфты и сцепления", "slug": "zap-mufty", "match_keywords": ["муфта", "полумуфта", "сцеплен"], "source": "name_keywords" },
-        { "tool_type": "Шпиндели, валы, стволы, патроны", "slug": "zap-shpindeli-valy", "match_keywords": ["шпиндель", "ствол", "патрон", "гибкий вал", "вс-10", "ив-75"], "source": "name_keywords" },
+        { "tool_type": "Шпиндели, валы, стволы, патроны", "slug": "zap-shpindeli-valy", "match_keywords": ["шпиндель", "ствол", "патрон", "гибкий вал", "вс-10", "ив-75"], "match_keywords_word": ["вал", "валы"], "source": "name_keywords" },
         { "tool_type": "Звёздочки и барабаны", "slug": "zap-zvezdochki", "match_keywords": ["звездочк", "барабан"], "source": "name_keywords" },
         { "tool_type": "Ремкомплекты", "slug": "zap-remkomplekty", "match_keywords": ["ремкомплект", "рем.комплект", "рем комплект", "комплект прокладок", "комплект уплотн"], "source": "name_keywords" },
         { "tool_type": "Втулки", "slug": "zap-vtulki", "match_keywords": ["втулка"], "source": "name_keywords" },

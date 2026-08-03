@@ -475,6 +475,141 @@ class KeywordAccessoryGuardRegressionTests(TestCase):
         self.assertEqual(ex.slug, "str-laki")
 
 
+class WordBoundaryMechanismTests(TestCase):
+    """Механизм ``match_keywords_word`` (TT-17): ключ матчится, только если
+    вхождение ограничено границами слова С ОБЕИХ сторон. Существующие
+    ``match_keywords`` работают как раньше (см. ExtractionEngineTests)."""
+
+    WORD_RULES = {
+        "version": 1,
+        "categories": [
+            {
+                "category": "Запчасти",
+                "extraction": "priority_keyword",
+                "rules": [
+                    {
+                        "tool_type": "Шпиндели, валы, стволы, патроны",
+                        "slug": "zap-shpindeli-valy",
+                        "match_keywords": ["шпиндель"],
+                        "match_keywords_word": ["вал", "валы"],
+                    },
+                ],
+            },
+        ],
+    }
+
+    def setUp(self):
+        self.rules = ToolTypeRules.from_dict(self.WORD_RULES)
+
+    def _extract(self, name):
+        return self.rules.extract("Запчасти", name)
+
+    def test_standalone_word_matches(self):
+        ex = self._extract("Вал приводной")
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.slug, "zap-shpindeli-valy")
+        self.assertEqual(ex.matched_keyword, "вал")
+
+    def test_inflected_forms_match_by_explicit_keys(self):
+        ex = self._extract("Валы приводные")
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.matched_keyword, "валы")
+
+    def test_genitive_forms_do_not_match(self):
+        # Решение владельца по TT-17: только именительный падеж — «N вала»
+        # (втулка/трубка/храповик вала) не является валом и не ловится.
+        for name in (
+            "Трубка передаточного вала",
+            "Крепление к валу редуктора",
+            "Соединение с валом двигателя",
+        ):
+            ex = self._extract(name)
+            self.assertEqual(ex.result, MODERATION, name)
+
+    def test_word_inside_other_root_does_not_match(self):
+        for name in (
+            "Валик малярный",
+            "Валик прижимной",
+            "Вальцы трёхвалковые",
+            "Интервал",
+            "Набор для развальцовки тормозных трубок",
+        ):
+            ex = self._extract(name)
+            self.assertEqual(ex.result, MODERATION, name)
+
+    def test_case_normalized_in_word_keys(self):
+        ex = self._extract("ВАЛЫ")
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.matched_keyword, "валы")
+
+    def test_word_key_does_not_break_plain_substring_keys(self):
+        # Существующий ключ-подстрока в том же правиле жив.
+        ex = self._extract("Шпиндель")
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.matched_keyword, "шпиндель")
+
+    def test_missing_field_means_no_word_keys(self):
+        # Обратная совместимость формата: правила без match_keywords_word
+        # загружаются с пустым кортежем.
+        rules = ToolTypeRules.from_dict(RULES)
+        for cat in rules.categories:
+            for rule in cat.rules:
+                self.assertEqual(rule.match_keywords_word, ())
+
+
+class ZapShpindeliValyWordBoundaryTests(TestCase):
+    """TT-17: keyword «вал» с границей слова в правиле zap-shpindeli-valy
+    (реальный data/tool_type_rules.json)."""
+
+    def setUp(self):
+        self.rules = ToolTypeRules.from_file(
+            Path(settings.BASE_DIR) / "data" / "tool_type_rules.json"
+        )
+
+    def _extract(self, name):
+        return self.rules.extract("Запчасти", name)
+
+    def test_val_names_assigned(self):
+        for name in ("Вал гибкий ИВ-75", "Валы приводные", "Гибкий вал ВС-10"):
+            ex = self._extract(name)
+            self.assertEqual(ex.result, ASSIGNED, name)
+            self.assertEqual(ex.slug, "zap-shpindeli-valy", name)
+
+    def test_shpindel_regression(self):
+        ex = self._extract("Шпиндель")
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.slug, "zap-shpindeli-valy")
+
+    def test_kolenchaty_stays_with_kolenval_rule(self):
+        # «Вал коленчатый» перехватывает более приоритетное zap-kolenval-shatun
+        # (стоит выше в блоке) — корректный маршрут, а не добыча ключа «вал».
+        ex = self._extract("Вал коленчатый")
+        self.assertEqual(ex.slug, "zap-kolenval-shatun")
+
+    def test_val_inside_other_words_not_captured(self):
+        for name in (
+            "Валик малярный",
+            "Валик прижимной",
+            "Вальцы",
+            "Интервал",
+            # Живые названия каталога, где «вал» — часть другого корня.
+            "Ванночка для краски 290х150мм 0,15л ЗУБР СТАНДАРТ для валика до 110мм",
+            "Набор для развальцовки тормозных трубок, профессиональный",
+            # «N вала» — деталь при вале, а не вал (решение владельца TT-17:
+            # только именительный падеж; кейсы из замера dry-run).
+            "Трубка передаточного вала 6689372",
+            "Храповик вала 6698557",
+        ):
+            ex = self._extract(name)
+            self.assertNotEqual(ex.slug, "zap-shpindeli-valy", name)
+
+    def test_vtulka_vala_keeps_vtulki_route(self):
+        # «Опорная втулка вала» — втулка: правило zap-vtulki ниже по приоритету
+        # не должно перехватываться ключом «вал» (кейс 9035 из замера TT-17).
+        ex = self._extract("Опорная втулка вала 726337B")
+        self.assertEqual(ex.slug, "zap-vtulki")
+
+
 class TransliterateTests(TestCase):
     """Транслитерация кириллицы для слугов (фолбэк _unique_option_slug, C2)."""
 
