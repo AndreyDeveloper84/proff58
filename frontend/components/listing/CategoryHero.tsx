@@ -15,9 +15,6 @@ import { cn } from "@/lib/utils";
 // inline намеренно НЕвысокий: раньше он занимал 280px и вместе с тулбаром съедал
 // первый экран — до товаров приходилось прокручивать. Заголовок здесь служебный,
 // человек пришёл за выдачей, поэтому высота задаётся содержимым.
-//
-// `children` — слот под шапкой (капсулы разделов): они часть навигации по
-// разделу и стоят рядом с его названием, а не в фильтрах.
 
 type Hero = {
   image: string | null;
@@ -33,8 +30,6 @@ type CategoryHeroProps = {
   className?: string;
   /** Названия вышестоящих разделов — запасной чертёж для подкатегорий. */
   parentTitles?: string[];
-  /** Навигация по разделу под заголовком (капсулы подкатегорий и типов). */
-  children?: React.ReactNode;
 };
 
 export function CategoryHero({
@@ -45,7 +40,6 @@ export function CategoryHero({
   variant = "card",
   className,
   parentTitles = [],
-  children,
 }: CategoryHeroProps) {
   const inline = variant === "inline";
   // Свой чертёж есть не у каждой подкатегории: «Домкраты» берут чертёж
@@ -136,8 +130,6 @@ export function CategoryHero({
             </div>
           </div>
         </div>
-
-        {children}
       </div>
 
       {/* В inline-hero все чертежи помещаются в одну и ту же чистую правую
