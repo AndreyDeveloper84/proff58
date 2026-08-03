@@ -8,7 +8,6 @@ import {
   MessageSquareText,
   Phone,
 } from "lucide-react";
-import { accountLinkHref, type AuthState } from "@/lib/auth-state";
 import type { InfoPageLink } from "@/lib/info-pages";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -22,7 +21,6 @@ export function Footer({
   siteName = SITE.brand.name,
   storefront = resolveStorefront(),
   infoPages = [],
-  authState = "unknown",
 }: {
   logoUrl?: string;
   siteName?: string;
@@ -30,9 +28,6 @@ export function Footer({
   /** Страницы из админки («Доставка», «О компании»). Пусто — раздела нет:
       правило подвала «не подменять отсутствующие разделы решёткой» сохраняется. */
   infoPages?: InfoPageLink[];
-  /** Вошёл ли посетитель: колонка «Покупателям» ведёт в кабинет, и гостя надо
-      сразу на форму входа — иначе его развернёт гвард уже после смены адреса. */
-  authState?: AuthState;
 }) {
   return (
     <footer className="border-t border-line bg-surface">
@@ -86,14 +81,7 @@ export function Footer({
             <ul className="space-y-1 text-[11px] leading-[1.35]">
               {col.links.map((l) => (
                 <li key={l.label} className="leading-[1.35]">
-                  <Link
-                    href={
-                      l.href.startsWith("/account/")
-                        ? accountLinkHref(l.href, authState)
-                        : l.href
-                    }
-                    className="text-ink-2 hover:text-accent"
-                  >
+                  <Link href={l.href} className="text-ink-2 hover:text-accent">
                     {l.label}
                   </Link>
                 </li>
@@ -146,7 +134,11 @@ export function Footer({
           </ul>
         </div>
 
-        <div>
+        {/* Бот магазина в MAX. Без настроенного бота плитки нет: ссылка на
+            max.ru без имени бота вела бы на главную мессенджера и выглядела
+            рабочей — а человек оказывался бы не у нас. */}
+        {storefront.maxHref && (
+          <div>
           <a
             href={storefront.maxHref}
             target="_blank"
@@ -167,14 +159,15 @@ export function Footer({
             <span className="min-w-0">
               <span className="flex items-center gap-1.5 text-xs font-semibold text-ink">
                 <MessageSquareText className="h-3.5 w-3.5 text-[#6156f5]" aria-hidden />
-                Мы в мессенджерах
+                {SITE.maxBot.title}
               </span>
               <span className="mt-0.5 block text-[11px] leading-snug text-ink-2">
-                Напишите нам в MAX для консультации
+                {SITE.maxBot.text}
               </span>
             </span>
           </a>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Нижняя строка. Политика/соглашение появятся вместе с юр. страницами —

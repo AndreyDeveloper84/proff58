@@ -234,6 +234,21 @@ export async function addWishlistItem(productId: number): Promise<void> {
   });
 }
 
+/**
+ * Перенести избранное гостя в аккаунт одним запросом.
+ *
+ * Списком, а не по товару: иначе вход у человека с двумя десятками сохранённых
+ * позиций превращался бы в веер запросов ровно в тот момент, когда страница и
+ * так грузится. Повторный перенос безопасен — сервер игнорирует дубли.
+ */
+export async function addWishlistItems(productIds: number[]): Promise<void> {
+  if (productIds.length === 0) return;
+  await apiFetch("/api/account/wishlist", {
+    method: "POST",
+    body: JSON.stringify({ product_ids: productIds }),
+  });
+}
+
 export async function removeWishlistItem(productId: number): Promise<void> {
   await apiFetch("/api/account/wishlist", {
     method: "DELETE",

@@ -48,6 +48,7 @@ FRONTEND_PATHS = [
     "/api/orders/PROF-12/max-track/start",
     "/api/orders/max-track/xyz/status",
     "/api/catalog/products/drel/availability-subscription",
+    "/api/catalog/compare",
     "/api/search/suggest",
 ]
 

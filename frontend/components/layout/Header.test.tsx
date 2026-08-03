@@ -41,7 +41,7 @@ describe("Header (#586)", () => {
     expect(catalog).toHaveAttribute("href", "/catalog");
     expect(screen.getAllByRole("link", { name: /Избранное/ })[0]).toHaveAttribute(
       "href",
-      "/account/wishlist",
+      "/wishlist",
     );
     // Корзина показывает актуальный счётчик из useCart.
     const cart = screen.getAllByRole("link", { name: /Корзина, товаров: 3/ })[0];
@@ -137,19 +137,20 @@ describe("Header (#586)", () => {
     expect(screen.getByText(SITE.email)).toBeInTheDocument();
   });
 
-  // Гостю «Кабинет» и «Избранное» ведут прямо на вход. Пока они вели в кабинет,
-  // серверный гвард разворачивал человека уже после смены адреса: в строке
-  // успевал мелькнуть /account/profile, а на месте сайта — пустая страница.
-  it("гостю кабинет и избранное ведут на форму входа с возвратом", () => {
+  // Гостю «Кабинет» ведёт прямо на вход. Пока он вёл в кабинет, серверный гвард
+  // разворачивал человека уже после смены адреса: в строке успевал мелькнуть
+  // /account/profile, а на месте сайта — пустая страница.
+  it("гостю кабинет ведёт на форму входа с возвратом, избранное — на витрину", () => {
     renderHeader();
 
     expect(screen.getAllByRole("link", { name: /Личный кабинет/ })[0]).toHaveAttribute(
       "href",
       "/account/login?next=%2Faccount%2Fprofile",
     );
+    // Избранное переехало на витрину и доступно без аккаунта — гостя туда и ведём.
     expect(screen.getAllByRole("link", { name: /Избранное/ })[0]).toHaveAttribute(
       "href",
-      "/account/login?next=%2Faccount%2Fwishlist",
+      "/wishlist",
     );
   });
 
@@ -165,7 +166,7 @@ describe("Header (#586)", () => {
   // Сессия есть, маркера входа нет (человек вошёл до того, как маркер появился).
   // Раньше такому показывали форму входа, хотя он был залогинен, — и всё
   // чинилось перезагрузкой. Ведём по назначению: доступ проверит гвард кабинета.
-  it("«может быть вошёл» ведут в кабинет, а не на форму входа", () => {
+  it("«может быть вошёл» ведёт в кабинет, а не на форму входа", () => {
     renderHeader("unknown");
 
     expect(screen.getAllByRole("link", { name: /Личный кабинет/ })[0]).toHaveAttribute(
@@ -174,7 +175,7 @@ describe("Header (#586)", () => {
     );
     expect(screen.getAllByRole("link", { name: /Избранное/ })[0]).toHaveAttribute(
       "href",
-      "/account/wishlist",
+      "/wishlist",
     );
   });
 });
