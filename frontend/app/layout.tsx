@@ -5,6 +5,8 @@ import { CartProvider } from "@/components/cart/CartProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { THEME_INIT_SCRIPT } from "@/components/layout/ThemeToggle";
+import { getCategoryTreeOrNull } from "@/lib/catalog";
+import { pickFooterCategories } from "@/lib/footer-nav";
 import { getInfoPageLinks } from "@/lib/info-pages";
 import { getSiteTheme } from "@/lib/theme";
 import { resolveStorefront } from "@/lib/site";
@@ -51,10 +53,15 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // Тема и список инфо-страниц — независимые запросы, поэтому параллельно:
-  // последовательные добавили бы задержку к КАЖДОЙ странице сайта.
-  const [theme, infoPages] = await Promise.all([getSiteTheme(), getInfoPageLinks()]);
+  // Тема, инфо-страницы и дерево категорий — независимые запросы, поэтому
+  // параллельно: последовательные добавили бы задержку к КАЖДОЙ странице сайта.
+  const [theme, infoPages, categoryTree] = await Promise.all([
+    getSiteTheme(),
+    getInfoPageLinks(),
+    getCategoryTreeOrNull(),
+  ]);
   const storefront = resolveStorefront(theme);
+  const footerCategories = pickFooterCategories(categoryTree);
 
   // Тема: светлая по макету (#477) — она же серверный рендер. Реальную тему
   // посетителя (сохранённый выбор либо системная) ставит THEME_INIT_SCRIPT в
@@ -89,6 +96,7 @@ export default async function RootLayout({
               siteName={theme.name}
               storefront={storefront}
               infoPages={infoPages}
+              categories={footerCategories}
             />
           </div>
         </CartProvider>

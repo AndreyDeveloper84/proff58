@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { Footer } from "./Footer";
@@ -59,5 +59,35 @@ describe("Footer (#591)", () => {
     for (const col of SITE.footerColumns) {
       expect(screen.getByRole("navigation", { name: col.title })).toBeInTheDocument();
     }
+  });
+
+  // Раньше в колонке «Каталог товаров» лежали шесть подписей, и все шесть вели на
+  // общий /catalog — меню, которое никуда не ведёт. Теперь разделы приходят из
+  // дерева категорий, и каждая ссылка открывает свой раздел.
+  it("разделы каталога ведут каждый в свой раздел", () => {
+    render(
+      <Footer
+        categories={[
+          { label: "Оснастка и расходные материалы", href: "/catalog/osnastka" },
+          { label: "Ручной инструмент", href: "/catalog/ruchnoy" },
+        ]}
+      />,
+    );
+    const nav = screen.getByRole("navigation", { name: "Каталог товаров" });
+    expect(within(nav).getByRole("link", { name: "Ручной инструмент" })).toHaveAttribute(
+      "href",
+      "/catalog/ruchnoy",
+    );
+    expect(within(nav).getByRole("link", { name: "Все категории" })).toHaveAttribute(
+      "href",
+      "/catalog",
+    );
+  });
+
+  it("без дерева категорий колонка остаётся с одной ссылкой «Все категории»", () => {
+    render(<Footer />);
+    const nav = screen.getByRole("navigation", { name: "Каталог товаров" });
+    expect(within(nav).getAllByRole("link")).toHaveLength(1);
+    expect(within(nav).getByRole("link", { name: "Все категории" })).toBeInTheDocument();
   });
 });

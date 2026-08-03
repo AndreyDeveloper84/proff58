@@ -8,6 +8,7 @@ import {
   MessageSquareText,
   Phone,
 } from "lucide-react";
+import type { FooterCategoryLink } from "@/lib/footer-nav";
 import type { InfoPageLink } from "@/lib/info-pages";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ export function Footer({
   siteName = SITE.brand.name,
   storefront = resolveStorefront(),
   infoPages = [],
+  categories = [],
 }: {
   logoUrl?: string;
   siteName?: string;
@@ -28,6 +30,9 @@ export function Footer({
   /** Страницы из админки («Доставка», «О компании»). Пусто — раздела нет:
       правило подвала «не подменять отсутствующие разделы решёткой» сохраняется. */
   infoPages?: InfoPageLink[];
+  /** Разделы каталога из дерева категорий. Пусто (API недоступен) — остаётся
+      одна ссылка «Все категории»: колонка не исчезает и сетка не скачет. */
+  categories?: FooterCategoryLink[];
 }) {
   return (
     <footer className="border-t border-line bg-surface">
@@ -73,6 +78,27 @@ export function Footer({
           {/* Кнопки соцсетей удалены по решению команды: реальных аккаунтов нет,
               ссылки вели на главные страницы сервисов. Вернуть вместе с адресами. */}
         </div>
+
+        {/* Разделы каталога — настоящие узлы дерева, а не подписи из конфига:
+            каждая ссылка открывает свой раздел. «Все категории» остаётся всегда,
+            в том числе когда дерево не загрузилось. */}
+        <nav aria-label="Каталог товаров">
+          <h2 className="mb-2 font-sans text-xs font-bold text-ink">Каталог товаров</h2>
+          <ul className="space-y-1 text-[11px] leading-[1.35]">
+            {categories.map((c) => (
+              <li key={c.href} className="leading-[1.35]">
+                <Link href={c.href} className="text-ink-2 hover:text-accent">
+                  {c.label}
+                </Link>
+              </li>
+            ))}
+            <li className="leading-[1.35]">
+              <Link href="/catalog" className="text-ink-2 hover:text-accent">
+                Все категории
+              </Link>
+            </li>
+          </ul>
+        </nav>
 
         {/* Группы ссылок */}
         {SITE.footerColumns.map((col) => (
