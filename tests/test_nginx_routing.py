@@ -23,6 +23,9 @@ FRONTEND_PATHS = [
     "/api/account/me/",
     "/api/account/wishlist/",
     "/api/account/wishlist",
+    # Карточки товаров избранного (#625): роут Next, хотя данные — каталожные.
+    # Под /api/catalog/ он бы ушёл в Django и вернул 404 при зелёной сборке.
+    "/api/account/wishlist/products",
     "/api/account/notifications/read-all/",
     "/api/account/notifications/preferences/",
     "/api/account/notifications/42/read/",

@@ -1,4 +1,5 @@
-// Карточки товаров избранного — через свой BFF-роут (app/api/catalog/wishlist).
+// Карточки товаров избранного — через свой BFF-роут
+// (app/api/account/wishlist/products).
 //
 // Избранное на бэкенде хранит только связь «пользователь ↔ товар», и раньше
 // страница показывала то, что отдавал этот эндпоинт: название, ссылку и серую
@@ -14,7 +15,7 @@ import type { Product } from "@/lib/types";
 export async function fetchWishlistProducts(ids: number[]): Promise<Product[]> {
   if (ids.length === 0) return [];
   const { products } = await apiFetch<{ products: Product[] }>(
-    `/api/catalog/wishlist?ids=${ids.join(",")}`,
+    `/api/account/wishlist/products?ids=${ids.join(",")}`,
     { method: "GET" },
   );
   // Порядок задаёт избранное, а не выдача каталога: человек ждёт свой список.
