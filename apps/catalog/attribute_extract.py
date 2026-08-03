@@ -40,7 +40,12 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-from .tool_type import keyword_at_word_boundary, normalize
+from .tool_type import (
+    _keyword_ends_at_word_boundary,
+    _keyword_starts_at_word_boundary,
+    keyword_at_word_boundary,
+    normalize,
+)
 
 SELECT = "select"
 NUMBER = "number"
@@ -199,11 +204,38 @@ class AttributeRules:
         )
 
     @staticmethod
+    def _skip_if_matches(norm: str, norm_kw: str) -> bool:
+        """Проверить вхождение стоп-слова с учётом границы слова.
+
+        * Стоп-слово без ведущего пробела (например ``"комплект"``) требует
+          границы начала: матчит «комплект»/«комплекта», но не «БОЕКОМПЛЕКТ».
+        * Стоп-слово с ведущим пробелом (например ``" шт"``) требует
+          границы конца: матчит «10 шт»/«10 шт.", но не «штампованный».
+
+        Это сохраняет словоформы (набор/наборе, комплект/комплекта/комплекте)
+        и одновременно не ломает слова, в которых подстрока — часть другого слова.
+        """
+        if not norm_kw:
+            return False
+        # Граница конца нужна, если стоп-слово начинается с пробела.
+        check_end = norm_kw.startswith(" ")
+        idx = norm.find(norm_kw)
+        while idx != -1:
+            if check_end:
+                if _keyword_ends_at_word_boundary(norm, idx + len(norm_kw)):
+                    return True
+            else:
+                if _keyword_starts_at_word_boundary(norm, idx):
+                    return True
+            idx = norm.find(norm_kw, idx + 1)
+        return False
+
+    @staticmethod
     def _extract_one(rule: AttrRule, norm: str, raw: str = "") -> AttrValue | None:
         # Стоп-слова правила: у товара-набора «размер»/«диаметр» один назвать нельзя
         # («Набор ключей 6-19 мм, 8 шт.»), поэтому правило не применяется целиком —
         # это надёжнее, чем пытаться выразить исключение в regex.
-        if any(normalize(kw) in norm for kw in rule.skip_if):
+        if any(AttributeRules._skip_if_matches(norm, normalize(kw)) for kw in rule.skip_if):
             return None
 
         if rule.kind == SELECT:

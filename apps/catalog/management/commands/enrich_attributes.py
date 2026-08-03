@@ -295,9 +295,12 @@ class Command(BaseCommand):
                             )
                             pav_create.append(pav)
                             existing[key] = pav
+                            cache[av.slug] = extracted_value_to_json(attribute, av, option)
+                            cache_changed = True
                         else:
+                            old_source = pav.source
                             # Перезапись только если приоритет нового ≥ сохранённого.
-                            if priority.get(new_source, 0) < priority.get(pav.source, 0):
+                            if priority.get(new_source, 0) < priority.get(old_source, 0):
                                 stats["skipped_priority"] += 1
                                 add_report_row(
                                     product,
@@ -309,15 +312,45 @@ class Command(BaseCommand):
                                     av.matched,
                                     new_source,
                                     f"приоритет {new_source} ({priority.get(new_source, 0)}) "
-                                    f"< {pav.source} ({priority.get(pav.source, 0)}) — "
+                                    f"< {old_source} ({priority.get(old_source, 0)}) — "
                                     "перезапись запрещена",
                                 )
                                 continue
+
+                            value_changed = self._value_changed(pav, av, option)
+                            source_changed = new_source != old_source
+
+                            if not value_changed and not source_changed:
+                                add_report_row(
+                                    product,
+                                    tt_slug,
+                                    "keep",
+                                    av.slug,
+                                    attr_value_to_json(pav),
+                                    extracted_value_to_json(attribute, av, option),
+                                    av.matched,
+                                    new_source,
+                                    "значение не изменилось — PAV остаётся без перезаписи",
+                                )
+                                continue
+
                             current_value = attr_value_to_json(pav) if dry_run else None
-                            old_source = pav.source
                             pav.source = new_source
                             pav.confidence = new_conf
                             self._apply_value(pav, av, option)
+                            if not value_changed and source_changed:
+                                reason = (
+                                    f"значение не изменилось, но источник {new_source} "
+                                    f"({priority.get(new_source, 0)}) выше приоритетом, "
+                                    f"чем {old_source} ({priority.get(old_source, 0)}) — "
+                                    "обновление происхождения записи"
+                                )
+                            else:
+                                reason = (
+                                    f"приоритет {new_source} ({priority.get(new_source, 0)}) "
+                                    f">= {old_source} ({priority.get(old_source, 0)}) — "
+                                    "перезапись"
+                                )
                             add_report_row(
                                 product,
                                 tt_slug,
@@ -327,13 +360,12 @@ class Command(BaseCommand):
                                 extracted_value_to_json(attribute, av, option),
                                 av.matched,
                                 new_source,
-                                f"приоритет {new_source} ({priority.get(new_source, 0)}) "
-                                f">= {old_source} ({priority.get(old_source, 0)}) — перезапись",
+                                reason,
                             )
                             pav_update.append(pav)
+                            cache[av.slug] = extracted_value_to_json(attribute, av, option)
+                            cache_changed = True
 
-                        cache[av.slug] = extracted_value_to_json(attribute, av, option)
-                        cache_changed = True
                         stats["by_attribute"][av.slug] = stats["by_attribute"].get(av.slug, 0) + 1
 
                     if cache_changed:
@@ -472,3 +504,21 @@ class Command(BaseCommand):
             pav.value_boolean = av.boolean
         elif av.kind == TEXT:
             pav.value_text = av.text
+
+    @staticmethod
+    def _value_changed(pav: ProductAttributeValue, av, option) -> bool:
+        """Сравнить фактическое значение сохранённого PAV с извлечённым.
+
+        Сравнение по логическому kind: Decimal для чисел, slug/id для select,
+        bool для boolean, str для text. Decimal('10') == Decimal('10.0') —
+        одно значение.
+        """
+        if av.kind == NUMBER:
+            return pav.value_decimal != av.number
+        if av.kind == SELECT:
+            return pav.value_option_id != option.id
+        if av.kind == BOOLEAN:
+            return pav.value_boolean != av.boolean
+        if av.kind == TEXT:
+            return pav.value_text != av.text
+        return True

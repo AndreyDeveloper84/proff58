@@ -789,6 +789,49 @@ def test_skip_if_blocks_whole_rule():
 
 
 @pytest.mark.parametrize(
+    "skip_if,name,extracted",
+    [
+        # граница начала (по умолчанию): "комплект" глушит словоформы,
+        # но не матчит внутри другого слова (БОЕКОМПЛЕКТ).
+        (["комплект"], "Сверло по бетону 5х85мм БОЕКОМПЛЕКТ", True),
+        (["комплект"], "Комплект сверел 5 шт", False),
+        (["комплект"], "Сверла комплекта 5 шт", False),
+        # граница конца (ведущий пробел): " шт" глушит "10 шт",
+        # но не матчит "штампованный".
+        ([" шт"], "Ключ комб 17х19мм штампованный", True),
+        ([" шт"], "Ключ 17мм 10 шт", False),
+        ([" шт"], "Ключ 17мм 10шт", True),  # без пробела — не " шт"
+        # словоформы "набор" сохраняются: "наборе" всё ещё глушит.
+        (["набор"], "Наборе ключей 17мм", False),
+    ],
+)
+def test_skip_if_respects_word_boundary(skip_if, name, extracted):
+    """Стоп-слово с границей начала/конца: не ломает словоформы, не матчит внутри слов."""
+    doc = {
+        "source_priority": {"regex": 40},
+        "tool_types": [
+            {
+                "tool_type": "t",
+                "attributes": [
+                    {
+                        "slug": "size",
+                        "name": "Размер",
+                        "kind": "number",
+                        "unit": "мм",
+                        "source": "regex",
+                        "skip_if": skip_if,
+                        "regex": [r"(\d{1,2})\s*мм"],
+                    }
+                ],
+            }
+        ],
+    }
+    r = AttributeRules.from_dict(doc)
+    has_size = "size" in {v.slug: v for v in r.extract("t", name)}
+    assert has_size is extracted
+
+
+@pytest.mark.parametrize(
     "tt,name",
     [
         # диапазон с ПРОБЕЛАМИ вокруг дефиса — lookbehind на один символ его не ловил

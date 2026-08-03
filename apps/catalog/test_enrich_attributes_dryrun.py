@@ -273,6 +273,43 @@ def test_dry_run_reports_keep_for_non_prunable_source(catalog):
     assert row["proposed_value"] is None
 
 
+@pytest.mark.django_db
+def test_dry_run_reports_keep_when_value_unchanged(catalog):
+    """Если значение совпадает и источник тот же — keep, не update."""
+    product = _make_product(catalog, "Дрель-шуруповёрт 18В", "k2")
+    call_command("load_attributes")
+    voltage = Attribute.objects.get(slug="voltage")
+    ProductAttributeValue.objects.create(
+        product=product, attribute=voltage, value_decimal=Decimal("18.0"), source=Source.REGEX
+    )
+
+    report = _dry_run_report()
+
+    row = next(r for r in _rows_by(report, "keep") if r["attribute"] == "voltage")
+    assert row["current_value"] == 18.0
+    assert row["proposed_value"] == 18.0
+    assert "не изменилось" in row["reason"]
+
+
+@pytest.mark.django_db
+def test_dry_run_reports_update_when_source_priority_higher_same_value(catalog):
+    """Если значение совпадает, но источник выше приоритетом — update (меняем provenance)."""
+    product = _make_product(catalog, "Дрель-шуруповёрт 18В", "k3")
+    call_command("load_attributes")
+    voltage = Attribute.objects.get(slug="voltage")
+    ProductAttributeValue.objects.create(
+        product=product, attribute=voltage, value_decimal=Decimal("18"), source=Source.KEYWORD
+    )
+
+    report = _dry_run_report()
+
+    row = next(r for r in _rows_by(report, "update") if r["attribute"] == "voltage")
+    assert row["current_value"] == 18.0
+    assert row["proposed_value"] == 18.0
+    assert row["source"] == Source.REGEX
+    assert "происхождения" in row["reason"]
+
+
 # --- dry-run ничего не пишет ----------------------------------------------
 
 
