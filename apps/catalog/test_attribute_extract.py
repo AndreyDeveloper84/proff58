@@ -1635,16 +1635,19 @@ def test_izm_dalnomery_max_distance(rules, name, expected):
 
 
 @pytest.mark.parametrize(
-    "name,expected",
+    "name",
     [
-        ("Угольник 250 мм Startul", 250),
-        ("Угольник 160х100 УП-1-160 Буревестник", 160),
-        ("Угольник кровельный 170мм высокоточный KRAFTOOL", 170),
+        "Угольник 250 мм Startul",
+        "Угольник 160х100 УП-1-160 Буревестник",
+        "Угольник кровельный 170мм высокоточный KRAFTOOL",
     ],
 )
-def test_izm_ugolniki_size(rules, name, expected):
-    f = {v.slug: v for v in rules.extract("izm-ugolniki", name)}
-    assert f["size"].number == Decimal(str(expected))
+def test_izm_ugolniki_excluded_from_ruleset(rules, name):
+    # Решение владельца 2026-08-03 (после аудита КАТ-15A): блок izm-ugolniki
+    # изъят из словаря до чистки типа. Правило size работало корректно, но в
+    # типе лежат чужие товары (соковыжималка, тележки, контейнеры медотходов),
+    # и enrich приписывал бы им размеры. Вернуть блок после чистки tool_type.
+    assert rules.extract("izm-ugolniki", name) == []
 
 
 @pytest.mark.parametrize(

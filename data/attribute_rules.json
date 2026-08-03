@@ -2096,23 +2096,6 @@
       ]
     },
     {
-      "tool_type": "izm-ugolniki",
-      "category": "Угольники и линейки",
-      "attributes": [
-        {
-          "slug": "size",
-          "name": "Размер",
-          "kind": "number",
-          "unit": "мм",
-          "source": "regex",
-          "priority": 40,
-          "is_filter": true,
-          "is_seo_facet": true,
-          "regex": ["(?:^|\\s)(\\d{2,4})\\s*(?:мм|mm|[хx])"]
-        }
-      ]
-    },
-    {
       "tool_type": "izm-mikrometry",
       "category": "Штангенциркули и микрометры",
       "attributes": [
