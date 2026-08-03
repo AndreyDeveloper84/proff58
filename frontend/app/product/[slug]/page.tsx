@@ -35,6 +35,18 @@ export default async function ProductPage({ params }: Props) {
   if (!product) notFound();
   const reviews = await fetchProductReviewsSafe(slug);
 
+  // product.compatible приходит ВСЕГДА (при сбое эндпоинта — с пустыми секциями),
+  // поэтому проверять надо наличие товаров, а не самого объекта: иначе в шапке
+  // карточки висела ссылка «Совместимые товары», ведущая в пустоту. Совместимость
+  // в каталоге пока не заполнена — раздел появится вместе с данными.
+  const hasCompatible = Boolean(
+    product.compatible &&
+      product.compatible.accessories.length +
+        product.compatible.fits.length +
+        product.compatible.compatible.length >
+        0,
+  );
+
   // Главная → Каталог → …категории (из breadcrumb)… → Товар (последний — текст, без ссылки).
   const crumbs = [
     { label: "Главная", href: "/" },
@@ -187,7 +199,7 @@ export default async function ProductPage({ params }: Props) {
                 Описание
               </a>
             )}
-            {product.compatible && (
+            {hasCompatible && (
               <a href="#compatible" className="min-h-12 shrink-0 py-3.5 hover:text-accent">
                 Совместимые товары
               </a>
