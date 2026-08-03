@@ -102,7 +102,6 @@ export default async function RootLayout({
                   siteName={theme.name}
                   storefront={storefront}
                   infoPages={infoPages}
-                  authState={authState}
                 />
               </div>
             </WishlistProvider>

@@ -8,6 +8,8 @@ export interface SiteTheme {
   logo_url: string;
   region: string;
   contacts: Record<string, unknown>;
+  /** Ссылка на бота магазина в MAX. Пусто — бот не настроен, плитку не рисуем. */
+  max_bot_url?: string;
 }
 
 const DEFAULT_THEME: SiteTheme = {
@@ -17,6 +19,7 @@ const DEFAULT_THEME: SiteTheme = {
   logo_url: "",
   region: "Пенза",
   contacts: {},
+  max_bot_url: "",
 };
 
 export async function getSiteTheme(): Promise<SiteTheme> {
