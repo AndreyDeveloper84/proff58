@@ -79,7 +79,11 @@ const WishlistContext = createContext<WishlistContextValue>({
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const authState = useAuthState();
-  const isGuest = authState === "anonymous";
+  // Сервер отказал в доступе к избранному — значит сессии нет, как бы ни
+  // выглядели cookie. Дальше ведём человека как гостя: иначе каждый клик уходил
+  // бы на сервер, получал 401 и откатывался — сердечко не реагирует вообще.
+  const [serverRejected, setServerRejected] = useState(false);
+  const isGuest = authState === "anonymous" || serverRejected;
 
   // Гостевая часть — внешнее хранилище, читаем через useSyncExternalStore:
   // на сервере localStorage нет, и серверный снимок обязан быть пустым.
@@ -119,9 +123,15 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       })
       .then(() => getWishlist())
       .then((items) => {
-        // "error" (в том числе истёкшая сессия) — не повод врать пустым списком:
-        // оставляем незагруженным, сердечки будут неактивны до перезагрузки.
-        if (!active || items === "error") return;
+        if (!active) return;
+        // Сбой связи — не повод врать пустым списком: оставляем незагруженным.
+        if (items === "error") return;
+        // А вот отказ в доступе означает, что сессии нет, — переходим в
+        // гостевой режим, иначе клики будут молча откатываться.
+        if (items === "unauthorized") {
+          setServerRejected(true);
+          return;
+        }
         const merged = new Set(items.map((item) => item.product_id));
         for (const [productId, inList] of localOverrides.current) {
           if (inList) merged.add(productId);
@@ -165,10 +175,13 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       request
         .catch((error: unknown) => {
           applyLocally(!willAdd);
-          // Сессия истекла, пока человек ходил по каталогу: дальше он гость, и
-          // список у него теперь браузерный — сохраняем клик туда, а не теряем.
+          // Сессии нет: дальше человек гость, и список у него браузерный.
+          // Сохраняем туда сам клик (только добавление — снимать нечего) и
+          // переключаем режим, иначе выбор ушёл бы в список, который интерфейс
+          // не читает, и клик выглядел бы проигнорированным.
           if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-            toggleGuestWishlist(productId);
+            if (willAdd) toggleGuestWishlist(productId);
+            setServerRejected(true);
           }
         })
         .finally(() =>

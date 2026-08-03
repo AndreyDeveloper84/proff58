@@ -67,9 +67,9 @@ export function ProductCard({
   showFavorite?: boolean;
   variant?: "default" | "home";
 }) {
-  // Избранное хранится на сервере и общее на всю страницу (WishlistProvider):
-  // одна и та же позиция встречается в выдаче и в каруселях, и сердечки обязаны
-  // показывать одно состояние. Гостя клик уводит на форму входа.
+  // Избранное общее на всю страницу (WishlistProvider): одна и та же позиция
+  // встречается в выдаче и в каруселях, и сердечки обязаны показывать одно
+  // состояние. Вход не нужен — гостю список сохраняется в браузере.
   const { has, toggle, isPending } = useWishlist();
   const fav = has(product.id);
   const href = `/product/${product.slug}`;
@@ -89,8 +89,11 @@ export function ProductCard({
       data-product-id={product.id}
       className={cn(
         // #478: touch hit-area ≥44px на мобиле.
-        "grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors disabled:opacity-60 sm:h-8 sm:w-8",
-        fav ? "text-brand" : "text-ink-3 hover:text-brand",
+        "grid h-11 w-11 shrink-0 place-items-center rounded-full transition disabled:opacity-60 sm:h-8 sm:w-8",
+        // Сохранённое состояние отличается не только заливкой иконки: при
+        // наведении сердечко и так зеленеет, и клик по нему читался как «ничего
+        // не произошло». Подложка делает разницу однозначной.
+        fav ? "bg-brand/10 text-brand" : "text-ink-3 hover:bg-brand/5 hover:text-brand",
       )}
     >
       <Heart className="h-4 w-4" fill={fav ? "currentColor" : "none"} />
