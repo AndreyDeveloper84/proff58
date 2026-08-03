@@ -1346,7 +1346,10 @@ def _sp(rules: AttributeRules, name: str):
         ("Перчатки х/б с ПВХ 10/5-нит (протектор) БЕЛЫЕ (10/400)", "hb"),
         ("Перчатки ANSELL ЭКСТРА 87-950 мт. латекс", "lateks"),
         ("Рукавицы брезентовые с двойным наладонником (520 г", "brezent"),
-        ("Перчатки KRAFTOOL NEOPREN неопреновые индустриальные противокислотные р-р XXL", "neopren"),
+        (
+            "Перчатки KRAFTOOL NEOPREN неопреновые индустриальные противокислотные р-р XXL",
+            "neopren",
+        ),
         ("Перчатки п/ш черные (полушерст)", "psh"),
         ("Перчатки комбинированные STAYER искусственная кожа, зеленые", "kozha"),
         ("Перчатки нитриловые одноразовые", "nitril"),
@@ -1359,9 +1362,10 @@ def test_sp_material(rules, name, material):
 def test_sp_material_base_before_coating_material(rules):
     # «полиэстер с нитриловым обливом»: нитрил — материал облива, не основы;
     # базовые материалы стоят раньше латекса/нитрила/пвх (первый матч выигрывает).
-    assert _sp(rules, "Перчатки садовые из полиэстера с нитриловым обливо")[
-        "material"
-    ].option_slug == "poliester"
+    assert (
+        _sp(rules, "Перчатки садовые из полиэстера с нитриловым обливо")["material"].option_slug
+        == "poliester"
+    )
 
 
 @pytest.mark.parametrize(
@@ -1379,9 +1383,12 @@ def test_sp_coating(rules, name, coating):
 
 def test_sp_coating_full_dip_before_partial(rules):
     # «полный облив» обязан стоять раньше «облив» — иначе проиграет подстроке.
-    assert _sp(rules, "Перчатки ЗУБР МЕХАНИК+ маслобензостойкие тонкие полный облив р-р XL")[
-        "coating"
-    ].option_slug == "polny-obliv"
+    assert (
+        _sp(rules, "Перчатки ЗУБР МЕХАНИК+ маслобензостойкие тонкие полный облив р-р XL")[
+            "coating"
+        ].option_slug
+        == "polny-obliv"
+    )
 
 
 @pytest.mark.parametrize("name", ["Перчатки одноразовые", "Перчатки КЩС-2"])
