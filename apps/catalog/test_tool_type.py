@@ -58,6 +58,7 @@ RULES = {
             "extraction": "inherit_1c_subgroup",
             "rules": [
                 {"tool_type": "Сверла", "slug": "sverla", "source": "1c_subgroup"},
+                {"tool_type": "Буры", "slug": "bury", "source": "1c_subgroup"},
                 {
                     "tool_type": "Переходные кольца",
                     "slug": "perehodnye-koltsa",
@@ -382,6 +383,96 @@ class RealRulesRegressionTests(TestCase):
         self.assertEqual(slug("Набор ключей рожковых 8 шт ЗУБР"), "klyuchi-gaechnye")
         self.assertEqual(slug("Набор головок 1/2 24шт"), "golovki")
         self.assertEqual(slug("Набор бит 32 предмета KRAFTOOL"), "nabory-instrumenta")
+
+
+class KeywordAccessoryGuardRegressionTests(TestCase):
+    """Регресс ALIAS-CONFLICT-374 (7 групп/25 товаров): слово-триггер описывает
+    аксессуар/цель применения внутри названия основного товара — не должен
+    переклассифицировать сам товар. Точные названия — из
+    scratchpad/phase8/alias-conflict-374-report.md (продукты 47171-47175,
+    29722-29730, 40798-40799, 29829/29833, 32151, 31354, 43112 на staging)."""
+
+    def setUp(self):
+        self.rules = ToolTypeRules.from_file(
+            Path(settings.BASE_DIR) / "data" / "tool_type_rules.json"
+        )
+
+    def test_str_pistolety_not_reclassified_as_germetiki(self):
+        # «Пистолет ДЛЯ герметиков» — сам товар пистолет, «герметиков» — цель.
+        names = (
+            "Пистолет для герметиков ЗУБР 310мл ЗУБР полуоткрытый",
+            "Пистолет для герметиков ЗУБР 310мл полукорпусной",
+            "Пистолет для герметиков ЗУБР 310мл полукорпусной антикапельная система",
+            "Пистолет для герметиков ЗУБР 310мл полукорпусной хромированный",
+            "Пистолет для герметиков ЗУБР 310мл скелетный",
+        )
+        for name in names:
+            ex = self.rules.extract("Строительное и отделочное", name)
+            self.assertEqual(ex.result, ASSIGNED, name)
+            self.assertEqual(ex.slug, "str-pistolety", name)
+
+    def test_krepleniya_ognetushiteley_not_reclassified_as_ognetushiteli(self):
+        # «Подставка ПОД огнетушитель» — крепление, не сам огнетушитель.
+        names = (
+            "Подставка под огнетушитель двойная П-15",
+            "Подставка под огнетушитель П-10",
+            "Подставка под огнетушитель П-10 красная напольная 175х175х340мм (ОП-1-4, ОУ1-2) до 6,5кг",
+            "Подставка под огнетушитель П-15",
+            "Подставка под огнетушитель П-15 (собранная)",
+            "Подставка под огнетушитель П-15 красная напольная р-р 195х195х380мм (ОП-1-6,ОУ1-2) до 8,2кг",
+            "Подставка под огнетушитель П-20 красная напольная 230х230х400мм (ОП-1-8, ОУ-1-4) до 12кг",
+            "Подставка под огнетушитель ПО-170 (ПО-01,П-10)",
+            "Подставка под огнетушитель универсальная",
+        )
+        for name in names:
+            ex = self.rules.extract("Спецодежда и защита", name)
+            self.assertNotEqual(ex.slug, "siz-ognetushiteli", name)
+
+    def test_izm_lupy_not_reclassified_as_ochki(self):
+        # «Лупа... (очки)/очки с подсветкой» — форм-фактор лупы, не защитные очки.
+        names = (
+            "Лупа налобная 20х монокулярная (очки) с подсветкой PL4401 (EL-92)",
+            "Лупа налобная 3,5х очки с подсветкой PL4406",
+        )
+        for name in names:
+            ex = self.rules.extract("Спецодежда и защита", name)
+            self.assertNotEqual(ex.slug, "siz-ochki", name)
+
+    def test_siz_rukava_not_reclassified_as_golovki(self):
+        # «Рукав... с головкой ГР-50 и стволом РС-50» — рукав, не пожарная головка/ствол.
+        names = (
+            'Рукав пожарный РПК(В)-Н/В-50-1,0-М-УХЛ1 "Классик" (18,5 м) с головкой ГР-50 '
+            "Ал и стволом РС-50.01 А",
+            'Рукав пожарный РПК(В)-Н/В-50-1,0-М-УХЛ1 "Классик" с головкой ГР-50 Ал и стволом '
+            "РС-50.01 А",
+        )
+        for name in names:
+            ex = self.rules.extract("Спецодежда и защита", name)
+            self.assertEqual(ex.result, ASSIGNED, name)
+            self.assertEqual(ex.slug, "siz-rukava", name)
+
+    def test_zubilo_not_reclassified_as_odezhda(self):
+        # «Зубило с пластмассовым фартуком» — встроенный щиток инструмента, не одежда.
+        ex = self.rules.extract(
+            "Спецодежда и защита", "Зубило с пластмассовым фартуком для защиты руки, с"
+        )
+        self.assertNotEqual(ex.slug, "siz-odezhda")
+
+    def test_svar_apparaty_not_reclassified_as_perchatki(self):
+        # «(маска+краги)» — бонус-комплект, «краги» не делают инвертор перчатками.
+        ex = self.rules.extract(
+            "Спецодежда и защита", 'Свар. инвертор СВАРОГ MIG 200 "REAL"  Black (маска+краги)'
+        )
+        self.assertNotEqual(ex.slug, "siz-perchatki")
+
+    def test_str_laki_not_reclassified_as_kisti(self):
+        # «Цапон лак ... с кисточкой» — сам товар лак, кисточка — встроенный аппликатор.
+        ex = self.rules.extract(
+            "Строительное и отделочное",
+            "Цапон лак прозрачный с кисточкой 20 мл. TSAP-NO-KIS20 Connector",
+        )
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.slug, "str-laki")
 
 
 class TransliterateTests(TestCase):

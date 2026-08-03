@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -26,6 +27,96 @@ from pathlib import Path
 def normalize(text: str | None) -> str:
     """Нормализация для матчинга: нижний регистр и ``ё`` → ``е``."""
     return (text or "").lower().replace("ё", "е")
+
+
+_WORD_CHAR = re.compile(r"[a-zа-я0-9]")  # применяется к уже normalize()-нному тексту
+
+# Guard — ТОЧЕЧНЫЙ список подтверждённых ложных срабатываний priority_keyword
+# (ALIAS-CONFLICT-374-report.md, 7 групп/25 товаров): слово-триггер описывает
+# аксессуар/цель применения ВНУТРИ названия основного товара, а не сам товар
+# («пистолет ДЛЯ герметиков», «(маска+краги)», «...с кисточкой», «...с головкой
+# и стволом», «...(очки) с подсветкой», «...фартуком для защиты руки», «...под
+# огнетушитель»). НЕ применяется ко всем ключевым словам ruleset — глобальный
+# контекстный фильтр ломает валидные срабатывания за пределами этих 7 групп
+# (напр. «Штифт СО шплинтом», «...ПОД шплинт» в блоке «Крепёж и метизы» —
+# регрессия, обнаруженная прогоном 13 блоков; см. условие остановки промпта).
+# Ключ — normalize()-нное ключевое слово ИЗ ПРАВИЛА (как в match_keywords).
+_PURPOSE_PREFIXES = ("для ", "под ")
+_BUNDLE_LOOKBACK_WORDS = 3
+_BUNDLE_MARKER_WORDS = {"с", "со", "и"}
+
+_GUARDED_KEYWORDS: dict[str, dict[str, object]] = {
+    # str-pistolety vs str-germetiki: «Пистолет ДЛЯ герметиков».
+    "герметик": {"purpose": True},
+    # krepleniya-ognetushiteley vs siz-ognetushiteli: «Подставка ПОД огнетушитель».
+    "огнетушитель": {"purpose": True},
+    # izm-lupy vs siz-ochki: «Лупа... (очки) с подсветкой» / «Лупа... очки с подсветкой».
+    "очки": {"parens": True, "cooccurs_with": ("лупа",)},
+    # siz-rukava vs siz-golovki: «Рукав... с головкой ГР-50 Ал и стволом РС-50».
+    "головка": {"bundle": True},
+    "ствол": {"bundle": True},
+    # zubila vs siz-odezhda: «Зубило с пластмассовым фартуком для защиты руки».
+    "фартук": {"bundle": True},
+    # svar-apparaty vs siz-perchatki: «...(маска+краги)».
+    "краги": {"parens": True, "plus": True},
+    # str-laki vs str-kisti: «Цапон лак прозрачный с кисточкой».
+    "кисточк": {"bundle": True},
+}
+
+
+def _keyword_starts_at_word_boundary(norm_name: str, start: int) -> bool:
+    if start == 0:
+        return True
+    return not _WORD_CHAR.match(norm_name[start - 1])
+
+
+def _is_accessory_or_purpose_context(norm_name: str, start: int, norm_keyword: str) -> bool:
+    """Слово-триггер (из ``_GUARDED_KEYWORDS``) — объект применения/бонус-
+    аксессуар внутри названия основного товара, а не сам товар (см.
+    alias-conflict-374-report.md). Для остальных ключевых слов — не вызывается."""
+    spec = _GUARDED_KEYWORDS.get(norm_keyword)
+    if spec is None:
+        return False
+    prefix = norm_name[:start]
+    if spec.get("purpose") and prefix.endswith(_PURPOSE_PREFIXES):
+        return True
+    if spec.get("plus") and prefix.endswith("+"):
+        return True
+    if spec.get("parens"):
+        open_paren = prefix.rfind("(")
+        close_paren = prefix.rfind(")")
+        if open_paren != -1 and open_paren > close_paren:
+            return True
+    if spec.get("bundle"):
+        lookback = prefix.split()[-_BUNDLE_LOOKBACK_WORDS:]
+        if any(w in _BUNDLE_MARKER_WORDS for w in lookback):
+            return True
+    cooccurs_with = spec.get("cooccurs_with")
+    if cooccurs_with and any(marker in norm_name for marker in cooccurs_with):
+        return True
+    return False
+
+
+def find_keyword_match(norm_name: str, keywords: tuple[str, ...]) -> str | None:
+    """Первое ключевое слово из ``keywords``, реально совпавшее с ``norm_name``:
+    матч должен начинаться на границе слова (см. ``_keyword_starts_at_word_boundary``
+    — ловит словоформы вроде «герметиков», но не мусор в середине чужого слова) и,
+    для точечного списка ``_GUARDED_KEYWORDS``, не приходиться на контекст
+    «объект применения/бонус-аксессуар» (``_is_accessory_or_purpose_context``).
+    Возвращает ключевое слово как задано в правиле (не normalize()-нное) — для
+    ``matched_keyword``."""
+    for kw in keywords:
+        norm_kw = normalize(kw)
+        if not norm_kw:
+            continue
+        idx = norm_name.find(norm_kw)
+        while idx != -1:
+            if _keyword_starts_at_word_boundary(
+                norm_name, idx
+            ) and not _is_accessory_or_purpose_context(norm_name, idx, norm_kw):
+                return kw
+            idx = norm_name.find(norm_kw, idx + 1)
+    return None
 
 
 # Транслитерация кириллицы для ЧПУ-слугов (латиница, как у слугов категорий):
@@ -175,35 +266,43 @@ class ToolTypeRules:
                     continue
                 if normalize(rule.subgroup) != target:
                     continue
-                for kw in rule.match_keywords:
-                    if normalize(kw) in norm_name:
-                        return Extraction(
-                            result=ASSIGNED,
-                            tool_type=rule.tool_type,
-                            slug=rule.slug,
-                            matched_keyword=kw,
-                        )
+                matched = find_keyword_match(norm_name, rule.match_keywords)
+                if matched is not None:
+                    return Extraction(
+                        result=ASSIGNED,
+                        tool_type=rule.tool_type,
+                        slug=rule.slug,
+                        matched_keyword=matched,
+                    )
             slug = self._inherit_slug(cat, sub)
+            if not slug:
+                # Подгруппа не резолвится ни override'ом (выше), ни базовым
+                # rule.tool_type — оставлять tool_type=сырое имя листа (с пустым
+                # slug) означало бы протащить в БД значение вне манифеста
+                # (option_not_in_manifest на запись). Явный subgroup-mapping —
+                # apps.catalog.tool_type_subgroup_aliases — таких случаев не
+                # покрывает намеренно (см. окно ENRICH-WRITE-PATH-HARDENING).
+                return Extraction(result=MODERATION)
             return Extraction(result=ASSIGNED, tool_type=sub, slug=slug)
 
         # priority_keyword: первый матч выигрывает
         norm_name = normalize(name)
         for rule in cat.rules:
-            for kw in rule.match_keywords:
-                if normalize(kw) in norm_name:
-                    if rule.is_recategorize:
-                        return Extraction(
-                            result=RECATEGORIZE,
-                            tool_type=rule.tool_type,
-                            slug=rule.slug,
-                            matched_keyword=kw,
-                        )
+            matched = find_keyword_match(norm_name, rule.match_keywords)
+            if matched is not None:
+                if rule.is_recategorize:
                     return Extraction(
-                        result=ASSIGNED,
+                        result=RECATEGORIZE,
                         tool_type=rule.tool_type,
                         slug=rule.slug,
-                        matched_keyword=kw,
+                        matched_keyword=matched,
                     )
+                return Extraction(
+                    result=ASSIGNED,
+                    tool_type=rule.tool_type,
+                    slug=rule.slug,
+                    matched_keyword=matched,
+                )
         return Extraction(result=MODERATION)
 
     @staticmethod
