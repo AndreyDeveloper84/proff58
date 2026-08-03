@@ -6,12 +6,12 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
 from apps.accounts.models import CustomerType
+from apps.accounts.requisites import INN_RE, KPP_RE
 
 
 @dataclass(frozen=True)
@@ -52,8 +52,11 @@ class InvoiceData:
         return "pending_delivery_quote" if self.delivery_pending else "issued"
 
 
-_INN_RE = re.compile(r"^\d{10}$|^\d{12}$")
-_KPP_RE = re.compile(r"^\d{9}$")
+# Формат реквизитов — общий с аккаунтом (apps/accounts/requisites.py), чтобы
+# ИНН, принятый при регистрации, не оказался забракован при выпуске счёта.
+# Требования самого счёта (юр. адрес, почта) добавляются ниже.
+_INN_RE = INN_RE
+_KPP_RE = KPP_RE
 
 
 def validate_b2b_requisites(

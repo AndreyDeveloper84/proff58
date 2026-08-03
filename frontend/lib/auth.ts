@@ -27,6 +27,10 @@ export type AccountUser = {
 export type AccountUserPatch = {
   full_name?: string;
   email?: string;
+  // Переход «частное лицо ↔ организация» прямо из кабинета: тот, кто
+  // зарегистрировался физлицом, начинает покупать от компании. Переход в
+  // организацию сервер примет только вместе с реквизитами.
+  customer_type?: "b2c" | "b2b";
   profile?: Partial<AccountProfile>;
 };
 
@@ -36,18 +40,25 @@ export type WishlistItem = {
   product_slug: string;
 };
 
-export async function login(phone: string, password: string) {
+// Вход — по e-mail. Телефон логином не является: он контакт заказа и
+// идентификатор для MAX (см. apps/accounts/models.py).
+export async function login(email: string, password: string) {
   return apiFetch<Record<string, unknown>>("/api/account/login/", {
     method: "POST",
-    body: JSON.stringify({ phone, password }),
+    body: JSON.stringify({ email, password }),
   });
 }
 
 export async function register(data: {
-  phone: string;
+  email: string;
   password: string;
   full_name?: string;
-  email?: string;
+  // Организация указывает реквизиты сразу — без них кабинет юрлица пуст,
+  // а счёт запросить не из чего.
+  customer_type?: "b2c" | "b2b";
+  company_name?: string;
+  inn?: string;
+  kpp?: string;
 }) {
   return apiFetch<Record<string, unknown>>("/api/account/register/", {
     method: "POST",
@@ -117,13 +128,6 @@ export async function changePhone(newPhone: string, password: string): Promise<v
 
 export async function deleteAccount(): Promise<void> {
   await apiFetch("/api/account/delete/", { method: "POST" });
-}
-
-export async function otpLogin(phone: string, otp: string) {
-  return apiFetch<Record<string, unknown>>("/api/account/otp-login/", {
-    method: "POST",
-    body: JSON.stringify({ phone, otp }),
-  });
 }
 
 // --- Авторизация через MAX (deeplink + one-time attempt, #492) ---

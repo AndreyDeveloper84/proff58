@@ -14,7 +14,9 @@ def client():
 
 @pytest.fixture
 def user(db):
-    return User.objects.create_user(phone="+79001112233", password="pass123", full_name="Тест")
+    return User.objects.create_user(
+        phone="+79001112233", email="test@proff58.ru", password="pass123", full_name="Тест"
+    )
 
 
 # ═══════════ #327 Регистрация ═══════════
@@ -24,12 +26,12 @@ def user(db):
 def test_register(client):
     resp = client.post(
         "/api/account/register/",
-        {"phone": "+79009999999", "password": "StrongPass2026", "full_name": "Новый"},
+        {"email": "new@proff58.ru", "password": "StrongPass2026", "full_name": "Новый"},
         format="json",
     )
     assert resp.status_code == 201
-    assert resp.json()["phone"] == "+79009999999"
-    assert User.objects.filter(phone="+79009999999").exists()
+    assert resp.json()["email"] == "new@proff58.ru"
+    assert User.objects.filter(email="new@proff58.ru").exists()
 
 
 @pytest.mark.django_db
@@ -38,7 +40,7 @@ def test_register_weak_password_rejected(client):
     # Слишком короткий.
     resp = client.post(
         "/api/account/register/",
-        {"phone": "+79009999998", "password": "abc12"},
+        {"email": "weak1@proff58.ru", "password": "abc12"},
         format="json",
     )
     assert resp.status_code == 400
@@ -46,7 +48,7 @@ def test_register_weak_password_rejected(client):
     # Полностью числовой.
     resp = client.post(
         "/api/account/register/",
-        {"phone": "+79009999997", "password": "39481726354"},
+        {"email": "weak2@proff58.ru", "password": "39481726354"},
         format="json",
     )
     assert resp.status_code == 400
@@ -62,31 +64,55 @@ def test_register_without_name(client):
     """
     resp = client.post(
         "/api/account/register/",
-        {"phone": "+79009999997", "password": "StrongPass2026", "full_name": ""},
+        {"email": "noname@proff58.ru", "password": "StrongPass2026", "full_name": ""},
         format="json",
     )
     assert resp.status_code == 201, resp.json()
-    user = User.objects.get(phone="+79009999997")
+    user = User.objects.get(email="noname@proff58.ru")
     assert user.full_name == ""
 
 
 @pytest.mark.django_db
-def test_register_with_blank_email(client):
-    """E-mail тоже необязателен и может прийти пустой строкой."""
+def test_register_without_phone(client):
+    """Телефон при регистрации не спрашивают — он контакт заказа, а не логин."""
     resp = client.post(
         "/api/account/register/",
-        {"phone": "+79009999996", "password": "StrongPass2026", "email": ""},
+        {"email": "nophone@proff58.ru", "password": "StrongPass2026"},
         format="json",
     )
     assert resp.status_code == 201, resp.json()
-    assert User.objects.get(phone="+79009999996").email == ""
+    assert User.objects.get(email="nophone@proff58.ru").phone is None
 
 
 @pytest.mark.django_db
-def test_register_duplicate_phone(client, user):
+def test_register_second_user_without_phone(client):
+    """Два аккаунта без телефона уживаются: пустой номер хранится как NULL."""
+    for address in ("first@proff58.ru", "second@proff58.ru"):
+        resp = client.post(
+            "/api/account/register/",
+            {"email": address, "password": "StrongPass2026"},
+            format="json",
+        )
+        assert resp.status_code == 201, resp.json()
+    assert User.objects.filter(phone__isnull=True).count() == 2
+
+
+@pytest.mark.django_db
+def test_register_duplicate_email(client, user):
     resp = client.post(
         "/api/account/register/",
-        {"phone": "+79001112233", "password": "pass123"},
+        {"email": "test@proff58.ru", "password": "StrongPass2026"},
+        format="json",
+    )
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_register_duplicate_email_ignores_case(client, user):
+    """Адрес — логин, поэтому Test@ и test@ не могут быть разными людьми."""
+    resp = client.post(
+        "/api/account/register/",
+        {"email": "TEST@proff58.ru", "password": "StrongPass2026"},
         format="json",
     )
     assert resp.status_code == 400
@@ -99,11 +125,11 @@ def test_register_duplicate_phone(client, user):
 def test_login(client, user):
     resp = client.post(
         "/api/account/login/",
-        {"phone": "+79001112233", "password": "pass123"},
+        {"email": "test@proff58.ru", "password": "pass123"},
         format="json",
     )
     assert resp.status_code == 200
-    assert resp.json()["phone"] == "+79001112233"
+    assert resp.json()["email"] == "test@proff58.ru"
 
 
 @pytest.mark.django_db
@@ -206,52 +232,6 @@ def test_wishlist_delete(client, user):
 # ═══════════ #326 OTP Login ═══════════
 
 
-@pytest.mark.django_db
-def test_otp_login(client, user):
-    from django.core.cache import cache
-
-    user.max_chat_id = 555
-    user.save()
-    cache.set("max_otp:555", {"otp": "1234", "user_id": user.pk, "attempts": 0}, timeout=300)
-
-    resp = client.post(
-        "/api/account/otp-login/",
-        {"phone": "+79001112233", "otp": "1234"},
-        format="json",
-    )
-    assert resp.status_code == 200
-    assert resp.json()["phone"] == "+79001112233"
-    cache.clear()
-
-
-@pytest.mark.django_db
-def test_otp_login_wrong_code(client, user):
-    from django.core.cache import cache
-
-    user.max_chat_id = 556
-    user.save()
-    cache.set("max_otp:556", {"otp": "1234", "user_id": user.pk, "attempts": 0}, timeout=300)
-
-    resp = client.post(
-        "/api/account/otp-login/",
-        {"phone": "+79001112233", "otp": "0000"},
-        format="json",
-    )
-    assert resp.status_code == 400
-    cache.clear()
-
-
-@pytest.mark.django_db
-def test_otp_login_no_max(client, user):
-    resp = client.post(
-        "/api/account/otp-login/",
-        {"phone": "+79001112233", "otp": "1234"},
-        format="json",
-    )
-    assert resp.status_code == 400
-    assert "MAX" in resp.json()["detail"]
-
-
 # ═══════════ #341 Привязка гостевых заказов ═══════════
 
 
@@ -260,11 +240,15 @@ def test_claim_guest_orders_on_login_requires_verified_phone(client):
     """#421 (B-01): вход с НЕподтверждённым телефоном НЕ привязывает заказы."""
     from apps.orders.models import Order
 
-    User.objects.create_user(phone="+79005550001", password="pass")
+    User.objects.create_user(
+        phone="+79005550001", email="guest1@proff58.ru", password="StrongPass2026"
+    )
     Order.objects.create(order_number="П-GUEST-1", customer_phone="+79005550001")
 
     resp = client.post(
-        "/api/account/login/", {"phone": "+79005550001", "password": "pass"}, format="json"
+        "/api/account/login/",
+        {"email": "guest1@proff58.ru", "password": "StrongPass2026"},
+        format="json",
     )
     assert resp.status_code == 200
     assert resp.json().get("claimed_orders", 0) == 0
@@ -277,13 +261,17 @@ def test_claim_guest_orders_on_login_with_verified_phone(client):
     """#421 (B-01): подтверждённый номер привязывает свои гостевые заказы."""
     from apps.orders.models import Order
 
-    u = User.objects.create_user(phone="+79005550001", password="pass")
+    u = User.objects.create_user(
+        phone="+79005550001", email="guest2@proff58.ru", password="StrongPass2026"
+    )
     u.phone_verified = True
     u.save(update_fields=["phone_verified"])
     Order.objects.create(order_number="П-GUEST-1", customer_phone="+79005550001")
 
     resp = client.post(
-        "/api/account/login/", {"phone": "+79005550001", "password": "pass"}, format="json"
+        "/api/account/login/",
+        {"email": "guest2@proff58.ru", "password": "StrongPass2026"},
+        format="json",
     )
     assert resp.status_code == 200
     assert resp.json().get("claimed_orders", 0) == 1
@@ -447,7 +435,7 @@ def test_login_throttled():
     }
     with override_settings(REST_FRAMEWORK=rf):
         c = APIClient()
-        body = {"phone": "+70000000000", "password": "x"}
+        body = {"email": "brute@proff58.ru", "password": "x"}
         assert c.post("/api/account/login/", body, format="json").status_code != 429
         assert c.post("/api/account/login/", body, format="json").status_code != 429
         assert c.post("/api/account/login/", body, format="json").status_code == 429
@@ -458,11 +446,11 @@ def test_login_sets_session(db):
     """После логина сессия существует (браузер получает sessionid cookie)."""
     from django.test import Client as DjangoClient
 
-    User.objects.create_user(phone="+79006660001", password="pass123")
+    User.objects.create_user(email="session@proff58.ru", password="pass123")
     c = DjangoClient()
     resp = c.post(
         "/api/account/login/",
-        data='{"phone":"+79006660001","password":"pass123"}',
+        data='{"email":"session@proff58.ru","password":"pass123"}',
         content_type="application/json",
     )
     assert resp.status_code == 200

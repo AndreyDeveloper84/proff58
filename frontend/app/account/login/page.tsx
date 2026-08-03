@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bell, ClipboardList, FileText, Heart, ShieldCheck } from "lucide-react";
-import { login, otpLogin, register } from "@/lib/auth";
+import { login, register } from "@/lib/auth";
 import { MaxAuthFlow } from "@/components/account/MaxAuthFlow";
+import { isValidInn, isValidKpp, isLegalEntityInn } from "@/lib/validation";
 
 // Куда вернуть после входа (§16.7): ?next=<path> из URL, иначе профиль.
 function nextTarget(): string {
@@ -14,27 +15,54 @@ function nextTarget(): string {
   return n && n.startsWith("/") ? n : "/account/profile";
 }
 
+type CustomerType = "b2c" | "b2b";
+
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "register" | "otp">("login");
-  const [phone, setPhone] = useState("");
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
   const [name, setName] = useState("");
+  // Кто регистрируется. Организация указывает реквизиты сразу: с ними кабинет
+  // сразу «свой» — со счетами и карточкой компании.
+  const [customerType, setCustomerType] = useState<CustomerType>("b2c");
+  const [companyName, setCompanyName] = useState("");
+  const [inn, setInn] = useState("");
+  const [kpp, setKpp] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const isCompany = customerType === "b2b";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (mode === "register" && isCompany) {
+      // Зеркалит серверную проверку (apps/accounts/requisites.py): человек
+      // видит ошибку сразу, а не после ответа.
+      if (!companyName.trim()) return setError("Укажите название организации.");
+      if (!isValidInn(inn)) return setError("ИНН должен содержать 10 или 12 цифр.");
+      if (isLegalEntityInn(inn) && !kpp.trim()) {
+        return setError("КПП обязателен для юридического лица (ИНН из 10 цифр).");
+      }
+      if (kpp.trim() && !isValidKpp(kpp)) return setError("КПП должен содержать 9 цифр.");
+    }
+
     setLoading(true);
     try {
       if (mode === "login") {
-        await login(phone, password);
-      } else if (mode === "register") {
-        await register({ phone, password, full_name: name });
+        await login(email, password);
       } else {
-        await otpLogin(phone, otp);
+        await register({
+          email,
+          password,
+          full_name: name,
+          customer_type: customerType,
+          ...(isCompany
+            ? { company_name: companyName.trim(), inn: inn.trim(), kpp: kpp.trim() }
+            : {}),
+        });
       }
       // replace: после успешного входа «Назад» не должен возвращать на форму
       // входа — вошедшему она не нужна и выглядит как «меня опять разлогинило».
@@ -57,11 +85,7 @@ export default function LoginPage() {
       <div className="mx-auto grid max-w-[920px] overflow-hidden rounded-lg border border-line bg-surface lg:grid-cols-[1.08fr_.92fr]">
         <section className="p-5 sm:p-7 lg:p-8">
           <h1 className="text-2xl font-semibold text-ink">
-            {mode === "login"
-              ? "Вход в личный кабинет"
-              : mode === "register"
-                ? "Регистрация"
-                : "Вход по коду MAX"}
+            {mode === "login" ? "Вход в личный кабинет" : "Регистрация"}
           </h1>
           <p className="mt-1 text-sm text-ink-3">
             Проверяйте заказы, счета и уведомления в одном месте.
@@ -93,45 +117,113 @@ export default function LoginPage() {
               </label>
             )}
             <label className="block text-sm text-ink-2">
-              Телефон
+              E-mail
               <input
-                type="tel"
-                placeholder="+7 (___) ___-__-__"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                type="email"
+                placeholder="you@company.ru"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 h-11 w-full rounded-md border border-line bg-surface px-3 text-ink outline-none focus:border-accent"
                 required
+                autoComplete="email"
               />
             </label>
 
-            {mode !== "otp" && (
-              <label className="block text-sm text-ink-2">
-                Пароль
-                <input
-                  type="password"
-                  placeholder="Введите пароль"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1 h-11 w-full rounded-md border border-line bg-surface px-3 text-ink outline-none focus:border-accent"
-                  required
-                />
-              </label>
-            )}
+            <label className="block text-sm text-ink-2">
+              Пароль
+              <input
+                type="password"
+                placeholder="Введите пароль"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1 h-11 w-full rounded-md border border-line bg-surface px-3 text-ink outline-none focus:border-accent"
+                required
+                autoComplete={mode === "register" ? "new-password" : "current-password"}
+              />
+            </label>
 
-            {mode === "otp" && (
-              <label className="block text-sm text-ink-2">
-                Код из MAX
-                <input
-                  type="text"
-                  placeholder="4 цифры"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  className="mt-1 h-11 w-full rounded-md border border-line bg-surface px-3 text-ink outline-none focus:border-accent"
-                  required
-                  maxLength={4}
-                  inputMode="numeric"
-                />
-              </label>
+            {mode === "register" && (
+              <>
+                <fieldset>
+                  <legend className="text-sm text-ink-2">Кто покупает</legend>
+                  <div className="mt-1 grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        ["b2c", "Частное лицо"],
+                        ["b2b", "Организация"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <label
+                        key={value}
+                        className={`flex min-h-11 cursor-pointer items-center justify-center rounded-md border px-3 text-sm font-medium transition ${
+                          customerType === value
+                            ? "border-accent bg-accent/10 text-accent"
+                            : "border-line text-ink-2 hover:border-accent/50"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="customer-type"
+                          value={value}
+                          checked={customerType === value}
+                          onChange={() => setCustomerType(value)}
+                          className="sr-only"
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                {isCompany && (
+                  <div className="space-y-4 rounded-md border border-line bg-raised p-4">
+                    <p className="text-xs text-ink-3">
+                      Реквизиты нужны для счёта. Юридический адрес попросим при первом заказе.
+                    </p>
+                    <label className="block text-sm text-ink-2">
+                      Название организации *
+                      <input
+                        type="text"
+                        placeholder="ООО «Профессионал»"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        className="mt-1 h-11 w-full rounded-md border border-line bg-surface px-3 text-ink outline-none focus:border-accent"
+                        required
+                      />
+                    </label>
+                    <label className="block text-sm text-ink-2">
+                      ИНН *
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="10 или 12 цифр"
+                        value={inn}
+                        onChange={(e) => setInn(e.target.value)}
+                        className="mt-1 h-11 w-full rounded-md border border-line bg-surface px-3 text-ink outline-none focus:border-accent"
+                        required
+                      />
+                      <span className="mt-1 block text-xs text-ink-3">
+                        10 цифр — организация, 12 — ИП.
+                      </span>
+                    </label>
+                    <label className="block text-sm text-ink-2">
+                      КПП {isLegalEntityInn(inn) ? "*" : ""}
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="9 цифр"
+                        value={kpp}
+                        onChange={(e) => setKpp(e.target.value)}
+                        className="mt-1 h-11 w-full rounded-md border border-line bg-surface px-3 text-ink outline-none focus:border-accent"
+                        required={isLegalEntityInn(inn)}
+                      />
+                      <span className="mt-1 block text-xs text-ink-3">
+                        У ИП его нет — оставьте пустым.
+                      </span>
+                    </label>
+                  </div>
+                )}
+              </>
             )}
 
             {error && <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}
@@ -146,15 +238,17 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-5 space-y-2 border-t border-line pt-5 text-sm">
-            {mode !== "login" && (
-              <button onClick={() => setMode("login")} className="block font-medium text-accent hover:underline">Вход по паролю</button>
+            {mode === "register" ? (
+              <button onClick={() => setMode("login")} className="block font-medium text-accent hover:underline">
+                Уже есть аккаунт? Войти
+              </button>
+            ) : (
+              <button onClick={() => setMode("register")} className="block font-medium text-accent hover:underline">
+                Нет аккаунта? Зарегистрироваться
+              </button>
             )}
-            {mode !== "register" && (
-              <button onClick={() => setMode("register")} className="block font-medium text-accent hover:underline">Нет аккаунта? Зарегистрироваться</button>
-            )}
-            {mode !== "otp" && (
-              <button onClick={() => setMode("otp")} className="block font-medium text-[#5146ed] hover:underline">Войти по коду из MAX</button>
-            )}
+            {/* Сброса пароля по письму пока нет — честно указываем рабочий путь. */}
+            <p className="text-xs text-ink-3">Забыли пароль? Войдите через MAX — он не требует пароля.</p>
           </div>
         </section>
 

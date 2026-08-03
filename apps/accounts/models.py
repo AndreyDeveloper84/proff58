@@ -25,9 +25,23 @@ class CustomerType(models.TextChoices):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    """Пользователь с входом по телефону или e-mail."""
+    """Покупатель или сотрудник.
 
-    phone = models.CharField(_("Телефон"), max_length=20, unique=True)
+    Вход на витрине — по e-mail с паролем либо через MAX. Телефон логином НЕ
+    является: он остаётся контактом (курьеру звонить, 1С выгружает его в заказе)
+    и идентификатором для MAX, который знает человека именно по номеру.
+
+    Поэтому телефон необязателен: регистрация по почте его не спрашивает, а
+    аккаунт, заведённый через MAX, наоборот приходит с номером, но без почты.
+    ``USERNAME_FIELD`` остаётся телефоном — это техническое поле для админки и
+    ``createsuperuser``; витринный вход делает EmailBackend (auth_backends.py).
+    """
+
+    # unique + null: пустых телефонов может быть сколько угодно (Postgres не
+    # считает NULL равными), а заполненный остаётся уникальным.
+    phone = models.CharField(_("Телефон"), max_length=20, unique=True, null=True, blank=True)
+    # Уникальность среди заполненных — частичным индексом в Meta.constraints:
+    # у аккаунтов из MAX почты нет, и пустые значения конфликтовать не должны.
     email = models.EmailField(_("E-mail"), blank=True)
     full_name = models.CharField(_("ФИО"), max_length=255, blank=True)
     customer_type = models.CharField(
@@ -61,9 +75,18 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         verbose_name = _("Пользователь")
         verbose_name_plural = _("Пользователи")
+        constraints = [
+            # E-mail — логин витрины, поэтому двух одинаковых быть не может.
+            # Условие исключает пустые: аккаунты из MAX заводятся без почты.
+            models.UniqueConstraint(
+                fields=["email"],
+                condition=~models.Q(email=""),
+                name="accounts_user_unique_email",
+            ),
+        ]
 
     def __str__(self) -> str:
-        return self.full_name or self.phone
+        return self.full_name or self.email or self.phone or f"Пользователь #{self.pk}"
 
     @property
     def is_b2b(self) -> bool:

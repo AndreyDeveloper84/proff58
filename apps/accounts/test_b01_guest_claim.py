@@ -102,37 +102,38 @@ def test_claim_does_not_touch_already_claimed():
 
 @pytest.mark.django_db
 def test_register_does_not_claim_guest_orders(client):
-    """Регистрация чужого незанятого номера НЕ захватывает гостевые заказы."""
+    """Регистрация не захватывает чужие гостевые заказы.
+
+    Регистрация идёт по e-mail и телефон вообще не принимает, поэтому подобрать
+    чужой номер на этом шаге больше нельзя в принципе. Номер попадает в аккаунт
+    только через MAX — то есть после подтверждения владения.
+    """
     Order.objects.create(order_number="VICTIM-1", customer_phone="+79001112233")
     resp = client.post(
         "/api/account/register/",
-        {"phone": "+79001112233", "password": "StrongPass2026", "full_name": "Злоумышленник"},
+        {
+            "email": "attacker@proff58.ru",
+            "password": "StrongPass2026",
+            "full_name": "Злоумышленник",
+            "phone": "+79001112233",  # даже если прислать — сериализатор его не знает
+        },
         format="json",
     )
     assert resp.status_code == 201
     assert "claimed_orders" not in resp.json()
     assert Order.objects.get(order_number="VICTIM-1").user_id is None
-    u = User.objects.get(phone="+79001112233")
+    u = User.objects.get(email="attacker@proff58.ru")
+    assert u.phone is None
     assert u.phone_verified is False
 
 
 @pytest.mark.django_db
-def test_register_normalizes_phone(client):
-    resp = client.post(
-        "/api/account/register/",
-        {"phone": "8 (900) 111-22-33", "password": "StrongPass2026"},
-        format="json",
-    )
-    assert resp.status_code == 201
-    assert User.objects.filter(phone="+79001112233").exists()
-
-
-@pytest.mark.django_db
-def test_register_duplicate_normalized_phone_rejected(client):
-    User.objects.create_user(phone="+79001112233", password="p")
+def test_register_requires_email(client):
+    """Без e-mail регистрация невозможна: он и есть логин."""
     resp = client.post(
         "/api/account/register/",
         {"phone": "89001112233", "password": "StrongPass2026"},
         format="json",
     )
     assert resp.status_code == 400
+    assert "email" in resp.json()
