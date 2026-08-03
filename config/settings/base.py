@@ -67,6 +67,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Сразу после аутентификации: маркер входа для фронта (нужен request.user).
+    "apps.accounts.middleware.AuthMarkerCookieMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -133,6 +135,14 @@ SALES_HIT_TOP_N = env.int("SALES_HIT_TOP_N", default=24)
 SALES_HIT_MIN_QUANTITY = env.int("SALES_HIT_MIN_QUANTITY", default=3)
 
 AUTH_USER_MODEL = "accounts.User"
+
+# Витрина пускает по e-mail (EmailBackend), админка — по телефону
+# (USERNAME_FIELD, стандартный ModelBackend). Порядок важен: первым отвечает тот,
+# кто нашёл пользователя.
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.auth_backends.EmailBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

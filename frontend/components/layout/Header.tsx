@@ -23,6 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
+import { accountLinkHref, useHasAuthMarker } from "@/lib/auth-marker";
 import { useCompare } from "@/lib/compare";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
 import { SearchBar } from "./SearchBar";
@@ -52,6 +53,11 @@ export function Header({
   const { count } = useCart();
   const { count: compareCount } = useCompare();
   const [open, setOpen] = useState(false);
+  // Гостя ведём сразу на форму входа: иначе он попадал в кабинет, откуда его
+  // разворачивал серверный гвард, — со скачком адреса и пустой страницей.
+  const authMarker = useHasAuthMarker();
+  const profileHref = accountLinkHref("/account/profile", authMarker);
+  const wishlistHref = accountLinkHref("/account/wishlist", authMarker);
 
   const logo = logoUrl ? (
     <Image
@@ -200,7 +206,7 @@ export function Header({
         {/* Действия — desktop: избранное · сравнение (future) · корзина · кабинет */}
         <div className="ml-auto hidden shrink-0 items-center gap-1 lg:flex">
           <Link
-            href="/account/wishlist"
+            href={wishlistHref}
             className="flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
             aria-label="Избранное"
           >
@@ -240,7 +246,7 @@ export function Header({
             <span className="text-[11px]">Корзина</span>
           </Link>
           <Link
-            href="/account/profile"
+            href={profileHref}
             className="flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
             aria-label="Личный кабинет"
           >
@@ -292,7 +298,7 @@ export function Header({
               {SITE.header.catalogLabel}
             </Link>
             <Link
-              href="/account/profile"
+              href={profileHref}
               className="flex min-h-11 items-center gap-2 border-b border-header-line py-2.5 text-sm text-topbar-ink hover:text-accent"
               onClick={() => setOpen(false)}
             >
@@ -300,7 +306,7 @@ export function Header({
               Личный кабинет
             </Link>
             <Link
-              href="/account/wishlist"
+              href={wishlistHref}
               className="flex min-h-11 items-center gap-2 border-b border-header-line py-2.5 text-sm text-topbar-ink hover:text-accent"
               onClick={() => setOpen(false)}
             >

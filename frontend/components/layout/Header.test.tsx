@@ -21,9 +21,12 @@ describe("Header (#586)", () => {
     // Список сравнения живёт в localStorage: без очистки счётчик протекал бы
     // из предыдущего теста.
     localStorage.clear();
+    // По умолчанию — гость: маркер входа снимаем.
+    document.cookie = "auth=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
   });
 
   it("каталог, корзина и избранное — рабочие ссылки", () => {
+    document.cookie = "auth=1";
     render(<Header />);
     const catalog = screen.getAllByRole("link", { name: new RegExp(SITE.header.catalogLabel) })[0];
     expect(catalog).toHaveAttribute("href", "/catalog");
@@ -123,5 +126,31 @@ describe("Header (#586)", () => {
     // «Контакты» рендерятся из storefront: адрес и e-mail присутствуют.
     expect(screen.getAllByText(/Онежский проезд/)[0]).toBeInTheDocument();
     expect(screen.getByText(SITE.email)).toBeInTheDocument();
+  });
+
+  // Гостю «Кабинет» и «Избранное» ведут прямо на вход. Пока они вели в кабинет,
+  // серверный гвард разворачивал человека уже после смены адреса: в строке
+  // успевал мелькнуть /account/profile, а на месте сайта — пустая страница.
+  it("гостю кабинет и избранное ведут на форму входа с возвратом", () => {
+    render(<Header />);
+
+    expect(screen.getAllByRole("link", { name: /Личный кабинет/ })[0]).toHaveAttribute(
+      "href",
+      "/account/login?next=%2Faccount%2Fprofile",
+    );
+    expect(screen.getAllByRole("link", { name: /Избранное/ })[0]).toHaveAttribute(
+      "href",
+      "/account/login?next=%2Faccount%2Fwishlist",
+    );
+  });
+
+  it("вошедшего ведут прямо в кабинет", () => {
+    document.cookie = "auth=1";
+    render(<Header />);
+
+    expect(screen.getAllByRole("link", { name: /Личный кабинет/ })[0]).toHaveAttribute(
+      "href",
+      "/account/profile",
+    );
   });
 });
