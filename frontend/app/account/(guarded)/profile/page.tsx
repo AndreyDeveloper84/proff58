@@ -141,7 +141,9 @@ export default function ProfilePage() {
         // #574: сбой загрузки не превращаем в «0 заказов» — счётчики врали бы.
         if (orderData === "error") setOrdersFailed(true);
         else setOrders(orderData);
-        if (wishlistData !== "error") setWishlist(wishlistData);
+        // Строковые исходы — сбой связи и «сессии нет»: в обоих случаях
+        // счётчик избранного оставляем как есть, а не обнуляем.
+        if (Array.isArray(wishlistData)) setWishlist(wishlistData);
         setLoading(false);
       })
       .catch(() => {

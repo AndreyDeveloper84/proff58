@@ -217,12 +217,21 @@ export async function getOrder(orderNumber: string): Promise<Order> {
   });
 }
 
-/** #574: "error" вместо [] — пустой список и сбой загрузки различимы на экране. */
-export async function getWishlist(): Promise<WishlistItem[] | "error"> {
+/**
+ * Избранное аккаунта.
+ *
+ * Три исхода, а не два: "error" (#574) отличает сбой загрузки от пустого списка,
+ * а "unauthorized" — от них обоих. Без последнего посетитель с протухшей cookie
+ * выглядел для интерфейса вошедшим: каждый клик уходил на сервер, получал 401 и
+ * откатывался, то есть сердечко не реагировало вообще.
+ */
+export async function getWishlist(): Promise<WishlistItem[] | "error" | "unauthorized"> {
   try {
     return await apiFetch<WishlistItem[]>("/api/account/wishlist/", { method: "GET" });
   } catch (e) {
-    if (e instanceof ApiError) return "error";
+    if (e instanceof ApiError) {
+      return e.status === 401 || e.status === 403 ? "unauthorized" : "error";
+    }
     throw e;
   }
 }

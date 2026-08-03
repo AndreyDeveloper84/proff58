@@ -147,13 +147,29 @@ describe("WishlistProvider", () => {
     expect(await screen.findByText("готово:нет")).toBeInTheDocument();
   });
 
-  it("истёкшая сессия не теряет клик — товар уходит в браузерный список", async () => {
+  // Симптом с production: cookie в браузере есть, а сессии за ней нет. Интерфейс
+  // считал такого человека вошедшим, каждый клик уходил на сервер, получал 401 и
+  // откатывался — сердечко не реагировало вообще.
+  it("протухшая сессия: клик виден сразу и сохраняется в браузере", async () => {
     mockedAdd.mockRejectedValue(new ApiError("Сессия истекла.", 403));
     renderProbe("unknown");
     await screen.findByText("готово:нет");
 
     fireEvent.click(screen.getByRole("button"));
 
+    expect(await screen.findByText("готово:в избранном")).toBeInTheDocument();
+    await waitFor(() => expect(stored()).toEqual([7]));
+  });
+
+  it("отказ на загрузке списка тоже переводит в гостевой режим", async () => {
+    mockedGet.mockResolvedValue("unauthorized");
+    renderProbe("unknown");
+    await waitFor(() => expect(mockedGet).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button"));
+
+    expect(await screen.findByText("готово:в избранном")).toBeInTheDocument();
+    expect(mockedAdd).not.toHaveBeenCalled();  // на сервер больше не ходим
     await waitFor(() => expect(stored()).toEqual([7]));
   });
 
