@@ -1391,6 +1391,133 @@ def test_sp_no_material_no_coating(rules, name):
     assert "coating" not in f
 
 
+# --- CAT-14C часть B: ждёт CODE-02 (word_boundary / kind: text) ---------------
+# Правила заведены в attribute_rules.json; движок их поддержит в CODE-02.
+# После rebase на CODE-02: снять skip-маркер CODE02 и прогнать валидацию
+# (статус зафиксирован в scratchpad/cat14/cat-14c-rules-report.md).
+
+CODE02 = pytest.mark.skip(
+    reason="CAT-14C часть B: валидация после rebase на CODE-02 (word_boundary / kind: text)"
+)
+
+
+@CODE02
+@pytest.mark.parametrize(
+    "name,size",
+    [
+        ("Перчатки садовые GRINDA бело-зеленые S", "s"),
+        ("Перчатки садовые GRINDA M", "m"),
+        ("Перчатки латексные экстратонкие, S, STAYER", "s"),
+        ("Перчатки ЗУБР FLEX красные комбинированные работа с сенсор экранами р.L", "l"),
+        ("Перчатки ЗУБР МЕХАНИК+ маслобензостойкие тонкие полный облив р-р XL", "xl"),
+        ("Перчатки KRAFTOOL NEOPREN неопреновые индустриальные противокислотные р-р XXL", "xxl"),
+        ("Перчатки ЗУБР ТОЧНАЯ РАБОТА с полиуретан покрытие размер XL", "xl"),
+        ("Перчатки ЗУБР ЗАЩИТА с двойным латексным обливом р-р S-M", "s-m"),
+        ("Перчатки садовые р-р L-XL", "l-xl"),
+    ],
+)
+def test_sp_size_letters(rules, name, size):
+    # word_boundary (обе границы): «S» в «, S,» — размер; диапазоны S-M/L-XL —
+    # самостоятельные значения и стоят раньше одиночных букв.
+    assert _sp(rules, name)["size"].option_slug == size
+
+
+@CODE02
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Перчатки STELS",  # «s» внутри бренда — не размер
+        "Перчатки ANSELL ЭКСТРА 87-950 мт. латекс",  # «l» внутри ANSELL
+        "Перчатки х/б с ПВХ 10/5-нит (протектор) БЕЛЫЕ (10/400)",
+        "Перчатки КЩС-2",
+    ],
+)
+def test_sp_size_letters_no_false_positive(rules, name):
+    assert "size" not in _sp(rules, name)
+
+
+@CODE02
+def test_sp_size_from_article_suffix_in_name(rules):
+    # «11299-L» внутри названия: дефис — граница слова, «l» матчится. У ЗУБР/
+    # KRAFTOOL суффикс артикула дублирует размер (11279-XL ↔ р-р XL), поэтому
+    # значение корректно, но артикул источником размера не считается (таблица §3).
+    name = "Перчатки KRAFTOOL ULTIMATE комбинированные, работа с сенсор экранами (арт. 11299-L)"
+    assert _sp(rules, name)["size"].option_slug == "l"
+
+
+@CODE02
+@pytest.mark.parametrize(
+    "name,num",
+    [
+        ("Перчатки ANSELL ALPHATEC 87-900 зел.-жел, р-р 11", "11"),
+        ("Перчатки х/б р-р 6", "6"),
+        ("Перчатки х/б р-р 13", "13"),
+        ("Перчатки размер 10", "10"),
+    ],
+)
+def test_sp_size_num_anchor(rules, name, num):
+    # Числовой размер 6–13 — только при якоре «р-р»/«размер»/«р.».
+    assert _sp(rules, name)["size_num"].number == Decimal(num)
+
+
+@CODE02
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Перчатки ANSELL ЭКСТРА 87-950 мт. латекс",  # модель — не размер
+        "Перчатки х/б с ПВХ 10/5-нит (протектор) БЕЛЫЕ (10/400)",  # нити/упаковка
+        "Перчатки х/б черные с ПВХ (точка) 10 кл.5-ти нитка (10/300)",  # класс вязки
+        "Перчатки КЩС-2",  # модель
+        "Перчатки х/б р-р 5",  # вне диапазона 6–13
+        "Перчатки х/б р-р 14",
+    ],
+)
+def test_sp_size_num_rejected(rules, name):
+    assert "size_num" not in _sp(rules, name)
+
+
+@CODE02
+@pytest.mark.parametrize(
+    "name,code",
+    [
+        ("Щетки угольные АНАЛОГ 6.5х9х17мм 13-102 HITACHI 999088", "13-102"),
+        ("Щетки угольные АНАЛОГ 5х8х11мм 18-102 MAKITA CB51", "18-102"),
+        ("Угольные щетки CB-155 MAKITA", "cb-155"),
+        ("Щетки угольные АНАЛОГ 5х10х14мм 18-120 MAKITA CB325", "18-120"),
+    ],
+)
+def test_zu_analog_code(rules, name, code):
+    # kind: text — значение из нормализованного текста (lower), поле v.text.
+    assert _zu(rules, name)["analog_code"].text == code
+
+
+@CODE02
+def test_zu_analog_code_cb_without_hyphen(rules):
+    # «CB325» без дефиса — тоже код (паттерн 2), если нет кода линейки «АНАЛОГ».
+    assert _zu(rules, "Угольные щетки CB325 MAKITA")["analog_code"].text == "cb325"
+
+
+@CODE02
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Угольные щетки BOSCH 1607000V37",
+        "Угольные щетки",
+        "Угольные щетки Hitachi (арт. 999016*)",
+    ],
+)
+def test_zu_analog_code_absent(rules, name):
+    assert "analog_code" not in _zu(rules, name)
+
+
+@CODE02
+def test_zu_analog_code_separate_from_dims(rules):
+    # Код аналога хранится отдельно от габаритов dim_a/b/c (решение 3).
+    f = _zu(rules, "Щетки угольные АНАЛОГ 6.5х9х17мм 13-102 HITACHI 999088")
+    assert f["dim_a"].number == Decimal("6.5")
+    assert f["analog_code"].text == "13-102"
+
+
 # --- Измерительный: рулетки (длина/ширина ленты) и уровни (длина) -----------------
 
 
