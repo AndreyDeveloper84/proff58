@@ -1398,17 +1398,11 @@ def test_sp_no_material_no_coating(rules, name):
     assert "coating" not in f
 
 
-# --- CAT-14C часть B: ждёт CODE-02 (word_boundary / kind: text) ---------------
-# Правила заведены в attribute_rules.json; движок их поддержит в CODE-02.
-# После rebase на CODE-02: снять skip-маркер CODE02 и прогнать валидацию
-# (статус зафиксирован в scratchpad/cat14/cat-14c-rules-report.md).
-
-CODE02 = pytest.mark.skip(
-    reason="CAT-14C часть B: валидация после rebase на CODE-02 (word_boundary / kind: text)"
-)
+# --- CAT-14C часть B: валидация после сведения с CODE-02 (CAT-14E) ------------
+# word_boundary / kind: text поддержаны движком CODE-02; skip-маркер CODE02
+# снят в CAT-14E, результаты — scratchpad/cat14/cat-14e-merge-validation-report.md.
 
 
-@CODE02
 @pytest.mark.parametrize(
     "name,size",
     [
@@ -1429,7 +1423,6 @@ def test_sp_size_letters(rules, name, size):
     assert _sp(rules, name)["size"].option_slug == size
 
 
-@CODE02
 @pytest.mark.parametrize(
     "name",
     [
@@ -1443,7 +1436,6 @@ def test_sp_size_letters_no_false_positive(rules, name):
     assert "size" not in _sp(rules, name)
 
 
-@CODE02
 def test_sp_size_from_article_suffix_in_name(rules):
     # «11299-L» внутри названия: дефис — граница слова, «l» матчится. У ЗУБР/
     # KRAFTOOL суффикс артикула дублирует размер (11279-XL ↔ р-р XL), поэтому
@@ -1452,7 +1444,6 @@ def test_sp_size_from_article_suffix_in_name(rules):
     assert _sp(rules, name)["size"].option_slug == "l"
 
 
-@CODE02
 @pytest.mark.parametrize(
     "name,num",
     [
@@ -1467,7 +1458,6 @@ def test_sp_size_num_anchor(rules, name, num):
     assert _sp(rules, name)["size_num"].number == Decimal(num)
 
 
-@CODE02
 @pytest.mark.parametrize(
     "name",
     [
@@ -1483,41 +1473,43 @@ def test_sp_size_num_rejected(rules, name):
     assert "size_num" not in _sp(rules, name)
 
 
-@CODE02
 @pytest.mark.parametrize(
     "name,code",
     [
         ("Щетки угольные АНАЛОГ 6.5х9х17мм 13-102 HITACHI 999088", "13-102"),
         ("Щетки угольные АНАЛОГ 5х8х11мм 18-102 MAKITA CB51", "18-102"),
-        ("Угольные щетки CB-155 MAKITA", "cb-155"),
+        ("Угольные щетки CB-155 MAKITA", "CB-155"),
         ("Щетки угольные АНАЛОГ 5х10х14мм 18-120 MAKITA CB325", "18-120"),
     ],
 )
 def test_zu_analog_code(rules, name, code):
-    # kind: text — значение из нормализованного текста (lower), поле v.text.
+    # kind: text — значение из исходного названия по span матча (регистр
+    # сохраняется), поле v.text.
     assert _zu(rules, name)["analog_code"].text == code
 
 
-@CODE02
 def test_zu_analog_code_cb_without_hyphen(rules):
     # «CB325» без дефиса — тоже код (паттерн 2), если нет кода линейки «АНАЛОГ».
-    assert _zu(rules, "Угольные щетки CB325 MAKITA")["analog_code"].text == "cb325"
+    # Регистр сохраняется (значение из исходного названия).
+    assert _zu(rules, "Угольные щетки CB325 MAKITA")["analog_code"].text == "CB325"
 
 
-@CODE02
 @pytest.mark.parametrize(
     "name",
     [
         "Угольные щетки BOSCH 1607000V37",
         "Угольные щетки",
         "Угольные щетки Hitachi (арт. 999016*)",
+        # CAT-14E (замер b31): номер модели, склеенный с брендом, — не код аналога.
+        "Угольная щетка WS13-125 4931428729",
+        "Угольная щетка WS13-125 4931428732",
+        "Щетка графитовая BOSCH GWS24-230BV к-т",
     ],
 )
 def test_zu_analog_code_absent(rules, name):
     assert "analog_code" not in _zu(rules, name)
 
 
-@CODE02
 def test_zu_analog_code_separate_from_dims(rules):
     # Код аналога хранится отдельно от габаритов dim_a/b/c (решение 3).
     f = _zu(rules, "Щетки угольные АНАЛОГ 6.5х9х17мм 13-102 HITACHI 999088")
