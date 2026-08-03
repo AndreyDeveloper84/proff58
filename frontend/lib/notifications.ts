@@ -58,10 +58,6 @@ export function getNotificationHistory(offset = 0, limit = 20): Promise<Paginate
   );
 }
 
-export function getUnreadNotificationCount(): Promise<{ unread_count: number }> {
-  return apiFetch<{ unread_count: number }>("/api/account/notifications/unread-count");
-}
-
 export function markNotificationRead(id: number): Promise<NotificationItem> {
   return apiFetch<NotificationItem>(`/api/account/notifications/${id}/read`, { method: "POST" });
 }

@@ -177,7 +177,3 @@ def normalize_item(raw: Mapping[str, Any]) -> Item:
         data[field] = to_decimal(pick(field))
     data["is_active"] = _to_bool(pick("is_active"))
     return Item(**data)
-
-
-def normalize_items(raw_items: list[Mapping[str, Any]]) -> list[Item]:
-    return [normalize_item(raw) for raw in raw_items]

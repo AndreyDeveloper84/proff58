@@ -5,10 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@/components/cart/CartProvider", () => ({
   useCart: () => ({ count: 0, add: vi.fn(), items: [] }),
 }));
-// Reveal — анимация появления на IntersectionObserver, которого нет в jsdom.
-vi.mock("@/components/motion/Reveal", () => ({
-  Reveal: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
 
 import type { Product } from "@/lib/types";
 import { Bestsellers } from "./Bestsellers";
