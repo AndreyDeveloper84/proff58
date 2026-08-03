@@ -1,29 +1,23 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const pushMock = vi.fn();
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock, replace: vi.fn() }),
-  usePathname: () => "/catalog/perforatory",
-}));
-
 vi.mock("@/lib/auth", () => ({
   getWishlist: vi.fn(),
   addWishlistItem: vi.fn(),
+  addWishlistItems: vi.fn(),
   removeWishlistItem: vi.fn(),
-  loginHref: (next?: string) =>
-    next ? `/account/login?next=${encodeURIComponent(next)}` : "/account/login",
 }));
 
 import { AuthStateProvider } from "@/components/auth/AuthStateProvider";
 import { ApiError } from "@/lib/api";
-import { addWishlistItem, getWishlist, removeWishlistItem } from "@/lib/auth";
+import { addWishlistItem, addWishlistItems, getWishlist, removeWishlistItem } from "@/lib/auth";
 import type { AuthState } from "@/lib/auth-state";
+import { WISHLIST_STORAGE_KEY } from "@/lib/wishlist-storage";
 import { useWishlist, WishlistProvider } from "./WishlistProvider";
 
 const mockedGet = getWishlist as unknown as ReturnType<typeof vi.fn>;
 const mockedAdd = addWishlistItem as unknown as ReturnType<typeof vi.fn>;
+const mockedAddMany = addWishlistItems as unknown as ReturnType<typeof vi.fn>;
 const mockedRemove = removeWishlistItem as unknown as ReturnType<typeof vi.fn>;
 
 function Probe({ productId }: { productId: number }) {
@@ -45,29 +39,81 @@ function renderProbe(state: AuthState, productId = 7) {
   );
 }
 
+const stored = () => JSON.parse(localStorage.getItem(WISHLIST_STORAGE_KEY) ?? "[]");
+
 describe("WishlistProvider", () => {
   beforeEach(() => {
-    pushMock.mockReset();
+    localStorage.clear();
     mockedGet.mockReset();
     mockedAdd.mockReset();
+    mockedAddMany.mockReset();
     mockedRemove.mockReset();
     mockedGet.mockResolvedValue([]);
+    mockedAddMany.mockResolvedValue(undefined);
   });
 
-  it("гостя уводит на вход с возвратом на текущую страницу и не трогает API", async () => {
+  // --- Гость: избранное работает без аккаунта, как список сравнения ---
+
+  it("гостю сохраняет товар в браузере и не ходит на сервер", async () => {
     renderProbe("anonymous");
     await screen.findByText("готово:нет");
 
     fireEvent.click(screen.getByRole("button"));
 
-    expect(pushMock).toHaveBeenCalledWith(
-      "/account/login?next=%2Fcatalog%2Fperforatory",
-    );
+    expect(await screen.findByText("готово:в избранном")).toBeInTheDocument();
+    expect(stored()).toEqual([7]);
     expect(mockedAdd).not.toHaveBeenCalled();
     expect(mockedGet).not.toHaveBeenCalled();
   });
 
-  it("вошедшему сохраняет товар и показывает это сразу", async () => {
+  it("повторный клик гостя снимает товар", async () => {
+    localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify([7]));
+    renderProbe("anonymous");
+    await screen.findByText("готово:в избранном");
+
+    fireEvent.click(screen.getByRole("button"));
+
+    expect(await screen.findByText("готово:нет")).toBeInTheDocument();
+    expect(stored()).toEqual([]);
+  });
+
+  // --- Вход: список гостя переезжает в аккаунт ---
+
+  it("при входе переносит накопленное в аккаунт и чистит браузер", async () => {
+    localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify([7, 9]));
+    mockedGet.mockResolvedValue([
+      { product_id: 7, product_name: "Дрель", product_slug: "drel" },
+      { product_id: 9, product_name: "Пила", product_slug: "pila" },
+    ]);
+
+    renderProbe("authenticated");
+
+    await waitFor(() => expect(mockedAddMany).toHaveBeenCalledWith([7, 9]));
+    expect(await screen.findByText("готово:в избранном")).toBeInTheDocument();
+    await waitFor(() => expect(stored()).toEqual([]));
+  });
+
+  it("неудачный перенос не стирает список из браузера", async () => {
+    localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify([7]));
+    mockedAddMany.mockRejectedValue(new Error("нет связи"));
+
+    renderProbe("authenticated");
+
+    await waitFor(() => expect(mockedAddMany).toHaveBeenCalled());
+    await waitFor(() => expect(mockedGet).toHaveBeenCalled());
+    expect(stored()).toEqual([7]);
+  });
+
+  it("без накопленного переносить нечего", async () => {
+    renderProbe("authenticated");
+
+    await waitFor(() => expect(mockedGet).toHaveBeenCalled());
+    expect(mockedAddMany).not.toHaveBeenCalled();
+  });
+
+  // --- Вошедший: сервер ---
+
+  it("вошедшему сохраняет товар на сервере и показывает это сразу", async () => {
     mockedAdd.mockResolvedValue(undefined);
     renderProbe("authenticated");
     await screen.findByText("готово:нет");
@@ -79,9 +125,7 @@ describe("WishlistProvider", () => {
   });
 
   it("уже сохранённый товар снимается", async () => {
-    mockedGet.mockResolvedValue([
-      { product_id: 7, product_name: "Дрель", product_slug: "drel" },
-    ]);
+    mockedGet.mockResolvedValue([{ product_id: 7, product_name: "Дрель", product_slug: "drel" }]);
     mockedRemove.mockResolvedValue(undefined);
     renderProbe("authenticated");
     await screen.findByText("готово:в избранном");
@@ -103,36 +147,14 @@ describe("WishlistProvider", () => {
     expect(await screen.findByText("готово:нет")).toBeInTheDocument();
   });
 
-  it("истёкшая сессия уводит на вход, а не молча теряет клик", async () => {
+  it("истёкшая сессия не теряет клик — товар уходит в браузерный список", async () => {
     mockedAdd.mockRejectedValue(new ApiError("Сессия истекла.", 403));
     renderProbe("unknown");
     await screen.findByText("готово:нет");
 
     fireEvent.click(screen.getByRole("button"));
 
-    await waitFor(() =>
-      expect(pushMock).toHaveBeenCalledWith("/account/login?next=%2Fcatalog%2Fperforatory"),
-    );
-  });
-
-  it("клик до прихода списка не затирается ответом сервера", async () => {
-    let deliverList: (items: unknown) => void = () => {};
-    mockedGet.mockReturnValue(
-      new Promise((resolve) => {
-        deliverList = resolve;
-      }),
-    );
-    mockedAdd.mockResolvedValue(undefined);
-    renderProbe("authenticated");
-    await screen.findByText("грузим:нет");
-
-    fireEvent.click(screen.getByRole("button"));
-    await waitFor(() => expect(mockedAdd).toHaveBeenCalledWith(7));
-
-    // Список сервер собрал раньше клика — этого товара в нём нет.
-    deliverList([{ product_id: 9, product_name: "Другой", product_slug: "drugoy" }]);
-
-    expect(await screen.findByText("готово:в избранном")).toBeInTheDocument();
+    await waitFor(() => expect(stored()).toEqual([7]));
   });
 
   it("сбой загрузки списка не выдаётся за пустое избранное", async () => {

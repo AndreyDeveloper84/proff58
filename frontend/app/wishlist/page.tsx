@@ -2,29 +2,30 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Heart } from "lucide-react";
-import { AccountShell } from "@/components/account/AccountShell";
+import { Heart, Info } from "lucide-react";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { ProductCard } from "@/components/product/ProductCard";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { useWishlist } from "@/components/wishlist/WishlistProvider";
+import { loginHref } from "@/lib/auth-state";
 import type { Product } from "@/lib/types";
 import { fetchWishlistProducts } from "@/lib/wishlist-products";
 
-// Избранное покупателя. Доступ проверяет серверный гвард кабинета
-// (app/account/(guarded)/layout.tsx) ещё до отдачи разметки — здесь остаётся
-// только показать сохранённое.
+// Избранное покупателя — обычная страница витрины, рядом со сравнением, а не
+// раздел кабинета: сохранять товары можно и без аккаунта, а страница за гвардом
+// кабинета гостю недоступна в принципе.
 //
 // Карточки — обычные ProductCard: цена, наличие, «в корзину» и то же сердечко,
 // что на витрине. Оно и снимает товар из избранного, поэтому отдельной кнопки
 // удаления нет: две кнопки с одним смыслом на одной карточке путают.
 export default function WishlistPage() {
-  const { ids, loaded } = useWishlist();
+  const { ids, loaded, isGuest } = useWishlist();
   const [products, setProducts] = useState<Product[] | null>(null);
   const [failed, setFailed] = useState(false);
 
   // Список идентификаторов ведёт провайдер (он же обновляет его при клике по
-  // сердечку), а карточки догружаем один раз — по мере появления новых id.
-  // Строкой, а не Set: иначе effect перезапускался бы на каждый рендер.
+  // сердечку), а карточки догружаем по мере появления новых id. Строкой, а не
+  // Set: иначе effect перезапускался бы на каждый рендер.
   const idsKey = [...ids].sort((a, b) => a - b).join(",");
 
   useEffect(() => {
@@ -52,8 +53,39 @@ export default function WishlistPage() {
       : (products?.filter((product) => ids.has(product.id)) ?? null);
 
   return (
-    <AccountShell title="Избранное" mobileBackHref="/account/profile">
-      <div className="space-y-4">
+    <main className="mx-auto w-full max-w-[1680px] px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-7">
+      <nav
+        aria-label="Хлебные крошки"
+        className="mb-3 hidden items-center gap-2 text-xs text-ink-3 sm:flex"
+      >
+        <Link href="/" className="hover:text-accent">
+          Главная
+        </Link>
+        <span aria-hidden>›</span>
+        <span>Избранное</span>
+      </nav>
+
+      <h1 className="font-display text-2xl font-semibold text-ink lg:text-[30px]">Избранное</h1>
+
+      <div className="mt-4 space-y-4">
+        {/* Гостю честно говорим, где лежит его список: иначе «избранное
+            пропало» на другом устройстве выглядит как потеря данных. */}
+        {isGuest && ids.size > 0 && (
+          <p className="flex items-start gap-2 rounded-lg border border-line bg-raised/60 px-4 py-3 text-sm text-ink-2">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-ink-3" aria-hidden />
+            <span>
+              Избранное хранится в этом браузере.{" "}
+              <Link
+                href={loginHref("/wishlist")}
+                className="font-medium text-accent hover:underline"
+              >
+                Войдите
+              </Link>{" "}
+              — и оно будет доступно на любом устройстве.
+            </span>
+          </p>
+        )}
+
         {failed && (
           <ErrorState
             title="Не удалось загрузить избранное"
@@ -61,9 +93,7 @@ export default function WishlistPage() {
           />
         )}
 
-        {!failed && (!loaded || visible === null) && (
-          <LoadingState label="Загружаем избранное…" />
-        )}
+        {!failed && (!loaded || visible === null) && <LoadingState label="Загружаем избранное…" />}
 
         {!failed && visible !== null && visible.length === 0 && (
           <EmptyState
@@ -82,13 +112,15 @@ export default function WishlistPage() {
         )}
 
         {visible !== null && visible.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {visible.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}
       </div>
-    </AccountShell>
+
+      <MobileBottomNav active="account" />
+    </main>
   );
 }

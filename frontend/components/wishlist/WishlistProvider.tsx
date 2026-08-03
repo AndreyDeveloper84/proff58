@@ -7,12 +7,18 @@
 // (`/api/account/wishlist/`) при этом существовал и работал — не хватало только
 // провода между ним и карточкой.
 //
-// Состояние держим здесь, а не в каждой карточке: одна и та же позиция
-// встречается в выдаче, в каруселях и в самом избранном, и все сердечки обязаны
-// показывать одно и то же. Список идентификаторов забирается один раз за
-// загрузку страницы, дальше — только точечные POST/DELETE.
+// Два источника, по состоянию входа:
+//   гость   — localStorage (lib/wishlist-storage), как список сравнения;
+//   вошёл   — сервер, поэтому избранное доступно с любого устройства.
+//
+// При входе гостевой список ПЕРЕЕЗЖАЕТ в аккаунт и чистится. Без этого шага
+// гостевое избранное было бы ловушкой: человек копил его месяцами, завёл
+// аккаунт — и всё пропало. Перенос живёт здесь, а не в форме входа: так он
+// покрывает сразу все способы (пароль, MAX, регистрация) и ни один не забудется.
+//
+// Состояние держим в одном месте: одна и та же позиция встречается в выдаче, в
+// каруселях и в самом избранном, и все сердечки обязаны показывать одно и то же.
 
-import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -21,11 +27,24 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 
 import { useAuthState } from "@/components/auth/AuthStateProvider";
 import { ApiError } from "@/lib/api";
-import { addWishlistItem, getWishlist, loginHref, removeWishlistItem } from "@/lib/auth";
+import {
+  addWishlistItem,
+  addWishlistItems,
+  getWishlist,
+  removeWishlistItem,
+} from "@/lib/auth";
+import {
+  clearGuestWishlist,
+  readGuestWishlist,
+  subscribeGuestWishlist,
+  toggleGuestWishlist,
+  WISHLIST_GUEST_LIMIT,
+} from "@/lib/wishlist-storage";
 
 type WishlistContextValue = {
   /** Идентификаторы товаров в избранном. */
@@ -33,13 +52,18 @@ type WishlistContextValue = {
   /** Список уже загружен (или загружать нечего — гость). */
   loaded: boolean;
   has: (productId: number) => boolean;
-  /** Добавить/убрать. Гостя уводит на форму входа с возвратом на эту же страницу. */
+  /** Добавить/убрать. Вход не требуется — гостю список сохраняется в браузере. */
   toggle: (productId: number) => void;
   /** По этому товару сейчас идёт запрос — повторный клик игнорируем. */
   isPending: (productId: number) => boolean;
+  /** Гостевой список: живёт только в этом браузере (для подсказки на странице). */
+  isGuest: boolean;
+  /** Упёрлись в лимит гостевого списка — последний товар не сохранён. */
+  limitReached: boolean;
 };
 
 const EMPTY: ReadonlySet<number> = new Set();
+const EMPTY_ARRAY: number[] = [];
 
 // Вне провайдера (юнит-тест карточки, изолированный рендер) сердечко просто
 // ничего не сохраняет — падать из-за отсутствия контекста ему незачем.
@@ -49,53 +73,71 @@ const WishlistContext = createContext<WishlistContextValue>({
   has: () => false,
   toggle: () => {},
   isPending: () => false,
+  isGuest: false,
+  limitReached: false,
 });
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const authState = useAuthState();
-  const router = useRouter();
-  const pathname = usePathname();
-  // null — список ещё не пришёл. Гостю его и не ждать, поэтому «загружено» и
-  // «что в избранном» выводятся, а не хранятся отдельным состоянием: иначе
-  // пришлось бы синхронизировать их из effect'а на каждый вход-выход.
+  const isGuest = authState === "anonymous";
+
+  // Гостевая часть — внешнее хранилище, читаем через useSyncExternalStore:
+  // на сервере localStorage нет, и серверный снимок обязан быть пустым.
+  const guestIds = useSyncExternalStore(
+    subscribeGuestWishlist,
+    readGuestWishlist,
+    () => EMPTY_ARRAY,
+  );
+
+  // null — серверный список ещё не пришёл. Гостю его и не ждать, поэтому
+  // «загружено» выводится, а не хранится отдельным состоянием.
   const [storedIds, setStoredIds] = useState<ReadonlySet<number> | null>(null);
   const [pendingIds, setPendingIds] = useState<ReadonlySet<number>>(EMPTY);
-  // Клики, сделанные до прихода списка: ответ сервера сформирован раньше их и
-  // не должен их затирать. id → «лежит ли товар в избранном после клика».
+  const [limitReached, setLimitReached] = useState(false);
+  // Клики, сделанные до прихода списка: ответ сервера собран раньше их и не
+  // должен их затирать. id → «лежит ли товар в избранном после клика».
   const localOverrides = useRef(new Map<number, boolean>());
 
-  const isGuest = authState === "anonymous";
-  const ids = isGuest ? EMPTY : (storedIds ?? EMPTY);
+  const ids = useMemo<ReadonlySet<number>>(
+    () => (isGuest ? new Set(guestIds) : (storedIds ?? EMPTY)),
+    [isGuest, guestIds, storedIds],
+  );
   const loaded = isGuest || storedIds !== null;
 
   useEffect(() => {
-    // Гостю избранного не полагается — запрос дал бы только 401.
     if (isGuest) return;
     let active = true;
-    getWishlist().then((items) => {
-      // "error" (в том числе истёкшая сессия) — не повод врать пустым списком:
-      // оставляем незагруженным, сердечки будут неактивны до перезагрузки.
-      if (!active || items === "error") return;
-      const merged = new Set(items.map((item) => item.product_id));
-      for (const [productId, inList] of localOverrides.current) {
-        if (inList) merged.add(productId);
-        else merged.delete(productId);
-      }
-      setStoredIds(merged);
-    });
+    // Вошёл — сначала переносим то, что накопилось в браузере, потом читаем
+    // серверный список: иначе перенесённое не попало бы в выдачу до перезагрузки.
+    const local = readGuestWishlist();
+    const merge = local.length > 0 ? addWishlistItems(local).then(clearGuestWishlist) : null;
+
+    Promise.resolve(merge)
+      .catch(() => {
+        // Перенос не удался — гостевой список НЕ чистим: попробуем на следующей
+        // загрузке. Потерять сохранённое хуже, чем перенести дважды.
+      })
+      .then(() => getWishlist())
+      .then((items) => {
+        // "error" (в том числе истёкшая сессия) — не повод врать пустым списком:
+        // оставляем незагруженным, сердечки будут неактивны до перезагрузки.
+        if (!active || items === "error") return;
+        const merged = new Set(items.map((item) => item.product_id));
+        for (const [productId, inList] of localOverrides.current) {
+          if (inList) merged.add(productId);
+          else merged.delete(productId);
+        }
+        setStoredIds(merged);
+      });
     return () => {
       active = false;
     };
   }, [isGuest]);
 
-  const toLogin = useCallback(() => {
-    router.push(loginHref(pathname));
-  }, [router, pathname]);
-
   const toggle = useCallback(
     (productId: number) => {
       if (isGuest) {
-        toLogin();
+        setLimitReached(!toggleGuestWishlist(productId));
         return;
       }
       // Блокируем только повторный клик по этому же товару: сердечки соседних
@@ -123,9 +165,10 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       request
         .catch((error: unknown) => {
           applyLocally(!willAdd);
-          // Сессия истекла, пока человек ходил по каталогу, — это не сбой, а вход.
+          // Сессия истекла, пока человек ходил по каталогу: дальше он гость, и
+          // список у него теперь браузерный — сохраняем клик туда, а не теряем.
           if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-            toLogin();
+            toggleGuestWishlist(productId);
           }
         })
         .finally(() =>
@@ -136,7 +179,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
           }),
         );
     },
-    [ids, isGuest, pendingIds, toLogin],
+    [ids, isGuest, pendingIds],
   );
 
   const value = useMemo<WishlistContextValue>(
@@ -146,8 +189,10 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       has: (productId: number) => ids.has(productId),
       toggle,
       isPending: (productId: number) => pendingIds.has(productId),
+      isGuest,
+      limitReached: limitReached && ids.size >= WISHLIST_GUEST_LIMIT,
     }),
-    [ids, loaded, toggle, pendingIds],
+    [ids, loaded, toggle, pendingIds, isGuest, limitReached],
   );
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;

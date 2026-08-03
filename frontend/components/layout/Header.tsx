@@ -59,7 +59,6 @@ export function Header({
   // «может быть вошёл» ссылка идёт по назначению — см. lib/auth-state.
   const authState = useAuthState();
   const profileHref = accountLinkHref("/account/profile", authState);
-  const wishlistHref = accountLinkHref("/account/wishlist", authState);
 
   const logo = logoUrl ? (
     <Image
@@ -208,7 +207,7 @@ export function Header({
         {/* Действия — desktop: избранное · сравнение (future) · корзина · кабинет */}
         <div className="ml-auto hidden shrink-0 items-center gap-1 lg:flex">
           <Link
-            href={wishlistHref}
+            href="/wishlist"
             className="flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
             aria-label="Избранное"
           >
@@ -308,7 +307,7 @@ export function Header({
               Личный кабинет
             </Link>
             <Link
-              href={wishlistHref}
+              href="/wishlist"
               className="flex min-h-11 items-center gap-2 border-b border-header-line py-2.5 text-sm text-topbar-ink hover:text-accent"
               onClick={() => setOpen(false)}
             >

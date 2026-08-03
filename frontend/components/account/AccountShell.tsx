@@ -36,7 +36,8 @@ const PRIMARY_NAV: NavItem[] = [
   // #560: счета юрлица (24ч, эпик #557). Пункт виден всем — B2C увидит пустое
   // состояние с пояснением (тип покупателя в Shell не прокидывается).
   { label: "Счета", href: "/account/invoices", icon: FileText, match: "/account/invoices" },
-  { label: "Избранное", href: "/account/wishlist", icon: Heart, match: "/account/wishlist" },
+  // Избранное живёт на витрине (/wishlist) — оно доступно и без аккаунта.
+  { label: "Избранное", href: "/wishlist", icon: Heart, match: "/wishlist" },
   // #573: отзывы; страница сама показывает off/empty-состояния (прецедент — «Счета»).
   { label: "Отзывы", href: "/account/reviews", icon: Star, match: "/account/reviews" },
 ];
