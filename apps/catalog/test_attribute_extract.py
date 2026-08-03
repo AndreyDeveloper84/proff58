@@ -1527,3 +1527,167 @@ def test_cat10_rescued_rules_extract_numbers(rules, tt, name, expected):
     value = found.get(attr)
     assert value is not None, f"{attr} not extracted from {name!r}"
     assert value.number == expected
+
+
+# --- word_boundary: opt-in граница слова для select (окно CODE-02) ----------
+#
+# Буквенные размеры (перчатки siz-perchatki): голая подстрока находит «s» внутри
+# STELS, «l» внутри ANSELL. Флаг word_boundary: true на правиле включает матч
+# целым словом — граница проверяется с ОБЕИХ сторон вхождения (механика
+# tool_type._keyword_starts_at_word_boundary / _WORD_CHAR + проверка конца,
+# иначе XL матчил бы XLR). По умолчанию флаг выключен и поведение select
+# не меняется ни на йоту.
+
+
+def _size_rules_wb(**rule_extra) -> AttributeRules:
+    """Правило размера перчаток инлайн (демонстрационное, НЕ из attribute_rules.json)."""
+    doc = {
+        "source_priority": {"keyword": 30},
+        "tool_types": [
+            {
+                "tool_type": "siz-perchatki",
+                "attributes": [
+                    {
+                        "slug": "size",
+                        "name": "Размер",
+                        "kind": "select",
+                        "source": "keyword",
+                        "options": [
+                            {"value": "XXL", "slug": "xxl", "keywords": ["XXL"]},
+                            {"value": "XL", "slug": "xl", "keywords": ["XL"]},
+                            {"value": "L", "slug": "l", "keywords": ["L"]},
+                            {"value": "M", "slug": "m", "keywords": ["M"]},
+                            {"value": "S", "slug": "s", "keywords": ["S"]},
+                        ],
+                        **rule_extra,
+                    }
+                ],
+            }
+        ],
+    }
+    return AttributeRules.from_dict(doc)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        # «s» внутри бренда STELS
+        "Перчатки нитриловые STELS, 100 шт.",
+        # «l» внутри бренда ANSELL
+        "Перчатки ANSELL HyFlex х/б",
+        # «m» внутри бренда MAKITA
+        "Перчатки MAKITA универсальные",
+        # ещё одна брендовая строка: «l» на конце KRAFTOOL
+        "Перчатки х/б KRAFTOOL с ПВХ точкой",
+        # модельная строка: «l» внутри кода модели L2000
+        "Перчатки нитриловые L2000 усиленные",
+        # конец вхождения тоже граница: XL не должно матчить XLR
+        "Перчатки XLR-200 усиленные",
+    ],
+)
+def test_word_boundary_ignores_brand_and_model_strings(name):
+    r = _size_rules_wb(word_boundary=True)
+    assert "size" not in {v.slug: v for v in r.extract("siz-perchatki", name)}
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Перчатки нитриловые размер L", "l"),
+        ("Перчатки р-р XL х/б", "xl"),
+        ("Перчатки XXL нитриловые", "xxl"),
+        # диапазон: выигрывает первый вариант по порядку правила (m раньше s)
+        ("Перчатки S-M комбинированные", "m"),
+        ("Перчатки L-XL", "xl"),
+    ],
+)
+def test_word_boundary_matches_letter_sizes(name, expected):
+    r = _size_rules_wb(word_boundary=True)
+    found = {v.slug: v for v in r.extract("siz-perchatki", name)}
+    assert found["size"].option_slug == expected
+
+
+def test_select_without_word_boundary_matches_substring_as_before():
+    """Регрессия: правило БЕЗ флага на тех же данных матчит по-старому (default не изменился)."""
+    r = _size_rules_wb()  # word_boundary не задан — по умолчанию выключен
+    # «l» внутри STELS срабатывает подстрокой (вариант L в правиле раньше S)
+    found = {v.slug: v for v in r.extract("siz-perchatki", "Перчатки нитриловые STELS")}
+    assert found["size"].option_slug == "l"
+    assert found["size"].matched == "L"
+    # «m» внутри MAKITA срабатывает подстрокой
+    found = {v.slug: v for v in r.extract("siz-perchatki", "Перчатки MAKITA универсальные")}
+    assert found["size"].option_slug == "m"
+    assert found["size"].matched == "M"
+
+
+# --- kind: text — открытое строковое значение по regex (окно CODE-02) -------
+#
+# Первый потребитель — zap-shchetki-ugolnye.analog_code («13-102», «CB-155»).
+# regex с группой → СТРОКА (не Decimal); первый сработавший паттерн выигрывает,
+# как у number; значение берётся из исходного названия (регистр сохраняется) и
+# trim-ится; пустая строка после trim = значение не извлечено. ``matched`` —
+# полный матч (m.group(0)), как у number.
+
+
+def _analog_rules(patterns) -> AttributeRules:
+    doc = {
+        "source_priority": {"regex": 40},
+        "tool_types": [
+            {
+                "tool_type": "zap-shchetki-ugolnye",
+                "attributes": [
+                    {
+                        "slug": "analog_code",
+                        "name": "Код аналога",
+                        "kind": "text",
+                        "source": "regex",
+                        "regex": patterns,
+                    }
+                ],
+            }
+        ],
+    }
+    return AttributeRules.from_dict(doc)
+
+
+_ANALOG_PATTERNS = [r"\b(\d{1,3}-\d{1,4})\b", r"\b([a-z]{1,4}-?\d{1,5}[a-z0-9]?)\b"]
+
+
+def _extract_analog(r: AttributeRules, name: str):
+    return {v.slug: v for v in r.extract("zap-shchetki-ugolnye", name)}.get("analog_code")
+
+
+def test_text_kind_extracts_numeric_hyphen_code():
+    v = _extract_analog(_analog_rules(_ANALOG_PATTERNS), "Щётка угольная 13-102 для дрели")
+    assert v is not None
+    assert v.text == "13-102"
+    assert isinstance(v.text, str)
+    assert v.matched == "13-102"  # полный матч, как у number
+
+
+def test_text_kind_preserves_original_case():
+    # матч идёт по normalize()-нному названию, значение — из исходного (регистр!)
+    v = _extract_analog(_analog_rules(_ANALOG_PATTERNS), "Щётка угольная CB-155")
+    assert v.text == "CB-155"
+
+
+def test_text_kind_extracts_alphanumeric_marking():
+    v = _extract_analog(_analog_rules(_ANALOG_PATTERNS), "Щётка угольная A41X пара")
+    assert v.text == "A41X"
+
+
+def test_text_kind_first_pattern_wins():
+    # как у number: первый сработавший паттерн выигрывает
+    v = _extract_analog(_analog_rules(_ANALOG_PATTERNS), "Щётка 13-102 аналог CB-155")
+    assert v.text == "13-102"
+
+
+def test_text_kind_no_match_returns_nothing():
+    v = _extract_analog(_analog_rules(_ANALOG_PATTERNS), "Щётка угольная графитовая")
+    assert v is None
+
+
+def test_text_kind_empty_after_trim_is_not_extracted():
+    # группа совпала, но после trim пусто — значение не извлечено
+    r = _analog_rules([r"аналог\s*:(\s*);"])
+    assert _extract_analog(r, "Щётка аналог: ; графитовая") is None

@@ -9,11 +9,16 @@
 * ``select``  — значение из списка вариантов; перебор вариантов ПО ПОРЯДКУ,
   выигрывает первый, чьё любое ключевое слово — подстрока названия. Порядок
   важен: ``brushless`` должен стоять раньше ``brushed`` («бесщеточный» содержит
-  «щеточный»).
+  «щеточный»). Opt-in флаг правила ``word_boundary: true`` переводит матч на
+  «целое слово» (границы с обеих сторон, механика :mod:`apps.catalog.tool_type`)
+  — для буквенных значений вроде размеров перчаток (``s`` внутри ``STELS``).
 * ``number``  — число + единица; первый сработавший regex даёт значение
   (``Decimal``, запятая → точка).
 * ``boolean`` — да/нет по whitelist: сначала ``false_keywords``, затем
   ``true_keywords``; иначе значение не извлекается.
+* ``text``    — открытое строковое значение: первый сработавший regex, группа 1
+  → строка (НЕ Decimal). Значение берётся из исходного названия (регистр
+  сохраняется: «CB-155») и trim-ится; пустое после trim = не извлечено.
 
 Любое правило может объявить ``skip_if`` — список стоп-слов. Если хоть одно из них
 входит в нормализованное название, правило **не применяется целиком** (значение не
@@ -35,11 +40,12 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-from .tool_type import normalize
+from .tool_type import keyword_at_word_boundary, normalize
 
 SELECT = "select"
 NUMBER = "number"
 BOOLEAN = "boolean"
+TEXT = "text"
 
 
 @dataclass(frozen=True)
@@ -68,6 +74,9 @@ class AttrRule:
     false_keywords: tuple[str, ...] = ()  # boolean
     derive: dict | None = None  # инференс по другим атрибутам (см. _derive_one)
     skip_if: tuple[str, ...] = ()  # стоп-слова: правило целиком не применяется
+    # select: матчить ключевые слова только целым словом (границы с обеих сторон).
+    # По умолчанию выключено — поведение существующих select-правил не меняется.
+    word_boundary: bool = False
 
 
 @dataclass
@@ -82,6 +91,7 @@ class AttrValue:
     option_slug: str = ""
     option_value: str = ""
     boolean: bool | None = None
+    text: str = ""
     unit: str = ""
     matched: str = ""
 
@@ -130,6 +140,7 @@ class AttributeRules:
             false_keywords=tuple(a.get("false_keywords", [])),
             derive=a.get("derive"),
             skip_if=tuple(a.get("skip_if", [])),
+            word_boundary=a.get("word_boundary", False),
         )
 
     def rules_for(self, tool_type_slug: str) -> list[AttrRule]:
@@ -144,7 +155,7 @@ class AttributeRules:
         norm = normalize(name)
         out: list[AttrValue] = []
         for rule in self.rules_for(tool_type_slug):
-            value = self._extract_one(rule, norm)
+            value = self._extract_one(rule, norm, name)
             if value is not None:
                 out.append(value)
         present = {v.slug for v in out}
@@ -188,7 +199,7 @@ class AttributeRules:
         )
 
     @staticmethod
-    def _extract_one(rule: AttrRule, norm: str) -> AttrValue | None:
+    def _extract_one(rule: AttrRule, norm: str, raw: str = "") -> AttrValue | None:
         # Стоп-слова правила: у товара-набора «размер»/«диаметр» один назвать нельзя
         # («Набор ключей 6-19 мм, 8 шт.»), поэтому правило не применяется целиком —
         # это надёжнее, чем пытаться выразить исключение в regex.
@@ -198,7 +209,15 @@ class AttributeRules:
         if rule.kind == SELECT:
             for opt in rule.options:
                 for kw in opt.keywords:
-                    if normalize(kw) in norm:
+                    norm_kw = normalize(kw)
+                    # opt-in word_boundary: ключевое слово — целое слово (обе границы);
+                    # без флага — голая подстрока, как было всегда.
+                    hit = (
+                        keyword_at_word_boundary(norm, norm_kw)
+                        if rule.word_boundary
+                        else norm_kw in norm
+                    )
+                    if hit:
                         return AttrValue(
                             slug=rule.slug,
                             kind=SELECT,
@@ -252,6 +271,33 @@ class AttributeRules:
                         boolean=True,
                         matched=kw,
                     )
+            return None
+
+        if rule.kind == TEXT:
+            for pat in rule.patterns:
+                m = pat.search(norm)
+                if not m:
+                    continue
+                try:
+                    start, end = m.span(1)
+                except IndexError:
+                    continue
+                # Значение — из ИСХОДНОГО названия: normalize() сохраняет длину
+                # (регистр + ё→е), поэтому span матча по norm валиден и для raw.
+                # Коды вроде «CB-155» не должны терять регистр. Если длина вдруг
+                # изменилась (экзотика Unicode) — откат на normalize()-нный фрагмент.
+                raw_value = raw[start:end] if len(raw) == len(norm) else m.group(1)
+                value = raw_value.strip()
+                if not value:
+                    continue
+                return AttrValue(
+                    slug=rule.slug,
+                    kind=TEXT,
+                    source=rule.source,
+                    priority=rule.priority,
+                    text=value,
+                    matched=m.group(0),
+                )
             return None
 
         return None

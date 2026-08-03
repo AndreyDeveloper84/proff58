@@ -30,7 +30,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from apps.catalog.attribute_extract import BOOLEAN, NUMBER, SELECT, AttributeRules
+from apps.catalog.attribute_extract import BOOLEAN, NUMBER, SELECT, TEXT, AttributeRules
 from apps.catalog.attrs_cache import flush_attrs_cache_merged
 from apps.catalog.ingest import data_dir
 from apps.catalog.models import (
@@ -470,3 +470,5 @@ class Command(BaseCommand):
             pav.value_option = option
         elif av.kind == BOOLEAN:
             pav.value_boolean = av.boolean
+        elif av.kind == TEXT:
+            pav.value_text = av.text

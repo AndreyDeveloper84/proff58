@@ -87,9 +87,9 @@ def extracted_value_to_json(attribute, av, option=None):
         decimal=av.number,
         boolean=av.boolean,
         option_value=option.value if option is not None else None,
-        # TEXT enrich не извлекает; на случай TEXT-атрибута дадим пустую строку,
-        # которую rebuild_attrs_cache отбрасывает как пустое значение.
-        text="",
+        # kind: text (CODE-02) несёт строку в ``av.text``; для остальных kinds
+        # там пустая строка, которую rebuild_attrs_cache отбрасывает как пустое.
+        text=av.text or "",
     )
 
 
