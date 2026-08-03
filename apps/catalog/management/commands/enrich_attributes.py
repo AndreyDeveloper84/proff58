@@ -12,6 +12,13 @@
    ``confidence`` в решении о перезаписи НЕ участвует.
 4. Bulk-паттерн #93: префетч PAV → ``iterator`` → ``bulk_create``/``bulk_update``
    батчами; ``attrs_cache`` обновляем в памяти; итоги — в ``ImportRun.stats``.
+
+Режим ``--dry-run``/``--report-only`` (окно CODE-01): тот же extraction/write-decision
+path, что и боевой apply — решения (create/update/keep/prune/skip) принимает тот же
+код, расходится только финальный шаг: вместо записи в БД каждое решение попадает в
+machine-readable JSON-отчёт (``--json-report <файл>``, иначе stdout; человекочитаемая
+сводка тогда идёт в stderr). Dry-run НЕ пишет PAV, НЕ меняет ``attrs_cache`` и НЕ
+создаёт ``ImportRun``.
 """
 
 from __future__ import annotations
@@ -35,7 +42,7 @@ from apps.catalog.models import (
     ProductAttributeValue,
     Source,
 )
-from apps.catalog.read_models import extracted_value_to_json
+from apps.catalog.read_models import attr_value_to_json, extracted_value_to_json
 
 BATCH = 1000
 TOOL_TYPE_SLUG = "tool_type"
@@ -64,8 +71,26 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--path", default=None, help="Каталог с attribute_rules.json")
+        parser.add_argument(
+            "--dry-run",
+            "--report-only",
+            dest="dry_run",
+            action="store_true",
+            help=(
+                "Ничего не писать в БД (PAV/attrs_cache/ImportRun): построить "
+                "machine-readable JSON-отчёт create/update/keep/prune/skip."
+            ),
+        )
+        parser.add_argument(
+            "--json-report",
+            dest="json_report",
+            default=None,
+            help="Файл для machine-readable JSON-отчёта dry-run (иначе — stdout).",
+        )
 
     def handle(self, *args, **options):
+        dry_run = options["dry_run"]
+        json_report_path = options["json_report"]
         base = options["path"] or data_dir()
         raw = json.loads(Path(f"{base}/attribute_rules.json").read_text(encoding="utf-8"))
         rules = AttributeRules.from_dict(raw)
@@ -107,13 +132,14 @@ class Command(BaseCommand):
         product_ids = list(product_tt)
 
         # Существующие PAV управляемых атрибутов — объектами (bulk_update + проверка приоритета).
+        # value_option нужен dry-run'у для current_value (attr_value_to_json) без N+1.
         existing: dict[tuple[int, str], ProductAttributeValue] = {}
         for pav in ProductAttributeValue.objects.filter(
             product_id__in=product_ids, attribute__slug__in=managed_slugs
-        ).select_related("attribute"):
+        ).select_related("attribute", "value_option"):
             existing[(pav.product_id, pav.attribute.slug)] = pav
 
-        run = ImportRun.objects.create(source="enrich_attributes")
+        run = None if dry_run else ImportRun.objects.create(source="enrich_attributes")
         stats = {
             "processed": 0,
             "no_attributes": 0,
@@ -126,11 +152,41 @@ class Command(BaseCommand):
         pav_update: list[ProductAttributeValue] = []
         pav_delete_ids: list[int] = []
         cache_updates: list[Product] = []
+        # По-позиционные решения dry-run (только в режиме отчёта).
+        report_rows: list[dict] = []
 
         # Ключи attrs_cache, которыми владеет команда для конкретного товара (его
         # tool_type). Нужно для безопасной записи: чужие ключи не трогаем (#5).
         def managed_for(product: Product) -> set[str]:
             return set(managed_by_tt.get(product_tt.get(product.id, ""), ()))
+
+        # Строка по-позиционного отчёта dry-run; в боевом режиме — no-op.
+        def add_report_row(
+            product: Product,
+            tt_slug: str,
+            action: str,
+            slug: str,
+            current_value,
+            proposed_value,
+            source_fragment: str,
+            source: str,
+            reason: str,
+        ) -> None:
+            if not dry_run:
+                return
+            report_rows.append(
+                {
+                    "product_id": product.id,
+                    "tool_type": tt_slug,
+                    "attribute": slug,
+                    "current_value": current_value,
+                    "proposed_value": proposed_value,
+                    "source_fragment": source_fragment,
+                    "action": action,
+                    "reason": reason,
+                    "source": source,
+                }
+            )
 
         qs = Product.objects.filter(id__in=product_ids).iterator(chunk_size=2000)
         try:
@@ -152,8 +208,36 @@ class Command(BaseCommand):
                         if slug in current:
                             continue
                         pav = existing.get((product.id, slug))
-                        if pav is None or pav.pk is None or pav.source not in PRUNABLE_SOURCES:
+                        if pav is None or pav.pk is None:
                             continue
+                        if pav.source not in PRUNABLE_SOURCES:
+                            # Авторитетный/чужой источник по управляемому атрибуту,
+                            # который движок не извлёк: решение «оставить как есть».
+                            add_report_row(
+                                product,
+                                tt_slug,
+                                "keep",
+                                slug,
+                                attr_value_to_json(pav),
+                                None,
+                                "",
+                                pav.source,
+                                f"источник {pav.source} вне PRUNABLE_SOURCES — "
+                                "движок не управляет, значение остаётся",
+                            )
+                            continue
+                        add_report_row(
+                            product,
+                            tt_slug,
+                            "prune",
+                            slug,
+                            attr_value_to_json(pav),
+                            None,
+                            "",
+                            pav.source,
+                            f"движок больше не извлекает значение; источник {pav.source} "
+                            "из PRUNABLE_SOURCES — устаревшее значение удаляется",
+                        )
                         pav_delete_ids.append(pav.pk)
                         existing.pop((product.id, slug), None)
                         if slug in cache:
@@ -170,7 +254,21 @@ class Command(BaseCommand):
                         if av.kind == SELECT:
                             option = option_index.get(av.slug, {}).get(av.option_slug)
                             if option is None:
-                                continue  # вариант не загружен — пропускаем
+                                # вариант не загружен — пропускаем
+                                pav0 = existing.get((product.id, av.slug))
+                                add_report_row(
+                                    product,
+                                    tt_slug,
+                                    "skip",
+                                    av.slug,
+                                    attr_value_to_json(pav0) if pav0 is not None else None,
+                                    av.option_value,
+                                    av.matched,
+                                    av.source,
+                                    f"вариант {av.option_slug!r} не загружен — "
+                                    "выполните load_attributes",
+                                )
+                                continue
                         new_source = av.source
                         new_conf = SOURCE_CONFIDENCE.get(new_source, 100)
                         key = (product.id, av.slug)
@@ -184,16 +282,54 @@ class Command(BaseCommand):
                                 confidence=new_conf,
                             )
                             self._apply_value(pav, av, option)
+                            add_report_row(
+                                product,
+                                tt_slug,
+                                "create",
+                                av.slug,
+                                None,
+                                extracted_value_to_json(attribute, av, option),
+                                av.matched,
+                                new_source,
+                                "PAV отсутствует — значение создаётся",
+                            )
                             pav_create.append(pav)
                             existing[key] = pav
                         else:
                             # Перезапись только если приоритет нового ≥ сохранённого.
                             if priority.get(new_source, 0) < priority.get(pav.source, 0):
                                 stats["skipped_priority"] += 1
+                                add_report_row(
+                                    product,
+                                    tt_slug,
+                                    "skip",
+                                    av.slug,
+                                    attr_value_to_json(pav),
+                                    extracted_value_to_json(attribute, av, option),
+                                    av.matched,
+                                    new_source,
+                                    f"приоритет {new_source} ({priority.get(new_source, 0)}) "
+                                    f"< {pav.source} ({priority.get(pav.source, 0)}) — "
+                                    "перезапись запрещена",
+                                )
                                 continue
+                            current_value = attr_value_to_json(pav) if dry_run else None
+                            old_source = pav.source
                             pav.source = new_source
                             pav.confidence = new_conf
                             self._apply_value(pav, av, option)
+                            add_report_row(
+                                product,
+                                tt_slug,
+                                "update",
+                                av.slug,
+                                current_value,
+                                extracted_value_to_json(attribute, av, option),
+                                av.matched,
+                                new_source,
+                                f"приоритет {new_source} ({priority.get(new_source, 0)}) "
+                                f">= {old_source} ({priority.get(old_source, 0)}) — перезапись",
+                            )
                             pav_update.append(pav)
 
                         cache[av.slug] = extracted_value_to_json(attribute, av, option)
@@ -204,44 +340,47 @@ class Command(BaseCommand):
                         product.attrs_cache = cache
                         cache_updates.append(product)
 
-                    if len(pav_delete_ids) >= BATCH:
+                    if not dry_run and len(pav_delete_ids) >= BATCH:
                         ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
                         pav_delete_ids.clear()
-                    if len(pav_create) >= BATCH:
+                    if not dry_run and len(pav_create) >= BATCH:
                         ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
                         pav_create.clear()
-                    if len(pav_update) >= BATCH:
+                    if not dry_run and len(pav_update) >= BATCH:
                         ProductAttributeValue.objects.bulk_update(
                             pav_update, UPDATE_FIELDS, batch_size=BATCH
                         )
                         pav_update.clear()
-                    if len(cache_updates) >= BATCH:
+                    if not dry_run and len(cache_updates) >= BATCH:
                         flush_attrs_cache_merged(cache_updates, managed_for, batch_size=BATCH)
                         cache_updates.clear()
 
-                if pav_delete_ids:
+                if not dry_run and pav_delete_ids:
                     ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
-                if pav_create:
+                if not dry_run and pav_create:
                     ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
-                if pav_update:
+                if not dry_run and pav_update:
                     ProductAttributeValue.objects.bulk_update(
                         pav_update, UPDATE_FIELDS, batch_size=BATCH
                     )
-                if cache_updates:
+                if not dry_run and cache_updates:
                     flush_attrs_cache_merged(cache_updates, managed_for, batch_size=BATCH)
 
-                run.status = ImportRunStatus.DONE
+                if run is not None:
+                    run.status = ImportRunStatus.DONE
         except Exception as exc:  # noqa: BLE001
-            run.status = ImportRunStatus.FAILED
-            stats["error"] = str(exc)
+            if run is not None:
+                run.status = ImportRunStatus.FAILED
+                stats["error"] = str(exc)
+                run.finished_at = timezone.now()
+                run.stats = stats
+                run.save()
+            raise
+
+        if run is not None:
             run.finished_at = timezone.now()
             run.stats = stats
             run.save()
-            raise
-
-        run.finished_at = timezone.now()
-        run.stats = stats
-        run.save()
 
         by_attr = ", ".join(f"{k}: {v}" for k, v in sorted(stats["by_attribute"].items()))
         pruned_total = sum(stats["pruned"].values())
@@ -250,15 +389,70 @@ class Command(BaseCommand):
             if stats["pruned"]
             else ""
         )
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Характеристики: обработано {stats['processed']}, "
-                f"без характеристик {stats['no_attributes']}, "
-                f"пропущено по приоритету {stats['skipped_priority']}, "
-                f"удалено устаревших {pruned_total}{pruned_detail}. По атрибутам — {by_attr}."
-            )
+        summary = (
+            f"Характеристики: обработано {stats['processed']}, "
+            f"без характеристик {stats['no_attributes']}, "
+            f"пропущено по приоритету {stats['skipped_priority']}, "
+            f"удалено устаревших {pruned_total}{pruned_detail}. По атрибутам — {by_attr}."
         )
+
+        if dry_run:
+            self._emit_dry_run_report(
+                report_rows, stats, summary, base=base, json_report_path=json_report_path
+            )
+            # Вернуть непустую строку нельзя: BaseCommand.execute() автоматически
+            # печатает возврат handle() в stdout и ломает чистый JSON.
+            return ""
+
+        self.stdout.write(self.style.SUCCESS(summary))
         return str(run.pk)
+
+    # --- dry-run отчёт -----------------------------------------------------
+
+    def _emit_dry_run_report(
+        self, report_rows: list[dict], stats: dict, summary: str, *, base, json_report_path
+    ) -> None:
+        """Собрать machine-readable JSON dry-run'а и выдать его в файл или stdout.
+
+        Человекочитаемая сводка — сверх JSON, не вместо: при выводе JSON в stdout
+        сводка уходит в stderr, чтобы stdout оставался чистым JSON для CAT-14C.
+        """
+        by_action: dict[str, int] = {}
+        by_tool_type: dict[str, dict] = {}
+        by_attribute: dict[str, dict] = {}
+        for row in report_rows:
+            by_action[row["action"]] = by_action.get(row["action"], 0) + 1
+            tt = by_tool_type.setdefault(row["tool_type"], {"total": 0, "by_action": {}})
+            tt["total"] += 1
+            tt["by_action"][row["action"]] = tt["by_action"].get(row["action"], 0) + 1
+            at = by_attribute.setdefault(row["attribute"], {"total": 0, "by_action": {}})
+            at["total"] += 1
+            at["by_action"][row["action"]] = at["by_action"].get(row["action"], 0) + 1
+
+        report = {
+            "command": "enrich_attributes",
+            "mode": "dry-run",
+            "rules_path": str(Path(f"{base}/attribute_rules.json")),
+            "generated_at": timezone.now().isoformat(),
+            "totals": {
+                "processed": stats["processed"],
+                "no_attributes": stats["no_attributes"],
+                "skipped_priority": stats["skipped_priority"],
+                "pruned": sum(stats["pruned"].values()),
+                "by_action": by_action,
+            },
+            "by_tool_type": by_tool_type,
+            "by_attribute": by_attribute,
+            "rows": report_rows,
+        }
+        payload = json.dumps(report, ensure_ascii=False, indent=2)
+        if json_report_path:
+            Path(json_report_path).write_text(payload + "\n", encoding="utf-8")
+            self.stdout.write(self.style.SUCCESS(summary))
+            self.stdout.write(self.style.SUCCESS(f"dry-run: отчёт записан в {json_report_path}"))
+        else:
+            self.stderr.write(summary)
+            self.stdout.write(payload)
 
     # --- helpers ---------------------------------------------------------
 
