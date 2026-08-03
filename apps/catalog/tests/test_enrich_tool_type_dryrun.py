@@ -97,6 +97,22 @@ class TestAliasWiringInDryRun:
         assert report["by_rule_block"]["Строительное и отделочное"]["matched"] == 1
         assert report["by_target_slug"]["str-kisti"] == 1
 
+    def test_osnastka_alias_matches_via_legacy_block(self, seeded):
+        # Третий alias (ENRICH-WRITE-PATH-HARDENING): "Оснастка и расходники" →
+        # live "Оснастка и расходные материалы". Лист "Свёрла" уже совпадает с
+        # rule.subgroup "Сверла" через normalize() (ё→е) — без subgroup-mapping.
+        root = _root("Оснастка и расходные материалы", "osnastka")
+        leaf = root.add_child(name="Свёрла", slug="sverla-leaf", on_site=True)
+        _product(leaf, "Сверло по металлу ц/х 6,0 мм Р6М5", "osn1")
+
+        out = call_command("enrich_tool_type", "--dry-run")
+        report = json.loads(out)
+
+        assert report["counts"]["matched"] == 1
+        assert report["by_root"]["Оснастка и расходные материалы"]["matched"] == 1
+        assert report["by_rule_block"]["Оснастка и расходники"]["matched"] == 1
+        assert report["by_target_slug"]["sverla"] == 1
+
     def test_write_path_now_uses_aliases_too(self, seeded):
         # ENRICH-WRITE-PATH-HARDENING: боевой прогон резолвит top_name через
         # тот же live_to_legacy, что и --dry-run — расхождение убрано (было
