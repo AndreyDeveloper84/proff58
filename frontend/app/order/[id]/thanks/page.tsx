@@ -7,6 +7,7 @@ import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReservationNotice } from "@/components/order/ReservationNotice";
 import { TrackOrderInMaxCta } from "@/components/order/TrackOrderInMaxCta";
+import { accountLinkHref, useHasAuthMarker } from "@/lib/auth-marker";
 import { formatDeliverySlot, formatPrice } from "@/lib/format";
 import { readStashedOrder } from "@/lib/order-storage";
 import type { Order } from "@/lib/types";
@@ -41,6 +42,9 @@ export default function ThanksPage() {
     return cacheRef.current.value;
   }, [orderNumber]);
   const order = useSyncExternalStore(subscribe, getSnapshot, () => null);
+  // Заказ часто оформляют без входа, поэтому «в личном кабинете» для гостя ведёт
+  // на форму входа — оттуда его вернут в заказы.
+  const ordersHref = accountLinkHref("/account/orders", useHasAuthMarker());
 
   // Сумма товаров из снимка строк: order.total включает доставку, а отдельного
   // поля «товары» бэк не отдаёт.
@@ -84,7 +88,7 @@ export default function ThanksPage() {
         {!order && (
           <div className="mt-5 rounded-md border border-line bg-raised px-4 py-3 text-sm text-ink-2">
             Детали заказа не сохранились в этом браузере — на заказ это не влияет. Статус доступен{" "}
-            <Link href="/account/orders" className="font-semibold text-accent hover:underline">
+            <Link href={ordersHref} className="font-semibold text-accent hover:underline">
               в личном кабинете
             </Link>.
           </div>
@@ -166,7 +170,7 @@ export default function ThanksPage() {
       )}
 
       <div className="mt-6 flex flex-wrap justify-center gap-3">
-        <Link href="/account/orders"><Button variant="outline">Перейти в личный кабинет</Button></Link>
+        <Link href={ordersHref}><Button variant="outline">Перейти в личный кабинет</Button></Link>
         <Link href="/catalog"><Button variant="accent">Вернуться в каталог</Button></Link>
       </div>
     </main>
