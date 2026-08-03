@@ -10,15 +10,23 @@ import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SearchBar } from "@/components/layout/SearchBar";
 import { getCategoryTreeOrNull, type CategoryNode } from "@/lib/catalog";
 import { categoryPhoto } from "@/lib/category-artwork";
+import { cn } from "@/lib/utils";
 
 // Категории берём из API в рантайме (slug'и из БД), без редиректа. Данные — через
 // lib/catalog.ts (единственная точка интеграции), fetch тут не дублируем.
 export const dynamic = "force-dynamic";
 
+//: Сколько первых разделов показывать крупно — ровно один ряд сетки на десктопе.
+const FEATURED_CATEGORIES = 4;
+
 function CategoryCard({
   category,
+  featured = false,
 }: {
   category: CategoryNode;
+  // Крупная карточка: фото сверху во всю ширину, а не маленькое сбоку.
+  // Первый ряд разделов подаётся заметнее — с него начинают почти все.
+  featured?: boolean;
 }) {
   const artwork = categoryPhoto(category.name);
   const children = category.children.slice(0, 3);
@@ -26,10 +34,18 @@ function CategoryCard({
   return (
     <Link
       href={`/catalog/${category.slug}`}
-      className="group relative flex min-h-[132px] overflow-hidden rounded-md border border-line bg-surface p-3 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md lg:min-h-[128px]"
+      className={cn(
+        "group relative flex min-h-[132px] overflow-hidden rounded-md border border-line bg-surface p-3 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md",
+        featured ? "lg:min-h-[184px] lg:p-4" : "lg:min-h-[128px]",
+      )}
     >
       <div
-        className="pointer-events-none absolute inset-x-2 top-1 h-[78px] transition duration-300 group-hover:scale-[1.03] lg:inset-y-2 lg:left-2 lg:right-auto lg:top-2 lg:h-auto lg:w-[108px]"
+        className={cn(
+          "pointer-events-none absolute inset-x-2 top-1 h-[78px] transition duration-300 group-hover:scale-[1.03]",
+          featured
+            ? "lg:inset-x-3 lg:top-1 lg:h-[124px]"
+            : "lg:inset-y-2 lg:left-2 lg:right-auto lg:top-2 lg:h-auto lg:w-[108px]",
+        )}
         aria-hidden
       >
         {artwork ? (
@@ -39,7 +55,7 @@ function CategoryCard({
             fill
             loading="eager"
             unoptimized
-            sizes="(max-width: 1023px) 40vw, 108px"
+            sizes={featured ? "(max-width: 1023px) 40vw, 280px" : "(max-width: 1023px) 40vw, 108px"}
             className="object-contain"
           />
         ) : (
@@ -50,10 +66,16 @@ function CategoryCard({
       </div>
 
       <div
-        className="relative z-10 mt-auto flex min-w-0 flex-1 flex-col justify-end pt-[78px] lg:ml-[116px] lg:my-auto lg:justify-center lg:pt-0"
+        className={cn(
+          "relative z-10 mt-auto flex min-w-0 flex-1 flex-col justify-end pt-[78px]",
+          featured ? "lg:pt-[124px]" : "lg:ml-[116px] lg:my-auto lg:justify-center lg:pt-0",
+        )}
       >
         <h2
-          className="line-clamp-3 pr-4 text-[11px] font-semibold leading-[1.25] text-ink transition group-hover:text-accent sm:text-sm lg:line-clamp-2 lg:text-[13px]"
+          className={cn(
+            "line-clamp-3 pr-4 text-[11px] font-semibold leading-[1.25] text-ink transition group-hover:text-accent sm:text-sm lg:line-clamp-2",
+            featured ? "lg:text-[14px]" : "lg:text-[13px]",
+          )}
         >
           {category.name}
         </h2>
@@ -126,13 +148,24 @@ export default async function CatalogIndexPage() {
           </section>
         ) : (
           <>
-            <section
-              aria-label="Категории товаров"
-              className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-2.5 2xl:grid-cols-5"
-            >
-              {categories.map((category) => (
-                <CategoryCard key={category.id} category={category} />
-              ))}
+            {/* Первый ряд — крупными карточками, отдельной сеткой строго по
+                четыре. В общей сетке этого не сделать: с 2xl в ней пять колонок,
+                и четвёрка вставала бы неровно, оставляя рядом чужую мелкую
+                карточку. Ниже — остальные разделы во всю ширину. */}
+            <section aria-label="Категории товаров" className="mt-3">
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-2.5">
+                {categories.slice(0, FEATURED_CATEGORIES).map((category) => (
+                  <CategoryCard key={category.id} category={category} featured />
+                ))}
+              </div>
+
+              {categories.length > FEATURED_CATEGORIES && (
+                <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3 lg:mt-2.5 lg:grid-cols-4 lg:gap-2.5 2xl:grid-cols-5">
+                  {categories.slice(FEATURED_CATEGORIES).map((category) => (
+                    <CategoryCard key={category.id} category={category} />
+                  ))}
+                </div>
+              )}
             </section>
 
             <div className="mt-3 hidden lg:block">
