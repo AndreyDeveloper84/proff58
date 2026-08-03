@@ -62,7 +62,10 @@ export function CategoryHero({
         // В карточном варианте чертёж стоит в собственной grid-колонке.
         !inline && skeleton && "lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6",
         inline
-          ? "border-b border-line/80"
+          // Небольшой минимум только ради чертежа справа: он тянется на всю
+          // высоту секции, и в листовой категории (заголовок без капсул)
+          // сжимался бы в полоску. Против прежних 280px это всё равно вдвое ниже.
+          ? "border-b border-line/80 lg:min-h-[124px]"
           : "mb-6 rounded-xl border border-line bg-surface",
         className,
       )}

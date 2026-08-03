@@ -115,6 +115,26 @@ describe("WishlistProvider", () => {
     );
   });
 
+  it("клик до прихода списка не затирается ответом сервера", async () => {
+    let deliverList: (items: unknown) => void = () => {};
+    mockedGet.mockReturnValue(
+      new Promise((resolve) => {
+        deliverList = resolve;
+      }),
+    );
+    mockedAdd.mockResolvedValue(undefined);
+    renderProbe("authenticated");
+    await screen.findByText("грузим:нет");
+
+    fireEvent.click(screen.getByRole("button"));
+    await waitFor(() => expect(mockedAdd).toHaveBeenCalledWith(7));
+
+    // Список сервер собрал раньше клика — этого товара в нём нет.
+    deliverList([{ product_id: 9, product_name: "Другой", product_slug: "drugoy" }]);
+
+    expect(await screen.findByText("готово:в избранном")).toBeInTheDocument();
+  });
+
   it("сбой загрузки списка не выдаётся за пустое избранное", async () => {
     mockedGet.mockResolvedValue("error");
     renderProbe("authenticated");

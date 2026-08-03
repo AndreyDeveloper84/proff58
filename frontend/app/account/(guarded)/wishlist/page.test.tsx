@@ -15,7 +15,7 @@ vi.mock("@/components/wishlist/WishlistProvider", () => ({
     loaded: wishlistState.loaded,
     has: (id: number) => wishlistState.ids.has(id),
     toggle: toggleMock,
-    pendingId: null,
+    isPending: () => false,
   }),
 }));
 

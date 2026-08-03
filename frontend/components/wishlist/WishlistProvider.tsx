@@ -13,7 +13,15 @@
 // загрузку страницы, дальше — только точечные POST/DELETE.
 
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { useAuthState } from "@/components/auth/AuthStateProvider";
 import { ApiError } from "@/lib/api";
@@ -27,8 +35,8 @@ type WishlistContextValue = {
   has: (productId: number) => boolean;
   /** Добавить/убрать. Гостя уводит на форму входа с возвратом на эту же страницу. */
   toggle: (productId: number) => void;
-  /** Товар, по которому сейчас идёт запрос (для блокировки повторного клика). */
-  pendingId: number | null;
+  /** По этому товару сейчас идёт запрос — повторный клик игнорируем. */
+  isPending: (productId: number) => boolean;
 };
 
 const EMPTY: ReadonlySet<number> = new Set();
@@ -40,7 +48,7 @@ const WishlistContext = createContext<WishlistContextValue>({
   loaded: false,
   has: () => false,
   toggle: () => {},
-  pendingId: null,
+  isPending: () => false,
 });
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
@@ -51,7 +59,10 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   // «что в избранном» выводятся, а не хранятся отдельным состоянием: иначе
   // пришлось бы синхронизировать их из effect'а на каждый вход-выход.
   const [storedIds, setStoredIds] = useState<ReadonlySet<number> | null>(null);
-  const [pendingId, setPendingId] = useState<number | null>(null);
+  const [pendingIds, setPendingIds] = useState<ReadonlySet<number>>(EMPTY);
+  // Клики, сделанные до прихода списка: ответ сервера сформирован раньше их и
+  // не должен их затирать. id → «лежит ли товар в избранном после клика».
+  const localOverrides = useRef(new Map<number, boolean>());
 
   const isGuest = authState === "anonymous";
   const ids = isGuest ? EMPTY : (storedIds ?? EMPTY);
@@ -64,9 +75,13 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     getWishlist().then((items) => {
       // "error" (в том числе истёкшая сессия) — не повод врать пустым списком:
       // оставляем незагруженным, сердечки будут неактивны до перезагрузки.
-      if (active && items !== "error") {
-        setStoredIds(new Set(items.map((item) => item.product_id)));
+      if (!active || items === "error") return;
+      const merged = new Set(items.map((item) => item.product_id));
+      for (const [productId, inList] of localOverrides.current) {
+        if (inList) merged.add(productId);
+        else merged.delete(productId);
       }
+      setStoredIds(merged);
     });
     return () => {
       active = false;
@@ -83,29 +98,45 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         toLogin();
         return;
       }
-      if (pendingId !== null) return;
+      // Блокируем только повторный клик по этому же товару: сердечки соседних
+      // карточек должны работать, пока идёт чужой запрос.
+      if (pendingIds.has(productId)) return;
 
       const willAdd = !ids.has(productId);
-      const previous = ids;
-      const next = new Set(previous);
-      if (willAdd) next.add(productId);
-      else next.delete(productId);
+      // Функциональные обновления, а не снимок из замыкания: параллельные
+      // клики по разным товарам иначе затирали бы друг друга.
+      const applyLocally = (add: boolean) => {
+        localOverrides.current.set(productId, add);
+        setStoredIds((current) => {
+          const next = new Set(current ?? EMPTY);
+          if (add) next.add(productId);
+          else next.delete(productId);
+          return next;
+        });
+      };
+
       // Оптимистично: сердечко откликается сразу, откат — только если сервер отказал.
-      setStoredIds(next);
-      setPendingId(productId);
+      applyLocally(willAdd);
+      setPendingIds((current) => new Set(current).add(productId));
 
       const request = willAdd ? addWishlistItem(productId) : removeWishlistItem(productId);
       request
         .catch((error: unknown) => {
-          setStoredIds(previous);
+          applyLocally(!willAdd);
           // Сессия истекла, пока человек ходил по каталогу, — это не сбой, а вход.
           if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
             toLogin();
           }
         })
-        .finally(() => setPendingId(null));
+        .finally(() =>
+          setPendingIds((current) => {
+            const next = new Set(current);
+            next.delete(productId);
+            return next;
+          }),
+        );
     },
-    [ids, isGuest, pendingId, toLogin],
+    [ids, isGuest, pendingIds, toLogin],
   );
 
   const value = useMemo<WishlistContextValue>(
@@ -114,9 +145,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       loaded,
       has: (productId: number) => ids.has(productId),
       toggle,
-      pendingId,
+      isPending: (productId: number) => pendingIds.has(productId),
     }),
-    [ids, loaded, toggle, pendingId],
+    [ids, loaded, toggle, pendingIds],
   );
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;

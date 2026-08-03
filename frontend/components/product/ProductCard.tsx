@@ -70,7 +70,7 @@ export function ProductCard({
   // Избранное хранится на сервере и общее на всю страницу (WishlistProvider):
   // одна и та же позиция встречается в выдаче и в каруселях, и сердечки обязаны
   // показывать одно состояние. Гостя клик уводит на форму входа.
-  const { has, toggle, pendingId } = useWishlist();
+  const { has, toggle, isPending } = useWishlist();
   const fav = has(product.id);
   const href = `/product/${product.slug}`;
   // Короткая форма из 1С; пока товар не прошёл нормализацию — витринное имя.
@@ -82,7 +82,7 @@ export function ProductCard({
     <button
       type="button"
       onClick={() => toggle(product.id)}
-      disabled={pendingId === product.id}
+      disabled={isPending(product.id)}
       aria-label={fav ? "Убрать из избранного" : "В избранное"}
       aria-pressed={fav}
       data-event="favorite_toggle"
