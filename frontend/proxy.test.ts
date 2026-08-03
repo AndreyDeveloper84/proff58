@@ -54,9 +54,22 @@ describe("proxy: доступ в личный кабинет", () => {
     expect(res.headers.get("x-middleware-request-x-pathname")).toBe("/account/invoices");
   });
 
-  it("сама форма входа исключена из matcher", () => {
-    // Иначе редирект зациклится: /account/login → /account/login → …
+  it("форма входа и старый адрес избранного исключены из matcher", () => {
+    // login — иначе редирект зациклится: /account/login → /account/login → …
+    // wishlist — избранное переехало на витрину и входа не требует; страница по
+    // прежнему адресу уводит на /wishlist, и разворачивать гостя раньше неё нельзя.
     // Роутинг здесь не воспроизводим — проверяем ровно то, что отдаём Next.
-    expect(config.matcher).toEqual(["/account", "/account/((?!login).*)"]);
+    expect(config.matcher).toEqual(["/account", "/account/((?!login|wishlist).*)"]);
+  });
+
+  // Регулярка matcher'а — то место, где легко ошибиться скобкой, поэтому
+  // проверяем её на самих адресах.
+  it("регулярка matcher пропускает вход и избранное, но ловит остальной кабинет", () => {
+    const rule = new RegExp(`^${config.matcher[1]}$`);
+
+    expect(rule.test("/account/login")).toBe(false);
+    expect(rule.test("/account/wishlist")).toBe(false);
+    expect(rule.test("/account/profile")).toBe(true);
+    expect(rule.test("/account/orders/PROF-12")).toBe(true);
   });
 });
