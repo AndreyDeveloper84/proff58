@@ -115,4 +115,6 @@
 (плюс новый файл `apps/catalog/test_enrich_attributes_text.py`, в diff не попадает —
 untracked до коммита; 195 строк)
 
-Коммит: **TODO**
+Коммит: **`5211173`** — `feat(catalog): движок характеристик — opt-in word_boundary
+для select и kind: text (CODE-02)` (ветка `feature/catalog-cat14-attribute-schemas`,
+push/PR не делались).
