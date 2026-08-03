@@ -46,7 +46,8 @@ export function FacetSidebar({
   onRange,
   connected = false,
 }: Props) {
-  // tool_type (isNav) — навигация, рендерится отдельным блоком CategoryNavPanel, а НЕ фасетом (§3.1, §23.5).
+  // tool_type (isNav) — навигация, рендерится капсулами в шапке раздела (CategoryNavStrip),
+  // а НЕ фасетом сайдбара (§3.1, §23.5).
   const visibleFacets = facets.filter((f) => !f.isNav);
   const sections = groupSidebarFacets(visibleFacets);
 

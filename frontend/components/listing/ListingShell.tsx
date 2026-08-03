@@ -12,7 +12,7 @@ import { track } from "@/lib/analytics";
 import { PER_PAGE_OPTIONS, SORT_OPTIONS } from "@/lib/constants";
 import { ProductCard } from "@/components/product/ProductCard";
 import { FacetSidebar } from "@/components/filters/FacetSidebar";
-import { CategoryNavPanel, CategoryNavStrip } from "@/components/listing/CategoryNav";
+import { CategoryNavStrip } from "@/components/listing/CategoryNav";
 import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
 import { CategoryHero } from "@/components/listing/CategoryHero";
 import { MobileFilterDrawer } from "@/components/listing/MobileFilterDrawer";
@@ -257,7 +257,6 @@ export function ListingShell({
                 </div>
               )}
             </div>
-            {nav && <CategoryNavPanel nav={nav} onSelect={onSelectType} connected />}
             <FacetSidebar
               facets={visibleFacets}
               filters={query.filters}
@@ -282,7 +281,13 @@ export function ListingShell({
               .slice(0, -1)
               .map((crumb) => crumb.label)
               .reverse()}
-          />
+          >
+            {/* Капсулы разделов и типов — часть шапки раздела, а не фильтров:
+                подкатегория это переход на другую страницу, и прятать её за
+                кнопкой «Фильтры» (или в самый низ левой колонки) значит сделать
+                вид, что её нет. */}
+            {nav && <CategoryNavStrip nav={nav} onSelect={onSelectType} />}
+          </CategoryHero>
 
           {listing.promo && (
             <a
@@ -295,10 +300,6 @@ export function ListingShell({
               </span>
             </a>
           )}
-
-          {/* Мобильная навигация раздела: одна строка со свайпом (на lg+ то же самое
-              живёт вертикальным блоком в левой колонке). */}
-          {nav && <CategoryNavStrip nav={nav} onSelect={onSelectType} />}
 
           {/* Панель фильтров (§9.1): триггер сайдбара + сброс + активные чипы (зелёные). */}
           <div className="mb-4 flex flex-wrap items-center gap-3 lg:hidden">
