@@ -12,23 +12,30 @@ from apps.catalog.tool_type_aliases import ROOT_ALIASES, AliasConfigError, resol
 
 
 class TestRootAliasesConstant:
-    def test_exactly_two_aliases(self):
-        assert len(ROOT_ALIASES) == 2
+    def test_exactly_three_aliases(self):
+        assert len(ROOT_ALIASES) == 3
 
     def test_confirmed_pairs(self):
         assert ROOT_ALIASES == {
             "Спецодежда и защита": "Спецодежда и СИЗ",
             "Строительное и отделочное": "Строительный и отделочный инструмент",
+            "Оснастка и расходники": "Оснастка и расходные материалы",
         }
 
 
 class TestResolveHitMiss:
     def test_hit_resolves_live_to_legacy(self):
-        rule_categories = {"Спецодежда и защита", "Строительное и отделочное", "Запчасти"}
+        rule_categories = {
+            "Спецодежда и защита",
+            "Строительное и отделочное",
+            "Оснастка и расходники",
+            "Запчасти",
+        }
         result = resolve_live_to_legacy(rule_categories)
         assert result == {
             "Спецодежда и СИЗ": "Спецодежда и защита",
             "Строительный и отделочный инструмент": "Строительное и отделочное",
+            "Оснастка и расходные материалы": "Оснастка и расходники",
         }
 
     def test_miss_is_simply_absent_no_fuzzy(self):
@@ -89,4 +96,12 @@ class TestRealRulesFileWiring:
         assert result == {
             "Спецодежда и СИЗ": "Спецодежда и защита",
             "Строительный и отделочный инструмент": "Строительное и отделочное",
+            "Оснастка и расходные материалы": "Оснастка и расходники",
         }
+
+    def test_no_collision_between_three_confirmed_aliases(self):
+        # Третий alias (Оснастка) не сталкивается ни с двумя существующими, ни с
+        # прямыми rule-блоками — resolve_live_to_legacy не поднимает AliasConfigError.
+        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
+        rule_categories = {c.category for c in rules.categories}
+        resolve_live_to_legacy(rule_categories)  # не должно поднять исключение

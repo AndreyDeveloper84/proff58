@@ -10,12 +10,14 @@
 4. Каждое решение — строкой в ``EnrichmentLog``.
 
 Обрабатываются товары категорий верхнего уровня, для которых есть правила.
+Lookup корневой категории использует явный слой aliases
+(``apps.catalog.tool_type_aliases``) — ОДИНАКОВО в ``--dry-run`` и в боевом
+прогоне (ENRICH-WRITE-PATH-HARDENING): dry-run-предсказание и то, что реально
+пишет боевой прогон, для одного и того же товара совпадают побайтово.
 
 Безопасный режим (``--dry-run``/``--report-only``, ENRICH-DRYRUN-ALIASES):
 ничего не пишет в БД, строит machine-readable отчёт matched/moderation/
-skipped/conflict. В этом режиме, и только в нём, lookup корневой категории
-использует явный слой aliases (``apps.catalog.tool_type_aliases``) — см.
-комментарий в ``_handle_write`` про причину такого разделения.
+skipped/conflict.
 """
 
 from __future__ import annotations
@@ -44,6 +46,11 @@ from apps.catalog.models import (
 from apps.catalog.taxonomy_manifest import load_options_index
 from apps.catalog.tool_type import ASSIGNED, RECATEGORIZE, ToolTypeRules, normalize
 from apps.catalog.tool_type_aliases import AliasConfigError, resolve_live_to_legacy
+from apps.catalog.tool_type_subgroup_aliases import (
+    SubgroupAliasConfigError,
+    known_subgroup_identities,
+    resolve_live_subgroup_to_legacy,
+)
 
 BATCH = 1000
 
@@ -75,6 +82,14 @@ class _DryRunReport:
         self.by_rule_block: dict[str, dict[str, int]] = {}
         self.by_target_slug: dict[str, int] = {}
         self.tool_type_changes: list[dict] = []
+        # ENRICH-WRITE-PATH-HARDENING: диагностика inherit_1c_subgroup — лист
+        # сайта не резолвится ни напрямую (normalize), ни через subgroup alias.
+        # Считается ДОПОЛНИТЕЛЬНО к counts["moderation"] (ex.result у таких
+        # товаров всегда MODERATION) — отдельный разрез "почему", не замена.
+        self.subgroup_unmapped: dict[str, int] = {}
+
+    def record_subgroup_unmapped(self, leaf_name: str) -> None:
+        self.subgroup_unmapped[leaf_name] = self.subgroup_unmapped.get(leaf_name, 0) + 1
 
     def _bump(self, bucket: str, root: str | None, rule_block: str | None = None) -> None:
         self.counts[bucket] += 1
@@ -123,6 +138,7 @@ class _DryRunReport:
             "by_rule_block": self.by_rule_block,
             "by_target_slug": self.by_target_slug,
             "existing_tool_type_changes": self.tool_type_changes,
+            "subgroup_unmapped": self.subgroup_unmapped,
         }
 
 
@@ -138,8 +154,7 @@ class Command(BaseCommand):
             action="store_true",
             help=(
                 "Ничего не писать в БД (PAV/EnrichmentLog/ImportRun): построить "
-                "machine-readable отчёт matched/moderation/skipped/conflict. Только в "
-                "этом режиме используется слой aliases (legacy root → live root)."
+                "machine-readable отчёт matched/moderation/skipped/conflict."
             ),
         )
         parser.add_argument(
@@ -179,6 +194,21 @@ class Command(BaseCommand):
             live_to_legacy = resolve_live_to_legacy(rule_categories)
         except AliasConfigError as exc:
             raise CommandError(f"tool_type_rules aliases: {exc}", returncode=2) from exc
+
+        # Subgroup aliases (ENRICH-WRITE-PATH-HARDENING) — та же валидация ВСЕГДА,
+        # по одной на категорию с inherit_1c_subgroup (сегодня — ровно одна).
+        subgroup_live_to_legacy: dict[str, dict[str, str]] = {}
+        for cat_rules in rules.categories:
+            if cat_rules.extraction != "inherit_1c_subgroup":
+                continue
+            try:
+                subgroup_live_to_legacy[cat_rules.category] = resolve_live_subgroup_to_legacy(
+                    cat_rules.category, known_subgroup_identities(cat_rules)
+                )
+            except SubgroupAliasConfigError as exc:
+                raise CommandError(
+                    f"tool_type_rules subgroup aliases: {exc}", returncode=2
+                ) from exc
 
         attribute = Attribute.objects.filter(slug=TOOL_TYPE_SLUG).first()
         if attribute is None:
@@ -220,6 +250,7 @@ class Command(BaseCommand):
                 rules=rules,
                 rule_categories=rule_categories,
                 live_to_legacy=live_to_legacy,
+                subgroup_live_to_legacy=subgroup_live_to_legacy,
                 top_name_by_id=top_name_by_id,
                 opt_by_slug=opt_by_slug,
                 opt_by_value=opt_by_value,
@@ -237,6 +268,8 @@ class Command(BaseCommand):
             qs,
             rules=rules,
             rule_categories=rule_categories,
+            live_to_legacy=live_to_legacy,
+            subgroup_live_to_legacy=subgroup_live_to_legacy,
             top_name_by_id=top_name_by_id,
             path_str_by_id=path_str_by_id,
             attribute=attribute,
@@ -254,6 +287,8 @@ class Command(BaseCommand):
         *,
         rules,
         rule_categories,
+        live_to_legacy,
+        subgroup_live_to_legacy,
         top_name_by_id,
         path_str_by_id,
         attribute,
@@ -281,14 +316,23 @@ class Command(BaseCommand):
                 for product in qs:
                     cat = product.category
                     top_name = top_name_by_id.get(cat.id)
-                    # ПРЕДНАМЕРЕННО без aliases: расширение маршрутизации на боевом
-                    # (пишущем) пути — отдельная авторизация после dry-run/sandbox
-                    # репетиции (owner-decisions.md §STEP6-KEYWORDS-V1V2-DECISIONS,
-                    # «оба слоя»). Здесь lookup byte-for-byte как до этого окна.
-                    if top_name not in rule_categories:
+                    # Тот же live_to_legacy слой, что и в _handle_dry_run (ENRICH-
+                    # WRITE-PATH-HARDENING): для 10 из 13 блоков без alias — байт-в-
+                    # байт прежнее поведение (top_name уже совпадает с legacy).
+                    # Для 3 алиасированных корней (Спецодежда, Строительное, Оснастка)
+                    # боевой прогон теперь официально ведёт себя как dry-run-предсказание.
+                    legacy_category = (
+                        top_name if top_name in rule_categories else live_to_legacy.get(top_name)
+                    )
+                    if legacy_category is None:
                         continue
 
-                    ex = rules.extract(top_name, product.original_name or product.name, cat.name)
+                    sub_name, _unmapped = self._translate_subgroup(
+                        rules, legacy_category, cat.name, subgroup_live_to_legacy
+                    )
+                    ex = rules.extract(
+                        legacy_category, product.original_name or product.name, sub_name
+                    )
                     stats["processed"] += 1
 
                     tool_type_value = ""
@@ -398,6 +442,7 @@ class Command(BaseCommand):
         rules,
         rule_categories,
         live_to_legacy,
+        subgroup_live_to_legacy,
         top_name_by_id,
         opt_by_slug,
         opt_by_value,
@@ -418,7 +463,10 @@ class Command(BaseCommand):
                 report.record_skipped(top_name)
                 continue
 
-            ex = rules.extract(legacy_category, product.original_name or product.name, cat.name)
+            sub_name, unmapped = self._translate_subgroup(
+                rules, legacy_category, cat.name, subgroup_live_to_legacy
+            )
+            ex = rules.extract(legacy_category, product.original_name or product.name, sub_name)
             old_slug = self._existing_slug(existing_pav.get(product.id))
 
             if ex.result == ASSIGNED:
@@ -435,6 +483,8 @@ class Command(BaseCommand):
                 report.record_conflict(top_name, legacy_category, product, old_slug)
             else:
                 report.record_moderation(top_name, legacy_category, product, old_slug)
+            if unmapped:
+                report.record_subgroup_unmapped(cat.name)
 
         payload = json.dumps(
             report.to_dict(filters=filters, aliases_config=live_to_legacy),
@@ -447,6 +497,33 @@ class Command(BaseCommand):
         else:
             self.stdout.write(payload)
         return payload
+
+    @staticmethod
+    def _translate_subgroup(
+        rules: ToolTypeRules,
+        legacy_category: str,
+        leaf_name: str,
+        subgroup_live_to_legacy: dict[str, dict[str, str]],
+    ) -> tuple[str, bool]:
+        """Подгруппа для ``rules.extract`` (ENRICH-WRITE-PATH-HARDENING).
+
+        Лист сайта (``leaf_name`` = ``cat.name``), уже резолвящийся напрямую
+        (совпадает через ``normalize`` с override-подгруппой или базовым типом
+        ``inherit_1c_subgroup``-блока) — без изменений. Иначе — перевод через
+        ``tool_type_subgroup_aliases`` для подтверждённых случаев. Возвращает
+        ``(effective_subgroup, unmapped)`` — ``unmapped=True``, когда ни то,
+        ни другое не сработало (движок безопасно вернёт MODERATION, а не
+        сырое значение листа — см. ``tool_type.py::extract``)."""
+        cat_rules = rules.get(legacy_category)
+        if cat_rules is None or cat_rules.extraction != "inherit_1c_subgroup":
+            return leaf_name, False
+        known = known_subgroup_identities(cat_rules)
+        if normalize(leaf_name) in {normalize(identity) for identity in known}:
+            return leaf_name, False
+        mapped = subgroup_live_to_legacy.get(legacy_category, {}).get(leaf_name)
+        if mapped is not None:
+            return mapped, False
+        return leaf_name, True
 
     @staticmethod
     def _existing_slug(pav: ProductAttributeValue | None) -> str | None:
