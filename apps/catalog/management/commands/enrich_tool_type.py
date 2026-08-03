@@ -10,12 +10,14 @@
 4. Каждое решение — строкой в ``EnrichmentLog``.
 
 Обрабатываются товары категорий верхнего уровня, для которых есть правила.
+Lookup корневой категории использует явный слой aliases
+(``apps.catalog.tool_type_aliases``) — ОДИНАКОВО в ``--dry-run`` и в боевом
+прогоне (ENRICH-WRITE-PATH-HARDENING): dry-run-предсказание и то, что реально
+пишет боевой прогон, для одного и того же товара совпадают побайтово.
 
 Безопасный режим (``--dry-run``/``--report-only``, ENRICH-DRYRUN-ALIASES):
 ничего не пишет в БД, строит machine-readable отчёт matched/moderation/
-skipped/conflict. В этом режиме, и только в нём, lookup корневой категории
-использует явный слой aliases (``apps.catalog.tool_type_aliases``) — см.
-комментарий в ``_handle_write`` про причину такого разделения.
+skipped/conflict.
 """
 
 from __future__ import annotations
@@ -237,6 +239,7 @@ class Command(BaseCommand):
             qs,
             rules=rules,
             rule_categories=rule_categories,
+            live_to_legacy=live_to_legacy,
             top_name_by_id=top_name_by_id,
             path_str_by_id=path_str_by_id,
             attribute=attribute,
@@ -254,6 +257,7 @@ class Command(BaseCommand):
         *,
         rules,
         rule_categories,
+        live_to_legacy,
         top_name_by_id,
         path_str_by_id,
         attribute,
@@ -281,14 +285,20 @@ class Command(BaseCommand):
                 for product in qs:
                     cat = product.category
                     top_name = top_name_by_id.get(cat.id)
-                    # ПРЕДНАМЕРЕННО без aliases: расширение маршрутизации на боевом
-                    # (пишущем) пути — отдельная авторизация после dry-run/sandbox
-                    # репетиции (owner-decisions.md §STEP6-KEYWORDS-V1V2-DECISIONS,
-                    # «оба слоя»). Здесь lookup byte-for-byte как до этого окна.
-                    if top_name not in rule_categories:
+                    # Тот же live_to_legacy слой, что и в _handle_dry_run (ENRICH-
+                    # WRITE-PATH-HARDENING): для 10 из 13 блоков без alias — байт-в-
+                    # байт прежнее поведение (top_name уже совпадает с legacy).
+                    # Для 3 алиасированных корней (Спецодежда, Строительное, Оснастка)
+                    # боевой прогон теперь официально ведёт себя как dry-run-предсказание.
+                    legacy_category = (
+                        top_name if top_name in rule_categories else live_to_legacy.get(top_name)
+                    )
+                    if legacy_category is None:
                         continue
 
-                    ex = rules.extract(top_name, product.original_name or product.name, cat.name)
+                    ex = rules.extract(
+                        legacy_category, product.original_name or product.name, cat.name
+                    )
                     stats["processed"] += 1
 
                     tool_type_value = ""

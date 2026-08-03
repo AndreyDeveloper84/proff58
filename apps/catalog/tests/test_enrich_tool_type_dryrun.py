@@ -97,17 +97,52 @@ class TestAliasWiringInDryRun:
         assert report["by_rule_block"]["Строительное и отделочное"]["matched"] == 1
         assert report["by_target_slug"]["str-kisti"] == 1
 
-    def test_write_path_ignores_aliases_without_dry_run(self, seeded):
-        # Инвариант: без --dry-run алиасы НЕ применяются — боевой путь остаётся
-        # прежним (owner-decisions.md: расширение маршрутизации — отдельная
-        # авторизация после dry-run/sandbox репетиции).
+    def test_write_path_now_uses_aliases_too(self, seeded):
+        # ENRICH-WRITE-PATH-HARDENING: боевой прогон резолвит top_name через
+        # тот же live_to_legacy, что и --dry-run — расхождение убрано (было
+        # намеренным до этого окна, owner-decisions.md §STEP6-KEYWORDS-V1V2).
         root = _root("Спецодежда и СИЗ", "siz")
         _product(root, "Перчатки рабочие х/б", "siz1")
 
         call_command("enrich_tool_type")
 
-        assert ProductAttributeValue.objects.count() == 0
-        assert EnrichmentLog.objects.count() == 0
+        pav = ProductAttributeValue.objects.get()
+        assert pav.value_option.slug == "siz-perchatki"
+        assert EnrichmentLog.objects.count() == 1
+
+
+@pytest.mark.django_db
+class TestDryRunWriteParity:
+    """Обязательная проверка ENRICH-WRITE-PATH-HARDENING: для одного и того же
+    товара с алиасированным корнем dry-run-предсказание и то, что реально
+    пишет боевой прогон, совпадают побайтово (slug, provenance-намерение)."""
+
+    def test_dry_run_prediction_matches_write_result_byte_for_byte(self, seeded):
+        root = _root("Строительный и отделочный инструмент", "stroy")
+        _product(root, "Кисть малярная плоская 50мм", "str1")
+
+        dry_out = call_command("enrich_tool_type", "--dry-run")
+        dry_report = json.loads(dry_out)
+        assert dry_report["counts"]["matched"] == 1
+        (predicted_slug,) = dry_report["by_target_slug"]
+        assert predicted_slug == "str-kisti"
+        assert ProductAttributeValue.objects.count() == 0  # dry-run — ничего не пишет
+
+        call_command("enrich_tool_type")
+
+        pav = ProductAttributeValue.objects.get()
+        assert pav.value_option.slug == predicted_slug
+
+    def test_non_aliased_root_write_path_is_byte_for_byte_unchanged(self, seeded):
+        # Инвариант из PR #628: 10 из 13 блоков без alias — top_name уже
+        # совпадает с legacy, поведение не меняется (не только для 3 алиасов).
+        root = _root("Электроинструмент", "elektro")
+        _product(root, "Перфоратор Bosch GBH 2-26", "p1")
+
+        call_command("enrich_tool_type")
+
+        pav = ProductAttributeValue.objects.get()
+        assert pav.value_option.slug == "perforatory"
 
 
 @pytest.mark.django_db
