@@ -7,7 +7,8 @@ import {
   ShoppingCart,
   UserRound,
 } from "lucide-react";
-import { accountLinkHref, useHasAuthMarker } from "@/lib/auth-marker";
+import { useAuthState } from "@/components/auth/AuthStateProvider";
+import { accountLinkHref } from "@/lib/auth-state";
 import { cn } from "@/lib/utils";
 
 type MobileNavSection = "catalog" | "search" | "account" | "cart" | "profile";
@@ -27,7 +28,7 @@ const ITEMS = [
 export function MobileBottomNav({ active }: { active: MobileNavSection }) {
   // Гостю «Профиль» ведёт на форму входа, а не в кабинет: иначе его разворачивал
   // бы серверный гвард — со скачком адреса и пустой страницей.
-  const authMarker = useHasAuthMarker();
+  const authState = useAuthState();
 
   return (
     <nav
@@ -41,7 +42,7 @@ export function MobileBottomNav({ active }: { active: MobileNavSection }) {
           <Link
             key={item.section}
             href={
-              item.section === "profile" ? accountLinkHref(item.href, authMarker) : item.href
+              item.section === "profile" ? accountLinkHref(item.href, authState) : item.href
             }
             aria-current={current ? "page" : undefined}
             className={cn(
