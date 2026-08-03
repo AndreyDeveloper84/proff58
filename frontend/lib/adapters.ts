@@ -42,7 +42,7 @@ const SSR_TIMEOUT_MS = 4000;
 export class CatalogFetchError extends Error {}
 
 type ApiAttr = { name: string; slug: string; unit?: string; value: unknown };
-export type ApiProduct = {
+type ApiProduct = {
   id: number;
   name: string;
   // Короткая форма для плитки; backend отдаёт витринное имя, если она не задана.
@@ -574,6 +574,27 @@ export async function fetchCategoryTreeFromApi(base: string): Promise<CategoryNo
 
 // Товары раздела для блока «подобрать по теме» в статьях. Best-effort: сбой →
 // пустой список, блок просто не отрисуется (статья ценна и без витрины).
+/**
+ * Карточки товаров по списку id — для избранного (?ids=).
+ *
+ * limit, а не page_size: пагинация каталога — LimitOffsetPagination, и без
+ * явного лимита ответ обрезала бы страница по умолчанию (24 позиции).
+ * Порядок ответа не гарантирован, его выстраивает вызывающий.
+ */
+export async function fetchProductsByIdsFromApi(base: string, ids: number[]): Promise<Product[]> {
+  if (ids.length === 0) return [];
+  const root = base.replace(/\/$/, "");
+  const params = new URLSearchParams({ ids: ids.join(","), limit: String(ids.length) });
+  const res = await fetch(`${root}/api/catalog/products/?${params.toString()}`, {
+    cache: "no-store",
+    headers: SSR_HEADERS,
+    signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new CatalogFetchError(`Каталог ответил ${res.status}`);
+  const json = (await res.json()) as { results?: ApiProduct[] };
+  return (json.results ?? []).map(apiProductToProduct);
+}
+
 export async function fetchCategoryProductsFromApi(
   base: string,
   category: string,
