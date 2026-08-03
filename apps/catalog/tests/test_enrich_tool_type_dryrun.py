@@ -162,6 +162,81 @@ class TestDryRunWriteParity:
 
 
 @pytest.mark.django_db
+class TestSubgroupMappingInDryRun:
+    """ENRICH-WRITE-PATH-HARDENING: явный subgroup-mapping для листьев
+    ``inherit_1c_subgroup``, переименованных относительно tool_type_rules.json
+    (osnastka-mechanism-preflight-report.md)."""
+
+    def test_mapped_leaf_resolves_to_override_subgroup(self, seeded):
+        # "Пики, долота и зубила" -> legacy "Пики и долота" (override subgroup).
+        root = _root("Оснастка и расходные материалы", "osnastka")
+        leaf = root.add_child(name="Пики, долота и зубила", slug="piki-leaf", on_site=True)
+        _product(leaf, "Долото 40х250 мм SDS+ ЗУБР", "osn-piki")
+
+        out = call_command("enrich_tool_type", "--dry-run")
+        report = json.loads(out)
+
+        assert report["counts"]["matched"] == 1
+        assert report["by_target_slug"]["piki-dolota"] == 1
+        assert report["subgroup_unmapped"] == {}
+
+    def test_mapped_leaf_resolves_to_base_type(self, seeded):
+        # "Мешки-пылесборники" -> legacy base "Мешки для пылесосов" (без override).
+        root = _root("Оснастка и расходные материалы", "osnastka")
+        leaf = root.add_child(name="Мешки-пылесборники", slug="meshki-leaf", on_site=True)
+        _product(leaf, "Мешок-пылесборник синтетический OZONE MXT-204", "osn-meshki")
+
+        out = call_command("enrich_tool_type", "--dry-run")
+        report = json.loads(out)
+
+        assert report["counts"]["matched"] == 1
+        assert report["by_target_slug"]["meshki-pylesos"] == 1
+
+    def test_many_to_one_leaves_resolve_to_same_subgroup(self, seeded):
+        # "Алмазная оснастка"/"Диски"/"Чашки" -> одна legacy-подгруппа "Алмазные круги".
+        root = _root("Оснастка и расходные материалы", "osnastka")
+        diski = root.add_child(name="Диски", slug="diski-leaf", on_site=True)
+        chashki = root.add_child(name="Чашки", slug="chashki-leaf", on_site=True)
+        _product(diski, "Круг алмаз. отрез. 125х1,2х10х22,23", "osn-disk")
+        _product(chashki, "Чашка алмазная 125мм двухрядная", "osn-chashka")
+
+        out = call_command("enrich_tool_type", "--dry-run")
+        report = json.loads(out)
+
+        assert report["counts"]["matched"] == 2
+        assert report["by_target_slug"]["krugi-almaznye"] == 1  # диск — сам круг
+        assert report["by_target_slug"]["chashki-shlif"] == 1  # чашка — override по keyword
+
+    def test_krugi_leaf_is_not_auto_mapped_and_surfaces_as_unmapped(self, seeded):
+        # "Круги" (id=82 на проде) — подтверждённая смешанная корзина, НЕ мапится:
+        # попадает в moderation + отдельный диагностический subgroup_unmapped.
+        root = _root("Оснастка и расходные материалы", "osnastka")
+        leaf = root.add_child(name="Круги", slug="krugi-leaf", on_site=True)
+        _product(leaf, "Бумага наждачная 230х280мм, Р1000, 10 шт.", "osn-krugi")
+
+        out = call_command("enrich_tool_type", "--dry-run")
+        report = json.loads(out)
+
+        assert report["counts"]["moderation"] == 1
+        assert report["counts"]["matched"] == 0
+        assert report["subgroup_unmapped"] == {"Круги": 1}
+
+    def test_unmapped_leaf_write_path_goes_to_moderation_not_crash(self, seeded):
+        # Регресс-guard: до этого окна raw-fallback (tool_type=sub, slug="") на
+        # незнакомом листе падал бы CommandError(option_not_in_manifest) при
+        # записи — движок теперь безопасно отдаёт MODERATION (tool_type.py).
+        root = _root("Оснастка и расходные материалы", "osnastka")
+        leaf = root.add_child(name="Круги", slug="krugi-leaf", on_site=True)
+        _product(leaf, "Бумага наждачная 230х280мм, Р1000, 10 шт.", "osn-krugi")
+
+        call_command("enrich_tool_type")  # не должно поднять CommandError
+
+        assert ProductAttributeValue.objects.count() == 0
+        log = EnrichmentLog.objects.get()
+        assert log.result == "moderation"
+
+
+@pytest.mark.django_db
 class TestReportBuckets:
     def test_skipped_bucket_for_unmapped_live_root(self, seeded):
         root = _root("Автоинструмент и гаражное оборудование", "auto")
