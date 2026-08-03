@@ -112,11 +112,6 @@ def update_cart_item(item: CartItem, qty: int) -> CartItem:
     return item
 
 
-def remove_from_cart(item: CartItem) -> None:
-    """Физически удалить строку (для внутреннего использования)."""
-    item.delete()
-
-
 def soft_delete_cart_item(item: CartItem) -> None:
     """Мягко удалить строку — скрыть из корзины с возможностью восстановления (#380)."""
     item.is_deleted = True
