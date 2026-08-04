@@ -45,6 +45,9 @@ FRONTEND_PATHS = [
     "/api/orders/PROF-12/",
     "/api/orders/PROF-12/invoice",
     "/api/orders/PROF-12/invoice/",
+    # Отмена заказа покупателем: мутация вошедшего, без BFF упала бы на CSRF.
+    "/api/orders/PROF-12/cancel",
+    "/api/orders/PROF-12/cancel/",
     "/api/orders/PROF-12/max-track/start",
     "/api/orders/max-track/xyz/status",
     "/api/catalog/products/drel/availability-subscription",

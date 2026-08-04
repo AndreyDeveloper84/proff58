@@ -30,7 +30,9 @@ const mockedPlaceOrder = placeOrder as unknown as ReturnType<typeof vi.fn>;
 function fillBaseFields() {
   fireEvent.change(screen.getByLabelText(/^Имя/), { target: { value: "Иван" } });
   fireEvent.change(screen.getByLabelText(/^Телефон/), { target: { value: "+79001112233" } });
-  fireEvent.change(screen.getByLabelText(/^Адрес доставки/), { target: { value: "Пенза, 1" } });
+  // Адрес заполняется по частям — как на службах доставки (см. lib/delivery-address).
+  fireEvent.change(screen.getByLabelText(/^Улица/), { target: { value: "Ленина" } });
+  fireEvent.change(screen.getByLabelText(/^Дом/), { target: { value: "1" } });
 }
 
 function submit() {
@@ -53,7 +55,22 @@ describe("CheckoutPage — B2B-реквизиты и способ оплаты",
     expect(mockedPlaceOrder.mock.calls[0][0]).toMatchObject({
       customer_type: "b2c",
       payment_method: "online",
+      // Части адреса склеиваются в одну строку — контракт заказа не менялся.
+      delivery_address: "г. Пенза, Ленина, д. 1",
     });
+  });
+
+  // В базе стенда лежат заказы с адресом «Пен» и «Молокова»: одно поле «Адрес
+  // доставки» принимало что угодно, и курьеру было некуда ехать.
+  it("без номера дома заказ не отправляется", async () => {
+    render(<CheckoutPage />);
+    fireEvent.change(screen.getByLabelText(/^Имя/), { target: { value: "Иван" } });
+    fireEvent.change(screen.getByLabelText(/^Телефон/), { target: { value: "+79001112233" } });
+    fireEvent.change(screen.getByLabelText(/^Улица/), { target: { value: "Молокова" } });
+    submit();
+
+    expect(await screen.findByText(/номер дома/i)).toBeTruthy();
+    expect(mockedPlaceOrder).not.toHaveBeenCalled();
   });
 
   it("B2B без КПП и юр. адреса: заказ не отправляется, показана ошибка", async () => {

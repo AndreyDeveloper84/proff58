@@ -23,7 +23,7 @@ from django.db import transaction
 
 from apps.core import events
 
-from .models import FulfillmentStatus, Order
+from .models import FulfillmentStatus, Order, PaymentStatus, Sync1CStatus
 from .transitions import allowed_transitions, can_transition
 
 logger = logging.getLogger(__name__)
@@ -99,3 +99,71 @@ def advance_fulfillment(order_id: int, target: str, *, actor_id: int | None = No
         actor_id,
     )
     return order
+
+
+# Отмена покупателем разрешена, пока склад ещё не начал собирать заказ. Со
+# «Собирается» и дальше товар уже снят с полок, и отмена — разговор с менеджером.
+CUSTOMER_CANCELLABLE = frozenset({FulfillmentStatus.NEW, FulfillmentStatus.CONFIRMED})
+
+# Оплаченный заказ покупатель не отменяет сам: автовозврата денег у нас нет, и
+# «отменено» без возврата оставило бы человека без товара и без денег.
+_PAID_STATUSES = frozenset({PaymentStatus.PAID, PaymentStatus.PARTIALLY_REFUNDED})
+
+
+def can_customer_cancel(order: Order) -> bool:
+    """Виден ли покупателю смысл в кнопке отмены (для сериализатора и интерфейса).
+
+    Ответ «да» не заменяет проверку в ``cancel_by_customer``: между отрисовкой
+    страницы и нажатием статус мог уйти вперёд.
+    """
+    return (
+        order.fulfillment_status in CUSTOMER_CANCELLABLE
+        and order.payment_status not in _PAID_STATUSES
+    )
+
+
+def cancel_by_customer(order_id: int, *, actor_id: int | None = None) -> Order:
+    """Отменить заказ по просьбе самого покупателя.
+
+    Правило (решение владельца от 03.08.2026): можно, пока обработка в «Новый»
+    или «Подтверждён»; неоплаченный. Матрицу переходов и побочные эффекты не
+    дублируем — ими занимается ``advance_fulfillment``: возврат резерва в той же
+    транзакции и ``order_status_changed`` после коммита.
+
+    Проверка политики идёт под тем же блокирующим чтением, что и сам переход:
+    иначе между «можно» и «перевожу» менеджер успел бы сдвинуть статус, и
+    покупатель отменил бы уже собираемый заказ.
+    """
+    with transaction.atomic():
+        order = Order.objects.select_for_update().get(pk=order_id)
+
+        if order.fulfillment_status == FulfillmentStatus.CANCELLED:
+            return order  # повторное нажатие — не ошибка
+
+        if order.payment_status in _PAID_STATUSES:
+            raise ValidationError(
+                "Заказ уже оплачен — отменить его может только менеджер: "
+                "нужно оформить возврат денег. Позвоните нам, мы всё сделаем."
+            )
+
+        if order.fulfillment_status not in CUSTOMER_CANCELLABLE:
+            labels = dict(FulfillmentStatus.choices)
+            raise ValidationError(
+                f"Заказ уже в статусе «{labels[order.fulfillment_status]}» — "
+                "отменить его самостоятельно нельзя. Свяжитесь с менеджером."
+            )
+
+        cancelled = advance_fulfillment(order_id, FulfillmentStatus.CANCELLED, actor_id=actor_id)
+
+    # 1С забирает только незавершённые заказы (export_new_orders исключает
+    # отменённые), поэтому невыгруженный заказ до неё просто не доедет. А вот
+    # уже выгруженный там останется: обратного канала «заказ отменён» в контракте
+    # нет, и менеджеру придётся сказать об этом руками — пишем в лог заметно.
+    if cancelled.sync_1c_status == Sync1CStatus.EXPORTED:
+        logger.warning(
+            "Заказ #%s отменён покупателем ПОСЛЕ выгрузки в 1С — снять там вручную",
+            cancelled.order_number,
+        )
+
+    logger.info("Заказ #%s отменён покупателем (user id=%s)", cancelled.order_number, actor_id)
+    return cancelled

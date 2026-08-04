@@ -90,6 +90,33 @@ describe("auth client (M-11)", () => {
     expect(await getOrders()).toBe("error");
   });
 
+  // Страница ответа — 24 заказа, кнопки «показать ещё» в кабинете нет: без
+  // дозагрузки всё, что старше двух десятков заказов, пропадало из виду.
+  it("getOrders дочитывает все страницы", async () => {
+    const page = (from: number, n: number) =>
+      Array.from({ length: n }, (_, i) => ({ order_number: `П-${from + i}` }));
+    mockedFetch
+      .mockResolvedValueOnce({ count: 130, results: page(0, 100) })
+      .mockResolvedValueOnce({ count: 130, results: page(100, 30) });
+
+    const orders = await getOrders();
+
+    expect(Array.isArray(orders) && orders.length).toBe(130);
+    expect(mockedFetch).toHaveBeenNthCalledWith(1, "/api/orders?limit=100&offset=0", {
+      method: "GET",
+    });
+    expect(mockedFetch).toHaveBeenNthCalledWith(2, "/api/orders?limit=100&offset=100", {
+      method: "GET",
+    });
+  });
+
+  it("getOrders не делает лишнего запроса, когда всё поместилось", async () => {
+    mockedFetch.mockResolvedValueOnce({ count: 2, results: [{ id: 1 }, { id: 2 }] });
+
+    expect(await getOrders()).toHaveLength(2);
+    expect(mockedFetch).toHaveBeenCalledTimes(1);
+  });
+
   it("updateMe отправляет PATCH профиля через BFF", async () => {
     const updated = { id: 1, full_name: "Иван", email: "ivan@example.com" };
     mockedFetch.mockResolvedValueOnce(updated);
