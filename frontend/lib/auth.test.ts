@@ -36,14 +36,14 @@ describe("auth client (M-11)", () => {
   it("logout идёт POST через BFF (CSRF-aware) и ожидается", async () => {
     mockedFetch.mockResolvedValueOnce(undefined);
     await logout();
-    expect(mockedFetch).toHaveBeenCalledWith("/api/account/logout/", { method: "POST" });
+    expect(mockedFetch).toHaveBeenCalledWith("/api/account/logout", { method: "POST" });
   });
 
   it("login шлёт POST на BFF-путь account/login", async () => {
     mockedFetch.mockResolvedValueOnce({ id: 1 });
     await login("+79001112233", "pass");
     expect(mockedFetch).toHaveBeenCalledWith(
-      "/api/account/login/",
+      "/api/account/login",
       expect.objectContaining({ method: "POST" }),
     );
   });
@@ -97,7 +97,7 @@ describe("auth client (M-11)", () => {
     await expect(updateMe({ full_name: "Иван", email: "ivan@example.com" })).resolves.toBe(
       updated,
     );
-    expect(mockedFetch).toHaveBeenCalledWith("/api/account/me/", {
+    expect(mockedFetch).toHaveBeenCalledWith("/api/account/me", {
       method: "PATCH",
       body: JSON.stringify({ full_name: "Иван", email: "ivan@example.com" }),
     });
@@ -126,11 +126,11 @@ describe("auth client (M-11)", () => {
     await changePhone("+79001112233", "secret");
     await deleteAccount();
 
-    expect(mockedFetch).toHaveBeenNthCalledWith(1, "/api/account/change-phone/", {
+    expect(mockedFetch).toHaveBeenNthCalledWith(1, "/api/account/change-phone", {
       method: "POST",
       body: JSON.stringify({ new_phone: "+79001112233", password: "secret" }),
     });
-    expect(mockedFetch).toHaveBeenNthCalledWith(2, "/api/account/delete/", {
+    expect(mockedFetch).toHaveBeenNthCalledWith(2, "/api/account/delete", {
       method: "POST",
     });
   });

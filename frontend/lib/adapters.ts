@@ -603,7 +603,10 @@ export async function fetchCategoryProductsFromApi(
   const root = base.replace(/\/$/, "");
   try {
     const res = await fetch(
-      `${root}/api/catalog/products/?category=${encodeURIComponent(category)}&page_size=${limit}`,
+      // limit, а не page_size: пагинация каталога — LimitOffsetPagination, и
+      // page_size она просто игнорирует. Работало по случайности: ответ приходил
+      // страницей по умолчанию (24 позиции), лишнее срезал slice ниже.
+      `${root}/api/catalog/products/?category=${encodeURIComponent(category)}&limit=${limit}`,
       { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(SSR_TIMEOUT_MS) },
     );
     if (!res.ok) return [];

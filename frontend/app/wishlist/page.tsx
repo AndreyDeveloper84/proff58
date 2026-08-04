@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Heart, Info } from "lucide-react";
+import { AccountShell } from "@/components/account/AccountShell";
+import { useAuthState } from "@/components/auth/AuthStateProvider";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { ProductCard } from "@/components/product/ProductCard";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { useWishlist } from "@/components/wishlist/WishlistProvider";
 import { loginHref } from "@/lib/auth-state";
 import type { Product } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { fetchWishlistProducts } from "@/lib/wishlist-products";
 
 // Избранное покупателя — обычная страница витрины, рядом со сравнением, а не
@@ -20,6 +23,11 @@ import { fetchWishlistProducts } from "@/lib/wishlist-products";
 // удаления нет: две кнопки с одним смыслом на одной карточке путают.
 export default function WishlistPage() {
   const { ids, loaded, isGuest } = useWishlist();
+  // Вошедшему та же страница показывается в обвязке кабинета. «Избранное» стоит
+  // в меню кабинета, и переход по нему выбрасывал человека на витрину — со
+  // стороны это выглядело так, будто кабинет закрылся сам. Гостю кабинет
+  // показывать нечего: у него нет ни заказов, ни счетов.
+  const inAccount = useAuthState() !== "anonymous";
   const [products, setProducts] = useState<Product[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -52,6 +60,70 @@ export default function WishlistPage() {
       ? []
       : (products?.filter((product) => ids.has(product.id)) ?? null);
 
+  const content = (
+    <div className="space-y-4">
+      {/* Гостю честно говорим, где лежит его список: иначе «избранное
+          пропало» на другом устройстве выглядит как потеря данных. */}
+      {isGuest && ids.size > 0 && (
+        <p className="flex items-start gap-2 rounded-lg border border-line bg-raised/60 px-4 py-3 text-sm text-ink-2">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-ink-3" aria-hidden />
+          <span>
+            Избранное хранится в этом браузере.{" "}
+            <Link
+              href={loginHref("/wishlist")}
+              className="font-medium text-accent hover:underline"
+            >
+              Войдите
+            </Link>{" "}
+            — и оно будет доступно на любом устройстве.
+          </span>
+        </p>
+      )}
+
+      {failed && (
+        <ErrorState
+          title="Не удалось загрузить избранное"
+          description="Проверьте соединение и обновите страницу."
+        />
+      )}
+
+      {!failed && (!loaded || visible === null) && <LoadingState label="Загружаем избранное…" />}
+
+      {!failed && visible !== null && visible.length === 0 && (
+        <EmptyState
+          icon={<Heart className="h-10 w-10" aria-hidden />}
+          title="В избранном пока пусто"
+          description="Сохраняйте интересные товары, чтобы быстро вернуться к ним позже."
+          action={
+            <Link
+              href="/catalog"
+              className="inline-flex h-11 items-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
+            >
+              Перейти в каталог
+            </Link>
+          }
+        />
+      )}
+
+      {visible !== null && visible.length > 0 && (
+        <div
+          className={cn(
+            "grid grid-cols-2 gap-3 sm:grid-cols-3",
+            // В кабинете колонку сужает боковое меню — пятый столбец там
+            // сплющивал карточки до нечитаемой ширины.
+            inAccount ? "lg:grid-cols-3 xl:grid-cols-4" : "lg:grid-cols-4 xl:grid-cols-5",
+          )}
+        >
+          {visible.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  if (inAccount) return <AccountShell title="Избранное">{content}</AccountShell>;
+
   return (
     <main className="mx-auto w-full max-w-[1680px] px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-7">
       <nav
@@ -67,58 +139,7 @@ export default function WishlistPage() {
 
       <h1 className="font-display text-2xl font-semibold text-ink lg:text-[30px]">Избранное</h1>
 
-      <div className="mt-4 space-y-4">
-        {/* Гостю честно говорим, где лежит его список: иначе «избранное
-            пропало» на другом устройстве выглядит как потеря данных. */}
-        {isGuest && ids.size > 0 && (
-          <p className="flex items-start gap-2 rounded-lg border border-line bg-raised/60 px-4 py-3 text-sm text-ink-2">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-ink-3" aria-hidden />
-            <span>
-              Избранное хранится в этом браузере.{" "}
-              <Link
-                href={loginHref("/wishlist")}
-                className="font-medium text-accent hover:underline"
-              >
-                Войдите
-              </Link>{" "}
-              — и оно будет доступно на любом устройстве.
-            </span>
-          </p>
-        )}
-
-        {failed && (
-          <ErrorState
-            title="Не удалось загрузить избранное"
-            description="Проверьте соединение и обновите страницу."
-          />
-        )}
-
-        {!failed && (!loaded || visible === null) && <LoadingState label="Загружаем избранное…" />}
-
-        {!failed && visible !== null && visible.length === 0 && (
-          <EmptyState
-            icon={<Heart className="h-10 w-10" aria-hidden />}
-            title="В избранном пока пусто"
-            description="Сохраняйте интересные товары, чтобы быстро вернуться к ним позже."
-            action={
-              <Link
-                href="/catalog"
-                className="inline-flex h-11 items-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
-              >
-                Перейти в каталог
-              </Link>
-            }
-          />
-        )}
-
-        {visible !== null && visible.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {visible.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
-      </div>
+      <div className="mt-4">{content}</div>
 
       <MobileBottomNav active="account" />
     </main>

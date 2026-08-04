@@ -5,6 +5,11 @@
 // (cookie + X-CSRFToken) для мутаций аутентифицированного пользователя — без
 // этого logout/PATCH получали бы 403. Единый apiFetch даёт единообразную
 // обработку ошибок (ApiError с detail из Django).
+//
+// Пути — БЕЗ хвостового слэша. Next отдаёт на такой адрес 308 на версию без
+// слэша, то есть каждый вызов уходил дважды: и вход, и /me на каждой странице
+// кабинета, и опрос статуса MAX в цикле. Слэш нужен только внутри BFF, когда
+// route handler зовёт Django (его APPEND_SLASH ждёт именно такой путь).
 import { ApiError, apiFetch } from "@/lib/api";
 import type { Order } from "@/lib/types";
 
@@ -43,7 +48,7 @@ export type WishlistItem = {
 // Вход — по e-mail. Телефон логином не является: он контакт заказа и
 // идентификатор для MAX (см. apps/accounts/models.py).
 export async function login(email: string, password: string) {
-  return apiFetch<Record<string, unknown>>("/api/account/login/", {
+  return apiFetch<Record<string, unknown>>("/api/account/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
@@ -60,7 +65,7 @@ export async function register(data: {
   inn?: string;
   kpp?: string;
 }) {
-  return apiFetch<Record<string, unknown>>("/api/account/register/", {
+  return apiFetch<Record<string, unknown>>("/api/account/register", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -69,7 +74,7 @@ export async function register(data: {
 export async function logout() {
   // Ждём ответ (CSRF-защищённый POST) ДО редиректа — иначе 403 маскируется и
   // сессия остаётся активной.
-  await apiFetch<void>("/api/account/logout/", { method: "POST" });
+  await apiFetch<void>("/api/account/logout", { method: "POST" });
 }
 
 /**
@@ -82,7 +87,7 @@ export async function logout() {
  */
 export async function getMe(): Promise<AccountUser | null> {
   try {
-    return await apiFetch<AccountUser>("/api/account/me/", { method: "GET" });
+    return await apiFetch<AccountUser>("/api/account/me", { method: "GET" });
   } catch (e) {
     if (e instanceof ApiError && (e.status === 401 || e.status === 403)) return null;
     throw e;
@@ -110,21 +115,21 @@ export async function checkAuth(): Promise<AuthCheck> {
 export { loginHref } from "@/lib/auth-state";
 
 export async function updateMe(data: AccountUserPatch): Promise<AccountUser> {
-  return apiFetch<AccountUser>("/api/account/me/", {
+  return apiFetch<AccountUser>("/api/account/me", {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
 export async function changePhone(newPhone: string, password: string): Promise<void> {
-  await apiFetch("/api/account/change-phone/", {
+  await apiFetch("/api/account/change-phone", {
     method: "POST",
     body: JSON.stringify({ new_phone: newPhone, password }),
   });
 }
 
 export async function deleteAccount(): Promise<void> {
-  await apiFetch("/api/account/delete/", { method: "POST" });
+  await apiFetch("/api/account/delete", { method: "POST" });
 }
 
 // --- Авторизация через MAX (deeplink + one-time attempt, #492) ---
@@ -140,20 +145,20 @@ export type MaxAttemptStatus = { status: string; failure_reason: string | null }
 
 // Старт попытки входа/регистрации через MAX.
 export async function maxStart() {
-  return apiFetch<MaxAttempt>("/api/auth/max/start/", { method: "POST" });
+  return apiFetch<MaxAttempt>("/api/auth/max/start", { method: "POST" });
 }
 
 // Старт привязки MAX к текущему аккаунту (из ЛК).
 export async function maxLinkStart() {
-  return apiFetch<MaxAttempt>("/api/account/max/link/", { method: "POST" });
+  return apiFetch<MaxAttempt>("/api/account/max/link", { method: "POST" });
 }
 
 export async function maxStatus(attemptId: string) {
-  return apiFetch<MaxAttemptStatus>(`/api/auth/max/${attemptId}/status/`, { method: "GET" });
+  return apiFetch<MaxAttemptStatus>(`/api/auth/max/${attemptId}/status`, { method: "GET" });
 }
 
 export async function maxCancel(attemptId: string) {
-  return apiFetch<MaxAttemptStatus>(`/api/auth/max/${attemptId}/cancel/`, { method: "POST" });
+  return apiFetch<MaxAttemptStatus>(`/api/auth/max/${attemptId}/cancel`, { method: "POST" });
 }
 
 // --- Отслеживание гостевого заказа в MAX (#520) — свой start/status, тот же
@@ -175,7 +180,7 @@ export async function getOrderTrackingStatus(attemptId: string) {
 }
 
 export async function maxUnlink() {
-  return apiFetch<{ linked: boolean; removed: boolean }>("/api/account/max/unlink/", {
+  return apiFetch<{ linked: boolean; removed: boolean }>("/api/account/max/unlink", {
     method: "POST",
   });
 }
@@ -183,7 +188,7 @@ export async function maxUnlink() {
 export async function maxAccountStatus() {
   try {
     return await apiFetch<{ linked: boolean; max_user_id: number | null; linked_at: string | null }>(
-      "/api/account/max/status/",
+      "/api/account/max/status",
       { method: "GET" },
     );
   } catch (e) {
@@ -227,7 +232,7 @@ export async function getOrder(orderNumber: string): Promise<Order> {
  */
 export async function getWishlist(): Promise<WishlistItem[] | "error" | "unauthorized"> {
   try {
-    return await apiFetch<WishlistItem[]>("/api/account/wishlist/", { method: "GET" });
+    return await apiFetch<WishlistItem[]>("/api/account/wishlist", { method: "GET" });
   } catch (e) {
     if (e instanceof ApiError) {
       return e.status === 401 || e.status === 403 ? "unauthorized" : "error";

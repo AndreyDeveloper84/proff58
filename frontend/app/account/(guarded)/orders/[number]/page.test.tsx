@@ -4,10 +4,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const pushMock = vi.fn();
 const replaceMock = vi.fn();
 
+// Номер как он реально приходит из useParams: Next отдаёт сегмент закодированным,
+// а все наши номера начинаются с кириллической «П». Раньше здесь стоял
+// ASCII-номер, поэтому двойное кодирование в getOrder тесты не ловили.
+const { ENCODED_NUMBER, ORDER_NUMBER } = vi.hoisted(() => ({
+  ENCODED_NUMBER: "%D0%9F-20260803-CC74CA",
+  ORDER_NUMBER: "П-20260803-CC74CA",
+}));
+
 vi.mock("next/navigation", () => ({
-  useParams: () => ({ number: "P-2026-0010" }),
+  useParams: () => ({ number: ENCODED_NUMBER }),
   useRouter: () => ({ push: pushMock, replace: replaceMock }),
-  usePathname: () => "/account/orders/P-2026-0010",
+  usePathname: () => `/account/orders/${ENCODED_NUMBER}`,
 }));
 vi.mock("@/lib/auth", () => ({
   checkAuth: vi.fn(),
@@ -30,7 +38,7 @@ describe("OrderDetailsPage", () => {
     mockedGetMe.mockResolvedValue({ id: 1 });
     mockedGetOrder.mockResolvedValue({
       id: 10,
-      order_number: "P-2026-0010",
+      order_number: ORDER_NUMBER,
       external_order_id: "",
       fulfillment_status: "confirmed",
       payment_status: "pending",
@@ -86,7 +94,17 @@ describe("OrderDetailsPage", () => {
     expect(screen.getByText("Позвонить перед доставкой")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Открыть счёт" })).toHaveAttribute(
       "href",
-      "/api/orders/P-2026-0010/invoice",
+      `/api/orders/${encodeURIComponent(ORDER_NUMBER)}/invoice`,
     );
+  });
+
+  // Симптом со стенда: «Не удалось загрузить заказ» на каждой карточке. Номер из
+  // useParams приходит закодированным, getOrder кодировал его повторно, и Django
+  // искал заказ с номером «%D0%9F-…» — то есть 404 на любом заказе.
+  it("запрашивает заказ по раскодированному номеру", async () => {
+    render(<OrderDetailsPage />);
+
+    expect(await screen.findByText("Дрель аккумуляторная")).toBeInTheDocument();
+    expect(mockedGetOrder).toHaveBeenCalledWith(ORDER_NUMBER);
   });
 });

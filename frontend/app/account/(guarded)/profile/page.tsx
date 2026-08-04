@@ -302,10 +302,14 @@ export default function ProfilePage() {
 
   const displayName = user.full_name || "Покупатель";
   const company = user.profile?.company_name;
-  const deliveryAddress =
-    orders.find((order) => order.delivery_address)?.delivery_address ||
-    user.profile?.legal_address ||
-    "";
+  // Адресной книги у нас нет: показываем адрес последнего заказа с доставкой.
+  // Раньше он выдавался за сохранённый адрес — с бейджем «1» и стрелкой в
+  // «Личные данные», где поля адреса для B2C вообще нет. Отсюда и недоумение от
+  // строки вроде «Пен»: это обрывок, введённый когда-то при оформлении, и
+  // поменять его в кабинете было негде. Теперь подписываем источник и ведём в
+  // сам заказ, где адрес виден целиком.
+  const deliveryOrder = orders.find((order) => order.delivery_address);
+  const deliveryAddress = deliveryOrder?.delivery_address || user.profile?.legal_address || "";
 
   return (
     <AccountShell title="Личный кабинет">
@@ -478,7 +482,7 @@ export default function ProfilePage() {
             icon={Heart}
             title="Избранное"
             count={wishlist.length}
-            href="/account/wishlist"
+            href="/wishlist"
           >
             {wishlist.length > 0 ? (
               <div className="flex gap-3">
@@ -526,16 +530,25 @@ export default function ProfilePage() {
           <PreviewCard
             id="addresses"
             icon={MapPin}
-            title="Адреса доставки"
+            title="Адрес доставки"
             count={deliveryAddress ? 1 : 0}
-            href="#personal-data"
+            href={
+              deliveryOrder
+                ? `/account/orders/${encodeURIComponent(deliveryOrder.order_number)}`
+                : "#personal-data"
+            }
           >
             {deliveryAddress ? (
               <div className="rounded-md bg-raised p-3">
                 <p className="text-xs leading-5 text-ink-2">{deliveryAddress}</p>
+                <p className="mt-1.5 text-[11px] leading-4 text-ink-3">
+                  {deliveryOrder
+                    ? `Из заказа № ${deliveryOrder.order_number} от ${formatDate(deliveryOrder.created_at)}`
+                    : "Юридический адрес из профиля"}
+                </p>
               </div>
             ) : (
-              <EmptyPreview text="Адрес появится после оформления заказа" />
+              <EmptyPreview text="Адрес появится после заказа с доставкой" />
             )}
           </PreviewCard>
         </div>

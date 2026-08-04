@@ -28,8 +28,18 @@ vi.mock("@/components/cart/CartProvider", () => ({
   useCart: () => ({ count: 0, addItem: vi.fn(), lines: [] }),
 }));
 
+import { AuthStateProvider } from "@/components/auth/AuthStateProvider";
+import type { AuthState } from "@/lib/auth-state";
 import { fetchWishlistProducts } from "@/lib/wishlist-products";
 import WishlistPage from "./page";
+
+function renderAs(state: AuthState) {
+  return render(
+    <AuthStateProvider state={state}>
+      <WishlistPage />
+    </AuthStateProvider>,
+  );
+}
 
 const mockedFetch = fetchWishlistProducts as unknown as ReturnType<typeof vi.fn>;
 
@@ -118,5 +128,22 @@ describe("WishlistPage", () => {
 
     await screen.findByText("Дрель");
     expect(screen.queryByText(/хранится в этом браузере/)).not.toBeInTheDocument();
+  });
+
+  // «Избранное» есть в меню кабинета, но страница живёт на витрине — переход по
+  // пункту меню выбрасывал вошедшего наружу, и это читалось как «кабинет закрылся».
+  it("вошедшему страница открывается внутри кабинета", async () => {
+    renderAs("authenticated");
+
+    expect(await screen.findByText("В избранном пока пусто")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Разделы личного кабинета" })).toBeInTheDocument();
+  });
+
+  it("гостю кабинет не показываем — обычная страница витрины", async () => {
+    renderAs("anonymous");
+
+    expect(await screen.findByText("В избранном пока пусто")).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Разделы личного кабинета" })).toBeNull();
+    expect(screen.getByRole("navigation", { name: "Хлебные крошки" })).toBeInTheDocument();
   });
 });
