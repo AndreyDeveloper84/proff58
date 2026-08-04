@@ -204,12 +204,26 @@ export async function getOrders(): Promise<Order[] | "error"> {
   // а путь со слэшем уходил в Django напрямую мимо BFF (см. правило в lib/cart.ts).
   // #574: сбой возвращает "error", а не [] — иначе при 500 экран показывал
   // «Заказов пока нет», то есть пустое состояние врало о наличии данных.
+  // Страница по умолчанию — 24 заказа, кнопки «показать ещё» в кабинете нет:
+  // без дозагрузки 25-й и более старые заказы становились недоступны совсем.
+  // Забираем всё сами — постоянных покупателей с сотнями заказов у нас нет, а
+  // предохранитель ниже не даст запросу разрастись.
+  const PAGE = 100;
+  const MAX_ORDERS = 1000;
   try {
-    const data = await apiFetch<{ results?: Order[] } | Order[]>(
-      "/api/orders",
-      { method: "GET" },
-    );
-    return Array.isArray(data) ? data : (data.results ?? []);
+    const orders: Order[] = [];
+    for (let offset = 0; offset < MAX_ORDERS; offset += PAGE) {
+      const data = await apiFetch<{ count?: number; results?: Order[] } | Order[]>(
+        `/api/orders?limit=${PAGE}&offset=${offset}`,
+        { method: "GET" },
+      );
+      // Массив вместо конверта — старый непагинированный ответ: тогда это всё.
+      if (Array.isArray(data)) return data;
+      const page = data.results ?? [];
+      orders.push(...page);
+      if (page.length < PAGE || orders.length >= (data.count ?? orders.length)) break;
+    }
+    return orders;
   } catch (e) {
     if (e instanceof ApiError) return "error";
     throw e;
@@ -219,6 +233,19 @@ export async function getOrders(): Promise<Order[] | "error"> {
 export async function getOrder(orderNumber: string): Promise<Order> {
   return apiFetch<Order>(`/api/orders/${encodeURIComponent(orderNumber)}`, {
     method: "GET",
+  });
+}
+
+/**
+ * Отменить свой заказ.
+ *
+ * Возвращает заказ в новом состоянии — страница перерисовывается по ответу, а
+ * не по догадке о том, что получилось. 409 означает «заказ ушёл вперёд»
+ * (менеджер уже начал сборку): текст из ответа показываем как есть.
+ */
+export async function cancelOrder(orderNumber: string): Promise<Order> {
+  return apiFetch<Order>(`/api/orders/${encodeURIComponent(orderNumber)}/cancel`, {
+    method: "POST",
   });
 }
 

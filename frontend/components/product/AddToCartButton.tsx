@@ -26,14 +26,17 @@ export function AddToCartButton({
   hasPrice = true,
   fullWidth = false,
   compact = false,
+  showLabel = false,
 }: {
   productId: number;
   productSlug: string;
   stock?: StockState;
   hasPrice?: boolean;
-  // fullWidth — растянуть заявочные кнопки (нет в наличии / нет цены) на всю ширину карточки.
+  // Растянуть CTA на всю ширину контейнера (в обычной плитке остаётся компактным).
   fullWidth?: boolean;
   compact?: boolean;
+  // В карточке сравнения места достаточно для явного CTA, а не одной иконки.
+  showLabel?: boolean;
 }) {
   const wide = fullWidth ? "w-full" : "";
   const size = compact ? "h-8 min-h-8 rounded-sm px-2 text-[11px]" : "";
@@ -69,13 +72,30 @@ export function AddToCartButton({
     );
   }
   // in / order / низкий остаток → добавление в корзину (под заказ — предзаказ в корзину).
-  return <AddInStockButton productId={productId} compact={compact} />;
+  return (
+    <AddInStockButton
+      productId={productId}
+      compact={compact}
+      fullWidth={fullWidth}
+      showLabel={showLabel}
+    />
+  );
 }
 
 type Phase = "idle" | "loading" | "added" | "error";
 
 // Реальное добавление в корзину для товара в наличии с ценой.
-function AddInStockButton({ productId, compact = false }: { productId: number; compact?: boolean }) {
+function AddInStockButton({
+  productId,
+  compact = false,
+  fullWidth = false,
+  showLabel = false,
+}: {
+  productId: number;
+  compact?: boolean;
+  fullWidth?: boolean;
+  showLabel?: boolean;
+}) {
   const { add } = useCart();
   const [phase, setPhase] = useState<Phase>("idle");
   // Очищаем таймер «Добавлено»/«ошибка» при размонтировании, чтобы не дёргать состояние.
@@ -114,7 +134,7 @@ function AddInStockButton({ productId, compact = false }: { productId: number; c
 
   return (
     <Button
-      size="icon"
+      size={showLabel ? "default" : "icon"}
       variant="accent"
       aria-label={label}
       title={label}
@@ -122,7 +142,7 @@ function AddInStockButton({ productId, compact = false }: { productId: number; c
       onClick={handleClick}
       data-event="add_to_cart_from_plp"
       data-product-id={productId}
-      className={compact ? "h-8 w-11 min-w-11 rounded-sm" : undefined}
+      className={cn(compact && "h-8 w-11 min-w-11 rounded-sm", fullWidth && "w-full")}
     >
       {phase === "loading" ? (
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -130,6 +150,15 @@ function AddInStockButton({ productId, compact = false }: { productId: number; c
         <Check className="h-4 w-4" aria-hidden />
       ) : (
         <ShoppingCart className="h-4 w-4" aria-hidden />
+      )}
+      {showLabel && (
+        <span>
+          {phase === "added"
+            ? "Добавлено"
+            : phase === "error"
+              ? "Повторить"
+              : "В корзину"}
+        </span>
       )}
     </Button>
   );

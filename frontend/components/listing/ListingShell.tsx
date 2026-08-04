@@ -14,6 +14,7 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { FacetSidebar } from "@/components/filters/FacetSidebar";
 import { CategoryNavStrip } from "@/components/listing/CategoryNav";
 import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
+import { BreadcrumbsJsonLd } from "./BreadcrumbsJsonLd";
 import { CategoryHero } from "@/components/listing/CategoryHero";
 import { MobileFilterDrawer } from "@/components/listing/MobileFilterDrawer";
 
@@ -192,15 +193,27 @@ export function ListingShell({
 
   return (
     <div className="mx-auto w-full max-w-[1680px] px-4 py-6 sm:px-6 xl:px-8">
+      <BreadcrumbsJsonLd crumbs={listing.category.breadcrumb} />
       <nav aria-label="Хлебные крошки" className="mb-3 flex flex-wrap items-center gap-1 text-xs text-ink-3">
-        {listing.category.breadcrumb.map((b, i) => (
-          <span key={`${b.href}-${i}`} className="flex items-center gap-1">
-            {i > 0 && <span className="text-ink-3">/</span>}
-            <a href={b.href} className="hover:text-accent">
-              {b.label}
-            </a>
-          </span>
-        ))}
+        {listing.category.breadcrumb.map((b, i, all) => {
+          // Последняя крошка — это сама открытая страница: ссылка на себя ведёт
+          // в никуда и сбивает («нажал — ничего не произошло»).
+          const current = i === all.length - 1;
+          return (
+            <span key={`${b.href}-${i}`} className="flex items-center gap-1">
+              {i > 0 && <span className="text-ink-3">/</span>}
+              {current ? (
+                <span aria-current="page" className="text-ink-2">
+                  {b.label}
+                </span>
+              ) : (
+                <a href={b.href} className="hover:text-accent">
+                  {b.label}
+                </a>
+              )}
+            </span>
+          );
+        })}
       </nav>
 
       <div className="grid gap-5 lg:grid-cols-[280px_1fr]">

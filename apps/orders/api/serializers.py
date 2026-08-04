@@ -138,6 +138,7 @@ class OrderSerializer(serializers.ModelSerializer):
     reservation_expired = serializers.SerializerMethodField()
     delivery_slot = serializers.SerializerMethodField()
     applied_promotions = serializers.SerializerMethodField()
+    can_cancel = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -177,6 +178,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "reserved_until",
             "reservation_status",
             "reservation_expired",
+            "can_cancel",
             "created_at",
             "items",
         )
@@ -184,6 +186,13 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_total(self, obj):
         return _money(obj.total)
+
+    def get_can_cancel(self, obj) -> bool:
+        # Правило отмены живёт в сервисе, а не в интерфейсе: фронт лишь рисует
+        # кнопку по этому флагу, решение всё равно перепроверяется при нажатии.
+        from apps.orders.fulfillment import can_customer_cancel
+
+        return can_customer_cancel(obj)
 
     def get_applied_promotions(self, obj):
         # #571: только снимок — правка акции задним числом заказ не меняет.
