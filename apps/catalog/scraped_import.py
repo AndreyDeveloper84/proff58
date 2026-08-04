@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections import defaultdict
 from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
@@ -113,6 +114,36 @@ def model_key(name: str) -> str | None:
 def card_brand_token(card: dict, source: str) -> str | None:
     brand = (card.get("brand") or "").strip().lower()
     return BRAND_TOKEN_BY_CARD_BRAND.get(brand) or BRAND_TOKEN_BY_SOURCE.get(source)
+
+
+def _exact_model_key(name: str) -> str | None:
+    """Точное строковое совпадение извлечённой модели (без транслита)."""
+    model = extract_model(name)
+    return model.lower().strip() if model else None
+
+
+def _alias_key(model: str | None) -> str | None:
+    """Нормализованный ключ модели без trailing суффикса (1–3 кириллические буквы).
+
+    Алиас — последняя ступень лестницы: ``ДА-24-2ЛК-У`` → ``ДА-24-2ЛК``.
+    Без разделителя суффикс не отрезаем, чтобы не портить корень модели.
+    """
+    if not model:
+        return None
+    stripped = re.sub(r"(?:[-/\s])([А-ЯЁ]{1,3})$", "", model.strip(), flags=re.I)
+    return norm_key(stripped)
+
+
+def _card_sku_keys(card: dict) -> list[str]:
+    raw = card.get("manufacturer_sku")
+    if not raw:
+        return []
+    keys = []
+    for part in re.split(r"[,;]", str(raw)):
+        part = part.strip()
+        if part:
+            keys.append(norm_key(part))
+    return keys
 
 
 # --- нормализация значений (правила карты Phase 3) --------------------------
@@ -242,38 +273,132 @@ def extract_card_values(card: dict, source: str, amap: dict) -> CardExtraction:
 # --- матчинг -----------------------------------------------------------------
 
 
+LADDER_RANK = {
+    "sku": 0,
+    "exact_model": 1,
+    "normalized_model": 2,
+    "alias": 3,
+}
+
+
 @dataclass
 class MatchResult:
     status: str  # matched | ambiguous | not_found
     model_key: str | None
     products: list[Product] = field(default_factory=list)
+    matched_by: str = ""
 
 
-def build_product_index(products: list[Product]) -> dict[tuple[str, str], list[Product]]:
-    """(brand_token, model_key) → товары. Товары без модели в названии не индексируются."""
-    index: dict[tuple[str, str], list[Product]] = {}
+@dataclass
+class ProductMatchEntry:
+    product: Product
+    token: str
+    exact_key: str | None
+    normalized_key: str | None
+    alias_key: str | None
+    article_key: str | None
+
+
+@dataclass
+class MatchIndex:
+    entries: list[ProductMatchEntry] = field(default_factory=list)
+    by_token: dict[str, list[ProductMatchEntry]] = field(default_factory=lambda: defaultdict(list))
+    by_article: dict[tuple[str, str], list[ProductMatchEntry]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
+    by_exact: dict[tuple[str, str], list[ProductMatchEntry]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
+    by_normalized: dict[tuple[str, str], list[ProductMatchEntry]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
+    by_alias: dict[tuple[str, str], list[ProductMatchEntry]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
+
+
+def _index_entry(product: Product) -> ProductMatchEntry | None:
+    token = next((t for t in BRAND_TOKEN_BY_SOURCE.values() if t in product.name.lower()), None)
+    if token is None:
+        return None
+    exact = _exact_model_key(product.name)
+    normalized = model_key(product.name)
+    alias = _alias_key(extract_model(product.name)) if exact else None
+    article = norm_key(product.article) if product.article else None
+    return ProductMatchEntry(
+        product=product,
+        token=token,
+        exact_key=exact,
+        normalized_key=normalized,
+        alias_key=alias,
+        article_key=article,
+    )
+
+
+def build_product_index(products: list[Product]) -> MatchIndex:
+    """Индекс для лестницы матчинга: SKU → exact → normalized → alias."""
+    index = MatchIndex()
     for p in products:
-        token = next((t for t in BRAND_TOKEN_BY_SOURCE.values() if t in p.name.lower()), None)
-        if token is None:
+        entry = _index_entry(p)
+        if entry is None:
             continue
-        key = model_key(p.name)
-        if not key:
-            continue
-        index.setdefault((token, key), []).append(p)
+        index.entries.append(entry)
+        index.by_token[entry.token].append(entry)
+        if entry.article_key:
+            index.by_article[(entry.token, entry.article_key)].append(entry)
+        if entry.exact_key:
+            index.by_exact[(entry.token, entry.exact_key)].append(entry)
+        if entry.normalized_key:
+            index.by_normalized[(entry.token, entry.normalized_key)].append(entry)
+        if entry.alias_key:
+            index.by_alias[(entry.token, entry.alias_key)].append(entry)
     return index
 
 
-def match_card(card: dict, source: str, index: dict[tuple[str, str], list[Product]]) -> MatchResult:
+def _resolve(candidates: list[ProductMatchEntry], step: str, model_key: str | None) -> MatchResult:
+    products = [e.product for e in candidates]
+    if len(candidates) == 1:
+        return MatchResult("matched", model_key, products, matched_by=step)
+    return MatchResult("ambiguous", model_key, products)
+
+
+def match_card(card: dict, source: str, index: MatchIndex) -> MatchResult:
     token = card_brand_token(card, source)
-    key = model_key(card["name"]) if token else None
-    if not token or not key:
-        return MatchResult("not_found", key)
-    found = index.get((token, key), [])
-    if len(found) == 1:
-        return MatchResult("matched", key, found)
-    if len(found) > 1:
-        return MatchResult("ambiguous", key, found)
-    return MatchResult("not_found", key)
+    if not token:
+        return MatchResult("not_found", None)
+
+    name = card["name"]
+    exact = _exact_model_key(name)
+    normalized = model_key(name)
+    alias = _alias_key(extract_model(name))
+    if not any((exact, normalized, alias)):
+        return MatchResult("not_found", normalized)
+
+    # 1. точный SKU / артикул
+    for sku_key in _card_sku_keys(card):
+        candidates = index.by_article.get((token, sku_key), [])
+        if candidates:
+            return _resolve(candidates, "sku", normalized)
+
+    # 2. точная модель
+    if exact:
+        candidates = index.by_exact.get((token, exact), [])
+        if candidates:
+            return _resolve(candidates, "exact_model", normalized)
+
+    # 3. нормализованная модель
+    if normalized:
+        candidates = index.by_normalized.get((token, normalized), [])
+        if candidates:
+            return _resolve(candidates, "normalized_model", normalized)
+
+    # 4. alias
+    if alias:
+        candidates = index.by_alias.get((token, alias), [])
+        if candidates:
+            return _resolve(candidates, "alias", normalized)
+
+    return MatchResult("not_found", normalized)
 
 
 def article_check(product: Product, card_sku: str | None) -> str | None:
@@ -301,7 +426,7 @@ class PlanItem:
     new_value: object
     is_option: bool
     confidence: int
-    action: str  # create | confirm | overwrite | skipped_priority | skipped_voltage
+    action: str  # create | confirm | conflict | skipped_voltage
     old_value: object = None
     old_source: str = ""
 
@@ -350,9 +475,13 @@ def plan_product_values(
     existing: dict[str, ProductAttributeValue],
     priority: dict[str, int],
 ) -> list[PlanItem]:
-    """План по одному товару: create/confirm/overwrite/skipped_*.
+    """План по одному товару: create / confirm / conflict / skipped_voltage.
 
     existing: {attribute_slug: PAV} по управляемым атрибутам.
+
+    Автоматический overwrite запрещён (CODE-04): любое расхождение со
+    значением в каталоге уходит в ``conflict`` / manual review.
+    ``priority`` больше не влияет на решение, но оставлен для совместимости.
     """
     battery = is_battery_values(values)
     items: list[PlanItem] = []
@@ -402,36 +531,21 @@ def plan_product_values(
                 )
             )
             continue
-        if priority.get(Source.SCRAPER, 0) >= priority.get(pav.source, 0):
-            items.append(
-                PlanItem(
-                    product.id,
-                    v.attribute_slug,
-                    v.field,
-                    v.raw,
-                    v.value,
-                    v.is_option,
-                    v.confidence,
-                    "overwrite",
-                    _pav_current_value(pav),
-                    pav.source,
-                )
+        # Расхождение — в ручную проверку, без перезаписи.
+        items.append(
+            PlanItem(
+                product.id,
+                v.attribute_slug,
+                v.field,
+                v.raw,
+                v.value,
+                v.is_option,
+                v.confidence,
+                "conflict",
+                _pav_current_value(pav),
+                pav.source,
             )
-        else:
-            items.append(
-                PlanItem(
-                    product.id,
-                    v.attribute_slug,
-                    v.field,
-                    v.raw,
-                    v.value,
-                    v.is_option,
-                    v.confidence,
-                    "skipped_priority",
-                    _pav_current_value(pav),
-                    pav.source,
-                )
-            )
+        )
     return items
 
 
