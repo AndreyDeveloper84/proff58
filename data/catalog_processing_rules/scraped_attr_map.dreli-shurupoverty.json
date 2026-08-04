@@ -225,6 +225,20 @@
           "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
           "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
         },
+        "Тип редуктора": {"action": "ignore", "reason": "нет атрибута"},
+        "Наибольший диаметр сверления в стали": {"action": "ignore", "reason": "нет атрибута"},
+        "Присоединительная резьба шпинделя": {"action": "ignore", "reason": "нет атрибута"},
+        "Диаметр зажимаемого сверла": {"action": "unmapped", "candidate_attribute": "chuck_size_mm", "reason": "диаметр патрона, не тип"},
+        "Регулировка оборотов": {"action": "ignore", "reason": "нет атрибута"},
+        "Класс безопасности машины": {"action": "ignore", "reason": "нет атрибута"},
+        "Класс безопасности машины (по ГОСТ Р МЭК 60745-1)": {"action": "ignore", "reason": "нет атрибута"},
+        "Предохранительная муфта": {"action": "ignore", "reason": "нет атрибута"},
+        "Наибольший диаметр сверления в древесине": {"action": "ignore", "reason": "нет атрибута"},
+        "Направление вращения": {"action": "ignore", "reason": "нет атрибута"},
+        "Номинальный потребляемый ток": {"action": "ignore", "reason": "нет атрибута"},
+        "Установленный срок службы": {"action": "ignore", "reason": "коммерческая информация"},
+        "Быстрозажимной патрон": {"action": "ignore", "reason": "значения нечитаемые/нет атрибута"},
+        "Смена направления вращения": {"action": "ignore", "reason": "нет атрибута"},
         "Емкость аккумулятора, Ач": {
           "action": "map", "attribute": "battery_capacity", "attribute_type": "decimal", "unit": "А*ч",
           "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
