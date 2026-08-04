@@ -48,7 +48,7 @@ const SETTINGS_NAV: NavItem[] = [
     href: "/account/profile#personal-data",
     icon: UserRound,
   },
-  { label: "Адреса доставки", href: "/account/profile#addresses", icon: MapPin },
+  { label: "Адрес доставки", href: "/account/profile#addresses", icon: MapPin },
   {
     label: "Уведомления",
     href: "/account/notifications",

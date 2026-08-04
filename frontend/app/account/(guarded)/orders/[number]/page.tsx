@@ -34,6 +34,7 @@ import {
 } from "@/lib/format";
 import { isDelivered, statusBadgeClass } from "@/lib/order-status";
 import { getMyReviewForOrder, reviewStatusText } from "@/lib/reviews";
+import { decodeRouteParam } from "@/lib/route-params";
 import type { MyReview } from "@/lib/types";
 import type { Order, OrderItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -89,7 +90,9 @@ export default function OrderDetailsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams<{ number: string }>();
-  const orderNumber = params.number;
+  // Из useParams номер приходит закодированным — иначе getOrder закодирует его
+  // повторно и Django будет искать заказ «%D0%9F-…» (см. lib/route-params).
+  const orderNumber = decodeRouteParam(params.number);
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

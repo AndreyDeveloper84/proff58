@@ -2,7 +2,9 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // #574: разбивка итога и честный fallback без снимка заказа.
-vi.mock("next/navigation", () => ({ useParams: () => ({ id: "П-1" }) }));
+// Номер в useParams приходит закодированным (Next отдаёт сегмент как в адресе),
+// а checkout кладёт снимок под обычным номером — на этой паре и ломался поиск.
+vi.mock("next/navigation", () => ({ useParams: () => ({ id: "%D0%9F-1" }) }));
 vi.mock("@/lib/order-storage", () => ({ readStashedOrder: vi.fn() }));
 vi.mock("@/components/order/TrackOrderInMaxCta", () => ({ TrackOrderInMaxCta: () => null }));
 
@@ -62,5 +64,16 @@ describe("ThanksPage (#574)", () => {
     render(<ThanksPage />);
     expect(screen.getByText(/Детали заказа не сохранились в этом браузере/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "в личном кабинете" })).toBeTruthy();
+  });
+
+  // Ключ снимка — обычный номер заказа. Пока его брали из useParams как есть,
+  // поиск шёл по «%D0%9F-1» и не находил ничего: страница ВСЕГДА показывала
+  // «детали не сохранились», а в заголовке светился закодированный номер.
+  it("ищет снимок по раскодированному номеру", () => {
+    mockedRead.mockReturnValue(null);
+    render(<ThanksPage />);
+
+    expect(mockedRead).toHaveBeenCalledWith("П-1");
+    expect(screen.getByText(/№ П-1/)).toBeTruthy();
   });
 });

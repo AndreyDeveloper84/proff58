@@ -14,12 +14,15 @@ const MIN_QUERY = 2;
 export function SearchBar({
   className,
   placeholder = "Поиск товаров…",
+  initialQuery = "",
 }: {
   className?: string;
   placeholder?: string;
+  /** Начальный текст — страница поиска подставляет сюда текущий запрос. */
+  initialQuery?: string;
 }) {
   const router = useRouter();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
