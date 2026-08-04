@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { categoryNav } from "./listing";
+import { categoryNav, normalizeRangeFilters } from "./listing";
 import type { Facet, Listing } from "./types";
 
 function navFacet(options: { value: string; label: string; count: number }[]): Facet {
@@ -86,5 +86,58 @@ describe("categoryNav", () => {
 
   it("без подкатегорий и без nav-фасета блока нет", () => {
     expect(categoryNav(listing(), "ruchnoy-otvertki")).toBeNull();
+  });
+});
+
+describe("normalizeRangeFilters", () => {
+  const priceFacet = (min: number, max: number): Facet => ({
+    code: "price",
+    label: "Цена",
+    type: "range",
+    unit: "₽",
+    kind: "base",
+    min,
+    max,
+  });
+
+  // Тот самый баг: цена выставлена на прошлом типе (до 15 595 ₽), после
+  // переключения на «Аппараты сварки пластиковых труб» шкала — 980…3 850.
+  it("снимает верхнюю границу, которая выше всей выдачи", () => {
+    expect(normalizeRangeFilters({ price: { max: 15595 } }, [priceFacet(980, 3850)])).toEqual({});
+  });
+
+  it("снимает нижнюю границу, которая ниже всей выдачи", () => {
+    expect(normalizeRangeFilters({ price: { min: 500 } }, [priceFacet(980, 3850)])).toEqual({});
+  });
+
+  it("оставляет границу, которая реально сужает выдачу", () => {
+    expect(normalizeRangeFilters({ price: { min: 500, max: 2000 } }, [priceFacet(980, 3850)])).toEqual(
+      { price: { min: undefined, max: 2000 } },
+    );
+  });
+
+  // Пустой результат — честное состояние с точечным сбросом, а не повод молча
+  // переписать выбор человека.
+  it("не трогает границу, которая обнуляет выдачу", () => {
+    expect(normalizeRangeFilters({ price: { min: 9000 } }, [priceFacet(980, 3850)])).toBeNull();
+  });
+
+  it("ничего не меняет, когда границы в шкале — второй проход холостой", () => {
+    expect(normalizeRangeFilters({ price: { max: 2000 } }, [priceFacet(980, 3850)])).toBeNull();
+  });
+
+  it("не судит о фасете, которого нет в выдаче или он без шкалы", () => {
+    expect(normalizeRangeFilters({ price: { max: 15595 } }, [])).toBeNull();
+    expect(
+      normalizeRangeFilters({ attr_weight: { max: 10 } }, [
+        { code: "attr_weight", label: "Вес", type: "range" },
+      ]),
+    ).toBeNull();
+  });
+
+  it("чекбоксы переносит как есть", () => {
+    expect(
+      normalizeRangeFilters({ brand: ["bosch"], price: { max: 15595 } }, [priceFacet(980, 3850)]),
+    ).toEqual({ brand: ["bosch"] });
   });
 });

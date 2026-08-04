@@ -2,7 +2,7 @@
 // Чистые функции поверх уже пришедших фасетов — НЕ дублировать эту логику в компонентах.
 
 import { humanizeToken } from "./format";
-import type { Facet, FacetGroupKind, Listing } from "./types";
+import type { Facet, FacetGroupKind, Listing, ListingQuery } from "./types";
 
 // Каноническая таксономия v2: верхний «Электроинструмент» навигируется второй осью
 // tool_type, а не деревом — его дочерние узлы в навигации не показываем.
@@ -99,6 +99,59 @@ export function sidebarFacets(listing: Listing, toolType?: string): Facet[] {
     return nonNav.filter((f) => f.kind === "base" || f.kind == null);
   }
   return nonNav;
+}
+
+/**
+ * Убрать границы диапазонов, которые в новой выдаче ничего не отсекают.
+ *
+ * Границы в URL достались от прошлой выдачи. Выставили «до 15 595 ₽» на одном
+ * типе инструмента, переключили тип на «Аппараты сварки пластиковых труб» — там
+ * всё дешевле 3 850 ₽, и фильтр не отсекает ничего, но продолжает висеть: чип
+ * «Цена: до 15 595 ₽», счётчик «2 фильтра», а ползунок упирается в правый край
+ * при подписи «до 5 000» — вид сломанного элемента.
+ *
+ * Правила ровно те же, которыми фильтр применяется (RangeFacet.commit): граница
+ * ниже минимума выдачи или выше её максимума — это «границы нет». Границы,
+ * которые реально сужают выдачу — пусть даже до нуля товаров, — не трогаем: за
+ * них отвечает пустое состояние с точечным сбросом, молча править выбор
+ * человека нельзя. Фасеты диапазонов считаются на бэке без своей же оси
+ * (drill-down own-axis), поэтому чистка устойчива: повторный проход уже ничего
+ * не меняет.
+ *
+ * @returns новый набор фильтров либо null, если менять нечего.
+ */
+export function normalizeRangeFilters(
+  filters: ListingQuery["filters"],
+  facets: Facet[],
+): ListingQuery["filters"] | null {
+  let changed = false;
+  const next: ListingQuery["filters"] = {};
+
+  for (const [code, val] of Object.entries(filters)) {
+    if (Array.isArray(val)) {
+      next[code] = val;
+      continue;
+    }
+    const facet = facets.find((f) => f.code === code);
+    const lo = facet?.min;
+    const hi = facet?.max;
+    // Фасета в выдаче нет (не относится к типу) или он без границ (выдача пуста) —
+    // судить не о чем, оставляем как есть.
+    if (lo == null || hi == null || lo >= hi) {
+      next[code] = val;
+      continue;
+    }
+    const min = val.min != null && val.min > lo ? val.min : undefined;
+    const max = val.max != null && val.max < hi ? val.max : undefined;
+    if (min === val.min && max === val.max) {
+      next[code] = val;
+      continue;
+    }
+    changed = true;
+    if (min != null || max != null) next[code] = { min, max };
+  }
+
+  return changed ? next : null;
 }
 
 // Секция сайдбара (D2, §22.4): «Базовые» / «Основные» / «Дополнительные». extra-секция
