@@ -4,9 +4,10 @@ from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Count, IntegerField, OuterRef, Subquery, Value
+from django.db.models import Count, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
-from django.shortcuts import redirect
+from django.core.paginator import Paginator
+from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import format_html, format_html_join
@@ -19,6 +20,7 @@ from apps.core.events import EventSource, product_created, product_updated
 from apps.pricing.models import PriceRecord
 from apps.pricing.services import WHOLESALE, price_for
 
+from . import links as links_service
 from . import moderation, processing, queues
 from .availability_subscriptions import ProductAvailabilitySubscription
 from .models import (
@@ -26,6 +28,7 @@ from .models import (
     AttributeOption,
     AttributeType,
     CatalogChange,
+    CompatibilityKind,
     CatalogProcessingItem,
     CatalogProcessingRun,
     Category,
@@ -633,6 +636,7 @@ class ProductAdmin(admin.ModelAdmin):
         ContentGapFilter,
         "stock_status",
         "is_active",
+        "is_hit_manual",
         BrandFilter,
     )
     search_fields = ("name", "original_name", "article", "code_1c", "slug")
@@ -661,6 +665,11 @@ class ProductAdmin(admin.ModelAdmin):
                 "moderate/",
                 self.admin_site.admin_view(self.moderate_view),
                 name="catalog_product_moderate",
+            ),
+            path(
+                "<int:product_id>/links/",
+                self.admin_site.admin_view(self.links_view),
+                name="catalog_product_links",
             ),
             *super().get_urls(),
         ]
@@ -740,6 +749,114 @@ class ProductAdmin(admin.ModelAdmin):
         base = reverse("admin:catalog_product_moderate")
         return f"{base}?product={nxt.pk}" if nxt else base
 
+    # --- Связи товара: «покупают вместе» и «аналоги» галочками ---
+    #
+    # Построчная форма внизу карточки годится для двух-трёх аксессуаров. Здесь
+    # работа другая: пройти подгруппу целиком и отметить, что с чем берут. Поэтому
+    # отдельный экран — список кандидатов того же типа инструмента с галочками.
+
+    LINK_KINDS = (
+        (CompatibilityKind.CROSS_SELL, "Покупают вместе"),
+        (CompatibilityKind.ANALOG, "Аналог"),
+    )
+
+    @admin.display(description=_("Связи товара"))
+    def related_links(self, obj):
+        if obj is None or obj.pk is None:
+            return _("Появятся после сохранения товара.")
+        counts = {kind: len(links_service.linked_ids(obj, kind)) for kind, _label in self.LINK_KINDS}
+        return format_html(
+            '<a class="button" href="{}">Подобрать связи</a>'
+            '<span style="margin-left:.7rem;opacity:.7;">покупают вместе: {} · аналоги: {}</span>',
+            reverse("admin:catalog_product_links", args=[obj.pk]),
+            counts[CompatibilityKind.CROSS_SELL],
+            counts[CompatibilityKind.ANALOG],
+        )
+
+    def links_view(self, request, product_id):
+        """Экран подбора связей: кандидаты списком, две колонки галочек."""
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        product = get_object_or_404(Product, pk=product_id)
+        tool_type = (product.attrs_cache or {}).get("tool_type")
+        scope = request.GET.get("scope") or ("tool_type" if tool_type else "category")
+        query = (request.GET.get("q") or "").strip()
+
+        current = {kind: links_service.linked_ids(product, kind) for kind, _label in self.LINK_KINDS}
+
+        if request.method == "POST":
+            # Снимаем только то, что человек видел на экране: страница показывает
+            # не весь каталог, и молча стереть связь, которой в списке не было,
+            # нельзя.
+            shown = {int(x) for x in request.POST.getlist("shown") if x.isdigit()}
+            report = []
+            for kind, label in self.LINK_KINDS:
+                chosen = {int(x) for x in request.POST.getlist(f"link_{kind}") if x.isdigit()}
+                wanted = (current[kind] - shown) | chosen
+                added, removed = links_service.set_links(product, kind, wanted, scope_ids=shown)
+                if added or removed:
+                    report.append(f"{label}: +{added} / −{removed}")
+            self.message_user(
+                request,
+                "Связи сохранены. " + (" · ".join(report) if report else "Изменений нет."),
+                level=messages.SUCCESS,
+            )
+            return redirect(request.get_full_path())
+
+        candidates = Product.objects.exclude(pk=product.pk)
+        if scope == "tool_type" and tool_type:
+            candidates = candidates.filter(attrs_cache__tool_type=tool_type)
+        elif scope == "category" and product.category_id:
+            candidates = candidates.filter(category_id=product.category_id)
+        if query:
+            candidates = candidates.filter(Q(name__icontains=query) | Q(article__icontains=query))
+        candidates = candidates.select_related("category").order_by("name")
+
+        page = Paginator(candidates, 60).get_page(request.GET.get("page"))
+
+        # Уже связанные товары держим наверху, даже если выборка их не содержит —
+        # иначе снять отметку можно было бы только угадав нужный фильтр.
+        linked_all = current[CompatibilityKind.CROSS_SELL] | current[CompatibilityKind.ANALOG]
+        pinned = list(Product.objects.filter(pk__in=linked_all).select_related("category").order_by("name"))
+        rows = pinned + [p for p in page.object_list if p.pk not in linked_all]
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": f"Связи товара: {product.name}",
+            "product": product,
+            "tool_type": tool_type,
+            "scope": scope,
+            "query": query,
+            "page_obj": page,
+            "kinds": self.LINK_KINDS,
+            "rows": [
+                {
+                    "product": p,
+                    # Ячейки готовим здесь: в шаблоне Django нет доступа к словарю
+                    # по переменному ключу.
+                    "cells": [
+                        {"kind": kind, "label": label, "checked": p.pk in current[kind]}
+                        for kind, label in self.LINK_KINDS
+                    ],
+                    "pinned": p.pk in linked_all,
+                }
+                for p in rows
+            ],
+            "opts": self.model._meta,
+        }
+        return TemplateResponse(request, "admin/catalog/product/links.html", context)
+
+    @admin.action(description=_("Отметить как «Хит продаж»"))
+    def action_mark_hit(self, request, queryset):
+        updated = queryset.update(is_hit_manual=True)
+        self.message_user(request, f"Отмечено хитами: {updated}", level=messages.SUCCESS)
+
+    @admin.action(description=_("Снять отметку «Хит продаж»"))
+    def action_unmark_hit(self, request, queryset):
+        updated = queryset.update(is_hit_manual=False)
+        self.message_user(request, f"Снята отметка хита: {updated}", level=messages.INFO)
+
     def lookup_allowed(self, lookup, value, request=None):
         # Drill-down из списка категорий: ссылка по поддереву (?category__path__startswith=<path>)
         # или по точному узлу (?category__id__exact=<id>). Категорию НЕ кладём в list_filter
@@ -754,6 +871,7 @@ class ProductAdmin(admin.ModelAdmin):
     readonly_fields = (
         "readiness",
         "moderation_reason_detail",
+        "related_links",
         "code_1c",
         "original_name",
         "source_group",
@@ -779,6 +897,8 @@ class ProductAdmin(admin.ModelAdmin):
         "action_publish",
         "action_needs_review",
         "action_rebuild_attrs_cache",
+        "action_mark_hit",
+        "action_unmark_hit",
     ]
     fieldsets = (
         (
@@ -797,6 +917,8 @@ class ProductAdmin(admin.ModelAdmin):
                     "slug",
                     "status",
                     "is_active",
+                    "is_hit_manual",
+                    "related_links",
                 ),
             },
         ),

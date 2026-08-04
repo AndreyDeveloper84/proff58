@@ -35,6 +35,17 @@ export default async function ProductPage({ params }: Props) {
   if (!product) notFound();
   const reviews = await fetchProductReviewsSafe(slug);
 
+  // Вкладка связанных товаров. Раньше она появлялась при любом непустом объекте
+  // секций — даже когда все пять пусты, и вела в никуда. Подпись зависит от того,
+  // что там на самом деле: «покупают вместе» и аналоги интереснее совместимости.
+  const related = product.compatible;
+  const hasRelated = related != null && Object.values(related).some((items) => items.length > 0);
+  const relatedTabLabel = !hasRelated
+    ? null
+    : related.crossSell.length || related.analogs.length
+      ? "Смотрите также"
+      : "Совместимые товары";
+
   // Главная → Каталог → …категории (из breadcrumb)… → Товар (последний — текст, без ссылки).
   const crumbs = [
     { label: "Главная", href: "/" },
@@ -108,7 +119,7 @@ export default async function ProductPage({ params }: Props) {
               href="#reviews"
               className="flex w-fit items-center gap-2 text-sm text-ink-2 hover:text-accent"
             >
-              <Star className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden />
+              <Star className="h-4 w-4 fill-current text-rating" aria-hidden />
               <span className="font-semibold text-ink">
                 {(reviews.summary.product_rating_avg ?? 0).toFixed(1)}
               </span>
@@ -187,9 +198,9 @@ export default async function ProductPage({ params }: Props) {
                 Описание
               </a>
             )}
-            {product.compatible && (
+            {relatedTabLabel && (
               <a href="#compatible" className="min-h-12 shrink-0 py-3.5 hover:text-accent">
-                Совместимые товары
+                {relatedTabLabel}
               </a>
             )}
             {reviews && (

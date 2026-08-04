@@ -225,7 +225,13 @@ def test_api_sections(client, cat):
     resp = client.get("/api/catalog/products/tool/compatible/")
     assert resp.status_code == 200
     data = resp.json()
-    assert set(data.keys()) == {"accessories", "fits", "compatible"}
+    assert set(data.keys()) == {
+        "accessories",
+        "cross_sell",
+        "analogs",
+        "fits",
+        "compatible",
+    }
 
     assert [r["slug"] for r in data["accessories"]] == ["acc"]
     assert data["accessories"][0]["note"] == "идёт в комплект"
@@ -278,7 +284,13 @@ def test_sections_helper(cat):
     acc = make_product(cat, "Аксессуар", "acc")
     link(tool, acc, CompatibilityKind.ACCESSORY)
     sections = compatibility_sections(tool)
-    assert set(sections.keys()) == {"accessories", "fits", "compatible"}
+    assert set(sections.keys()) == {
+        "accessories",
+        "cross_sell",
+        "analogs",
+        "fits",
+        "compatible",
+    }
     assert [i.product.id for i in sections["accessories"]] == [acc.id]
 
 

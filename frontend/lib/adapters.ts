@@ -70,9 +70,11 @@ type ApiProductDetail = ApiProduct & {
   images?: ApiImage[];
   breadcrumb?: { name: string; slug: string }[];
 };
-// /products/{slug}/compatible/ — три секции товаров (ApiProduct + опц. note).
+// /products/{slug}/compatible/ — секции связанных товаров (ApiProduct + опц. note).
 type ApiCompatibleResponse = {
   accessories?: ApiProduct[];
+  cross_sell?: ApiProduct[];
+  analogs?: ApiProduct[];
   fits?: ApiProduct[];
   compatible?: ApiProduct[];
 };
@@ -525,7 +527,13 @@ async function fetchProductCompatible(
   root: string,
   slug: string,
 ): Promise<CompatibilitySections> {
-  const empty: CompatibilitySections = { accessories: [], fits: [], compatible: [] };
+  const empty: CompatibilitySections = {
+    accessories: [],
+    crossSell: [],
+    analogs: [],
+    fits: [],
+    compatible: [],
+  };
   try {
     const res = await fetch(
       `${root}/api/catalog/products/${encodeURIComponent(slug)}/compatible/`,
@@ -535,6 +543,8 @@ async function fetchProductCompatible(
     const cj = (await res.json()) as ApiCompatibleResponse;
     return {
       accessories: (cj.accessories ?? []).map(apiProductToProduct),
+      crossSell: (cj.cross_sell ?? []).map(apiProductToProduct),
+      analogs: (cj.analogs ?? []).map(apiProductToProduct),
       fits: (cj.fits ?? []).map(apiProductToProduct),
       compatible: (cj.compatible ?? []).map(apiProductToProduct),
     };

@@ -26,8 +26,10 @@ from .queries import (
     CompatibilityItem,
     accessories_of,
     category_counts,
+    analogs_of,
     compatibility_sections,
     compatible_of,
+    cross_sell_of,
     fits_of,
     products_in,
     range_filter_attributes,
@@ -56,5 +58,7 @@ __all__ = [
     "accessories_of",
     "fits_of",
     "compatible_of",
+    "cross_sell_of",
+    "analogs_of",
     "compatibility_sections",
 ]
