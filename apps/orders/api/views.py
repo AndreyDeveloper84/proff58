@@ -9,6 +9,7 @@
   POST   /api/orders/                     — оформить заказ (цена серверная)
   GET    /api/orders/                     — список своих заказов (только аутентифицированный)
   GET    /api/orders/{number}/            — заказ по номеру (только владелец)
+  POST   /api/orders/{number}/cancel/     — отмена заказа покупателем (#до сборки)
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ from rest_framework.views import APIView
 from apps.catalog.models import Product
 from apps.core.throttling import OrdersRateThrottle
 
-from .. import services
+from .. import fulfillment, services
 from ..models import Cart, CartItem, CartStatus, Order
 from .serializers import (
     AddCartItemSerializer,
@@ -336,6 +337,34 @@ class OrderDetailView(APIView):
         )
         if order is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(OrderSerializer(order).data)
+
+
+class OrderCancelView(APIView):
+    """POST /api/orders/{number}/cancel/ — покупатель отменяет свой заказ.
+
+    Только владелец и только пока склад не начал сборку — правило целиком в
+    ``fulfillment.cancel_by_customer``, здесь лишь доступ к заказу и перевод
+    ValidationError в 409: «сейчас так нельзя» — это не ошибка запроса, состояние
+    заказа просто ушло вперёд, и интерфейсу нужно показать актуальный статус.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, number):
+        order = Order.objects.filter(order_number=number, user=request.user).first()
+        if order is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            order = fulfillment.cancel_by_customer(order.pk, actor_id=request.user.pk)
+        except DjangoValidationError as exc:
+            return Response(
+                {"detail": " ".join(exc.messages)},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        order = Order.objects.prefetch_related("items").get(pk=order.pk)
         return Response(OrderSerializer(order).data)
 
 

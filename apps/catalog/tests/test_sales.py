@@ -242,3 +242,44 @@ class TestBestsellersApi:
         response = client.get(reverse("catalog_api:product-list"), {"sort": "bestsellers"})
 
         assert [r["slug"] for r in response.json()["results"]] == [sold.slug, plain.slug]
+
+
+class TestРучныеХиты:
+    """Подборка магазина: галочка «Хит продаж», пока 1С не присылает продажи."""
+
+    def test_ручной_хит_попадает_в_блок(self, client):
+        product = make_product("A", is_hit_manual=True)
+        make_product("B")
+
+        response = client.get(reverse("catalog_api:bestsellers"))
+
+        results = response.json()["results"]
+        assert [r["slug"] for r in results] == [product.slug]
+        assert results[0]["is_hit"] is True
+
+    def test_настоящие_продажи_идут_первыми(self, client, settings):
+        """Ручная отметка дополняет рейтинг, а не подменяет его."""
+        settings.SALES_HIT_MIN_QUANTITY = 1
+        sold = make_product("A")
+        by_hand = make_product("B", is_hit_manual=True)
+        sell(sold, "5")
+        rebuild_sales_stats()
+
+        response = client.get(reverse("catalog_api:bestsellers"))
+
+        assert [r["slug"] for r in response.json()["results"]] == [sold.slug, by_hand.slug]
+
+    def test_снятая_галочка_убирает_из_блока(self, client):
+        product = make_product("A", is_hit_manual=True)
+
+        Product.objects.filter(pk=product.pk).update(is_hit_manual=False)
+
+        response = client.get(reverse("catalog_api:bestsellers"))
+        assert response.json()["results"] == []
+
+    def test_скрытый_товар_ручным_хитом_не_станет(self, client):
+        make_product("A", is_hit_manual=True, is_active=False)
+
+        response = client.get(reverse("catalog_api:bestsellers"))
+
+        assert response.json()["results"] == []

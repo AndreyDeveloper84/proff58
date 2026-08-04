@@ -164,7 +164,7 @@ export default function OrdersPage() {
               {/* #574: резерв виден и в списке. Раньше «ждём оплату» показывалось,
                   а то, что резерв тикает или уже истёк, — только внутри заказа. */}
               {reservationState(order) === "held" && (
-                <p className="mt-3 flex items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                <p className="mt-3 flex items-center gap-1.5 rounded-md border border-info-line bg-info-bg px-3 py-2 text-xs text-info">
                   <Clock3 className="h-4 w-4 shrink-0" aria-hidden />
                   Товар зарезервирован до {formatDateTime(order.reserved_until!)}
                 </p>

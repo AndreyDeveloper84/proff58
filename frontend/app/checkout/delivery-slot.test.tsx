@@ -41,7 +41,9 @@ const SLOTS = [
 function fillBaseFields() {
   fireEvent.change(screen.getByLabelText(/^Имя/), { target: { value: "Иван" } });
   fireEvent.change(screen.getByLabelText(/^Телефон/), { target: { value: "+79001112233" } });
-  fireEvent.change(screen.getByLabelText(/^Адрес доставки/), { target: { value: "Пенза, 1" } });
+  // Адрес — по частям (см. lib/delivery-address): улица и дом обязательны.
+  fireEvent.change(screen.getByLabelText(/^Улица/), { target: { value: "Ленина" } });
+  fireEvent.change(screen.getByLabelText(/^Дом/), { target: { value: "1" } });
   fireEvent.change(screen.getByLabelText(/^Зона доставки/), { target: { value: "penza" } });
 }
 

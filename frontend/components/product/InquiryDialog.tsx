@@ -152,7 +152,7 @@ export function InquiryDialog({
               className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
             />
             {phase === "error" && (
-              <p className="text-xs text-red-600">
+              <p className="text-xs text-danger">
                 Не удалось отправить заявку. Попробуйте ещё раз.
               </p>
             )}

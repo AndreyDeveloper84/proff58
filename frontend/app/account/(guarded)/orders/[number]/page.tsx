@@ -17,6 +17,7 @@ import {
   ShoppingBag,
   Truck,
   UserRound,
+  XCircle,
 } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { AccountDialog } from "@/components/account/AccountDialog";
@@ -24,7 +25,7 @@ import { EmptyState, ErrorState } from "@/components/ui/states";
 import { ReservationNotice, reservationState } from "@/components/order/ReservationNotice";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { StarDisplay } from "@/components/reviews/StarRating";
-import { checkAuth, getOrder, loginHref } from "@/lib/auth";
+import { cancelOrder, checkAuth, getOrder, loginHref } from "@/lib/auth";
 import {
   formatDateTime,
   formatDeliverySlot,
@@ -34,6 +35,7 @@ import {
 } from "@/lib/format";
 import { isDelivered, statusBadgeClass } from "@/lib/order-status";
 import { getMyReviewForOrder, reviewStatusText } from "@/lib/reviews";
+import { decodeRouteParam } from "@/lib/route-params";
 import type { MyReview } from "@/lib/types";
 import type { Order, OrderItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -89,13 +91,18 @@ export default function OrderDetailsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams<{ number: string }>();
-  const orderNumber = params.number;
+  // Из useParams номер приходит закодированным — иначе getOrder закодирует его
+  // повторно и Django будет искать заказ «%D0%9F-…» (см. lib/route-params).
+  const orderNumber = decodeRouteParam(params.number);
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   // #573: null — отзыва нет (показать CTA), "disabled" — фича выключена, undefined — не грузили.
   const [review, setReview] = useState<MyReview | null | "disabled" | undefined>(undefined);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -181,6 +188,26 @@ export default function OrderDetailsPage() {
   const deliveryCost =
     order.delivery_cost === null ? null : Number(order.delivery_cost) || 0;
 
+  // Отменять или нет — решает сервер (fulfillment.can_customer_cancel): правило
+  // «до сборки и не оплачен» одно, и держать его копию в интерфейсе значит
+  // однажды разойтись с ней. При нажатии сервер проверяет ещё раз.
+  const handleCancel = async () => {
+    setCancelling(true);
+    setCancelError("");
+    try {
+      setOrder(await cancelOrder(order.order_number));
+      setCancelOpen(false);
+    } catch (caught) {
+      setCancelError(
+        caught instanceof Error
+          ? caught.message
+          : "Не удалось отменить заказ. Попробуйте ещё раз.",
+      );
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <AccountShell
       title={`Заказ № ${order.order_number}`}
@@ -216,6 +243,21 @@ export default function OrderDetailsPage() {
               <p className="mt-1 text-2xl font-bold text-ink">
                 {formatPrice(Number(order.total) || 0, order.currency)}
               </p>
+              {/* Отмена — рядом с итогом, но текстовой кнопкой: это редкое и
+                  необратимое действие, ему не место среди основных. */}
+              {order.can_cancel && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCancelError("");
+                    setCancelOpen(true);
+                  }}
+                  className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-ink-3 underline-offset-4 transition hover:text-danger hover:underline sm:min-h-0"
+                >
+                  <XCircle className="h-4 w-4" aria-hidden />
+                  Отменить заказ
+                </button>
+              )}
             </div>
           </div>
           {/* #574: резерв — рядом со статусами заказа, а не спрятан в карточке
@@ -398,6 +440,40 @@ export default function OrderDetailsPage() {
             )}
           </section>
         )}
+
+        <AccountDialog
+          title="Отменить заказ?"
+          description="Заказ будет отменён, а зарезервированный товар вернётся в продажу. Восстановить отменённый заказ нельзя — придётся оформить новый."
+          open={cancelOpen}
+          onClose={() => setCancelOpen(false)}
+          danger
+        >
+          <div className="space-y-4">
+            {cancelError && (
+              <p role="alert" className="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">
+                {cancelError}
+              </p>
+            )}
+            <div className="flex flex-col gap-2 sm:flex-row-reverse">
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={cancelling}
+                className="inline-flex h-11 items-center justify-center rounded-md bg-danger px-5 text-sm font-semibold text-white transition disabled:opacity-60"
+              >
+                {cancelling ? "Отменяем…" : "Да, отменить заказ"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCancelOpen(false)}
+                disabled={cancelling}
+                className="inline-flex h-11 items-center justify-center rounded-md border border-line px-5 text-sm font-medium text-ink transition hover:bg-raised disabled:opacity-60"
+              >
+                Оставить заказ
+              </button>
+            </div>
+          </div>
+        </AccountDialog>
 
         <AccountDialog
           title="Отзыв о заказе"

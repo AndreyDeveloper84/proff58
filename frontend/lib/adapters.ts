@@ -70,9 +70,11 @@ type ApiProductDetail = ApiProduct & {
   images?: ApiImage[];
   breadcrumb?: { name: string; slug: string }[];
 };
-// /products/{slug}/compatible/ — три секции товаров (ApiProduct + опц. note).
+// /products/{slug}/compatible/ — секции связанных товаров (ApiProduct + опц. note).
 type ApiCompatibleResponse = {
   accessories?: ApiProduct[];
+  cross_sell?: ApiProduct[];
+  analogs?: ApiProduct[];
   fits?: ApiProduct[];
   compatible?: ApiProduct[];
 };
@@ -525,7 +527,13 @@ async function fetchProductCompatible(
   root: string,
   slug: string,
 ): Promise<CompatibilitySections> {
-  const empty: CompatibilitySections = { accessories: [], fits: [], compatible: [] };
+  const empty: CompatibilitySections = {
+    accessories: [],
+    crossSell: [],
+    analogs: [],
+    fits: [],
+    compatible: [],
+  };
   try {
     const res = await fetch(
       `${root}/api/catalog/products/${encodeURIComponent(slug)}/compatible/`,
@@ -535,6 +543,8 @@ async function fetchProductCompatible(
     const cj = (await res.json()) as ApiCompatibleResponse;
     return {
       accessories: (cj.accessories ?? []).map(apiProductToProduct),
+      crossSell: (cj.cross_sell ?? []).map(apiProductToProduct),
+      analogs: (cj.analogs ?? []).map(apiProductToProduct),
       fits: (cj.fits ?? []).map(apiProductToProduct),
       compatible: (cj.compatible ?? []).map(apiProductToProduct),
     };
@@ -603,7 +613,10 @@ export async function fetchCategoryProductsFromApi(
   const root = base.replace(/\/$/, "");
   try {
     const res = await fetch(
-      `${root}/api/catalog/products/?category=${encodeURIComponent(category)}&page_size=${limit}`,
+      // limit, а не page_size: пагинация каталога — LimitOffsetPagination, и
+      // page_size она просто игнорирует. Работало по случайности: ответ приходил
+      // страницей по умолчанию (24 позиции), лишнее срезал slice ниже.
+      `${root}/api/catalog/products/?category=${encodeURIComponent(category)}&limit=${limit}`,
       { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(SSR_TIMEOUT_MS) },
     );
     if (!res.ok) return [];

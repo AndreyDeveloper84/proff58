@@ -13,9 +13,9 @@ import { cn } from "@/lib/utils";
 
 // Статусы счёта — машиночитаемые (union в lib/invoices.ts), без разбора текста.
 const STATUS_BADGE: Record<B2BInvoice["status"], string> = {
-  issued: "bg-blue-50 text-blue-700",
+  issued: "bg-info/10 text-info",
   paid: "bg-accent/10 text-accent",
-  expired: "bg-red-50 text-danger",
+  expired: "bg-danger/10 text-danger",
   cancelled: "bg-raised text-ink-2",
 };
 
@@ -63,7 +63,7 @@ function InvoiceCard({ invoice }: { invoice: B2BInvoice }) {
       </dl>
 
       {active && (
-        <p className="mt-3 flex items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+        <p className="mt-3 flex items-center gap-1.5 rounded-md border border-info-line bg-info-bg px-3 py-2 text-xs text-info">
           <Clock3 className="h-4 w-4 shrink-0" aria-hidden />
           Счёт действителен до {formatDateTime(invoice.valid_until)} — до этого момента товар
           зарезервирован за вами.

@@ -27,7 +27,7 @@ export function StarRating({
             className="rounded p-0.5 transition hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <Star
-              className={n <= value ? "h-6 w-6 fill-amber-400 text-amber-400" : "h-6 w-6 text-ink-3"}
+              className={n <= value ? "h-6 w-6 fill-current text-rating" : "h-6 w-6 text-ink-3"}
               aria-hidden
             />
           </button>
@@ -44,7 +44,7 @@ export function StarDisplay({ value, className = "" }: { value: number; classNam
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
-          className={n <= value ? "h-4 w-4 fill-amber-400 text-amber-400" : "h-4 w-4 text-ink-3"}
+          className={n <= value ? "h-4 w-4 fill-current text-rating" : "h-4 w-4 text-ink-3"}
           aria-hidden
         />
       ))}

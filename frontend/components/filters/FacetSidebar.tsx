@@ -130,7 +130,7 @@ function CheckboxFacet({
             {/* Кастомный зелёный чекбокс (по макету). */}
             <span
               aria-hidden
-              className="grid h-5 w-5 shrink-0 place-items-center rounded border border-line text-transparent transition peer-checked:border-brand peer-checked:bg-brand peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-accent"
+              className="grid h-5 w-5 shrink-0 place-items-center rounded border border-line text-transparent transition peer-checked:border-accent peer-checked:bg-accent peer-checked:text-accent-ink peer-focus-visible:ring-2 peer-focus-visible:ring-accent"
             >
               <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" aria-hidden>
                 <path
@@ -174,7 +174,15 @@ function RangeFacet({
   const hi = facet.max;
   const disabled = lo == null || hi == null || lo >= hi;
 
-  const [draft, setDraft] = useState({ min: value.min ?? lo ?? 0, max: value.max ?? hi ?? 0 });
+  // Границы из URL могут не попадать в шкалу новой выдачи: сменили тип инструмента —
+  // цены другие, а price_max остался прежним. Показываем зажатыми в шкалу, иначе
+  // бегунок улетает за край, а число в поле спорит с подписями пресетов. Сам фильтр
+  // в URL чистит ListingShell (normalizeRangeFilters).
+  const clamp = (v: number) => Math.min(Math.max(v, lo ?? v), hi ?? v);
+  const [draft, setDraft] = useState({
+    min: clamp(value.min ?? lo ?? 0),
+    max: clamp(value.max ?? hi ?? 0),
+  });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {

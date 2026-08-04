@@ -35,6 +35,8 @@ export type ProductImageData = { url: string; alt: string; isMain: boolean };
 // Секции совместимости карточки товара (бэк: /products/{slug}/compatible/).
 export type CompatibilitySections = {
   accessories: Product[]; // аксессуары/оснастка К товару
+  crossSell: Product[]; // «с этим товаром покупают» — взаимная связь
+  analogs: Product[]; // аналоги/замены — взаимная связь
   fits: Product[]; // к чему подходит (для аксессуара)
   compatible: Product[]; // симметрично совместимые
 };
@@ -262,6 +264,10 @@ export type Order = {
   reserved_until?: string | null;
   reservation_status?: "none" | "held" | "released" | "confirmed";
   reservation_expired?: boolean;
+  // Можно ли покупателю отменить заказ самому (правило — на сервере, см.
+  // orders/fulfillment.can_customer_cancel). Optional: старые снимки заказов в
+  // sessionStorage поля не содержат.
+  can_cancel?: boolean;
   created_at: string;
   items: OrderItem[];
   // Только для гостевых заказов (#322/#520) — сервер отдаёт при создании, если

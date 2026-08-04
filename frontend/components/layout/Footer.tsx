@@ -144,7 +144,7 @@ export function Footer({
             target="_blank"
             rel="noopener noreferrer"
             data-event="footer_max"
-            className="flex items-center gap-3 rounded-sm border border-line bg-surface p-2.5 transition hover:border-[#6156f5]"
+            className="flex items-center gap-3 rounded-sm border border-line bg-surface p-2.5 transition hover:border-max"
           >
             <span className="grid h-14 w-14 shrink-0 place-items-center rounded-sm bg-[var(--max-tint)]">
               <Image
@@ -158,7 +158,7 @@ export function Footer({
             </span>
             <span className="min-w-0">
               <span className="flex items-center gap-1.5 text-xs font-semibold text-ink">
-                <MessageSquareText className="h-3.5 w-3.5 text-[#6156f5]" aria-hidden />
+                <MessageSquareText className="h-3.5 w-3.5 text-max" aria-hidden />
                 {SITE.maxBot.title}
               </span>
               <span className="mt-0.5 block text-[11px] leading-snug text-ink-2">

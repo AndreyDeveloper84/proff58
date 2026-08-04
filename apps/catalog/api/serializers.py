@@ -101,14 +101,14 @@ class ProductListSerializer(serializers.ModelSerializer):
         return obj.card_name or obj.name
 
     def get_is_hit(self, obj) -> bool:
-        """Бейдж «Хит» — только по факту продаж (apps.catalog.sales).
+        """Бейдж «Хит»: факт продаж (apps.catalog.sales) либо отметка магазина.
 
         Строки рейтинга у большинства товаров нет, поэтому обращаемся осторожно:
         OneToOne без записи бросает исключение, а не отдаёт None. Запрос не
         добавляем — sales_stat приходит через select_related выдачи.
         """
         stat = getattr(obj, "sales_stat", None)
-        return bool(stat and stat.is_hit)
+        return bool((stat and stat.is_hit) or obj.is_hit_manual)
 
     def get_stock_qty(self, obj):
         """Остаток для сигнала «мало осталось» (#488).

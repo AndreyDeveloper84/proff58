@@ -93,7 +93,7 @@ export function ProductCard({
         // Сохранённое состояние отличается не только заливкой иконки: при
         // наведении сердечко и так зеленеет, и клик по нему читался как «ничего
         // не произошло». Подложка делает разницу однозначной.
-        fav ? "bg-brand/10 text-brand" : "text-ink-3 hover:bg-brand/5 hover:text-brand",
+        fav ? "bg-accent/10 text-accent" : "text-ink-3 hover:bg-accent/5 hover:text-accent",
       )}
     >
       <Heart className="h-4 w-4" fill={fav ? "currentColor" : "none"} />
@@ -155,7 +155,7 @@ export function ProductCard({
             </span>
           )}
           {product.badges.includes("hit") && (
-            <span className="rounded-full bg-[#ff8700] px-2 py-0.5 text-[10px] font-bold text-white">
+            <span className="rounded-full bg-hit px-2 py-0.5 text-[10px] font-bold text-white">
               Хит
             </span>
           )}
@@ -206,7 +206,7 @@ export function ProductCard({
   // Бейдж «Хит» — из product.badges, куда его кладёт adapters по признаку
   // is_hit backend (рейтинг продаж). Ручных пометок здесь нет и быть не должно.
   const hitBadge = product.badges.includes("hit") ? (
-    <span className="shrink-0 rounded-full bg-[#ff8700] px-2 py-0.5 text-[10px] font-bold text-white">
+    <span className="shrink-0 rounded-full bg-hit px-2 py-0.5 text-[10px] font-bold text-white">
       Хит
     </span>
   ) : null;

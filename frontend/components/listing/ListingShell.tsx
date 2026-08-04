@@ -1,19 +1,20 @@
 "use client";
 
-import { useCallback, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutGrid, List, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Listing, ListingQuery, RangeFilterValue, SortOption } from "@/lib/types";
 import { serializeQuery } from "@/lib/url-state";
 import { humanizeToken, rangeChipLabel } from "@/lib/format";
-import { categoryNav, sidebarFacets } from "@/lib/listing";
+import { categoryNav, normalizeRangeFilters, sidebarFacets } from "@/lib/listing";
 import { track } from "@/lib/analytics";
 import { PER_PAGE_OPTIONS, SORT_OPTIONS } from "@/lib/constants";
 import { ProductCard } from "@/components/product/ProductCard";
 import { FacetSidebar } from "@/components/filters/FacetSidebar";
 import { CategoryNavStrip } from "@/components/listing/CategoryNav";
 import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
+import { BreadcrumbsJsonLd } from "./BreadcrumbsJsonLd";
 import { CategoryHero } from "@/components/listing/CategoryHero";
 import { MobileFilterDrawer } from "@/components/listing/MobileFilterDrawer";
 
@@ -77,6 +78,24 @@ export function ListingShell({
 
   // reset all сбрасывает И тип, И все фильтры (§3.5), но НЕ трогает sort/view/per_page.
   const resetAll = () => push({ ...query, toolType: undefined, filters: {}, page: 1 });
+
+  // Границы диапазонов достались от прошлой выдачи: после смены типа «до 15 595 ₽»
+  // может оказаться выше самого дорогого товара — фильтр не отсекает ничего, но
+  // висит чипом, считается в «фильтрах» и упирает ползунок в край. Чистим URL
+  // (replace, в историю не пишем); listing и query — из одного серверного рендера,
+  // поэтому границы сравниваются с фасетами той же выдачи.
+  const normalizedFilters = normalizeRangeFilters(query.filters, listing.facets);
+  const normalizedQs = normalizedFilters
+    ? serializeQuery({ ...query, filters: normalizedFilters })
+    : null;
+  useEffect(() => {
+    if (normalizedQs == null) return;
+    startTransition(() => {
+      router.replace(normalizedQs ? `${pathname}?${normalizedQs}` : pathname, { scroll: false });
+    });
+    // Зависимость — строка запроса: объект фильтров пересоздаётся каждый рендер.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [normalizedQs, pathname]);
 
   // --- Навигация раздела: подкатегории-ссылки либо типы инструмента (§3.1) ---
   const navFacet = listing.facets.find((f) => f.isNav);
@@ -192,15 +211,27 @@ export function ListingShell({
 
   return (
     <div className="mx-auto w-full max-w-[1680px] px-4 py-6 sm:px-6 xl:px-8">
+      <BreadcrumbsJsonLd crumbs={listing.category.breadcrumb} />
       <nav aria-label="Хлебные крошки" className="mb-3 flex flex-wrap items-center gap-1 text-xs text-ink-3">
-        {listing.category.breadcrumb.map((b, i) => (
-          <span key={`${b.href}-${i}`} className="flex items-center gap-1">
-            {i > 0 && <span className="text-ink-3">/</span>}
-            <a href={b.href} className="hover:text-accent">
-              {b.label}
-            </a>
-          </span>
-        ))}
+        {listing.category.breadcrumb.map((b, i, all) => {
+          // Последняя крошка — это сама открытая страница: ссылка на себя ведёт
+          // в никуда и сбивает («нажал — ничего не произошло»).
+          const current = i === all.length - 1;
+          return (
+            <span key={`${b.href}-${i}`} className="flex items-center gap-1">
+              {i > 0 && <span className="text-ink-3">/</span>}
+              {current ? (
+                <span aria-current="page" className="text-ink-2">
+                  {b.label}
+                </span>
+              ) : (
+                <a href={b.href} className="hover:text-accent">
+                  {b.label}
+                </a>
+              )}
+            </span>
+          );
+        })}
       </nav>
 
       <div className="grid gap-5 lg:grid-cols-[280px_1fr]">

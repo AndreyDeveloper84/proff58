@@ -254,8 +254,8 @@ def fits_of(product: Product) -> list[CompatibilityItem]:
     ]
 
 
-def compatible_of(product: Product) -> list[CompatibilityItem]:
-    """Симметрично совместимые товары (COMPATIBLE; product как source ИЛИ target).
+def _symmetric_of(product: Product, kind: str) -> list[CompatibilityItem]:
+    """Второй конец симметричных рёбер данного вида (product как source ИЛИ target).
 
     Ребро хранится канонически, поэтому ищем по обоим концам. Видимость второго
     конца проверяем в Python (is_visible), т.к. он может быть и source, и target.
@@ -264,7 +264,7 @@ def compatible_of(product: Product) -> list[CompatibilityItem]:
     edges = (
         ProductCompatibility.objects.filter(
             Q(source=product) | Q(target=product),
-            kind=CompatibilityKind.COMPATIBLE,
+            kind=kind,
         )
         .select_related(
             "source",
@@ -292,10 +292,27 @@ def compatible_of(product: Product) -> list[CompatibilityItem]:
     return items
 
 
+def compatible_of(product: Product) -> list[CompatibilityItem]:
+    """Симметрично совместимые товары (COMPATIBLE)."""
+    return _symmetric_of(product, CompatibilityKind.COMPATIBLE)
+
+
+def cross_sell_of(product: Product) -> list[CompatibilityItem]:
+    """«С этим товаром покупают» (CROSS_SELL) — взаимная связь, направления нет."""
+    return _symmetric_of(product, CompatibilityKind.CROSS_SELL)
+
+
+def analogs_of(product: Product) -> list[CompatibilityItem]:
+    """Аналоги/замены (ANALOG) — взаимная связь, направления нет."""
+    return _symmetric_of(product, CompatibilityKind.ANALOG)
+
+
 def compatibility_sections(product: Product) -> dict[str, list[CompatibilityItem]]:
-    """Три секции совместимости товара одним вызовом."""
+    """Секции связей товара одним вызовом (порядок — как на карточке)."""
     return {
         "accessories": accessories_of(product),
+        "cross_sell": cross_sell_of(product),
+        "analogs": analogs_of(product),
         "fits": fits_of(product),
         "compatible": compatible_of(product),
     }

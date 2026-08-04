@@ -36,14 +36,14 @@ describe("auth client (M-11)", () => {
   it("logout идёт POST через BFF (CSRF-aware) и ожидается", async () => {
     mockedFetch.mockResolvedValueOnce(undefined);
     await logout();
-    expect(mockedFetch).toHaveBeenCalledWith("/api/account/logout/", { method: "POST" });
+    expect(mockedFetch).toHaveBeenCalledWith("/api/account/logout", { method: "POST" });
   });
 
   it("login шлёт POST на BFF-путь account/login", async () => {
     mockedFetch.mockResolvedValueOnce({ id: 1 });
     await login("+79001112233", "pass");
     expect(mockedFetch).toHaveBeenCalledWith(
-      "/api/account/login/",
+      "/api/account/login",
       expect.objectContaining({ method: "POST" }),
     );
   });
@@ -90,6 +90,33 @@ describe("auth client (M-11)", () => {
     expect(await getOrders()).toBe("error");
   });
 
+  // Страница ответа — 24 заказа, кнопки «показать ещё» в кабинете нет: без
+  // дозагрузки всё, что старше двух десятков заказов, пропадало из виду.
+  it("getOrders дочитывает все страницы", async () => {
+    const page = (from: number, n: number) =>
+      Array.from({ length: n }, (_, i) => ({ order_number: `П-${from + i}` }));
+    mockedFetch
+      .mockResolvedValueOnce({ count: 130, results: page(0, 100) })
+      .mockResolvedValueOnce({ count: 130, results: page(100, 30) });
+
+    const orders = await getOrders();
+
+    expect(Array.isArray(orders) && orders.length).toBe(130);
+    expect(mockedFetch).toHaveBeenNthCalledWith(1, "/api/orders?limit=100&offset=0", {
+      method: "GET",
+    });
+    expect(mockedFetch).toHaveBeenNthCalledWith(2, "/api/orders?limit=100&offset=100", {
+      method: "GET",
+    });
+  });
+
+  it("getOrders не делает лишнего запроса, когда всё поместилось", async () => {
+    mockedFetch.mockResolvedValueOnce({ count: 2, results: [{ id: 1 }, { id: 2 }] });
+
+    expect(await getOrders()).toHaveLength(2);
+    expect(mockedFetch).toHaveBeenCalledTimes(1);
+  });
+
   it("updateMe отправляет PATCH профиля через BFF", async () => {
     const updated = { id: 1, full_name: "Иван", email: "ivan@example.com" };
     mockedFetch.mockResolvedValueOnce(updated);
@@ -97,7 +124,7 @@ describe("auth client (M-11)", () => {
     await expect(updateMe({ full_name: "Иван", email: "ivan@example.com" })).resolves.toBe(
       updated,
     );
-    expect(mockedFetch).toHaveBeenCalledWith("/api/account/me/", {
+    expect(mockedFetch).toHaveBeenCalledWith("/api/account/me", {
       method: "PATCH",
       body: JSON.stringify({ full_name: "Иван", email: "ivan@example.com" }),
     });
@@ -126,11 +153,11 @@ describe("auth client (M-11)", () => {
     await changePhone("+79001112233", "secret");
     await deleteAccount();
 
-    expect(mockedFetch).toHaveBeenNthCalledWith(1, "/api/account/change-phone/", {
+    expect(mockedFetch).toHaveBeenNthCalledWith(1, "/api/account/change-phone", {
       method: "POST",
       body: JSON.stringify({ new_phone: "+79001112233", password: "secret" }),
     });
-    expect(mockedFetch).toHaveBeenNthCalledWith(2, "/api/account/delete/", {
+    expect(mockedFetch).toHaveBeenNthCalledWith(2, "/api/account/delete", {
       method: "POST",
     });
   });
