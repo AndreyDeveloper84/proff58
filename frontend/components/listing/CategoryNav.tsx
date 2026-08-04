@@ -1,41 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
 
 import type { CategoryNav as Nav, CategoryNavItem } from "@/lib/listing";
 import { cn } from "@/lib/utils";
 
 // Навигация «куда дальше» внутри раздела: подкатегории-ссылки либо типы инструмента
-// (§3.1, §13–14). Состав пунктов считает categoryNav() — здесь только представление,
-// два варианта под ширину экрана:
-//   CategoryNavPanel — вертикальный сворачиваемый блок левой колонки (lg+), над фильтрами;
-//   CategoryNavStrip — одна строка со свайпом на мобильном.
-// Почему не в drawer фильтров: подкатегория — переход на другую страницу, прятать
-// навигацию за кнопкой «Фильтры» нельзя. Типы держим рядом с ними, чтобы страницы
-// каталога вели себя одинаково.
+// (§3.1, §13–14). Состав пунктов считает categoryNav() — здесь только представление:
+// строка капсул под заголовком раздела, одинаковая на всех ширинах.
+//
+// Почему не в фильтрах. Подкатегория — переход на другую страницу, а не сужение
+// выдачи. В левой колонке под фасетами (и тем более в мобильном drawer'е за
+// кнопкой «Фильтры») эта навигация читалась как ещё один фильтр и терялась.
+//
+// Почему капсулы переносятся, а не листаются вбок. Горизонтальная лента на
+// десктопе прячет половину пунктов: полосы прокрутки нет, и человек просто не
+// узнаёт, что за краем что-то есть. Поэтому ряд переносится, а длинный список
+// сворачивается до COLLAPSED_COUNT с кнопкой «Ещё» — видно, что список неполон.
 
-const COLLAPSED_COUNT = 8;
+const COLLAPSED_COUNT = 12;
 
 type Props = {
   nav: Nav;
   /** Клик по переключателю типа; для подкатегорий не вызывается — там обычная ссылка. */
   onSelect: (key: string, label: string) => void;
-  /** Встроить в общую карточку с фасетами без собственной рамки и радиуса. */
-  connected?: boolean;
 };
-
-/** Свернуть длинный список, но активный пункт показывать всегда (§13–14). */
-function useVisibleItems(items: CategoryNavItem[], limit: number) {
-  const [expanded, setExpanded] = useState(false);
-  const hiddenCount = Math.max(0, items.length - limit);
-  const visible = expanded ? items : items.slice(0, limit);
-  if (!expanded && !visible.some((i) => i.active)) {
-    const active = items.find((i) => i.active);
-    if (active) visible.push(active);
-  }
-  return { visible, hiddenCount, expanded, setExpanded };
-}
 
 function Count({ value, active }: { value: number; active: boolean }) {
   return (
@@ -43,111 +32,70 @@ function Count({ value, active }: { value: number; active: boolean }) {
   );
 }
 
-export function CategoryNavPanel({ nav, onSelect, connected = false }: Props) {
-  const { visible, hiddenCount, expanded, setExpanded } = useVisibleItems(
-    nav.items,
-    COLLAPSED_COUNT,
-  );
-
-  const itemCls = (active: boolean) =>
-    cn(
-      "flex min-h-9 w-full items-center gap-2 rounded-md px-2 -mx-2 text-left text-sm transition",
-      active
-        ? "bg-accent/10 font-semibold text-accent"
-        : "text-ink-2 hover:bg-raised hover:text-accent",
-    );
-
-  return (
-    <nav
-      aria-label={nav.title}
-      className={cn(
-        "p-4",
-        connected
-          ? "rounded-none border-0 bg-transparent px-5"
-          : "rounded-lg border border-line bg-surface",
-      )}
-    >
-      <details open className="group">
-        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-ink">
-          {nav.title}
-          <ChevronDown
-            className="h-4 w-4 text-ink-3 transition group-open:rotate-180"
-            aria-hidden
-          />
-        </summary>
-
-        <ul className="mt-3 flex flex-col">
-          {visible.map((item) => (
-            <li key={item.key}>
-              {item.href ? (
-                <a href={item.href} className={itemCls(item.active)}>
-                  <span className="min-w-0 flex-1">{item.label}</span>
-                  {item.count != null && <Count value={item.count} active={item.active} />}
-                </a>
-              ) : (
-                <button
-                  type="button"
-                  aria-pressed={item.active}
-                  onClick={() => onSelect(item.key, item.label)}
-                  className={itemCls(item.active)}
-                >
-                  <span className="min-w-0 flex-1">{item.label}</span>
-                  {item.count != null && <Count value={item.count} active={item.active} />}
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-
-        {hiddenCount > 0 && (
-          <button
-            type="button"
-            onClick={() => setExpanded((value) => !value)}
-            aria-expanded={expanded}
-            className="mt-2 text-sm font-medium text-accent hover:underline"
-          >
-            {expanded ? "Свернуть" : `Показать ещё (${hiddenCount})`}
-          </button>
-        )}
-      </details>
-    </nav>
-  );
+/** Свернуть длинный список, но активный пункт показывать всегда (§13–14). */
+function visibleItems(items: CategoryNavItem[], expanded: boolean): CategoryNavItem[] {
+  if (expanded || items.length <= COLLAPSED_COUNT) return items;
+  const shown = items.slice(0, COLLAPSED_COUNT);
+  if (shown.some((item) => item.active)) return shown;
+  const active = items.find((item) => item.active);
+  return active ? [...shown, active] : shown;
 }
 
 export function CategoryNavStrip({ nav, onSelect }: Props) {
+  const [expanded, setExpanded] = useState(false);
+  const shown = visibleItems(nav.items, expanded);
+  const hiddenCount = nav.items.length - shown.length;
+
   const pillCls = (active: boolean) =>
     cn(
-      // min-h-11: на мобильном это основная навигация — зона нажатия ≥44px (§4).
-      "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 text-sm transition",
+      // min-h-11 на мобильном: это основная навигация, зона нажатия ≥44px (§4).
+      // На десктопе капсула ниже — там ряд стоит вплотную к заголовку раздела.
+      "inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full border px-4 text-sm transition lg:min-h-9",
       active
         ? "border-accent bg-accent/10 font-medium text-accent"
-        : "border-line bg-surface text-ink-2",
+        : "border-line bg-surface text-ink-2 hover:border-accent hover:text-accent",
+    );
+
+  const item = (entry: CategoryNavItem) =>
+    entry.href ? (
+      <a key={entry.key} href={entry.href} className={pillCls(entry.active)}>
+        <span className="truncate">{entry.label}</span>
+        {entry.count != null && <Count value={entry.count} active={entry.active} />}
+      </a>
+    ) : (
+      <button
+        key={entry.key}
+        type="button"
+        aria-pressed={entry.active}
+        onClick={() => onSelect(entry.key, entry.label)}
+        className={pillCls(entry.active)}
+      >
+        <span className="truncate">{entry.label}</span>
+        {entry.count != null && <Count value={entry.count} active={entry.active} />}
+      </button>
     );
 
   return (
-    <nav aria-label={nav.title} className="mb-4 lg:hidden">
-      {/* Одна строка со свайпом: отрицательный отступ уводит скролл под края
-          контейнера, чтобы обрезанная пилюля читалась как «листается дальше». */}
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {nav.items.map((item) =>
-          item.href ? (
-            <a key={item.key} href={item.href} className={pillCls(item.active)}>
-              {item.label}
-            </a>
-          ) : (
-            <button
-              key={item.key}
-              type="button"
-              aria-pressed={item.active}
-              onClick={() => onSelect(item.key, item.label)}
-              className={pillCls(item.active)}
-            >
-              {item.label}
-              {item.count != null && <Count value={item.count} active={item.active} />}
-            </button>
-          ),
-        )}
-      </div>
+    <nav aria-label={nav.title} className="mb-4 flex flex-wrap items-center gap-2">
+      {shown.map(item)}
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="inline-flex min-h-11 items-center rounded-full border border-dashed border-line px-4 text-sm font-medium text-accent transition hover:border-accent lg:min-h-9"
+        >
+          Ещё {hiddenCount}
+        </button>
+      )}
+      {expanded && nav.items.length > COLLAPSED_COUNT && (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-accent hover:underline lg:min-h-9"
+        >
+          Свернуть
+        </button>
+      )}
     </nav>
   );
 }

@@ -215,6 +215,84 @@ def test_wishlist_add_and_list(client, user):
     assert resp.json()[0]["product_slug"] == "wish-drel"
 
 
+# --- Перенос гостевого избранного при входе (списком) ---
+
+
+def _make_products(*names):
+    from apps.catalog.models import Product, ProductStatus
+
+    return [
+        Product.objects.create(
+            name=name,
+            slug=f"bulk-{name}",
+            price=1000,
+            status=ProductStatus.PUBLISHED,
+            is_active=True,
+        )
+        for name in names
+    ]
+
+
+@pytest.mark.django_db
+def test_wishlist_bulk_add(client, user):
+    """Список товаров переносится одним запросом — это вход, а не двадцать кликов."""
+    a, b = _make_products("a", "b")
+    client.force_authenticate(user=user)
+
+    resp = client.post("/api/account/wishlist/", {"product_ids": [a.id, b.id]}, format="json")
+
+    assert resp.status_code == 201
+    assert resp.json()["added"] == 2
+    assert {row["product_id"] for row in client.get("/api/account/wishlist/").json()} == {
+        a.id,
+        b.id,
+    }
+
+
+@pytest.mark.django_db
+def test_wishlist_bulk_add_is_idempotent(client, user):
+    """Повторный перенос не падает и не двоит: сеть могла оборвать первый ответ."""
+    a, b = _make_products("c", "d")
+    client.force_authenticate(user=user)
+    client.post("/api/account/wishlist/", {"product_ids": [a.id]}, format="json")
+
+    resp = client.post("/api/account/wishlist/", {"product_ids": [a.id, b.id]}, format="json")
+
+    assert resp.status_code == 201
+    assert len(client.get("/api/account/wishlist/").json()) == 2
+
+
+@pytest.mark.django_db
+def test_wishlist_bulk_add_skips_unknown_ids(client, user):
+    """Товар мог исчезнуть, пока лежал в браузере, — перенос остального не срывается."""
+    a, *_ = _make_products("e")
+    client.force_authenticate(user=user)
+
+    resp = client.post("/api/account/wishlist/", {"product_ids": [a.id, 10**9]}, format="json")
+
+    assert resp.status_code == 201
+    assert resp.json()["added"] == 1
+
+
+@pytest.mark.django_db
+def test_wishlist_bulk_add_rejects_non_list(client, user):
+    client.force_authenticate(user=user)
+
+    resp = client.post("/api/account/wishlist/", {"product_ids": "1,2"}, format="json")
+
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_wishlist_single_add_still_404s_on_unknown(client, user):
+    """Одиночная форма отвечает честно: там id один, и тишина означала бы «сохранили»."""
+    client.force_authenticate(user=user)
+
+    resp = client.post("/api/account/wishlist/", {"product_id": 10**9}, format="json")
+
+    assert resp.status_code == 404
+
+
 @pytest.mark.django_db
 def test_wishlist_delete(client, user):
     from apps.catalog.models import Product, ProductStatus

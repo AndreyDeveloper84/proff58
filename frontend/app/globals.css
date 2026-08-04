@@ -249,4 +249,33 @@
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
+
+  /* Курсор-указатель на всём, что нажимается.
+   *
+   * Tailwind v4 убрал `cursor: pointer` для кнопок из своего сброса стилей, и
+   * кнопки стали неотличимы от текста: «Нет аккаунта? Зарегистрируйтесь» на
+   * форме входа — кнопка, а курсор над ней оставался стрелкой.
+   *
+   * Правилом, а не классом в каждом файле: кнопок под сорок мест, и новая
+   * появится без указателя ровно так же. Ссылки (`a[href]`) указатель имеют по
+   * умолчанию, поэтому здесь их нет.
+   */
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  /* Подписи, оборачивающие переключатель: кликается вся карточка фильтра. */
+  label:has(input[type="checkbox"]:not(:disabled)),
+  label:has(input[type="radio"]:not(:disabled)) {
+    cursor: pointer;
+  }
+
+  /* Недоступное сейчас — не «нажимаемое», но и не текст: видно, что элемент
+     интерактивный и просто выключен. */
+  button:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
 }

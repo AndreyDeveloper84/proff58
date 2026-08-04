@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Clock, Heart } from "lucide-react";
+import { useWishlist } from "@/components/wishlist/WishlistProvider";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
@@ -64,12 +64,14 @@ export function ProductCard({
   // Ширина/растяжение задаются местом использования: в карусели главной
   // карточка тянется на всю ячейку дорожки, чтобы ряд был ровным.
   className?: string;
-  // Избранное — Wave 2: сердце присутствует в шаблоне по референсу, но это ещё не
-  // завершённая функция (локальное визуальное состояние, без бэкенда/персистентности).
   showFavorite?: boolean;
   variant?: "default" | "home";
 }) {
-  const [fav, setFav] = useState(false);
+  // Избранное общее на всю страницу (WishlistProvider): одна и та же позиция
+  // встречается в выдаче и в каруселях, и сердечки обязаны показывать одно
+  // состояние. Вход не нужен — гостю список сохраняется в браузере.
+  const { has, toggle, isPending } = useWishlist();
+  const fav = has(product.id);
   const href = `/product/${product.slug}`;
   // Короткая форма из 1С; пока товар не прошёл нормализацию — витринное имя.
   const title = product.cardName || product.name;
@@ -79,15 +81,19 @@ export function ProductCard({
   const heart = (
     <button
       type="button"
-      onClick={() => setFav((v) => !v)}
-      aria-label="В избранное"
+      onClick={() => toggle(product.id)}
+      disabled={isPending(product.id)}
+      aria-label={fav ? "Убрать из избранного" : "В избранное"}
       aria-pressed={fav}
       data-event="favorite_toggle"
       data-product-id={product.id}
       className={cn(
         // #478: touch hit-area ≥44px на мобиле.
-        "grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors sm:h-8 sm:w-8",
-        fav ? "text-brand" : "text-ink-3 hover:text-brand",
+        "grid h-11 w-11 shrink-0 place-items-center rounded-full transition disabled:opacity-60 sm:h-8 sm:w-8",
+        // Сохранённое состояние отличается не только заливкой иконки: при
+        // наведении сердечко и так зеленеет, и клик по нему читался как «ничего
+        // не произошло». Подложка делает разницу однозначной.
+        fav ? "bg-brand/10 text-brand" : "text-ink-3 hover:bg-brand/5 hover:text-brand",
       )}
     >
       <Heart className="h-4 w-4" fill={fav ? "currentColor" : "none"} />

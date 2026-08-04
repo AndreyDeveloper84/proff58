@@ -134,7 +134,11 @@ export function Footer({
           </ul>
         </div>
 
-        <div>
+        {/* Бот магазина в MAX. Без настроенного бота плитки нет: ссылка на
+            max.ru без имени бота вела бы на главную мессенджера и выглядела
+            рабочей — а человек оказывался бы не у нас. */}
+        {storefront.maxHref && (
+          <div>
           <a
             href={storefront.maxHref}
             target="_blank"
@@ -155,14 +159,15 @@ export function Footer({
             <span className="min-w-0">
               <span className="flex items-center gap-1.5 text-xs font-semibold text-ink">
                 <MessageSquareText className="h-3.5 w-3.5 text-[#6156f5]" aria-hidden />
-                Мы в мессенджерах
+                {SITE.maxBot.title}
               </span>
               <span className="mt-0.5 block text-[11px] leading-snug text-ink-2">
-                Напишите нам в MAX для консультации
+                {SITE.maxBot.text}
               </span>
             </span>
           </a>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Нижняя строка. Политика/соглашение появятся вместе с юр. страницами —

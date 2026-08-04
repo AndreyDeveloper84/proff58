@@ -12,7 +12,7 @@ import { track } from "@/lib/analytics";
 import { PER_PAGE_OPTIONS, SORT_OPTIONS } from "@/lib/constants";
 import { ProductCard } from "@/components/product/ProductCard";
 import { FacetSidebar } from "@/components/filters/FacetSidebar";
-import { CategoryNavPanel, CategoryNavStrip } from "@/components/listing/CategoryNav";
+import { CategoryNavStrip } from "@/components/listing/CategoryNav";
 import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
 import { CategoryHero } from "@/components/listing/CategoryHero";
 import { MobileFilterDrawer } from "@/components/listing/MobileFilterDrawer";
@@ -257,7 +257,6 @@ export function ListingShell({
                 </div>
               )}
             </div>
-            {nav && <CategoryNavPanel nav={nav} onSelect={onSelectType} connected />}
             <FacetSidebar
               facets={visibleFacets}
               filters={query.filters}
@@ -275,7 +274,7 @@ export function ListingShell({
             hero={listing.category.hero}
             total={listing.total}
             variant="inline"
-            className="mb-5 w-full min-w-0"
+            className="mb-4 w-full min-w-0"
             // Хлебные крошки идут от корня, поэтому ближайший родитель — предпоследний;
             // «Главная» и «Каталог» в подборе чертежа просто ни с чем не совпадут.
             parentTitles={listing.category.breadcrumb
@@ -283,6 +282,14 @@ export function ListingShell({
               .map((crumb) => crumb.label)
               .reverse()}
           />
+
+          {/* Капсулы разделов и типов — сразу под шапкой раздела, а не в
+              фильтрах: подкатегория это переход на другую страницу, и прятать
+              её за кнопкой «Фильтры» значит сделать вид, что её нет.
+              Отдельным блоком, а не внутри шапки: там ряд попадал под
+              overflow-hidden и узкую колонку с чертежом — часть капсул просто
+              обрезалась, и человек их не видел. */}
+          {nav && <CategoryNavStrip nav={nav} onSelect={onSelectType} />}
 
           {listing.promo && (
             <a
@@ -295,10 +302,6 @@ export function ListingShell({
               </span>
             </a>
           )}
-
-          {/* Мобильная навигация раздела: одна строка со свайпом (на lg+ то же самое
-              живёт вертикальным блоком в левой колонке). */}
-          {nav && <CategoryNavStrip nav={nav} onSelect={onSelectType} />}
 
           {/* Панель фильтров (§9.1): триггер сайдбара + сброс + активные чипы (зелёные). */}
           <div className="mb-4 flex flex-wrap items-center gap-3 lg:hidden">
@@ -346,12 +349,12 @@ export function ListingShell({
               счётчик и размер страницы) — раскладка в три ряда съедала пол-экрана
               до первого товара. С sm раскладка снова flex: сортировка слева,
               остальное прижато вправо через ml-auto. */}
-          <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex sm:flex-wrap sm:gap-3 lg:min-h-[68px] lg:rounded-xl lg:border lg:border-line lg:bg-surface lg:px-4 lg:py-3 lg:shadow-sm">
+          <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex sm:flex-wrap sm:gap-3 lg:rounded-lg lg:border lg:border-line lg:bg-surface lg:px-3 lg:py-1.5">
             <select
               value={query.sort}
               onChange={(e) => setSort(e.target.value as SortOption)}
               aria-label="Сортировка"
-              className="row-start-1 h-11 w-full min-w-0 rounded-md border border-line bg-surface px-3 text-sm text-ink sm:w-auto"
+              className="row-start-1 h-11 w-full min-w-0 rounded-md border border-line bg-surface px-3 text-sm text-ink sm:w-auto lg:h-8"
             >
               {sortOptions.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -375,7 +378,7 @@ export function ListingShell({
                 <select
                   value={query.perPage}
                   onChange={(e) => setPerPage(Number(e.target.value))}
-                  className="h-9 rounded-md border border-line bg-surface px-2 text-sm text-ink"
+                  className="h-9 rounded-md border border-line bg-surface px-2 text-sm text-ink lg:h-8"
                 >
                   {PER_PAGE_OPTIONS.map((n) => (
                     <option key={n} value={n}>
@@ -397,7 +400,7 @@ export function ListingShell({
                 aria-pressed={query.view === "grid"}
                 onClick={() => setView("grid")}
                 className={cn(
-                  "grid h-9 w-9 place-items-center",
+                  "grid h-9 w-9 place-items-center lg:h-8 lg:w-8",
                   query.view === "grid" ? "bg-accent text-accent-ink" : "text-ink-3",
                 )}
               >
@@ -409,7 +412,7 @@ export function ListingShell({
                 aria-pressed={query.view === "list"}
                 onClick={() => setView("list")}
                 className={cn(
-                  "grid h-9 w-9 place-items-center",
+                  "grid h-9 w-9 place-items-center lg:h-8 lg:w-8",
                   query.view === "list" ? "bg-accent text-accent-ink" : "text-ink-3",
                 )}
               >

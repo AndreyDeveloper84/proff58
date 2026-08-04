@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { CategoryNav } from "@/lib/listing";
-import { CategoryNavPanel, CategoryNavStrip } from "./CategoryNav";
+import { CategoryNavStrip } from "./CategoryNav";
 
 function types(count = 12, activeKey?: string): CategoryNav {
   return {
@@ -25,51 +25,35 @@ const subcategories: CategoryNav = {
   ],
 };
 
-describe("CategoryNavPanel", () => {
-  it("сворачивает длинный список и раскрывает его по кнопке", () => {
-    render(<CategoryNavPanel nav={types()} onSelect={vi.fn()} />);
+describe("CategoryNavStrip", () => {
+  it("показывает все пункты сразу — строка листается свайпом, без «показать ещё»", () => {
+    render(<CategoryNavStrip nav={types()} onSelect={vi.fn()} />);
 
-    expect(screen.getByText("Тип 8")).toBeInTheDocument();
-    expect(screen.queryByText("Тип 9")).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "Показать ещё (4)" }));
-
-    expect(screen.getByText("Тип 9")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Свернуть" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-  });
-
-  it("оставляет активный тип видимым в свёрнутом состоянии", () => {
-    render(<CategoryNavPanel nav={types(12, "type-12")} onSelect={vi.fn()} />);
-
-    expect(screen.getByRole("button", { name: /Тип 12/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /Тип 1\b/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Тип 12/ })).toBeInTheDocument();
   });
 
   it("сообщает выбранный тип родителю", () => {
     const onSelect = vi.fn();
-    render(<CategoryNavPanel nav={types(3)} onSelect={onSelect} />);
+    render(<CategoryNavStrip nav={types(3)} onSelect={onSelect} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Тип 2/ }));
 
     expect(onSelect).toHaveBeenCalledWith("type-2", "Тип 2");
   });
 
+  it("отмечает активный тип", () => {
+    render(<CategoryNavStrip nav={types(12, "type-12")} onSelect={vi.fn()} />);
+
+    expect(screen.getByRole("button", { name: /Тип 12/ })).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("подкатегорию рендерит ссылкой, а не переключателем", () => {
-    render(<CategoryNavPanel nav={subcategories} onSelect={vi.fn()} />);
+    render(<CategoryNavStrip nav={subcategories} onSelect={vi.fn()} />);
 
     expect(screen.getByRole("link", { name: "Отвёртки" })).toHaveAttribute(
       "href",
       "/catalog/ruchnoy-otvertki",
     );
-  });
-});
-
-describe("CategoryNavStrip", () => {
-  it("показывает на мобильном все пункты сразу — список листается свайпом", () => {
-    render(<CategoryNavStrip nav={types()} onSelect={vi.fn()} />);
-
-    expect(screen.getByRole("button", { name: /Тип 12/ })).toBeInTheDocument();
   });
 });

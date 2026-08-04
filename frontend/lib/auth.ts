@@ -105,12 +105,9 @@ export async function checkAuth(): Promise<AuthCheck> {
   }
 }
 
-/** Адрес формы входа с запоминанием, куда человек шёл (форма вернёт его туда). */
-export function loginHref(next?: string): string {
-  return next && next.startsWith("/")
-    ? `/account/login?next=${encodeURIComponent(next)}`
-    : "/account/login";
-}
+// loginHref переехал в lib/auth-state (модуль без зависимостей — его импортирует
+// и proxy.ts). Реэкспорт оставлен, чтобы не переписывать импорты по всему фронту.
+export { loginHref } from "@/lib/auth-state";
 
 export async function updateMe(data: AccountUserPatch): Promise<AccountUser> {
   return apiFetch<AccountUser>("/api/account/me/", {
@@ -220,12 +217,21 @@ export async function getOrder(orderNumber: string): Promise<Order> {
   });
 }
 
-/** #574: "error" вместо [] — пустой список и сбой загрузки различимы на экране. */
-export async function getWishlist(): Promise<WishlistItem[] | "error"> {
+/**
+ * Избранное аккаунта.
+ *
+ * Три исхода, а не два: "error" (#574) отличает сбой загрузки от пустого списка,
+ * а "unauthorized" — от них обоих. Без последнего посетитель с протухшей cookie
+ * выглядел для интерфейса вошедшим: каждый клик уходил на сервер, получал 401 и
+ * откатывался, то есть сердечко не реагировало вообще.
+ */
+export async function getWishlist(): Promise<WishlistItem[] | "error" | "unauthorized"> {
   try {
     return await apiFetch<WishlistItem[]>("/api/account/wishlist/", { method: "GET" });
   } catch (e) {
-    if (e instanceof ApiError) return "error";
+    if (e instanceof ApiError) {
+      return e.status === 401 || e.status === 403 ? "unauthorized" : "error";
+    }
     throw e;
   }
 }
@@ -234,6 +240,21 @@ export async function addWishlistItem(productId: number): Promise<void> {
   await apiFetch("/api/account/wishlist", {
     method: "POST",
     body: JSON.stringify({ product_id: productId }),
+  });
+}
+
+/**
+ * Перенести избранное гостя в аккаунт одним запросом.
+ *
+ * Списком, а не по товару: иначе вход у человека с двумя десятками сохранённых
+ * позиций превращался бы в веер запросов ровно в тот момент, когда страница и
+ * так грузится. Повторный перенос безопасен — сервер игнорирует дубли.
+ */
+export async function addWishlistItems(productIds: number[]): Promise<void> {
+  if (productIds.length === 0) return;
+  await apiFetch("/api/account/wishlist", {
+    method: "POST",
+    body: JSON.stringify({ product_ids: productIds }),
   });
 }
 

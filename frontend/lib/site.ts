@@ -47,58 +47,48 @@ export const SITE = {
     ],
   },
 
-  // Консультация в мессенджере MAX — блок помощи с выбором на страницах каталога.
-  // TODO: SiteSettings — вынести ссылку/тексты в настройки сайта (сейчас статично).
-  support: {
-    max: {
-      title: "Консультация в MAX",
-      text: "Подберём инструмент под вашу задачу и бюджет",
-      ctaLabel: "Написать специалисту",
-      href: "https://max.ru/", // TODO: реальный deeplink магазина в MAX
-    },
+  // Бот магазина в мессенджере MAX. Тексты описывают то, что бот действительно
+  // умеет: вход без пароля и уведомления по заказу и поступлению товара. Живого
+  // консультанта за ним нет, и обещать «напишите специалисту» нельзя — человек
+  // напишет и не дождётся ответа.
+  //
+  // Ссылки здесь намеренно НЕТ: адрес бота приходит с сервера (max_bot_url в
+  // /api/core/theme/, собирается из MAX_BOT_USERNAME). Захардкоженный
+  // https://max.ru/ вёл на главную мессенджера и выглядел рабочим.
+  maxBot: {
+    title: "Наш бот в MAX",
+    text: "Вход без пароля и уведомления о заказе",
   },
 
   // #592: старое topNav удалено — единственный потребитель (TopBar.tsx) был
   // мёртвым кодом со ссылками на несуществующие страницы.
 
-  // Иконка — строковый ключ (маппинг в Footer): shield|truck|undo|wrench|gift.
-  trustBadges: [
-    { icon: "shield", label: "Официальная гарантия" },
-    { icon: "truck", label: "Быстрая доставка" },
-    { icon: "undo", label: "Возврат за 14 дней" },
-    { icon: "wrench", label: "Сервисный центр" },
-    { icon: "gift", label: "Программа лояльности" },
-  ],
 
   // #591: только РАБОЧИЕ маршруты — инфо-страниц (/delivery, /about, /faq …)
   // на сайте нет, битые ссылки в подвале не рисуем. Группы «Компания»/«Покупателям»
   // из макета появятся вместе со статическими страницами (см. MR).
+  // Разделы ведут в СВОИ разделы, а не все в /catalog: ссылка с названием
+  // раздела, открывающая общий каталог, — обманутое ожидание, человек второй раз
+  // ищет то же самое руками. Slug'и — корневые узлы каталога (см. /api/catalog/categories/).
+  //
+  // Колонки «Покупателям» здесь нет: кабинет, заказы, избранное и корзина стоят
+  // в шапке на каждой странице, и второй такой же список внизу — просто шум.
   footerColumns: [
     {
       title: "Каталог товаров",
       links: [
-        { label: "Электроинструмент", href: "/catalog" },
-        { label: "Ручной инструмент", href: "/catalog" },
-        { label: "Измерительный инструмент", href: "/catalog" },
-        { label: "Садовая техника", href: "/catalog" },
-        { label: "Сварочное оборудование", href: "/catalog" },
+        { label: "Электроинструмент", href: "/catalog/elektroinstrument" },
+        { label: "Ручной инструмент", href: "/catalog/ruchnoy" },
+        { label: "Измерительный инструмент", href: "/catalog/izmeritelnyy" },
+        { label: "Садовая техника", href: "/catalog/sadovaya" },
+        { label: "Сварочное оборудование", href: "/catalog/svarka" },
         { label: "Все категории", href: "/catalog" },
-      ],
-    },
-    {
-      title: "Покупателям",
-      links: [
-        { label: "Личный кабинет", href: "/account/profile" },
-        { label: "Мои заказы", href: "/account/orders" },
-        { label: "Избранное", href: "/account/wishlist" },
-        { label: "Корзина", href: "/cart" },
       ],
     },
     {
       title: "Помощь",
       links: [
         { label: "Поиск по каталогу", href: "/search" },
-        { label: "Подбор инструмента", href: "/catalog" },
         { label: "Статьи и обзоры", href: "/articles" },
       ],
     },
@@ -127,6 +117,8 @@ export type ResolvedStorefront = {
 export function resolveStorefront(input?: {
   region?: string;
   contacts?: Record<string, unknown>;
+  /** Бот магазина в MAX — собран сервером из MAX_BOT_USERNAME (может отсутствовать). */
+  max_bot_url?: string;
 }): ResolvedStorefront {
   const contacts = input?.contacts ?? {};
   const text = (...keys: string[]): string => {
@@ -152,6 +144,8 @@ export function resolveStorefront(input?: {
       href: text("phone_href") || inferredHref,
     },
     phoneNote: text("phone_note") || SITE.phoneNote,
-    maxHref: text("max_url", "max_href") || SITE.support.max.href,
+    // Приоритет: явная ссылка из настроек сайта → бот из переменных окружения.
+    // Пусто — плитка «наш бот в MAX» не рисуется (битую ссылку не показываем).
+    maxHref: text("max_url", "max_href") || (input?.max_bot_url ?? "").trim(),
   };
 }

@@ -122,6 +122,12 @@ class MeView(APIView):
         return Response(UserProfileSerializer(user).data)
 
 
+#: Потолок разового переноса избранного из браузера в аккаунт. Совпадает по
+#: смыслу с лимитом гостевого списка на фронте: больше человек не накопит, а
+#: длинный список превратил бы вход в тяжёлую запись.
+MAX_WISHLIST_BULK = 100
+
+
 class WishlistView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -138,8 +144,34 @@ class WishlistView(APIView):
         return Response(data)
 
     def post(self, request):
+        """Добавить товар (``product_id``) или сразу несколько (``product_ids``).
+
+        Список нужен переносу гостевого избранного при входе: человек копил его
+        без аккаунта, и отправлять по запросу на товар — значит устроить веер из
+        двадцати обращений в момент, когда страница и так грузится.
+
+        Несуществующие id в списке молча пропускаем: товар мог быть снят с
+        публикации, пока лежал в браузере, и это не повод потерять весь перенос.
+        Одиночная форма по-прежнему отвечает 404 — там id ровно один, и тишина
+        в ответ означала бы «сохранили», хотя не сохранили.
+        """
         from apps.accounts.wishlist import WishlistItem
         from apps.catalog.models import Product
+
+        raw_ids = request.data.get("product_ids")
+        if raw_ids is not None:
+            if not isinstance(raw_ids, list):
+                return Response(
+                    {"detail": "product_ids должен быть списком."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            ids = [int(v) for v in raw_ids if str(v).isdigit()][:MAX_WISHLIST_BULK]
+            products = Product.objects.filter(pk__in=ids)
+            WishlistItem.objects.bulk_create(
+                [WishlistItem(user=request.user, product=product) for product in products],
+                ignore_conflicts=True,  # повторный перенос не должен падать
+            )
+            return Response({"ok": True, "added": len(products)}, status=status.HTTP_201_CREATED)
 
         product_id = request.data.get("product_id")
         try:

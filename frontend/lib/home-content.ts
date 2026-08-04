@@ -2,18 +2,11 @@
 // картинки сценарных карточек. Смена копий магазина — правка ТОЛЬКО этого файла,
 // без касания компонентов. Названия категорий и сами товары приходят из API.
 
-export type HomeStat = { value: number; suffix: string; label: string };
-export type TrustItem = { icon: string; title: string };
 export type HeroBullet = { icon: string; text: string };
 export type IntentCard = { image: string; title: string; text: string; href: string };
 export type ServiceItem = { icon: string; title: string; text: string };
 
 export const HOME_CONTENT = {
-  topbar: {
-    promo: "Бесплатная доставка по Пензе от 5 000 ₽",
-    phone: "8 (800) 600-44-99",
-    phoneHref: "tel:+78006004499",
-  },
   // #592: nav/account удалены — потреблялись только старым тёмным Header
   // (до #586); «#»-ссылки в новых компонентах запрещены DoD эпика.
   // #587: hero по утверждённому макету — тёмный фотобаннер, экспертный подбор.
@@ -29,10 +22,6 @@ export const HOME_CONTENT = {
       { icon: "Users", text: "Помощь экспертов в подборе" },
       { icon: "Wrench", text: "Сервисный центр в Пензе" },
     ] as HeroBullet[],
-    // primaryCta открывает модалку подбора (InquiryModal); secondary ведёт в каталог.
-    primaryCta: { label: "Подобрать инструмент" },
-    secondaryCta: { label: "Перейти в каталог", href: "/catalog" },
-    maxPill: { title: "Консультация в MAX", note: "Подбор инструмента в чате за 2–3 минуты" },
   },
   // #588: сценарный вход «Что вы хотите сделать?» — помогает выбрать по задаче,
   // не думая в терминах дерева каталога. Ссылки ведут в каталог (маппинг на
@@ -90,13 +79,6 @@ export const HOME_CONTENT = {
     "Ресанта",
   ] as string[],
 
-  trust: [
-    { icon: "ShieldCheck", title: "Официальная гарантия" },
-    { icon: "Truck", title: "Быстрая доставка" },
-    { icon: "Store", title: "Самовывоз" },
-    { icon: "Wrench", title: "Сервис и запчасти" },
-    { icon: "Building2", title: "Работаем с юрлицами" },
-  ] as TrustItem[],
   // #590: «Почему покупают у нас» — 6 пунктов по макету.
   whyBuy: [
     { icon: "Award", title: "Более 10 лет", text: "на рынке Пензы" },
@@ -106,29 +88,4 @@ export const HOME_CONTENT = {
     { icon: "BadgeRussianRuble", title: "Выгодные цены", text: "честные цены и акции для наших клиентов" },
     { icon: "RotateCcw", title: "Гарантия и возврат", text: "официальная гарантия и простой возврат" },
   ] as ServiceItem[],
-  // Статьи переехали в lib/articles.ts: раздел /articles появился, карточки стали
-  // настоящими ссылками, а заглушки с одинаковой картинкой больше не нужны.
-  // #590: email-подписка — UI-заглушка (backend подписок нет, решение зафиксировано):
-  // поле и кнопка отрисованы, отправка отключена до появления backend.
-  subscribe: {
-    title: "Будьте в курсе новинок и акций",
-    text: "Подпишитесь и получайте полезные советы и спецпредложения на почту",
-    cta: "Подписаться",
-    note: "Скоро: подписка заработает после запуска рассылки",
-  },
-  consult: {
-    title: "Не знаете, какой инструмент выбрать?",
-    text: "Поможем подобрать инструмент под вашу задачу, бюджет и условия работы.",
-    maxUrl: "https://max.ru/proffinstrument",
-  },
-  about: {
-    title: "О магазине «Профессионал»",
-    text: "Магазин профессионального электро- и ручного инструмента с доставкой по Пензе и области.",
-    stats: [
-      { value: 10, suffix: "+", label: "лет на рынке" },
-      { value: 20000, suffix: "+", label: "товаров в каталоге" },
-      { value: 50000, suffix: "+", label: "довольных клиентов" },
-      { value: 100, suffix: "+", label: "брендов" },
-    ] as HomeStat[],
-  },
 };

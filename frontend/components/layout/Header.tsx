@@ -22,8 +22,10 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import { useAuthState } from "@/components/auth/AuthStateProvider";
 import { useCart } from "@/components/cart/CartProvider";
-import { accountLinkHref, useHasAuthMarker } from "@/lib/auth-marker";
+import { useWishlist } from "@/components/wishlist/WishlistProvider";
+import { accountLinkHref } from "@/lib/auth-state";
 import { useCompare } from "@/lib/compare";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
 import { SearchBar } from "./SearchBar";
@@ -52,12 +54,17 @@ export function Header({
 }: HeaderProps) {
   const { count } = useCart();
   const { count: compareCount } = useCompare();
+  // Сердечко на карточке подтверждает клик только цветом самой карточки. Счётчик
+  // в шапке — общий на весь сайт признак «выбор дошёл»: он же у сравнения и
+  // корзины, и избранное без него читалось как менее надёжное.
+  const { ids: wishlistIds } = useWishlist();
+  const wishlistCount = wishlistIds.size;
   const [open, setOpen] = useState(false);
   // Гостя ведём сразу на форму входа: иначе он попадал в кабинет, откуда его
-  // разворачивал серверный гвард, — со скачком адреса и пустой страницей.
-  const authMarker = useHasAuthMarker();
-  const profileHref = accountLinkHref("/account/profile", authMarker);
-  const wishlistHref = accountLinkHref("/account/wishlist", authMarker);
+  // разворачивал серверный гвард, — со скачком адреса и пустой страницей. При
+  // «может быть вошёл» ссылка идёт по назначению — см. lib/auth-state.
+  const authState = useAuthState();
+  const profileHref = accountLinkHref("/account/profile", authState);
 
   const logo = logoUrl ? (
     <Image
@@ -206,11 +213,20 @@ export function Header({
         {/* Действия — desktop: избранное · сравнение (future) · корзина · кабинет */}
         <div className="ml-auto hidden shrink-0 items-center gap-1 lg:flex">
           <Link
-            href={wishlistHref}
-            className="flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
-            aria-label="Избранное"
+            href="/wishlist"
+            className="relative flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
+            aria-label={
+              wishlistCount > 0 ? `Избранное, товаров: ${wishlistCount}` : "Избранное"
+            }
           >
-            <Heart className="h-5 w-5" aria-hidden />
+            <span className="relative">
+              <Heart className="h-5 w-5" aria-hidden />
+              {wishlistCount > 0 && (
+                <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-ink">
+                  {wishlistCount > 99 ? "99+" : wishlistCount}
+                </span>
+              )}
+            </span>
             <span className="text-[11px]">Избранное</span>
           </Link>
           <Link
@@ -306,12 +322,20 @@ export function Header({
               Личный кабинет
             </Link>
             <Link
-              href={wishlistHref}
+              href="/wishlist"
               className="flex min-h-11 items-center gap-2 border-b border-header-line py-2.5 text-sm text-topbar-ink hover:text-accent"
               onClick={() => setOpen(false)}
+              aria-label={
+                wishlistCount > 0 ? `Избранное, товаров: ${wishlistCount}` : undefined
+              }
             >
               <Heart className="h-4 w-4" aria-hidden />
               Избранное
+              {wishlistCount > 0 && (
+                <span className="grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-ink">
+                  {wishlistCount > 99 ? "99+" : wishlistCount}
+                </span>
+              )}
             </Link>
             {/* #592: инфо-пункты (сервис/доставка/гарантии/контакты) в мобильном
                 меню не показываем, пока нет страниц — некликабельные строки в
