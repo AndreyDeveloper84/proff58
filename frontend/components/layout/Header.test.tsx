@@ -6,6 +6,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/components/cart/CartProvider", () => ({
   useCart: () => ({ count: 3 }),
 }));
+// Избранное — как и корзина: состояние задаём напрямую, без провайдера и похода
+// на сервер (наполнение списка проверяет WishlistProvider.test).
+const wishlist = vi.hoisted(() => ({ ids: new Set<number>() }));
+vi.mock("@/components/wishlist/WishlistProvider", () => ({
+  useWishlist: () => ({ ids: wishlist.ids }),
+}));
 // SearchBar тянет suggest через fetch — подменяем на заглушку.
 vi.mock("./SearchBar", () => ({
   SearchBar: () => <div data-testid="searchbar" />,
@@ -33,6 +39,7 @@ describe("Header (#586)", () => {
     // Список сравнения живёт в localStorage: без очистки счётчик протекал бы
     // из предыдущего теста.
     localStorage.clear();
+    wishlist.ids = new Set();
   });
 
   it("каталог, корзина и избранное — рабочие ссылки", () => {
@@ -66,6 +73,38 @@ describe("Header (#586)", () => {
     const compare = screen.getByRole("link", { name: "Сравнение" });
     expect(compare).toHaveAttribute("href", "/compare");
     expect(within(compare).queryByText("0")).toBeNull();
+  });
+
+  // Сердечко на карточке — единственное подтверждение клика, и на длинной
+  // выдаче его не видно. Счётчик в шапке показывает выбор целиком, как у
+  // сравнения и корзины.
+  it("«Избранное» показывает счётчик выбранного", () => {
+    wishlist.ids = new Set([11, 22]);
+    renderHeader();
+
+    const link = screen.getByRole("link", { name: "Избранное, товаров: 2" });
+    expect(link).toHaveAttribute("href", "/wishlist");
+    expect(within(link).getByText("2")).toBeInTheDocument();
+  });
+
+  it("пустое избранное — ссылка без счётчика", () => {
+    renderHeader();
+
+    const link = screen.getByRole("link", { name: "Избранное" });
+    expect(within(link).queryByText("0")).toBeNull();
+  });
+
+  // На телефоне ряда иконок нет вовсе — там избранное живёт в бургер-меню, и
+  // без счётчика клик по сердечку остался бы вообще без подтверждения.
+  it("счётчик виден и в мобильном меню", () => {
+    wishlist.ids = new Set([11, 22, 33]);
+    renderHeader();
+    fireEvent.click(screen.getByRole("button", { name: "Меню" }));
+
+    const inMenu = within(screen.getByRole("navigation")).getByRole("link", {
+      name: "Избранное, товаров: 3",
+    });
+    expect(within(inMenu).getByText("3")).toBeInTheDocument();
   });
 
   // #592: инфо-страниц (/service, /delivery, …) не существует — пункты topbar
