@@ -250,6 +250,18 @@ class Command(BaseCommand):
                             "raw": item.raw,
                         }
                     )
+                elif item.action == "confirm":
+                    report.setdefault("confirmed", []).append(
+                        {
+                            "product_id": product.id,
+                            "product": product.name,
+                            "attribute": item.attribute_slug,
+                            "field": item.field,
+                            "value": str(item.new_value),
+                            "source": item.old_source,
+                            "raw": item.raw,
+                        }
+                    )
                 elif item.action == "skipped_voltage":
                     report["skipped_voltage"].append(
                         {
