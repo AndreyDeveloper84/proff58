@@ -12,7 +12,7 @@
     "ranges": "Диапазоны как значения не сопоставляются, кроме no_load_speed: берётся верхняя граница (range_upper_decimal).",
     "voltage": "Источники дают '220-230В ~50Гц', '220±10% /50', '230/50' и просто '20' (аккумулятор). Для сетевых инструментов — первое число; для аккумуляторных — напряжение батареи. Импортёр сам отбрасывает voltage >=60В для не-аккумуляторных товаров.",
     "motor_type": "ЗУБР отдаёт 'BRUSHLESS, бесщеточный' / 'щеточный'; Вихрь/Ресанта — 'Щеточный'/'Бесщеточный'; Интерскол — 'Бесщеточный (вентильный)'. Нормализовать в brushless/brushed.",
-    "chuck": "У дрелей ЗУБР 'ключевой'/'БЗП'; у Вихря 'ключевой'/'быстрозажимной (БЗП)'. В БД у атрибута chuck только SDS-опции, поэтому значения уходят в dropped. Отложено до расширения опций в треке обогащения.",
+    "chuck": "У дрелей ЗУБР 'ключевой'/'БЗП'; у Вихря 'ключевой'/'быстрозажимной (БЗП)'; у Ресанты 'Ключевой'. Словарь chuck расширен (КАТ-14I): значения мапятся в слаги kulachkovyy/bystrozazhimnoy. SDS-опции — только перфораторы.",
     "torque": "У Ресанты/Вихря крутящий момент может быть записан как '50/25' (жёсткий/мягкий). Берём первое число — максимальный момент.",
     "weight": "Вес не брать: у разных источников брутто/нетто, атрибута веса нет.",
     "unmapped": "Поля без подходящего Attribute — в unmapped с кандидатом; новые Attribute не создавать.",
@@ -74,7 +74,13 @@
         "Кейс": {"action": "ignore", "reason": "комплектация"},
         "Время заряда аккумулятора, ч": {"action": "ignore", "reason": "нет атрибута"},
         "Корпус редуктора": {"action": "ignore", "reason": "нет атрибута"},
-        "Тип патрона": {"action": "ignore", "reason": "опций chuck нет в БД; отложено"},
+        "Тип патрона": {
+          "action": "map", "attribute": "chuck", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {"ключевой": "kulachkovyy"},
+          "confidence": "medium", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report",
+          "comment": "слаги словаря КАТ-14I; в выборке только 'Ключевой'"
+        },
         "Напряжение сети адаптера питания, В, Гц": {"action": "ignore", "reason": "зарядное устройство, не инструмент"},
         "Вес, кг": {"action": "unmapped", "candidate_attribute": "weight_kg", "reason": "атрибута веса нет"},
         "Габариты упаковки": {"action": "unmapped", "candidate_attribute": "dimensions", "reason": "атрибута нет"}
@@ -121,12 +127,12 @@
           "action": "map", "attribute": "chuck", "attribute_type": "select",
           "normalize": "option_map",
           "values": {
-            "ключевой": "keyed",
-            "быстрозажимной (бзп)": "keyless",
-            "бзп": "keyless"
+            "ключевой": "kulachkovyy",
+            "быстрозажимной (бзп)": "bystrozazhimnoy",
+            "бзп": "bystrozazhimnoy"
           },
           "confidence": "medium", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report",
-          "comment": "опций chuck в БД пока нет — значения упадут в dropped, это ожидаемо"
+          "comment": "слаги словаря КАТ-14I (kulachkovyy/bystrozazhimnoy)"
         },
         "Диаметр патрона, мм": {
           "action": "unmapped", "candidate_attribute": "chuck_size_mm",
@@ -243,7 +249,13 @@
           "action": "map", "attribute": "battery_capacity", "attribute_type": "decimal", "unit": "А*ч",
           "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
         },
-        "Тип патрона": {"action": "ignore", "reason": "значения нечитаемые/нет атрибута"},
+        "Тип патрона": {
+          "action": "map", "attribute": "chuck", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {"бзп": "bystrozazhimnoy"},
+          "confidence": "medium", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report",
+          "comment": "ПАРС-09: «БЗП» → bystrozazhimnoy; мусор («нет», «Есть», «Есть, металлический с храповиком») → drop_to_report"
+        },
         "Патрон": {"action": "ignore", "reason": "нет подходящего атрибута"},
         "Реверс": {"action": "ignore", "reason": "нет атрибута"},
         "Диапазон зажима патрона": {"action": "unmapped", "candidate_attribute": "chuck_size_mm", "reason": "диаметр патрона, не тип"},
@@ -347,15 +359,15 @@
           "action": "map", "attribute": "chuck", "attribute_type": "select",
           "normalize": "option_map",
           "values": {
-            "ключевой": "keyed",
-            "кулачковый": "keyed",
-            "бзп": "keyless",
-            "бзп, угловой, эксцентриковый": "keyless",
-            "быстрозажимной": "keyless",
-            "бесключевой": "keyless"
+            "ключевой": "kulachkovyy",
+            "кулачковый": "kulachkovyy",
+            "бзп": "bystrozazhimnoy",
+            "бзп, угловой, эксцентриковый": "bystrozazhimnoy",
+            "быстрозажимной": "bystrozazhimnoy",
+            "бесключевой": "bystrozazhimnoy"
           },
           "confidence": "medium", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report",
-          "comment": "опций keyed/keyless в БД пока нет — plan items создаются, но запись невозможна до расширения опций"
+          "comment": "слаги словаря КАТ-14I (kulachkovyy/bystrozazhimnoy)"
         },
         "Размер патрона, мм": {
           "action": "unmapped", "candidate_attribute": "chuck_size_mm",
@@ -428,9 +440,9 @@
         "Дрель-миксер": {"action": "ignore", "reason": "дублирует категорию"},
         "Подсветка": {"action": "ignore", "reason": "нет атрибута"},
         "Напряжение питания зарядного устройства, В/Гц": {"action": "ignore", "reason": "зарядное устройство"},
-        "Патрон кулачковый": {"action": "ignore", "reason": "отложено до расширения chuck"},
-        "Патрон эксцентриковый": {"action": "ignore", "reason": "отложено до расширения chuck"},
-        "Патрон угловой": {"action": "ignore", "reason": "отложено до расширения chuck"},
+        "Патрон кулачковый": {"action": "ignore", "reason": "флаг наличия ('1'), тип берём из 'Тип патрона'"},
+        "Патрон эксцентриковый": {"action": "ignore", "reason": "флаг наличия ('1'); слага для эксцентрикового нет"},
+        "Патрон угловой": {"action": "ignore", "reason": "флаг наличия ('1'); слага для углового нет"},
         "Аккумулятор": {"action": "ignore", "reason": "комплектация"},
         "Макс. диаметр сверления (дерево)": {"action": "ignore", "reason": "нет атрибута"},
         "Макс. диаметр сверления (металл)": {"action": "ignore", "reason": "нет атрибута"},
