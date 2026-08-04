@@ -158,6 +158,26 @@ def test_model_key_no_substring_trap():
     assert si.model_key("Перф.ЗУБР ЗП-2680, SDS+") != si.model_key("Перф.ЗУБР ЗП-26-800 SDS+")
 
 
+def test_model_re_zdm_prefix():
+    """ПАРС-09: префикс ЗДМ (дрели-миксеры ЗУБР) извлекается из названия карточки."""
+    assert si.extract_model("Дрель-миксер ЗДМ-820 РМ") == "ЗДМ-820 РМ"
+    assert si.extract_model("Дрель-миксер ЗДМ-1200 РММ2") == "ЗДМ-1200 РММ2"
+    assert si.model_key("Дрель-миксер ЗДМ-820 РМ") == "zdm820rm"
+    assert si.model_key("Дрель-миксер ЗДМ-1200 РММ2") == "zdm1200rmm2"
+    # РММ2 и РММ — разные модификации, ключи не склеиваются.
+    assert si.model_key("Дрель-миксер ЗДМ-1200 РММ2") != si.model_key("Дрель-миксер ЗДМ-1200 РММ")
+
+
+def test_model_re_zdm_card_and_product_keys_equal():
+    """Карточка и товар каталога дают один ключ модели (карточка ЗДМ-820 РМ)."""
+    card_key = si.model_key("Дрель-миксер ЗДМ-820 РМ")
+    product_key = si.model_key(
+        "Дрель-миксер реверсивная ЗУБР ЗДМ-820 РМ Профессионал, 50 Нм, "
+        "патрон 13 мм, 0-650 об/мин, 820 Вт"
+    )
+    assert card_key == product_key
+
+
 @pytest.mark.django_db
 def test_substring_match_impossible(catalog):
     """Карточка ЗП-26-800 НЕ матчится с товаром ЗП-2680 (и наоборот)."""
