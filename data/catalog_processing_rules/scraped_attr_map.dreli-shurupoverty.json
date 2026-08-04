@@ -183,6 +183,11 @@
           "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
           "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report"
         },
+        "Частота вращения на холостом ходу": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "comment": "fallback из HTML-описания, единица измерения отсечена"
+        },
         "Напряжение аккумулятора, В": {
           "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
           "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
@@ -213,6 +218,10 @@
           "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report"
         },
         "Мощность": {
+          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
+          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Номинальная потребляемая мощность": {
           "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
           "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
         },
