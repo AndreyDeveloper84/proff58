@@ -3,6 +3,8 @@ import { ProductCard } from "./ProductCard";
 
 const TITLES: Record<keyof Sections, string> = {
   accessories: "Аксессуары и расходники",
+  crossSell: "С этим товаром покупают",
+  analogs: "Аналоги",
   fits: "Подходит к",
   compatible: "Совместимые товары",
 };
@@ -10,7 +12,14 @@ const TITLES: Record<keyof Sections, string> = {
 // Секции совместимости на PDP. Пустые секции не рендерим; вообще нет данных → ничего.
 export function CompatibilitySections({ sections }: { sections?: Sections }) {
   if (!sections) return null;
-  const order: (keyof Sections)[] = ["accessories", "fits", "compatible"];
+  // Порядок для покупателя: сначала «докупить», потом «чем заменить», потом справочное.
+  const order: (keyof Sections)[] = [
+    "accessories",
+    "crossSell",
+    "analogs",
+    "fits",
+    "compatible",
+  ];
   const nonEmpty = order.filter((k) => sections[k].length > 0);
   if (!nonEmpty.length) return null;
 

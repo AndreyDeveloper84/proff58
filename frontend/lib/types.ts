@@ -35,6 +35,8 @@ export type ProductImageData = { url: string; alt: string; isMain: boolean };
 // Секции совместимости карточки товара (бэк: /products/{slug}/compatible/).
 export type CompatibilitySections = {
   accessories: Product[]; // аксессуары/оснастка К товару
+  crossSell: Product[]; // «с этим товаром покупают» — взаимная связь
+  analogs: Product[]; // аналоги/замены — взаимная связь
   fits: Product[]; // к чему подходит (для аксессуара)
   compatible: Product[]; // симметрично совместимые
 };

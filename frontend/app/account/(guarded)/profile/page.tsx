@@ -582,7 +582,7 @@ export default function ProfilePage() {
                     router.push("/");
                   }
                 }}
-                className="inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-medium text-danger transition hover:bg-red-50"
+                className="inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-medium text-danger transition hover:bg-danger/10"
               >
                 <LogOut className="h-4 w-4" aria-hidden />
                 Выйти
@@ -658,7 +658,7 @@ export default function ProfilePage() {
                 setDeleteError("");
                 setDeleteOpen(true);
               }}
-              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-danger/40 px-4 text-sm font-semibold text-danger transition hover:bg-red-50"
+              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-danger/40 px-4 text-sm font-semibold text-danger transition hover:bg-danger/10"
             >
               <Trash2 className="h-4 w-4" aria-hidden />
               Удалить аккаунт

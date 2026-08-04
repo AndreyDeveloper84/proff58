@@ -1,0 +1,112 @@
+{% extends "admin/base_site.html" %}
+
+{% comment %}
+Подбор связей товара: «покупают вместе» и «аналоги» галочками по списку
+кандидатов. Построчная форма в карточке для этого не годится — здесь проходят
+подгруппу целиком.
+{% endcomment %}
+
+{% block content %}
+<style>
+  .lnk-wrap { max-width: 68rem; }
+  .lnk-head { margin-bottom: .9rem; }
+  .lnk-head h2 { margin: 0 0 .2rem; }
+  .lnk-sub { font-size: .85rem; opacity: .7; }
+  .lnk-tools { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; margin:.9rem 0; }
+  .lnk-tools input[type=text] { min-width: 16rem; }
+  .lnk-table { width:100%; border-collapse:collapse; }
+  .lnk-table th, .lnk-table td { padding:.45rem .6rem; border-bottom:1px solid rgba(128,128,128,.22); vertical-align:middle; }
+  .lnk-table th { text-align:left; font-size:.82rem; text-transform:uppercase; letter-spacing:.03em; opacity:.7; }
+  .lnk-table th.lnk-check, .lnk-table td.lnk-check { text-align:center; width:9.5rem; }
+  .lnk-name { font-weight:500; }
+  .lnk-meta { font-size:.8rem; opacity:.65; }
+  .lnk-pinned { background:rgba(107,163,6,.07); }
+  .lnk-off { color:#b3261e; font-size:.78rem; }
+  .lnk-actions { position:sticky; bottom:0; padding:.8rem 0; margin-top:.6rem; background:inherit; display:flex; gap:.7rem; align-items:center; }
+  .lnk-pages { margin:.8rem 0; font-size:.9rem; }
+</style>
+
+<div class="lnk-wrap">
+  <div class="lnk-head">
+    <h2>{{ product.name }}</h2>
+    <div class="lnk-sub">
+      Артикул {{ product.article|default:"—" }} ·
+      категория {{ product.category|default:"без категории" }} ·
+      тип инструмента {{ tool_type|default:"не задан" }}
+    </div>
+  </div>
+
+  <p class="lnk-sub">
+    «Покупают вместе» и «Аналог» — связи взаимные: отметив здесь, вы увидите её и в
+    карточке связанного товара. На витрине показываются только товары, доступные
+    покупателю.
+  </p>
+
+  <form method="get" class="lnk-tools">
+    <label>Показать:
+      <select name="scope" onchange="this.form.submit()">
+        <option value="tool_type" {% if scope == "tool_type" %}selected{% endif %}>тот же тип инструмента</option>
+        <option value="category" {% if scope == "category" %}selected{% endif %}>та же категория</option>
+        <option value="all" {% if scope == "all" %}selected{% endif %}>весь каталог</option>
+      </select>
+    </label>
+    <input type="text" name="q" value="{{ query }}" placeholder="Название или артикул">
+    <button type="submit" class="button">Найти</button>
+    <a href="{% url 'admin:catalog_product_change' product.pk %}">← в карточку товара</a>
+  </form>
+
+  <form method="post">
+    {% csrf_token %}
+    <table class="lnk-table">
+      <thead>
+        <tr>
+          <th>Товар</th>
+          {% for kind, label in kinds %}<th class="lnk-check">{{ label }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr class="{% if row.pinned %}lnk-pinned{% endif %}">
+          <td>
+            <input type="hidden" name="shown" value="{{ row.product.pk }}">
+            <div class="lnk-name">{{ row.product.name }}</div>
+            <div class="lnk-meta">
+              {{ row.product.article|default:"без артикула" }} ·
+              {{ row.product.price|default:"цены нет" }} ₽ ·
+              {{ row.product.category|default:"без категории" }}
+              {% if not row.product.is_visible %}<span class="lnk-off">· не на витрине</span>{% endif %}
+            </div>
+          </td>
+          {% for cell in row.cells %}
+          <td class="lnk-check">
+            <input type="checkbox" name="link_{{ cell.kind }}" value="{{ row.product.pk }}"
+                   {% if cell.checked %}checked{% endif %}
+                   aria-label="{{ cell.label }}: {{ row.product.name }}">
+          </td>
+          {% endfor %}
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">Кандидатов нет — смените область показа или поищите по названию.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="lnk-actions">
+      <button type="submit" class="button default">Сохранить связи</button>
+      <span class="lnk-sub">Сохраняются отметки только по показанным товарам.</span>
+    </div>
+  </form>
+
+  {% if page_obj.has_other_pages %}
+  <div class="lnk-pages">
+    Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }} ·
+    {% if page_obj.has_previous %}
+      <a href="?scope={{ scope }}&q={{ query|urlencode }}&page={{ page_obj.previous_page_number }}">← назад</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+      <a href="?scope={{ scope }}&q={{ query|urlencode }}&page={{ page_obj.next_page_number }}">вперёд →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

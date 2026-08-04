@@ -570,6 +570,16 @@ class Product(TimeStampedModel):
         default=False,
         help_text=_("Виден на витрине только если статус «Опубликован» и этот флаг включён."),
     )
+    is_hit_manual = models.BooleanField(
+        _("Хит продаж (вручную)"),
+        default=False,
+        db_index=True,
+        help_text=_(
+            "Витринная подборка магазина, пока 1С не присылает продажи. Товары с "
+            "реальными продажами за окно всё равно идут первыми — ручная отметка "
+            "их не вытесняет и не подменяет (см. apps.catalog.sales)."
+        ),
+    )
 
     attrs_cache = models.JSONField(
         _("Кэш характеристик"),
@@ -718,6 +728,28 @@ class Product(TimeStampedModel):
 class CompatibilityKind(models.TextChoices):
     ACCESSORY = "accessory", _("Аксессуар / оснастка / расходник")
     COMPATIBLE = "compatible", _("Совместим")
+    CROSS_SELL = "cross_sell", _("С этим товаром покупают")
+    ANALOG = "analog", _("Аналог / замена")
+
+
+# Виды связей, у которых направление не значит ничего: «покупают вместе» и
+# «аналог» взаимны по смыслу, поэтому ребро хранится канонически min(id)→max(id)
+# и обратный дубль невозможен. ACCESSORY сюда не входит — там направление и есть
+# факт («к дрели — свёрла», но не наоборот).
+SYMMETRIC_COMPATIBILITY_KINDS = frozenset(
+    {
+        CompatibilityKind.COMPATIBLE,
+        CompatibilityKind.CROSS_SELL,
+        CompatibilityKind.ANALOG,
+    }
+)
+
+
+class CompatibilityOrigin(models.TextChoices):
+    """Кто поставил связь — видно в админке, чтобы отличать разбор ИИ от руки."""
+
+    MANUAL = "manual", _("Менеджер")
+    AI = "ai", _("Предложено ИИ")
 
 
 class ProductCompatibility(TimeStampedModel):
@@ -729,8 +761,10 @@ class ProductCompatibility(TimeStampedModel):
       target — аксессуар/оснастка/расходник к нему. Направление значимо и НЕ
       канонизируется: ребро A→B и B→A — это два разных факта (A — аксессуар к B
       и наоборот).
-    * ``COMPATIBLE`` — СИММЕТРИЧНАЯ «совместим с». Чтобы не плодить обратные
-      дубли (A↔B и B↔A), храним ребро в каноническом виде ``min(id) → max(id)``.
+    * ``COMPATIBLE`` / ``CROSS_SELL`` / ``ANALOG`` — СИММЕТРИЧНЫЕ («совместим с»,
+      «покупают вместе», «аналог»). Чтобы не плодить обратные дубли (A↔B и B↔A),
+      храним ребро в каноническом виде ``min(id) → max(id)``; полный перечень —
+      ``SYMMETRIC_COMPATIBILITY_KINDS``.
 
     Канонизация делается в :meth:`clean` и :meth:`save`. ``bulk_create`` обходит
     ``save()`` — массовый импорт совместимостей вне scope V1 (при добавлении
@@ -752,6 +786,12 @@ class ProductCompatibility(TimeStampedModel):
     kind = models.CharField(_("Тип связи"), max_length=20, choices=CompatibilityKind.choices)
     note = models.CharField(_("Примечание"), max_length=512, blank=True)
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
+    origin = models.CharField(
+        _("Источник связи"),
+        max_length=10,
+        choices=CompatibilityOrigin.choices,
+        default=CompatibilityOrigin.MANUAL,
+    )
 
     class Meta:
         verbose_name = _("Связь совместимости товаров")
@@ -773,10 +813,10 @@ class ProductCompatibility(TimeStampedModel):
         ]
 
     def _canonicalize(self) -> None:
-        # COMPATIBLE симметричен → храним каноническим min(id)→max(id) (защита от
-        # обратных дублей). ACCESSORY направленный — не трогаем.
+        # Симметричные виды храним каноническим min(id)→max(id) (защита от обратных
+        # дублей). ACCESSORY направленный — не трогаем.
         if (
-            self.kind == CompatibilityKind.COMPATIBLE
+            self.kind in SYMMETRIC_COMPATIBILITY_KINDS
             and self.source_id
             and self.target_id
             and self.source_id > self.target_id
@@ -787,7 +827,7 @@ class ProductCompatibility(TimeStampedModel):
     def canonical_pair(cls, source_id, target_id, kind):
         """Каноническая пара (source_id, target_id) для данного вида связи."""
         if (
-            kind == CompatibilityKind.COMPATIBLE
+            kind in SYMMETRIC_COMPATIBILITY_KINDS
             and source_id
             and target_id
             and source_id > target_id

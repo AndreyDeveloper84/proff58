@@ -25,11 +25,12 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Count, Max, Sum
+from django.db.models import Count, IntegerField, Max, Q, Sum, Value
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from .filters import visible_products
-from .models import ProductSalesFact, ProductSalesStat
+from .models import Product, ProductSalesFact, ProductSalesStat
 
 __all__ = [
     "SalesRow",
@@ -173,19 +174,38 @@ def purge_old_sales_facts(today: date | None = None) -> int:
 
 
 def bestsellers_queryset():
-    """Товары витрины с реальными продажами за окно, по убыванию продаж.
+    """Товары блока «Хиты продаж»: сначала реальные продажи, затем подборка магазина.
 
-    Только опубликованные и только со строкой рейтинга: пустая выдача здесь —
-    честный ответ «продаж пока нет», а не повод подставить что-то похожее.
+    Рейтинг по фактам продаж — главный: он идёт первым и ручной отметкой не
+    вытесняется. Товары с галочкой «Хит продаж (вручную)» дополняют выдачу, пока
+    1С не начала присылать продажи (`/api/1c/sales/upload`) — иначе блок пуст и
+    витрина молча подменяет его новинками. Как только продажи пойдут, подборка
+    сама уедет вниз, а снять её можно галочкой.
+
     Без среза — размер выдачи задаёт пагинация вызывающего.
     """
-    return visible_products().filter(sales_stat__isnull=False).order_by("sales_stat__rank")
+    # Товар без строки рейтинга получает заведомо худший ранг — так ручные хиты
+    # встают после настоящих, а не вперемешку с ними.
+    no_rank = 1_000_000
+    return (
+        visible_products()
+        .filter(Q(sales_stat__isnull=False) | Q(is_hit_manual=True))
+        .annotate(
+            hit_rank=Coalesce("sales_stat__rank", Value(no_rank, output_field=IntegerField()))
+        )
+        .order_by("hit_rank", "name")
+    )
 
 
 def hit_product_ids(product_ids) -> set[int]:
-    """Из переданных товаров — те, что помечены хитом (для бейджей на карточках)."""
-    return set(
-        ProductSalesStat.objects.filter(product_id__in=list(product_ids), is_hit=True).values_list(
-            "product_id", flat=True
-        )
+    """Из переданных товаров — те, что помечены хитом (для бейджей на карточках).
+
+    Бейдж «Хит» ставит и рейтинг продаж, и ручная отметка магазина — на карточке
+    это одно и то же обещание покупателю.
+    """
+    ids = list(product_ids)
+    by_sales = ProductSalesStat.objects.filter(product_id__in=ids, is_hit=True).values_list(
+        "product_id", flat=True
     )
+    by_hand = Product.objects.filter(pk__in=ids, is_hit_manual=True).values_list("pk", flat=True)
+    return set(by_sales) | set(by_hand)
