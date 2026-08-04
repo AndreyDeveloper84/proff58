@@ -40,7 +40,7 @@ export function ProductReviews({
         Отзывы ({total})
         {avg !== null && total > 0 && (
           <span className="inline-flex items-center gap-1 text-lg normal-case text-ink-2">
-            <Star className="h-5 w-5 fill-amber-400 text-amber-400" aria-hidden />
+            <Star className="h-5 w-5 fill-current text-rating" aria-hidden />
             {avg.toFixed(1)}
           </span>
         )}

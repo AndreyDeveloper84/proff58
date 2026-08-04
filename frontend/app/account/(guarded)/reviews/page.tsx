@@ -14,9 +14,9 @@ import type { MyReview, ReviewStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const STATUS_BADGE: Record<ReviewStatus, string> = {
-  pending: "bg-amber-50 text-amber-700",
+  pending: "bg-st-wait/10 text-st-wait",
   approved: "bg-accent/10 text-accent",
-  rejected: "bg-red-50 text-danger",
+  rejected: "bg-danger/10 text-danger",
 };
 
 export default function MyReviewsPage() {

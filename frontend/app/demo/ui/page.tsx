@@ -24,9 +24,14 @@ const TOKENS = [
   ["canvas", "bg-canvas"],
   ["surface", "bg-surface"],
   ["raised", "bg-raised"],
+  // accent — то, что нажимают; brand — состояние товара. Порядок как в globals.css.
   ["accent", "bg-accent"],
   ["brand", "bg-brand"],
   ["danger", "bg-danger"],
+  ["rating", "bg-rating"],
+  ["hit", "bg-hit"],
+  ["max", "bg-max"],
+  ["info", "bg-info"],
 ];
 
 export default function UiKitPage() {

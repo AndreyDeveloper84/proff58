@@ -43,7 +43,7 @@ export function MaxLinkCard() {
       <h2 className="mb-2 font-semibold">Вход через MAX</h2>
       {linked ? (
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span className="inline-flex items-center gap-1.5 font-medium text-green-600">
+          <span className="inline-flex items-center gap-1.5 font-medium text-brand">
             <Check className="h-4 w-4" aria-hidden />
             MAX подключён
           </span>
@@ -51,7 +51,7 @@ export function MaxLinkCard() {
             type="button"
             onClick={unlink}
             disabled={busy}
-            className="text-red-600 underline disabled:opacity-50"
+            className="text-danger underline disabled:opacity-50"
           >
             Отключить MAX
           </button>

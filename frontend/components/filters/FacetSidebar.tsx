@@ -130,7 +130,7 @@ function CheckboxFacet({
             {/* Кастомный зелёный чекбокс (по макету). */}
             <span
               aria-hidden
-              className="grid h-5 w-5 shrink-0 place-items-center rounded border border-line text-transparent transition peer-checked:border-brand peer-checked:bg-brand peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-accent"
+              className="grid h-5 w-5 shrink-0 place-items-center rounded border border-line text-transparent transition peer-checked:border-accent peer-checked:bg-accent peer-checked:text-accent-ink peer-focus-visible:ring-2 peer-focus-visible:ring-accent"
             >
               <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" aria-hidden>
                 <path

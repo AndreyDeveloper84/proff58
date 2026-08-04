@@ -132,7 +132,7 @@ export function MaxAuthFlow({
         onClick={start}
         disabled={phase === "starting"}
         data-event="max_auth_started"
-        className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-95 disabled:opacity-50"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink transition hover:brightness-95 disabled:opacity-50"
       >
         <MessageSquareText className="h-4 w-4" aria-hidden />
         {phase === "starting" ? "Создаём ссылку…" : (ctaLabel ?? "Войти через MAX")}
@@ -141,7 +141,7 @@ export function MaxAuthFlow({
   }
 
   if (phase === "completed") {
-    return <p className="text-center text-sm font-medium text-brand">Готово! Входим…</p>;
+    return <p className="text-center text-sm font-medium text-accent">Готово! Входим…</p>;
   }
 
   // waiting / error

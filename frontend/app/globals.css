@@ -53,12 +53,25 @@
      (кнопки «Каталог товаров»/«Подобрать инструмент» ≈ #6ca408/#6aa207). Белый текст
      поверх. Значение фиксировано в дизайн-системе и НЕ берётся из SiteSettings
      (см. layout.tsx). */
+  /* Два зелёных не взаимозаменяемы, правило одно на весь проект:
+     --accent — то, что человек нажимает и выбирает (кнопки, чекбоксы, активные
+     фильтры, сердечко, тумблеры);
+     --primary (утилита brand) — состояние товара, которое НЕ трогают руками:
+     «в наличии», «новинка», ссылки в тексте.
+     Смешивать нельзя: две кнопки рядом в разной зелени читаются как ошибка. */
   --accent: #6ba306;
   --accent-ink: #ffffff;
-  --primary: #0a8043; /* ссылки/«в наличии»/зелёные CTA — контраст на белом */
+  --primary: #0a8043;
 
   --danger: #cf2e2e;
   --rating: #b7791f;
+  /* Оранжевый «Хита» и лиловый MAX — фирменные, не выводятся из зелёного. */
+  --hit: #ff8700;
+  --max-brand: #6156f5;
+  /* Спокойная синяя рамка справок «к сведению» (резерв, сроки счёта). */
+  --info: #2f6fb0;
+  --info-bg: #eef4fb;
+  --info-line: #d3e2f2;
 
   --photo: #eef1f3;
   --photo-ink: #6b747c;
@@ -104,6 +117,11 @@
 
   --danger: #e5484d;
   --rating: #e6b45a;
+  --hit: #ff9a2e;
+  --max-brand: #8b83f8;
+  --info: #74b6ee;
+  --info-bg: #17202b;
+  --info-line: #24384d;
 
   --photo: #eef1f3;
   --photo-ink: #8b939a;
@@ -140,6 +158,11 @@
 
   --color-danger: var(--danger);
   --color-rating: var(--rating);
+  --color-hit: var(--hit);
+  --color-max: var(--max-brand);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-info-line: var(--info-line);
 
   --color-photo: var(--photo);
   --color-photo-ink: var(--photo-ink);
