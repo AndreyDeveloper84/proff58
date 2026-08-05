@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupProductSpecs, selectKeySpecs } from "./ProductDetailsShowcase";
+import { groupProductSpecs, hasPassportSpecs, selectKeySpecs } from "./ProductDetailsShowcase";
 
 const specs = [
   { label: "Тип инструмента", value: "Перфораторы" },
@@ -38,5 +38,24 @@ describe("ProductDetailsShowcase", () => {
 
   it("не оставляет пустые группы", () => {
     expect(groupProductSpecs([{ label: "Цвет", value: "Зелёный" }])).toHaveLength(1);
+  });
+});
+
+describe("наполнение карточки", () => {
+  // 12 250 товаров каталога имеют единственную «характеристику» — тип инструмента.
+  // Это служебная строка разбора, а не паспорт: таблица из неё одной читалась как
+  // обрезанная.
+  it("считает паспорт пустым, когда есть только тип инструмента", () => {
+    expect(hasPassportSpecs([{ label: "Тип инструмента", value: "Газонокосилки" }])).toBe(false);
+    expect(hasPassportSpecs([])).toBe(false);
+  });
+
+  it("видит паспорт при любой настоящей характеристике", () => {
+    expect(
+      hasPassportSpecs([
+        { label: "Тип инструмента", value: "Перфораторы" },
+        { label: "Мощность", value: "950 Вт" },
+      ]),
+    ).toBe(true);
   });
 });
