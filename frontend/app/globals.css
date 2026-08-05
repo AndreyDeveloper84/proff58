@@ -26,6 +26,12 @@
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-pill: 999px;
+
+  /* Signature-панель экспертной помощи на PDP остаётся графитовой в обеих темах:
+     это акцентный блок, который должен читаться как «врезка от магазина», а не
+     как ещё одна карточка. */
+  --expert-bg: #1a2024;
+  --expert-ink: #f7f8f9;
 }
 
 /* Светлая тема — ДЕФОЛТ для товарных поверхностей (#477). */
@@ -166,6 +172,9 @@
 
   --color-photo: var(--photo);
   --color-photo-ink: var(--photo-ink);
+
+  --color-expert: var(--expert-bg);
+  --color-expert-ink: var(--expert-ink);
 
   --color-st-wait: var(--st-wait);
   --color-st-confirm: var(--st-confirm);

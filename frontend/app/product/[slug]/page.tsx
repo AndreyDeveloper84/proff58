@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Star } from "lucide-react";
+import { MessageSquareText, ShieldCheck, Star } from "lucide-react";
 import { getProduct } from "@/lib/catalog";
 import { pluralize } from "@/lib/format";
 import { ProductGallery } from "@/components/product/ProductGallery";
@@ -11,16 +11,14 @@ import { CompatibilitySections } from "@/components/product/CompatibilitySection
 import { ProductReviews } from "@/components/product/ProductReviews";
 import { StickyBuyBar } from "@/components/product/StickyBuyBar";
 import { ProductJsonLd } from "@/components/product/ProductJsonLd";
-import { Collapsible } from "@/components/product/Collapsible";
 import { CompareButton } from "@/components/product/CompareButton";
 import { ShareButton } from "@/components/product/ShareButton";
 import { ProductVideo } from "@/components/product/ProductVideo";
+import { ProductDetailsShowcase } from "@/components/product/ProductDetailsShowcase";
+import { SpecChips } from "@/components/product/SpecChips";
+import { SITE } from "@/lib/site";
 
 type Props = { params: Promise<{ slug: string }> };
-
-// Сколько характеристик показываем в выжимке рядом с ценой: больше — и блок
-// начинает конкурировать с полной таблицей ниже.
-const KEY_SPECS_LIMIT = 6;
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
@@ -53,29 +51,6 @@ export default async function ProductPage({ params }: Props) {
     ...product.breadcrumb.map((c) => ({ label: c.name, href: `/catalog/${c.slug}` })),
   ];
 
-  // Длинные характеристики/описание сворачиваем (порог по объёму).
-  const specsDl = (
-    <dl className="divide-y divide-line rounded-lg border border-line">
-      {product.specs.map((s, i) => (
-        // #574: на 320px жёсткие 50/50 ломали длинные значения («SDS-Max, 1500 Вт»)
-        // — до sm характеристики идут в две строки, дальше в две колонки.
-        <div
-          key={`${s.label}-${i}`}
-          className="flex flex-col gap-0.5 px-3 py-2 text-sm sm:flex-row sm:gap-3"
-        >
-          <dt className="text-ink-3 sm:w-1/2">{s.label}</dt>
-          <dd className="text-ink-2 sm:w-1/2">{s.value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-
-  const descriptionBlock = product.description ? (
-    <p className="whitespace-pre-line text-sm leading-relaxed text-ink-2">
-      {product.description}
-    </p>
-  ) : null;
-
   return (
     // #574: нижний отступ под липкую панель покупки — иначе она перекрывала
     // последнюю карточку отзывов.
@@ -103,7 +78,13 @@ export default async function ProductPage({ params }: Props) {
       </nav>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(420px,.92fr)] lg:gap-8">
-        <ProductGallery images={product.images} name={product.name} />
+        <div className="flex flex-col gap-3">
+          <ProductGallery images={product.images} name={product.name} />
+          {/* Паспортные чипы под фото (макет pdp-v4): «800 Вт · 3 Дж · SDS-plus».
+              Читаются раньше всего остального — покупатель сверяет параметры
+              прежде, чем смотреть цену. */}
+          <SpecChips specs={product.specs} />
+        </div>
 
         <div className="flex flex-col gap-4">
           {product.brand && <span className="text-sm text-ink-3">{product.brand}</span>}
@@ -150,32 +131,29 @@ export default async function ProductPage({ params }: Props) {
             />
           </div>
 
-          {/* Ключевые характеристики рядом с ценой. Галерея занимает высоту
-              всего экрана, а правая колонка заканчивалась на кнопке «В корзину»
-              — под ней зияла пустота в пол-экрана. Здесь короткая выжимка,
-              полный список остаётся ниже во вкладке (на мобильном он идёт сразу
-              следом, поэтому там выжимку не показываем). */}
-          {product.specs.length > 0 && (
-            <div className="hidden lg:block">
-              <h2 className="mb-2 text-sm font-semibold text-ink">Коротко о товаре</h2>
-              <dl className="divide-y divide-line rounded-lg border border-line">
-                {product.specs.slice(0, KEY_SPECS_LIMIT).map((s, i) => (
-                  <div key={`key-${s.label}-${i}`} className="flex gap-3 px-3 py-2 text-sm">
-                    <dt className="w-1/2 text-ink-3">{s.label}</dt>
-                    <dd className="w-1/2 text-ink-2">{s.value}</dd>
-                  </div>
-                ))}
-              </dl>
-              {product.specs.length > KEY_SPECS_LIMIT && (
-                <a
-                  href="#characteristics"
-                  className="mt-2 inline-block text-sm font-medium text-accent hover:underline"
-                >
-                  Все характеристики ({product.specs.length})
-                </a>
-              )}
+          {/* Обещания магазина под ценой. «Коротко о товаре» отсюда убрано:
+              выжимку характеристик теперь держит блок «Главное в работе», и
+              две таблицы подряд только спорили друг с другом. */}
+          <div className="grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
+            <div className="flex items-start gap-2.5">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
+              <span>
+                <strong className="block text-sm font-semibold text-ink">
+                  Официальная продукция
+                </strong>
+                <span className="mt-0.5 block text-xs text-ink-3">Только официальные поставки</span>
+              </span>
             </div>
-          )}
+            <a href={SITE.phone.href} className="flex items-start gap-2.5 hover:text-accent">
+              <MessageSquareText className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
+              <span>
+                <strong className="block text-sm font-semibold text-ink">
+                  Экспертная консультация
+                </strong>
+                <span className="mt-0.5 block text-xs text-ink-3">Поможем с выбором инструмента</span>
+              </span>
+            </a>
+          </div>
         </div>
       </div>
 
@@ -183,13 +161,16 @@ export default async function ProductPage({ params }: Props) {
         <section className="mt-8 overflow-hidden rounded-lg border border-line bg-surface">
           <nav
             aria-label="Разделы карточки товара"
-            className="flex gap-6 overflow-x-auto border-b border-line px-4 text-sm font-semibold text-ink-2 sm:px-5"
+            className="flex gap-6 overflow-x-auto border-b border-line bg-surface px-4 text-sm font-semibold text-ink-2 sm:px-5"
           >
+            <a
+              href="#overview"
+              className="min-h-12 shrink-0 border-b-2 border-accent py-3.5 text-ink"
+            >
+              О товаре
+            </a>
             {product.specs.length > 0 && (
-              <a
-                href="#characteristics"
-                className="min-h-12 shrink-0 border-b-2 border-accent py-3.5 text-ink"
-              >
+              <a href="#characteristics" className="min-h-12 shrink-0 py-3.5 hover:text-accent">
                 Характеристики
               </a>
             )}
@@ -210,27 +191,8 @@ export default async function ProductPage({ params }: Props) {
             )}
           </nav>
 
-          <div className="grid gap-6 p-4 sm:p-5 lg:grid-cols-[1.08fr_.92fr] lg:gap-8">
-            {product.specs.length > 0 && (
-              <div id="characteristics" className="scroll-mt-28">
-                <h2 className="mb-3 text-lg font-semibold text-ink">Характеристики</h2>
-                {product.specs.length > 8 ? (
-                  <Collapsible collapsedHeight={300}>{specsDl}</Collapsible>
-                ) : (
-                  specsDl
-                )}
-              </div>
-            )}
-            {product.description && (
-              <div id="description" className="scroll-mt-28">
-                <h2 className="mb-3 text-lg font-semibold text-ink">Описание</h2>
-                {product.description.length > 600 ? (
-                  <Collapsible collapsedHeight={240}>{descriptionBlock}</Collapsible>
-                ) : (
-                  descriptionBlock
-                )}
-              </div>
-            )}
+          <div id="overview" className="scroll-mt-28 bg-raised p-4 sm:p-5 lg:p-6">
+            <ProductDetailsShowcase product={product} />
           </div>
         </section>
       )}
