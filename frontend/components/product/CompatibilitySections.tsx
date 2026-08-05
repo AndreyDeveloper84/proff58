@@ -24,13 +24,23 @@ export function CompatibilitySections({ sections }: { sections?: Sections }) {
   if (!nonEmpty.length) return null;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-5">
       {nonEmpty.map((key) => (
-        <section key={key} aria-label={TITLES[key]}>
-          <h2 className="mb-3 font-display text-lg font-semibold text-ink">{TITLES[key]}</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        // Каждая секция — такой же контейнер, как остальные блоки карточки:
+        // раньше они висели голыми заголовками и читались как продолжение
+        // страницы, а не как отдельные подборки.
+        <section
+          key={key}
+          aria-label={TITLES[key]}
+          className="rounded-lg border border-line bg-surface p-4 sm:p-5"
+        >
+          <h2 className="mb-3 font-display text-xl font-semibold text-ink">{TITLES[key]}</h2>
+          {/* Лента с прокруткой вместо сетки: в секции бывает и три товара, и
+              шесть, а сетка на четыре колонки во втором случае переносила
+              строку — вторая строка из двух карточек выглядела обрывком. */}
+          <div className="grid auto-cols-[minmax(190px,1fr)] grid-flow-col gap-3 overflow-x-auto pb-2 sm:auto-cols-[minmax(210px,1fr)] lg:auto-cols-[minmax(220px,1fr)]">
             {sections[key].map((p) => (
-              <ProductCard key={p.id} product={p} view="grid" />
+              <ProductCard key={p.id} product={p} variant="home" />
             ))}
           </div>
         </section>

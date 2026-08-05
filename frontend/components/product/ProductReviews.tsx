@@ -35,8 +35,11 @@ export function ProductReviews({
   };
 
   return (
-    <section id="reviews" className="mt-10 scroll-mt-24">
-      <h2 className="mb-4 flex flex-wrap items-center gap-3 font-display text-2xl font-semibold uppercase tracking-wide text-ink">
+    <section
+      id="reviews"
+      className="mt-8 scroll-mt-24 rounded-lg border border-line bg-surface p-4 sm:p-5"
+    >
+      <h2 className="mb-4 flex flex-wrap items-center gap-3 font-display text-xl font-semibold text-ink">
         Отзывы ({total})
         {avg !== null && total > 0 && (
           <span className="inline-flex items-center gap-1 text-lg normal-case text-ink-2">
@@ -50,14 +53,14 @@ export function ProductReviews({
           icon={<Star className="h-10 w-10" aria-hidden />}
           title="Отзывов пока нет"
           description="Купите товар — и поделитесь впечатлением первым."
-          className="rounded-lg border border-line bg-surface"
+          className="rounded-lg border border-line bg-raised"
         />
       ) : (
         <div className="space-y-4">
           {/* Список только дополняется (offset-пагинация, порядок не меняется),
               поэтому индекс — стабильный ключ; id отзыва бэк не отдаёт. */}
           {items.map((review, i) => (
-            <article key={i} className="rounded-lg border border-line bg-surface p-4">
+            <article key={i} className="rounded-lg border border-line bg-raised p-4">
               <div className="flex flex-wrap items-center gap-3">
                 <StarDisplay value={review.product_rating} />
                 <span className="text-sm font-semibold text-ink">{review.author_name}</span>

@@ -10,6 +10,7 @@ import { Lightbox } from "./Lightbox";
 // квадрат 700×700 был выше всей правой колонки с ценой, и под ней оставалась
 // пустая полоса в пол-экрана. На мобильном квадрат сохраняется — там колонка одна.
 const MAIN_PHOTO_SIZE = "lg:aspect-auto lg:h-[520px]";
+const EMPTY_PHOTO_SIZE = "lg:aspect-auto lg:h-[400px]";
 
 // Галерея PDP: главное фото (приоритетная загрузка — LCP) + миниатюры с выбором.
 // Главное фото открывается на весь экран (Lightbox); листание — стрелками/свайпом.
@@ -27,46 +28,12 @@ export function ProductGallery({ images, name }: { images: ProductImageData[]; n
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      {hasImages ? (
-        <button
-          type="button"
-          aria-label="Открыть фото на весь экран"
-          className="block cursor-zoom-in"
-          onClick={() => setLightbox(true)}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowLeft") {
-              e.preventDefault();
-              go(-1);
-            } else if (e.key === "ArrowRight") {
-              e.preventDefault();
-              go(1);
-            }
-          }}
-          onTouchStart={(e) => {
-            touchX.current = e.touches[0].clientX;
-          }}
-          onTouchEnd={(e) => {
-            if (touchX.current == null) return;
-            const dx = e.changedTouches[0].clientX - touchX.current;
-            if (dx > 50) go(-1);
-            else if (dx < -50) go(1);
-            touchX.current = null;
-          }}
-        >
-          <ProductImage
-            src={current?.url}
-            alt={current?.alt || name}
-            priority
-            className={MAIN_PHOTO_SIZE}
-          />
-        </button>
-      ) : (
-        <ProductImage src={undefined} alt={name} priority className={MAIN_PHOTO_SIZE} />
-      )}
-
+    <div className="flex flex-col gap-3 lg:flex-row">
       {images.length > 1 && (
-        <ul className="grid grid-cols-5 gap-2" aria-label="Миниатюры">
+        <ul
+          className="order-2 grid grid-cols-5 gap-2 lg:order-1 lg:w-20 lg:shrink-0 lg:grid-cols-1 lg:auto-rows-max"
+          aria-label="Миниатюры"
+        >
           {images.map((img, i) => (
             <li key={`${img.url}-${i}`}>
               <button
@@ -95,6 +62,45 @@ export function ProductGallery({ images, name }: { images: ProductImageData[]; n
           ))}
         </ul>
       )}
+
+      <div className="order-1 min-w-0 flex-1 lg:order-2">
+        {hasImages ? (
+          <button
+            type="button"
+            aria-label="Открыть фото на весь экран"
+            className="block w-full cursor-zoom-in"
+            onClick={() => setLightbox(true)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                go(-1);
+              } else if (e.key === "ArrowRight") {
+                e.preventDefault();
+                go(1);
+              }
+            }}
+            onTouchStart={(e) => {
+              touchX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              if (touchX.current == null) return;
+              const dx = e.changedTouches[0].clientX - touchX.current;
+              if (dx > 50) go(-1);
+              else if (dx < -50) go(1);
+              touchX.current = null;
+            }}
+          >
+            <ProductImage
+              src={current?.url}
+              alt={current?.alt || name}
+              priority
+              className={MAIN_PHOTO_SIZE}
+            />
+          </button>
+        ) : (
+          <ProductImage src={undefined} alt={name} priority className={EMPTY_PHOTO_SIZE} />
+        )}
+      </div>
 
       {lightbox && (
         <Lightbox
