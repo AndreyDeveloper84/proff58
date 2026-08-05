@@ -15,7 +15,7 @@ import {
   type DeliveryZoneOption,
 } from "@/lib/delivery";
 import { formatPrice, formatSlotDay } from "@/lib/format";
-import { placeOrder } from "@/lib/orders";
+import { placeOrder, startOrderPayment } from "@/lib/orders";
 import {
   isLegalEntityInn,
   isValidEmail,
@@ -43,6 +43,9 @@ export default function CheckoutPage() {
   const { cart, loading, total, refresh } = useCart();
 
   const [submitting, setSubmitting] = useState(false);
+  // Фаза отправки: «оформляем» и «переходим к оплате» — разные ожидания. Второе
+  // заканчивается уходом на сайт кассы, и человек должен понимать, куда его ведут.
+  const [phase, setPhase] = useState<"idle" | "placing" | "paying">("idle");
   const [error, setError] = useState<string | null>(null);
   // Anti-double-submit: ref не зависит от ре-рендера и закрывает гонку «двух кликов подряд».
   const inFlight = useRef(false);
@@ -236,6 +239,7 @@ export default function CheckoutPage() {
 
     inFlight.current = true;
     setSubmitting(true);
+    setPhase("placing");
     setError(null);
     try {
       const order = await placeOrder({
@@ -259,6 +263,23 @@ export default function CheckoutPage() {
       stashOrder(order);
       // Корзина после оформления закрыта на бэке — обновляем снимок (счётчик Header → 0).
       await refresh();
+
+      // Онлайн-оплата: заказ уже создан и сохранён, дальше ведём в кассу.
+      // Любая неудача здесь — не потеря заказа: страница «Спасибо» покажет его
+      // в статусе «ожидает оплаты» с кнопкой повтора, поэтому переход туда
+      // выполняется в обоих случаях.
+      if (payment === "online") {
+        setPhase("paying");
+        try {
+          const started = await startOrderPayment(order.order_number, order.access_token);
+          if (started.confirmation_url) {
+            window.location.assign(started.confirmation_url);
+            return;
+          }
+        } catch {
+          // Касса недоступна или выключена — молча уходим на страницу заказа.
+        }
+      }
       router.push(`/order/${order.order_number}/thanks`);
     } catch (err) {
       setError(
@@ -275,6 +296,7 @@ export default function CheckoutPage() {
       }
       inFlight.current = false;
       setSubmitting(false);
+      setPhase("idle");
     }
   };
 
@@ -861,7 +883,11 @@ export default function CheckoutPage() {
             disabled={submitting || mixedCurrencies}
             className="h-11 px-5 lg:h-12 lg:w-full lg:px-8 lg:text-base"
           >
-            {submitting ? "Оформляем…" : "Оформить заказ"}
+            {phase === "paying"
+              ? "Переходим к оплате…"
+              : submitting
+                ? "Оформляем…"
+                : "Оформить заказ"}
           </Button>
         </div>
           </aside>
