@@ -3,10 +3,10 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
-from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -28,12 +28,12 @@ from .models import (
     AttributeOption,
     AttributeType,
     CatalogChange,
-    CompatibilityKind,
     CatalogProcessingItem,
     CatalogProcessingRun,
     Category,
     CategoryAttribute,
     CategoryMappingRule,
+    CompatibilityKind,
     EnrichmentLog,
     GroupCategoryMapping,
     ImportRun,
