@@ -72,6 +72,18 @@ export function selectKeySpecs(specs: ProductSpec[], limit = 4): ProductSpec[] {
   return selected;
 }
 
+/**
+ * Есть ли что показывать в техническом паспорте.
+ *
+ * Тип инструмента — служебная строка разбора каталога, а не характеристика: у
+ * 12 тысяч товаров он единственный, и паспорт из одной строки «Тип инструмента:
+ * Газонокосилки» читался как обрезанная таблица. Нет чего показывать — нет и
+ * раздела.
+ */
+export function hasPassportSpecs(specs: ProductSpec[]): boolean {
+  return specs.some((spec) => !/тип инструмента/i.test(spec.label));
+}
+
 export function groupProductSpecs(specs: ProductSpec[]): SpecGroup[] {
   const buckets = GROUPS.map((group) => ({ ...group, specs: [] as ProductSpec[] }));
   const other: ProductSpec[] = [];
@@ -176,7 +188,7 @@ function SpecGroups({ specs }: { specs: ProductSpec[] }) {
 
 const USE_CASE_ICONS = [BadgeCheck, Wrench, CircleGauge];
 
-function ExpertPanel({ specs }: { specs: ProductSpec[] }) {
+function ExpertPanel({ specs, wide = false }: { specs: ProductSpec[]; wide?: boolean }) {
   // Сценарии зависят от типа инструмента: у перфоратора это бурение и штробление,
   // у мойки — фасад и автомобиль. Для типа без своей записи остаётся честный
   // запасной набор про помощь магазина — выдумывать применение нельзя.
@@ -192,11 +204,24 @@ function ExpertPanel({ specs }: { specs: ProductSpec[] }) {
         <h2 className="font-display text-2xl font-semibold">
           {isGeneric ? "Поможем с выбором" : "Подойдёт для"}
         </h2>
-        <div className="mt-4 divide-y divide-white/10">
+        {/* Без паспорта рядом панель занимает всю ширину — сценарии тогда идут
+            в ряд, иначе три строки текста растягиваются на весь экран. */}
+        <div
+          className={
+            wide
+              ? "mt-4 grid gap-4 sm:grid-cols-3"
+              : "mt-4 divide-y divide-white/10"
+          }
+        >
           {items.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.title} className="flex gap-3 py-4 first:pt-0">
+              <div
+                key={item.title}
+                className={
+                  wide ? "flex gap-3" : "flex gap-3 border-t border-white/10 py-4 first:border-t-0 first:pt-0"
+                }
+              >
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-white/15 text-accent">
                   <Icon className="h-5 w-5" aria-hidden />
                 </span>
@@ -263,17 +288,21 @@ function PurchaseConfidence() {
 export function ProductDetailsShowcase({ product }: { product: ProductDetail }) {
   if (!product.specs.length && !product.description) return null;
 
+  const hasPassport = hasPassportSpecs(product.specs);
+
   return (
     <div className="space-y-5">
-      {product.specs.length > 0 && <MetricCards specs={product.specs} />}
+      {hasPassport && <MetricCards specs={product.specs} />}
 
-      {product.specs.length > 0 && (
+      {hasPassport ? (
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.18fr)_minmax(320px,.82fr)]">
           <SpecGroups specs={product.specs} />
           <div className="lg:sticky lg:top-28">
             <ExpertPanel specs={product.specs} />
           </div>
         </div>
+      ) : (
+        <ExpertPanel specs={product.specs} wide />
       )}
 
       <PurchaseConfidence />
