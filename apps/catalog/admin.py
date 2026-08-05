@@ -3,10 +3,10 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
-from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -28,12 +28,12 @@ from .models import (
     AttributeOption,
     AttributeType,
     CatalogChange,
-    CompatibilityKind,
     CatalogProcessingItem,
     CatalogProcessingRun,
     Category,
     CategoryAttribute,
     CategoryMappingRule,
+    CompatibilityKind,
     EnrichmentLog,
     GroupCategoryMapping,
     ImportRun,
@@ -772,7 +772,9 @@ class ProductAdmin(admin.ModelAdmin):
     def related_links(self, obj):
         if obj is None or obj.pk is None:
             return _("Появятся после сохранения товара.")
-        counts = {kind: len(links_service.linked_ids(obj, kind)) for kind, _label in self.LINK_KINDS}
+        counts = {
+            kind: len(links_service.linked_ids(obj, kind)) for kind, _label in self.LINK_KINDS
+        }
         return format_html(
             '<a class="button" href="{}">Подобрать связи</a>'
             '<span style="margin-left:.7rem;opacity:.7;">покупают вместе: {} · аналоги: {}</span>',
@@ -791,7 +793,9 @@ class ProductAdmin(admin.ModelAdmin):
         scope = request.GET.get("scope") or ("tool_type" if tool_type else "category")
         query = (request.GET.get("q") or "").strip()
 
-        current = {kind: links_service.linked_ids(product, kind) for kind, _label in self.LINK_KINDS}
+        current = {
+            kind: links_service.linked_ids(product, kind) for kind, _label in self.LINK_KINDS
+        }
 
         if request.method == "POST":
             # Снимаем только то, что человек видел на экране: страница показывает
@@ -826,7 +830,9 @@ class ProductAdmin(admin.ModelAdmin):
         # Уже связанные товары держим наверху, даже если выборка их не содержит —
         # иначе снять отметку можно было бы только угадав нужный фильтр.
         linked_all = current[CompatibilityKind.CROSS_SELL] | current[CompatibilityKind.ANALOG]
-        pinned = list(Product.objects.filter(pk__in=linked_all).select_related("category").order_by("name"))
+        pinned = list(
+            Product.objects.filter(pk__in=linked_all).select_related("category").order_by("name")
+        )
         rows = pinned + [p for p in page.object_list if p.pk not in linked_all]
 
         context = {
