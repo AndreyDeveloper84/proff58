@@ -102,19 +102,21 @@ function MetricCards({ specs }: { specs: ProductSpec[] }) {
       <h2 id="key-metrics-title" className="font-display text-xl font-semibold text-ink">
         Главное в работе
       </h2>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Две колонки уже на телефоне: в один столбец четыре карточки занимали
+          пол-экрана, и до технического паспорта приходилось долго скроллить. */}
+      <div className="mt-3 grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         {metrics.map((spec, index) => {
           const Icon = METRIC_ICONS[index % METRIC_ICONS.length];
           return (
             <div
               key={`${spec.label}-${spec.value}`}
-              className="flex min-h-24 items-center gap-3 rounded-lg border border-line bg-surface p-3"
+              className="flex min-h-20 items-center gap-2.5 rounded-lg border border-line bg-surface p-3 sm:min-h-24 sm:gap-3"
             >
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-accent text-accent-ink shadow-sm">
-                <Icon className="h-6 w-6" aria-hidden />
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-accent text-accent-ink shadow-sm sm:h-12 sm:w-12">
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
               </span>
               <span className="min-w-0">
-                <strong className="block font-display text-lg font-semibold text-ink">
+                <strong className="block break-words font-display text-base font-semibold leading-tight text-ink sm:text-lg">
                   {spec.value}
                 </strong>
                 <span className="mt-0.5 block text-xs leading-snug text-ink-3">{spec.label}</span>
