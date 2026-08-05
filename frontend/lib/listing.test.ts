@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { categoryNav, normalizeRangeFilters } from "./listing";
+import { categoryNav, filtersAfterToolTypeChange, normalizeRangeFilters } from "./listing";
 import type { Facet, Listing } from "./types";
 
 function navFacet(options: { value: string; label: string; count: number }[]): Facet {
@@ -139,5 +139,32 @@ describe("normalizeRangeFilters", () => {
     expect(
       normalizeRangeFilters({ brand: ["bosch"], price: { max: 15595 } }, [priceFacet(980, 3850)]),
     ).toEqual({ brand: ["bosch"] });
+  });
+});
+
+describe("filtersAfterToolTypeChange", () => {
+  // Жалоба «зашёл в раздел — цена сломана»: цена от прежнего типа приезжала
+  // в новую выдачу, вешала чип и резала список.
+  it("сбрасывает цену и характеристики", () => {
+    expect(
+      filtersAfterToolTypeChange({
+        price: { max: 15595 },
+        attr_disc_diameter: ["125"],
+      }),
+    ).toEqual({});
+  });
+
+  it("сохраняет бренд и наличие — они не про тип инструмента", () => {
+    expect(
+      filtersAfterToolTypeChange({
+        brand: ["bosch"],
+        stock: ["in_stock"],
+        price: { min: 1000, max: 8000 },
+      }),
+    ).toEqual({ brand: ["bosch"], stock: ["in_stock"] });
+  });
+
+  it("на пустом наборе ничего не выдумывает", () => {
+    expect(filtersAfterToolTypeChange({})).toEqual({});
   });
 });
