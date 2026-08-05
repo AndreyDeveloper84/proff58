@@ -3244,7 +3244,7 @@
     },
     {
       "slug": "svar-cangi",
-      "value": "Цанги",
+      "value": "Цанги сварочные",
       "sort_order": 14,
       "origin_kind": "seed",
       "origin_ref": null,
@@ -3526,6 +3526,17 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "tsangi-i-tsangovye-patrony",
+      "value": "Цанги и цанговые патроны",
+      "sort_order": 15,
+      "origin_kind": "manual_backport",
+      "origin_ref": "phase8 taxonomy-gaps + owner decision 2026-08-05 (TT-18A)",
+      "review_status": "approved",
+      "review_reason": "Новый тип для цанг и цанговых патронов (общетехнические), отделён от сварочных цанг svar-cangi, переименованных в 'Цанги сварочные'. sort_order 15 — рядом с оснасткой/сварочными цангами.",
+      "review_ref": "tt-18a",
       "legacy_aliases": []
     },
     {
@@ -3991,6 +4002,6 @@
       "legacy_aliases": []
     }
   ],
-  "taxonomy_identity_hash": "f7b73846bf984917b1fae2c775ae0b6ce1cf91609361529c57f4e64adebb6fde",
-  "manifest_semantic_hash": "0a9cb707179b1c09411f1b231691c1c24f52937e4e4ee9e085e2f3c867aedbbe"
+  "taxonomy_identity_hash": "ddf4b949b38265b1fde3f7e2caa0cf5bb4fe4e82fd23980676ac93c8bf844874",
+  "manifest_semantic_hash": "afe2b1ab6fda1a30e5bdcbf0a5d3b904ce15ba6217caccd5d5d5b5475e9c48b3"
 }

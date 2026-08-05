@@ -908,7 +908,7 @@ def test_create_writes_canonical_taxonomy_identity(feature_enabled, tmp_path):
     run = CatalogProcessingRun.objects.get(pk=run_id)
     manifest = load_manifest()
     assert run.taxonomy_hash == manifest.identity_hash
-    assert run.taxonomy_hash.startswith("f7b73846")
+    assert run.taxonomy_hash.startswith("ddf4b949")
     export_data = _export_run(run_id, tmp_path)
     assert export_data["taxonomy_hash"] == manifest.identity_hash
 
