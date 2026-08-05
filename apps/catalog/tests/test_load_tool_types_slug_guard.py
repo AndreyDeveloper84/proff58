@@ -11,7 +11,7 @@ import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
-from apps.catalog.models import AttributeOption
+from apps.catalog.models import AttributeOption, Product, ProductAttributeValue
 from apps.catalog.taxonomy_manifest import manifest_semantic_hash, taxonomy_identity_hash
 
 
@@ -127,3 +127,119 @@ def test_nothing_deleted(tmp_path):
     path = _manifest_file(tmp_path, [_opt("a-slug", "А")])
     call_command("load_tool_types", manifest=path)
     assert _tt_options().filter(slug="extra").exists()
+
+
+@pytest.mark.django_db
+def test_apply_renames_updates_value_keeps_pk(tmp_path):
+    path = _manifest_file(tmp_path / "m1", [_opt("a-slug", "А"), _opt("b-slug", "Б")])
+    call_command("load_tool_types", manifest=path)
+    opt_before = _tt_options().get(slug="a-slug")
+    pk_before = opt_before.pk
+
+    path = _manifest_file(tmp_path, [_opt("a-slug", "Цанги сварочные"), _opt("b-slug", "Б")])
+    call_command("load_tool_types", manifest=path, apply_renames=True)
+
+    opt_after = _tt_options().get(slug="a-slug")
+    assert opt_after.pk == pk_before
+    assert opt_after.value == "Цанги сварочные"
+
+
+@pytest.mark.django_db
+def test_apply_renames_to_occupied_value_fails_closed(tmp_path):
+    call_command(
+        "load_tool_types",
+        manifest=_manifest_file(tmp_path / "m1", [_opt("a-slug", "А"), _opt("b-slug", "Б")]),
+    )
+    path = _manifest_file(tmp_path, [_opt("a-slug", "Б")])
+    with pytest.raises(CommandError, match="rename target value conflicts"):
+        call_command("load_tool_types", manifest=path, apply_renames=True)
+
+    assert _tt_options().get(slug="a-slug").value == "А"
+    assert _tt_options().get(slug="b-slug").value == "Б"
+
+
+@pytest.mark.django_db
+def test_apply_renames_chain_value_freed_by_other_rename(tmp_path):
+    call_command(
+        "load_tool_types",
+        manifest=_manifest_file(tmp_path / "m1", [_opt("a-slug", "А"), _opt("b-slug", "Б")]),
+    )
+    path = _manifest_file(
+        tmp_path,
+        [_opt("a-slug", "Б"), _opt("b-slug", "В")],
+    )
+    call_command("load_tool_types", manifest=path, apply_renames=True)
+
+    assert _tt_options().get(slug="a-slug").value == "Б"
+    assert _tt_options().get(slug="b-slug").value == "В"
+
+
+@pytest.mark.django_db
+def test_dry_run_without_apply_renames_reports_mismatch(tmp_path, capsys):
+    call_command("load_tool_types", manifest=_manifest_file(tmp_path / "m1", [_opt("a-slug", "А")]))
+    before = set(_tt_options().values_list("slug", "value", "sort_order"))
+    path = _manifest_file(tmp_path, [_opt("a-slug", "Новое А")])
+
+    call_command("load_tool_types", manifest=path, dry_run=True)
+
+    out, _ = capsys.readouterr()
+    assert "a-slug: 'А' -> 'Новое А'" in out
+    assert set(_tt_options().values_list("slug", "value", "sort_order")) == before
+
+
+@pytest.mark.django_db
+def test_dry_run_leaves_db_unchanged(tmp_path):
+    call_command(
+        "load_tool_types",
+        manifest=_manifest_file(tmp_path / "m1", [_opt("a-slug", "А", 5), _opt("b-slug", "Б")]),
+    )
+    before = set(_tt_options().values_list("slug", "value", "sort_order"))
+    path = _manifest_file(tmp_path, [_opt("a-slug", "Новое А", 7), _opt("c-slug", "В")])
+
+    call_command("load_tool_types", manifest=path, dry_run=True)
+
+    assert set(_tt_options().values_list("slug", "value", "sort_order")) == before
+
+
+@pytest.mark.django_db
+def test_dry_run_apply_renames_shows_plan_no_db_change(tmp_path, capsys):
+    call_command("load_tool_types", manifest=_manifest_file(tmp_path / "m1", [_opt("a-slug", "А")]))
+    before = set(_tt_options().values_list("slug", "value", "sort_order"))
+    path = _manifest_file(tmp_path, [_opt("a-slug", "Новое А")])
+
+    call_command("load_tool_types", manifest=path, dry_run=True, apply_renames=True)
+
+    out, _ = capsys.readouterr()
+    assert "a-slug: 'А' -> 'Новое А'" in out
+    assert set(_tt_options().values_list("slug", "value", "sort_order")) == before
+
+
+@pytest.mark.django_db
+def test_apply_renames_keeps_product_attribute_value_link(tmp_path):
+    call_command("load_tool_types", manifest=_manifest_file(tmp_path / "m1", [_opt("a-slug", "А")]))
+    opt = _tt_options().get(slug="a-slug")
+    product = Product.objects.create(name="Test product")
+    pav = ProductAttributeValue.objects.create(
+        product=product, attribute=opt.attribute, value_option=opt
+    )
+    value_option_id = pav.value_option_id
+
+    path = _manifest_file(tmp_path, [_opt("a-slug", "Новое А")])
+    call_command("load_tool_types", manifest=path, apply_renames=True)
+
+    pav.refresh_from_db()
+    assert pav.value_option_id == value_option_id
+    assert pav.value_option.value == "Новое А"
+
+
+@pytest.mark.django_db
+def test_apply_renames_idempotent(tmp_path, capsys):
+    call_command("load_tool_types", manifest=_manifest_file(tmp_path / "m1", [_opt("a-slug", "А")]))
+    path = _manifest_file(tmp_path, [_opt("a-slug", "Новое А")])
+    call_command("load_tool_types", manifest=path, apply_renames=True)
+    capsys.readouterr()
+
+    call_command("load_tool_types", manifest=path, apply_renames=True)
+    out, _ = capsys.readouterr()
+
+    assert "renamed=0" in out
