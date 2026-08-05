@@ -1,0 +1,455 @@
+{
+  "schema_version": 1,
+  "category": "dreli-shurupoverty",
+  "target_category": {"id": 3, "slug": "elektroinstrument", "name": "Электроинструмент"},
+  "created": "2026-08-03",
+  "inputs": {
+    "prompt": "scratchpad/phase8/prompts/pars-07-dreli-map-validation-prompt.md",
+    "report": "scratchpad/parser-mvp/pars-07-dreli-map-report.md",
+    "note": "Карта доведена до предсказуемого результата на выборке 60 карточек (ПАРС-07). Можно коммитить как продуктовый артефакт."
+  },
+  "policy": {
+    "ranges": "Диапазоны как значения не сопоставляются, кроме no_load_speed: берётся верхняя граница (range_upper_decimal).",
+    "voltage": "Источники дают '220-230В ~50Гц', '220±10% /50', '230/50' и просто '20' (аккумулятор). Для сетевых инструментов — первое число; для аккумуляторных — напряжение батареи. Импортёр сам отбрасывает voltage >=60В для не-аккумуляторных товаров.",
+    "motor_type": "ЗУБР отдаёт 'BRUSHLESS, бесщеточный' / 'щеточный'; Вихрь/Ресанта — 'Щеточный'/'Бесщеточный'; Интерскол — 'Бесщеточный (вентильный)'. Нормализовать в brushless/brushed.",
+    "chuck": "У дрелей ЗУБР 'ключевой'/'БЗП'; у Вихря 'ключевой'/'быстрозажимной (БЗП)'; у Ресанты 'Ключевой'. Словарь chuck расширен (КАТ-14I): значения мапятся в слаги kulachkovyy/bystrozazhimnoy. SDS-опции — только перфораторы.",
+    "torque": "У Ресанты/Вихря крутящий момент может быть записан как '50/25' (жёсткий/мягкий). Берём первое число — максимальный момент.",
+    "weight": "Вес не брать: у разных источников брутто/нетто, атрибута веса нет.",
+    "unmapped": "Поля без подходящего Attribute — в unmapped с кандидатом; новые Attribute не создавать.",
+    "derived": "Derived-правила power_source в текущей версии парсера работают некорректно (срабатывают безусловно), поэтому удалены из карты. power_source определяется по voltage <60В на этапе планирования."
+  },
+  "normalizers": {
+    "int": "первое целое число строки",
+    "decimal": "первое число строки, десятичная запятая -> точка",
+    "range_upper_decimal": "'A-B' -> B; если диапазона нет — как decimal",
+    "voltage_first": "первое число строки; '220-230В ~50Гц' -> 220, '230/50' -> 230, '220±10% /50' -> 220",
+    "option_map": "lower + strip -> словарь values; неизвестное -> drop_to_report"
+  },
+  "sources": {
+    "resanta": {
+      "fields": {
+        "Частота вращения, об/мин": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report"
+        },
+        "Тип двигателя": {
+          "action": "map", "attribute": "motor_type", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {"щеточный": "brushed", "бесщеточный": "brushless"},
+          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report"
+        },
+        "Напряжение аккумулятора, В": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "только для аккумуляторных моделей"
+        },
+        "Напряжение питающей сети, В": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "voltage_first", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "сетевые модели: 220-230В -> voltage, но импортёр отбросит как >=60В"
+        },
+        "Максимальный крутящий момент, Нм": {
+          "action": "map", "attribute": "torque", "attribute_type": "decimal", "unit": "Нм",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "'50/25' -> первое число (максимальный момент)"
+        },
+        "Мощность, Вт": {
+          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
+          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Диаметр патрона, мм": {
+          "action": "unmapped", "candidate_attribute": "chuck_size_mm",
+          "reason": "диаметр патрона, не тип; отдельного атрибута нет"
+        },
+        "Бренд": {"action": "ignore", "reason": "дублирует поле brand карточки"},
+        "Гарантия": {"action": "ignore", "reason": "коммерческая информация"},
+        "Режим реверса": {"action": "ignore", "reason": "нет атрибута"},
+        "Режим удара": {"action": "ignore", "reason": "нет атрибута"},
+        "Блокировка шпинделя": {"action": "ignore", "reason": "нет атрибута"},
+        "Тип аккумулятора по способу установки": {"action": "ignore", "reason": "нет атрибута"},
+        "Максимальный диаметр сверления: дерево/металл, мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Максимальный диаметр сверления: сталь/бетон/дерево, мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Подсветка рабочей зоны": {"action": "ignore", "reason": "нет атрибута"},
+        "Количество аккумуляторов": {"action": "ignore", "reason": "нет атрибута"},
+        "Кейс": {"action": "ignore", "reason": "комплектация"},
+        "Время заряда аккумулятора, ч": {"action": "ignore", "reason": "нет атрибута"},
+        "Корпус редуктора": {"action": "ignore", "reason": "нет атрибута"},
+        "Тип патрона": {
+          "action": "map", "attribute": "chuck", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {"ключевой": "kulachkovyy"},
+          "confidence": "medium", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report",
+          "comment": "слаги словаря КАТ-14I; в выборке только 'Ключевой'"
+        },
+        "Напряжение сети адаптера питания, В, Гц": {"action": "ignore", "reason": "зарядное устройство, не инструмент"},
+        "Вес, кг": {"action": "unmapped", "candidate_attribute": "weight_kg", "reason": "атрибута веса нет"},
+        "Габариты упаковки": {"action": "unmapped", "candidate_attribute": "dimensions", "reason": "атрибута нет"}
+      },
+      "fallbacks": [],
+      "derived": []
+    },
+    "vihr": {
+      "fields": {
+        "Напряжение аккумулятора, В": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "только для аккумуляторных моделей"
+        },
+        "Напряжение питающей сети, В": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "voltage_first", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "сетевые модели: отбрасывается импортёром как >=60В"
+        },
+        "Емкость аккумулятора, А*ч": {
+          "action": "map", "attribute": "battery_capacity", "attribute_type": "decimal", "unit": "А*ч",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Максимальный крутящий момент, Нм": {
+          "action": "map", "attribute": "torque", "attribute_type": "decimal", "unit": "Нм",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Частота вращения, об/мин": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "comment": "диапазоны '0-400; 0-1400' — верхняя граница 1400"
+        },
+        "Мощность, Вт": {
+          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
+          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Тип двигателя": {
+          "action": "map", "attribute": "motor_type", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {"щеточный": "brushed", "бесщеточный": "brushless"},
+          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report"
+        },
+        "Тип патрона": {
+          "action": "map", "attribute": "chuck", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "ключевой": "kulachkovyy",
+            "быстрозажимной (бзп)": "bystrozazhimnoy",
+            "бзп": "bystrozazhimnoy"
+          },
+          "confidence": "medium", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report",
+          "comment": "слаги словаря КАТ-14I (kulachkovyy/bystrozazhimnoy)"
+        },
+        "Диаметр патрона, мм": {
+          "action": "unmapped", "candidate_attribute": "chuck_size_mm",
+          "reason": "диаметр патрона, не тип; атрибута нет"
+        },
+        "Тип аккумулятора": {"action": "ignore", "reason": "Li-Ion у всех; неинформативно"},
+        "Бренд": {"action": "ignore", "reason": "дублирует поле brand"},
+        "Кейс": {"action": "ignore", "reason": "комплектация"},
+        "Режим реверса": {"action": "ignore", "reason": "нет атрибута"},
+        "Подсветка рабочей зоны": {"action": "ignore", "reason": "нет атрибута"},
+        "Количество аккумуляторов": {"action": "ignore", "reason": "нет атрибута"},
+        "Количество скоростей": {"action": "ignore", "reason": "нет атрибута"},
+        "Число ступеней регулировки": {"action": "ignore", "reason": "нет атрибута"},
+        "Максимальный диаметр сверления: дерево/металл, мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Максимальный диаметр сверления: сталь/бетон/дерево, мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Время заряда аккумулятора, ч": {"action": "ignore", "reason": "нет атрибута"},
+        "Тип аккумулятора по способу установки": {"action": "ignore", "reason": "нет атрибута"},
+        "Упаковка": {"action": "ignore", "reason": "комплектация"},
+        "Режим удара": {"action": "ignore", "reason": "нет атрибута"},
+        "Напряжение сети адаптера питания, В, Гц": {"action": "ignore", "reason": "зарядное устройство, не инструмент"},
+        "Гарантия": {"action": "ignore", "reason": "коммерческая информация"},
+        "Вес, кг": {"action": "unmapped", "candidate_attribute": "weight_kg", "reason": "атрибута веса нет"},
+        "Габариты упаковки": {"action": "ignore", "reason": "габариты, атрибута нет"}
+      },
+      "fallbacks": [],
+      "derived": []
+    },
+    "interskol": {
+      "fields": {
+        "Крутящий момент": {
+          "action": "map", "attribute": "torque", "attribute_type": "decimal", "unit": "Нм",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Max крутящий момент, Н.м.": {
+          "action": "map", "attribute": "torque", "attribute_type": "decimal", "unit": "Нм",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Ступени крутящего момента": {"action": "ignore", "reason": "нет атрибута torque_stages"},
+        "Частота вращения": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "comment": "'0-2700' -> 2700; '0-450 / 0-1650' -> 1650"
+        },
+        "Частота вращения, 1 скорость": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "low", "on_ambiguous": "drop_to_report"
+        },
+        "Частота вращения, 2 скорость": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "comment": "вторая скорость выше — берём как max"
+        },
+        "Частота вращения на холостом ходу, об/мин": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report"
+        },
+        "Частота вращения на холостом ходу": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "comment": "fallback из HTML-описания, единица измерения отсечена"
+        },
+        "Напряжение аккумулятора, В": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "чистое напряжение аккумулятора"
+        },
+        "Тип аккумулятора / напряжение": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "'АПИ Ki-ion / 18' -> 18"
+        },
+        "Напряжение": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Тип / платформа / напряжение аккумуляторной батареи": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "'Слайдерная Li-ion / АПИ 18 В / 18' -> 18"
+        },
+        "Тип двигателя": {
+          "action": "map", "attribute": "motor_type", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "бесщеточный": "brushless",
+            "бесщеточный (вентильный)": "brushless",
+            "щеточный": "brushed"
+          },
+          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report"
+        },
+        "Мощность": {
+          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
+          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Номинальная потребляемая мощность": {
+          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
+          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Тип редуктора": {"action": "ignore", "reason": "нет атрибута"},
+        "Наибольший диаметр сверления в стали": {"action": "ignore", "reason": "нет атрибута"},
+        "Присоединительная резьба шпинделя": {"action": "ignore", "reason": "нет атрибута"},
+        "Диаметр зажимаемого сверла": {"action": "unmapped", "candidate_attribute": "chuck_size_mm", "reason": "диаметр патрона, не тип"},
+        "Регулировка оборотов": {"action": "ignore", "reason": "нет атрибута"},
+        "Класс безопасности машины": {"action": "ignore", "reason": "нет атрибута"},
+        "Класс безопасности машины (по ГОСТ Р МЭК 60745-1)": {"action": "ignore", "reason": "нет атрибута"},
+        "Предохранительная муфта": {"action": "ignore", "reason": "нет атрибута"},
+        "Наибольший диаметр сверления в древесине": {"action": "ignore", "reason": "нет атрибута"},
+        "Направление вращения": {"action": "ignore", "reason": "нет атрибута"},
+        "Номинальный потребляемый ток": {"action": "ignore", "reason": "нет атрибута"},
+        "Установленный срок службы": {"action": "ignore", "reason": "коммерческая информация"},
+        "Быстрозажимной патрон": {"action": "ignore", "reason": "значения нечитаемые/нет атрибута"},
+        "Смена направления вращения": {"action": "ignore", "reason": "нет атрибута"},
+        "Емкость аккумулятора, Ач": {
+          "action": "map", "attribute": "battery_capacity", "attribute_type": "decimal", "unit": "А*ч",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Тип патрона": {
+          "action": "map", "attribute": "chuck", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {"бзп": "bystrozazhimnoy"},
+          "confidence": "medium", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report",
+          "comment": "ПАРС-09: «БЗП» → bystrozazhimnoy; мусор («нет», «Есть», «Есть, металлический с храповиком») → drop_to_report"
+        },
+        "Патрон": {"action": "ignore", "reason": "нет подходящего атрибута"},
+        "Реверс": {"action": "ignore", "reason": "нет атрибута"},
+        "Диапазон зажима патрона": {"action": "unmapped", "candidate_attribute": "chuck_size_mm", "reason": "диаметр патрона, не тип"},
+        "Диаметр сверления в древесине": {"action": "ignore", "reason": "нет атрибута"},
+        "Диаметр сверления в стали": {"action": "ignore", "reason": "нет атрибута"},
+        "Диаметр сверления в бетоне": {"action": "ignore", "reason": "нет атрибута"},
+        "Частота ударов": {"action": "ignore", "reason": "нет атрибута"},
+        "Частота ударов на холостом ходу, уд/мин": {"action": "ignore", "reason": "нет атрибута"},
+        "Тип редуктора": {"action": "ignore", "reason": "нет атрибута"},
+        "Габариты": {"action": "ignore", "reason": "нет атрибута"},
+        "Габаритные размеры машины (с батареей) (ДхШхВ), мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Масса": {"action": "unmapped", "candidate_attribute": "weight_kg", "reason": "атрибута веса нет"},
+        "Масса согласно процедуре ЕРТА, кг": {"action": "unmapped", "candidate_attribute": "weight_kg", "reason": "атрибута веса нет"},
+        "Параметры сети питания": {"action": "ignore", "reason": "сетевая информация, voltage отбросится"},
+        "Регулировка оборотов": {"action": "ignore", "reason": "нет атрибута"},
+        "Срок службы": {"action": "ignore", "reason": "коммерческая информация"},
+        "Предохранительная муфта": {"action": "ignore", "reason": "нет атрибута"},
+        "Класс безопасности": {"action": "ignore", "reason": "нет атрибута"},
+        "Резьба шпинделя": {"action": "ignore", "reason": "нет атрибута"},
+        "Электронный блок управления": {"action": "ignore", "reason": "нет атрибута"},
+        "Подсветка": {"action": "ignore", "reason": "нет атрибута"},
+        "Ударное сверление": {"action": "ignore", "reason": "нет атрибута"},
+        "Быстросъемный патрон": {"action": "ignore", "reason": "нет атрибута"},
+        "Серия аккумулятора": {"action": "ignore", "reason": "нет атрибута"},
+        "Крепление на ремень": {"action": "ignore", "reason": "нет атрибута"},
+        "Блокировка шпинделя": {"action": "ignore", "reason": "нет атрибута"},
+        "Количество скоростей": {"action": "ignore", "reason": "нет атрибута"},
+        "Количество аккумуляторов в комплекте": {"action": "ignore", "reason": "комплектация"},
+        "Зарядное устройство в комплекте": {"action": "ignore", "reason": "комплектация"},
+        "Упаковка": {"action": "ignore", "reason": "комплектация"},
+        "Наличие удара": {"action": "ignore", "reason": "нет атрибута"},
+        "Диаметр хвостовика оснастки, зажимаемого патроном, мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Наибольший диаметр сверления в стали, мм;": {"action": "ignore", "reason": "нет атрибута"},
+        "Наибольший диаметр сверления в древесине, мм;": {"action": "ignore", "reason": "нет атрибута"},
+        "Наибольший диаметр сверления в кирпиче, мм;": {"action": "ignore", "reason": "нет атрибута"},
+        "Наибольший рекомендуемый диаметр самореза, заворачиваемого без засверливания в древесину": {"action": "ignore", "reason": "нет атрибута"},
+        "Число ступеней регулировки усилия затяжки": {"action": "ignore", "reason": "нет атрибута"},
+        "Число ступеней регулировки момента затяжки": {"action": "ignore", "reason": "нет атрибута"},
+        "Максимальные рекомендуемые диаметры сверления полнотелыми сверлами, мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Наибольший диаметр сверление в древесине / стали": {"action": "ignore", "reason": "нет атрибута"},
+        "Количество ступеней ограничения усилия затяжки": {"action": "ignore", "reason": "нет атрибута"},
+        "Тип аккумулятора": {"action": "ignore", "reason": "Li-Ion у всех"}
+      },
+      "fallbacks": [],
+      "derived": [],
+      "comment": "Заполнено по выборке ПАРС-07: дрели/шуруповёрты Интерскол."
+    },
+    "zubr": {
+      "fields": {
+        "Мощность, Вт": {
+          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
+          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Напряжение питания, В/Гц": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "voltage_first", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "'220±10% /50' -> 220; сетевые значения отбрасываются импортёром"
+        },
+        "Напряжение, В/Гц": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "voltage_first", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "альтернативная подпись у сетевых инструментов"
+        },
+        "Напряжение изделия, В": {
+          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "для аккумуляторных моделей"
+        },
+        "Макс. число оборотов холостого хода, об/мин": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report"
+        },
+        "Частота вращения шпинделя, об/мин": {
+          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
+          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "comment": "вариант подписи у аккумуляторных шуруповёртов"
+        },
+        "Жесткий крутящий момент, Н×м": {
+          "action": "map", "attribute": "torque", "attribute_type": "decimal", "unit": "Нм",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Крутящий момент, Н*м": {
+          "action": "map", "attribute": "torque", "attribute_type": "decimal", "unit": "Нм",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "comment": "у сетевых дрелей/шуруповёртов"
+        },
+        "Мягкий крутящий момент, Н×м": {
+          "action": "ignore", "reason": "выбираем жёсткий (max) крутящий момент"
+        },
+        "Тип двигателя": {
+          "action": "map", "attribute": "motor_type", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "brushless, бесщеточный": "brushless",
+            "бесщеточный": "brushless",
+            "щеточный": "brushed"
+          },
+          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report"
+        },
+        "Тип патрона": {
+          "action": "map", "attribute": "chuck", "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "ключевой": "kulachkovyy",
+            "кулачковый": "kulachkovyy",
+            "бзп": "bystrozazhimnoy",
+            "бзп, угловой, эксцентриковый": "bystrozazhimnoy",
+            "быстрозажимной": "bystrozazhimnoy",
+            "бесключевой": "bystrozazhimnoy"
+          },
+          "confidence": "medium", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report",
+          "comment": "слаги словаря КАТ-14I (kulachkovyy/bystrozazhimnoy)"
+        },
+        "Размер патрона, мм": {
+          "action": "unmapped", "candidate_attribute": "chuck_size_mm",
+          "reason": "диаметр/размер патрона, не тип; атрибута нет"
+        },
+        "Диаметр патрона, мм": {
+          "action": "unmapped", "candidate_attribute": "chuck_size_mm",
+          "reason": "диаметр патрона, не тип; атрибута нет"
+        },
+        "Посадка патрона, дюйм": {"action": "unmapped", "candidate_attribute": "chuck_size_inch", "reason": "атрибута нет"},
+        "Артикул": {"action": "ignore", "reason": "дублирует manufacturer_sku"},
+        "Габариты, см": {"action": "ignore", "reason": "габариты, атрибута нет"},
+        "Масса изделия, кг": {"action": "unmapped", "candidate_attribute": "weight_kg", "reason": "атрибута веса нет"},
+        "Масса изделия с АКБ, кг": {"action": "unmapped", "candidate_attribute": "weight_kg", "reason": "атрибута веса нет"},
+        "Масса в упаковке, кг": {"action": "unmapped", "candidate_attribute": "weight_gross_kg", "reason": "атрибута нет"},
+        "Длина кабеля, м": {"action": "unmapped", "candidate_attribute": "cable_length", "reason": "атрибута нет"},
+        "Длина кабеля, мм": {"action": "unmapped", "candidate_attribute": "cable_length", "reason": "атрибута нет"},
+        "Реверс": {"action": "ignore", "reason": "нет атрибута"},
+        "Число скоростей": {"action": "ignore", "reason": "нет атрибута"},
+        "Количество скоростей работы": {"action": "ignore", "reason": "нет атрибута"},
+        "Электронная регулировка частоты вращения": {"action": "ignore", "reason": "нет атрибута"},
+        "Защита от перегрузки": {"action": "ignore", "reason": "нет атрибута"},
+        "Блокировка шпинделя": {"action": "ignore", "reason": "нет атрибута"},
+        "Быстрая замена щеток": {"action": "ignore", "reason": "нет атрибута"},
+        "Скоба поясная": {"action": "ignore", "reason": "комплектация"},
+        "Битодержатель": {"action": "ignore", "reason": "комплектация"},
+        "Кейс": {"action": "ignore", "reason": "комплектация"},
+        "Кейс в комплекте": {"action": "ignore", "reason": "комплектация"},
+        "Аккумуляторная система": {"action": "ignore", "reason": "нет атрибута"},
+        "Тип аккумулятора": {"action": "ignore", "reason": "Li-Ion у всех"},
+        "Съемная батарея": {"action": "ignore", "reason": "нет атрибута"},
+        "Тормоз двигателя": {"action": "ignore", "reason": "нет атрибута"},
+        "Ударная функция": {"action": "ignore", "reason": "нет атрибута"},
+        "Защита от обратного удара": {"action": "ignore", "reason": "нет атрибута"},
+        "Индикатор заряда батареи": {"action": "ignore", "reason": "нет атрибута"},
+        "Количество аккумуляторов": {"action": "ignore", "reason": "комплектация"},
+        "Зарядное устройство": {"action": "ignore", "reason": "комплектация"},
+        "Бита 50 мм": {"action": "ignore", "reason": "комплектация"},
+        "Тип инструмента": {"action": "ignore", "reason": "дублирует категорию"},
+        "Режимы работы": {"action": "ignore", "reason": "нет атрибута"},
+        "Поддержание постоянных оборотов под нагрузкой": {"action": "ignore", "reason": "нет атрибута"},
+        "Металлический корпус редуктора": {"action": "ignore", "reason": "нет атрибута"},
+        "Автоматически отключающиеся при износе щетки": {"action": "ignore", "reason": "нет атрибута"},
+        "Фиксация кнопки включения": {"action": "ignore", "reason": "нет атрибута"},
+        "Ограничитель глубины сверления": {"action": "ignore", "reason": "нет атрибута"},
+        "Дополнительная рукоятка": {"action": "ignore", "reason": "комплектация"},
+        "Рукоятка дополнительная": {"action": "ignore", "reason": "комплектация"},
+        "Ключ патрона": {"action": "ignore", "reason": "комплектация"},
+        "Макс диаметр сверления (дерево), мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Макс диаметр сверления (металл), мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Макс. диаметр сверления (дерево), мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Макс. диаметр сверления (металл), мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Макс диаметр крепежа, мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Регулировка глубины заворачивания": {"action": "ignore", "reason": "нет атрибута"},
+        "Наличие удара": {"action": "ignore", "reason": "нет атрибута"},
+        "Наличие подсветки": {"action": "ignore", "reason": "нет атрибута"},
+        "Плавный пуск": {"action": "ignore", "reason": "нет атрибута"},
+        "Емкость аккумулятора, А·ч": {
+          "action": "map", "attribute": "battery_capacity", "attribute_type": "decimal", "unit": "А*ч",
+          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report"
+        },
+        "Время заряда батареи, ч": {"action": "ignore", "reason": "нет атрибута"},
+        "Диаметр шейки под рукоятку, мм": {"action": "ignore", "reason": "нет атрибута"},
+        "Глубиномер": {"action": "ignore", "reason": "нет атрибута"},
+        "Кол-во ступеней крутящего момента": {"action": "ignore", "reason": "нет атрибута"},
+        "Число ступеней крутящего момента": {"action": "ignore", "reason": "нет атрибута"},
+        "Руководство по эксплуатации": {"action": "ignore", "reason": "комплектация"},
+        "Дрель-шуруповерт": {"action": "ignore", "reason": "дублирует категорию"},
+        "Дрель": {"action": "ignore", "reason": "дублирует категорию"},
+        "Дрель-миксер": {"action": "ignore", "reason": "дублирует категорию"},
+        "Подсветка": {"action": "ignore", "reason": "нет атрибута"},
+        "Напряжение питания зарядного устройства, В/Гц": {"action": "ignore", "reason": "зарядное устройство"},
+        "Патрон кулачковый": {"action": "ignore", "reason": "флаг наличия ('1'), тип берём из 'Тип патрона'"},
+        "Патрон эксцентриковый": {"action": "ignore", "reason": "флаг наличия ('1'); слага для эксцентрикового нет"},
+        "Патрон угловой": {"action": "ignore", "reason": "флаг наличия ('1'); слага для углового нет"},
+        "Аккумулятор": {"action": "ignore", "reason": "комплектация"},
+        "Макс. диаметр сверления (дерево)": {"action": "ignore", "reason": "нет атрибута"},
+        "Макс. диаметр сверления (металл)": {"action": "ignore", "reason": "нет атрибута"},
+        "Макс. диаметр сверления (бетон), мм": {"action": "ignore", "reason": "нет атрибута"}
+      },
+      "fallbacks": [],
+      "derived": []
+    }
+  }
+}

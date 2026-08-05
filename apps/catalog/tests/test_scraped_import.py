@@ -127,6 +127,10 @@ def _zubr_card(name, sku, power="1000"):
     }
 
 
+def _card(name, sku):
+    return {"name": name, "brand": None, "manufacturer_sku": sku}
+
+
 def _run(export_path, *extra):
     call_command(
         "catalog_import_scraped",
@@ -138,6 +142,12 @@ def _run(export_path, *extra):
     )
 
 
+def _run_report(tmp_path, export_path, *extra):
+    report_path = tmp_path / "report.json"
+    _run(export_path, "--report", str(report_path), *extra)
+    return json.loads(report_path.read_text(encoding="utf-8"))
+
+
 # --- матчинг (unit) -----------------------------------------------------------
 
 
@@ -146,6 +156,26 @@ def test_model_key_no_substring_trap():
     assert si.model_key("Перф.ЗУБР ЗП-2680, SDS+") == "zp2680"
     assert si.model_key("Перф.ЗУБР ЗП-26-800 SDS+") == "zp26800"
     assert si.model_key("Перф.ЗУБР ЗП-2680, SDS+") != si.model_key("Перф.ЗУБР ЗП-26-800 SDS+")
+
+
+def test_model_re_zdm_prefix():
+    """ПАРС-09: префикс ЗДМ (дрели-миксеры ЗУБР) извлекается из названия карточки."""
+    assert si.extract_model("Дрель-миксер ЗДМ-820 РМ") == "ЗДМ-820 РМ"
+    assert si.extract_model("Дрель-миксер ЗДМ-1200 РММ2") == "ЗДМ-1200 РММ2"
+    assert si.model_key("Дрель-миксер ЗДМ-820 РМ") == "zdm820rm"
+    assert si.model_key("Дрель-миксер ЗДМ-1200 РММ2") == "zdm1200rmm2"
+    # РММ2 и РММ — разные модификации, ключи не склеиваются.
+    assert si.model_key("Дрель-миксер ЗДМ-1200 РММ2") != si.model_key("Дрель-миксер ЗДМ-1200 РММ")
+
+
+def test_model_re_zdm_card_and_product_keys_equal():
+    """Карточка и товар каталога дают один ключ модели (карточка ЗДМ-820 РМ)."""
+    card_key = si.model_key("Дрель-миксер ЗДМ-820 РМ")
+    product_key = si.model_key(
+        "Дрель-миксер реверсивная ЗУБР ЗДМ-820 РМ Профессионал, 50 Нм, "
+        "патрон 13 мм, 0-650 об/мин, 820 Вт"
+    )
+    assert card_key == product_key
 
 
 @pytest.mark.django_db
@@ -185,7 +215,93 @@ def test_many_cards_to_one_product_not_written(catalog, tmp_path):
     assert ProductAttributeValue.objects.count() == pav_before
 
 
-# --- запись / приоритеты / voltage --------------------------------------------
+# --- лестница матчинга (CODE-04) ---------------------------------------------
+
+
+@pytest.mark.django_db
+def test_sku_match_wins_over_model_collision(catalog):
+    """Точный артикул/SKU разрешает коллизию, даже если модель совпадает."""
+    p1 = _product(catalog, "Перф.ЗУБР ДА-24-2ЛК", article="SKU-123")
+    _p2 = _product(catalog, "Перф.ЗУБР ДА-24-2ЛК/Б", article="SKU-456")
+    index = si.build_product_index(list(Product.objects.all()))
+    m = si.match_card(_card("Перфоратор ЗУБР ДА-24-2ЛК", "SKU-123"), "zubr", index)
+    assert m.status == "matched"
+    assert m.products == [p1]
+    assert m.matched_by == "sku"
+
+
+@pytest.mark.django_db
+def test_exact_model_wins_over_normalized(catalog):
+    """Точная модель выигрывает у нормализованной, когда ключи совпадают."""
+    p1 = _product(catalog, "Перф.ЗУБР ЗП-26-800", article="A")
+    _p2 = _product(catalog, "Перф.ЗУБР ЗП-26800", article="B")
+    index = si.build_product_index(list(Product.objects.all()))
+    m = si.match_card(_card("Перфоратор ЗУБР ЗП-26-800", "X"), "zubr", index)
+    assert m.status == "matched"
+    assert m.products == [p1]
+    assert m.matched_by == "exact_model"
+
+
+@pytest.mark.django_db
+def test_normalized_model_wins_over_alias(catalog):
+    """Нормализованная модель выигрывает у алиаса, когда точная модель не совпала."""
+    _product(catalog, "Перф.ЗУБР ДА-24-2ЛК", article="A")
+    p_suffix = _product(catalog, "Перф.ЗУБР ДА-24-2ЛК-У", article="B")
+    index = si.build_product_index(list(Product.objects.all()))
+    # у товара суффикс через дефис, у карточки слитно: exact не совпадает,
+    # нормализованный ключ совпадает с суффиксным товаром, алиас — с базовым.
+    m = si.match_card(_card("Перфоратор ЗУБР ДА-24-2ЛКУ", "X"), "zubr", index)
+    assert m.status == "matched"
+    assert m.products == [p_suffix]
+    assert m.matched_by == "normalized_model"
+
+
+@pytest.mark.django_db
+def test_alias_match_last_ladder(catalog):
+    """Алиас срабатывает последним, когда нет точного/нормализованного совпадения."""
+    p_base = _product(catalog, "Перф.ЗУБР ДА-24-2ЛК", article="A")
+    index = si.build_product_index(list(Product.objects.all()))
+    m = si.match_card(_card("Перфоратор ЗУБР ДА-24-2ЛК-У", "X"), "zubr", index)
+    assert m.status == "matched"
+    assert m.products == [p_base]
+    assert m.matched_by == "alias"
+
+
+@pytest.mark.django_db
+def test_sku_multiple_products_same_article_is_ambiguous(catalog):
+    """SKU без единственного товара — неоднозначность, не угадывание."""
+    _product(catalog, "Перф.ЗУБР ДА-24-2ЛК", article="SKU-1")
+    _product(catalog, "Перф.ЗУБР ДА-24-2ЛК/Б", article="SKU-1")
+    index = si.build_product_index(list(Product.objects.all()))
+    m = si.match_card(_card("Перфоратор ЗУБР ДА-24-2ЛК", "SKU-1"), "zubr", index)
+    assert m.status == "ambiguous"
+
+
+@pytest.mark.django_db
+def test_alias_yields_ambiguous_when_multiple_bases(catalog):
+    """Алиас, который подходит к нескольким товарам, остаётся ambiguous."""
+    _product(catalog, "Перф.ЗУБР ДА-24-2ЛК", article="A")
+    _product(catalog, "Перф.ЗУБР ДА-24-2ЛК-Б", article="B")
+    index = si.build_product_index(list(Product.objects.all()))
+    m = si.match_card(_card("Перфоратор ЗУБР ДА-24-2ЛК-У", "X"), "zubr", index)
+    assert m.status == "ambiguous"
+
+
+@pytest.mark.django_db
+def test_exact_card_kept_when_alias_card_collides(catalog, tmp_path):
+    """Точная карточка остаётся matched, суффиксная уходит в ambiguous (CODE-04)."""
+    _product(catalog, "Перф.ЗУБР ДА-24-2ЛК")
+    card_exact = _zubr_card("Перфоратор ЗУБР ДА-24-2ЛК", "SKU-1")
+    card_alias = _zubr_card("Перфоратор ЗУБР ДА-24-2ЛК-У", "SKU-2")
+    export = _export(tmp_path, [card_exact, card_alias])
+    report = _run_report(tmp_path, export)
+    assert report["stats"]["matched"] == 1
+    assert report["stats"]["ambiguous"] == 1
+    assert len(report["matched"]) == 1
+    assert report["matched"][0]["card"] == card_exact["name"]
+
+
+# --- запись / приоритеты / voltage / конфликты --------------------------------
 
 
 @pytest.mark.django_db
@@ -220,7 +336,8 @@ def test_voltage_written_for_battery(catalog, tmp_path):
 
 
 @pytest.mark.django_db
-def test_scraper_overwrites_regex_but_not_import_1c_or_manual(catalog, tmp_path):
+def test_scraper_does_not_overwrite_any_source(catalog, tmp_path):
+    """Автоматический overwrite запрещён: расхождения уходят в conflict, БД не меняется."""
     p_regex = _product(catalog, "Перф.ЗУБР ЗП-99-1000 К")
     _pav(catalog, p_regex, "power", Source.REGEX, decimal=Decimal("950"))
     p_1c = _product(catalog, "Перф.ЗУБР ЗП-98-1000 К")
@@ -233,13 +350,30 @@ def test_scraper_overwrites_regex_but_not_import_1c_or_manual(catalog, tmp_path)
         _zubr_card("Перфоратор ЗУБР ЗП-97-1000 К", "ЗП-97-1000 К"),
     ]
     export = _export(tmp_path, cards)
-    _run(export)
-    pav = ProductAttributeValue.objects.get(product=p_regex, attribute__slug="power")
-    assert pav.value_decimal == Decimal("1000") and pav.source == Source.SCRAPER
-    pav = ProductAttributeValue.objects.get(product=p_1c, attribute__slug="power")
-    assert pav.value_decimal == Decimal("900") and pav.source == Source.IMPORT_1C
-    pav = ProductAttributeValue.objects.get(product=p_manual, attribute__slug="power")
-    assert pav.value_decimal == Decimal("800") and pav.source == Source.MANUAL
+    report = _run_report(tmp_path, export)
+    assert ProductAttributeValue.objects.get(
+        product=p_regex, attribute__slug="power"
+    ).value_decimal == Decimal("950")
+    assert ProductAttributeValue.objects.get(
+        product=p_1c, attribute__slug="power"
+    ).value_decimal == Decimal("900")
+    assert ProductAttributeValue.objects.get(
+        product=p_manual, attribute__slug="power"
+    ).value_decimal == Decimal("800")
+    assert report["stats"]["conflict"] == 3
+    assert report["stats"].get("overwrite", 0) == 0
+    assert len(report["conflicts"]) == 3
+
+
+@pytest.mark.django_db
+def test_same_value_is_confirmed_not_conflict(catalog, tmp_path):
+    """Совпадение значения — confirm, не конфликт."""
+    p = _product(catalog, "Перф.ЗУБР ЗП-99-1000 К")
+    _pav(catalog, p, "power", Source.MANUAL, decimal=Decimal("1000"))
+    export = _export(tmp_path, [_zubr_card("Перфоратор ЗУБР ЗП-99-1000 К", "ЗП-99-1000 К")])
+    report = _run_report(tmp_path, export)
+    assert report["stats"]["confirm"] == 1
+    assert report["stats"].get("conflict", 0) == 0
 
 
 @pytest.mark.django_db

@@ -119,14 +119,15 @@ class Command(BaseCommand):
             "fuzzy_suggestions": [],
             "unmapped_attributes": {},
             "created": [],
-            "overwritten": [],
-            "skipped_priority": [],
+            "confirmed": [],
+            "conflicts": [],
             "skipped_voltage": [],
             "dropped": [],
         }
         unmapped_counter: Counter = Counter()
         plans_by_product: dict[int, list[si.PlanItem]] = {}
-        product_cards: dict[int, list[str]] = {}
+
+        card_matches: list[dict] = []
 
         for source, card in cards:
             stats["cards"] += 1
@@ -182,35 +183,83 @@ class Command(BaseCommand):
                     "product_id": product.id,
                     "product": product.name,
                     "model_key": m.model_key,
+                    "matched_by": m.matched_by,
                     "article": art,
                 }
             )
-            product_cards.setdefault(product.id, []).append(card["name"])
             items = si.plan_product_values(
                 product, extraction.values, existing_by_product.get(product.id, {}), priority
             )
-            plans_by_product.setdefault(product.id, []).extend(items)
-
-        # «Многие к одному»: несколько карточек → один товар — в отчёт, не в базу.
-        for product_id, names in list(product_cards.items()):
-            if len(names) < 2:
-                continue
-            plans_by_product.pop(product_id, None)
-            stats["ambiguous"] += len(names)
-            report["ambiguous"].append(
+            card_matches.append(
                 {
-                    "reason": "многие к одному: несколько карточек -> один товар",
-                    "product_id": product_id,
-                    "product": products_by_id[product_id].name,
-                    "cards": names,
+                    "product_id": product.id,
+                    "source": source,
+                    "card": card,
+                    "matched_by": m.matched_by,
+                    "items": items,
                 }
             )
-            report["matched"] = [e for e in report["matched"] if e["product_id"] != product_id]
+
+        # «Многие к одному» с учётом лестницы: более точный матч вытесняет более слабый.
+        product_hits: dict[int, list[dict]] = {}
+        for cm in card_matches:
+            product_hits.setdefault(cm["product_id"], []).append(cm)
+
+        match_by_product: dict[int, dict] = {}
+        for product_id, hits in product_hits.items():
+            if len(hits) == 1:
+                keeper = hits[0]
+            else:
+                best_rank = min(si.LADDER_RANK[h["matched_by"]] for h in hits)
+                best = [h for h in hits if si.LADDER_RANK[h["matched_by"]] == best_rank]
+                if len(best) > 1:
+                    plans_by_product.pop(product_id, None)
+                    stats["ambiguous"] += len(hits)
+                    report["ambiguous"].append(
+                        {
+                            "reason": "многие к одному: несколько карточек -> один товар",
+                            "product_id": product_id,
+                            "product": products_by_id[product_id].name,
+                            "cards": [h["card"]["name"] for h in hits],
+                        }
+                    )
+                    report["matched"] = [
+                        e for e in report["matched"] if e["product_id"] != product_id
+                    ]
+                    continue
+                keeper = best[0]
+                for h in hits:
+                    if h is keeper:
+                        continue
+                    stats["ambiguous"] += 1
+                    report["ambiguous"].append(
+                        {
+                            "reason": "менее точный матч отброшен",
+                            "source": h["source"],
+                            "product_id": product_id,
+                            "product": products_by_id[product_id].name,
+                            "card": h["card"]["name"],
+                            "matched_by": h["matched_by"],
+                            "kept": keeper["card"]["name"],
+                            "kept_matched_by": keeper["matched_by"],
+                        }
+                    )
+                report["matched"] = [
+                    e
+                    for e in report["matched"]
+                    if not (e["product_id"] == product_id and e["card"] != keeper["card"]["name"])
+                ]
+            plans_by_product.setdefault(product_id, []).extend(keeper["items"])
+            match_by_product[product_id] = keeper
+
         stats["matched"] = len(report["matched"])
 
         # Статистика значений и поимённые списки — ПОСЛЕ разрешения коллизий.
         for product_id, items in plans_by_product.items():
             product = products_by_id[product_id]
+            match_info = match_by_product.get(product_id, {})
+            card = match_info.get("card", {})
+            source = match_info.get("source", "")
             for item in items:
                 stats[item.action] += 1
                 if item.action == "create":
@@ -224,29 +273,31 @@ class Command(BaseCommand):
                             "raw": item.raw,
                         }
                     )
-                elif item.action == "overwrite":
-                    report["overwritten"].append(
+                elif item.action == "conflict":
+                    report["conflicts"].append(
                         {
                             "product_id": product.id,
                             "product": product.name,
                             "attribute": item.attribute_slug,
                             "field": item.field,
-                            "old": str(item.old_value),
-                            "new": str(item.new_value),
-                            "old_source": item.old_source,
+                            "catalog_value": str(item.old_value),
+                            "catalog_source": item.old_source,
+                            "catalog_article": product.article,
+                            "scraped_value": str(item.new_value),
+                            "scraped_sku": card.get("manufacturer_sku"),
+                            "scraped_source": source,
                             "raw": item.raw,
                         }
                     )
-                elif item.action == "skipped_priority":
-                    report["skipped_priority"].append(
+                elif item.action == "confirm":
+                    report["confirmed"].append(
                         {
                             "product_id": product.id,
                             "product": product.name,
                             "attribute": item.attribute_slug,
                             "field": item.field,
-                            "current": str(item.old_value),
-                            "current_source": item.old_source,
-                            "rejected": str(item.new_value),
+                            "value": str(item.new_value),
+                            "source": item.old_source,
                             "raw": item.raw,
                         }
                     )
@@ -296,7 +347,7 @@ class Command(BaseCommand):
                 f"{mode}. Карточек: {stats['cards']}, matched: {stats['matched']}, "
                 f"ambiguous: {stats['ambiguous']}, not_found: {stats['not_found']}. "
                 f"Значения: create {stats['create']}, confirm {stats['confirm']}, "
-                f"overwrite {stats['overwrite']}, skipped_priority {stats['skipped_priority']}, "
+                f"conflict {stats.get('conflict', 0)}, "
                 f"skipped_voltage {stats['skipped_voltage']}, dropped {stats['dropped']}."
             )
         )

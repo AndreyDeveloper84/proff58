@@ -801,3 +801,30 @@ class LoadToolTypesReuseIdentityTests(TestCase):
         self.assertEqual(
             AttributeOption.objects.filter(attribute=attr, value="Специальные ключи").count(), 1
         )
+
+
+# --- keyword_at_word_boundary: граница слова с ОБЕИХ сторон (окно CODE-02) ---
+#
+# В tool_type используется только проверка НАЧАЛА вхождения
+# (_keyword_starts_at_word_boundary). Для select-характеристик (attribute_extract)
+# нужна и проверка конца — иначе XL матчит XLR. Общая функция живёт рядом с
+# исходной механикой и переиспользует _WORD_CHAR, не дублируя её.
+
+
+def test_keyword_at_word_boundary_requires_both_sides():
+    from apps.catalog.tool_type import keyword_at_word_boundary
+
+    # обе границы соблюдены
+    assert keyword_at_word_boundary("перчатки xl", "xl")
+    assert keyword_at_word_boundary("xl", "xl")  # начало и конец строки — границы
+    assert keyword_at_word_boundary("перчатки s-m", "s")  # дефис — граница
+    assert keyword_at_word_boundary("перчатки s-m", "m")
+    # нарушена граница НАЧАЛА
+    assert not keyword_at_word_boundary("stels", "s")
+    assert not keyword_at_word_boundary("перчатки ansell", "l")
+    # нарушена граница КОНЦА (у tool_type такой проверки нет — новая механика)
+    assert not keyword_at_word_boundary("xlr-200", "xl")
+    assert not keyword_at_word_boundary("l2000", "l")
+    # краевые случаи
+    assert not keyword_at_word_boundary("", "xl")
+    assert not keyword_at_word_boundary("перчатки xl", "")

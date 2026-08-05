@@ -50,6 +50,14 @@ _INTERSKOL_PAIR_RE = re.compile(
 _INTERSKOL_CODE_RE = re.compile(r'"code":"([^"]+)"')
 _INTERSKOL_ARTICLE_HTML_RE = re.compile(r"Артикул:\s*(?:<!--\s*-->)?([^<]{1,30})")
 
+# У старых/сетевых моделей Интерскола (например, Д-10/300ЭР) характеристики не
+# inlined в RSC payload, а опубликованы в rich-text описании в формате
+# "Параметр: значение". Отсекаем типовые единицы измерения при нормализации ключа.
+_INTERSKOL_DESC_UNIT_RE = re.compile(
+    r"\s*,\s*(?:об/мин|мин|Вт|мм|дюйм|А|В/Гц|кг|л(?:ет)?)\s*$",
+    re.IGNORECASE,
+)
+
 
 class ProductParseError(Exception):
     """Карточка не извлеклась (нет имени, битый HTML и т.п.) — товар отклоняется."""
@@ -198,6 +206,21 @@ def _unescape_rsc(html: str) -> str:
     return html.replace('\\\\"', '"').replace('\\"', '"')
 
 
+def _parse_interskol_description_specs(soup, attributes: dict[str, str]) -> None:
+    """Fallback: у ряда страниц Интерскола характеристики живут только
+    в rich-text блоке ``unfolding-list-right`` в виде ``Параметр: значение``.
+    """
+    for container in soup.find_all("div", class_=lambda c: c and "unfolding-list-right" in c):
+        for line in container.get_text("\n", strip=True).splitlines():
+            if ":" not in line:
+                continue
+            label, _, value = line.partition(":")
+            label = _INTERSKOL_DESC_UNIT_RE.sub("", label).strip()
+            value = value.strip()
+            if label and value:
+                _add_pair(attributes, label, value)
+
+
 def _parse_interskol(html: str) -> dict:
     soup = _soup(html)
     unescaped = _unescape_rsc(html)
@@ -212,6 +235,10 @@ def _parse_interskol(html: str) -> dict:
     else:
         article = _INTERSKOL_ARTICLE_HTML_RE.search(html)
         sku = article.group(1) if article else None
+    # У старых/сетевых моделей (Д-10/300ЭР и др.) RSC-свойства отсутствуют,
+    # но спецификация есть в HTML-описании.
+    if not attributes:
+        _parse_interskol_description_specs(soup, attributes)
     # h1 содержит только модель («П-24/700ЭР») — это нормально
     return {
         "name": _first_h1(soup) or _title(soup),

@@ -73,6 +73,34 @@ def _keyword_starts_at_word_boundary(norm_name: str, start: int) -> bool:
     return not _WORD_CHAR.match(norm_name[start - 1])
 
 
+def _keyword_ends_at_word_boundary(norm_name: str, end: int) -> bool:
+    """Символ сразу ПОСЛЕ вхождения — не буква/цифра (или конец строки)."""
+    if end >= len(norm_name):
+        return True
+    return not _WORD_CHAR.match(norm_name[end])
+
+
+def keyword_at_word_boundary(norm_name: str, norm_keyword: str) -> bool:
+    """Ключевое слово (уже normalize()-нное) входит в текст целым «словом».
+
+    Граница проверяется с ОБЕИХ сторон вхождения — в отличие от
+    :func:`find_keyword_match`, где достаточно границы начала. Нужно движку
+    характеристик (``attribute_extract``, opt-in флаг ``word_boundary``) для
+    буквенных значений вроде размеров перчаток: «s» не должно матчиться внутри
+    STELS, а «xl» — внутри XLR.
+    """
+    if not norm_keyword:
+        return False
+    idx = norm_name.find(norm_keyword)
+    while idx != -1:
+        if _keyword_starts_at_word_boundary(norm_name, idx) and _keyword_ends_at_word_boundary(
+            norm_name, idx + len(norm_keyword)
+        ):
+            return True
+        idx = norm_name.find(norm_keyword, idx + 1)
+    return False
+
+
 def _is_accessory_or_purpose_context(norm_name: str, start: int, norm_keyword: str) -> bool:
     """Слово-триггер (из ``_GUARDED_KEYWORDS``) — объект применения/бонус-
     аксессуар внутри названия основного товара, а не сам товар (см.
