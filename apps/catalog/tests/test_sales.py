@@ -6,8 +6,11 @@
 
 from datetime import timedelta
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
+from django.contrib.admin import site
+from django.contrib.messages.storage.fallback import FallbackStorage
 from django.urls import reverse
 from django.utils import timezone
 
@@ -283,3 +286,61 @@ class TestРучныеХиты:
         response = client.get(reverse("catalog_api:bestsellers"))
 
         assert response.json()["results"] == []
+
+
+class TestОтметкаХитаВАдминке:
+    """Галочка на скрытом товаре не работает — админка обязана сказать об этом.
+
+    Молчаливое «Отмечено хитами: 12» при пустом блоке на главной — ровно тот
+    случай, когда интерфейс отчитался об успехе, а результата нет.
+    """
+
+    @pytest.fixture
+    def staff_client(self, client, django_user_model):
+        user = django_user_model.objects.create_superuser(
+            phone="+79001112255", email="hits@proff58.ru", password="pass12345"
+        )
+        client.force_login(user)
+        return client
+
+    def _mark(self, staff_client, products):
+        return staff_client.post(
+            reverse("admin:catalog_product_changelist"),
+            {
+                "action": "action_mark_hit",
+                "_selected_action": [str(p.pk) for p in products],
+            },
+            follow=True,
+        )
+
+    def test_предупреждает_о_скрытых(self, staff_client):
+        visible = make_product("A")
+        hidden = make_product("B", is_active=False)
+
+        response = self._mark(staff_client, [visible, hidden])
+
+        texts = [str(m) for m in response.context["messages"]]
+        assert any("Отмечено хитами: 2" in t for t in texts)
+        warning = next(t for t in texts if "скрыты" in t)
+        assert "1" in warning and hidden.name in warning
+
+    def test_молчит_когда_все_видимы(self, staff_client):
+        response = self._mark(staff_client, [make_product("A"), make_product("B")])
+
+        texts = [str(m) for m in response.context["messages"]]
+        assert not any("скрыт" in t for t in texts)
+
+    def test_отметка_в_карточке_скрытого_предупреждает(self, rf, django_user_model):
+        """Тот же случай, но галочку ставят в самой карточке, а не действием списка."""
+        hidden = make_product("B", is_active=False, is_hit_manual=True)
+        request = rf.post("/admin/catalog/product/")
+        request.user = django_user_model.objects.create_superuser(
+            phone="+79001112266", email="card@proff58.ru", password="pass12345"
+        )
+        request.session = {}
+        request._messages = FallbackStorage(request)
+        form = SimpleNamespace(changed_data=["is_hit_manual"])
+
+        site._registry[Product].save_model(request, hidden, form, change=True)
+
+        assert any("скрыт с витрины" in str(m) for m in request._messages)

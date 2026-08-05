@@ -3,10 +3,10 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
-from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -28,12 +28,12 @@ from .models import (
     AttributeOption,
     AttributeType,
     CatalogChange,
-    CompatibilityKind,
     CatalogProcessingItem,
     CatalogProcessingRun,
     Category,
     CategoryAttribute,
     CategoryMappingRule,
+    CompatibilityKind,
     EnrichmentLog,
     GroupCategoryMapping,
     ImportRun,
@@ -764,7 +764,9 @@ class ProductAdmin(admin.ModelAdmin):
     def related_links(self, obj):
         if obj is None or obj.pk is None:
             return _("Появятся после сохранения товара.")
-        counts = {kind: len(links_service.linked_ids(obj, kind)) for kind, _label in self.LINK_KINDS}
+        counts = {
+            kind: len(links_service.linked_ids(obj, kind)) for kind, _label in self.LINK_KINDS
+        }
         return format_html(
             '<a class="button" href="{}">Подобрать связи</a>'
             '<span style="margin-left:.7rem;opacity:.7;">покупают вместе: {} · аналоги: {}</span>',
@@ -783,7 +785,9 @@ class ProductAdmin(admin.ModelAdmin):
         scope = request.GET.get("scope") or ("tool_type" if tool_type else "category")
         query = (request.GET.get("q") or "").strip()
 
-        current = {kind: links_service.linked_ids(product, kind) for kind, _label in self.LINK_KINDS}
+        current = {
+            kind: links_service.linked_ids(product, kind) for kind, _label in self.LINK_KINDS
+        }
 
         if request.method == "POST":
             # Снимаем только то, что человек видел на экране: страница показывает
@@ -818,7 +822,9 @@ class ProductAdmin(admin.ModelAdmin):
         # Уже связанные товары держим наверху, даже если выборка их не содержит —
         # иначе снять отметку можно было бы только угадав нужный фильтр.
         linked_all = current[CompatibilityKind.CROSS_SELL] | current[CompatibilityKind.ANALOG]
-        pinned = list(Product.objects.filter(pk__in=linked_all).select_related("category").order_by("name"))
+        pinned = list(
+            Product.objects.filter(pk__in=linked_all).select_related("category").order_by("name")
+        )
         rows = pinned + [p for p in page.object_list if p.pk not in linked_all]
 
         context = {
@@ -849,8 +855,28 @@ class ProductAdmin(admin.ModelAdmin):
 
     @admin.action(description=_("Отметить как «Хит продаж»"))
     def action_mark_hit(self, request, queryset):
+        # Галочка на скрытом товаре молча ничего не даёт: блок витрины строится по
+        # видимым позициям. Менеджер отмечал первую страницу списка (а там сверху
+        # технический мусор из 1С — всё отключённое) и не понимал, почему на главной
+        # пусто. Поэтому считаем скрытых и говорим об этом прямо.
+        hidden = list(
+            queryset.exclude(is_active=True, status=ProductStatus.PUBLISHED).values_list(
+                "name", flat=True
+            )[:5]
+        )
+        hidden_total = queryset.exclude(is_active=True, status=ProductStatus.PUBLISHED).count()
         updated = queryset.update(is_hit_manual=True)
         self.message_user(request, f"Отмечено хитами: {updated}", level=messages.SUCCESS)
+        if hidden_total:
+            names = ", ".join(f"«{n[:40]}»" for n in hidden)
+            tail = " и др." if hidden_total > len(hidden) else ""
+            self.message_user(
+                request,
+                f"Из них скрыты и на витрину не попадут: {hidden_total} "
+                f"({names}{tail}). Такой товар отключён или не опубликован — "
+                f"сначала включите его, иначе «Хит» останется только в админке.",
+                level=messages.WARNING,
+            )
 
     @admin.action(description=_("Снять отметку «Хит продаж»"))
     def action_unmark_hit(self, request, queryset):
@@ -1164,6 +1190,16 @@ class ProductAdmin(admin.ModelAdmin):
         if "category" in form.changed_data and obj.category_id is not None:
             obj.category_is_manual = True
         super().save_model(request, obj, form, change)
+
+        # То же, что в групповом действии: отметка хитом на скрытом товаре не даёт
+        # ничего, и об этом надо сказать здесь же, а не оставлять человека гадать.
+        if obj.is_hit_manual and not (obj.is_active and obj.status == ProductStatus.PUBLISHED):
+            self.message_user(
+                request,
+                "Товар отмечен хитом, но скрыт с витрины (отключён или не опубликован) — "
+                "в блоке «Хиты продаж» он не появится, пока вы его не включите.",
+                level=messages.WARNING,
+            )
 
         # Доменное событие — из admin-flow, после коммита; в payload только id.
         if change:
