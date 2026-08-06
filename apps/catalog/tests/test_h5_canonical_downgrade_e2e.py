@@ -52,7 +52,7 @@ def canonical_pair(tmp_path):
     """Пара манифестов: реальный canonical как N=2 и он же без 4 опций как N=1."""
     base = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     assert base["manifest_version"] == 1
-    assert len(base["options"]) == 359
+    assert len(base["options"]) == 360
 
     upper = dict(base, manifest_version=2)
     lower = dict(
@@ -60,7 +60,7 @@ def canonical_pair(tmp_path):
         manifest_version=1,
         options=[o for o in base["options"] if o["slug"] not in UNUSED_IN_H4],
     )
-    assert len(lower["options"]) == 355
+    assert len(lower["options"]) == 356
     return _write(tmp_path, "canonical.v2.json", upper), _write(
         tmp_path, "canonical.v1.json", lower
     )
@@ -84,7 +84,7 @@ def _product(slug, option):
 def test_seed_reproduces_canonical_identity_hash(seeded):
     base = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
-    assert AttributeOption.objects.filter(attribute__slug="tool_type").count() == 359
+    assert AttributeOption.objects.filter(attribute__slug="tool_type").count() == 360
     assert live_taxonomy_identity() == base["taxonomy_identity_hash"]
 
 
@@ -94,14 +94,14 @@ def test_downgrade_drops_four_unused_options_and_lands_on_target_identity(seeded
 
     assert plan.feasible is True
     assert plan.summary["drop"] == 4
-    assert plan.summary["keep"] == 355
+    assert plan.summary["keep"] == 356
     assert plan.summary["blocked"] == 0
     assert sorted(e["slug"] for e in plan.entries_by_disposition("drop")) == UNUSED_IN_H4
 
     result = drop_disappearing_options(plan, apply=True)
 
     assert result["dropped"] == UNUSED_IN_H4
-    assert AttributeOption.objects.filter(attribute__slug="tool_type").count() == 355
+    assert AttributeOption.objects.filter(attribute__slug="tool_type").count() == 356
     assert live_taxonomy_identity() == plan.to_manifest.identity_hash
 
 

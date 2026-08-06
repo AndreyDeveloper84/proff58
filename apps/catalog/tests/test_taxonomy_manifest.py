@@ -24,15 +24,11 @@ from apps.catalog.taxonomy_manifest import (
 V2_PATH = Path(settings.BASE_DIR) / "data" / "catalog_processing_rules" / "tool_type.v2.json"
 SEED_RULES_PATH = Path(settings.BASE_DIR) / "data" / "tool_type_rules.json"
 
-# TT-NEW-TYPES-BATCH-3 (2026-08-01): пакет из 4 опций P2 (phase8 taxonomy-gaps;
-# 359 options: drovokoly, hoz-motygi, zerkala-dosmotrovye, zap-ognetushiteley) —
-# identity и semantic hash пересчитаны;
-# разметка gate-sample не переразмечалась (2 строки, как в
-# TT-NEW-TYPES-BATCH-2/TT-NEW-TYPES-BATCH/TT-14/TT-07/TT-01).
-PINNED_IDENTITY_HASH = "f7b73846bf984917b1fae2c775ae0b6ce1cf91609361529c57f4e64adebb6fde"
-# H4: clean-taxonomy снял 15 pending_business_review (identity_hash не менялся —
-# slug/value не тронуты; semantic_hash покрывает origin/review metadata).
-PINNED_SEMANTIC_HASH = "0a9cb707179b1c09411f1b231691c1c24f52937e4e4ee9e085e2f3c867aedbbe"
+# ТТ-18A (2026-08-05): новый тип tsangi-i-tsangovye-patrony и переименование
+# svar-cangi (Цанги → Цанги сварочные); 360 options; identity и semantic hash
+# пересчитаны; gate-sample и labels перевыпущены на новый canonical binding.
+PINNED_IDENTITY_HASH = "ddf4b949b38265b1fde3f7e2caa0cf5bb4fe4e82fd23980676ac93c8bf844874"
+PINNED_SEMANTIC_HASH = "afe2b1ab6fda1a30e5bdcbf0a5d3b904ce15ba6217caccd5d5d5b5475e9c48b3"
 
 BACKPORTED_SLUGS = {
     "bp-podgotovka-vozduha",
@@ -94,7 +90,7 @@ def _opt(slug, value, **kw):
 
 def test_committed_manifest_loads_and_matches_pins():
     m = load_manifest()
-    assert len(m.options) == 359
+    assert len(m.options) == 360
     assert m.identity_hash == PINNED_IDENTITY_HASH
     assert m.semantic_hash == PINNED_SEMANTIC_HASH
     assert m.schema_version == 1 and m.manifest_version == 1
