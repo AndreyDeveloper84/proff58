@@ -18,6 +18,9 @@ describe("useCasesFor", () => {
 
   it("узнаёт болгарку под любым из её имён", () => {
     for (const name of ["Болгарки (УШМ)", "Шлифовальные машины", "УШМ"]) {
+      // useCasesFor — чистая функция, а не React-хук: префикс use в имени сбивает
+      // rules-of-hooks на вызове внутри цикла.
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       expect(useCasesFor(withType(name)).cases[0].title).toBe("Резка металла");
     }
   });
