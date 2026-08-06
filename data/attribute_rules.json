@@ -584,7 +584,7 @@
     },
     {
       "tool_type": "krugi-almaznye",
-      "category": "Алмазные круги",
+      "category": "Диски",
       "attributes": [
         {
           "slug": "disc_diameter",
@@ -1310,7 +1310,7 @@
     },
     {
       "tool_type": "bury",
-      "category": "Оснастка и расходники",
+      "category": "Оснастка и расходные материалы",
       "attributes": [
         {
           "slug": "diameter",
@@ -1370,7 +1370,7 @@
     },
     {
       "tool_type": "koronki",
-      "category": "Оснастка и расходники",
+      "category": "Оснастка и расходные материалы",
       "attributes": [
         {
           "slug": "diameter",
@@ -1509,7 +1509,7 @@
     },
     {
       "tool_type": "sverla",
-      "category": "Оснастка и расходники",
+      "category": "Оснастка и расходные материалы",
       "attributes": [
         {
           "slug": "diameter",
@@ -1668,7 +1668,7 @@
     },
     {
       "tool_type": "piki-dolota",
-      "category": "Оснастка и расходники",
+      "category": "Оснастка и расходные материалы",
       "attributes": [
         {
           "slug": "shank_type",
@@ -1724,7 +1724,7 @@
     },
     {
       "tool_type": "bity",
-      "category": "Оснастка и расходники",
+      "category": "Оснастка и расходные материалы",
       "attributes": [
         {
           "slug": "bit_type",
@@ -1791,7 +1791,7 @@
     },
     {
       "tool_type": "pilki-polotna",
-      "category": "Оснастка и расходники",
+      "category": "Оснастка и расходные материалы",
       "attributes": [
         {
           "slug": "purpose",
@@ -1867,7 +1867,7 @@
     },
     {
       "tool_type": "reztsy",
-      "category": "Оснастка и расходники",
+      "category": "Оснастка и расходные материалы",
       "attributes": [
         {
           "slug": "material",
@@ -2134,7 +2134,7 @@
     },
     {
       "tool_type": "krugi-shlif",
-      "category": "Отрезные и шлифовальные круги",
+      "category": "Круги",
       "attributes": [
         {
           "slug": "disc_diameter",
@@ -2996,7 +2996,7 @@
     },
     {
       "tool_type": "svar-electrody",
-      "category": "Сварка",
+      "category": "Электроды",
       "attributes": [
         {
           "slug": "diameter",
@@ -3018,7 +3018,7 @@
     },
     {
       "tool_type": "str-valiki",
-      "category": "Строительный инструмент",
+      "category": "Малярный инструмент",
       "attributes": [
         {
           "slug": "length",
@@ -3040,7 +3040,7 @@
     },
     {
       "tool_type": "str-kisti",
-      "category": "Строительный инструмент",
+      "category": "Прочий строительный инструмент",
       "attributes": [
         {
           "slug": "diameter",
@@ -3138,7 +3138,7 @@
     },
     {
       "tool_type": "zap-shchetki-ugolnye",
-      "category": "Запчасти к инструменту",
+      "category": "Запчасти, аккумуляторы и комплектующие",
       "_note": "CAT-14B: габариты — только формат AxBxCмм (линейка «АНАЛОГ»), три отдельных числа; запись «7*13*23» без «мм» не ловится осознанно. skip_if: щётки пылесосов и аксессуары (держатель/крышка) — не угольные щётки, ничего не извлекаем. CAT-14C B2 (решение 3): analog_code — kind text (CODE-02), открытое множество, select-options не заводятся; хранится отдельно от габаритов dim_a/b/c.",
       "attributes": [
         {
