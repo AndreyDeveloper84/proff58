@@ -7,7 +7,12 @@ import { cn } from "@/lib/utils";
 import type { Listing, ListingQuery, RangeFilterValue, SortOption } from "@/lib/types";
 import { serializeQuery } from "@/lib/url-state";
 import { humanizeToken, rangeChipLabel } from "@/lib/format";
-import { categoryNav, normalizeRangeFilters, sidebarFacets } from "@/lib/listing";
+import {
+  categoryNav,
+  filtersAfterToolTypeChange,
+  normalizeRangeFilters,
+  sidebarFacets,
+} from "@/lib/listing";
 import { track } from "@/lib/analytics";
 import { PER_PAGE_OPTIONS, SORT_OPTIONS } from "@/lib/constants";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -122,7 +127,14 @@ export function ListingShell({
         active_filters_count: activeFiltersCount,
       },
     });
-    push({ ...query, toolType: next ?? undefined, page: 1 });
+    // Цена и характеристики принадлежали прежнему типу — в новой выдаче они
+    // ничего не значат и читаются как поломка (см. filtersAfterToolTypeChange).
+    push({
+      ...query,
+      toolType: next ?? undefined,
+      filters: filtersAfterToolTypeChange(query.filters),
+      page: 1,
+    });
   };
   // Клик по плитке: повторный по активному → снять, иначе выбрать (§3.1, §7.1).
   const onSelectType = (slug: string, label: string) =>

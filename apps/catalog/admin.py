@@ -863,8 +863,28 @@ class ProductAdmin(admin.ModelAdmin):
 
     @admin.action(description=_("Отметить как «Хит продаж»"))
     def action_mark_hit(self, request, queryset):
+        # Галочка на скрытом товаре молча ничего не даёт: блок витрины строится по
+        # видимым позициям. Менеджер отмечал первую страницу списка (а там сверху
+        # технический мусор из 1С — всё отключённое) и не понимал, почему на главной
+        # пусто. Поэтому считаем скрытых и говорим об этом прямо.
+        hidden = list(
+            queryset.exclude(is_active=True, status=ProductStatus.PUBLISHED).values_list(
+                "name", flat=True
+            )[:5]
+        )
+        hidden_total = queryset.exclude(is_active=True, status=ProductStatus.PUBLISHED).count()
         updated = queryset.update(is_hit_manual=True)
         self.message_user(request, f"Отмечено хитами: {updated}", level=messages.SUCCESS)
+        if hidden_total:
+            names = ", ".join(f"«{n[:40]}»" for n in hidden)
+            tail = " и др." if hidden_total > len(hidden) else ""
+            self.message_user(
+                request,
+                f"Из них скрыты и на витрину не попадут: {hidden_total} "
+                f"({names}{tail}). Такой товар отключён или не опубликован — "
+                f"сначала включите его, иначе «Хит» останется только в админке.",
+                level=messages.WARNING,
+            )
 
     @admin.action(description=_("Снять отметку «Хит продаж»"))
     def action_unmark_hit(self, request, queryset):
@@ -1178,6 +1198,16 @@ class ProductAdmin(admin.ModelAdmin):
         if "category" in form.changed_data and obj.category_id is not None:
             obj.category_is_manual = True
         super().save_model(request, obj, form, change)
+
+        # То же, что в групповом действии: отметка хитом на скрытом товаре не даёт
+        # ничего, и об этом надо сказать здесь же, а не оставлять человека гадать.
+        if obj.is_hit_manual and not (obj.is_active and obj.status == ProductStatus.PUBLISHED):
+            self.message_user(
+                request,
+                "Товар отмечен хитом, но скрыт с витрины (отключён или не опубликован) — "
+                "в блоке «Хиты продаж» он не появится, пока вы его не включите.",
+                level=messages.WARNING,
+            )
 
         # Доменное событие — из admin-flow, после коммита; в payload только id.
         if change:
