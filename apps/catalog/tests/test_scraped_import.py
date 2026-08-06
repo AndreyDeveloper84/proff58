@@ -420,7 +420,10 @@ SHLIFMASHINY_PREFIXES = ["ЗЛШМ", "ЗОШМ", "ЗПШМ", "ВШМ", "ЛШМ",
 
 def test_build_model_re_from_prefixes():
     """Регекс собирается из префиксов карты и извлекает шлифмашинную модель."""
-    assert si.extract_model("Лентошлифмашина ЛШМ-75/800", prefixes=SHLIFMASHINY_PREFIXES) == "ЛШМ-75/800"
+    assert (
+        si.extract_model("Лентошлифмашина ЛШМ-75/800", prefixes=SHLIFMASHINY_PREFIXES)
+        == "ЛШМ-75/800"
+    )
     assert si.model_key("Лентошлифмашина ЛШМ-75/800", prefixes=SHLIFMASHINY_PREFIXES) == "lshm75800"
 
 
@@ -436,3 +439,14 @@ def test_fallback_without_model_prefixes_matches_legacy():
     assert si.model_key("Дрель-миксер ЗДМ-820 РМ") == "zdm820rm"
 
 
+def test_validate_model_prefixes_rejects_regex_metacharacters():
+    """Карта не может содержать regex-метасимволы в префиксах.
+
+    Единственное исключение — унаследованный generic ``D[A-Z]{1,2}``.
+    """
+    with pytest.raises(ValueError, match="regex-метасимволы"):
+        si.validate_model_prefixes(["ЗПШМ", "Z[A-Z]+"])
+    # литеральные префиксы проходят
+    si.validate_model_prefixes(["ЗЛШМ", "ПШМ", "DCG405"])
+    # унаследованный generic разрешён
+    si.validate_model_prefixes(si.LEGACY_MODEL_PREFIXES)

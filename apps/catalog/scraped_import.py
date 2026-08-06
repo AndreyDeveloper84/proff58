@@ -103,25 +103,12 @@ def norm_key(s: str) -> str:
     return re.sub(r"[^a-z0-9]", "", s.lower().translate(TRANS))
 
 
-def _build_model_re(prefixes: list[str]) -> re.Pattern:
-    """Собрать regex модели из префиксов категории (длинные раньше коротких).
+# Унаследованный regex-префикс из MODEL_RE. Он единственный не-литеральный
+# префикс, который допустимо переносить в карты категорий.
+ALLOWED_REGEX_PREFIXES = frozenset({"D[A-Z]{1,2}"})
 
-    Префиксы вставляются в тело паттерна как есть — это позволяет fallback-набору
-    унаследованного ``MODEL_RE`` содержать регулярное выражение ``D[A-Z]{1,2}``,
-    а картам категорий хранить только литеральные буквенные префиксы.
-    """
-    prefix_part = "|".join(p for p in sorted(prefixes, key=len, reverse=True))
-    return re.compile(
-        r"\b((?:" + prefix_part + r")"
-        r"[-\s]?(?:\d+[А-ЯЁ]?(?:[-/,.]*\d+[А-ЯЁ]?)*|(?:[A-ZА-ЯЁ]\d+(?:[-/,.]*\d+[А-ЯЁ]?)*))"
-        r"(?:\s?[А-ЯЁ]{1,3}\d{0,2}(?![А-ЯЁ0-9]))?"
-        r"(?:[-][A-ZА-ЯЁ][A-ZА-ЯЁ0-9]{0,3})?)",
-        re.I,
-    )
-
-
-# Унаследованный перечень префиксов из MODEL_RE; используется для fallback и для
-# доказательства эквивалентности: сборка из этого списка даёт тот же regex.
+# Полный унаследованный перечень префиксов из MODEL_RE (включая generic
+# D[A-Z]{1,2}). Используется для доказательства эквивалентности fallback.
 LEGACY_MODEL_PREFIXES = [
     "ЗПМ",
     "ЗПВ",
@@ -149,6 +136,38 @@ LEGACY_MODEL_PREFIXES = [
     "DAU",
     "D[A-Z]{1,2}",
 ]
+
+
+def _build_model_re(prefixes: list[str]) -> re.Pattern:
+    """Собрать regex модели из префиксов категории (длинные раньше коротких).
+
+    Префиксы вставляются в тело паттерна как есть. Литеральные префиксы
+    безопасны, т.к. ``validate_model_prefixes`` отсекает regex-метасимволы,
+    кроме явно разрешённых унаследованных выражений.
+    """
+    prefix_part = "|".join(p for p in sorted(prefixes, key=len, reverse=True))
+    return re.compile(
+        r"\b((?:" + prefix_part + r")"
+        r"[-\s]?(?:\d+[А-ЯЁ]?(?:[-/,.]*\d+[А-ЯЁ]?)*|(?:[A-ZА-ЯЁ]\d+(?:[-/,.]*\d+[А-ЯЁ]?)*))"
+        r"(?:\s?[А-ЯЁ]{1,3}\d{0,2}(?![А-ЯЁ0-9]))?"
+        r"(?:[-][A-ZА-ЯЁ][A-ZА-ЯЁ0-9]{0,3})?)",
+        re.I,
+    )
+
+
+def validate_model_prefixes(prefixes: list[str]) -> None:
+    """Карта категории должна содержать литеральные префиксы моделей.
+
+    Regex-метасимволы запрещены, кроме явно разрешённых унаследованных
+    выражений (сейчас это только ``D[A-Z]{1,2}``). Унаследованный ``MODEL_RE``
+    остаётся fallback для карт без ``model_prefixes``.
+    """
+    for p in prefixes:
+        if re.escape(p) != p and p not in ALLOWED_REGEX_PREFIXES:
+            raise ValueError(
+                f"Префикс модели содержит regex-метасимволы: {p!r}. "
+                "Карта должна содержать только литеральные префиксы."
+            )
 
 
 def extract_model(name: str, prefixes: list[str] | None = None) -> str | None:
@@ -386,9 +405,7 @@ def _index_entry(product: Product, prefixes: list[str] | None = None) -> Product
     )
 
 
-def build_product_index(
-    products: list[Product], prefixes: list[str] | None = None
-) -> MatchIndex:
+def build_product_index(products: list[Product], prefixes: list[str] | None = None) -> MatchIndex:
     """Индекс для лестницы матчинга: SKU → exact → normalized → alias."""
     index = MatchIndex()
     for p in products:

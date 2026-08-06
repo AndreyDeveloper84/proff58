@@ -59,6 +59,8 @@ class Command(BaseCommand):
             raise CommandError(f"Карта не найдена: {map_path}")
         amap = si.load_attr_map(map_path)
         model_prefixes = amap.get("model_prefixes")
+        if model_prefixes:
+            si.validate_model_prefixes(model_prefixes)
 
         rules_raw = json.loads((base / "attribute_rules.json").read_text(encoding="utf-8"))
         priority = rules_raw.get("source_priority", {})
