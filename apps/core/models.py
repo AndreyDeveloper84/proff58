@@ -50,7 +50,17 @@ class SiteSettings(TimeStampedModel):
 
     # --- Контакты, реквизиты, регион ---
     contacts = models.JSONField(_("Контакты"), default=dict, blank=True)
-    requisites = models.JSONField(_("Реквизиты"), default=dict, blank=True)
+    requisites = models.JSONField(
+        _("Реквизиты"),
+        default=dict,
+        blank=True,
+        help_text=_(
+            "Реквизиты поставщика для счетов B2B. Ключи: company_name, inn, kpp, ogrn, "
+            "address, phone, bank_name, bank_bik, bank_account, bank_corr_account, "
+            "director, accountant. Без банковских полей счёт нельзя оплатить — "
+            "покупателю не из чего заполнить платёжное поручение."
+        ),
+    )
     region = models.CharField(_("Регион"), max_length=100, default="Пенза")
 
     # --- Бизнес-feature-флаги (переключаются администратором) ---
