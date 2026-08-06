@@ -11,17 +11,54 @@
   th { background: #f5f5f5; }
   .total { font-weight: bold; font-size: 16px; margin-top: 15px; }
   .section { margin-top: 20px; }
+  .muted { color: #555; font-size: 12px; }
+  .nowrap { white-space: nowrap; }
+  .note { color: #8a5a00; }
+  table.bank td { vertical-align: top; }
+  table.sign { margin-top: 30px; border: none; }
+  table.sign td { border: none; padding: 10px 8px 0; }
+  table.sign td.line { border-bottom: 1px solid #333; width: 200px; }
   @media print { body { margin: 20px; } }
 </style>
 </head>
 <body>
 <h1>Счёт № {{ invoice.order_number }} от {{ invoice.date|date:"d.m.Y" }}</h1>
 
+{# Банковская часть — обязательная: без неё платёжное поручение не заполнить,
+   и счёт остаётся справкой, а не документом на оплату. #}
+{% if invoice.seller.bank_account %}
+<table class="bank">
+  <tr>
+    <td>
+      {% if invoice.seller.bank_name %}{{ invoice.seller.bank_name }}{% endif %}<br>
+      <span class="muted">Банк получателя</span>
+    </td>
+    <td class="nowrap">
+      БИК<br><span class="muted">Сч. №</span>
+    </td>
+    <td class="nowrap">
+      {{ invoice.seller.bank_bik }}<br>{{ invoice.seller.bank_corr_account }}
+    </td>
+  </tr>
+  <tr>
+    <td>
+      ИНН {{ invoice.seller.inn }}{% if invoice.seller.kpp %} КПП {{ invoice.seller.kpp }}{% endif %}<br>
+      {{ invoice.seller.company_name }}<br>
+      <span class="muted">Получатель</span>
+    </td>
+    <td class="nowrap">Сч. №</td>
+    <td class="nowrap">{{ invoice.seller.bank_account }}</td>
+  </tr>
+</table>
+{% endif %}
+
 <div class="section">
-  <strong>Продавец:</strong><br>
+  <strong>Поставщик:</strong><br>
   {% if invoice.seller.company_name %}{{ invoice.seller.company_name }}<br>{% endif %}
-  {% if invoice.seller.inn %}ИНН: {{ invoice.seller.inn }}<br>{% endif %}
+  {% if invoice.seller.inn %}ИНН: {{ invoice.seller.inn }}{% if invoice.seller.kpp %}, КПП: {{ invoice.seller.kpp }}{% endif %}<br>{% endif %}
+  {% if invoice.seller.ogrn %}ОГРН: {{ invoice.seller.ogrn }}<br>{% endif %}
   {% if invoice.seller.address %}{{ invoice.seller.address }}<br>{% endif %}
+  {% if invoice.seller.phone %}Тел.: {{ invoice.seller.phone }}<br>{% endif %}
 </div>
 
 <div class="section">
@@ -53,5 +90,41 @@
 
 {% if invoice.items_discount_total %}<div>Скидка{% if invoice.promo_code %} (промокод {{ invoice.promo_code }}){% endif %}: −{{ invoice.items_discount_total }} {{ invoice.currency }}</div>{% endif %}
 <div class="total">Итого: {{ invoice.total }} {{ invoice.currency }}</div>
+{# Ставка НДС — обязательный реквизит счёта. vat_rate=0 у неплательщика (УСН):
+   пишем «Без НДС», а не молчим, иначе бухгалтерия покупателя не примет документ. #}
+<div>
+  {% if invoice.vat_rate %}
+    В том числе НДС {{ invoice.vat_rate }}%: {{ invoice.vat_amount }} {{ invoice.currency }}
+  {% else %}
+    Без НДС
+  {% endif %}
+</div>
+<div class="section">Всего наименований {{ invoice.items|length }}, на сумму {{ invoice.total }} {{ invoice.currency }}</div>
+
+{% if invoice.delivery_pending %}
+<div class="section note">
+  Стоимость доставки уточняет менеджер — счёт предварительный, итоговая сумма может измениться.
+</div>
+{% endif %}
+
+<div class="section">
+  <em>Оплатой счёта покупатель подтверждает согласие с условиями продажи. Товар отпускается
+  после поступления денег на расчётный счёт поставщика.</em>
+</div>
+
+{% if invoice.seller.director %}
+<table class="sign">
+  <tr>
+    <td>Руководитель</td>
+    <td class="line"></td>
+    <td>{{ invoice.seller.director }}</td>
+  </tr>
+  <tr>
+    <td>Главный бухгалтер</td>
+    <td class="line"></td>
+    <td>{{ invoice.seller.accountant|default:invoice.seller.director }}</td>
+  </tr>
+</table>
+{% endif %}
 </body>
 </html>
