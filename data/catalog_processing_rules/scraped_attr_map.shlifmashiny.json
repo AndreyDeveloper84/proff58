@@ -1,7 +1,11 @@
 {
   "schema_version": 1,
   "category": "shlifmashiny",
-  "target_category": {"id": 3, "slug": "elektroinstrument", "name": "Электроинструмент"},
+  "target_category": {
+    "id": 3,
+    "slug": "elektroinstrument",
+    "name": "Электроинструмент"
+  },
   "created": "2026-08-06",
   "inputs": {
     "prompt": "scratchpad/prompts/pars-12-shlifmashiny-map.md",
@@ -28,49 +32,89 @@
     "resanta": {
       "fields": {
         "Мощность, Вт": {
-          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
-          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+          "action": "map",
+          "attribute": "power",
+          "attribute_type": "decimal",
+          "unit": "Вт",
+          "normalize": "int",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report"
         },
         "Напряжение питающей сети, В": {
-          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
-          "normalize": "voltage_first", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "action": "map",
+          "attribute": "voltage",
+          "attribute_type": "decimal",
+          "unit": "В",
+          "normalize": "voltage_first",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
           "comment": "сетевые значения отбрасываются импортёром как >=60В"
         },
         "Частота вращения, об/мин": {
-          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
-          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "action": "map",
+          "attribute": "no_load_speed",
+          "attribute_type": "decimal",
+          "unit": "об/мин",
+          "normalize": "range_upper_decimal",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
           "comment": "'4000-13000' -> 13000"
         },
         "Тип двигателя": {
-          "action": "map", "attribute": "motor_type", "attribute_type": "select",
+          "action": "map",
+          "attribute": "motor_type",
+          "attribute_type": "select",
           "normalize": "option_map",
-          "values": {"щеточный": "brushed", "бесщеточный": "brushless"},
-          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report"
+          "values": {
+            "щеточный": "brushed",
+            "бесщеточный": "brushless"
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
         },
         "Размер шлифовальной ленты, мм": {
-          "action": "unmapped", "candidate_attribute": "belt_size_mm",
+          "action": "unmapped",
+          "candidate_attribute": "belt_size_mm",
           "reason": "размер шлифовальной ленты; атрибута нет"
         },
         "Скорость ленты, м/мин": {
-          "action": "unmapped", "candidate_attribute": "belt_speed_m_min",
+          "action": "unmapped",
+          "candidate_attribute": "belt_speed_m_min",
           "reason": "скорость ленты; атрибута нет"
         },
         "Диаметр шлифовальной подошвы, мм": {
-          "action": "unmapped", "candidate_attribute": "pad_diameter_mm",
+          "action": "unmapped",
+          "candidate_attribute": "pad_diameter_mm",
           "reason": "диаметр шлифовальной подошвы; атрибута нет"
         },
         "Амплитуда колебаний, мм": {
-          "action": "unmapped", "candidate_attribute": "oscillation_amplitude_mm",
+          "action": "unmapped",
+          "candidate_attribute": "oscillation_amplitude_mm",
           "reason": "амплитуда колебаний эксцентрика; атрибута нет"
         },
         "Размер основания, мм": {
-          "action": "unmapped", "candidate_attribute": "base_size_mm",
+          "action": "unmapped",
+          "candidate_attribute": "base_size_mm",
           "reason": "размер основания вибро/плоскошлифмашины; атрибута нет"
         },
-        "Электронная регулировка оборотов": {"action": "ignore", "reason": "нет атрибута"},
-        "Бренд": {"action": "ignore", "reason": "дублирует поле brand карточки"},
-        "Габариты упаковки": {"action": "ignore", "reason": "габариты упаковки, атрибута нет"},
-        "Вес, кг": {"action": "unmapped", "candidate_attribute": "weight_kg", "reason": "атрибута веса нет"}
+        "Электронная регулировка оборотов": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Бренд": {
+          "action": "ignore",
+          "reason": "дублирует поле brand карточки"
+        },
+        "Габариты упаковки": {
+          "action": "ignore",
+          "reason": "габариты упаковки, атрибута нет"
+        },
+        "Вес, кг": {
+          "action": "unmapped",
+          "candidate_attribute": "weight_kg",
+          "reason": "атрибута веса нет"
+        }
       },
       "fallbacks": [],
       "derived": []
@@ -78,51 +122,92 @@
     "vihr": {
       "fields": {
         "Мощность, Вт": {
-          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
-          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+          "action": "map",
+          "attribute": "power",
+          "attribute_type": "decimal",
+          "unit": "Вт",
+          "normalize": "int",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report"
         },
         "Напряжение питающей сети, В": {
-          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
-          "normalize": "voltage_first", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "action": "map",
+          "attribute": "voltage",
+          "attribute_type": "decimal",
+          "unit": "В",
+          "normalize": "voltage_first",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
           "comment": "сетевые значения отбрасываются импортёром как >=60В"
         },
         "Частота вращения, об/мин": {
-          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
-          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report"
+          "action": "map",
+          "attribute": "no_load_speed",
+          "attribute_type": "decimal",
+          "unit": "об/мин",
+          "normalize": "range_upper_decimal",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report"
         },
         "Тип двигателя": {
-          "action": "map", "attribute": "motor_type", "attribute_type": "select",
+          "action": "map",
+          "attribute": "motor_type",
+          "attribute_type": "select",
           "normalize": "option_map",
-          "values": {"щеточный": "brushed", "бесщеточный": "brushless"},
-          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report"
+          "values": {
+            "щеточный": "brushed",
+            "бесщеточный": "brushless"
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
         },
         "Размер шлифовальной ленты, мм": {
-          "action": "unmapped", "candidate_attribute": "belt_size_mm",
+          "action": "unmapped",
+          "candidate_attribute": "belt_size_mm",
           "reason": "размер шлифовальной ленты; атрибута нет"
         },
         "Скорость ленты, м/мин": {
-          "action": "unmapped", "candidate_attribute": "belt_speed_m_min",
+          "action": "unmapped",
+          "candidate_attribute": "belt_speed_m_min",
           "reason": "скорость ленты; атрибута нет"
         },
         "Диаметр шлифовальной подошвы, мм": {
-          "action": "unmapped", "candidate_attribute": "pad_diameter_mm",
+          "action": "unmapped",
+          "candidate_attribute": "pad_diameter_mm",
           "reason": "диаметр подошвы эксцентриковой шлифмашины; атрибута нет"
         },
         "Амплитуда колебаний, мм": {
-          "action": "unmapped", "candidate_attribute": "oscillation_amplitude_mm",
+          "action": "unmapped",
+          "candidate_attribute": "oscillation_amplitude_mm",
           "reason": "амплитуда колебаний; атрибута нет"
         },
         "Размер основания, мм": {
-          "action": "unmapped", "candidate_attribute": "base_size_mm",
+          "action": "unmapped",
+          "candidate_attribute": "base_size_mm",
           "reason": "размер основания виброшлифмашины; атрибута нет"
         },
         "Частота колебаний": {
-          "action": "ignore", "reason": "частота колебаний платформы (кол/мин), не обороты; атрибута нет"
+          "action": "ignore",
+          "reason": "частота колебаний платформы (кол/мин), не обороты; атрибута нет"
         },
-        "Электронная регулировка оборотов": {"action": "ignore", "reason": "нет атрибута"},
-        "Бренд": {"action": "ignore", "reason": "дублирует поле brand карточки"},
-        "Габариты упаковки": {"action": "ignore", "reason": "габариты упаковки, атрибута нет"},
-        "Вес, кг": {"action": "unmapped", "candidate_attribute": "weight_kg", "reason": "атрибута веса нет"}
+        "Электронная регулировка оборотов": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Бренд": {
+          "action": "ignore",
+          "reason": "дублирует поле brand карточки"
+        },
+        "Габариты упаковки": {
+          "action": "ignore",
+          "reason": "габариты упаковки, атрибута нет"
+        },
+        "Вес, кг": {
+          "action": "unmapped",
+          "candidate_attribute": "weight_kg",
+          "reason": "атрибута веса нет"
+        }
       },
       "fallbacks": [],
       "derived": []
@@ -130,103 +215,189 @@
     "interskol": {
       "fields": {
         "Мощность": {
-          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
-          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+          "action": "map",
+          "attribute": "power",
+          "attribute_type": "decimal",
+          "unit": "Вт",
+          "normalize": "int",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report"
         },
         "Параметры сети питания": {
-          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
-          "normalize": "voltage_first", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "action": "map",
+          "attribute": "voltage",
+          "attribute_type": "decimal",
+          "unit": "В",
+          "normalize": "voltage_first",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
           "comment": "'220 ±10% / 50' -> 220; сетевые отбрасываются импортёром"
         },
         "Напряжение и ток В /": {
-          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
-          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "action": "map",
+          "attribute": "voltage",
+          "attribute_type": "decimal",
+          "unit": "В",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
           "comment": "аккумуляторные модели, например '18'"
         },
         "Напряжение аккумулятора, В": {
-          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
-          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "action": "map",
+          "attribute": "voltage",
+          "attribute_type": "decimal",
+          "unit": "В",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
           "comment": "аккумуляторные модели"
         },
         "Частота вращения": {
-          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
-          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report",
+          "action": "map",
+          "attribute": "no_load_speed",
+          "attribute_type": "decimal",
+          "unit": "об/мин",
+          "normalize": "range_upper_decimal",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
           "comment": "'5000-12000' -> 12000; у ленточных может отсутствовать"
         },
         "Тип двигателя": {
-          "action": "map", "attribute": "motor_type", "attribute_type": "select",
+          "action": "map",
+          "attribute": "motor_type",
+          "attribute_type": "select",
           "normalize": "option_map",
           "values": {
             "бесщеточный": "brushless",
             "бесщеточный (вентильный)": "brushless",
             "щеточный": "brushed"
           },
-          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report"
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
         },
         "Размер шлифовальной ленты": {
-          "action": "unmapped", "candidate_attribute": "belt_size_mm",
+          "action": "unmapped",
+          "candidate_attribute": "belt_size_mm",
           "reason": "размер шлифовальной ленты; атрибута нет"
         },
         "Шлифовальная поверхность": {
-          "action": "unmapped", "candidate_attribute": "belt_size_mm",
+          "action": "unmapped",
+          "candidate_attribute": "belt_size_mm",
           "reason": "вариант подписи размера ленты; атрибута нет"
         },
         "Скорость ленты на холостом ходу": {
-          "action": "unmapped", "candidate_attribute": "belt_speed_m_min",
+          "action": "unmapped",
+          "candidate_attribute": "belt_speed_m_min",
           "reason": "скорость ленты; атрибута нет"
         },
         "Размер шлифовального листа": {
-          "action": "unmapped", "candidate_attribute": "paper_size_mm",
+          "action": "unmapped",
+          "candidate_attribute": "paper_size_mm",
           "reason": "размер шлифовального листа/бумаги; атрибута нет"
         },
         "Размер шлифовальной бумаги": {
-          "action": "unmapped", "candidate_attribute": "paper_size_mm",
+          "action": "unmapped",
+          "candidate_attribute": "paper_size_mm",
           "reason": "вариант подписи размера бумаги; атрибута нет"
         },
         "Размер шлифовальной платформы": {
-          "action": "unmapped", "candidate_attribute": "base_size_mm",
+          "action": "unmapped",
+          "candidate_attribute": "base_size_mm",
           "reason": "размер платформы плоскошлифмашины; атрибута нет"
         },
         "Размер основания": {
-          "action": "unmapped", "candidate_attribute": "base_size_mm",
+          "action": "unmapped",
+          "candidate_attribute": "base_size_mm",
           "reason": "вариант подписи размера основания; атрибута нет"
         },
         "Диаметр шлифкруга": {
-          "action": "unmapped", "candidate_attribute": "pad_diameter_mm",
+          "action": "unmapped",
+          "candidate_attribute": "pad_diameter_mm",
           "reason": "диаметр шлифовального круга/бумаги; атрибута нет"
         },
         "Диаметр шлифовальной бумаги": {
-          "action": "unmapped", "candidate_attribute": "pad_diameter_mm",
+          "action": "unmapped",
+          "candidate_attribute": "pad_diameter_mm",
           "reason": "вариант подписи; атрибута нет"
         },
         "Диаметр колебательного контура": {
-          "action": "unmapped", "candidate_attribute": "oscillation_amplitude_mm",
+          "action": "unmapped",
+          "candidate_attribute": "oscillation_amplitude_mm",
           "reason": "эксцентриситет/амплитуда; атрибута нет"
         },
         "Эксцентриситет": {
-          "action": "unmapped", "candidate_attribute": "oscillation_amplitude_mm",
+          "action": "unmapped",
+          "candidate_attribute": "oscillation_amplitude_mm",
           "reason": "вариант подписи эксцентриситета; атрибута нет"
         },
         "Частота колебаний платформы": {
-          "action": "ignore", "reason": "колебания платформы (кол/мин), не обороты; атрибута нет"
+          "action": "ignore",
+          "reason": "колебания платформы (кол/мин), не обороты; атрибута нет"
         },
         "Число колебаний в минуту, кол/мин": {
-          "action": "ignore", "reason": "вариант подписи частоты колебаний; атрибута нет"
+          "action": "ignore",
+          "reason": "вариант подписи частоты колебаний; атрибута нет"
         },
-        "Регулировка оборотов": {"action": "ignore", "reason": "нет атрибута"},
-        "Регулировка скорости шлифовальной ленты": {"action": "ignore", "reason": "нет атрибута"},
-        "Поддержание оборотов": {"action": "ignore", "reason": "нет атрибута"},
-        "Шаг изменения частоты вращения": {"action": "ignore", "reason": "нет атрибута"},
-        "Электронный тормоз двигателя": {"action": "ignore", "reason": "нет атрибута"},
-        "Защита от перегрузки": {"action": "ignore", "reason": "нет атрибута"},
-        "Потребляемый ток": {"action": "ignore", "reason": "нет атрибута"},
-        "Длина кабеля": {"action": "unmapped", "candidate_attribute": "cable_length_m", "reason": "атрибута нет"},
-        "Масса": {"action": "unmapped", "candidate_attribute": "weight_kg", "reason": "атрибута веса нет"},
-        "Габариты": {"action": "ignore", "reason": "габариты, атрибута нет"},
-        "Срок службы": {"action": "ignore", "reason": "коммерческая информация"},
-        "Класс безопасности": {"action": "ignore", "reason": "нет атрибута"},
-        "Модель": {"action": "ignore", "reason": "дублирует название/модель карточки"},
-        "Артикул": {"action": "ignore", "reason": "дублирует manufacturer_sku карточки"}
+        "Регулировка оборотов": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Регулировка скорости шлифовальной ленты": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Поддержание оборотов": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Шаг изменения частоты вращения": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Электронный тормоз двигателя": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Защита от перегрузки": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Потребляемый ток": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Длина кабеля": {
+          "action": "unmapped",
+          "candidate_attribute": "cable_length_m",
+          "reason": "атрибута нет"
+        },
+        "Масса": {
+          "action": "unmapped",
+          "candidate_attribute": "weight_kg",
+          "reason": "атрибута веса нет"
+        },
+        "Габариты": {
+          "action": "ignore",
+          "reason": "габариты, атрибута нет"
+        },
+        "Срок службы": {
+          "action": "ignore",
+          "reason": "коммерческая информация"
+        },
+        "Класс безопасности": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Модель": {
+          "action": "ignore",
+          "reason": "дублирует название/модель карточки"
+        },
+        "Артикул": {
+          "action": "ignore",
+          "reason": "дублирует manufacturer_sku карточки"
+        }
       },
       "fallbacks": [],
       "derived": []
@@ -234,81 +405,202 @@
     "zubr": {
       "fields": {
         "Мощность, Вт": {
-          "action": "map", "attribute": "power", "attribute_type": "decimal", "unit": "Вт",
-          "normalize": "int", "confidence": "high", "on_ambiguous": "drop_to_report"
+          "action": "map",
+          "attribute": "power",
+          "attribute_type": "decimal",
+          "unit": "Вт",
+          "normalize": "int",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report"
         },
         "Напряжение, В/Гц": {
-          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
-          "normalize": "voltage_first", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "action": "map",
+          "attribute": "voltage",
+          "attribute_type": "decimal",
+          "unit": "В",
+          "normalize": "voltage_first",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
           "comment": "'230 / 50' -> 230; сетевые отбрасываются импортёром"
         },
         "Напряжение изделия, В": {
-          "action": "map", "attribute": "voltage", "attribute_type": "decimal", "unit": "В",
-          "normalize": "decimal", "confidence": "high", "on_ambiguous": "drop_to_report",
+          "action": "map",
+          "attribute": "voltage",
+          "attribute_type": "decimal",
+          "unit": "В",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
           "comment": "аккумуляторные модели, если появятся"
         },
         "Частота вращения, об/мин": {
-          "action": "map", "attribute": "no_load_speed", "attribute_type": "decimal", "unit": "об/мин",
-          "normalize": "range_upper_decimal", "confidence": "medium", "on_ambiguous": "drop_to_report"
+          "action": "map",
+          "attribute": "no_load_speed",
+          "attribute_type": "decimal",
+          "unit": "об/мин",
+          "normalize": "range_upper_decimal",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report"
         },
         "Тип двигателя": {
-          "action": "map", "attribute": "motor_type", "attribute_type": "select",
+          "action": "map",
+          "attribute": "motor_type",
+          "attribute_type": "select",
           "normalize": "option_map",
-          "values": {"щеточный": "brushed", "бесщеточный": "brushless"},
-          "confidence": "high", "on_unknown_value": "drop_to_report", "on_ambiguous": "drop_to_report"
+          "values": {
+            "щеточный": "brushed",
+            "бесщеточный": "brushless"
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
         },
         "Мах скорость движения ленты, м/мин": {
-          "action": "unmapped", "candidate_attribute": "belt_speed_m_min",
+          "action": "unmapped",
+          "candidate_attribute": "belt_speed_m_min",
           "reason": "скорость движения ленты; атрибута нет"
         },
         "Рабочая поверхность, мм": {
-          "action": "unmapped", "candidate_attribute": "base_size_mm",
+          "action": "unmapped",
+          "candidate_attribute": "base_size_mm",
           "reason": "рабочая поверхность/платформа; атрибута нет"
         },
         "Длина ленты, мм": {
-          "action": "unmapped", "candidate_attribute": "belt_length_mm",
+          "action": "unmapped",
+          "candidate_attribute": "belt_length_mm",
           "reason": "длина шлифовальной ленты; атрибута нет"
         },
         "Размер абразивной бумаги, мм": {
-          "action": "unmapped", "candidate_attribute": "paper_size_mm",
+          "action": "unmapped",
+          "candidate_attribute": "paper_size_mm",
           "reason": "размер абразивной бумаги; атрибута нет"
         },
         "Амплитуда колебаний платформы, мм": {
-          "action": "unmapped", "candidate_attribute": "oscillation_amplitude_mm",
+          "action": "unmapped",
+          "candidate_attribute": "oscillation_amplitude_mm",
           "reason": "амплитуда колебаний; атрибута нет"
         },
         "Амплитуда колебаний, мм": {
-          "action": "unmapped", "candidate_attribute": "oscillation_amplitude_mm",
+          "action": "unmapped",
+          "candidate_attribute": "oscillation_amplitude_mm",
           "reason": "вариант подписи амплитуды; атрибута нет"
         },
-        "Диаметр адаптера под пылесос, мм": {"action": "ignore", "reason": "нет атрибута"},
-        "Крепление бумаги": {"action": "ignore", "reason": "нет атрибута"},
-        "Пылеотвод через основание": {"action": "ignore", "reason": "нет атрибута"},
-        "Кол-во отверстий пылеотвода, шт": {"action": "ignore", "reason": "нет атрибута"},
-        "Электронная регулировка оборотов": {"action": "ignore", "reason": "нет атрибута"},
-        "Поддержание постоянных оборотов под нагрузкой": {"action": "ignore", "reason": "нет атрибута"},
-        "Плавный пуск": {"action": "ignore", "reason": "нет атрибута"},
-        "Возможность подключения к пылесосу": {"action": "ignore", "reason": "нет атрибута"},
-        "Контейнер для пыли": {"action": "ignore", "reason": "комплектация"},
-        "Мешок для пыли": {"action": "ignore", "reason": "комплектация"},
-        "Мешок для сбора пыли": {"action": "ignore", "reason": "комплектация"},
-        "Регулировка положения ленты": {"action": "ignore", "reason": "нет атрибута"},
-        "Длина кабеля": {"action": "unmapped", "candidate_attribute": "cable_length_m", "reason": "длина кабеля (Интерскол, без единицы); атрибута нет"},
-        "Длина кабеля, м": {"action": "unmapped", "candidate_attribute": "cable_length_m", "reason": "атрибута нет"},
-        "Габариты, см": {"action": "ignore", "reason": "габариты, атрибута нет"},
-        "Масса изделия, кг": {"action": "unmapped", "candidate_attribute": "weight_kg", "reason": "атрибута веса нет"},
-        "Масса в упаковке, кг": {"action": "unmapped", "candidate_attribute": "weight_gross_kg", "reason": "атрибута нет"},
-        "Артикул": {"action": "ignore", "reason": "дублирует manufacturer_sku карточки"},
-        "Машина лентошлифовальная": {"action": "ignore", "reason": "строка комплектации (=1), атрибута нет"},
-        "Машина шлифовальная": {"action": "ignore", "reason": "строка комплектации (=1), атрибута нет"},
-        "Бумага шлифовальная": {"action": "ignore", "reason": "комплектация"},
-        "Ремень запасной": {"action": "ignore", "reason": "комплектация"},
-        "Контейнер для сбора пыли": {"action": "ignore", "reason": "комплектация"},
-        "Переходник для пылесоса": {"action": "ignore", "reason": "комплектация"},
-        "Руководство по эксплуатации": {"action": "ignore", "reason": "комплектация"}
+        "Диаметр адаптера под пылесос, мм": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Крепление бумаги": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Пылеотвод через основание": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Кол-во отверстий пылеотвода, шт": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Электронная регулировка оборотов": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Поддержание постоянных оборотов под нагрузкой": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Плавный пуск": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Возможность подключения к пылесосу": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Контейнер для пыли": {
+          "action": "ignore",
+          "reason": "комплектация"
+        },
+        "Мешок для пыли": {
+          "action": "ignore",
+          "reason": "комплектация"
+        },
+        "Мешок для сбора пыли": {
+          "action": "ignore",
+          "reason": "комплектация"
+        },
+        "Регулировка положения ленты": {
+          "action": "ignore",
+          "reason": "нет атрибута"
+        },
+        "Длина кабеля": {
+          "action": "unmapped",
+          "candidate_attribute": "cable_length_m",
+          "reason": "длина кабеля (Интерскол, без единицы); атрибута нет"
+        },
+        "Длина кабеля, м": {
+          "action": "unmapped",
+          "candidate_attribute": "cable_length_m",
+          "reason": "атрибута нет"
+        },
+        "Габариты, см": {
+          "action": "ignore",
+          "reason": "габариты, атрибута нет"
+        },
+        "Масса изделия, кг": {
+          "action": "unmapped",
+          "candidate_attribute": "weight_kg",
+          "reason": "атрибута веса нет"
+        },
+        "Масса в упаковке, кг": {
+          "action": "unmapped",
+          "candidate_attribute": "weight_gross_kg",
+          "reason": "атрибута нет"
+        },
+        "Артикул": {
+          "action": "ignore",
+          "reason": "дублирует manufacturer_sku карточки"
+        },
+        "Машина лентошлифовальная": {
+          "action": "ignore",
+          "reason": "строка комплектации (=1), атрибута нет"
+        },
+        "Машина шлифовальная": {
+          "action": "ignore",
+          "reason": "строка комплектации (=1), атрибута нет"
+        },
+        "Бумага шлифовальная": {
+          "action": "ignore",
+          "reason": "комплектация"
+        },
+        "Ремень запасной": {
+          "action": "ignore",
+          "reason": "комплектация"
+        },
+        "Контейнер для сбора пыли": {
+          "action": "ignore",
+          "reason": "комплектация"
+        },
+        "Переходник для пылесоса": {
+          "action": "ignore",
+          "reason": "комплектация"
+        },
+        "Руководство по эксплуатации": {
+          "action": "ignore",
+          "reason": "комплектация"
+        }
       },
       "fallbacks": [],
       "derived": []
     }
-  }
+  },
+  "model_prefixes": [
+    "ЗЛШМ",
+    "ЗОШМ",
+    "ЗПШМ",
+    "ВШМ",
+    "ЛШМ",
+    "ПШМ",
+    "ЭШМ"
+  ]
 }
