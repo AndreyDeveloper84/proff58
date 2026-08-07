@@ -9,7 +9,7 @@
   ключ идемпотентности, ``(product, source_url)`` — дешёвая предпроверка.
 
 Чего НЕ делает: ничего не удаляет и не трогает файлы в media. Миграция полностью
-обратима: ``manage.py migrate catalog 0034_merge_gitlab_20260805`` снимает
+обратима: ``manage.py migrate catalog 0035_rename_legacy_ruchnoy_instrument`` снимает
 ограничения и поля, существующие записи остаются на месте.
 """
 
@@ -33,7 +33,7 @@ def stamp_existing_as_manual(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("catalog", "0034_merge_gitlab_20260805"),
+        ("catalog", "0035_rename_legacy_ruchnoy_instrument"),
     ]
 
     operations = [
