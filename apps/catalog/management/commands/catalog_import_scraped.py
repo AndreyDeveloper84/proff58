@@ -58,6 +58,9 @@ class Command(BaseCommand):
         if not map_path.exists():
             raise CommandError(f"Карта не найдена: {map_path}")
         amap = si.load_attr_map(map_path)
+        model_prefixes = amap.get("model_prefixes")
+        if model_prefixes:
+            si.validate_model_prefixes(model_prefixes)
 
         rules_raw = json.loads((base / "attribute_rules.json").read_text(encoding="utf-8"))
         priority = rules_raw.get("source_priority", {})
@@ -78,7 +81,7 @@ class Command(BaseCommand):
             ).values_list("product_id", flat=True)
         )
         products = list(Product.objects.filter(id__in=product_ids))
-        index = si.build_product_index(products)
+        index = si.build_product_index(products, prefixes=model_prefixes)
 
         # атрибуты и опции карты
         managed_slugs = {
@@ -145,7 +148,7 @@ class Command(BaseCommand):
                 )
                 stats["dropped"] += 1
 
-            m = si.match_card(card, source, index)
+            m = si.match_card(card, source, index, prefixes=model_prefixes)
             if m.status == "not_found":
                 stats["not_found"] += 1
                 report["not_found"].append(

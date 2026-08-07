@@ -410,3 +410,43 @@ def test_idempotent_second_run(catalog, tmp_path):
         == pav_before
     )
     assert Product.objects.get(id=p.id).attrs_cache == cache_before
+
+
+# --- префиксы моделей из карты категории (PARS-13) ----------------------------
+
+
+SHLIFMASHINY_PREFIXES = ["ЗЛШМ", "ЗОШМ", "ЗПШМ", "ВШМ", "ЛШМ", "ПШМ", "ЭШМ"]
+
+
+def test_build_model_re_from_prefixes():
+    """Регекс собирается из префиксов карты и извлекает шлифмашинную модель."""
+    assert (
+        si.extract_model("Лентошлифмашина ЛШМ-75/800", prefixes=SHLIFMASHINY_PREFIXES)
+        == "ЛШМ-75/800"
+    )
+    assert si.model_key("Лентошлифмашина ЛШМ-75/800", prefixes=SHLIFMASHINY_PREFIXES) == "lshm75800"
+
+
+def test_prefix_order_long_before_short():
+    """Длинный префикс идёт раньше короткого: ЗПШМ > ПШМ."""
+    prefixes = ["ПШМ", "ЗПШМ"]
+    assert si.extract_model("Плоскошлифмашина ЗПШМ-300Е", prefixes=prefixes) == "ЗПШМ-300Е"
+
+
+def test_fallback_without_model_prefixes_matches_legacy():
+    """Без model_prefixes поведение совпадает с унаследованным MODEL_RE."""
+    assert si.model_key("Перф.ЗУБР ЗП-26-800 SDS+") == "zp26800"
+    assert si.model_key("Дрель-миксер ЗДМ-820 РМ") == "zdm820rm"
+
+
+def test_validate_model_prefixes_rejects_regex_metacharacters():
+    """Карта не может содержать regex-метасимволы в префиксах.
+
+    Единственное исключение — унаследованный generic ``D[A-Z]{1,2}``.
+    """
+    with pytest.raises(ValueError, match="regex-метасимволы"):
+        si.validate_model_prefixes(["ЗПШМ", "Z[A-Z]+"])
+    # литеральные префиксы проходят
+    si.validate_model_prefixes(["ЗЛШМ", "ПШМ", "DCG405"])
+    # унаследованный generic разрешён
+    si.validate_model_prefixes(si.LEGACY_MODEL_PREFIXES)

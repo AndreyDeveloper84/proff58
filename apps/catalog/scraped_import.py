@@ -103,13 +103,81 @@ def norm_key(s: str) -> str:
     return re.sub(r"[^a-z0-9]", "", s.lower().translate(TRANS))
 
 
-def extract_model(name: str) -> str | None:
-    m = MODEL_RE.search(name)
+# Унаследованный regex-префикс из MODEL_RE. Он единственный не-литеральный
+# префикс, который допустимо переносить в карты категорий.
+ALLOWED_REGEX_PREFIXES = frozenset({"D[A-Z]{1,2}"})
+
+# Полный унаследованный перечень префиксов из MODEL_RE (включая generic
+# D[A-Z]{1,2}). Используется для доказательства эквивалентности fallback.
+LEGACY_MODEL_PREFIXES = [
+    "ЗПМ",
+    "ЗПВ",
+    "ЗП",
+    "ПА",
+    "ПВ",
+    "П",
+    "ДАУ",
+    "ДАЭ",
+    "ДАШ",
+    "ДА",
+    "ДУ",
+    "ДШ",
+    "СШ",
+    "ДЭ",
+    "Д",
+    "ЗДУ",
+    "ЗДШ",
+    "ЗДМ",
+    "ЗД",
+    "GVB",
+    "DB",
+    "DSH",
+    "DU",
+    "DAU",
+    "D[A-Z]{1,2}",
+]
+
+
+def _build_model_re(prefixes: list[str]) -> re.Pattern:
+    """Собрать regex модели из префиксов категории (длинные раньше коротких).
+
+    Префиксы вставляются в тело паттерна как есть. Литеральные префиксы
+    безопасны, т.к. ``validate_model_prefixes`` отсекает regex-метасимволы,
+    кроме явно разрешённых унаследованных выражений.
+    """
+    prefix_part = "|".join(p for p in sorted(prefixes, key=len, reverse=True))
+    return re.compile(
+        r"\b((?:" + prefix_part + r")"
+        r"[-\s]?(?:\d+[А-ЯЁ]?(?:[-/,.]*\d+[А-ЯЁ]?)*|(?:[A-ZА-ЯЁ]\d+(?:[-/,.]*\d+[А-ЯЁ]?)*))"
+        r"(?:\s?[А-ЯЁ]{1,3}\d{0,2}(?![А-ЯЁ0-9]))?"
+        r"(?:[-][A-ZА-ЯЁ][A-ZА-ЯЁ0-9]{0,3})?)",
+        re.I,
+    )
+
+
+def validate_model_prefixes(prefixes: list[str]) -> None:
+    """Карта категории должна содержать литеральные префиксы моделей.
+
+    Regex-метасимволы запрещены, кроме явно разрешённых унаследованных
+    выражений (сейчас это только ``D[A-Z]{1,2}``). Унаследованный ``MODEL_RE``
+    остаётся fallback для карт без ``model_prefixes``.
+    """
+    for p in prefixes:
+        if re.escape(p) != p and p not in ALLOWED_REGEX_PREFIXES:
+            raise ValueError(
+                f"Префикс модели содержит regex-метасимволы: {p!r}. "
+                "Карта должна содержать только литеральные префиксы."
+            )
+
+
+def extract_model(name: str, prefixes: list[str] | None = None) -> str | None:
+    model_re = MODEL_RE if prefixes is None else _build_model_re(prefixes)
+    m = model_re.search(name)
     return m.group(1).strip() if m else None
 
 
-def model_key(name: str) -> str | None:
-    model = extract_model(name)
+def model_key(name: str, prefixes: list[str] | None = None) -> str | None:
+    model = extract_model(name, prefixes=prefixes)
     return norm_key(model) if model else None
 
 
@@ -118,9 +186,9 @@ def card_brand_token(card: dict, source: str) -> str | None:
     return BRAND_TOKEN_BY_CARD_BRAND.get(brand) or BRAND_TOKEN_BY_SOURCE.get(source)
 
 
-def _exact_model_key(name: str) -> str | None:
+def _exact_model_key(name: str, prefixes: list[str] | None = None) -> str | None:
     """Точное строковое совпадение извлечённой модели (без транслита)."""
-    model = extract_model(name)
+    model = extract_model(name, prefixes=prefixes)
     return model.lower().strip() if model else None
 
 
@@ -319,13 +387,13 @@ class MatchIndex:
     )
 
 
-def _index_entry(product: Product) -> ProductMatchEntry | None:
+def _index_entry(product: Product, prefixes: list[str] | None = None) -> ProductMatchEntry | None:
     token = next((t for t in BRAND_TOKEN_BY_SOURCE.values() if t in product.name.lower()), None)
     if token is None:
         return None
-    exact = _exact_model_key(product.name)
-    normalized = model_key(product.name)
-    alias = _alias_key(extract_model(product.name)) if exact else None
+    exact = _exact_model_key(product.name, prefixes=prefixes)
+    normalized = model_key(product.name, prefixes=prefixes)
+    alias = _alias_key(extract_model(product.name, prefixes=prefixes)) if exact else None
     article = norm_key(product.article) if product.article else None
     return ProductMatchEntry(
         product=product,
@@ -337,11 +405,11 @@ def _index_entry(product: Product) -> ProductMatchEntry | None:
     )
 
 
-def build_product_index(products: list[Product]) -> MatchIndex:
+def build_product_index(products: list[Product], prefixes: list[str] | None = None) -> MatchIndex:
     """Индекс для лестницы матчинга: SKU → exact → normalized → alias."""
     index = MatchIndex()
     for p in products:
-        entry = _index_entry(p)
+        entry = _index_entry(p, prefixes=prefixes)
         if entry is None:
             continue
         index.entries.append(entry)
@@ -364,15 +432,17 @@ def _resolve(candidates: list[ProductMatchEntry], step: str, model_key: str | No
     return MatchResult("ambiguous", model_key, products)
 
 
-def match_card(card: dict, source: str, index: MatchIndex) -> MatchResult:
+def match_card(
+    card: dict, source: str, index: MatchIndex, prefixes: list[str] | None = None
+) -> MatchResult:
     token = card_brand_token(card, source)
     if not token:
         return MatchResult("not_found", None)
 
     name = card["name"]
-    exact = _exact_model_key(name)
-    normalized = model_key(name)
-    alias = _alias_key(extract_model(name))
+    exact = _exact_model_key(name, prefixes=prefixes)
+    normalized = model_key(name, prefixes=prefixes)
+    alias = _alias_key(extract_model(name, prefixes=prefixes))
     if not any((exact, normalized, alias)):
         return MatchResult("not_found", normalized)
 
