@@ -443,14 +443,16 @@ def match_card(
     exact = _exact_model_key(name, prefixes=prefixes)
     normalized = model_key(name, prefixes=prefixes)
     alias = _alias_key(extract_model(name, prefixes=prefixes))
-    if not any((exact, normalized, alias)):
-        return MatchResult("not_found", normalized)
 
-    # 1. точный SKU / артикул
+    # 1. точный SKU / артикул — до проверки модели: артикул источника самодостаточен
+    # и не зависит от того, распозналась ли модель в имени карточки (ПАРС-16).
     for sku_key in _card_sku_keys(card):
         candidates = index.by_article.get((token, sku_key), [])
         if candidates:
             return _resolve(candidates, "sku", normalized)
+
+    if not any((exact, normalized, alias)):
+        return MatchResult("not_found", normalized)
 
     # 2. точная модель
     if exact:

@@ -231,6 +231,49 @@ def test_sku_match_wins_over_model_collision(catalog):
 
 
 @pytest.mark.django_db
+def test_sku_match_without_model_in_card_name(catalog):
+    """ПАРС-16: артикул проверяется ДО раннего выхода по нераспознанной модели.
+
+    У карточки в имени нет ничего, что ловит ``MODEL_RE`` (термопистолет, пушка,
+    насос — вся неинструментальная номенклатура), но артикул источника есть и
+    совпадает с товаром. До правки функция выходила в ``not_found``, не дойдя до
+    артикульной ветки.
+    """
+    card = _card("Термопистолет клеевой ЗУБР Профессионал", "ЗУБР-12345")
+    assert si.extract_model(card["name"]) is None  # предпосылка теста
+    p = _product(catalog, "Термопистолет клеевой ЗУБР", article="ЗУБР-12345")
+    index = si.build_product_index(list(Product.objects.all()))
+    m = si.match_card(card, "zubr", index)
+    assert m.status == "matched"
+    assert m.products == [p]
+    assert m.matched_by == "sku"
+
+
+@pytest.mark.django_db
+def test_no_model_and_no_sku_match_stays_not_found(catalog):
+    """Без модели и без совпадения по артикулу вердикт остаётся ``not_found``."""
+    _product(catalog, "Термопистолет клеевой ЗУБР", article="ЗУБР-12345")
+    index = si.build_product_index(list(Product.objects.all()))
+    m = si.match_card(_card("Пила цепная ЗУБР", "ЗУБР-99999"), "zubr", index)
+    assert m.status == "not_found"
+    assert m.products == []
+
+
+@pytest.mark.django_db
+def test_sku_step_still_first_in_ladder(catalog):
+    """Порядок лестницы не изменился: артикул выигрывает у точной модели."""
+    p_sku = _product(catalog, "Термопистолет клеевой ЗУБР", article="SKU-777")
+    _p_model = _product(catalog, "Перф.ЗУБР ЗП-26-800", article="SKU-778")
+    index = si.build_product_index(list(Product.objects.all()))
+    # в имени карточки есть модель ЗП-26-800 (ветка exact сработала бы),
+    # но артикул указывает на другой товар — побеждает артикул.
+    m = si.match_card(_card("Перфоратор ЗУБР ЗП-26-800", "SKU-777"), "zubr", index)
+    assert m.status == "matched"
+    assert m.products == [p_sku]
+    assert m.matched_by == "sku"
+
+
+@pytest.mark.django_db
 def test_exact_model_wins_over_normalized(catalog):
     """Точная модель выигрывает у нормализованной, когда ключи совпадают."""
     p1 = _product(catalog, "Перф.ЗУБР ЗП-26-800", article="A")
