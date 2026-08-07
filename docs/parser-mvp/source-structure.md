@@ -270,7 +270,15 @@
 
 - `robots.txt` прочитан у всех четырёх доменов, полного запрета нет ни у одного;
   запрещённые пути (`/search/`, `*?…` у Интерскола, `/brand/`, `*/filter/*`) не запрашивались.
-- `User-Agent`: `proff58-catalog-recon/0.1 (+https://proff58.ru; contact: sktajem95@gmail.com) one-off structure recon, 1 req/3s, no images`.
+- `User-Agent` **того разового прогона** (исторический факт, не менять):
+  `proff58-catalog-recon/0.1 (+https://proff58.ru; contact: sktajem95@gmail.com) one-off structure recon, 1 req/3s, no images`.
+  **Актуальный UA парсера — другой.** С трека ИЗО (владелец принял решение собирать
+  фотографии) декларация `no images` перестала быть правдой и снята; действующее
+  значение живёт в `parser/client.py` (`USER_AGENT`) и на 2026-08-07 равно
+  `proff58-catalog-parser/0.2 (+https://proff58.ru; contact: sktajem95@gmail.com) characteristics and product images, 1 req/3s`.
+  В браузерном режиме B UA остаётся UA реального Chrome, а блокировка картинок
+  стала режимом: по умолчанию `image/media/font` режутся, `collect_images=True`
+  снимает блокировку только с `image`.
 - Троттлинг 3.0 с между стартами запросов к одному хосту, последовательно, без параллелизма.
 - Всё скачанное закэшировано в `fixtures/`; повторный запрос того же URL берётся из кэша.
 - **Всего 24 запроса**: `resanta.ru` 6, `vihr.su` 6, `interskol.ru` 5, `zubr.ru` 7.

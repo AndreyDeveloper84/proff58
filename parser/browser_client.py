@@ -15,7 +15,10 @@ context + `storage_state`: профиль и куки живут между за
 - при 403/429 или маркерах челленджа в HTML — `BrowserChallengeError`,
   СТОП и доклад в stderr. Никаких «подождать и повторить»: сработала
   защита → профиль неверен → решение владельца;
-- фотографии не берём: загрузка image/media/font режется route abort;
+- по умолчанию фотографии не берём: загрузка image/media/font режется route
+  abort. Это **режим**, а не запрет: `collect_images=True` снимает блокировку
+  только с `image` (media/font режутся всегда) — включается явно, когда идёт
+  прогон сбора изображений (трек ИЗО);
 - кэш страниц, журнал JSONL и robots.txt — общие с режимом A
   (`parser._fetch_common`); сам robots получается один раз через httpx
   (один лёгкий запрос, не карточка).
@@ -30,6 +33,7 @@ import random
 import sys
 import time
 from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 
 import httpx
@@ -67,8 +71,18 @@ CHALLENGE_MARKERS = (
     "подтвердите, что вы не робот",
 )
 
-# Тяжёлые ресурсы не загружаем: фотографии не берём и в этом режиме тоже.
+# Тяжёлые ресурсы по умолчанию не загружаем — экономия трафика источника.
+# Это ДЕФОЛТ, а не запрет: с явным флагом сбора изображений (collect_images=True)
+# картинки пропускаются, media/font режутся всегда.
 BLOCKED_RESOURCE_TYPES = frozenset({"image", "media", "font"})
+
+# Режим сбора изображений: снимаем блокировку ТОЛЬКО с image.
+BLOCKED_RESOURCE_TYPES_WITH_IMAGES = frozenset({"media", "font"})
+
+
+def blocked_resource_types(collect_images: bool) -> frozenset[str]:
+    """Набор режущихся типов ресурсов для режима (по умолчанию — с image)."""
+    return BLOCKED_RESOURCE_TYPES_WITH_IMAGES if collect_images else BLOCKED_RESOURCE_TYPES
 
 
 class BrowserChallengeError(AccessDeniedError):
@@ -96,9 +110,14 @@ def find_challenge_marker(html: str) -> str | None:
     return None
 
 
-def abort_heavy_resources(route, request) -> None:
-    """Route-обработчик: image/media/font режем, остальное пропускаем."""
-    if request.resource_type in BLOCKED_RESOURCE_TYPES:
+def abort_heavy_resources(route, request, blocked: frozenset[str] = BLOCKED_RESOURCE_TYPES) -> None:
+    """Route-обработчик: типы из ``blocked`` режем, остальное пропускаем.
+
+    Значение по умолчанию сохраняет прежнее поведение (image/media/font режутся):
+    снять блокировку с картинок можно только явно, передав другой набор
+    (``blocked_resource_types(collect_images=True)``).
+    """
+    if request.resource_type in blocked:
         route.abort()
     else:
         route.continue_()
@@ -115,6 +134,8 @@ class BrowserClient:
         pace_s: (min, max) случайной паузы между карточками, секунды;
         run_limit: максимум карточек за прогон (BrowserRunLimitError сверху);
         headless: False — видимое окно (только bootstrap с человеком);
+        collect_images: True — не резать `image` (прогон сбора фотографий);
+            по умолчанию False, картинки блокируются как раньше;
         launcher: DI для тестов — фабрика фейкового context вместо playwright;
         robots_fetcher: DI для тестов — фетчер текста robots.txt.
     """
@@ -128,6 +149,7 @@ class BrowserClient:
         pace_s: tuple[float, float] = DEFAULT_PACE_S,
         run_limit: int = DEFAULT_RUN_LIMIT,
         headless: bool = True,
+        collect_images: bool = False,
         launcher: Callable[[], object] | None = None,
         robots_fetcher: Callable[[str], str | None] | None = None,
     ):
@@ -140,6 +162,7 @@ class BrowserClient:
         self._pace_s = pace_s
         self._run_limit = run_limit
         self._headless = headless
+        self._collect_images = collect_images
         self._launcher = launcher
         self._robots_fetcher = robots_fetcher
         self._robots_gate = RobotsGate(
@@ -298,7 +321,8 @@ class BrowserClient:
             self._profile_dir.mkdir(parents=True, exist_ok=True)
             launcher = self._launcher or self._default_launcher
             context = launcher()
-            context.route("**/*", abort_heavy_resources)
+            blocked = blocked_resource_types(self._collect_images)
+            context.route("**/*", partial(abort_heavy_resources, blocked=blocked))
             self._load_storage_state(context)
             self._context = context
         return self._context

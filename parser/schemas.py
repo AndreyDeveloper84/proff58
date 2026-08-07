@@ -39,8 +39,39 @@ def _utcnow() -> datetime:
     return datetime.now(UTC)
 
 
+class ImageRef(BaseModel):
+    """Ссылка на изображение товара в карточке-доноре.
+
+    Сам файл парсер не качает — здесь только адрес и то, что источник о нём
+    сказал. Скачивание, проверки и запись в БД — отдельный контур (ИЗО).
+    """
+
+    url: str
+    is_main: bool = False
+    alt: str | None = None
+
+    @field_validator("url")
+    @classmethod
+    def _check_url(cls, value: str) -> str:
+        # тот же валидатор, что у source_url: абсолютный http(s), без дублей логики
+        return _validate_source_url(value)
+
+    @field_validator("alt")
+    @classmethod
+    def _clean_alt(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _clean_text(value) or None
+
+
 class ProductCard(BaseModel):
-    """Карточка товара-донора характеристик (без цен и фотографий)."""
+    """Карточка товара-донора характеристик (без цен).
+
+    Поле ``images`` добавлено треком ИЗО и **необязательно**: карточка без него
+    валидна, значение по умолчанию — пустой список. Все выгрузки, собранные до
+    появления поля, читаются без изменений (тест
+    ``test_product_card_without_images_backward_compatible``).
+    """
 
     source_url: str
     name: str
@@ -51,6 +82,8 @@ class ProductCard(BaseModel):
     attributes: dict[str, str] = Field(default_factory=dict)
     # сырая «краткая сводка» карточки (у Ресанты — носитель мощности)
     summary_raw: str | None = None
+    # адреса изображений; пустой список = источник фото не отдал либо их не брали
+    images: list[ImageRef] = Field(default_factory=list)
 
     @field_validator("source_url")
     @classmethod
@@ -71,6 +104,30 @@ class ProductCard(BaseModel):
         if value is None:
             return None
         return _clean_text(value) or None
+
+    @field_validator("images")
+    @classmethod
+    def _clean_images(cls, value: list[ImageRef]) -> list[ImageRef]:
+        """Дедуп по URL (порядок сохраняется) и ровно один is_main.
+
+        Источники повторяют одну и ту же картинку в галерее и превью, а иногда
+        помечают главной сразу несколько. Нормализуем здесь, чтобы контур
+        скачивания не разбирался с этим второй раз.
+        """
+        seen: set[str] = set()
+        cleaned: list[ImageRef] = []
+        main_taken = False
+        for ref in value:
+            if ref.url in seen:
+                continue
+            seen.add(ref.url)
+            if ref.is_main:
+                if main_taken:
+                    ref = ref.model_copy(update={"is_main": False})
+                else:
+                    main_taken = True
+            cleaned.append(ref)
+        return cleaned
 
     @field_validator("attributes")
     @classmethod

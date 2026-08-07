@@ -858,8 +858,29 @@ class ProductCompatibility(TimeStampedModel):
         return f"{self.source} → {self.target} ({self.get_kind_display()})"
 
 
+class ImageSource(models.TextChoices):
+    """Откуда взялся файл изображения.
+
+    Нужен, чтобы откат прогона сбора трогал **только** спарсенное и никогда не
+    задевал загруженное руками (``MANUAL``). Значения совпадают с кодами
+    источников парсера (``parser/`` → ``Export.source``).
+    """
+
+    MANUAL = "manual", _("Загружено вручную")
+    RESANTA = "resanta", _("resanta.ru")
+    VIHR = "vihr", _("vihr.su")
+    INTERSKOL = "interskol", _("interskol.ru")
+    ZUBR = "zubr", _("zubr.ru")
+
+
 class ProductImage(models.Model):
-    """Изображение товара."""
+    """Изображение товара.
+
+    Провенанс (``source``/``source_url``/``checksum``/``fetched_at``) добавлен
+    треком ИЗО: без него повторный прогон сбора фотографий гарантированно
+    плодил дубли, а откат прогона был невозможен — записи нечем было отличить
+    от загруженных руками.
+    """
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
     image = models.ImageField(_("Файл"), upload_to="products/")
@@ -867,10 +888,63 @@ class ProductImage(models.Model):
     is_main = models.BooleanField(_("Главное фото"), default=False)
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
 
+    # --- Провенанс (ИЗО-02) ---
+    source = models.CharField(
+        _("Источник"),
+        max_length=16,
+        choices=ImageSource.choices,
+        default=ImageSource.MANUAL,
+        db_index=True,
+        help_text=_("Откат прогона сбора удаляет только НЕ manual-записи."),
+    )
+    # DJ001 осознанно: null здесь несёт смысл «источника нет», и он ОБЯЗАН быть
+    # NULL, а не '' — частичное unique-ограничение ниже иначе схлопнет все
+    # ручные записи одного товара в одну (в Postgres NULL != NULL, '' == '').
+    source_url = models.URLField(  # noqa: DJ001
+        _("URL источника"),
+        max_length=1000,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text=_("Абсолютный URL картинки на сайте производителя."),
+    )
+    checksum = models.CharField(  # noqa: DJ001  (см. комментарий у source_url)
+        _("Контрольная сумма"),
+        max_length=64,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text=_("sha256 сохранённого файла: одна и та же картинка под разными URL."),
+    )
+    fetched_at = models.DateTimeField(
+        _("Получено"),
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text=_("Момент скачивания. Вместе с source задаёт границы отката прогона."),
+    )
+
     class Meta:
         verbose_name = _("Изображение товара")
         verbose_name_plural = _("Изображения товаров")
         ordering = ["-is_main", "sort_order"]
+        constraints = [
+            # Основной ключ идемпотентности: одинаковые байты не ложатся дважды
+            # ОДНОМУ товару. Ограничение частичное и привязано к товару —
+            # одна картинка у РАЗНЫХ товаров (серия под одним фото) законна.
+            models.UniqueConstraint(
+                fields=["product", "checksum"],
+                condition=models.Q(checksum__isnull=False),
+                name="uniq_product_image_checksum",
+            ),
+            # Дешёвая предпроверка ДО скачивания: тот же URL тому же товару
+            # второй раз не пишется и трафик на него не тратится.
+            models.UniqueConstraint(
+                fields=["product", "source_url"],
+                condition=models.Q(source_url__isnull=False),
+                name="uniq_product_image_source_url",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"Фото {self.product} #{self.pk}"
