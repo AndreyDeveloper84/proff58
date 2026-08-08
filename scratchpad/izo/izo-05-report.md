@@ -227,3 +227,11 @@ uv run black --check apps/catalog parser  → 257 files would be left unchanged
 
 Ветка `feature/izo-05-rollback-robots`, локальная. Conventional Commits,
 хуки не пропускались.
+
+| Коммит | Что |
+|---|---|
+| `d204fc9` | `fix(catalog): прогон изображений пишет source прогона, а не manual (ИЗО-05)` |
+| `403bc7b` | `fix(parser): wildcard * и $ в robots.txt по RFC 9309 (ИЗО-05)` |
+| `d3d7a1f` | `docs(izo): протокол окна ИЗО-05 и артефакты sandbox-цикла` |
+
+Push и PR **не выполнялись** — запрещены заданием, ветка остаётся локальной.
