@@ -245,3 +245,25 @@ def test_log_line_fields(tmp_path, clock):
     }
     for entry in entries:
         assert required <= set(entry), f"в строке журнала нет полей: {entry}"
+
+
+# --- честность User-Agent (ИЗО-02) -----------------------------------------
+
+
+def test_user_agent_does_not_claim_no_images():
+    """UA обязан описывать реальное поведение: изображения мы теперь берём.
+
+    Декларация «no images» была правдой до решения владельца собирать фото;
+    оставить её — значит врать источнику в каждом запросе.
+    """
+    from parser.client import USER_AGENT
+
+    assert "no images" not in USER_AGENT
+    assert "characteristics only" not in USER_AGENT
+    assert "product images" in USER_AGENT
+    # контакт и заявленный темп остаются на месте
+    assert "contact: sktajem95@gmail.com" in USER_AGENT
+    assert "+https://proff58.ru" in USER_AGENT
+    assert "1 req/3s" in USER_AGENT
+    # не маскируемся под браузер
+    assert "Mozilla" not in USER_AGENT

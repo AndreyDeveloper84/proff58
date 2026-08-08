@@ -111,3 +111,78 @@ def test_error_record_and_errors_export():
 def test_error_record_bad_stage_rejected():
     with pytest.raises(ValidationError):
         ErrorRecord(source_url=VALID_URL, stage="bogus", error="x")
+
+
+# --- изображения (ИЗО-02) ------------------------------------------------
+
+
+def test_product_card_without_images_backward_compatible():
+    """Карточка БЕЗ ключа images валидна: все уже собранные выгрузки читаются.
+
+    Именно этот тест — доказательство обратной совместимости: экспорты Phase 2
+    поля images не содержат вовсе.
+    """
+    raw = {
+        "source_url": VALID_URL,
+        "name": "Перфоратор П-30/900К",
+        "attributes": {"Мощность, Вт": "900"},
+    }
+    card = ProductCard(**raw)
+    assert card.images == []
+    assert json.loads(card.model_dump_json())["images"] == []
+
+
+def test_export_without_images_round_trip():
+    """Старая выгрузка целиком (Export без images) читается и сериализуется."""
+    payload = {
+        "schema_version": "1.0",
+        "source": "resanta.ru",
+        "created_at": "2026-07-28T12:00:00+00:00",
+        "category": {"name": "Перфораторы", "source_url": CATEGORY_URL},
+        "products": [{"source_url": VALID_URL, "name": "П-30/900К"}],
+    }
+    export = Export(**payload)
+    assert export.products[0].images == []
+
+
+def test_product_card_images_parsed():
+    card = make_card(
+        images=[
+            {"url": "https://resanta.ru/img/a.jpg", "is_main": True, "alt": "  Перфоратор  "},
+            {"url": "https://resanta.ru/img/b.jpg"},
+        ]
+    )
+    assert [i.url for i in card.images] == [
+        "https://resanta.ru/img/a.jpg",
+        "https://resanta.ru/img/b.jpg",
+    ]
+    assert card.images[0].is_main is True
+    assert card.images[0].alt == "Перфоратор"
+    assert card.images[1].is_main is False and card.images[1].alt is None
+
+
+def test_product_card_images_relative_url_rejected():
+    """Тот же валидатор, что у source_url: относительный путь не проходит."""
+    with pytest.raises(ValidationError):
+        make_card(images=[{"url": "/img/a.jpg"}])
+
+
+def test_product_card_images_deduplicated_by_url():
+    card = make_card(
+        images=[
+            {"url": "https://resanta.ru/img/a.jpg", "is_main": True},
+            {"url": "https://resanta.ru/img/a.jpg"},
+        ]
+    )
+    assert len(card.images) == 1
+
+
+def test_product_card_images_single_main():
+    """Источник пометил главными две — главной остаётся первая."""
+    card = make_card(
+        images=[
+            {"url": "https://resanta.ru/img/a.jpg", "is_main": True},
+            {"url": "https://resanta.ru/img/b.jpg", "is_main": True},
+        ]
+    )
+    assert [i.is_main for i in card.images] == [True, False]

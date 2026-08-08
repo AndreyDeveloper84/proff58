@@ -1,8 +1,10 @@
 # apps/catalog/image_pipeline.py
 """Минимальный pipeline изображений: скачать → валидировать → ресайз → WebP → thumb.
 
-Вызывается вручную (admin/CLI). Enrich-поток фото не тянет. Идемпотентность —
-по URL (хранится в alt-маркере). content_locked уважается.
+Вызывается вручную (admin/CLI). Enrich-поток фото не тянет. content_locked
+уважается. Идемпотентность (ИЗО-02) — по `(product, source_url)` до скачивания
+и по `(product, checksum)` после обработки; оба ключа подпёрты частичными
+unique-ограничениями в БД, так что дубль не проходит даже мимо этого кода.
 
 Безопасность (M-13): только https и порт 443; хост обязан резолвиться в публичный
 IP (защита от SSRF во внутреннюю сеть); соединение пиннится к уже проверенному IP
@@ -12,6 +14,7 @@ IP (защита от SSRF во внутреннюю сеть); соединен
 """
 from __future__ import annotations
 
+import hashlib
 import io
 import ipaddress
 import logging
@@ -21,9 +24,10 @@ from urllib.parse import urlparse
 import certifi
 import urllib3
 from django.core.files.base import ContentFile
+from django.utils import timezone
 from PIL import Image, ImageOps
 
-from .models import Product, ProductImage
+from .models import ImageSource, Product, ProductImage
 
 log = logging.getLogger(__name__)
 
@@ -154,11 +158,33 @@ class ImagePipeline:
         return ContentFile(main_buf.getvalue()), ContentFile(thumb_buf.getvalue())
 
     def process_url(
-        self, product: Product, url: str, *, is_main: bool = False, source: str = "manual"
+        self,
+        product: Product,
+        url: str,
+        *,
+        is_main: bool = False,
+        source: str = ImageSource.MANUAL,
+        alt: str = "",
     ) -> ProductImage | None:
+        """Скачать URL и положить товару, идемпотентно (ИЗО-02).
+
+        Две ступени защиты от дубля, обе подпёрты ограничениями БД:
+
+        1. `(product, source_url)` — ДО скачивания: повторный прогон не тратит
+           ни запроса на уже взятую картинку;
+        2. `(product, checksum)` — ПОСЛЕ обработки: та же картинка под другим
+           URL (CDN, `?v=2`, зеркало пути) не ложится вторым файлом.
+
+        Одна и та же картинка у РАЗНЫХ товаров — законна: оба ограничения
+        частичные и привязаны к товару, глобального уникального checksum нет.
+        """
         if product.content_locked:
             return None
-        existing = product.images.filter(alt=url).first()  # идемпотентность по URL
+        existing = (
+            product.images.filter(source_url=url).first()
+            # legacy: до ИЗО-02 URL хранился в alt — старые записи не перекачиваем
+            or product.images.filter(alt=url).first()
+        )
         if existing is not None:
             return existing
         raw = self._download(url)
@@ -168,11 +194,25 @@ class ImagePipeline:
         if processed is None:
             return None
         main_file, _thumb = processed
+        payload = main_file.read()
+        main_file.seek(0)
+        checksum = hashlib.sha256(payload).hexdigest()
+
+        same_bytes = product.images.filter(checksum=checksum).first()
+        if same_bytes is not None:
+            return same_bytes  # та же картинка под другим URL — второй раз не пишем
+
         first = not product.images.exists()
-        image = ProductImage(product=product, alt=url, is_main=is_main or first)
-        image.image.save(
-            f"products/{product.pk}/{abs(hash(url)) % 10**8}.webp", main_file, save=True
+        image = ProductImage(
+            product=product,
+            alt=alt,
+            is_main=is_main or first,
+            source=source,
+            source_url=url,
+            checksum=checksum,
+            fetched_at=timezone.now(),
         )
+        image.image.save(f"products/{product.pk}/{checksum[:16]}.webp", main_file, save=True)
         return image
 
     def process_batch(self, product: Product, urls: list[str]) -> list[ProductImage]:

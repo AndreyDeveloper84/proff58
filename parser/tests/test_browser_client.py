@@ -478,3 +478,53 @@ def test_playwright_headless_about_blank_smoke(tmp_path):
         page.close()
     finally:
         client.close()
+
+
+# --- режим сбора изображений (ИЗО-02) ---------------------------------------------
+
+
+def test_collect_images_mode_lets_images_through(tmp_path, monkeypatch):
+    """collect_images=True снимает блокировку ТОЛЬКО с image; media/font режутся."""
+    monkeypatch.setattr("parser.browser_client.time.sleep", lambda _s: None)
+    context = FakeContext(results=[(200, PAGE_HTML)])
+    client = BrowserClient(
+        cache_dir=tmp_path / "cache",
+        fetch_log_path=tmp_path / "fetch-log.jsonl",
+        profile_dir=tmp_path / "profile",
+        collect_images=True,
+        launcher=lambda: context,
+        robots_fetcher=lambda _robots_url: "",
+    )
+    client.get_text("http://example.com/card/1")
+    _pattern, handler = context.routes[0]
+
+    route = FakeRoute("image")
+    handler(route, route.request)
+    assert route.continued and not route.aborted, "в режиме сбора картинки должны проходить"
+
+    for heavy in ("media", "font"):
+        route = FakeRoute(heavy)
+        handler(route, route.request)
+        assert route.aborted, f"{heavy} режется в любом режиме"
+
+
+def test_images_blocked_by_default(tmp_path, monkeypatch):
+    """Дефолт не изменился: без явного флага картинки по-прежнему режутся."""
+    monkeypatch.setattr("parser.browser_client.time.sleep", lambda _s: None)
+    client, context = make_client(tmp_path)
+    client.get_text("http://example.com/card/1")
+    _pattern, handler = context.routes[0]
+    route = FakeRoute("image")
+    handler(route, route.request)
+    assert route.aborted
+
+
+def test_abort_heavy_resources_default_argument_unchanged():
+    """Сама функция без параметра ведёт себя как раньше (image режется)."""
+    from parser.browser_client import abort_heavy_resources, blocked_resource_types
+
+    route = FakeRoute("image")
+    abort_heavy_resources(route, route.request)
+    assert route.aborted
+    assert blocked_resource_types(False) == frozenset({"image", "media", "font"})
+    assert blocked_resource_types(True) == frozenset({"media", "font"})
