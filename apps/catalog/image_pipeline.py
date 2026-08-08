@@ -215,10 +215,30 @@ class ImagePipeline:
         image.image.save(f"products/{product.pk}/{checksum[:16]}.webp", main_file, save=True)
         return image
 
-    def process_batch(self, product: Product, urls: list[str]) -> list[ProductImage]:
+    def process_batch(
+        self, product: Product, urls: list[str], *, source: str
+    ) -> list[ProductImage]:
+        """Пачка URL одного прогона сбора. `source` обязателен (ИЗО-05).
+
+        Раньше параметр не передавался вовсе, и вся пачка ложилась дефолтным
+        `manual`. Это ломало обратимость: миграция 0036 помечает ручные записи
+        `manual` именно затем, чтобы откат прогона обходил их стороной
+        (`build_rollback_plan` отказывает на `manual`). Записи прогона под
+        `manual` были бы неоткатываемы и неотличимы от загруженных руками.
+
+        Поэтому источник — обязательный keyword, а `manual` в прогоне сбора
+        запрещён так же, как он запрещён в `build_plan` и в откате.
+        """
+        if source not in ImageSource.values:
+            raise ValueError(f"неизвестный source={source!r}; допустимы {ImageSource.values}")
+        if source == ImageSource.MANUAL:
+            raise ValueError(
+                "source=manual в прогоне сбора недопустим: такие записи неоткатываемы "
+                "и неотличимы от загруженных руками"
+            )
         out: list[ProductImage] = []
         for i, url in enumerate(urls):
-            img = self.process_url(product, url, is_main=(i == 0))
+            img = self.process_url(product, url, is_main=(i == 0), source=source)
             if img is not None:
                 out.append(img)
         return out

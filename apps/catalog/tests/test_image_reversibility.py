@@ -152,6 +152,146 @@ def test_pipeline_different_bytes_creates_second(monkeypatch):
     assert p.images.count() == 2
 
 
+# --- пачка прогона (ИЗО-05) ----------------------------------------------
+
+
+def _batch_downloader(pipe, monkeypatch, mapping: dict[str, bytes]):
+    """Мокаем скачивание: каждому URL — свои байты (свой checksum). Сети нет."""
+    monkeypatch.setattr(pipe, "_download", lambda url: mapping.get(url))
+
+
+def test_process_batch_marks_run_source_not_manual(monkeypatch):
+    """ИЗО-05/A: пачка прогона обязана лечь под источником прогона.
+
+    Раньше `process_batch` не передавал `source`, и вся пачка ложилась
+    дефолтным `manual` — миграция 0036 специально уводит manual из-под отката,
+    так что записи пилота были бы неоткатываемы и неотличимы от ручных.
+    """
+    cat = _category()
+    p = _product(cat)
+    pipe = ImagePipeline()
+    urls = ["https://r.test/1.png", "https://r.test/2.png"]
+    _batch_downloader(
+        pipe,
+        monkeypatch,
+        {urls[0]: _png_bytes(color=(200, 30, 30)), urls[1]: _png_bytes(color=(30, 200, 30))},
+    )
+
+    images = pipe.process_batch(p, urls, source=ImageSource.RESANTA)
+
+    assert len(images) == 2
+    assert {i.source for i in images} == {ImageSource.RESANTA}
+    assert ProductImage.objects.filter(source=ImageSource.MANUAL).count() == 0
+    for image in images:
+        assert image.source_url in urls
+        assert image.checksum and len(image.checksum) == 64
+        assert image.fetched_at is not None
+
+
+def test_process_batch_requires_source():
+    """Забыть источник больше нельзя: это и был дефект."""
+    cat = _category()
+    p = _product(cat)
+    with pytest.raises(TypeError):
+        ImagePipeline().process_batch(p, ["https://r.test/1.png"])
+
+
+def test_process_batch_refuses_manual_source():
+    cat = _category()
+    p = _product(cat)
+    with pytest.raises(ValueError, match="manual"):
+        ImagePipeline().process_batch(p, ["https://r.test/1.png"], source=ImageSource.MANUAL)
+
+
+def test_process_batch_refuses_unknown_source():
+    cat = _category()
+    p = _product(cat)
+    with pytest.raises(ValueError):
+        ImagePipeline().process_batch(p, ["https://r.test/1.png"], source="makita")
+
+
+def test_batch_run_is_rollbackable_and_manual_survives(monkeypatch):
+    """ИЗО-05/A: откат сносит ровно пачку прогона и не видит `manual`."""
+    cat = _category()
+    p = _product(cat)
+    manual = _image(p, source=ImageSource.MANUAL, payload=b"manual-photo")
+    pipe = ImagePipeline()
+    urls = ["https://r.test/1.png", "https://r.test/2.png"]
+    _batch_downloader(
+        pipe,
+        monkeypatch,
+        {urls[0]: _png_bytes(color=(200, 30, 30)), urls[1]: _png_bytes(color=(30, 200, 30))},
+    )
+    pipe.process_batch(p, urls, source=ImageSource.RESANTA)
+
+    plan = build_rollback_plan(source=ImageSource.RESANTA)
+    assert plan["records_to_delete"] == 2
+    assert plan["manual_untouched"] == 1
+    assert apply_rollback(plan)["records_deleted"] == 2
+
+    manual.refresh_from_db()
+    assert list(ProductImage.objects.values_list("pk", flat=True)) == [manual.pk]
+    assert audit()["missing_file_total"] == 0
+
+
+def test_sandbox_apply_rollback_reapply(monkeypatch, capsys):
+    """ИЗО-05: полный цикл apply → rollback → reapply на живых ограничениях БД.
+
+    Проверяем то, ради чего заведены частичные unique-индексы 0036: повторный
+    прогон не падает и не плодит дублей, откат снимает только прогон, а после
+    отката прогон применяется заново с нуля.
+    """
+    cat = _category()
+    p = _product(cat)
+    manual = _image(p, source=ImageSource.MANUAL, payload=b"manual-photo")
+    before = build_snapshot()
+    assert before["records_total"] == 1
+
+    pipe = ImagePipeline()
+    urls = ["https://v.test/1.png", "https://v.test/2.png", "https://v.test/3.png"]
+    colors = [(200, 30, 30), (30, 200, 30), (30, 30, 200)]  # заведомо разные байты
+    payloads = {url: _png_bytes(color=colors[i]) for i, url in enumerate(urls)}
+    payloads["https://cdn.v.test/1.png?v=2"] = payloads[urls[0]]  # то же фото, другой URL
+    _batch_downloader(pipe, monkeypatch, payloads)
+
+    # apply
+    first = pipe.process_batch(p, urls, source=ImageSource.VIHR)
+    assert len(first) == 3
+    assert ProductImage.objects.filter(source=ImageSource.VIHR).count() == 3
+
+    # reapply поверх применённого: ни одной новой записи, ни одного IntegrityError
+    again = pipe.process_batch(p, urls, source=ImageSource.VIHR)
+    assert [i.pk for i in again] == [i.pk for i in first]
+    assert ProductImage.objects.count() == 4  # 3 прогона + 1 manual
+
+    # тот же файл под другим URL — второй записи не будет (ключ по checksum)
+    same_bytes_other_url = pipe.process_batch(
+        p, ["https://cdn.v.test/1.png?v=2"], source=ImageSource.VIHR
+    )
+    assert [i.pk for i in same_bytes_other_url] == [first[0].pk]
+    assert ProductImage.objects.count() == 4
+
+    # rollback через команду (с --apply), post-audit внутри
+    call_command("catalog_images_ops", "--mode", "rollback", "--source", "vihr", "--apply")
+    out = capsys.readouterr().out
+    assert "ПРИМЕНЕНО: записей 3" in out
+    assert ProductImage.objects.count() == 1
+    manual.refresh_from_db()
+    assert manual.source == ImageSource.MANUAL
+
+    after_rollback = build_snapshot()
+    assert after_rollback["records"] == before["records"]
+    assert after_rollback["files"] == before["files"]
+    assert after_rollback["orphan_files"] == []
+
+    # reapply после отката — прогон встаёт заново
+    third = pipe.process_batch(p, urls, source=ImageSource.VIHR)
+    assert len(third) == 3
+    assert ProductImage.objects.filter(source=ImageSource.VIHR).count() == 3
+    assert audit()["missing_file_total"] == 0
+    assert audit()["checksum_mismatch_total"] == 0
+
+
 # --- план ----------------------------------------------------------------
 
 
