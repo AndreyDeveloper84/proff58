@@ -2,19 +2,20 @@
 
 Общее для `PoliteClient` и `BrowserClient`: нормализация хоста, раскладка
 дискового кэша (`<хост>/<sha256>.html` + `.json`-мета), журнал доступа JSONL
-и robots.txt (robotparser с кэшем на хост). Политики (троттлинг/темп,
-ретраи/стоп) у режимов разные и в клиентах остаются.
+и robots.txt (свой matcher по RFC 9309 с кэшем на хост). Политики
+(троттлинг/темп, ретраи/стоп) у режимов разные и в клиентах остаются.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-import urllib.robotparser
+import re
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 
 def normalize_host(url: str) -> str:
@@ -116,8 +117,150 @@ class RobotsUnavailableError(Exception):
     """robots.txt не получен: обход хоста без robots запрещён (RFC 9309)."""
 
 
+# Символы, которые НЕ перекодируем при нормализации пути. `%` — чтобы уже
+# закодированное не кодировалось повторно; `*` и `$` — метасимволы шаблона.
+_ROBOTS_SAFE = "/*$?&=:@%+,;~-._!()'"
+
+
+def _normalize_robots_path(path: str) -> str:
+    """Одна нормализация для обеих сторон сравнения (правило и URL).
+
+    Иначе кириллица в robots («/каталог/») никогда не совпадёт с `%D0%BA…` в
+    URL: сравнивать надо приведённое к одному виду (RFC 9309 §2.2.2).
+    """
+    return quote(path, safe=_ROBOTS_SAFE)
+
+
+def _pattern_to_regex(pattern: str) -> re.Pattern[str]:
+    """Шаблон robots → regex.
+
+    `*` — любая последовательность символов; `$` **в самом конце** — конец
+    строки (в середине это обычный символ). Всё остальное экранируется.
+    """
+    anchored = pattern.endswith("$")
+    body = pattern[:-1] if anchored else pattern
+    expr = ".*".join(re.escape(part) for part in body.split("*"))
+    return re.compile("^" + expr + ("$" if anchored else ""))
+
+
+@dataclass(frozen=True)
+class _RobotsRule:
+    """Строка Allow/Disallow: шаблон, его длина (специфичность) и regex."""
+
+    allow: bool
+    pattern: str
+    regex: re.Pattern[str]
+
+    @property
+    def length(self) -> int:
+        return len(self.pattern)
+
+
+class _RobotsGroup:
+    """Группа `User-agent: …` и её правила."""
+
+    def __init__(self) -> None:
+        self.agents: list[str] = []
+        self.rules: list[_RobotsRule] = []
+
+
+class RobotsRules:
+    """Разобранный robots.txt с сопоставлением путей по RFC 9309.
+
+    Отличия от `urllib.robotparser`, ради которых он и заменён (ИЗО-05):
+
+    - `*` внутри правила — любая последовательность, а не литерал (медиа-запреты
+      resanta.ru и vihr.su записаны именно так);
+    - `$` в конце правила — якорь конца строки;
+    - выигрывает **самое длинное** совпавшее правило, а не первое по порядку;
+      при равной длине выигрывает `Allow`.
+    """
+
+    def __init__(self, groups: list[_RobotsGroup]):
+        self._groups = groups
+
+    def _rules_for(self, user_agent: str) -> list[_RobotsRule]:
+        """Группа для нашего UA: именованная точнее `*` (как и в robotparser)."""
+        token = user_agent.split("/")[0].strip().lower()
+        wildcard: list[_RobotsRule] | None = None
+        for group in self._groups:
+            for agent in group.agents:
+                if agent == "*":
+                    if wildcard is None:
+                        wildcard = group.rules
+                elif agent and agent in token:
+                    return group.rules
+        return wildcard if wildcard is not None else []
+
+    def can_fetch(self, user_agent: str, url: str) -> bool:
+        rules = self._rules_for(user_agent)
+        if not rules:
+            return True
+        target = _request_path(url)
+        best: _RobotsRule | None = None
+        for rule in rules:
+            if not rule.regex.match(target):
+                continue
+            if (
+                best is None
+                or rule.length > best.length
+                or (rule.length == best.length and rule.allow)
+            ):
+                best = rule
+        return True if best is None else best.allow
+
+
+def _request_path(url: str) -> str:
+    """Путь запроса для сверки с robots: path + query, без схемы и хоста."""
+    parts = urlsplit(url)
+    path = parts.path or "/"
+    if parts.query:
+        path += "?" + parts.query
+    return _normalize_robots_path(path)
+
+
+def parse_robots(text: str) -> RobotsRules:
+    """Разбор robots.txt в группы.
+
+    Пустое значение `Disallow:`/`Allow:` — не правило (первое по RFC значит
+    «ограничений нет», второе не определено); строки без `:` и комментарии
+    после `#` отбрасываются. Правила до первого `User-agent` игнорируются.
+    """
+    groups: list[_RobotsGroup] = []
+    current: _RobotsGroup | None = None
+    start_new_group = True
+
+    for raw in text.splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if not line or ":" not in line:
+            continue
+        field, _, value = line.partition(":")
+        field = field.strip().lower()
+        value = value.strip()
+        if field in ("user-agent", "useragent"):
+            if start_new_group or current is None:
+                current = _RobotsGroup()
+                groups.append(current)
+                start_new_group = False
+            current.agents.append(value.lower())
+        elif field in ("allow", "disallow"):
+            # следующая строка User-agent начнёт новую группу
+            start_new_group = True
+            if current is None or not value:
+                continue
+            pattern = _normalize_robots_path(value)
+            current.rules.append(
+                _RobotsRule(
+                    allow=(field == "allow"),
+                    pattern=pattern,
+                    regex=_pattern_to_regex(pattern),
+                )
+            )
+    return RobotsRules(groups)
+
+
 class RobotsGate:
-    """Кэш robotparser по хосту; текст robots отдаёт фетчер клиента.
+    """Кэш разобранного robots по хосту; текст robots отдаёт фетчер клиента.
 
     Контракт фетчера: `fetcher(robots_url) -> str | None` — текст robots;
     пустая строка — «ограничений нет» (4xx); None — robots недоступен
@@ -127,18 +270,17 @@ class RobotsGate:
     def __init__(self, *, user_agent: str, fetcher: Callable[[str], str | None]):
         self._user_agent = user_agent
         self._fetcher = fetcher
-        self._parsers: dict[str, urllib.robotparser.RobotFileParser] = {}
+        self._rules: dict[str, RobotsRules] = {}
 
     def can_fetch(self, url: str) -> bool:
         """True — путь разрешён; RobotsUnavailableError — robots недоступен."""
         host = normalize_host(url)
-        parser = self._parsers.get(host)
-        if parser is None:
+        rules = self._rules.get(host)
+        if rules is None:
             robots_url = robots_url_for(url)
             text = self._fetcher(robots_url)
             if text is None:
                 raise RobotsUnavailableError(robots_url)
-            parser = urllib.robotparser.RobotFileParser()
-            parser.parse(text.splitlines())
-            self._parsers[host] = parser
-        return parser.can_fetch(self._user_agent, url)
+            rules = parse_robots(text)
+            self._rules[host] = rules
+        return rules.can_fetch(self._user_agent, url)
