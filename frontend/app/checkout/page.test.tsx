@@ -2,23 +2,32 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const pushMock = vi.fn();
+const replaceMock = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock, replace: vi.fn() }),
+  useRouter: () => ({ push: pushMock, replace: replaceMock }),
 }));
 
 const refreshMock = vi.fn();
+const FULL_CART = {
+  lines: [{ id: 1, name: "Перфоратор", quantity: 1, line_total: "1000.00" }],
+};
+// Снимок корзины меняется по ходу теста: после оформления бэкенд её закрывает,
+// и провайдер отдаёт пустую — ровно тот момент, на котором ломался DRF-950.
+const cartState = { cart: FULL_CART as { lines: unknown[] } | null, loading: false };
 vi.mock("@/components/cart/CartProvider", () => ({
   useCart: () => ({
-    cart: {
-      lines: [{ id: 1, name: "Перфоратор", quantity: 1, line_total: "1000.00" }],
-    },
-    loading: false,
+    cart: cartState.cart,
+    loading: cartState.loading,
     total: 1000,
     refresh: refreshMock,
   }),
 }));
 
-vi.mock("@/lib/orders", () => ({ placeOrder: vi.fn() }));
+const startPaymentMock = vi.fn();
+vi.mock("@/lib/orders", () => ({
+  placeOrder: vi.fn(),
+  startOrderPayment: (...args: unknown[]) => startPaymentMock(...args),
+}));
 vi.mock("@/lib/order-storage", () => ({ stashOrder: vi.fn() }));
 
 import { placeOrder } from "@/lib/orders";
@@ -42,6 +51,12 @@ function submit() {
 describe("CheckoutPage — B2B-реквизиты и способ оплаты", () => {
   beforeEach(() => {
     pushMock.mockReset();
+    replaceMock.mockReset();
+    refreshMock.mockReset();
+    cartState.cart = FULL_CART;
+    cartState.loading = false;
+    startPaymentMock.mockReset();
+    startPaymentMock.mockResolvedValue({ payment_status: "pending", confirmation_url: "" });
     mockedPlaceOrder.mockReset();
     mockedPlaceOrder.mockResolvedValue({ order_number: "П-1" });
   });
@@ -138,5 +153,86 @@ describe("CheckoutPage — B2B-реквизиты и способ оплаты",
 
     await waitFor(() => expect(mockedPlaceOrder).toHaveBeenCalled());
     expect(mockedPlaceOrder.mock.calls[0][0]).toMatchObject({ kpp: "", payment_method: "invoice" });
+  });
+});
+
+describe("CheckoutPage — DRF-950: корзина пустеет после оформления", () => {
+  beforeEach(() => {
+    pushMock.mockReset();
+    replaceMock.mockReset();
+    refreshMock.mockReset();
+    cartState.cart = FULL_CART;
+    cartState.loading = false;
+    startPaymentMock.mockReset();
+    startPaymentMock.mockResolvedValue({ payment_status: "pending", confirmation_url: "" });
+    mockedPlaceOrder.mockReset();
+    mockedPlaceOrder.mockResolvedValue({ order_number: "П-950" });
+  });
+
+  // Первопричина бага: бэкенд закрывает корзину вместе с созданием заказа, и
+  // сторож пустой корзины уводил покупателя в /cart. Заказ создан, а человек
+  // видит «Корзина пуста» и жмёт «Оформить» второй раз.
+  it("после успешного заказа ведёт на «Спасибо», а не в пустую корзину", async () => {
+    const { rerender } = render(<CheckoutPage />);
+    fillBaseFields();
+    submit();
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/order/П-950/thanks"));
+
+    // Корзина опустела — так и должно быть после оформления.
+    cartState.cart = { lines: [] };
+    rerender(<CheckoutPage />);
+
+    expect(replaceMock).not.toHaveBeenCalledWith("/cart");
+  });
+
+  it("заход с пустой корзиной по-прежнему уводит в /cart", () => {
+    cartState.cart = { lines: [] };
+    render(<CheckoutPage />);
+
+    expect(replaceMock).toHaveBeenCalledWith("/cart");
+  });
+
+  it("переход на «Спасибо» не ждёт обновления счётчика корзины", async () => {
+    // refresh() висит — покупатель всё равно должен уехать на success.
+    refreshMock.mockReturnValue(new Promise(() => {}));
+    render(<CheckoutPage />);
+    fillBaseFields();
+    submit();
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/order/П-950/thanks"));
+  });
+});
+
+describe("CheckoutPage — переход к оплате", () => {
+  beforeEach(() => {
+    pushMock.mockReset();
+    replaceMock.mockReset();
+    refreshMock.mockReset();
+    cartState.cart = FULL_CART;
+    cartState.loading = false;
+    startPaymentMock.mockReset();
+    startPaymentMock.mockResolvedValue({ payment_status: "pending", confirmation_url: "" });
+    mockedPlaceOrder.mockReset();
+    mockedPlaceOrder.mockResolvedValue({ order_number: "П-777", access_token: "tok" });
+  });
+
+  it("онлайн-заказ запрашивает ссылку на оплату по номеру и токену", async () => {
+    render(<CheckoutPage />);
+    fillBaseFields();
+    submit();
+
+    await waitFor(() => expect(startPaymentMock).toHaveBeenCalledWith("П-777", "tok"));
+  });
+
+  // Касса выключена или лежит — заказ уже оформлен, и человек должен попасть
+  // на страницу «Спасибо», а не остаться на checkout с ошибкой.
+  it("сбой кассы всё равно ведёт на «Спасибо»", async () => {
+    startPaymentMock.mockRejectedValue(new Error("касса недоступна"));
+    render(<CheckoutPage />);
+    fillBaseFields();
+    submit();
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/order/П-777/thanks"));
   });
 });
