@@ -28,7 +28,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from apps.core import events
-from apps.orders.models import Order
+from apps.orders.models import FulfillmentStatus, Order
 from apps.orders.models import PaymentStatus as OrderPaymentStatus
 
 from .models import Payment, PaymentMethod, PaymentStatus, Refund, RefundStatus
@@ -247,7 +247,30 @@ def handle_webhook(payload: dict, *, verify: bool = True) -> None:
         payment.paid_at = timezone.now()
         payment.save(update_fields=["status", "paid_at", "webhook_payload", "updated_at"])
 
-        Order.objects.filter(pk=payment.order_id).update(payment_status=OrderPaymentStatus.PAID)
+        # DRF-952: строку заказа берём под блокировку. Раньше здесь был слепой
+        # UPDATE, и janitor истечения мог в тот же момент отменять этот заказ —
+        # получалось «деньги получены, заказ отменён, товар снят с резерва».
+        # Теперь одна из сторон ждёт другую, и решение принимает та, что успела.
+        order = Order.objects.select_for_update().get(pk=payment.order_id)
+
+        if order.fulfillment_status == FulfillmentStatus.CANCELLED:
+            # Поздняя оплата: заказ уже отменён по таймауту, товар мог уйти
+            # другому покупателю. Молча воскрешать нельзя — денег это не вернёт,
+            # а обещание отгрузить создаст. Платёж помечен успешным (деньги
+            # действительно пришли), заказ остаётся отменённым, случай уходит
+            # в лог ошибкой для ручного разбора и возврата.
+            logger.error(
+                "Поздняя оплата: заказ %s уже отменён, платёж %s на %s %s требует "
+                "ручного разбора (возврат или восстановление заказа)",
+                order.order_number,
+                yookassa_id,
+                payment.amount,
+                payment.currency,
+            )
+            return
+
+        order.payment_status = OrderPaymentStatus.PAID
+        order.save(update_fields=["payment_status", "updated_at"])
 
         order_id = payment.order_id
         payment_id = payment.id
