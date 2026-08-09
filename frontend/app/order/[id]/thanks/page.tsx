@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useRef, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { OrderOutcome } from "@/components/order/OrderOutcome";
 import { ReservationNotice } from "@/components/order/ReservationNotice";
 import { TrackOrderInMaxCta } from "@/components/order/TrackOrderInMaxCta";
 import { useAuthState } from "@/components/auth/AuthStateProvider";
 import { accountLinkHref } from "@/lib/auth-state";
 import { formatDeliverySlot, formatPrice } from "@/lib/format";
+import { getGuestOrder } from "@/lib/orders";
 import { readStashedOrder } from "@/lib/order-storage";
 import { decodeRouteParam } from "@/lib/route-params";
 import type { Order } from "@/lib/types";
@@ -46,7 +47,26 @@ export default function ThanksPage() {
     }
     return cacheRef.current.value;
   }, [orderNumber]);
-  const order = useSyncExternalStore(subscribe, getSnapshot, () => null);
+  const stashed = useSyncExternalStore(subscribe, getSnapshot, () => null);
+
+  // Снимок из sessionStorage — состояние на момент оформления. После возврата из
+  // кассы важно текущее: оплачен заказ или ещё ждёт подтверждения. Догружаем его
+  // с сервера по гостевому токену; сбой запроса не ломает страницу — остаётся
+  // снимок, а состояние оплаты человек увидит в кабинете.
+  const [fresh, setFresh] = useState<Order | null>(null);
+  useEffect(() => {
+    const token = stashed?.access_token;
+    if (!token || !stashed) return;
+    let active = true;
+    getGuestOrder(stashed.order_number, token)
+      .then((data) => active && setFresh(data))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [stashed]);
+
+  const order = fresh ?? stashed;
   // Заказ часто оформляют без входа, поэтому «в личном кабинете» для гостя ведёт
   // на форму входа — оттуда его вернут в заказы.
   const ordersHref = accountLinkHref("/account/orders", useAuthState());
@@ -72,33 +92,17 @@ export default function ThanksPage() {
         ))}
       </ol>
 
-      <section className="rounded-lg border border-line bg-surface p-5 sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <CheckCircle className="h-14 w-14 shrink-0 text-accent" strokeWidth={1.5} aria-hidden />
-          <div>
-            <h1 className="font-display text-3xl font-semibold text-ink">Спасибо за заказ!</h1>
-            <p className="mt-1 text-ink-2">
-              Ваш заказ{" "}
-              <span className="font-semibold text-accent">
-                № {order?.order_number ?? orderNumber}
-              </span>{" "}
-              принят в обработку
-            </p>
-            <p className="mt-1 text-sm text-ink-3">
-              Мы свяжемся с вами при необходимости и сообщим об изменении статуса.
-            </p>
-          </div>
+      <OrderOutcome order={order} orderNumber={orderNumber} invoiceHref={ordersHref} />
+
+      {order && <div className="mt-5"><ReservationNotice order={order} /></div>}
+      {!order && (
+        <div className="mt-5 rounded-md border border-line bg-raised px-4 py-3 text-sm text-ink-2">
+          Детали заказа не сохранились в этом браузере — на заказ это не влияет. Статус доступен{" "}
+          <Link href={ordersHref} className="font-semibold text-accent hover:underline">
+            в личном кабинете
+          </Link>.
         </div>
-        {order && <div className="mt-5"><ReservationNotice order={order} /></div>}
-        {!order && (
-          <div className="mt-5 rounded-md border border-line bg-raised px-4 py-3 text-sm text-ink-2">
-            Детали заказа не сохранились в этом браузере — на заказ это не влияет. Статус доступен{" "}
-            <Link href={ordersHref} className="font-semibold text-accent hover:underline">
-              в личном кабинете
-            </Link>.
-          </div>
-        )}
-      </section>
+      )}
 
       {order && (
         <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">

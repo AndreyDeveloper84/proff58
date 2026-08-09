@@ -23,7 +23,11 @@ vi.mock("@/components/cart/CartProvider", () => ({
   }),
 }));
 
-vi.mock("@/lib/orders", () => ({ placeOrder: vi.fn() }));
+const startPaymentMock = vi.fn();
+vi.mock("@/lib/orders", () => ({
+  placeOrder: vi.fn(),
+  startOrderPayment: (...args: unknown[]) => startPaymentMock(...args),
+}));
 vi.mock("@/lib/order-storage", () => ({ stashOrder: vi.fn() }));
 
 import { placeOrder } from "@/lib/orders";
@@ -51,6 +55,8 @@ describe("CheckoutPage — B2B-реквизиты и способ оплаты",
     refreshMock.mockReset();
     cartState.cart = FULL_CART;
     cartState.loading = false;
+    startPaymentMock.mockReset();
+    startPaymentMock.mockResolvedValue({ payment_status: "pending", confirmation_url: "" });
     mockedPlaceOrder.mockReset();
     mockedPlaceOrder.mockResolvedValue({ order_number: "П-1" });
   });
@@ -157,6 +163,8 @@ describe("CheckoutPage — DRF-950: корзина пустеет после о�
     refreshMock.mockReset();
     cartState.cart = FULL_CART;
     cartState.loading = false;
+    startPaymentMock.mockReset();
+    startPaymentMock.mockResolvedValue({ payment_status: "pending", confirmation_url: "" });
     mockedPlaceOrder.mockReset();
     mockedPlaceOrder.mockResolvedValue({ order_number: "П-950" });
   });
@@ -193,5 +201,38 @@ describe("CheckoutPage — DRF-950: корзина пустеет после о�
     submit();
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/order/П-950/thanks"));
+  });
+});
+
+describe("CheckoutPage — переход к оплате", () => {
+  beforeEach(() => {
+    pushMock.mockReset();
+    replaceMock.mockReset();
+    refreshMock.mockReset();
+    cartState.cart = FULL_CART;
+    cartState.loading = false;
+    startPaymentMock.mockReset();
+    startPaymentMock.mockResolvedValue({ payment_status: "pending", confirmation_url: "" });
+    mockedPlaceOrder.mockReset();
+    mockedPlaceOrder.mockResolvedValue({ order_number: "П-777", access_token: "tok" });
+  });
+
+  it("онлайн-заказ запрашивает ссылку на оплату по номеру и токену", async () => {
+    render(<CheckoutPage />);
+    fillBaseFields();
+    submit();
+
+    await waitFor(() => expect(startPaymentMock).toHaveBeenCalledWith("П-777", "tok"));
+  });
+
+  // Касса выключена или лежит — заказ уже оформлен, и человек должен попасть
+  // на страницу «Спасибо», а не остаться на checkout с ошибкой.
+  it("сбой кассы всё равно ведёт на «Спасибо»", async () => {
+    startPaymentMock.mockRejectedValue(new Error("касса недоступна"));
+    render(<CheckoutPage />);
+    fillBaseFields();
+    submit();
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/order/П-777/thanks"));
   });
 });
