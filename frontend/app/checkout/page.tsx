@@ -565,8 +565,10 @@ export default function CheckoutPage() {
           </div>
         ) : (
         <fieldset className="space-y-3 rounded-lg border border-line bg-surface p-5">
+          {/* DRF-951: «Способ получения», а не «доставки» — самовывоз доставкой
+              не является, и в корзине этот выбор больше не дублируется. */}
           <legend className="px-2 font-display text-lg font-semibold uppercase text-ink">
-            Способ доставки
+            Способ получения
           </legend>
           <label className="flex cursor-pointer items-center gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent">
             <input
@@ -581,7 +583,10 @@ export default function CheckoutPage() {
               }}
               className="accent-accent"
             />
-            <span className="text-sm text-ink">Курьер</span>
+            <span>
+              <span className="block text-sm text-ink">Курьерская доставка</span>
+              <span className="mt-0.5 block text-xs text-ink-3">По Пензе и области</span>
+            </span>
           </label>
           <label className="flex cursor-pointer items-center gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent">
             <input
@@ -597,8 +602,26 @@ export default function CheckoutPage() {
               }}
               className="accent-accent"
             />
-            <span className="text-sm text-ink">Самовывоз</span>
+            <span>
+              <span className="block text-sm text-ink">Самовывоз</span>
+              <span className="mt-0.5 block text-xs text-ink-3">
+                {SITE.address} · бесплатно
+              </span>
+            </span>
           </label>
+          {/* DRF-951: выбрал самовывоз — покажи, куда и когда ехать. Полей
+              доставки здесь нет и быть не должно, но пустое место вместо адреса
+              магазина заставляло искать его в подвале. */}
+          {delivery === "pickup" && (
+            <div className="rounded-md border border-line bg-raised p-3 text-xs leading-5 text-ink-2">
+              <span className="block font-semibold text-ink">Самовывоз из магазина</span>
+              <span className="block">{SITE.address}</span>
+              <span className="block">{SITE.schedule}</span>
+              <span className="mt-1 block text-ink-3">
+                Сообщим, когда заказ будет готов к выдаче.
+              </span>
+            </div>
+          )}
           {delivery === "courier" && (
             <>
               {zones === null && (
@@ -618,7 +641,7 @@ export default function CheckoutPage() {
               {courierZones.length > 0 && (
                 <div>
                   <label htmlFor="deliveryZone" className="mb-1 block text-sm text-ink-2">
-                    Зона доставки *
+                    Куда доставить? *
                   </label>
                   <select
                     id="deliveryZone"
@@ -630,7 +653,7 @@ export default function CheckoutPage() {
                     }}
                     className={inputClass}
                   >
-                    <option value="">— выберите зону —</option>
+                    <option value="">— выберите район —</option>
                     {courierZones.map((z) => (
                       <option key={z.zone} value={z.zone}>
                         {z.name}

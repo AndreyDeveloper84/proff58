@@ -44,7 +44,7 @@ function fillBaseFields() {
   // Адрес — по частям (см. lib/delivery-address): улица и дом обязательны.
   fireEvent.change(screen.getByLabelText(/^Улица/), { target: { value: "Ленина" } });
   fireEvent.change(screen.getByLabelText(/^Дом/), { target: { value: "1" } });
-  fireEvent.change(screen.getByLabelText(/^Зона доставки/), { target: { value: "penza" } });
+  fireEvent.change(screen.getByLabelText(/^Куда доставить/), { target: { value: "penza" } });
 }
 
 function submit() {
@@ -92,7 +92,7 @@ describe("CheckoutPage — слот доставки (#569)", () => {
     await screen.findByLabelText(/^Дата и время доставки/);
     fireEvent.change(screen.getByLabelText(/^Имя/), { target: { value: "Иван" } });
     fireEvent.change(screen.getByLabelText(/^Телефон/), { target: { value: "+79001112233" } });
-    fireEvent.click(screen.getByLabelText("Самовывоз"));
+    fireEvent.click(screen.getByRole("radio", { name: /Самовывоз/ }));
 
     await waitFor(() =>
       expect(screen.queryByLabelText(/^Дата и время доставки/)).toBeNull(),
@@ -120,7 +120,7 @@ describe("CheckoutPage — слот доставки (#569)", () => {
   it("слотов нет: подсказка вместо пикера, заказ уходит без слота", async () => {
     mockedGetSlots.mockResolvedValue([]);
     render(<CheckoutPage />);
-    await screen.findByLabelText(/^Зона доставки/);
+    await screen.findByLabelText(/^Куда доставить/);
     expect(
       await screen.findByText(/Доступных интервалов доставки нет/),
     ).toBeTruthy();
@@ -136,8 +136,8 @@ describe("CheckoutPage — слот доставки (#569)", () => {
     const select = await screen.findByLabelText(/^Дата и время доставки/);
     fillBaseFields();
     fireEvent.change(select, { target: { value: "11" } });
-    fireEvent.click(screen.getByLabelText("Самовывоз"));
-    fireEvent.click(screen.getByLabelText("Курьер"));
+    fireEvent.click(screen.getByRole("radio", { name: /Самовывоз/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Курьерская доставка/ }));
 
     const reselect = await screen.findByLabelText(/^Дата и время доставки/);
     expect((reselect as HTMLSelectElement).value).toBe("");
