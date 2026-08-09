@@ -453,6 +453,82 @@ def test_real_rules_bind_taps_to_live_metal_cutting_section():
 
 
 # --------------------------------------------------------------------------- #
+# ХАР-BIND-03: две последние мёртвые цели в боевом словаре
+# --------------------------------------------------------------------------- #
+
+
+def _bolts_and_sets_tree() -> tuple[Category, Category]:
+    """Стенд в миниатюре: мёртвые «Болты и винты» / «Наборы инструмента» + живые цели.
+
+    Соответствие узлам стенда: 29→31 (оба мёртвые) против живой пары 355→358
+    «Крепёж и метизы»→«Болты»; легаси-корень 1→45 (мёртвая) против живой пары
+    339→340 «Ручной инструмент»→«Наборы ручного инструмента».
+    """
+    legacy = Category.add_root(
+        name="Каталог (легаси)", slug="legacy-root", is_active=False, on_site=False
+    )
+    dead_fasteners = legacy.add_child(
+        name="Крепёж (легаси)", slug="krepezh-legacy", is_active=False, on_site=False
+    )
+    dead_fasteners.add_child(
+        name="Болты и винты", slug="bolty-i-vinty", is_active=False, on_site=False
+    )
+    legacy.add_child(
+        name="Наборы инструмента", slug="nabory-instrumenta", is_active=False, on_site=False
+    )
+
+    fasteners = Category.add_root(
+        name="Крепёж и метизы", slug="krepezh-i-metizy", is_active=True, on_site=True
+    )
+    bolts = fasteners.add_child(name="Болты", slug="krepezh-bolty", is_active=True, on_site=True)
+    hand = Category.add_root(name="Ручной инструмент", slug="ruchnoy", is_active=True, on_site=True)
+    sets = hand.add_child(
+        name="Наборы ручного инструмента",
+        slug="nabory-ruchnogo-instrumenta",
+        is_active=True,
+        on_site=True,
+    )
+    return bolts, sets
+
+
+@pytest.mark.django_db
+def test_real_rules_bind_bolts_and_sets_to_live_nodes():
+    """ХАР-BIND-03: боевой словарь ведёт крепёж и наборы в живые узлы витрины."""
+    bolts, sets = _bolts_and_sets_tree()
+
+    plan = _plan(str(data_dir()), "--allow-ambiguous")
+
+    rows = {
+        "krep-bolty": [r for r in plan["bindings"] if r["tool_type"] == "krep-bolty"],
+        "nabory-instrumenta": [
+            r for r in plan["bindings"] if r["tool_type"] == "nabory-instrumenta"
+        ],
+    }
+    assert rows["krep-bolty"], "блок krep-bolty исчез из словаря"
+    assert rows["nabory-instrumenta"], "блок nabory-instrumenta исчез из словаря"
+
+    assert {r["category"] for r in rows["krep-bolty"]} == {"Болты"}
+    assert {r["category_id"] for r in rows["krep-bolty"]} == {bolts.pk}
+    assert {r["status"] for r in rows["krep-bolty"]} == {"bound"}
+
+    assert {r["category"] for r in rows["nabory-instrumenta"]} == {"Наборы ручного инструмента"}
+    assert {r["category_id"] for r in rows["nabory-instrumenta"]} == {sets.pk}
+    assert {r["status"] for r in rows["nabory-instrumenta"]} == {"bound"}
+
+
+@pytest.mark.django_db
+def test_real_rules_have_no_dead_bindings_left():
+    """Критерий разблокировки: строгий режим на полном словаре больше не падает."""
+    _bolts_and_sets_tree()
+
+    plan = _plan(str(data_dir()), "--allow-ambiguous")
+    dead = [r["category"] for r in plan["bindings"] if r["status"] == "dead_category"]
+
+    assert dead == []
+    assert plan["summary"]["bindings"]["dead_category"] == 0
+
+
+# --------------------------------------------------------------------------- #
 # dry-run / plan mode
 # --------------------------------------------------------------------------- #
 
