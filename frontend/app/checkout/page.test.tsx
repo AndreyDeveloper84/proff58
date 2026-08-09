@@ -132,9 +132,9 @@ describe("CheckoutPage — B2B-реквизиты и способ оплаты",
 
   it("B2B: блок доставки скрыт, показано пояснение про самовывоз", () => {
     render(<CheckoutPage />);
-    expect(screen.getByText("Способ доставки")).toBeTruthy();
+    expect(screen.getByText("Способ получения")).toBeTruthy();
     fireEvent.click(screen.getByLabelText("Организация"));
-    expect(screen.queryByText("Способ доставки")).toBeNull();
+    expect(screen.queryByText("Способ получения")).toBeNull();
     expect(screen.getByText(/самовывоз со склада/i)).toBeTruthy();
     expect(screen.getByText(/Счёт формируется только на товары/i)).toBeTruthy();
   });
@@ -303,5 +303,36 @@ describe("CheckoutPage — способы оплаты (DRF-948)", () => {
 
     expect(screen.getByRole("radio", { name: /Оплата по счёту/ })).toBeInTheDocument();
     expect(screen.queryByRole("radio", { name: /Онлайн-оплата/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("CheckoutPage — самовывоз (DRF-951)", () => {
+  beforeEach(() => {
+    pushMock.mockReset();
+    replaceMock.mockReset();
+    cartState.cart = FULL_CART;
+    cartState.loading = false;
+    mockedPlaceOrder.mockReset();
+    mockedPlaceOrder.mockResolvedValue({ order_number: "П-951" });
+  });
+
+  // Выбрал самовывоз — покажи, куда и когда ехать. Раньше на месте адреса
+  // было пусто, и его искали в подвале.
+  it("показывает адрес магазина и часы работы", () => {
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByRole("radio", { name: /Самовывоз/ }));
+
+    expect(screen.getByText("Самовывоз из магазина")).toBeInTheDocument();
+    // Адрес встречается дважды: в подписи варианта и в раскрытом блоке.
+    expect(screen.getAllByText(/Онежский проезд/).length).toBeGreaterThan(1);
+    expect(screen.getByText(/Пн–Вс/)).toBeInTheDocument();
+  });
+
+  it("при самовывозе полей курьерской доставки нет", () => {
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByRole("radio", { name: /Самовывоз/ }));
+
+    expect(screen.queryByLabelText(/^Куда доставить/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Улица/)).not.toBeInTheDocument();
   });
 });
