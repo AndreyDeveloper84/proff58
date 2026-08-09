@@ -1463,7 +1463,7 @@ def test_sp_no_material_no_coating(rules, name):
 def test_sp_size_letters(rules, name, size):
     # word_boundary (обе границы): «S» в «, S,» — размер; диапазоны S-M/L-XL —
     # самостоятельные значения и стоят раньше одиночных букв.
-    assert _sp(rules, name)["size"].option_slug == size
+    assert _sp(rules, name)["glove_size"].option_slug == size
 
 
 @pytest.mark.parametrize(
@@ -1476,7 +1476,7 @@ def test_sp_size_letters(rules, name, size):
     ],
 )
 def test_sp_size_letters_no_false_positive(rules, name):
-    assert "size" not in _sp(rules, name)
+    assert "glove_size" not in _sp(rules, name)
 
 
 def test_sp_size_from_article_suffix_in_name(rules):
@@ -1484,7 +1484,7 @@ def test_sp_size_from_article_suffix_in_name(rules):
     # KRAFTOOL суффикс артикула дублирует размер (11279-XL ↔ р-р XL), поэтому
     # значение корректно, но артикул источником размера не считается (таблица §3).
     name = "Перчатки KRAFTOOL ULTIMATE комбинированные, работа с сенсор экранами (арт. 11299-L)"
-    assert _sp(rules, name)["size"].option_slug == "l"
+    assert _sp(rules, name)["glove_size"].option_slug == "l"
 
 
 @pytest.mark.parametrize(
