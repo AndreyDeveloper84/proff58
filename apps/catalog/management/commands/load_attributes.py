@@ -19,10 +19,12 @@
 с фактом, а не верить на слово.
 
 **2. Пустое значение в правилах не перезаписывает непустое в БД.** Один и тот же
-slug объявляется в нескольких блоках tool_type: ``size`` — это и «Размер под ключ»
-(number, ``unit`` = «мм», блоки ``klyuchi-gaechnye``/``golovki``), и «Размер»
-перчаток (select, ``unit`` не объявлен). Последний блок молча стирал единицу
-измерения. Защита узкая и намеренно ограничена строковым ``unit``
+slug объявляется в нескольких блоках tool_type, и блок без ``unit`` молча стирал
+единицу измерения, выставленную соседним блоком. Исторический случай — ``size``:
+«Размер под ключ» (number, ``unit`` = «мм», блоки ``klyuchi-gaechnye``/``golovki``)
+и «Размер» перчаток (select, ``unit`` не объявлен); в самом словаре он разведён
+окном ХАР-SIZE на ``size``/``glove_size``, но механизм защиты общий и остаётся.
+Защита узкая и намеренно ограничена строковым ``unit``
 (:data:`EMPTY_PRESERVING_FIELDS`): у ``is_filterable``/``is_ai_feature`` значение
 ``False`` — это объявленное значение, а не «пусто», и подавлять его нельзя.
 
@@ -37,6 +39,19 @@ slug объявляется в нескольких блоках tool_type: ``si
 остаётся предупреждением с кодом причины: испортить оно ничего не может (привязки
 просто не будет), а неполное дерево — штатное состояние bootstrap-а и тестов;
 ``--strict-bindings`` делает фатальным и его.
+
+Окно ХАР-BIND (2026-08-09) закрыло четвёртый.
+
+**4. Живость выбранного узла проверяется.** Лестница разрешала имя, но не смотрела,
+жив ли найденный узел: единственный кандидат с ``is_active=False``/``on_site=False``
+принимался молча (ветка «живых нет вовсе — работаем по всему множеству»). Привязка
+создавалась и выглядела успешной, а на витрине не давала ничего: сам узел скрыт, а
+живым потомкам характеристика не наследуется — фасет просто не появлялся. Ровно так
+блок ``metchiki-plashki`` уезжал в мёртвую категорию «Метчики и плашки», пока товары
+лежат в живых «Метчики»/«Плашки». Теперь у такого исхода свой код причины
+``bound:*:dead`` и свой статус ``dead_category``: по умолчанию — WARNING с указанием
+выбранного узла (fail-closed сломал бы bootstrap и наборы правил, где мёртвый узел
+единственный), ``--strict-live-categories`` делает его фатальным.
 """
 
 from __future__ import annotations
@@ -74,6 +89,9 @@ EMPTY_PRESERVING_FIELDS = ("unit",)
 # Признаки кандидата, попадающие в план: по ним владелец видит, почему выбран узел.
 CANDIDATE_FIELDS = ("id", "slug", "depth", "is_active", "on_site", "is_site_v2")
 
+# Суффикс кода причины для «узел найден, но мёртвый» (см. докстринг, дефект 4).
+DEAD_SUFFIX = ":dead"
+
 
 class Command(BaseCommand):
     help = "Создать Attribute/AttributeOption/CategoryAttribute из data/attribute_rules.json."
@@ -109,6 +127,14 @@ class Command(BaseCommand):
             action="store_true",
             help="Считать фатальным и отсутствие категории (not_found), не только ambiguous.",
         )
+        parser.add_argument(
+            "--strict-live-categories",
+            action="store_true",
+            help=(
+                "Считать фатальной привязку к мёртвой категории (dead_category: узел "
+                "найден, но is_active=False или on_site=False). По умолчанию — WARNING."
+            ),
+        )
 
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
@@ -121,6 +147,7 @@ class Command(BaseCommand):
             plan,
             allow_ambiguous=options["allow_ambiguous"],
             strict_bindings=options["strict_bindings"],
+            strict_live_categories=options["strict_live_categories"],
         )
 
         if dry_run:
@@ -339,7 +366,7 @@ class Command(BaseCommand):
             "is_filter": a.get("is_filter", True),
             "is_seo_facet": a.get("is_seo_facet", False),
         }
-        status = "bound" if category is not None else reason.split(":")[0]
+        status = _binding_status(reason)
 
         if category is None:
             binding_rows[key] = {
@@ -378,7 +405,7 @@ class Command(BaseCommand):
             "attribute": a["slug"],
             "tool_type": tt_slug,
             "action": ("create" if current is None else ("update" if changes else "keep")),
-            "status": "bound",
+            "status": status,
             "current": current,
             "target": target,
             "changes": changes,
@@ -390,7 +417,8 @@ class Command(BaseCommand):
         """Лестница разрешения имени категории: живые → топ → единственный.
 
         Возвращает ``(категория|None, код причины, кандидаты)``. Код причины:
-        ``bound:top``/``bound:tree`` (+``:live``, если мёртвые кандидаты отброшены),
+        ``bound:top``/``bound:tree`` (+``:live``, если мёртвые кандидаты отброшены,
+        +``:dead``, если живых кандидатов не было вовсе и выбран мёртвый узел),
         ``ambiguous:top``/``ambiguous:tree``, ``not_found``.
         """
         objects = list(Category.objects.filter(name=name).order_by("pk"))
@@ -411,26 +439,36 @@ class Command(BaseCommand):
         scope = tops or pool
         level = "top" if tops else "tree"
 
-        if len(scope) == 1:
-            return scope[0], f"bound:{level}" + (":live" if live_filter else ""), candidates
-        return None, f"ambiguous:{level}", candidates
+        if len(scope) != 1:
+            return None, f"ambiguous:{level}", candidates
+
+        # Guard живости (ХАР-BIND): выбранный узел может быть мёртвым — тогда привязка
+        # технически создастся, но фасета на витрине не даст. Это отдельный исход.
+        node = scope[0]
+        if not (node.is_active and node.on_site):
+            suffix = DEAD_SUFFIX
+        else:
+            suffix = ":live" if live_filter else ""
+        return node, f"bound:{level}{suffix}", candidates
 
     # ------------------------------------------------------------------ #
     # Политика привязок и вывод
     # ------------------------------------------------------------------ #
 
     def _enforce_binding_policy(
-        self, plan: dict, *, allow_ambiguous: bool, strict_bindings: bool
+        self,
+        plan: dict,
+        *,
+        allow_ambiguous: bool,
+        strict_bindings: bool,
+        strict_live_categories: bool = False,
     ) -> None:
         ambiguous = [r for r in plan["bindings"] if r["status"] == "ambiguous"]
         not_found = [r for r in plan["bindings"] if r["status"] == "not_found"]
+        dead = [r for r in plan["bindings"] if r["status"] == "dead_category"]
 
         for row in ambiguous:
-            names = ", ".join(
-                f"#{c['id']} {c['slug']} (depth={c['depth']}, active={c['is_active']}, "
-                f"on_site={c['on_site']})"
-                for c in row["candidates"]
-            )
+            names = ", ".join(_describe_candidate(c) for c in row["candidates"])
             self.stderr.write(
                 self.style.WARNING(
                     f"  [{row['reason']}] «{row['category']}» → {row['attribute']}: "
@@ -442,6 +480,13 @@ class Command(BaseCommand):
                 self.style.WARNING(
                     f"  [{row['reason']}] «{row['category']}» → {row['attribute']}: "
                     f"категории нет в дереве — сначала выполните build_categories."
+                )
+            )
+        for row in dead:
+            self.stderr.write(
+                self.style.WARNING(
+                    f"  [{row['reason']}] «{row['category']}» → {row['attribute']}: выбран "
+                    f"{_chosen_candidate(row)} — узел мёртв, фасета на витрине не будет."
                 )
             )
 
@@ -457,6 +502,13 @@ class Command(BaseCommand):
             names = sorted({r["category"] for r in not_found})
             raise CommandError(
                 "Категории не найдены (--strict-bindings): " + ", ".join(f"«{n}»" for n in names)
+            )
+        if dead and strict_live_categories:
+            names = sorted({r["category"] for r in dead})
+            raise CommandError(
+                "Привязка к мёртвой категории (--strict-live-categories): "
+                + ", ".join(f"«{n}»" for n in names)
+                + ". Укажите в правилах живой узел или оживите этот."
             )
 
     def _emit_plan(self, plan: dict, json_report: str | None) -> None:
@@ -475,8 +527,16 @@ class Command(BaseCommand):
             f"без изменений {summary['bindings']['keep']}, "
             f"пропущено {summary['bindings']['skip']} "
             f"(ambiguous {summary['bindings']['ambiguous']}, "
-            f"not_found {summary['bindings']['not_found']})"
+            f"not_found {summary['bindings']['not_found']})\n"
+            f"  из них в мёртвые узлы: dead_category {summary['bindings']['dead_category']}"
         )
+        for row in plan["bindings"]:
+            if row["status"] != "dead_category":
+                continue
+            human += (
+                f"\n  ! «{row['category']}» → {row['attribute']} ({row['tool_type']}): "
+                f"выбран {_chosen_candidate(row)}, причина {row['reason']}"
+            )
         for row in plan["attributes"]:
             if row["action"] == "update":
                 changes = ", ".join(
@@ -553,7 +613,27 @@ def _count_actions(rows: list[dict], actions: tuple[str, ...]) -> dict[str, int]
 
 
 def _count_statuses(rows: list[dict]) -> dict[str, int]:
-    counts = {"bound": 0, "ambiguous": 0, "not_found": 0}
+    counts = {"bound": 0, "dead_category": 0, "ambiguous": 0, "not_found": 0}
     for row in rows:
         counts[row["status"]] = counts.get(row["status"], 0) + 1
     return counts
+
+
+def _binding_status(reason: str) -> str:
+    """Код причины → статус строки плана. ``bound:*:dead`` — свой статус, не ``bound``."""
+    if reason.endswith(DEAD_SUFFIX):
+        return "dead_category"
+    return reason.split(":")[0]
+
+
+def _describe_candidate(candidate: dict) -> str:
+    return (
+        f"#{candidate['id']} {candidate['slug']} (depth={candidate['depth']}, "
+        f"active={candidate['is_active']}, on_site={candidate['on_site']})"
+    )
+
+
+def _chosen_candidate(row: dict) -> str:
+    """Описание узла, который лестница выбрала для строки плана."""
+    chosen = next((c for c in row["candidates"] if c["id"] == row["category_id"]), None)
+    return _describe_candidate(chosen) if chosen else f"#{row['category_id']}"

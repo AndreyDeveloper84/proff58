@@ -19,7 +19,13 @@ CAT-14B (`scratchpad/cat14/cat-14b-schemas-report.md`), CODE-01
 владельцем **как есть** (решение 1). Правила по ней заводит окно CAT-14C
 (часть B) — они требуют флаг `word_boundary` из CODE-02.
 
-### Буквенные размеры → select `size`
+### Буквенные размеры → select `glove_size`
+
+> **ХАР-SIZE (2026-08-09).** Slug буквенного размера перчаток — `glove_size`,
+> а не `size`. Общий `size` остаётся числовым «размером под ключ» (мм) у
+> `klyuchi-gaechnye`/`golovki`: один `Attribute` на slug не может быть
+> одновременно `decimal` и `select`, и объявление перчаток молча проигрывало.
+> Таблица значений и слаги опций перенесены без изменений.
 
 | Вариант в названии | Каноническое значение | slug |
 |---|---|---|
@@ -206,7 +212,7 @@ sandbox → staging apply`. Staging-apply правил, зависящих от
    `manage.py shell`), скрипты без write-вызовов; `load_attributes` /
    `enrich_attributes` в боевом режиме не запускаются (глобальный guard:
    перед записью обязательны dry-run + sandbox-репетиция).
-4. Правила части B (`size` перчаток с `word_boundary`, `analog_code` с
+4. Правила части B (`glove_size` перчаток с `word_boundary`, `analog_code` с
    `kind: text`) — отдельным коммитом, валидация после rebase на CODE-02;
    **непроходящие тесты в ветку не коммитить**.
 5. `pytest apps/catalog/test_attribute_extract.py` зелёный; полный

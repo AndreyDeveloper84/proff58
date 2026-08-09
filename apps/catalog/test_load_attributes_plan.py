@@ -1,4 +1,4 @@
-"""ХАР-PRE: dry-run/plan ``load_attributes`` + три дефекта загрузчика схемы.
+"""ХАР-PRE: dry-run/plan ``load_attributes`` + дефекты загрузчика схемы.
 
 Окно ХАР-PRE (задание владельца 2026-08-08). Проверяем:
 
@@ -15,6 +15,16 @@
    умолчанию (флаг ``--allow-ambiguous`` продолжает, пропуская), ``not_found`` —
    предупреждение с кодом причины (флаг ``--strict-bindings`` делает фатальным).
 
+Окно ХАР-BIND (задание владельца 2026-08-09) добавило четвёртый:
+
+4. **Дефект «привязка в мёртвый узел»** — лестница разрешала имя, но не проверяла,
+   что выбранный узел живой: единственный кандидат с ``is_active=False`` /
+   ``on_site=False`` принимался молча, привязка создавалась, а атрибут не попадал
+   в фасеты витрины (на живых потомках его нет, а сам узел скрыт). Инвариант:
+   такая привязка получает отдельный статус ``dead_category`` и код причины
+   ``bound:*:dead``, по умолчанию — WARNING с указанием выбранного узла,
+   ``--strict-live-categories`` делает её фатальной.
+
 Плюс сам dry-run: ничего не пишет, печатает machine-readable план
 (create/update/keep + было→станет) и совпадает с тем, что реально делает apply.
 """
@@ -28,6 +38,7 @@ import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
+from apps.catalog.ingest import data_dir
 from apps.catalog.models import (
     Attribute,
     AttributeOption,
@@ -299,6 +310,146 @@ def test_plan_marks_missing_category(tmp_path):
     assert row["reason"] == "not_found"
     assert row["candidates"] == []
     assert plan["summary"]["bindings"]["not_found"] == 1
+
+
+# --------------------------------------------------------------------------- #
+# Дефект 4 (ХАР-BIND): привязка уходила в мёртвый узел молча
+# --------------------------------------------------------------------------- #
+
+
+def _dead_leaf() -> tuple[Category, Category]:
+    """Живой раздел и мёртвый лист под ним — ровно случай «Метчики и плашки» (40).
+
+    Глубины как на стенде: корень depth=1, «Металлорежущий инструмент» depth=2,
+    «Метчики и плашки» depth=3 — поэтому лестница работает уровнем ``tree``, не ``top``.
+    """
+    root = Category.add_root(name="Инструмент", slug="instrument", is_active=True, on_site=True)
+    section = root.add_child(
+        name="Металлорежущий инструмент", slug="metallorezhushchiy", is_active=True, on_site=True
+    )
+    dead = section.add_child(
+        name="Метчики и плашки", slug="metchiki-i-plashki", is_active=False, on_site=False
+    )
+    return section, dead
+
+
+TAPS = {
+    "tool_type": "metchiki-plashki",
+    "category": "Метчики и плашки",
+    "attributes": [{"slug": "tool_kind", "name": "Вид", "kind": "select", "options": []}],
+}
+TAPS_LIVE = dict(TAPS, category="Металлорежущий инструмент")
+
+
+@pytest.mark.django_db
+def test_plan_marks_binding_to_dead_category(tmp_path):
+    """Дефект 4: единственный кандидат мёртв — это отдельный статус, а не «bound»."""
+    _section, dead = _dead_leaf()
+    path = _write_rules(tmp_path, [TAPS])
+    plan = _plan(path)
+
+    row = next(r for r in plan["bindings"] if r["attribute"] == "tool_kind")
+    assert row["status"] == "dead_category"
+    assert row["reason"] == "bound:tree:dead"
+    assert row["category_id"] == dead.pk
+    assert plan["summary"]["bindings"]["dead_category"] == 1
+    assert plan["summary"]["bindings"]["bound"] == 0
+
+
+@pytest.mark.django_db
+def test_plan_prints_dead_binding_separately_with_chosen_node(tmp_path):
+    """План печатает такие привязки отдельно: какой узел выбран и почему."""
+    _section, dead = _dead_leaf()
+    path = _write_rules(tmp_path, [TAPS])
+
+    err = StringIO()
+    call_command("load_attributes", "--path", path, "--dry-run", stdout=StringIO(), stderr=err)
+    human = err.getvalue()
+
+    assert "dead_category 1" in human
+    assert f"#{dead.pk} metchiki-i-plashki" in human
+    assert "bound:tree:dead" in human
+    assert "active=False" in human and "on_site=False" in human
+
+
+@pytest.mark.django_db
+def test_dead_category_binding_is_warning_by_default(tmp_path):
+    """По умолчанию не фатально: привязка создаётся как раньше, но с предупреждением."""
+    _section, dead = _dead_leaf()
+    path = _write_rules(tmp_path, [TAPS])
+
+    err = StringIO()
+    call_command("load_attributes", "--path", path, stderr=err)
+
+    assert CategoryAttribute.objects.filter(category=dead, attribute__slug="tool_kind").exists()
+    assert "bound:tree:dead" in err.getvalue()
+
+
+@pytest.mark.django_db
+def test_dead_category_binding_is_fatal_under_strict_live_categories(tmp_path):
+    """Фатальность включается явным флагом — как ``--strict-bindings`` для not_found."""
+    _section, _dead = _dead_leaf()
+    path = _write_rules(tmp_path, [TAPS])
+
+    with pytest.raises(CommandError) as exc:
+        call_command("load_attributes", "--path", path, "--strict-live-categories")
+
+    assert "Метчики и плашки" in str(exc.value)
+    assert not Attribute.objects.filter(slug="tool_kind").exists()
+    assert not CategoryAttribute.objects.exists()
+
+
+@pytest.mark.django_db
+def test_live_binding_is_not_flagged_as_dead(tmp_path):
+    """Живой узел guard не трогает: статус «bound», счётчик мёртвых нулевой."""
+    section, _dead = _dead_leaf()
+    path = _write_rules(tmp_path, [TAPS_LIVE])
+    plan = _plan(path)
+
+    row = next(r for r in plan["bindings"] if r["attribute"] == "tool_kind")
+    assert row["status"] == "bound"
+    assert row["reason"] == "bound:tree"
+    assert row["category_id"] == section.pk
+    assert plan["summary"]["bindings"]["dead_category"] == 0
+
+
+@pytest.mark.django_db
+def test_dead_candidate_dropped_in_favour_of_live_is_not_flagged(tmp_path):
+    """Мёртвый однофамилец рядом с живым — это «bound:top:live», а не dead_category."""
+    _legacy, live = _two_roots_same_name()
+    path = _write_rules(tmp_path, [HAND_TOOL])
+    plan = _plan(path)
+
+    row = next(r for r in plan["bindings"] if r["attribute"] == "size")
+    assert row["status"] == "bound"
+    assert row["reason"] == "bound:top:live"
+    assert row["category_id"] == live.pk
+    assert plan["summary"]["bindings"]["dead_category"] == 0
+
+
+@pytest.mark.django_db
+def test_real_rules_bind_taps_to_live_metal_cutting_section():
+    """ХАР-BIND: боевой словарь ведёт метчики/плашки в живой раздел, а не в мёртвый лист."""
+    section, dead = _dead_leaf()
+    section.add_child(name="Метчики", slug="metchiki", is_active=True, on_site=True)
+    section.add_child(name="Плашки", slug="plashki", is_active=True, on_site=True)
+
+    plan = _plan(str(data_dir()))
+    taps = [r for r in plan["bindings"] if r["tool_type"] == "metchiki-plashki"]
+
+    assert taps, "блок metchiki-plashki исчез из словаря"
+    assert {r["category"] for r in taps} == {"Металлорежущий инструмент"}
+    assert {r["category_id"] for r in taps} == {section.pk}
+    assert {r["status"] for r in taps} == {"bound"}
+    # tool_kind — тот самый атрибут, которого из-за мёртвой 40 не было в фасетах.
+    assert "tool_kind" in {r["attribute"] for r in taps}
+
+    call_command("load_attributes")
+    bound = set(
+        CategoryAttribute.objects.filter(category=section).values_list("attribute__slug", flat=True)
+    )
+    assert "tool_kind" in bound
+    assert not CategoryAttribute.objects.filter(category=dead).exists()
 
 
 # --------------------------------------------------------------------------- #
