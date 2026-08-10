@@ -77,3 +77,9 @@ docs/reports/*.csv
 config/settings/test.py
 celerybeat-schedule
 test.db
+
+# Дампы cookie от curl/httpie: содержат живые sessionid стенда (см. e.txt в 5a5466b)
+cookies.txt
+cookies*.txt
+*.cookies
+/e.txt
