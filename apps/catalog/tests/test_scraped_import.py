@@ -330,6 +330,96 @@ def test_alias_yields_ambiguous_when_multiple_bases(catalog):
     assert m.status == "ambiguous"
 
 
+# --- покрытие индекса каталога (ПАРС-17) --------------------------------------
+
+
+@pytest.mark.django_db
+def test_manufacturer_sku_from_product_name_feeds_sku_step(catalog):
+    """Артикул производителя стоит в названии, поле ``article`` пустое.
+
+    Так выглядит номенклатура Ресанты/Вихря в 1С («Перф. П-800к 72/3/6 ВИХРЬ»):
+    до правки такой товар терял ступень SKU целиком.
+    """
+    p = _product(catalog, "Перф. П-800к 72/3/6 ВИХРЬ", article="")
+    index = si.build_product_index(list(Product.objects.all()))
+    assert index.entries[0].article_keys == ["7236"]
+    m = si.match_card(_card("Перфоратор Вихрь П-800К", "72/3/6"), "vihr", index)
+    assert m.status == "matched"
+    assert m.products == [p]
+    assert m.matched_by == "sku"
+
+
+@pytest.mark.django_db
+def test_garbage_rsv_article_not_indexed(catalog):
+    """Мусорный ``РСВ-…`` не уникален: индекс игнорирует его, как ``article_check``.
+
+    Иначе два товара с одним и тем же ``РСВ`` дают ``ambiguous`` на ровном месте,
+    а настоящий артикул из названия остаётся рабочим.
+    """
+    p1 = _product(catalog, "Перф. П-1200к-м 72/3/3 ВИХРЬ", article="РСВ-140807")
+    _p2 = _product(catalog, "Перф. П-900к-в 72/3/2 ВИХРЬ", article="РСВ-140807")
+    index = si.build_product_index(list(Product.objects.all()))
+    assert si.match_card(_card("Перфоратор Вихрь", "РСВ-140807"), "vihr", index).status == (
+        "not_found"
+    )
+    m = si.match_card(_card("Перфоратор Вихрь П-1200К-М", "72/3/3"), "vihr", index)
+    assert m.status == "matched"
+    assert m.products == [p1]
+    assert m.matched_by == "sku"
+
+
+@pytest.mark.django_db
+def test_model_fragment_with_slash_is_not_sku_key(catalog):
+    """``ЭШМ-125/5Э`` — часть модели, а не артикул: ключа SKU ``125/5`` быть не должно."""
+    _product(catalog, "Шлифмаш эксц РЕСАНТА ЭШМ-125/5Э", article="")
+    index = si.build_product_index(list(Product.objects.all()))
+    assert index.entries[0].article_keys == []
+    m = si.match_card(_card("Шлифмашина Ресанта прочая", "125/5"), "resanta", index)
+    assert m.status == "not_found"
+
+
+@pytest.mark.django_db
+def test_product_with_two_brands_indexed_under_both(catalog):
+    """Имя упоминает два бренда — товар виден карточкам обоих источников."""
+    p = _product(catalog, "Аккумулятор для ДА-24-2ЛК Зубр, Ресанта", article="ACC-1")
+    index = si.build_product_index(list(Product.objects.all()))
+    assert index.entries[0].tokens == ["ресанта", "зубр"]
+    for source in ("zubr", "resanta"):
+        m = si.match_card(_card("Аккумулятор ДА-24-2ЛК", "ACC-1"), source, index)
+        assert m.status == "matched", source
+        assert m.products == [p]
+
+
+@pytest.mark.django_db
+def test_product_without_brand_token_stays_out_of_index(catalog):
+    """Брендовый токен остаётся обязательным: он и защищает ступень SKU.
+
+    Артикулы источников («70/6/14») сталкиваются с 1С-артикулами посторонних
+    товаров, поэтому совпадение по одному лишь артикулу запрещено.
+    """
+    _product(catalog, "Щуп веерный 0,05-1,0 мм (20 листов)", article="70/6/14")
+    index = si.build_product_index(list(Product.objects.all()))
+    assert index.entries == []
+    m = si.match_card(_card("Бензопила Ресанта БП-4516", "70/6/14"), "resanta", index)
+    assert m.status == "not_found"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Переходник ЗУБР 3/4 на 1/2",  # дроби размеров
+        "Выключатель УШМ Интерскол 125/900",  # Ø и мощность
+        "Тепловентилятор ТВК-1 220-240 В, 900/1800 В Ресанта",  # два режима мощности
+    ],
+)
+def test_two_group_numbers_in_name_are_not_sku_keys(catalog, name):
+    """Двухгрупповые числа в названии — параметры, а не артикул производителя."""
+    _product(catalog, name, article="")
+    index = si.build_product_index(list(Product.objects.all()))
+    assert index.entries[0].article_keys == []
+
+
 @pytest.mark.django_db
 def test_exact_card_kept_when_alias_card_collides(catalog, tmp_path):
     """Точная карточка остаётся matched, суффиксная уходит в ambiguous (CODE-04)."""
