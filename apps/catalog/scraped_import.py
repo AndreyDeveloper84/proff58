@@ -96,6 +96,21 @@ BRAND_TOKEN_BY_CARD_BRAND = {
     "зубр": "зубр",
     "интерскол": "интерскол",
 }
+# порядок стабилен и без дублей: имя товара может содержать несколько брендов
+BRAND_TOKENS = list(dict.fromkeys(BRAND_TOKEN_BY_SOURCE.values()))
+
+# Мусорные артикулы 1С: не уникальны, один и тот же код висит на разных товарах.
+# Тот же список игнорирует ``article_check`` — индекс обязан вести себя так же,
+# иначе ступень SKU выдаёт ``ambiguous`` на пустом месте.
+GARBAGE_ARTICLE_PREFIXES = ("РСВ",)
+
+# Артикул производителя, попавший в НАЗВАНИЕ товара: «72/14/4», «900/71/8/80».
+# Требования выведены из замера каталога (см. docs ПАРС-17):
+# - минимум ТРИ группы: двухгрупповые числа в названиях почти всегда параметры
+#   («УШМ 125/900» — Ø и мощность, «ТВК-1 900/1800 В»), а не артикулы;
+# - первая группа от двух цифр — иначе ловятся дроби «3/4», «1/2»;
+# - слева не буква/цифра/дефис — иначе «ЭШМ-125/5Э» разбирается как артикул.
+MANUFACTURER_SKU_IN_NAME_RE = re.compile(r"(?<![\w/\-])\d{2,4}(?:/\d{1,4}){2,4}(?![\w/])")
 
 
 def norm_key(s: str) -> str:
@@ -362,11 +377,11 @@ class MatchResult:
 @dataclass
 class ProductMatchEntry:
     product: Product
-    token: str
+    tokens: list[str]  # все брендовые токены из имени товара (обычно один)
     exact_key: str | None
     normalized_key: str | None
     alias_key: str | None
-    article_key: str | None
+    article_keys: list[str]  # артикул 1С + артикулы производителя из имени
 
 
 @dataclass
@@ -387,41 +402,79 @@ class MatchIndex:
     )
 
 
+def product_brand_tokens(name: str) -> list[str]:
+    """Все брендовые токены в названии товара, в стабильном порядке.
+
+    Раньше брался только первый: товар, в имени которого упомянуты два бренда
+    (совместимая оснастка, аккумулятор «для X и Y»), был виден карточкам лишь
+    одного из них.
+    """
+    low = name.lower()
+    return [t for t in BRAND_TOKENS if t in low]
+
+
+def product_article_keys(product: Product) -> list[str]:
+    """Ключи ступени SKU по одному товару: артикул 1С + артикулы из имени.
+
+    Артикул производителя у Ресанты/Вихря нередко стоит прямо в названии
+    («Перф. П-800к 72/3/6 ВИХРЬ»), а поле ``article`` при этом пустое или
+    занято мусорным кодом ``РСВ-…``. Такой товар терял ступень SKU целиком.
+    Мусорные артикулы в индекс не попадают — как и в ``article_check``.
+    """
+    keys: list[str] = []
+    article = (product.article or "").strip()
+    if article and not article.upper().startswith(GARBAGE_ARTICLE_PREFIXES):
+        key = norm_key(article)
+        if key:
+            keys.append(key)
+    for raw in MANUFACTURER_SKU_IN_NAME_RE.findall(product.name):
+        key = norm_key(raw)
+        if key and key not in keys:
+            keys.append(key)
+    return keys
+
+
 def _index_entry(product: Product, prefixes: list[str] | None = None) -> ProductMatchEntry | None:
-    token = next((t for t in BRAND_TOKEN_BY_SOURCE.values() if t in product.name.lower()), None)
-    if token is None:
+    tokens = product_brand_tokens(product.name)
+    if not tokens:
         return None
     exact = _exact_model_key(product.name, prefixes=prefixes)
     normalized = model_key(product.name, prefixes=prefixes)
     alias = _alias_key(extract_model(product.name, prefixes=prefixes)) if exact else None
-    article = norm_key(product.article) if product.article else None
     return ProductMatchEntry(
         product=product,
-        token=token,
+        tokens=tokens,
         exact_key=exact,
         normalized_key=normalized,
         alias_key=alias,
-        article_key=article,
+        article_keys=product_article_keys(product),
     )
 
 
 def build_product_index(products: list[Product], prefixes: list[str] | None = None) -> MatchIndex:
-    """Индекс для лестницы матчинга: SKU → exact → normalized → alias."""
+    """Индекс для лестницы матчинга: SKU → exact → normalized → alias.
+
+    Брендовый токен в названии остаётся обязательным условием попадания в
+    индекс: он единственное, что отделяет ступень SKU от ложных совпадений —
+    артикулы источников (``70/6/14``) сталкиваются с 1С-артикулами посторонних
+    товаров, а ``resanta.ru`` и ``vihr.su`` делят одно пространство SKU.
+    """
     index = MatchIndex()
     for p in products:
         entry = _index_entry(p, prefixes=prefixes)
         if entry is None:
             continue
         index.entries.append(entry)
-        index.by_token[entry.token].append(entry)
-        if entry.article_key:
-            index.by_article[(entry.token, entry.article_key)].append(entry)
-        if entry.exact_key:
-            index.by_exact[(entry.token, entry.exact_key)].append(entry)
-        if entry.normalized_key:
-            index.by_normalized[(entry.token, entry.normalized_key)].append(entry)
-        if entry.alias_key:
-            index.by_alias[(entry.token, entry.alias_key)].append(entry)
+        for token in entry.tokens:
+            index.by_token[token].append(entry)
+            for article_key in entry.article_keys:
+                index.by_article[(token, article_key)].append(entry)
+            if entry.exact_key:
+                index.by_exact[(token, entry.exact_key)].append(entry)
+            if entry.normalized_key:
+                index.by_normalized[(token, entry.normalized_key)].append(entry)
+            if entry.alias_key:
+                index.by_alias[(token, entry.alias_key)].append(entry)
     return index
 
 
@@ -480,7 +533,7 @@ def article_check(product: Product, card_sku: str | None) -> str | None:
     art = (product.article or "").strip()
     if not art or not card_sku:
         return None
-    if art.upper().startswith("РСВ"):
+    if art.upper().startswith(GARBAGE_ARTICLE_PREFIXES):
         return None
     return "confirmed" if norm_key(art) == norm_key(card_sku) else "mismatch"
 
