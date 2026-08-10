@@ -60,7 +60,7 @@ describe("CheckoutPage — зона доставки (аудит №5)", () => {
 
   it("курьер: зона обязательна — без неё заказ не отправляется", async () => {
     render(<CheckoutPage />);
-    await screen.findByLabelText(/^Зона доставки/); // дождаться загрузки зон
+    await screen.findByLabelText(/^Куда доставить/); // дождаться загрузки зон
     fillBaseFields();
     submit();
 
@@ -70,7 +70,7 @@ describe("CheckoutPage — зона доставки (аудит №5)", () => {
 
   it("курьер: выбранная зона уходит в delivery_zone", async () => {
     render(<CheckoutPage />);
-    const select = await screen.findByLabelText(/^Зона доставки/);
+    const select = await screen.findByLabelText(/^Куда доставить/);
     fillBaseFields();
     fireEvent.change(select, { target: { value: "penza" } });
     submit();
@@ -86,10 +86,10 @@ describe("CheckoutPage — зона доставки (аудит №5)", () => {
 
   it("самовывоз: зона не требуется и уходит пустой", async () => {
     render(<CheckoutPage />);
-    await screen.findByLabelText(/^Зона доставки/);
+    await screen.findByLabelText(/^Куда доставить/);
     fireEvent.change(screen.getByLabelText(/^Имя/), { target: { value: "Иван" } });
     fireEvent.change(screen.getByLabelText(/^Телефон/), { target: { value: "+79001112233" } });
-    fireEvent.click(screen.getByLabelText("Самовывоз"));
+    fireEvent.click(screen.getByRole("radio", { name: /Самовывоз/ }));
     submit();
 
     await waitFor(() => expect(mockedPlaceOrder).toHaveBeenCalled());

@@ -9,6 +9,7 @@ from __future__ import annotations
 from rest_framework import serializers
 
 from ..models import B2BInvoice, Order, OrderItem
+from ..payment_methods import PaymentMethod, available_payment_methods
 
 
 def _money(value):
@@ -307,7 +308,7 @@ class CreateOrderSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     {"payment_method": "B2B-заказ оплачивается только по счёту."}
                 )
-            attrs["payment_method"] = "invoice"
+            attrs["payment_method"] = PaymentMethod.INVOICE.value
 
             # #558 (Wave 1): доставки для юрлиц нет. Курьер — явный отказ, зону
             # игнорируем уже на границе API, чтобы она не могла повлиять на сумму
@@ -327,6 +328,22 @@ class CreateOrderSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"payment_method": "Оплата по счёту доступна только для B2B."}
             )
+        else:
+            # DRF-948/951: способ оплаты зависит от того, как покупатель получает
+            # заказ. Наличные и карта — только на выдаче в магазине; оплату
+            # курьеру магазин не подтверждал. Проверяем на сервере: браузер
+            # решает, что показать, но не что разрешить.
+            method = attrs.get("payment_method") or PaymentMethod.ONLINE.value
+            allowed = available_payment_methods(customer_type, attrs.get("delivery_method") or "")
+            if method not in allowed:
+                raise serializers.ValidationError(
+                    {
+                        "payment_method": (
+                            "Этот способ оплаты недоступен для выбранного способа получения."
+                        )
+                    }
+                )
+            attrs["payment_method"] = method
 
         # #569: слот имеет смысл только у курьерской доставки (зеркало place_order).
         if attrs.get("delivery_slot_id") and (attrs.get("delivery_method") or "") != "courier":

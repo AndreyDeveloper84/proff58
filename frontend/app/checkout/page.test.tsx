@@ -132,9 +132,9 @@ describe("CheckoutPage — B2B-реквизиты и способ оплаты",
 
   it("B2B: блок доставки скрыт, показано пояснение про самовывоз", () => {
     render(<CheckoutPage />);
-    expect(screen.getByText("Способ доставки")).toBeTruthy();
+    expect(screen.getByText("Способ получения")).toBeTruthy();
     fireEvent.click(screen.getByLabelText("Организация"));
-    expect(screen.queryByText("Способ доставки")).toBeNull();
+    expect(screen.queryByText("Способ получения")).toBeNull();
     expect(screen.getByText(/самовывоз со склада/i)).toBeTruthy();
     expect(screen.getByText(/Счёт формируется только на товары/i)).toBeTruthy();
   });
@@ -234,5 +234,105 @@ describe("CheckoutPage — переход к оплате", () => {
     submit();
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/order/П-777/thanks"));
+  });
+});
+
+describe("CheckoutPage — способы оплаты (DRF-948)", () => {
+  beforeEach(() => {
+    pushMock.mockReset();
+    replaceMock.mockReset();
+    refreshMock.mockReset();
+    cartState.cart = FULL_CART;
+    cartState.loading = false;
+    startPaymentMock.mockReset();
+    startPaymentMock.mockResolvedValue({ payment_status: "pending", confirmation_url: "" });
+    mockedPlaceOrder.mockReset();
+    mockedPlaceOrder.mockResolvedValue({ order_number: "П-948" });
+  });
+
+  const pickSelfPickup = () =>
+    fireEvent.click(screen.getByRole("radio", { name: /самовывоз/i }));
+
+  it("самовывоз: доступны онлайн, наличные и карта при получении", () => {
+    render(<CheckoutPage />);
+    pickSelfPickup();
+
+    expect(screen.getByRole("radio", { name: /Онлайн-оплата/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Наличными при получении/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Картой при получении/ })).toBeInTheDocument();
+  });
+
+  // Оплату курьеру магазин не подтверждал: показывать её нельзя даже
+  // заблокированной — это выглядит как обещание.
+  it("курьер: только онлайн, оплаты на месте нет", () => {
+    render(<CheckoutPage />);
+
+    expect(screen.getByRole("radio", { name: /Онлайн-оплата/ })).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: /при получении/ })).not.toBeInTheDocument();
+  });
+
+  it("выбранные наличные уходят в заказ", async () => {
+    render(<CheckoutPage />);
+    pickSelfPickup();
+    fireEvent.click(screen.getByRole("radio", { name: /Наличными при получении/ }));
+    fireEvent.change(screen.getByLabelText(/^Имя/), { target: { value: "Иван" } });
+    fireEvent.change(screen.getByLabelText(/^Телефон/), { target: { value: "+79001112233" } });
+    submit();
+
+    await waitFor(() => expect(mockedPlaceOrder).toHaveBeenCalled());
+    expect(mockedPlaceOrder.mock.calls[0][0]).toMatchObject({ payment_method: "cash" });
+  });
+
+  // Выбрали карту на самовывозе, потом передумали и выбрали курьера — такой
+  // способ исчез, и заказ не должен уйти с заведомо невозможной оплатой.
+  it("смена получения на курьера возвращает оплату к онлайн", async () => {
+    render(<CheckoutPage />);
+    pickSelfPickup();
+    fireEvent.click(screen.getByRole("radio", { name: /Картой при получении/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /курьер/i }));
+    fillBaseFields();
+    submit();
+
+    await waitFor(() => expect(mockedPlaceOrder).toHaveBeenCalled());
+    expect(mockedPlaceOrder.mock.calls[0][0]).toMatchObject({ payment_method: "online" });
+  });
+
+  it("организация платит только по счёту", () => {
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByRole("radio", { name: /Организация|Юридическое/i }));
+
+    expect(screen.getByRole("radio", { name: /Оплата по счёту/ })).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: /Онлайн-оплата/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("CheckoutPage — самовывоз (DRF-951)", () => {
+  beforeEach(() => {
+    pushMock.mockReset();
+    replaceMock.mockReset();
+    cartState.cart = FULL_CART;
+    cartState.loading = false;
+    mockedPlaceOrder.mockReset();
+    mockedPlaceOrder.mockResolvedValue({ order_number: "П-951" });
+  });
+
+  // Выбрал самовывоз — покажи, куда и когда ехать. Раньше на месте адреса
+  // было пусто, и его искали в подвале.
+  it("показывает адрес магазина и часы работы", () => {
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByRole("radio", { name: /Самовывоз/ }));
+
+    expect(screen.getByText("Самовывоз из магазина")).toBeInTheDocument();
+    // Адрес встречается дважды: в подписи варианта и в раскрытом блоке.
+    expect(screen.getAllByText(/Онежский проезд/).length).toBeGreaterThan(1);
+    expect(screen.getByText(/Пн–Вс/)).toBeInTheDocument();
+  });
+
+  it("при самовывозе полей курьерской доставки нет", () => {
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByRole("radio", { name: /Самовывоз/ }));
+
+    expect(screen.queryByLabelText(/^Куда доставить/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Улица/)).not.toBeInTheDocument();
   });
 });

@@ -30,7 +30,9 @@ import { composeAddress, validateAddress } from "@/lib/delivery-address";
 
 type CustomerType = "b2c" | "b2b";
 type DeliveryMethod = "courier" | "pickup";
-type PaymentMethod = "online" | "invoice";
+// Способы оплаты заказа. Наличные и карта — только на выдаче в магазине;
+// доступность считает paymentOptions, авторитетно проверяет сервер.
+type PaymentMethod = "online" | "invoice" | "cash" | "card_on_pickup";
 
 // #574: высота полей — как в дизайн-системе (components/ui/input.tsx): 44px на
 // мобильном (тач-таргет), компактнее на desktop. Раньше py-2 давал ~36px и все
@@ -87,11 +89,52 @@ export default function CheckoutPage() {
   const isB2B = customerType === "b2b";
   const addressParts = { city, street, house, flat, entrance, floor };
 
-  // Способ оплаты не хранится в состоянии: бэк (CreateOrderSerializer.validate) допускает
-  // ровно одну связку — b2c → online, b2b → invoice, любая другая комбинация даёт 400.
-  // Раньше payment был независимым состоянием с дефолтом "online", поэтому B2B-заказ
-  // гарантированно отклонялся. Выводим значение из типа покупателя.
-  const payment: PaymentMethod = isB2B ? "invoice" : "online";
+  // Способ оплаты выбирает человек, но не из всего подряд: набор зависит от того,
+  // кто покупает и как забирает (DRF-948/951). Ту же таблицу авторитетно проверяет
+  // сервер — здесь она только для показа.
+  const [paymentChoice, setPaymentChoice] = useState<PaymentMethod>("online");
+
+  const paymentOptions = useMemo<
+    { value: PaymentMethod; label: string; hint: string }[]
+  >(() => {
+    if (isB2B) {
+      return [
+        {
+          value: "invoice",
+          label: "Оплата по счёту",
+          hint: "Счёт с реквизитами придёт на почту и будет доступен в кабинете",
+        },
+      ];
+    }
+    const online = {
+      value: "online" as const,
+      label: "Онлайн-оплата",
+      hint: "Банковской картой на сайте",
+    };
+    if (delivery !== "pickup") return [online];
+    return [
+      online,
+      {
+        value: "cash" as const,
+        label: "Наличными при получении",
+        hint: "Оплата в магазине при выдаче заказа",
+      },
+      {
+        value: "card_on_pickup" as const,
+        label: "Картой при получении",
+        hint: "Банковской картой в магазине при выдаче",
+      },
+    ];
+  }, [isB2B, delivery]);
+
+  // Действующий способ считаем при рендере, а не храним копией в состоянии:
+  // смена типа покупателя или способа получения может убрать выбранный вариант
+  // (карта при получении после переключения на курьера), и тогда выбор сам
+  // схлопывается к первому доступному. Синхронизировать это эффектом значило бы
+  // отрисовать один кадр с заведомо невозможным способом.
+  const payment: PaymentMethod = paymentOptions.some((option) => option.value === paymentChoice)
+    ? paymentChoice
+    : paymentOptions[0].value;
 
   // #571: серверный промо-breakdown. Суммы здесь — только превью; авторитетный
   // расчёт (включая free_delivery-код) делает place_order.
@@ -522,8 +565,10 @@ export default function CheckoutPage() {
           </div>
         ) : (
         <fieldset className="space-y-3 rounded-lg border border-line bg-surface p-5">
+          {/* DRF-951: «Способ получения», а не «доставки» — самовывоз доставкой
+              не является, и в корзине этот выбор больше не дублируется. */}
           <legend className="px-2 font-display text-lg font-semibold uppercase text-ink">
-            Способ доставки
+            Способ получения
           </legend>
           <label className="flex cursor-pointer items-center gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent">
             <input
@@ -538,7 +583,10 @@ export default function CheckoutPage() {
               }}
               className="accent-accent"
             />
-            <span className="text-sm text-ink">Курьер</span>
+            <span>
+              <span className="block text-sm text-ink">Курьерская доставка</span>
+              <span className="mt-0.5 block text-xs text-ink-3">По Пензе и области</span>
+            </span>
           </label>
           <label className="flex cursor-pointer items-center gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent">
             <input
@@ -554,8 +602,26 @@ export default function CheckoutPage() {
               }}
               className="accent-accent"
             />
-            <span className="text-sm text-ink">Самовывоз</span>
+            <span>
+              <span className="block text-sm text-ink">Самовывоз</span>
+              <span className="mt-0.5 block text-xs text-ink-3">
+                {SITE.address} · бесплатно
+              </span>
+            </span>
           </label>
+          {/* DRF-951: выбрал самовывоз — покажи, куда и когда ехать. Полей
+              доставки здесь нет и быть не должно, но пустое место вместо адреса
+              магазина заставляло искать его в подвале. */}
+          {delivery === "pickup" && (
+            <div className="rounded-md border border-line bg-raised p-3 text-xs leading-5 text-ink-2">
+              <span className="block font-semibold text-ink">Самовывоз из магазина</span>
+              <span className="block">{SITE.address}</span>
+              <span className="block">{SITE.schedule}</span>
+              <span className="mt-1 block text-ink-3">
+                Сообщим, когда заказ будет готов к выдаче.
+              </span>
+            </div>
+          )}
           {delivery === "courier" && (
             <>
               {zones === null && (
@@ -575,7 +641,7 @@ export default function CheckoutPage() {
               {courierZones.length > 0 && (
                 <div>
                   <label htmlFor="deliveryZone" className="mb-1 block text-sm text-ink-2">
-                    Зона доставки *
+                    Куда доставить? *
                   </label>
                   <select
                     id="deliveryZone"
@@ -587,7 +653,7 @@ export default function CheckoutPage() {
                     }}
                     className={inputClass}
                   >
-                    <option value="">— выберите зону —</option>
+                    <option value="">— выберите район —</option>
                     {courierZones.map((z) => (
                       <option key={z.zone} value={z.zone}>
                         {z.name}
@@ -752,37 +818,29 @@ export default function CheckoutPage() {
           <legend className="px-2 font-display text-lg font-semibold uppercase text-ink">
             Способ оплаты
           </legend>
-          {/* Способ оплаты определяется типом покупателя (см. вывод payment выше), поэтому
-              оба варианта показываем, но заблокированными: правило видно, выбрать нечего. */}
-          {(
-            [
-              ["online", "Онлайн-оплата"],
-              ["invoice", "Счёт для организации (B2B)"],
-            ] as const
-          ).map(([value, label]) => (
+          {/* DRF-948/951: доступные способы зависят от того, как человек забирает
+              заказ. Недоступные не показываем вовсе — заблокированный вариант
+              выглядит как обещание, до которого «когда-нибудь дадут дотянуться».
+              Авторитетно ту же таблицу проверяет сервер. */}
+          {paymentOptions.map(({ value, label, hint }) => (
             <label
               key={value}
-              className={`flex items-center gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent ${
-                payment === value ? "" : "opacity-50"
-              }`}
+              className="flex cursor-pointer items-start gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent has-[:checked]:bg-accent/5"
             >
               <input
                 type="radio"
                 name="payment"
                 value={value}
                 checked={payment === value}
-                disabled
-                readOnly
-                className="accent-accent"
+                onChange={() => setPaymentChoice(value)}
+                className="mt-0.5 accent-accent"
               />
-              <span className="text-sm text-ink">{label}</span>
+              <span>
+                <span className="block text-sm font-medium text-ink">{label}</span>
+                <span className="mt-0.5 block text-xs text-ink-3">{hint}</span>
+              </span>
             </label>
           ))}
-          <p className="text-xs text-ink-3">
-            {isB2B
-              ? "Заказы организаций оплачиваются только по счёту."
-              : "Оплата по счёту доступна только для организаций."}
-          </p>
         </fieldset>
 
         <div className="rounded-lg border border-line bg-surface p-5">
@@ -874,6 +932,23 @@ export default function CheckoutPage() {
               Окончательную сумму, включая доставку, считает сервер при оформлении.
             </p>
           )}
+          {/* DRF-951: перед нажатием человек должен видеть не только сумму, но и
+              на что он соглашается — как получает и чем платит. Раньше это было
+              разбросано по форме выше и в итоге не сходилось в одном месте. */}
+          <dl className="mt-3 space-y-1 border-t border-line pt-3 text-xs text-ink-3">
+            <div className="flex justify-between gap-2">
+              <dt>Получение</dt>
+              <dd className="text-right text-ink-2">
+                {isB2B || delivery === "pickup" ? "Самовывоз" : "Курьерская доставка"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>Оплата</dt>
+              <dd className="text-right text-ink-2">
+                {paymentOptions.find((option) => option.value === payment)?.label}
+              </dd>
+            </div>
+          </dl>
           {/* #574: до оформления резерва ещё нет, точное «до HH:MM» появится на
               «Спасибо» и в кабинете. Здесь — предупреждение без числа: срок
               резерва задаёт бэк, хардкодить его на фронте нельзя. */}
@@ -902,7 +977,9 @@ export default function CheckoutPage() {
               ? "Переходим к оплате…"
               : submitting
                 ? "Оформляем…"
-                : "Оформить заказ"}
+                : mixedCurrencies
+                  ? "Оформить заказ"
+                  : `Оформить заказ — ${formatPrice(previewTotal, currency)}`}
           </Button>
         </div>
           </aside>

@@ -7,11 +7,9 @@ import {
   ChevronLeft,
   Heart,
   LockKeyhole,
-  MapPin,
   ShieldCheck,
   ShoppingCart,
   Trash2,
-  Truck,
 } from "lucide-react";
 import { CartItemRow } from "@/components/cart/CartItemRow";
 import { useCart } from "@/components/cart/CartProvider";
@@ -31,7 +29,6 @@ const RECOMMENDATIONS = [
   { name: "Защитные очки", query: "защитные очки" },
 ] as const;
 
-type DeliveryMethod = "delivery" | "pickup";
 
 export default function CartPage() {
   const { cart, loading, total, update, remove } = useCart();
@@ -39,7 +36,6 @@ export default function CartPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("delivery");
   const selectionInitialized = useRef(false);
 
   useEffect(() => {
@@ -263,28 +259,6 @@ export default function CartPage() {
 
             <aside className="space-y-4 lg:sticky lg:top-24">
               <section className="rounded-lg border border-line bg-surface p-4">
-                <h2 className="text-sm font-semibold text-ink">Способ получения</h2>
-                <div className="mt-3 space-y-2">
-                  <DeliveryOption
-                    checked={deliveryMethod === "delivery"}
-                    onChange={() => setDeliveryMethod("delivery")}
-                    icon={Truck}
-                    title="Доставка"
-                    description="По Пензе и области"
-                    hint="Рассчитаем на следующем шаге"
-                  />
-                  <DeliveryOption
-                    checked={deliveryMethod === "pickup"}
-                    onChange={() => setDeliveryMethod("pickup")}
-                    icon={MapPin}
-                    title="Самовывоз"
-                    description="ул. Суворова, 225"
-                    hint="Бесплатно"
-                  />
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-line bg-surface p-4">
                 <PromoCodeField />
                 <div className="mt-3 space-y-3 text-sm">
                   <SummaryRow label={`${lineCount} ${pluralize(lineCount, "товар", "товара", "товаров")}`} value={formatPrice(baseTotal, currency)} />
@@ -369,44 +343,6 @@ export default function CartPage() {
   );
 }
 
-function DeliveryOption({
-  checked,
-  onChange,
-  icon: Icon,
-  title,
-  description,
-  hint,
-}: {
-  checked: boolean;
-  onChange: () => void;
-  icon: typeof Truck;
-  title: string;
-  description: string;
-  hint: string;
-}) {
-  return (
-    <label
-      className={cn(
-        "grid cursor-pointer grid-cols-[20px_minmax(0,1fr)_24px] gap-2 rounded-md border p-3 transition",
-        checked ? "border-accent bg-accent/5" : "border-line hover:bg-raised",
-      )}
-    >
-      <input
-        type="radio"
-        name="delivery-method"
-        checked={checked}
-        onChange={onChange}
-        className="mt-0.5 h-4 w-4 accent-accent"
-      />
-      <span>
-        <span className="block text-xs font-semibold text-ink">{title}</span>
-        <span className="mt-1 block text-[10px] leading-4 text-ink-3">{description}</span>
-        <span className="block text-[10px] leading-4 text-ink-3">{hint}</span>
-      </span>
-      <Icon className="h-5 w-5 text-ink-2" aria-hidden />
-    </label>
-  );
-}
 
 function SummaryRow({
   label,
