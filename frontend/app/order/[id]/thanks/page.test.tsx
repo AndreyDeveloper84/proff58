@@ -58,6 +58,25 @@ describe("ThanksPage (#574)", () => {
     expect(screen.getByText("В т.ч. НДС 22%")).toBeTruthy();
   });
 
+  // Показывали сырой код: в деталях заказа стояло «cash».
+  it("способ оплаты назван по-человечески", () => {
+    mockedRead.mockReturnValue(order({ payment_method: "cash", delivery_method: "pickup" }));
+    render(<ThanksPage />);
+    expect(screen.getByText("Наличными при получении")).toBeTruthy();
+    expect(screen.queryByText("cash")).toBeNull();
+  });
+
+  // Состояние заказа сообщает OrderOutcome сверху. Дублирующая строка «Статус»
+  // спорила с ним: над «Оплата при получении» стояло «Ожидает оплаты».
+  it("статус в деталях не дублируется", () => {
+    mockedRead.mockReturnValue(
+      order({ payment_method: "cash", delivery_method: "pickup", display_status: "Ожидает оплаты" }),
+    );
+    render(<ThanksPage />);
+    expect(screen.getByText("Оплата при получении. Мы свяжемся с вами и сообщим об изменении статуса.")).toBeTruthy();
+    expect(screen.queryByText("Ожидает оплаты")).toBeNull();
+  });
+
   // Раньше без снимка страница показывала только номер заказа и ничего не объясняла.
   it("без снимка объясняет ситуацию и ведёт в кабинет", () => {
     mockedRead.mockReturnValue(null);

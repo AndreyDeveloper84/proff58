@@ -6,6 +6,7 @@ import { AlertCircle, CheckCircle, Clock, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
 import { startOrderPayment } from "@/lib/orders";
+import { isPaidOnPickup } from "@/lib/payment-methods";
 import { formatPrice } from "@/lib/format";
 import type { Order } from "@/lib/types";
 
@@ -25,7 +26,9 @@ type Outcome = "paid" | "awaiting-payment" | "invoice" | "on-delivery";
 
 function outcomeOf(order: Order): Outcome {
   if (order.payment_method === "invoice") return "invoice";
-  if (order.payment_method === "cash") return "on-delivery";
+  // Наличные и карта на выдаче — оба про оплату в магазине. Проверять их по
+  // одному коду значило бы звать в кассу того, кто собрался платить картой на месте.
+  if (isPaidOnPickup(order.payment_method)) return "on-delivery";
   return order.payment_status === "paid" ? "paid" : "awaiting-payment";
 }
 

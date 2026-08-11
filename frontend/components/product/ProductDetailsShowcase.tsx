@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Collapsible } from "./Collapsible";
 import { SITE } from "@/lib/site";
-import { useCasesFor } from "@/lib/pdp-usecases";
+import { pickUseCases } from "@/lib/pdp-usecases";
 import type { ProductDetail, ProductSpec } from "@/lib/types";
 
 type SpecGroup = {
@@ -192,7 +192,7 @@ function ExpertPanel({ specs, wide = false }: { specs: ProductSpec[]; wide?: boo
   // Сценарии зависят от типа инструмента: у перфоратора это бурение и штробление,
   // у мойки — фасад и автомобиль. Для типа без своей записи остаётся честный
   // запасной набор про помощь магазина — выдумывать применение нельзя.
-  const { cases, isGeneric } = useCasesFor(specs);
+  const { cases, isGeneric } = pickUseCases(specs);
   const items = cases.map((useCase, index) => ({
     ...useCase,
     icon: USE_CASE_ICONS[index % USE_CASE_ICONS.length],
