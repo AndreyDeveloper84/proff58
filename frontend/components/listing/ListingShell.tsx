@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, List, SlidersHorizontal, X } from "lucide-react";
+import { ChevronLeft, LayoutGrid, List, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Listing, ListingQuery, RangeFilterValue, SortOption } from "@/lib/types";
 import { serializeQuery } from "@/lib/url-state";
@@ -14,6 +14,7 @@ import {
   sidebarFacets,
   typeNavPanel,
 } from "@/lib/listing";
+import { allTypesLabel } from "@/lib/category-phrases";
 import { track } from "@/lib/analytics";
 import { PER_PAGE_OPTIONS, SORT_OPTIONS } from "@/lib/constants";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -145,16 +146,12 @@ export function ListingShell({
 
   const sortOptions = listing.sort.length ? listing.sort : SORT_OPTIONS;
 
-  // Чипы применённых фильтров (C-lite). Каждый чип знает свой сброс. Тип — отдельный спокойный
-  // чип «Тип: <Имя>» (§9.1), диапазоны — по-русски с единицами «… от 10,5 до 20 мм» (§9.2).
+  // Чипы применённых фильтров (C-lite). Каждый чип знает свой сброс; диапазоны —
+  // по-русски с единицами «… от 10,5 до 20 мм» (§9.2).
+  // Чипа «Тип: X» здесь намеренно нет (DRF-994): человек уже стоит на странице
+  // выбранного типа, и чип повторяет то, что написано строкой возврата выше, —
+  // а заодно накручивал счётчик на кнопке «Фильтры», который считает эти чипы.
   const chips: { key: string; label: string; onRemove: () => void }[] = [];
-  if (query.toolType) {
-    chips.push({
-      key: "tool_type",
-      label: `Тип: ${activeToolTypeLabel}`,
-      onRemove: () => applyToolType(null, activeToolTypeLabel),
-    });
-  }
   for (const [code, val] of Object.entries(query.filters)) {
     const facet = listing.facets.find((f) => f.code === code);
     if (Array.isArray(val)) {
@@ -336,6 +333,22 @@ export function ListingShell({
               overflow-hidden и узкую колонку с чертежом — часть капсул просто
               обрезалась, и человек их не видел. */}
           {nav && <CategoryNavStrip nav={nav} onSelect={onSelectType} />}
+
+          {/* Тип выбран — панели типов нет (правило D), вместо неё выход обратно.
+              Выбор уже сделан: показывать остальные 43 типа значит занимать
+              половину первого экрана предложением сделать его заново (DRF-994).
+              Название типа несёт эта строка, а не H1: заголовок обязан совпадать
+              с хлебными крошками и generateMetadata. */}
+          {query.toolType && (
+            <button
+              type="button"
+              onClick={() => applyToolType(null, activeToolTypeLabel)}
+              className="mb-4 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-accent hover:underline lg:min-h-9"
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden />
+              {allTypesLabel(listing.category.title)}
+            </button>
+          )}
 
           {listing.promo && (
             <a
