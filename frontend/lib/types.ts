@@ -82,6 +82,10 @@ export type Facet = {
   // Маппится из ApiFacet.group. Осмыслен только для технических (kind:"tech") фасетов;
   // базовые (kind:"base") и навигация (kind:"nav") группируются отдельно. undefined → main.
   group?: FacetGroupKind;
+  // Скольких товаров выдачи характеристика вообще касается — сумма count её значений.
+  // У диапазонных фасетов значения схлопываются в min/max, и счётчиков в options уже нет,
+  // поэтому покрытие считается при маппинге. Нужно гейтингу сайдбара (sidebarFacets).
+  covered?: number;
 };
 
 export type SortOption =

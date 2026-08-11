@@ -4,6 +4,8 @@ import {
   categoryNav,
   filtersAfterToolTypeChange,
   normalizeRangeFilters,
+  pricePresets,
+  sidebarFacets,
   typeNavPanel,
 } from "./listing";
 import type { Facet, Listing } from "./types";
@@ -308,5 +310,119 @@ describe("typeNavPanel", () => {
 
   it("нет навигации — нет и панели", () => {
     expect(typeNavPanel(null)).toBeNull();
+  });
+});
+
+describe("pricePresets", () => {
+  it("на широкой шкале доступны все четыре", () => {
+    expect(pricePresets(70, 92000).map((p) => p.label)).toEqual([
+      "до 3 000",
+      "3 000 – 7 000",
+      "7 000 – 15 000",
+      "от 15 000",
+    ]);
+  });
+
+  // «от 15 000» на выдаче, где всё дешевле 12 000, — кнопка, дающая ноль товаров.
+  it("не предлагает диапазоны за пределами шкалы", () => {
+    expect(pricePresets(500, 12000).map((p) => p.label)).toEqual([
+      "до 3 000",
+      "3 000 – 7 000",
+      "7 000 – 15 000",
+    ]);
+  });
+
+  // Пресет, который не отсекает ничего, normalizeRangeFilters всё равно сбросит —
+  // нажатие выглядело бы как «ничего не произошло».
+  it("не предлагает диапазон, который ничего не сужает", () => {
+    expect(pricePresets(4000, 6000).map((p) => p.label)).toEqual([]);
+  });
+
+  it("шкалы нет — пресетов нет", () => {
+    expect(pricePresets(undefined, undefined)).toEqual([]);
+    expect(pricePresets(1000, 1000)).toEqual([]);
+  });
+});
+
+describe("sidebarFacets: технические фасеты на широкой категории", () => {
+  function facet(code: string, kind: "base" | "tech", counts: number[]): Facet {
+    return {
+      code,
+      label: code,
+      type: "checkbox",
+      kind,
+      options: counts.map((count, i) => ({ value: `v${i}`, label: `v${i}`, count, selected: false })),
+    };
+  }
+
+  // Числа — «Электроинструмент» со стенда: 1518 товаров, мощность у 518, патрон у 107.
+  const broad = () =>
+    listing({
+      total: 1518,
+      facets: [
+        navFacet([
+          { value: "dreli", label: "Дрели", count: 337 },
+          { value: "pily", label: "Пилы", count: 150 },
+        ]),
+        facet("price", "base", [1518]),
+        facet("power", "tech", [300, 218]),
+        facet("chuck", "tech", [60, 47]),
+      ],
+    });
+
+  it("характеристика, покрывающая треть выдачи, показывается", () => {
+    expect(sidebarFacets(broad()).map((f) => f.code)).toContain("power");
+  });
+
+  // «Энергия удара» относится к 8 % раздела: для остальных 92 % такой фильтр
+  // означает «скрыть почти всё».
+  it("редкая характеристика на широкой категории остаётся скрытой", () => {
+    expect(sidebarFacets(broad()).map((f) => f.code)).not.toContain("chuck");
+  });
+
+  it("после выбора типа показываются все характеристики", () => {
+    expect(sidebarFacets(broad(), "dreli").map((f) => f.code)).toEqual([
+      "price",
+      "power",
+      "chuck",
+    ]);
+  });
+});
+
+// Диапазонный фасет схлопывает значения в min/max, и count в options не остаётся —
+// покрытие приходит отдельным полем из адаптера. На этом «Мощность» (34 % выдачи)
+// сначала не попала в сайдбар.
+describe("sidebarFacets: покрытие диапазонного фасета", () => {
+  const rangeFacet = (code: string, covered: number): Facet => ({
+    code,
+    label: code,
+    type: "range",
+    kind: "tech",
+    covered,
+    min: 100,
+    max: 2000,
+  });
+
+  const broadWithRanges = () =>
+    listing({
+      total: 1518,
+      facets: [
+        navFacet([
+          { value: "dreli", label: "Дрели", count: 337 },
+          { value: "pily", label: "Пилы", count: 150 },
+        ]),
+        rangeFacet("attr_power", 518),
+        rangeFacet("attr_energy_impact", 131),
+      ],
+    });
+
+  it("мощность у трети выдачи — показываем", () => {
+    expect(sidebarFacets(broadWithRanges()).map((f) => f.code)).toContain("attr_power");
+  });
+
+  it("энергия удара у 9 % — скрываем", () => {
+    expect(sidebarFacets(broadWithRanges()).map((f) => f.code)).not.toContain(
+      "attr_energy_impact",
+    );
   });
 });

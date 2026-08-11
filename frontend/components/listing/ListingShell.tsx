@@ -307,6 +307,8 @@ export function ListingShell({
               onToggle={toggleCheckbox}
               onRange={setRange}
               connected
+              total={listing.total}
+              resultsHref="#products"
             />
           </div>
         </aside>
@@ -490,7 +492,9 @@ export function ListingShell({
             </div>
           </div>
 
-          <div aria-busy={isPending}>
+          {/* Якорь для кнопки «Показать N товаров» из сайдбара: на десктопе колонка
+              фильтров длиннее первого экрана, и после выбора нужно вернуться к выдаче. */}
+          <div id="products" aria-busy={isPending} className="scroll-mt-24">
           {isPending ? (
             // §15: skeleton карточек на время навигации, без full-page spinner.
             <ProductGridSkeleton view={query.view} count={Math.min(query.perPage, 12)} />

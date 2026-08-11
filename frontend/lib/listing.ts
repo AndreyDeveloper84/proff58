@@ -140,7 +140,8 @@ export function isBroadCategory(listing: Listing): boolean {
 
 /**
  * Фасеты для левого сайдбара с учётом контекстного гейтинга (§6):
- *  - широкая категория И тип не выбран → только базовые (kind === "base"), технические скрыты;
+ *  - широкая категория И тип не выбран → базовые (kind === "base") плюс те технические,
+ *    что покрывают заметную часть выдачи (см. coversEnough) — остальные скрыты;
  *  - выбран tool_type ИЛИ листовая/типизированная → все пришедшие не-nav фасеты
  *    (drill-down на бэке уже отсёк пустые).
  * nav-фасет (tool_type) исключаем всегда — он рендерится отдельным блоком навигации
@@ -151,9 +152,36 @@ export function sidebarFacets(listing: Listing, toolType?: string): Facet[] {
   if (isBroadCategory(listing) && !toolType) {
     // kind == null (фикстуры / неожиданная форма) трактуем как видимый — деградация к
     // «показать базовое», а не к пустому сайдбару. На API-пути kind всегда проставлен.
-    return nonNav.filter((f) => f.kind === "base" || f.kind == null);
+    return nonNav.filter(
+      (f) => f.kind === "base" || f.kind == null || coversEnough(f, listing.total),
+    );
   }
   return nonNav;
+}
+
+/**
+ * Доля выдачи, которую должна покрывать характеристика, чтобы попасть в сайдбар
+ * широкой категории (DRF-995, решение по открытому вопросу DRF-991 §5).
+ *
+ * Полный гейтинг («на широкой категории только базовые фасеты») прятал и то, что
+ * осмысленно для раздела целиком: мощность есть у трети электроинструмента. Полное
+ * его снятие вернуло бы в сайдбар «Энергию удара», которая относится к 131 товару
+ * из 1 518 и для остальных 90 % раздела означает «скрыть всё».
+ */
+const TECH_FACET_MIN_SHARE = 0.25;
+
+/**
+ * Покрывает ли характеристика заметную часть выдачи.
+ *
+ * Считаем по `covered` из адаптера, а не по options: у диапазонных фасетов значения
+ * схлопнуты в min/max, и счётчиков там уже нет. Именно на этом «Мощность» (треть
+ * электроинструмента) сначала не попала в сайдбар — она decimal.
+ */
+function coversEnough(facet: Facet, total: number): boolean {
+  if (facet.kind !== "tech" || total <= 0) return false;
+  const covered =
+    facet.covered ?? (facet.options ?? []).reduce((sum, o) => sum + (o.count ?? 0), 0);
+  return covered / total >= TECH_FACET_MIN_SHARE;
 }
 
 /**
@@ -277,4 +305,34 @@ export function groupSidebarFacets(facets: Facet[]): FacetSection[] {
   return order
     .filter((key) => buckets[key].length > 0)
     .map((key) => ({ key, label: SECTION_LABEL[key], facets: buckets[key] }));
+}
+
+/**
+ * Пресеты цены под слайдером (DRF-995, макет Cat2).
+ *
+ * Готовые диапазоны отвечают на «сколько я готов потратить» быстрее, чем два поля
+ * и бегунок. Но показывать все четыре всегда нельзя: «от 15 000 ₽» на выдаче, где
+ * самый дорогой товар стоит 12 000, — это кнопка, дающая ноль товаров. Такие же
+ * пресеты, которые не отсекают ничего (нижняя граница ниже минимума выдачи, верхняя
+ * выше максимума), молча вычистит normalizeRangeFilters — нажатие выглядело бы как
+ * «ничего не произошло». И то и другое отсеиваем здесь.
+ */
+export type PricePreset = { label: string; min?: number; max?: number };
+
+const PRICE_PRESETS: PricePreset[] = [
+  { label: "до 3 000", max: 3000 },
+  { label: "3 000 – 7 000", min: 3000, max: 7000 },
+  { label: "7 000 – 15 000", min: 7000, max: 15000 },
+  { label: "от 15 000", min: 15000 },
+];
+
+/** Пресеты, осмысленные для текущей шкалы цен: пересекают её и реально сужают. */
+export function pricePresets(lo?: number, hi?: number): PricePreset[] {
+  if (lo == null || hi == null || lo >= hi) return [];
+  return PRICE_PRESETS.filter((preset) => {
+    const from = preset.min ?? lo;
+    const to = preset.max ?? hi;
+    if (from >= hi || to <= lo) return false; // за пределами шкалы — ноль товаров
+    return from > lo || to < hi; // не сужает ничего — фильтр всё равно будет сброшен
+  });
 }
