@@ -20,6 +20,7 @@ import { PER_PAGE_OPTIONS, SORT_OPTIONS } from "@/lib/constants";
 import { ProductCard } from "@/components/product/ProductCard";
 import { FacetSidebar } from "@/components/filters/FacetSidebar";
 import { CategoryNavStrip } from "@/components/listing/CategoryNav";
+import { TypeTiles } from "@/components/listing/TypeTiles";
 import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
 import { BreadcrumbsJsonLd } from "./BreadcrumbsJsonLd";
 import { CategoryHero } from "@/components/listing/CategoryHero";
@@ -332,7 +333,16 @@ export function ListingShell({
               Отдельным блоком, а не внутри шапки: там ряд попадал под
               overflow-hidden и узкую колонку с чертежом — часть капсул просто
               обрезалась, и человек их не видел. */}
-          {nav && <CategoryNavStrip nav={nav} onSelect={onSelectType} />}
+          {nav &&
+            (nav.isNavigation ? (
+              <CategoryNavStrip nav={nav} onSelect={onSelectType} />
+            ) : (
+              <TypeTiles
+                categoryTitle={listing.category.title}
+                items={nav.items}
+                onSelect={onSelectType}
+              />
+            ))}
 
           {/* Тип выбран — панели типов нет (правило D), вместо неё выход обратно.
               Выбор уже сделан: показывать остальные 43 типа значит занимать
