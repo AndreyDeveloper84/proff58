@@ -1,0 +1,34 @@
+=== [1] Атрибуты карты в БД (SELECT) ===
+  chuck: type=select unit=- cat=3 OK
+  energy_impact: type=decimal unit=Дж cat=3 OK
+  motor_type: type=select unit=- cat=3 OK
+  no_load_speed: type=decimal unit=об/мин cat=3 OK
+  power: type=decimal unit=Вт cat=3 OK
+  power_source: type=select unit=- cat=3 OK
+  voltage: type=decimal unit=В cat=3 OK
+=== [1b] Опции select-атрибутов в БД (SELECT) ===
+  chuck: нужны ['sds-max', 'sds-plus']; в БД ['sds-max', 'sds-plus']; OK
+  motor_type: нужны ['brushed', 'brushless']; в БД ['brushed', 'brushless']; OK
+  power_source: нужны ['mains']; в БД ['battery', 'mains']; OK
+=== [2] Прогон на выгрузке Phase 2 ===
+--- разбивка решений по источникам (вхождения полей) ---
+  resanta: map=34 fallback=6 derived=8 ignore=23 unmapped=68 dropped=0 unknown=0
+  vihr: map=40 fallback=0 derived=8 ignore=24 unmapped=70 dropped=0 unknown=0
+  interskol: map=41 fallback=0 derived=8 ignore=25 unmapped=119 dropped=0 unknown=0
+  zubr: map=40 fallback=0 derived=8 ignore=122 unmapped=128 dropped=0 unknown=0
+  ИТОГО: {'ignore': 194, 'unmapped': 385, 'map': 155, 'fallback': 6, 'derived': 32}
+--- покрытие по частоте ---
+  всего вхождений полей: 734
+  handled (map+ignore+unmapped): 734 = 100.0%
+  mapped к атрибутам (с fallback): 161 = 21.9%
+  derived (power_source): 32 карточек
+  уникальных полей (по всем источникам): 121, все имеют решение: ДА
+--- отброшенные при нормализации ---
+  (нет)
+--- [4] перекрёстная сверка power resanta (таблица vs summary_raw) ---
+  75/3/5: таблица 800 Вт vs summary 800 Вт -> СОВПАЛО
+  75/3/7: таблица 1600 Вт vs summary 1600 Вт -> СОВПАЛО
+=== [6] Выборка для поштучной сверки ===
+  критерий: все нормализованные значения (без derived), сортировка (attribute, source, sku, field), stride=4; пул=161, выборка=41
+  выборка записана: phase3_sample.txt
+  полный дамп (161 значений): phase3_normalized_all.txt

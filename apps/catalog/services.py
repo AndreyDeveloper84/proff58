@@ -25,8 +25,8 @@ from .models import CompatibilityKind, ProductCompatibility
 from .queries import (
     CompatibilityItem,
     accessories_of,
-    category_counts,
     analogs_of,
+    category_counts,
     compatibility_sections,
     compatible_of,
     cross_sell_of,

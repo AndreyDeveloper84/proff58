@@ -1,0 +1,93 @@
+{
+  "canonical": {
+    "attribute_slug": "tool_type",
+    "live_taxonomy_identity_hash": "524d4e317a804160548ebd5f4d0c590cb08a9b69910b23355df7558902616439",
+    "rows": [
+      {
+        "attrs_cache_tool_type": "Ареометры (денсиметры)",
+        "option_slug": "izm-areometry",
+        "option_value": "Ареометры (денсиметры)",
+        "product_id": 4
+      },
+      {
+        "attrs_cache_tool_type": "Специальные ключи",
+        "option_slug": "spetsialnye-klyuchi",
+        "option_value": "Специальные ключи",
+        "product_id": 22
+      },
+      {
+        "attrs_cache_tool_type": "Домкраты",
+        "option_slug": "domkraty",
+        "option_value": "Домкраты",
+        "product_id": 123
+      },
+      {
+        "attrs_cache_tool_type": "Зарядные устройства",
+        "option_slug": "zaryadnye",
+        "option_value": "Зарядные устройства",
+        "product_id": 164
+      },
+      {
+        "attrs_cache_tool_type": "Компрессоры",
+        "option_slug": "bp-kompressory",
+        "option_value": "Компрессоры",
+        "product_id": 179
+      },
+      {
+        "attrs_cache_tool_type": "Шарошки и борфрезы",
+        "option_slug": "sharoshki",
+        "option_value": "Шарошки и борфрезы",
+        "product_id": 377
+      },
+      {
+        "attrs_cache_tool_type": "Воздуходувки",
+        "option_slug": "bp-vozdukhoduvki",
+        "option_value": "Воздуходувки",
+        "product_id": 422
+      },
+      {
+        "attrs_cache_tool_type": "Ящики, сумки, органайзеры",
+        "option_slug": "yashchiki-sumki",
+        "option_value": "Ящики, сумки, органайзеры",
+        "product_id": 4944
+      },
+      {
+        "attrs_cache_tool_type": "Болты и винты",
+        "option_slug": "krep-bolty",
+        "option_value": "Болты и винты",
+        "product_id": 4945
+      },
+      {
+        "attrs_cache_tool_type": "Паяльники",
+        "option_slug": "payalniki",
+        "option_value": "Паяльники",
+        "product_id": 11232
+      },
+      {
+        "attrs_cache_tool_type": "Бытовая химия и пасты",
+        "option_slug": "hoz-himiya",
+        "option_value": "Бытовая химия и пасты",
+        "product_id": 23606
+      }
+    ],
+    "rows_count": 11,
+    "schema_version": 1,
+    "selector": {
+      "kind": "explicit_ids",
+      "value": [
+        4,
+        22,
+        123,
+        164,
+        179,
+        377,
+        422,
+        4944,
+        4945,
+        11232,
+        23606
+      ]
+    }
+  },
+  "canonical_hash": "9e483e7333a490cae1908c8eb065018ce213c808b8e872d192b1034170e444af"
+}

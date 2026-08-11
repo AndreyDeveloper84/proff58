@@ -1,0 +1,25 @@
+{
+  "total": 5,
+  "created": 0,
+  "would_create": 1,
+  "existing": 0,
+  "skipped": 3,
+  "errors": 1,
+  "dry_run": true,
+  "result_checksum": "aa3de2f8fa2084e3afb85e5d74fb4f2a0374171b97ebdad1d6db7bcd4cd26643",
+  "export_checksum": "459a2c8e916d2b4246ee15eb51bfe2104de8186d52315794ed3e93a544a3d0eb"
+}
+Ошибки:
+  - product_ref 1: unknown option ph8-syn-fake-tool-type
+Dry-run завершён
+{
+  "total": 5,
+  "created": 0,
+  "would_create": 1,
+  "existing": 0,
+  "skipped": 3,
+  "errors": 1,
+  "dry_run": true,
+  "result_checksum": "aa3de2f8fa2084e3afb85e5d74fb4f2a0374171b97ebdad1d6db7bcd4cd26643",
+  "export_checksum": "459a2c8e916d2b4246ee15eb51bfe2104de8186d52315794ed3e93a544a3d0eb"
+}

@@ -267,7 +267,8 @@ def _build_tool_type_panel(panel_base, tt_attr, selected_slug):
         return None
     return {
         "slug": tt_attr.slug,
-        "name": tt_attr.name,
+        # Подпись нав-панели: то же пер-категорийное переопределение (см. build_facets).
+        "name": getattr(tt_attr, "_display_name", "") or tt_attr.name,
         "type": tt_attr.attribute_type,
         "unit": tt_attr.unit,
         "is_nav": True,
@@ -439,7 +440,10 @@ def build_facets(
         facets.append(
             {
                 "slug": attr.slug,
-                "name": attr.name,
+                # Подпись: пер-категорийное переопределение CategoryAttribute.display_name
+                # (проброшено transient как _display_name, closest-wins); пусто → имя атрибута.
+                # Ключ фильтра — slug — от переопределения не зависит.
+                "name": getattr(attr, "_display_name", "") or attr.name,
                 "type": attr.attribute_type,
                 "unit": attr.unit,
                 "is_nav": False,

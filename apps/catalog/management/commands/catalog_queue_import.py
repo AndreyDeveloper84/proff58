@@ -44,9 +44,8 @@ from apps.catalog.processing import (
     tool_type_snapshot,
 )
 from apps.catalog.queue_contract import (
-    _allowed_tool_type_options,
+    _canonical_taxonomy,
     _product_snapshot,
-    _taxonomy_hash,
 )
 
 SCHEMA_VERSION = "1.0"
@@ -179,6 +178,12 @@ class Command(BaseCommand):
             action="store_true",
             help="Разрешить файл вне var/catalog-processing/inbox (только для доверенного оператора).",
         )
+        parser.add_argument(
+            "--allow-name-mismatch",
+            action="store_true",
+            help="Разрешить расхождение имени файла с run_id из JSON "
+            "(нештатный случай; факт фиксируется в выводе и stats).",
+        )
 
     def handle(self, *args, **options):
         if not settings.FEATURES.get("catalog_processing", False):
@@ -205,6 +210,14 @@ class Command(BaseCommand):
             if override_uuid != run_id:
                 raise CommandError("--run не совпадает с run_id внутри JSON")
 
+        # Имя файла = run_id по соглашению export; перепутанный файл — fail-closed (TT-13/G1).
+        name_mismatch = file_path.stem != str(run_id)
+        if name_mismatch and not options["allow_name_mismatch"]:
+            raise CommandError(
+                f"Имя файла ({file_path.stem}) не совпадает с run_id из JSON ({run_id}); "
+                "для нештатных случаев используйте --allow-name-mismatch"
+            )
+
         run = CatalogProcessingRun.objects.filter(pk=run_id).first()
         if run is None:
             raise CommandError(f"Run {run_id} не найден")
@@ -227,8 +240,7 @@ class Command(BaseCommand):
         attr = Attribute.objects.filter(slug="tool_type").first()
         if attr is None:
             raise CommandError("Атрибут tool_type не найден")
-        option_payload = _allowed_tool_type_options()
-        current_taxonomy_hash = _taxonomy_hash(option_payload)
+        option_payload, current_taxonomy_hash = _canonical_taxonomy()
         if not run.taxonomy_hash or data["taxonomy_hash"] != run.taxonomy_hash:
             raise CommandError("taxonomy_hash result не совпадает с run")
         if current_taxonomy_hash != run.taxonomy_hash:
@@ -246,6 +258,11 @@ class Command(BaseCommand):
             "result_checksum": result_checksum,
             "export_checksum": expected_export_checksum,
         }
+        if name_mismatch:
+            stats["file_name_mismatch"] = {
+                "file_stem": file_path.stem,
+                "run_id": str(run_id),
+            }
         errors: list[str] = []
 
         for item_data in data["items"]:
@@ -281,20 +298,28 @@ class Command(BaseCommand):
                 locked_run = CatalogProcessingRun.objects.select_for_update().get(pk=run.pk)
                 run_stats = dict(locked_run.stats or {})
                 imports = list(run_stats.get("recent_imports") or [])
-                imports.append(
-                    {
-                        "result_checksum": result_checksum,
-                        "created": stats["created"],
-                        "existing": stats["existing"],
-                        "errors": stats["errors"],
-                    }
-                )
+                import_entry = {
+                    "result_checksum": result_checksum,
+                    "created": stats["created"],
+                    "existing": stats["existing"],
+                    "errors": stats["errors"],
+                }
+                if name_mismatch:
+                    import_entry["file_name_mismatch"] = file_path.stem
+                imports.append(import_entry)
                 run_stats["recent_imports"] = imports[-20:]
                 locked_run.stats = run_stats
                 locked_run.save(update_fields=["stats"])
 
         payload = json.dumps(stats, ensure_ascii=False, indent=2)
         self.stdout.write(payload)
+        if name_mismatch:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"--allow-name-mismatch: имя файла ({file_path.stem}) "
+                    f"не совпадает с run_id ({run_id})"
+                )
+            )
         if errors:
             self.stdout.write(self.style.WARNING("Ошибки:"))
             for err in errors[:20]:

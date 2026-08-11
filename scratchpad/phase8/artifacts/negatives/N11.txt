@@ -1,0 +1,1 @@
+CommandError: Файл должен находиться внутри C:\Users\user\PycharmProjects\proff58\var\catalog-processing\inbox

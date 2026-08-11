@@ -66,7 +66,7 @@
 
 ## 4. Roadmap (4 независимых раунда)
 
-**Прогресс:** ✅ Round 1 — Applied · ✅ Round 2 — Applied · ✅ Round 3 — Applied (решаемые бакеты) · ✅ Round 4C — Applied · ⬜ Round 4 — частично Deferred. Отложены: 3A, 3C.2 и архитектурные хвосты Round 4.
+**Прогресс:** ✅ Round 1 — Applied · ✅ Round 2 — Applied · ✅ Round 3 — Applied (решаемые бакеты) · ✅ Round 4A — Applied · ✅ Round 4C — Applied · ⬜ Round 4 — частично Deferred. Отложены: 3A, 3C.2 и архитектурные хвосты Round 4.
 
 ### Round 1 — Строительные леса — ✅ APPLIED on staging (2026-07-10)
 new option «Строительные леса и вышки-туры» → leaf-scoped dry-run → enrich.
@@ -107,8 +107,15 @@ Leaf-scoped привязка к **14 существующим** option values (�
 - Бэкап: `db-2026-07-15-0516.sql.gz`.
 - Rollback-map зафиксирован.
 
+✅ **Round 4A «Фиксаторы и герметики резьбы» (NEW tool_type) — APPLIED on staging (2026-07-16)**
+- Создана новая опция `Фиксаторы и герметики резьбы` (`id=420`, `slug=fiksatory-germetiki-rezby`, `sort_order=42`).
+- Scope: 21 товар в leaf `193` («Герметики и монтажные пены»): Loctite / ABRO / WEICON / LAVR и фиксаторы Vib.
+- `product_ids`: `6143`, `6144`, `6145`, `6152`, `6153`, `6154`, `6155`, `6156`, `6157`, `6158`, `6159`, `6160`, `6161`, `6162`, `6163`, `6164`, `6165`, `6166`, `6167`, `6168`, `6169`.
+- PAV created: 21; attrs_cache synced: 21/21.
+- Post-audit: option slug/value unique; вне leaf=0; `category_is_manual=True` сохранён 21/21; repeat dry-run candidates=0.
+- Бэкап: `/home/taximeter/backups/staging/db-2026-07-16-1905.sql.gz` (`sha256=ed111d6ca60131874dec48f3032040398db97de5b825fa91265db8cfdb12ae7b`).
+
 **READY — отдельные gated mini-rounds:**
-- **4A — Фиксаторы и герметики резьбы:** scope **≈21** (Loctite / анаэробные фиксаторы / уплотнители фланцев, leaf 193). NEW option подтверждён архитектурно (§2). Отдельный leaf-scoped enrich-round.
 - **4B — Грунт-эмали по ржавчине:** **≈69** в листе ЛКМ, candidate reuse «Эмали, краски, грунтовки». Сначала проверить actual typed/untyped и FP.
 
 **DEFER / BLOCKED BY ARCHITECTURE:**

@@ -27,7 +27,7 @@ from jsonschema import Draft7Validator, FormatChecker
 from .processing import canonical_hash
 from .tool_type import normalize
 
-RULESET_PATH = Path(settings.BASE_DIR) / "data" / "catalog_processing_rules" / "tool_type.v1.json"
+RULESET_PATH = Path(settings.BASE_DIR) / "data" / "catalog_processing_rules" / "tool_type.v2.json"
 SCHEMA_PATH = Path(settings.BASE_DIR) / "apps" / "catalog" / "schemas" / "tool_type_ruleset_v1.json"
 CORPUS_SCHEMA_PATH = (
     Path(settings.BASE_DIR) / "apps" / "catalog" / "schemas" / "applied_tool_type_corpus_v1.json"

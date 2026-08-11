@@ -50,6 +50,9 @@
 - `apply_catalog_decision(...)` — атомарно применяет решение через
   `provenance.apply_sourced_value`, пересобирает `attrs_cache` и фиксирует результат.
 
+Операционный runbook research queue (файловый обмен export/result, bind mount
+`./var:/app/var`, checksum-контроль): [research-queue](research-queue.md).
+
 Инварианты foundation:
 
 1. БД — источник истины; JSON/SQL-файлы — только транспорт/бэкап.

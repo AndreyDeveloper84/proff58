@@ -58,6 +58,7 @@ RULES = {
             "extraction": "inherit_1c_subgroup",
             "rules": [
                 {"tool_type": "Сверла", "slug": "sverla", "source": "1c_subgroup"},
+                {"tool_type": "Буры", "slug": "bury", "source": "1c_subgroup"},
                 {
                     "tool_type": "Переходные кольца",
                     "slug": "perehodnye-koltsa",
@@ -384,6 +385,231 @@ class RealRulesRegressionTests(TestCase):
         self.assertEqual(slug("Набор бит 32 предмета KRAFTOOL"), "nabory-instrumenta")
 
 
+class KeywordAccessoryGuardRegressionTests(TestCase):
+    """Регресс ALIAS-CONFLICT-374 (7 групп/25 товаров): слово-триггер описывает
+    аксессуар/цель применения внутри названия основного товара — не должен
+    переклассифицировать сам товар. Точные названия — из
+    scratchpad/phase8/alias-conflict-374-report.md (продукты 47171-47175,
+    29722-29730, 40798-40799, 29829/29833, 32151, 31354, 43112 на staging)."""
+
+    def setUp(self):
+        self.rules = ToolTypeRules.from_file(
+            Path(settings.BASE_DIR) / "data" / "tool_type_rules.json"
+        )
+
+    def test_str_pistolety_not_reclassified_as_germetiki(self):
+        # «Пистолет ДЛЯ герметиков» — сам товар пистолет, «герметиков» — цель.
+        names = (
+            "Пистолет для герметиков ЗУБР 310мл ЗУБР полуоткрытый",
+            "Пистолет для герметиков ЗУБР 310мл полукорпусной",
+            "Пистолет для герметиков ЗУБР 310мл полукорпусной антикапельная система",
+            "Пистолет для герметиков ЗУБР 310мл полукорпусной хромированный",
+            "Пистолет для герметиков ЗУБР 310мл скелетный",
+        )
+        for name in names:
+            ex = self.rules.extract("Строительное и отделочное", name)
+            self.assertEqual(ex.result, ASSIGNED, name)
+            self.assertEqual(ex.slug, "str-pistolety", name)
+
+    def test_krepleniya_ognetushiteley_not_reclassified_as_ognetushiteli(self):
+        # «Подставка ПОД огнетушитель» — крепление, не сам огнетушитель.
+        names = (
+            "Подставка под огнетушитель двойная П-15",
+            "Подставка под огнетушитель П-10",
+            "Подставка под огнетушитель П-10 красная напольная 175х175х340мм (ОП-1-4, ОУ1-2) до 6,5кг",
+            "Подставка под огнетушитель П-15",
+            "Подставка под огнетушитель П-15 (собранная)",
+            "Подставка под огнетушитель П-15 красная напольная р-р 195х195х380мм (ОП-1-6,ОУ1-2) до 8,2кг",
+            "Подставка под огнетушитель П-20 красная напольная 230х230х400мм (ОП-1-8, ОУ-1-4) до 12кг",
+            "Подставка под огнетушитель ПО-170 (ПО-01,П-10)",
+            "Подставка под огнетушитель универсальная",
+        )
+        for name in names:
+            ex = self.rules.extract("Спецодежда и защита", name)
+            self.assertNotEqual(ex.slug, "siz-ognetushiteli", name)
+
+    def test_izm_lupy_not_reclassified_as_ochki(self):
+        # «Лупа... (очки)/очки с подсветкой» — форм-фактор лупы, не защитные очки.
+        names = (
+            "Лупа налобная 20х монокулярная (очки) с подсветкой PL4401 (EL-92)",
+            "Лупа налобная 3,5х очки с подсветкой PL4406",
+        )
+        for name in names:
+            ex = self.rules.extract("Спецодежда и защита", name)
+            self.assertNotEqual(ex.slug, "siz-ochki", name)
+
+    def test_siz_rukava_not_reclassified_as_golovki(self):
+        # «Рукав... с головкой ГР-50 и стволом РС-50» — рукав, не пожарная головка/ствол.
+        names = (
+            'Рукав пожарный РПК(В)-Н/В-50-1,0-М-УХЛ1 "Классик" (18,5 м) с головкой ГР-50 '
+            "Ал и стволом РС-50.01 А",
+            'Рукав пожарный РПК(В)-Н/В-50-1,0-М-УХЛ1 "Классик" с головкой ГР-50 Ал и стволом '
+            "РС-50.01 А",
+        )
+        for name in names:
+            ex = self.rules.extract("Спецодежда и защита", name)
+            self.assertEqual(ex.result, ASSIGNED, name)
+            self.assertEqual(ex.slug, "siz-rukava", name)
+
+    def test_zubilo_not_reclassified_as_odezhda(self):
+        # «Зубило с пластмассовым фартуком» — встроенный щиток инструмента, не одежда.
+        ex = self.rules.extract(
+            "Спецодежда и защита", "Зубило с пластмассовым фартуком для защиты руки, с"
+        )
+        self.assertNotEqual(ex.slug, "siz-odezhda")
+
+    def test_svar_apparaty_not_reclassified_as_perchatki(self):
+        # «(маска+краги)» — бонус-комплект, «краги» не делают инвертор перчатками.
+        ex = self.rules.extract(
+            "Спецодежда и защита", 'Свар. инвертор СВАРОГ MIG 200 "REAL"  Black (маска+краги)'
+        )
+        self.assertNotEqual(ex.slug, "siz-perchatki")
+
+    def test_str_laki_not_reclassified_as_kisti(self):
+        # «Цапон лак ... с кисточкой» — сам товар лак, кисточка — встроенный аппликатор.
+        ex = self.rules.extract(
+            "Строительное и отделочное",
+            "Цапон лак прозрачный с кисточкой 20 мл. TSAP-NO-KIS20 Connector",
+        )
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.slug, "str-laki")
+
+
+class WordBoundaryMechanismTests(TestCase):
+    """Механизм ``match_keywords_word`` (TT-17): ключ матчится, только если
+    вхождение ограничено границами слова С ОБЕИХ сторон. Существующие
+    ``match_keywords`` работают как раньше (см. ExtractionEngineTests)."""
+
+    WORD_RULES = {
+        "version": 1,
+        "categories": [
+            {
+                "category": "Запчасти",
+                "extraction": "priority_keyword",
+                "rules": [
+                    {
+                        "tool_type": "Шпиндели, валы, стволы, патроны",
+                        "slug": "zap-shpindeli-valy",
+                        "match_keywords": ["шпиндель"],
+                        "match_keywords_word": ["вал", "валы"],
+                    },
+                ],
+            },
+        ],
+    }
+
+    def setUp(self):
+        self.rules = ToolTypeRules.from_dict(self.WORD_RULES)
+
+    def _extract(self, name):
+        return self.rules.extract("Запчасти", name)
+
+    def test_standalone_word_matches(self):
+        ex = self._extract("Вал приводной")
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.slug, "zap-shpindeli-valy")
+        self.assertEqual(ex.matched_keyword, "вал")
+
+    def test_inflected_forms_match_by_explicit_keys(self):
+        ex = self._extract("Валы приводные")
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.matched_keyword, "валы")
+
+    def test_genitive_forms_do_not_match(self):
+        # Решение владельца по TT-17: только именительный падеж — «N вала»
+        # (втулка/трубка/храповик вала) не является валом и не ловится.
+        for name in (
+            "Трубка передаточного вала",
+            "Крепление к валу редуктора",
+            "Соединение с валом двигателя",
+        ):
+            ex = self._extract(name)
+            self.assertEqual(ex.result, MODERATION, name)
+
+    def test_word_inside_other_root_does_not_match(self):
+        for name in (
+            "Валик малярный",
+            "Валик прижимной",
+            "Вальцы трёхвалковые",
+            "Интервал",
+            "Набор для развальцовки тормозных трубок",
+        ):
+            ex = self._extract(name)
+            self.assertEqual(ex.result, MODERATION, name)
+
+    def test_case_normalized_in_word_keys(self):
+        ex = self._extract("ВАЛЫ")
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.matched_keyword, "валы")
+
+    def test_word_key_does_not_break_plain_substring_keys(self):
+        # Существующий ключ-подстрока в том же правиле жив.
+        ex = self._extract("Шпиндель")
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.matched_keyword, "шпиндель")
+
+    def test_missing_field_means_no_word_keys(self):
+        # Обратная совместимость формата: правила без match_keywords_word
+        # загружаются с пустым кортежем.
+        rules = ToolTypeRules.from_dict(RULES)
+        for cat in rules.categories:
+            for rule in cat.rules:
+                self.assertEqual(rule.match_keywords_word, ())
+
+
+class ZapShpindeliValyWordBoundaryTests(TestCase):
+    """TT-17: keyword «вал» с границей слова в правиле zap-shpindeli-valy
+    (реальный data/tool_type_rules.json)."""
+
+    def setUp(self):
+        self.rules = ToolTypeRules.from_file(
+            Path(settings.BASE_DIR) / "data" / "tool_type_rules.json"
+        )
+
+    def _extract(self, name):
+        return self.rules.extract("Запчасти", name)
+
+    def test_val_names_assigned(self):
+        for name in ("Вал гибкий ИВ-75", "Валы приводные", "Гибкий вал ВС-10"):
+            ex = self._extract(name)
+            self.assertEqual(ex.result, ASSIGNED, name)
+            self.assertEqual(ex.slug, "zap-shpindeli-valy", name)
+
+    def test_shpindel_regression(self):
+        ex = self._extract("Шпиндель")
+        self.assertEqual(ex.result, ASSIGNED)
+        self.assertEqual(ex.slug, "zap-shpindeli-valy")
+
+    def test_kolenchaty_stays_with_kolenval_rule(self):
+        # «Вал коленчатый» перехватывает более приоритетное zap-kolenval-shatun
+        # (стоит выше в блоке) — корректный маршрут, а не добыча ключа «вал».
+        ex = self._extract("Вал коленчатый")
+        self.assertEqual(ex.slug, "zap-kolenval-shatun")
+
+    def test_val_inside_other_words_not_captured(self):
+        for name in (
+            "Валик малярный",
+            "Валик прижимной",
+            "Вальцы",
+            "Интервал",
+            # Живые названия каталога, где «вал» — часть другого корня.
+            "Ванночка для краски 290х150мм 0,15л ЗУБР СТАНДАРТ для валика до 110мм",
+            "Набор для развальцовки тормозных трубок, профессиональный",
+            # «N вала» — деталь при вале, а не вал (решение владельца TT-17:
+            # только именительный падеж; кейсы из замера dry-run).
+            "Трубка передаточного вала 6689372",
+            "Храповик вала 6698557",
+        ):
+            ex = self._extract(name)
+            self.assertNotEqual(ex.slug, "zap-shpindeli-valy", name)
+
+    def test_vtulka_vala_keeps_vtulki_route(self):
+        # «Опорная втулка вала» — втулка: правило zap-vtulki ниже по приоритету
+        # не должно перехватываться ключом «вал» (кейс 9035 из замера TT-17).
+        ex = self._extract("Опорная втулка вала 726337B")
+        self.assertEqual(ex.slug, "zap-vtulki")
+
+
 class TransliterateTests(TestCase):
     """Транслитерация кириллицы для слугов (фолбэк _unique_option_slug, C2)."""
 
@@ -515,15 +741,15 @@ class LoadToolTypesGapOptionsTests(TestCase):
 
 
 class LoadToolTypesReuseIdentityTests(TestCase):
-    """Reuse существующих DB options (PR #539 review): identity строк и sort_order.
+    """Reuse существующих DB options: identity строк и sort_order (Wave 7.1/H1).
 
-    load_tool_types делает update_or_create(attribute, value, defaults={slug, sort_order}):
-    существующая запись НЕ дублируется и сохраняет PK/slug, но её sort_order
-    перезаписывается позицией правила в файле (при slug в нескольких категориях
-    побеждает более поздняя категория файла — как у zaryadnye/svar-klemmy).
+    load_tool_types материализует options из canonical manifest, ключ — slug:
+    существующая запись НЕ дублируется и сохраняет PK/value; sort_order
+    по умолчанию НЕ перезаписывается (display metadata), синхронизация —
+    только явным ``--update-display``.
     """
 
-    def test_reuse_preserves_pk_and_value_uniqueness(self):
+    def test_reuse_preserves_pk_value_and_sort_order(self):
         attr = Attribute.objects.create(
             slug="tool_type", name="Тип инструмента", attribute_type=AttributeType.SELECT
         )
@@ -540,20 +766,65 @@ class LoadToolTypesReuseIdentityTests(TestCase):
 
         call_command("load_tool_types")
 
-        # Ожидаемый sort_order — позиция правила; при дублировании slug в файле
-        # побеждает более поздняя категория (повторяем контракт загрузчика).
-        rules = ToolTypeRules.from_file(Path(settings.BASE_DIR) / "data" / "tool_type_rules.json")
-        expected_sort: dict[str, int] = {}
-        for cat in rules.categories:
-            for sort, rule in enumerate(rules.options(cat.category)):
-                expected_sort[rule.slug] = sort
-
         for value, opt in pre.items():
             self.assertEqual(
                 AttributeOption.objects.filter(attribute=attr, value=value).count(),
                 1,
                 f"дубль option для {value!r}",
             )
-            opt.refresh_from_db()  # тот же PK — обновление, а не новая строка
-            self.assertNotEqual(opt.sort_order, sentinel, f"{value!r}: sort_order не перезаписан")
-            self.assertEqual(opt.sort_order, expected_sort[opt.slug])
+            opt.refresh_from_db()  # тот же PK — новой строки нет
+            self.assertEqual(opt.value, value)
+            self.assertEqual(
+                opt.sort_order,
+                sentinel,
+                f"{value!r}: sort_order перезаписан без --update-display",
+            )
+
+    def test_update_display_syncs_sort_order(self):
+        from apps.catalog.taxonomy_manifest import load_manifest
+
+        attr = Attribute.objects.create(
+            slug="tool_type", name="Тип инструмента", attribute_type=AttributeType.SELECT
+        )
+        opt = AttributeOption.objects.create(
+            attribute=attr,
+            value="Специальные ключи",
+            slug="spetsialnye-klyuchi",
+            sort_order=999,
+        )
+        expected = {o.slug: o.sort_order for o in load_manifest().options}["spetsialnye-klyuchi"]
+
+        call_command("load_tool_types", update_display=True)
+
+        opt.refresh_from_db()
+        self.assertEqual(opt.sort_order, expected)
+        self.assertEqual(
+            AttributeOption.objects.filter(attribute=attr, value="Специальные ключи").count(), 1
+        )
+
+
+# --- keyword_at_word_boundary: граница слова с ОБЕИХ сторон (окно CODE-02) ---
+#
+# В tool_type используется только проверка НАЧАЛА вхождения
+# (_keyword_starts_at_word_boundary). Для select-характеристик (attribute_extract)
+# нужна и проверка конца — иначе XL матчит XLR. Общая функция живёт рядом с
+# исходной механикой и переиспользует _WORD_CHAR, не дублируя её.
+
+
+def test_keyword_at_word_boundary_requires_both_sides():
+    from apps.catalog.tool_type import keyword_at_word_boundary
+
+    # обе границы соблюдены
+    assert keyword_at_word_boundary("перчатки xl", "xl")
+    assert keyword_at_word_boundary("xl", "xl")  # начало и конец строки — границы
+    assert keyword_at_word_boundary("перчатки s-m", "s")  # дефис — граница
+    assert keyword_at_word_boundary("перчатки s-m", "m")
+    # нарушена граница НАЧАЛА
+    assert not keyword_at_word_boundary("stels", "s")
+    assert not keyword_at_word_boundary("перчатки ansell", "l")
+    # нарушена граница КОНЦА (у tool_type такой проверки нет — новая механика)
+    assert not keyword_at_word_boundary("xlr-200", "xl")
+    assert not keyword_at_word_boundary("l2000", "l")
+    # краевые случаи
+    assert not keyword_at_word_boundary("", "xl")
+    assert not keyword_at_word_boundary("перчатки xl", "")

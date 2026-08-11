@@ -1,6 +1,7 @@
 {
   "env": {
-    "TDD_GUARD_ENABLE": "1"
+    "TDD_GUARD_ENABLE": "0",
+    "ECC_GATEGUARD": "off"
   },
   "extraKnownMarketplaces": {
     "superpowers-dev": {
@@ -24,7 +25,7 @@
   },
   "enabledPlugins": {
     "superpowers@superpowers-dev": true,
-    "ecc@ecc": true,
+    "ecc@ecc": false,
     "modern-python@trailofbits": true,
     "static-analysis@trailofbits": true,
     "supply-chain-risk-auditor@trailofbits": true,

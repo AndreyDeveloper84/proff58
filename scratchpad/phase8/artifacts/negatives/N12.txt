@@ -1,0 +1,1 @@
+CommandError: Path traversal запрещён: var\catalog-processing\inbox\..\inbox\5ecbf02e-40d6-4c90-b636-e4eed72b7b3b.result.json

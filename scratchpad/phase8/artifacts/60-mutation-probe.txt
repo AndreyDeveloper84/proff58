@@ -1,0 +1,45 @@
+# Mutation probe: guard-тесты обязаны падать при снятии проверки
+
+Дата: 2026-07-27. Окно: Phase 8, ступень 1.
+Тестовая БД: test_proff58_ph8_regress (pytest --reuse-db).
+
+## До мутации (sanity)
+
+```
+pytest test_queue_commands.py::test_import_rejects_unknown_option \
+       test_queue_commands.py::test_import_rejects_changed_input_hash -q
+.. 2 passed in 1.29s
+```
+
+## Мутация 1: снята проверка unknown option
+
+Патч (apps/catalog/management/commands/catalog_queue_import.py, _process_item):
+`if option_slug not in allowed_options:` -> `if False and option_slug not in allowed_options:`
+
+```
+pytest test_queue_commands.py::test_import_rejects_unknown_option -q
+FAILED ... 1 failed in 1.51s
+```
+
+Файл восстановлен (Edit обратно), `git diff` пуст.
+
+## Мутация 2: снята проверка input_hash
+
+Патч: `if item.input_hash != item_data["input_hash"]:` -> `if False and ...`
+
+```
+pytest test_queue_commands.py::test_import_rejects_changed_input_hash -q
+FAILED ... 1 failed in 1.47s
+```
+
+Файл восстановлен, `git diff` пуст.
+
+## После восстановления
+
+```
+.. 2 passed in 1.27s
+git diff --stat  # пусто — tracked-файлы не менялись
+```
+
+Вывод: оба guard-теста реально держат проверки — при искусственном снятии
+проверки тест падает, после восстановления снова зелёный.

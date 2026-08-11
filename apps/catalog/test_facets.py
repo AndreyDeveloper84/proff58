@@ -661,3 +661,46 @@ def test_brand_filter_case_insensitive(client, tree):
 
     data = client.get("/api/catalog/categories/dreli/facets/?brand=bosch").json()
     assert data["total_products"] == 2
+
+
+@pytest.mark.django_db
+def test_display_name_override(client, tree):
+    """Пер-категорийная подпись (CAT-03): display_name переопределяет name, slug не меняется."""
+    _, leaf = tree
+    size = make_attr("size", "Размер «под ключ»", AttributeType.INTEGER, unit="мм")
+    CategoryAttribute.objects.create(category=leaf, attribute=size, display_name="Размер")
+    make_product(leaf, "p1", {"size": 150})
+
+    facet = get_facet(client.get("/api/catalog/categories/dreli/facets/").json(), "size")
+    assert facet["name"] == "Размер"
+    assert facet["slug"] == "size"  # ключ фильтра не изменился — сохранённые ссылки живы
+    assert facet["unit"] == "мм"
+
+
+@pytest.mark.django_db
+def test_display_name_fallback_to_attribute_name(client, tree):
+    """Пустой display_name — поведение как раньше: подпись = имя атрибута."""
+    _, leaf = tree
+    size = make_attr("size", "Размер «под ключ»", AttributeType.INTEGER, unit="мм")
+    link(leaf, size)
+    make_product(leaf, "p1", {"size": 150})
+
+    facet = get_facet(client.get("/api/catalog/categories/dreli/facets/").json(), "size")
+    assert facet["name"] == "Размер «под ключ»"
+    assert facet["slug"] == "size"
+
+
+@pytest.mark.django_db
+def test_display_name_closest_wins(client, tree):
+    """Общий атрибут: переопределение листа не трогает родителя (closest-wins)."""
+    root, leaf = tree
+    size = make_attr("size", "Размер «под ключ»", AttributeType.INTEGER, unit="мм")
+    link(root, size)  # у родителя — без переопределения
+    CategoryAttribute.objects.create(category=leaf, attribute=size, display_name="Размер")
+    make_product(leaf, "p1", {"size": 150})
+
+    leaf_facet = get_facet(client.get("/api/catalog/categories/dreli/facets/").json(), "size")
+    root_facet = get_facet(client.get("/api/catalog/categories/ei/facets/").json(), "size")
+    assert leaf_facet["name"] == "Размер"
+    assert root_facet["name"] == "Размер «под ключ»"
+    assert leaf_facet["slug"] == root_facet["slug"] == "size"

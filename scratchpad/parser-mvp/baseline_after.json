@@ -1,0 +1,4634 @@
+{
+ "total": 188,
+ "coverage": {
+  "power_source": 158,
+  "voltage": 17,
+  "power": 133,
+  "energy_impact": 131,
+  "no_load_speed": 17,
+  "chuck": 140,
+  "motor_type": 8,
+  "battery_included": 7,
+  "battery_capacity": 12
+ },
+ "managed": [
+  "power_source",
+  "voltage",
+  "power",
+  "energy_impact",
+  "no_load_speed",
+  "chuck",
+  "motor_type",
+  "battery_included",
+  "battery_capacity"
+ ],
+ "existing_pav_before": {
+  "voltage:regex": 17,
+  "power:regex": 133,
+  "power_source:inferred": 133,
+  "battery_capacity:regex": 12,
+  "power_source:keyword": 25,
+  "battery_included:keyword": 7,
+  "motor_type:keyword": 5,
+  "energy_impact:regex": 127,
+  "chuck:keyword": 138
+ },
+ "manual_rows": [],
+ "zero_attr": 25,
+ "rows": [
+  {
+   "id": 559,
+   "art": "4513970",
+   "name": "Перф. аккум Einhell PXC TC-HD 18/12 LI, 18В, 1,3Дж без АККУМ и ЗУ",
+   "n": 4,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "18",
+     "src": "regex",
+     "m": "18в"
+    },
+    "energy_impact": {
+     "val": "1.3",
+     "src": "regex",
+     "m": "1,3дж"
+    },
+    "battery_included": {
+     "val": false,
+     "src": "keyword",
+     "m": "без акк"
+    }
+   }
+  },
+  {
+   "id": 560,
+   "art": "4513812",
+   "name": "Перф. аккум Einhell PXC TE-HD 18 LI, 18В, 1,2Дж без АККУМ и ЗУ",
+   "n": 4,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "18",
+     "src": "regex",
+     "m": "18в"
+    },
+    "energy_impact": {
+     "val": "1.2",
+     "src": "regex",
+     "m": "1,2дж"
+    },
+    "battery_included": {
+     "val": false,
+     "src": "keyword",
+     "m": "без акк"
+    }
+   }
+  },
+  {
+   "id": 561,
+   "art": "",
+   "name": "Перф. аккум. BORT BHD-18Li-BLZ",
+   "n": 1,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    }
+   }
+  },
+  {
+   "id": 562,
+   "art": "",
+   "name": "Перф. аккум. DEWALT DCH133N (1 акк (18Вх2Ah), зарядное устройство, кейс)",
+   "n": 2,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "battery_capacity": {
+     "val": "2",
+     "src": "regex",
+     "m": "2ah"
+    }
+   }
+  },
+  {
+   "id": 563,
+   "art": "HTC-DH14DSL",
+   "name": "Перф. аккум. DH14DSL; 14,4V, 2х3,0А/ч, Li-ion, SDS",
+   "n": 4,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "14.4",
+     "src": "regex",
+     "m": "14,4v"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds"
+    },
+    "battery_capacity": {
+     "val": "3.0",
+     "src": "regex",
+     "m": "3,0а/ч"
+    }
+   }
+  },
+  {
+   "id": 564,
+   "art": "HTC-DH14DSL-Т4",
+   "name": "Перф. аккум. DH14DSL; 14,4V, без аккум  и зар уст",
+   "n": 3,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "14.4",
+     "src": "regex",
+     "m": "14,4v"
+    },
+    "battery_included": {
+     "val": false,
+     "src": "keyword",
+     "m": "без акк"
+    }
+   }
+  },
+  {
+   "id": 565,
+   "art": "HTC-DH18DSL-Т4",
+   "name": "Перф. аккум. DH18DSL (без аккум)",
+   "n": 2,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "battery_included": {
+     "val": false,
+     "src": "keyword",
+     "m": "без акк"
+    }
+   }
+  },
+  {
+   "id": 566,
+   "art": "HTC-DH24DV",
+   "name": "Перф. аккум. DH24DV 24В, 2х2,0А/ч, 2 реж SDS+",
+   "n": 4,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "24",
+     "src": "regex",
+     "m": "24в"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "battery_capacity": {
+     "val": "2.0",
+     "src": "regex",
+     "m": "2,0а/ч"
+    }
+   }
+  },
+  {
+   "id": 567,
+   "art": "HTC-DH36DL",
+   "name": "Перф. аккум. DH36DL 36В, 2х3,0А/ч, 2 реж SDS+",
+   "n": 4,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "36",
+     "src": "regex",
+     "m": "36в"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "battery_capacity": {
+     "val": "3.0",
+     "src": "regex",
+     "m": "3,0а/ч"
+    }
+   }
+  },
+  {
+   "id": 568,
+   "art": "HRH2024BL",
+   "name": "Перф. аккум. Hanskommer HRH2024BL 18В, 2,2Дж, 3реж б/щ 1х4,0Ач+ЗУ кейс",
+   "n": 5,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "18",
+     "src": "regex",
+     "m": "18в"
+    },
+    "energy_impact": {
+     "val": "2.2",
+     "src": "regex",
+     "m": "2,2дж"
+    },
+    "motor_type": {
+     "val": "Бесщёточный",
+     "src": "keyword",
+     "m": "б/щ"
+    },
+    "battery_capacity": {
+     "val": "4.0",
+     "src": "regex",
+     "m": "4,0ач"
+    }
+   }
+  },
+  {
+   "id": 569,
+   "art": "",
+   "name": "Перф. аккум. Makita DHR 202RFE SDS plus, 18V, 1,9Д",
+   "n": 4,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "18",
+     "src": "regex",
+     "m": "18v"
+    },
+    "energy_impact": {
+     "val": "1.9",
+     "src": "regex",
+     "m": "1,9д"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    }
+   }
+  },
+  {
+   "id": 570,
+   "art": "",
+   "name": "Перф. аккум. Makita DHR 242RFE SDS plus, 18V, 2,4Дж, Li-lon",
+   "n": 4,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "18",
+     "src": "regex",
+     "m": "18v"
+    },
+    "energy_impact": {
+     "val": "2.4",
+     "src": "regex",
+     "m": "2,4дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    }
+   }
+  },
+  {
+   "id": 571,
+   "art": "",
+   "name": "Перф. аккум. Makita DHR 242RT",
+   "n": 1,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    }
+   }
+  },
+  {
+   "id": 572,
+   "art": "",
+   "name": "Перф. аккум. Makita DHR 242Z (без аккум. и з/у)",
+   "n": 2,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "battery_included": {
+     "val": false,
+     "src": "keyword",
+     "m": "без акк"
+    }
+   }
+  },
+  {
+   "id": 573,
+   "art": "",
+   "name": "Перф. аккум. Makita DHR202",
+   "n": 1,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    }
+   }
+  },
+  {
+   "id": 574,
+   "art": "600324800",
+   "name": "Перф. аккум. Metabo BH 18 LTX BL 16",
+   "n": 1,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    }
+   }
+  },
+  {
+   "id": 575,
+   "art": "T03320",
+   "name": "Перф. аккум. METABO КНA 18 LTX + АККУМУЛЯТОР 4,0 АЧ + ЗАРЯДНОЕ УСТРОЙСТВО ASC 55",
+   "n": 2,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккумулятор"
+    },
+    "battery_capacity": {
+     "val": "4.0",
+     "src": "regex",
+     "m": "4,0 ач"
+    }
+   }
+  },
+  {
+   "id": 576,
+   "art": "CRH1820BL",
+   "name": "Перф. аккум. Sturm CRH1820BL 18В, 1BatterySystem,2,2Дж, 3реж, без АКБ и ЗУ коробка",
+   "n": 4,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "18",
+     "src": "regex",
+     "m": "18в"
+    },
+    "energy_impact": {
+     "val": "2.2",
+     "src": "regex",
+     "m": "2,2дж"
+    },
+    "battery_included": {
+     "val": false,
+     "src": "keyword",
+     "m": "без акб"
+    }
+   }
+  },
+  {
+   "id": 577,
+   "art": "CRH1832BLC",
+   "name": "Перф. аккум. Sturm CRH1832BLC б/щ, 18В, 1BatterySystem,3,2Дж, 3+1реж, 1х4.0Ач,ЗУ, кейс",
+   "n": 5,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "18",
+     "src": "regex",
+     "m": "18в"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "motor_type": {
+     "val": "Бесщёточный",
+     "src": "keyword",
+     "m": "б/щ"
+    },
+    "battery_capacity": {
+     "val": "4.0",
+     "src": "regex",
+     "m": "4.0ач"
+    }
+   }
+  },
+  {
+   "id": 578,
+   "art": "PB-260",
+   "name": "Перф. аккум. ЗУБР PB-260 20В бесщеточный без АКБ и ЗУ Профессионал в коробке",
+   "n": 4,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "20",
+     "src": "regex",
+     "m": "20в"
+    },
+    "motor_type": {
+     "val": "Бесщёточный",
+     "src": "keyword",
+     "m": "бесщеточн"
+    },
+    "battery_included": {
+     "val": false,
+     "src": "keyword",
+     "m": "без акб"
+    }
+   }
+  },
+  {
+   "id": 579,
+   "art": "PB-260-42",
+   "name": "Перф. аккум. ЗУБР PB-260-42 20В бесщеточный SDS+, 3Дж, 0-4800 уд/мин, аккум 4 а/ч",
+   "n": 6,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "20",
+     "src": "regex",
+     "m": "20в"
+    },
+    "energy_impact": {
+     "val": "3",
+     "src": "regex",
+     "m": "3дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "motor_type": {
+     "val": "Бесщёточный",
+     "src": "keyword",
+     "m": "бесщеточн"
+    },
+    "battery_capacity": {
+     "val": "4",
+     "src": "regex",
+     "m": "4 а/ч"
+    }
+   }
+  },
+  {
+   "id": 580,
+   "art": "",
+   "name": "Перф. аккум. ИНТЕРСКОЛ ПА-10/14,4Р SDS+, 14В, 1,3А/ч",
+   "n": 4,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "14",
+     "src": "regex",
+     "m": "14в"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "battery_capacity": {
+     "val": "1.3",
+     "src": "regex",
+     "m": "1,3а/ч"
+    }
+   }
+  },
+  {
+   "id": 1085,
+   "art": "BSH-0 611 903 R02",
+   "name": "яяПерф. аккум. Bosch GBH 36V-LI;36V,2х1,3А/ч, Li-i",
+   "n": 3,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "36",
+     "src": "regex",
+     "m": "36v"
+    },
+    "battery_capacity": {
+     "val": "1.3",
+     "src": "regex",
+     "m": "1,3а/ч"
+    }
+   }
+  },
+  {
+   "id": 44402,
+   "art": "BSH-0611250500",
+   "name": "Перф. Bosch GBH 2-23REA; 710Вт, SDS+, 2,5Дж,2реж,0",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "710",
+     "src": "regex",
+     "m": "710вт"
+    },
+    "energy_impact": {
+     "val": "2.5",
+     "src": "regex",
+     "m": "2,5дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44403,
+   "art": "0611254768",
+   "name": "Перф. Bosch GBH 2-26DFR;800Вт,SDS+,3Дж, 3реж,0-900",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3",
+     "src": "regex",
+     "m": "3дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44404,
+   "art": "0611253708",
+   "name": "Перф. Bosch GBH 2-26DRE; 800Вт,SDS+, 3Дж, 3реж, 0-",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3",
+     "src": "regex",
+     "m": "3дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44405,
+   "art": "0611267500",
+   "name": "Перф. Bosch GBH 2-28; 880Вт, SDS+, 3,2Дж, 3реж, 0-",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "880",
+     "src": "regex",
+     "m": "880вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44406,
+   "art": "0611273000",
+   "name": "Перф. Bosch GBH 240 F; 790Вт, SDS+, 2,7Дж, 3реж, 0",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "790",
+     "src": "regex",
+     "m": "790вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44407,
+   "art": "0611272100",
+   "name": "Перф. Bosch GBH 240; 790Вт, SDS+, 2,7Дж, 3реж, 0-9",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "790",
+     "src": "regex",
+     "m": "790вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44408,
+   "art": "061123A000",
+   "name": "Перф. Bosch GBH 3-28DRE; 800Вт, SDS+, 3,5Дж, 0-900",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3.5",
+     "src": "regex",
+     "m": "3,5дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44409,
+   "art": "0611332100",
+   "name": "Перф. Bosch GBH 4-32DFR; 900Вт, SDS+, 5Дж, 3-х реж",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "900",
+     "src": "regex",
+     "m": "900вт"
+    },
+    "energy_impact": {
+     "val": "5",
+     "src": "regex",
+     "m": "5дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44410,
+   "art": "BSH-0611240008",
+   "name": "Перф. Bosch GBH 5-38D; 1050Вт, SDS-MAX, 5,9ж, 340о",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1050",
+     "src": "regex",
+     "m": "1050вт"
+    },
+    "energy_impact": {
+     "val": "5.9",
+     "src": "regex",
+     "m": "5,9ж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44411,
+   "art": "0611269020",
+   "name": "Перф. Bosch GBH 5-40D",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44412,
+   "art": "BSH-0611265100",
+   "name": "Перф. Bosch GBH 8-45D; 1500Вт, SDS-MAX, 12,5Дж, 0-",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1500",
+     "src": "regex",
+     "m": "1500вт"
+    },
+    "energy_impact": {
+     "val": "12.5",
+     "src": "regex",
+     "m": "12,5дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44413,
+   "art": "06033A9320",
+   "name": "Перф. Bosch PBH 2100RE; 550Вт, SDS+, 1,7Дж, 0-2300",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "550",
+     "src": "regex",
+     "m": "550вт"
+    },
+    "energy_impact": {
+     "val": "1.7",
+     "src": "regex",
+     "m": "1,7дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44414,
+   "art": "",
+   "name": "Перф. DeWalt 900Вт D25144K-A9",
+   "n": 2,
+   "got": {
+    "power": {
+     "val": "900",
+     "src": "regex",
+     "m": "900вт"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44415,
+   "art": "",
+   "name": "Перф. DeWalt D 25134 K",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44416,
+   "art": "",
+   "name": "Перф. DeWalt D 25143 K",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44417,
+   "art": "",
+   "name": "Перф. DeWalt D 25144 K",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44418,
+   "art": "HTC-DH22PG",
+   "name": "Перф. DH22PG;  620Вт,  SDS plus,  1.6Дж,  2реж,  0",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "620",
+     "src": "regex",
+     "m": "620вт"
+    },
+    "energy_impact": {
+     "val": "1.6",
+     "src": "regex",
+     "m": "1.6дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44419,
+   "art": "HTC-DH22PH",
+   "name": "Перф. DH22PH; 620Вт, SDS plus, 1,7Дж, 3реж, 0-1400",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "620",
+     "src": "regex",
+     "m": "620вт"
+    },
+    "energy_impact": {
+     "val": "1.7",
+     "src": "regex",
+     "m": "1,7дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44420,
+   "art": "HTC-DH24PC3",
+   "name": "Перф. DH24PC3;  800Вт,  SDS plus,  3,2Дж,  3реж,",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44421,
+   "art": "HTC-DH24PD3",
+   "name": "Перф. DH24PD3; 800Вт, SDS plus, 3,2Дж,2реж,0-1050о",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44422,
+   "art": "HTC-DH24PG",
+   "name": "Перф. DH24PG; 730Вт, SDS plus, 2,7Дж, 2реж, 0-1050",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "730",
+     "src": "regex",
+     "m": "730вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44423,
+   "art": "HKK-DH24PH",
+   "name": "Перф. DH24PH; 730Вт, SDS plus, 2,7Дж, 3реж, 0-1050",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "730",
+     "src": "regex",
+     "m": "730вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44424,
+   "art": "DH24PH2NSZ",
+   "name": "Перф. DH24PH2; 730Вт, SDS plus, 2,7Дж, 3реж, 0-1050об/мин, 0-3950уд/мин, 2,8 кг  HiKoki",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "730",
+     "src": "regex",
+     "m": "730вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7дж"
+    },
+    "no_load_speed": {
+     "val": "1050",
+     "src": "regex",
+     "m": "1050об/мин"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44425,
+   "art": "HTC-DH26PB",
+   "name": "Перф. DH26PB; 800Вт, SDS plus, 3,2Дж, 2реж, 0-1100",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44426,
+   "art": "HTC-DH26PC",
+   "name": "Перф. DH26PC;  830Вт,  SDS plus,  3,2Дж,  3реж,  0",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "830",
+     "src": "regex",
+     "m": "830вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44427,
+   "art": "DH26PC2NSZ",
+   "name": "Перф. DH26PC2;  830Вт,  SDS plus,  3,5Дж,  3реж,  0-1050иоб/мин,",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "830",
+     "src": "regex",
+     "m": "830вт"
+    },
+    "energy_impact": {
+     "val": "3.5",
+     "src": "regex",
+     "m": "3,5дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44428,
+   "art": "HTC-DH28PBY",
+   "name": "Перф. DH28PBY; 850Вт, SDS plus, 3,4 Дж, 2реж, 0-11",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "3.4",
+     "src": "regex",
+     "m": "3,4 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44429,
+   "art": "HTC-DH28PC",
+   "name": "Перф. DH28PC;  720Вт,  SDS plus,  3,5Дж,  3реж,  0",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "720",
+     "src": "regex",
+     "m": "720вт"
+    },
+    "energy_impact": {
+     "val": "3.5",
+     "src": "regex",
+     "m": "3,5дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44430,
+   "art": "HTC-DH28PCY",
+   "name": "Перф. DH28PCY; 850Вт, SDS plus, 3,4 Дж,3 реж, 0-11",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "3.4",
+     "src": "regex",
+     "m": "3,4 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44431,
+   "art": "DH28PCY2NSZ",
+   "name": "Перф. DH28PCY2; 850Вт, SDS plus, 3,4 Дж,3 реж, 0-1100об/мин, 0-4300уд/мин, антивибр., 2,9к",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "3.4",
+     "src": "regex",
+     "m": "3,4 дж"
+    },
+    "no_load_speed": {
+     "val": "1100",
+     "src": "regex",
+     "m": "1100об/мин"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44432,
+   "art": "HTC-DH28PD",
+   "name": "Перф. DH28PD; 720Вт, SDS plus, 3,5 Дж,3 реж, 0-105",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "720",
+     "src": "regex",
+     "m": "720вт"
+    },
+    "energy_impact": {
+     "val": "3.5",
+     "src": "regex",
+     "m": "3,5 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44433,
+   "art": "DH28PECNSZ",
+   "name": "Перф. DH28PEC; 900Вт, SDS plus, 3,2 Дж,3 реж бесщеточный",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "900",
+     "src": "regex",
+     "m": "900вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "motor_type": {
+     "val": "Бесщёточный",
+     "src": "keyword",
+     "m": "бесщеточн"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44434,
+   "art": "HKK-DH28PMY",
+   "name": "Перф. DH28PMY; 850Вт, SDS plus, 3,4 Дж,3 реж, 0-11",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "3.4",
+     "src": "regex",
+     "m": "3,4 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44435,
+   "art": "HTC-DH30PC2",
+   "name": "Перф. DH30PC2;  850Вт,  SDS plus,  5.4Дж,  3реж,",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "5.4",
+     "src": "regex",
+     "m": "5.4дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44436,
+   "art": "DH40MCNSZ",
+   "name": "Перф. DH40MC; 1100Вт, SDS-max, 10,5Дж, 620об/мин, 2800уд/мин, 7,1кг",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "1100",
+     "src": "regex",
+     "m": "1100вт"
+    },
+    "energy_impact": {
+     "val": "10.5",
+     "src": "regex",
+     "m": "10,5дж"
+    },
+    "no_load_speed": {
+     "val": "620",
+     "src": "regex",
+     "m": "620об/мин"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44437,
+   "art": "DH40MEYNSZ",
+   "name": "Перф. DH40MEY; 1150Вт, SDS-max, 11Дж, 250-500об/мин, 1430-2850уд/мин, антивибр., 7,5кг",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "1150",
+     "src": "regex",
+     "m": "1150вт"
+    },
+    "energy_impact": {
+     "val": "11",
+     "src": "regex",
+     "m": "11дж"
+    },
+    "no_load_speed": {
+     "val": "500",
+     "src": "regex",
+     "m": "500об/мин"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44438,
+   "art": "HTC-DH40MR",
+   "name": "Перф. DH40MR  950Вт, SDS-max, 10,0Дж, 240-480об/ми",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "950",
+     "src": "regex",
+     "m": "950вт"
+    },
+    "energy_impact": {
+     "val": "10.0",
+     "src": "regex",
+     "m": "10,0дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44439,
+   "art": "HTC-DH40MR-Industrial",
+   "name": "Перф. DH40MR-Industrial  950Вт, SDS-max, 10,0Дж, 2",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "950",
+     "src": "regex",
+     "m": "950вт"
+    },
+    "energy_impact": {
+     "val": "10.0",
+     "src": "regex",
+     "m": "10,0дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44440,
+   "art": "HTC-DH40MRY",
+   "name": "Перф. DH40MRY 950Вт, SDS-max, 10,5Дж, 240-480об/ми",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "950",
+     "src": "regex",
+     "m": "950вт"
+    },
+    "energy_impact": {
+     "val": "10.5",
+     "src": "regex",
+     "m": "10,5дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44441,
+   "art": "DH45MENSZ",
+   "name": "Перф. DH45ME; бесщ., 1500Вт, SDS-max, 13,4Дж 310об/мин, 2950уд/мин, 9кг",
+   "n": 6,
+   "got": {
+    "power": {
+     "val": "1500",
+     "src": "regex",
+     "m": "1500вт"
+    },
+    "energy_impact": {
+     "val": "13.4",
+     "src": "regex",
+     "m": "13,4дж"
+    },
+    "no_load_speed": {
+     "val": "310",
+     "src": "regex",
+     "m": "310об/мин"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "motor_type": {
+     "val": "Бесщёточный",
+     "src": "keyword",
+     "m": "бесщ"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44442,
+   "art": "DH45MEYNSZ",
+   "name": "Перф. DH45MEY; бесщ., 1500Вт, SDS-max, 120-310об/мин, 1200-2950уд/мин, 9,5кг",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "1500",
+     "src": "regex",
+     "m": "1500вт"
+    },
+    "no_load_speed": {
+     "val": "310",
+     "src": "regex",
+     "m": "310об/мин"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "motor_type": {
+     "val": "Бесщёточный",
+     "src": "keyword",
+     "m": "бесщ"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44443,
+   "art": "HTC-DH45MR",
+   "name": "Перф. DH45MR 1200Вт, SDS-max, 15,5Дж, 120-250об/ми",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1200",
+     "src": "regex",
+     "m": "1200вт"
+    },
+    "energy_impact": {
+     "val": "15.5",
+     "src": "regex",
+     "m": "15,5дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44444,
+   "art": "HTC-DH50MR",
+   "name": "Перф. DH50MR 1400Вт, SDS-max, 20Дж, 110-230об/мин,",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "1400",
+     "src": "regex",
+     "m": "1400вт"
+    },
+    "energy_impact": {
+     "val": "20",
+     "src": "regex",
+     "m": "20дж"
+    },
+    "no_load_speed": {
+     "val": "230",
+     "src": "regex",
+     "m": "230об/мин"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44445,
+   "art": "HTC-DH50MRY",
+   "name": "Перф. DH50MRY 1400Вт, SDS-max, 20Дж, 110-230об/мин",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "1400",
+     "src": "regex",
+     "m": "1400вт"
+    },
+    "energy_impact": {
+     "val": "20",
+     "src": "regex",
+     "m": "20дж"
+    },
+    "no_load_speed": {
+     "val": "230",
+     "src": "regex",
+     "m": "230об/мин"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44446,
+   "art": "DH52MENSZ",
+   "name": "Перф. DH52ME бесщ., 1500Вт, SDS-max, 22Дж, 0-110/0-280об/мин, 1000-2400уд/мин, кейс, 11кг",
+   "n": 6,
+   "got": {
+    "power": {
+     "val": "1500",
+     "src": "regex",
+     "m": "1500вт"
+    },
+    "energy_impact": {
+     "val": "22",
+     "src": "regex",
+     "m": "22дж"
+    },
+    "no_load_speed": {
+     "val": "280",
+     "src": "regex",
+     "m": "280об/мин"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "motor_type": {
+     "val": "Бесщёточный",
+     "src": "keyword",
+     "m": "бесщ"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44447,
+   "art": "4258491",
+   "name": "Перф. Einhell RT-RH 20/1, SDS-Plus, 500Вт, 1,6Дж,2,8кг",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "500",
+     "src": "regex",
+     "m": "500вт"
+    },
+    "energy_impact": {
+     "val": "1.6",
+     "src": "regex",
+     "m": "1,6дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds-plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44448,
+   "art": "4258440",
+   "name": "Перф. Einhell RT-RH 32, SDS-Plus, 1250Вт, 3,5Дж,6,05кг",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1250",
+     "src": "regex",
+     "m": "1250вт"
+    },
+    "energy_impact": {
+     "val": "3.5",
+     "src": "regex",
+     "m": "3,5дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds-plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44449,
+   "art": "4257992",
+   "name": "Перф. Einhell TC-RH 620 4F KIT, SDS-Plus, 620Вт, 2,2Дж,2,63кг",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "620",
+     "src": "regex",
+     "m": "620вт"
+    },
+    "energy_impact": {
+     "val": "2.2",
+     "src": "regex",
+     "m": "2,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds-plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44450,
+   "art": "4257990",
+   "name": "Перф. Einhell TC-RH 620 4F, SDS-Plus, 620Вт, 2,2Дж,2,63кг",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "620",
+     "src": "regex",
+     "m": "620вт"
+    },
+    "energy_impact": {
+     "val": "2.2",
+     "src": "regex",
+     "m": "2,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds-plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44451,
+   "art": "4257980",
+   "name": "Перф. Einhell TC-RH 800 4F, SDS-Plus, 800Вт, 2,6Дж,3,12кг",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "2.6",
+     "src": "regex",
+     "m": "2,6дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds-plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44452,
+   "art": "4257920",
+   "name": "Перф. Einhell TC-RH 800 E, SDS-Plus, 800Вт, 2,5Дж,3,27кг",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "2.5",
+     "src": "regex",
+     "m": "2,5дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds-plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44453,
+   "art": "4258237",
+   "name": "Перф. Einhell TC-RH 900, SDS-Plus, 900Вт, 3,0Дж,4,05кг",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "900",
+     "src": "regex",
+     "m": "900вт"
+    },
+    "energy_impact": {
+     "val": "3.0",
+     "src": "regex",
+     "m": "3,0дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds-plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44454,
+   "art": "4257960",
+   "name": "Перф. Einhell TE-RH 26 4F, SDS-Plus, 800Вт, 2,6Дж,2,98кг",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "2.6",
+     "src": "regex",
+     "m": "2,6дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds-plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44455,
+   "art": "4257944",
+   "name": "Перф. Einhell TE-RH 32 4F KIT, SDS-Plus, 1250Вт, 5Дж,4,9кг",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1250",
+     "src": "regex",
+     "m": "1250вт"
+    },
+    "energy_impact": {
+     "val": "5",
+     "src": "regex",
+     "m": "5дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds-plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44456,
+   "art": "4257935",
+   "name": "Перф. Einhell TE-RH 40 3F, SDS-MAX, 1050Вт, 10,0Дж,7,45кг",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1050",
+     "src": "regex",
+     "m": "1050вт"
+    },
+    "energy_impact": {
+     "val": "10.0",
+     "src": "regex",
+     "m": "10,0дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44457,
+   "art": "4257978",
+   "name": "Перф. Einhell TE-RH 950 5F, SDS-Plus, 900Вт, 3,0Дж,3,61кг + патрон",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "900",
+     "src": "regex",
+     "m": "900вт"
+    },
+    "energy_impact": {
+     "val": "3.0",
+     "src": "regex",
+     "m": "3,0дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds-plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44458,
+   "art": "HRH0822RE",
+   "name": "Перф. Hanskonner HRH0822RE 600Вт, 3реж 2,2Дж, 22мм SDS+",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "600",
+     "src": "regex",
+     "m": "600вт"
+    },
+    "energy_impact": {
+     "val": "2.2",
+     "src": "regex",
+     "m": "2,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44459,
+   "art": "HRH0824RE",
+   "name": "Перф. Hanskonner HRH0824RE 790Вт, 3реж 2,8Дж, 24мм SDS+",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "790",
+     "src": "regex",
+     "m": "790вт"
+    },
+    "energy_impact": {
+     "val": "2.8",
+     "src": "regex",
+     "m": "2,8дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44460,
+   "art": "HRH0828RE",
+   "name": "Перф. Hanskonner HRH0828RE 850Вт, 3реж 3,2Дж, 28мм SDS+",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44461,
+   "art": "HRH0828REC",
+   "name": "Перф. Hanskonner HRH0828REC 850Вт, 3реж 3,2Дж, 28мм SDS+",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44462,
+   "art": "HRH0926AVS",
+   "name": "Перф. Hanskonner HRH0926AVS 800Вт, 3,0Дж, 26мм SDS+ 3реж",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3.0",
+     "src": "regex",
+     "m": "3,0дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44463,
+   "art": "HRH0928DR",
+   "name": "Перф. Hanskonner HRH0928DR 980Вт, 3,8Дж, 28мм SDS+ вертикал",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "980",
+     "src": "regex",
+     "m": "980вт"
+    },
+    "energy_impact": {
+     "val": "3.8",
+     "src": "regex",
+     "m": "3,8дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44464,
+   "art": "HRH0928H",
+   "name": "Перф. Hanskonner HRH0928H 950Вт, 3,2Дж, 28мм SDS+",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "950",
+     "src": "regex",
+     "m": "950вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44465,
+   "art": "HRH0928LRE",
+   "name": "Перф. Hanskonner HRH0928LRE 1050Вт, 3реж 3,5Дж, 28мм SDS+",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1050",
+     "src": "regex",
+     "m": "1050вт"
+    },
+    "energy_impact": {
+     "val": "3.5",
+     "src": "regex",
+     "m": "3,5дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44466,
+   "art": "HRH0928MLRE",
+   "name": "Перф. Hanskonner HRH0928MLRE 850Вт, 3,2Дж, 28мм метал редуктор",
+   "n": 3,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44467,
+   "art": "HRH1130AVS",
+   "name": "Перф. Hanskonner HRH1130AVS 1100Вт, 3реж 3,3Дж, 30мм SDS+",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1100",
+     "src": "regex",
+     "m": "1100вт"
+    },
+    "energy_impact": {
+     "val": "3.3",
+     "src": "regex",
+     "m": "3,3дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44468,
+   "art": "HRH1532RE",
+   "name": "Перф. Hanskonner HRH1532RE 1500Вт, 3реж 6Дж, 32мм SDS+ вертикальный",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1500",
+     "src": "regex",
+     "m": "1500вт"
+    },
+    "energy_impact": {
+     "val": "6",
+     "src": "regex",
+     "m": "6дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44469,
+   "art": "HRH1652M",
+   "name": "Перф. Hanskonner HRH1652M SDS-MAX 1600Вт, 52мм, 2-15Дж, 150-305об/мин",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "1600",
+     "src": "regex",
+     "m": "1600вт"
+    },
+    "energy_impact": {
+     "val": "15",
+     "src": "regex",
+     "m": "15дж"
+    },
+    "no_load_speed": {
+     "val": "305",
+     "src": "regex",
+     "m": "305об/мин"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44470,
+   "art": "HRH1836RE",
+   "name": "Перф. Hanskonner HRH1836RE 1800Вт, 3реж 7Дж, 36мм SDS+ вертикальный",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1800",
+     "src": "regex",
+     "m": "1800вт"
+    },
+    "energy_impact": {
+     "val": "7",
+     "src": "regex",
+     "m": "7дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44471,
+   "art": "HRH1855M",
+   "name": "Перф. Hanskonner HRH1855M SDS-MAX 1800Вт, 55мм, 5-19Дж, 100-220об/мин",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "1800",
+     "src": "regex",
+     "m": "1800вт"
+    },
+    "energy_impact": {
+     "val": "19",
+     "src": "regex",
+     "m": "19дж"
+    },
+    "no_load_speed": {
+     "val": "220",
+     "src": "regex",
+     "m": "220об/мин"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44472,
+   "art": "HRH2145MVE",
+   "name": "Перф. Hanskonner HRH2145MVE SDS-MAX 2100Вт, 52мм, 20Дж, 320-550об/мин",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "2100",
+     "src": "regex",
+     "m": "2100вт"
+    },
+    "energy_impact": {
+     "val": "20",
+     "src": "regex",
+     "m": "20дж"
+    },
+    "no_load_speed": {
+     "val": "550",
+     "src": "regex",
+     "m": "550об/мин"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44473,
+   "art": "MKT-HR1830",
+   "name": "Перф. Makita HR1830; 440 Вт, SDS plus, 1,2 Дж, 2ре",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "440",
+     "src": "regex",
+     "m": "440 вт"
+    },
+    "energy_impact": {
+     "val": "1.2",
+     "src": "regex",
+     "m": "1,2 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44474,
+   "art": "MKT-HR2230",
+   "name": "Перф. Makita HR2230; 710 Вт, SDS plus, 2,3 Дж, 2ре",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "710",
+     "src": "regex",
+     "m": "710 вт"
+    },
+    "energy_impact": {
+     "val": "2.3",
+     "src": "regex",
+     "m": "2,3 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44475,
+   "art": "MKT-HR2450",
+   "name": "Перф. Makita HR2450; 780 Вт, SDS plus, 2,7 Дж, 3 р",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "780",
+     "src": "regex",
+     "m": "780 вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44476,
+   "art": "HR2470",
+   "name": "Перф. Makita HR2470; 780Вт, SDS plus, 2,7Дж, 3 реж, 0-1100об/мин, 0-4500уд/мин, 2,6кг",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "780",
+     "src": "regex",
+     "m": "780вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7дж"
+    },
+    "no_load_speed": {
+     "val": "1100",
+     "src": "regex",
+     "m": "1100об/мин"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44477,
+   "art": "MKT-HR2600",
+   "name": "Перф. Makita HR2600; 800 Вт, SDS plus, 2,9 Дж, 2ре",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800 вт"
+    },
+    "energy_impact": {
+     "val": "2.9",
+     "src": "regex",
+     "m": "2,9 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44478,
+   "art": "MKT-HR2610X5",
+   "name": "Перф. Makita HR2610(X5); 800Вт, SDS plus, 2,9Дж, 3",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "2.9",
+     "src": "regex",
+     "m": "2,9дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44479,
+   "art": "MKT-HR2611FT",
+   "name": "Перф. Makita HR2611FT(X5); 800Вт, SDS plus, 2,9Дж,",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "2.9",
+     "src": "regex",
+     "m": "2,9дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44480,
+   "art": "MKT-HR2630",
+   "name": "Перф. Makita HR2630; 800 Вт, SDS plus, 2,9 Дж, 2ре",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800 вт"
+    },
+    "energy_impact": {
+     "val": "2.9",
+     "src": "regex",
+     "m": "2,9 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44481,
+   "art": "",
+   "name": "Перф. Makita HR2631FT; 800 Вт, SDS plus, 2,7 Дж, 3режима",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800 вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44482,
+   "art": "",
+   "name": "Перф. Makita HR2800; D-обр., 800Вт, SDS plus, 2,9Д",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "2.9",
+     "src": "regex",
+     "m": "2,9д"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44483,
+   "art": "MKT-HR2811FT",
+   "name": "Перф. Makita HR2811FT; 800Вт, SDS plus, 2,9Дж, 3ре",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "2.9",
+     "src": "regex",
+     "m": "2,9дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44484,
+   "art": "",
+   "name": "Перф. Makita HR3011FCJ; 1050Вт, SDS plus, 3,9Дж, 3 реж,4,4кг",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1050",
+     "src": "regex",
+     "m": "1050вт"
+    },
+    "energy_impact": {
+     "val": "3.9",
+     "src": "regex",
+     "m": "3,9дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44485,
+   "art": "",
+   "name": "Перф. Makita HR3200 C; 850Вт, SDS plus, 5,5Дж, 3ре",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "5.5",
+     "src": "regex",
+     "m": "5,5дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44486,
+   "art": "MKT-HR4001C",
+   "name": "Перф. Makita HR4001C; 1100 Вт, SDS max, 9,5Дж, 235",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1100",
+     "src": "regex",
+     "m": "1100 вт"
+    },
+    "energy_impact": {
+     "val": "9.5",
+     "src": "regex",
+     "m": "9,5дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44487,
+   "art": "HR4003C",
+   "name": "Перф. Makita HR4003C; 1100 Вт, SDS max, 11,4Дж, 250-500об/мин, 1450-2900уд/мин, 6,2кг",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "1100",
+     "src": "regex",
+     "m": "1100 вт"
+    },
+    "energy_impact": {
+     "val": "11.4",
+     "src": "regex",
+     "m": "11,4дж"
+    },
+    "no_load_speed": {
+     "val": "500",
+     "src": "regex",
+     "m": "500об/мин"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44488,
+   "art": "",
+   "name": "Перф. Makita HR4501C; 1350 Вт, SDS max, 2,7-13Дж,",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1350",
+     "src": "regex",
+     "m": "1350 вт"
+    },
+    "energy_impact": {
+     "val": "13",
+     "src": "regex",
+     "m": "13дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44489,
+   "art": "",
+   "name": "Перф. Makita HR5202C; 1500 Вт, SDS max, 20Дж,",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1500",
+     "src": "regex",
+     "m": "1500 вт"
+    },
+    "energy_impact": {
+     "val": "20",
+     "src": "regex",
+     "m": "20дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44490,
+   "art": "600763500",
+   "name": "Перф. Metabo KH5-40 SDS-MAX 1100Вт, 8,5/10,5Дж",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1100",
+     "src": "regex",
+     "m": "1100вт"
+    },
+    "energy_impact": {
+     "val": "10.5",
+     "src": "regex",
+     "m": "10,5дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44491,
+   "art": "606154510",
+   "name": "Перф. Metabo KHE 2444 SDS+ 3реж, 800Вт, 2,8Дж",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "2.8",
+     "src": "regex",
+     "m": "2,8дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44492,
+   "art": "606157950",
+   "name": "Перф. Metabo KHE 2644 SDS+ Top Seller 3реж, 800Вт, 2,8Дж",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "2.8",
+     "src": "regex",
+     "m": "2,8дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44493,
+   "art": "600663500",
+   "name": "Перф. Metabo KHE 2660 Quick SDS+ 850Вт, 3,0Дж +БЗП",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "3.0",
+     "src": "regex",
+     "m": "3,0дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44494,
+   "art": "600663510",
+   "name": "Перф. Metabo KHE 2660 Quick SDS+, 850Вт, 3,0Дж",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "3.0",
+     "src": "regex",
+     "m": "3,0дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44495,
+   "art": "600878500",
+   "name": "Перф. Metabo KHE 2860 Quick SDS+, 880Вт, 3,2Дж +БЗП",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "880",
+     "src": "regex",
+     "m": "880вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44496,
+   "art": "600637000",
+   "name": "Перф. Metabo KHE 3250 SDS+ 800Вт, 3,1Дж вертикал",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3.1",
+     "src": "regex",
+     "m": "3,1дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44497,
+   "art": "",
+   "name": "Перф. RSDS800K Ryobi",
+   "n": 1,
+   "got": {
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds"
+    }
+   }
+  },
+  {
+   "id": 44498,
+   "art": "RH2550",
+   "name": "Перф. STURM RH2550 600Вт, 2,3Дж 2 реж",
+   "n": 3,
+   "got": {
+    "power": {
+     "val": "600",
+     "src": "regex",
+     "m": "600вт"
+    },
+    "energy_impact": {
+     "val": "2.3",
+     "src": "regex",
+     "m": "2,3дж"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44499,
+   "art": "RH25921P",
+   "name": "Перф. STURM RH25921P 920Вт, 3,3Дж 3 реж",
+   "n": 3,
+   "got": {
+    "power": {
+     "val": "920",
+     "src": "regex",
+     "m": "920вт"
+    },
+    "energy_impact": {
+     "val": "3.3",
+     "src": "regex",
+     "m": "3,3дж"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44500,
+   "art": "HTC-DH18DSL",
+   "name": "Перф. аккум Hitachi DH18DSL; 18V, 2х3,0 А/ч, Li-io",
+   "n": 3,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "18",
+     "src": "regex",
+     "m": "18v"
+    },
+    "battery_capacity": {
+     "val": "3.0",
+     "src": "regex",
+     "m": "3,0 а/ч"
+    }
+   }
+  },
+  {
+   "id": 44501,
+   "art": "",
+   "name": "Перф. аккум Hitachi DH36DL; 36V,2х3,0А/ч,Li-ion,SD",
+   "n": 3,
+   "got": {
+    "power_source": {
+     "val": "Аккумулятор",
+     "src": "keyword",
+     "m": "аккум"
+    },
+    "voltage": {
+     "val": "36",
+     "src": "regex",
+     "m": "36v"
+    },
+    "battery_capacity": {
+     "val": "3.0",
+     "src": "regex",
+     "m": "3,0а/ч"
+    }
+   }
+  },
+  {
+   "id": 44502,
+   "art": "",
+   "name": "Перф. ВИХРЬ П-1000к",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44503,
+   "art": "72/3/5",
+   "name": "Перф. ВИХРЬ П-650к",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44504,
+   "art": "72/3/1",
+   "name": "Перф. ВИХРЬ П-800к-в",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44505,
+   "art": "",
+   "name": "Перф. ВИХРЬ П-900к",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44506,
+   "art": "РСВ-140804",
+   "name": "Перф. ИНТЕРСКОЛ П-24/700ЭР (кейс)",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44507,
+   "art": "РСВ-559974",
+   "name": "Перф. ИНТЕРСКОЛ П-32/1100АВС",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44508,
+   "art": "РСВ-140807",
+   "name": "Перф. П-1200к-м 72/3/3 ВИХРЬ",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44509,
+   "art": "",
+   "name": "Перф. П-1400 к-в 72/3/8 ВИХРЬ",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44510,
+   "art": "РСВ-140807",
+   "name": "Перф. П-26/800ЭР (кейс) \"Интерскол\"",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44511,
+   "art": "РСВ-200930",
+   "name": "Перф. П-26/800ЭР-2 (кейс) \"Интерскол\"",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44512,
+   "art": "рсв-140808",
+   "name": "Перф. П-30/900ЭР (кейс) \"Интерскол\"",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44513,
+   "art": "РСВ-200940",
+   "name": "Перф. П-30/900ЭР-2  (кейс) \"Интерскол\"",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44514,
+   "art": "",
+   "name": "Перф. П-800к 72/3/6 ВИХРЬ",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44515,
+   "art": "РСВ-140807",
+   "name": "Перф. П-900к-в 72/3/2 ВИХРЬ",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44516,
+   "art": "ПЕС-2550",
+   "name": "Перф. СОЮЗ ПЕС-2550 SDS+, 800Вт, 20мм, 1,5Дж",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "1.5",
+     "src": "regex",
+     "m": "1,5дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44517,
+   "art": "СПЕЦ-1939",
+   "name": "Перф. СПЕЦ БПЭ-850К, 900Вт",
+   "n": 2,
+   "got": {
+    "power": {
+     "val": "900",
+     "src": "regex",
+     "m": "900вт"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44518,
+   "art": "ЗП-26-750 ЭК",
+   "name": "Перф.ЗУБР 750 Вт, 26 мм,  SDS Plus",
+   "n": 3,
+   "got": {
+    "power": {
+     "val": "750",
+     "src": "regex",
+     "m": "750 вт"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44519,
+   "art": "ЗП-26-800",
+   "name": "Перф.ЗУБР 800 Вт, 26 мм,  SDS Plus, серия Профессионал",
+   "n": 3,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800 вт"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44520,
+   "art": "ЗП-22-650 К",
+   "name": "Перф.ЗУБР ЗП-22-650, SDS+, реверс, 650Вт ПРОФЕССИОНАЛ",
+   "n": 3,
+   "got": {
+    "power": {
+     "val": "650",
+     "src": "regex",
+     "m": "650вт"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44521,
+   "art": "ЗП-24-750 К",
+   "name": "Перф.ЗУБР ЗП-24-750, SDS+, реверс, 750Вт, 2.6Дж, ПРОФЕССИОНАЛ",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "750",
+     "src": "regex",
+     "m": "750вт"
+    },
+    "energy_impact": {
+     "val": "2.6",
+     "src": "regex",
+     "m": "2.6дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44522,
+   "art": "ЗП-2470",
+   "name": "Перф.ЗУБР ЗП-2470, SDS+, реверс, 780Вт, 2.7Дж, 3режима ПРОФЕССИОНАЛ",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "780",
+     "src": "regex",
+     "m": "780вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2.7дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44523,
+   "art": "ЗП-26-800-К",
+   "name": "Перф.ЗУБР ЗП-26-800 SDS+,800Вт, 3,2Дж, 0-1200об/мин, 0-4800у уд/мин ЗУБР Профессионал",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "no_load_speed": {
+     "val": "1200",
+     "src": "regex",
+     "m": "1200об/мин"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44524,
+   "art": "ЗП-2680",
+   "name": "Перф.ЗУБР ЗП-2680, SDS+, реверс, 850Вт, 2.9Дж, 3режима ПРОФЕССИОНАЛ",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "2.9",
+     "src": "regex",
+     "m": "2.9дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44525,
+   "art": "ЗП-28-800 К",
+   "name": "Перф.ЗУБР ЗП-28-800 К, SDS+, реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44526,
+   "art": "ЗП-28-800 КМ",
+   "name": "Перф.ЗУБР ЗП-28-800 КМ, SDS+, + БЗП реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44527,
+   "art": "ЗП-2890 м",
+   "name": "Перф.ЗУБР ЗП-2890, SDS+, реверс, 900Вт, 3,2Дж, 3режима ПРОФЕССИОНАЛ",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "900",
+     "src": "regex",
+     "m": "900вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44528,
+   "art": "ЗП-2890 мс",
+   "name": "Перф.ЗУБР ЗП-2890мс, SDS+, реверс, 900Вт, 3,2Дж, 3режима + патрон БЗП ПРОФЕССИОНАЛ",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "900",
+     "src": "regex",
+     "m": "900вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44529,
+   "art": "ЗП-30-900 К",
+   "name": "Перф.ЗУБР ЗП-30-900 К, SDS+, реверс, 900Вт, ПРОФЕССИОНАЛ",
+   "n": 3,
+   "got": {
+    "power": {
+     "val": "900",
+     "src": "regex",
+     "m": "900вт"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44530,
+   "art": "ЗП-32-1100 К",
+   "name": "Перф.ЗУБР ЗП-32-1100 К, SDS+, реверс, 1100Вт, ПРОФЕССИОНАЛ",
+   "n": 3,
+   "got": {
+    "power": {
+     "val": "1100",
+     "src": "regex",
+     "m": "1100вт"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44531,
+   "art": "ЗП-470Э",
+   "name": "Перф.ЗУБР ЗП470Э, SDS+, реверс,1,4Дж, 0-1500об/мин",
+   "n": 3,
+   "got": {
+    "energy_impact": {
+     "val": "1.4",
+     "src": "regex",
+     "m": "1,4дж"
+    },
+    "no_load_speed": {
+     "val": "1500",
+     "src": "regex",
+     "m": "1500об/мин"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    }
+   }
+  },
+  {
+   "id": 44532,
+   "art": "ЗПВ-32-1250 ЭВК",
+   "name": "Перф.ЗУБР ЗПВ-32-1250 ЭВК SDS+, вертикальный, 3,5Д",
+   "n": 2,
+   "got": {
+    "energy_impact": {
+     "val": "3.5",
+     "src": "regex",
+     "m": "3,5д"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    }
+   }
+  },
+  {
+   "id": 44533,
+   "art": "ЗПМ-40-1100 ЭК",
+   "name": "Перф.ЗУБР ЗПМ-40-1100 ЭК,\"ПРОФЕССИОНАЛ\" SDS-Max, 1",
+   "n": 1,
+   "got": {
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    }
+   }
+  },
+  {
+   "id": 44534,
+   "art": "ЗПМ-40-1250 ЭВК",
+   "name": "Перф.ЗУБР ЗПМ-40-1250 \"ПРОФЕССИОНАЛ\" SDS-Max, 10Дж, 6,8 кг, 1250Вт, кейс",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1250",
+     "src": "regex",
+     "m": "1250вт"
+    },
+    "energy_impact": {
+     "val": "10",
+     "src": "regex",
+     "m": "10дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44535,
+   "art": "ЗПМ-45-1350 ЭВ",
+   "name": "Перф.ЗУБР ЗПМ-45-1350 \"ПРОФЕССИОНАЛ\" SDS-Max, 12,5Дж, 7,6 кг, 1350Вт, кейс",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1350",
+     "src": "regex",
+     "m": "1350вт"
+    },
+    "energy_impact": {
+     "val": "12.5",
+     "src": "regex",
+     "m": "12,5дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44536,
+   "art": "ЗПМ-50-1700-Э",
+   "name": "Перф.ЗУБР ЗПМ-50-1700 \"ПРОФЕССИОНАЛ\" SDS-Max, 27Дж, 10,3 кг, 1700Вт, кейс",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1700",
+     "src": "regex",
+     "m": "1700вт"
+    },
+    "energy_impact": {
+     "val": "27",
+     "src": "regex",
+     "m": "27дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44537,
+   "art": "ЗПМ-52-1500-ЭК",
+   "name": "Перф.ЗУБР ЗПМ-52-1500 \"ПРОФЕССИОНАЛ\" SDS-Max, 18Дж, 12 кг, 1500Вт, кейс",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1500",
+     "src": "regex",
+     "m": "1500вт"
+    },
+    "energy_impact": {
+     "val": "18",
+     "src": "regex",
+     "m": "18дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44538,
+   "art": "П-22-650",
+   "name": "Перф.ЗУБР П-22-650, SDS+, реверс, 650Вт,",
+   "n": 3,
+   "got": {
+    "power": {
+     "val": "650",
+     "src": "regex",
+     "m": "650вт"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44539,
+   "art": "П-24-750",
+   "name": "Перф.ЗУБР П-24-750, SDS+, реверс, 750Вт,",
+   "n": 3,
+   "got": {
+    "power": {
+     "val": "750",
+     "src": "regex",
+     "m": "750вт"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44540,
+   "art": "П-26-800",
+   "name": "Перф.ЗУБР П-26-800, SDS+, реверс, 800Вт, 3Дж",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3",
+     "src": "regex",
+     "m": "3дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44541,
+   "art": "ПВ-32-1500 ЭВ",
+   "name": "Перф.ЗУБР ПВ-32-1500 ЭВ SDS+, вертикальный, 5Дж, 1500Вт",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1500",
+     "src": "regex",
+     "m": "1500вт"
+    },
+    "energy_impact": {
+     "val": "5",
+     "src": "regex",
+     "m": "5дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44542,
+   "art": "75/3/1",
+   "name": "Перф.РЕСАНТА П-28-800К",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44543,
+   "art": "75/3/2",
+   "name": "Перф.РЕСАНТА П-30-900к",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44544,
+   "art": "75/3/3",
+   "name": "Перф.РЕСАНТА П-32-1000к SDS+ 1000 Вт, 5,5 Дж",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "1000",
+     "src": "regex",
+     "m": "1000 вт"
+    },
+    "energy_impact": {
+     "val": "5.5",
+     "src": "regex",
+     "m": "5,5 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44545,
+   "art": "75/3/6",
+   "name": "Перф.РЕСАНТА П-32-1400КВ",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44546,
+   "art": "75/3/7",
+   "name": "Перф.РЕСАНТА П-40-1600КМ SDS-MAX",
+   "n": 1,
+   "got": {
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    }
+   }
+  },
+  {
+   "id": 44547,
+   "art": "75/3/13",
+   "name": "Перф.РЕСАНТА П-42-2000КМ SDS-MAX 2000Вт 13Дж",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "2000",
+     "src": "regex",
+     "m": "2000вт"
+    },
+    "energy_impact": {
+     "val": "13",
+     "src": "regex",
+     "m": "13дж"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44548,
+   "art": "",
+   "name": "Перфоратор HITACHI DH28PCY",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44549,
+   "art": "RH262901129",
+   "name": "Перфоратор WORTEX RH 2629 SDS-Plus 800Вт, 3Дж",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3",
+     "src": "regex",
+     "m": "3дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds-plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 44550,
+   "art": "72/3/7",
+   "name": "Перфоратор П-1000К Вихрь",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44551,
+   "art": "РСВ-242395",
+   "name": "Перфоратор П-24/650 ЭР кейс \"Интерскол\"",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 44552,
+   "art": "",
+   "name": "Перфоратор ручной электромонтажный ПМЛ-60 SHTOK",
+   "n": 0,
+   "got": {}
+  },
+  {
+   "id": 45574,
+   "art": "BSH-06112A0000",
+   "name": "яяПерф. Bosch GBH 2-24D; 790Вт, SDS+, 2,7Дж, 3реж,",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "790",
+     "src": "regex",
+     "m": "790вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds+"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45575,
+   "art": "HTC-DH24PB3",
+   "name": "яяПерф. DH24PB3;  800Вт,  SDS plus,  3,2Дж,  2реж,",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45576,
+   "art": "HTC-DH24PC3-Industrial",
+   "name": "яяПерф. DH24PC3-Industrial;  800Вт,  SDS plus,  3,",
+   "n": 3,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45577,
+   "art": "HTC-DH24PG-NY",
+   "name": "яяПерф. DH24PG-NY; 730Вт, SDS plus, 2,7Дж, 2реж, 0",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "730",
+     "src": "regex",
+     "m": "730вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45578,
+   "art": "HTC-DH24PH-NY",
+   "name": "яяПерф. DH24PH-NY; 730Вт, SDS plus, 2,7Дж, 3реж, 0",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "730",
+     "src": "regex",
+     "m": "730вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45579,
+   "art": "HTC-DH25PB",
+   "name": "яяПерф. DH25PB;  650Вт,  SDS plus,  3,0Дж,  2реж,",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "650",
+     "src": "regex",
+     "m": "650вт"
+    },
+    "energy_impact": {
+     "val": "3.0",
+     "src": "regex",
+     "m": "3,0дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45580,
+   "art": "HTC-DH26PB-NY",
+   "name": "яяПерф. DH26PB-NY; 800Вт, SDS plus, 3,2Дж, 2реж, 0",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "800",
+     "src": "regex",
+     "m": "800вт"
+    },
+    "energy_impact": {
+     "val": "3.2",
+     "src": "regex",
+     "m": "3,2дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45581,
+   "art": "HTC-DH26PC-NY",
+   "name": "яяПерф. DH26PC-NY; 830Вт, SDS plus, 3,4Дж, 3реж, 0",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "830",
+     "src": "regex",
+     "m": "830вт"
+    },
+    "energy_impact": {
+     "val": "3.4",
+     "src": "regex",
+     "m": "3,4дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45582,
+   "art": "HTC-DH28PCY-NY",
+   "name": "яяПерф. DH28PCY-NY; 850Вт, SDS plus, 3,4 Дж,3 реж,",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "3.4",
+     "src": "regex",
+     "m": "3,4 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45583,
+   "art": "HTC-DH28PCY-NY",
+   "name": "яяПерф. DH28PCY; 850Вт, SDS plus, 3,4 Дж,3 реж, 0-",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850вт"
+    },
+    "energy_impact": {
+     "val": "3.4",
+     "src": "regex",
+     "m": "3,4 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45584,
+   "art": "HTC-DH38MS",
+   "name": "яяПерф. DH38MS; 950Вт, SDS-max, 9,0Дж, 510об/мин,",
+   "n": 5,
+   "got": {
+    "power": {
+     "val": "950",
+     "src": "regex",
+     "m": "950вт"
+    },
+    "energy_impact": {
+     "val": "9.0",
+     "src": "regex",
+     "m": "9,0дж"
+    },
+    "no_load_speed": {
+     "val": "510",
+     "src": "regex",
+     "m": "510об/мин"
+    },
+    "chuck": {
+     "val": "SDS-max",
+     "src": "keyword",
+     "m": "sds-max"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45585,
+   "art": "MKT-HR2440",
+   "name": "яяПерф. Makita HR2440; 780 Вт, SDS plus, 2,7 Дж, 2",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "780",
+     "src": "regex",
+     "m": "780 вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7 дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45586,
+   "art": "MKT-HR2450FT",
+   "name": "яяПерф. Makita HR2450FT; 780Вт, SDS plus, 2,7Дж, 3",
+   "n": 4,
+   "got": {
+    "power": {
+     "val": "780",
+     "src": "regex",
+     "m": "780вт"
+    },
+    "energy_impact": {
+     "val": "2.7",
+     "src": "regex",
+     "m": "2,7дж"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  },
+  {
+   "id": 45587,
+   "art": "",
+   "name": "яяПерфоратор Ferm FBH-850КN; 850 Вт, SDS-plus",
+   "n": 3,
+   "got": {
+    "power": {
+     "val": "850",
+     "src": "regex",
+     "m": "850 вт"
+    },
+    "chuck": {
+     "val": "SDS-plus",
+     "src": "keyword",
+     "m": "sds-plus"
+    },
+    "power_source": {
+     "val": "Сеть",
+     "src": "inferred",
+     "m": "(inferred)"
+    }
+   }
+  }
+ ]
+}

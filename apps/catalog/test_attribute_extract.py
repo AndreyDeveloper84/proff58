@@ -148,6 +148,100 @@ def test_perforatory_kilowatt_not_supported(rules):
     assert "power" not in _perf(rules, "Перфоратор 1.2кВт")
 
 
+# --- Перфораторы: якорь на четыре правила Phase 0.5 (PR #593) -----------------
+#
+# Правила ниже добавлены докруткой Phase 0.5 и живут ИСКЛЮЧИТЕЛЬНО в данных
+# (data/attribute_rules.json, секция perforatory). Движок про них не знает, поэтому
+# единственная защита от их случайной правки — эти тесты. Все они read-only по
+# отношению к словарю: читают его через module-фикстуру `rules` и ничего не пишут.
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        # 1С обрезает длинные названия по ширине поля: «…5,9Дж» приезжает как «…5,9ж»,
+        # «…2,9Дж» — как «…2,9Д». Второй паттерн energy_impact ловит именно это.
+        ("Перфоратор ЗУБР ЗП-5,9ж", Decimal("5.9")),
+        ("Перфоратор ЗУБР ЗП-2,9Д", Decimal("2.9")),
+        ("Перфоратор Ставр ПЭ-3,5ж", Decimal("3.5")),
+        ("Перфоратор Интерскол П-1,9Д", Decimal("1.9")),
+    ],
+)
+def test_perforatory_energy_impact_truncated_forms(rules, name, expected):
+    assert _perf(rules, name)["energy_impact"].number == expected
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        # Обрезанная МОДЕЛЬНАЯ маркировка, а не энергия удара: «ЗП-24 Д» — это индекс
+        # модели, 24 Дж у перфоратора такого класса не бывает. Усечённый паттерн обязан
+        # требовать дробное число, иначе целое + кириллическая Д/Ж на конце названия
+        # даёт мусорное значение. Тест падает при возврате широкого «(\d+(?:[.,]\d+)?)».
+        "Перфоратор ЗУБР ЗП-24 Д",
+        "Перфоратор ЗУБР ЗП-24 Ж",
+        "Перфоратор Макита HR2470 24Д",
+    ],
+)
+def test_perforatory_energy_impact_ignores_truncated_model_marking(rules, name):
+    assert "energy_impact" not in _perf(rules, name)
+
+
+def test_perforatory_energy_impact_full_form_wins_over_truncated(rules):
+    # Порядок паттернов в правиле, а не позиция в строке: полная форма «2,4Дж»
+    # проверяется первой и выигрывает, даже если усечённая «5,9ж» стоит левее.
+    assert _perf(rules, "Перфоратор 5,9ж 2,4Дж")["energy_impact"].number == Decimal("2.4")
+    # «дж» не должно распадаться на усечённое «д»: значение целое и корректное.
+    assert _perf(rules, "Перфоратор 10Дж")["energy_impact"].number == Decimal("10")
+
+
+def test_perforatory_chuck_bare_sds_does_not_hijack_sds_max(rules):
+    """Голое «sds» у опции SDS-plus не должно перехватывать SDS-max.
+
+    Держится ИСКЛЮЧИТЕЛЬНО на порядке опций в JSON: движок берёт первую опцию, чьё
+    любое ключевое слово — подстрока названия (attribute_extract.py, `_extract_one`).
+    «sds» — подстрока «sds-max», поэтому SDS-max обязан перебираться раньше SDS-plus.
+    При перестановке опций местами тест падает: matched станет «sds», slug — «sds-plus».
+    """
+    found = _perf(rules, "Перфоратор SDS-max 1500Вт")["chuck"]
+    assert found.option_slug == "sds-max"
+    assert found.matched == "sds-max", "SDS-max перехвачен голым «sds» — переставлены опции"
+
+    # Голое «sds» существует и работает: перфоратор без уточнения — это SDS-plus.
+    bare = _perf(rules, "Перфоратор SDS 800Вт")["chuck"]
+    assert bare.option_slug == "sds-plus" and bare.matched == "sds"
+
+    # Инвариант порядка зафиксирован явно — не только через поведение.
+    chuck_rule = next(r for r in rules.rules_for(PERF) if r.slug == "chuck")
+    slugs = [o.slug for o in chuck_rule.options]
+    assert slugs.index("sds-max") < slugs.index("sds-plus")
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Перфоратор DeWALT бесщ. 18В", "brushless"),  # сокращение «бесщ.» (Phase 0.5)
+        ("Перфоратор бесщёточный 18В", "brushless"),
+        ("Перфоратор б/щ 18В", "brushless"),
+        ("Перфоратор щеточный 800Вт", "brushed"),
+    ],
+)
+def test_perforatory_motor_type_brushless_abbreviation(rules, name, expected):
+    # «щеточн» — подстрока «бесщеточн», поэтому brushless обязан идти раньше brushed.
+    assert _perf(rules, name)["motor_type"].option_slug == expected
+
+
+def test_perforatory_no_load_speed_takes_upper_bound_and_ignores_blows(rules):
+    # Диапазон «0-1050 об/мин»: regex требует 3-5 цифр подряд, «0-» отсекается,
+    # берётся верхняя граница.
+    assert _perf(rules, "Перфоратор 0-1050об/мин")["no_load_speed"].number == Decimal("1050")
+    # «уд/мин» — частота ударов, другая характеристика: правилом не ловится.
+    assert "no_load_speed" not in _perf(rules, "Перфоратор 4500уд/мин")
+    # Обе величины в одном названии — берутся только обороты.
+    both = _perf(rules, "Перфоратор 900Вт 0-1050 об/мин 4500 уд/мин")
+    assert both["no_load_speed"].number == Decimal("1050")
+
+
 # --- Болгарки/УШМ (tool_type=bolgarki-ushm) ----------------------------------
 
 USHM = "bolgarki-ushm"
@@ -556,6 +650,318 @@ def test_golovki_drive_and_size(rules):
     assert f["size"].number == Decimal("13")
 
 
+# --- size у ключей/головок: диапазоны отсекаем, пары «10х11» СОХРАНЯЕМ ---------
+#
+# Правило `size` у `golovki` и `klyuchi-gaechnye` использует lookbehind
+# `(?<![\d.,/-])`, который блокирует диапазон («10-32 мм» → набор/разводной ключ, где
+# одного размера нет), но НЕ блокирует «х». Это осознанное расхождение с конвенцией
+# `passatizhi`/`bokorezy`/`nozhovki` (`(?<![\d.,/x*х-])`): у двустороннего ключа «10х11»
+# размер 11 реально существует, и его удаление лишило бы 211 товаров поиска по размеру.
+# Полноценное решение (мультизначение / size_min+size_max) вынесено отдельной задачей.
+
+
+@pytest.mark.parametrize(
+    "tt,name",
+    [
+        # диапазоны и наборы — одного размера нет, значение извлекаться не должно
+        ("golovki", "Набор головок 1/2, 10-32 мм, 26 предметов"),
+        ("golovki", "Головка многоразмерная, 6-21 мм, под квадрат 3/8, CrV"),
+        ("golovki", 'Набор головок 1" , 8 предметов, 24-46мм FROSP'),
+        ("klyuchi-gaechnye", "Ключ разводной 150мм 0-19 мм W27AT6 Jonnesway"),
+        ("klyuchi-gaechnye", "Ключ для фитингов 32-75 мм ПНД"),
+        ("klyuchi-gaechnye", "Ключ универсальный самозажимной 8-14, 15-22мм, 250мм"),
+        ("klyuchi-gaechnye", "Ключ гаечный комб трещ.  8-22 мм  Cr-V   ЗУБР ПРОФ"),
+        # Диапазон с ПРОБЕЛАМИ вокруг дефиса — эти кейсы намеренно без слова «набор»,
+        # иначе их отсекал бы skip_if и защита lookbehind осталась бы непроверенной.
+        ("klyuchi-gaechnye", "Ключ трубный рычажный №1 10 - 36 мм CrV"),
+        ("klyuchi-gaechnye", "Ключ разводной 300мм 0 - 34 мм Jonnesway"),
+        ("golovki", "Головка многоразмерная 11 - 32 мм под квадрат 1/2 CrV"),
+    ],
+)
+def test_size_range_does_not_yield_single_value(rules, tt, name):
+    assert "size" not in {v.slug: v for v in rules.extract(tt, name)}
+
+
+@pytest.mark.parametrize(
+    "tt,name,expected",
+    [
+        # ЯКОРЬ осознанного расхождения: «х» НЕ блокируется, пара даёт размер.
+        # Если кто-то «выровняет» правило по passatizhi, добавив «х» в lookbehind,
+        # эти кейсы упадут — расхождение должно сниматься решением, а не рефакторингом.
+        ("klyuchi-gaechnye", "Ключ накидной 10х11 мм  СК", Decimal("11")),
+        ("klyuchi-gaechnye", "Ключ баллонный 24х27мм торцовый ЗУБР МАСТЕР", Decimal("27")),
+        ("golovki", "Ключ торцевой 14х14 мм изогнутый", Decimal("14")),
+        ("golovki", "Ключ трубчатый 8х9мм KWB", Decimal("9")),
+    ],
+)
+def test_size_pair_is_kept_deliberately(rules, tt, name, expected):
+    assert {v.slug: v for v in rules.extract(tt, name)}["size"].number == expected
+
+
+@pytest.mark.parametrize(
+    "tt,name,expected",
+    [
+        # одиночные размеры не задеты починкой
+        ("golovki", "Ключ ступичный  50мм торцевой восьмигранный ЗУБР", Decimal("50")),
+        ("golovki", "Ключ торцовый 27 мм СИБИН односторонний, оцинкован", Decimal("27")),
+        ("klyuchi-gaechnye", "Ключ Т-образный 10мм KING TONY", Decimal("10")),
+        ("klyuchi-gaechnye", "Ключ Т-образный с рукояткой 5мм, DUEL", Decimal("5")),
+    ],
+)
+def test_size_single_value_still_extracted(rules, tt, name, expected):
+    # «Т-образный» содержит дефис, но не перед числом — на извлечение не влияет.
+    assert {v.slug: v for v in rules.extract(tt, name)}["size"].number == expected
+
+
+# --- motor_type у шлифмашин: «щёточный шлифователь» — это КЛАСС, не двигатель ----
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        # Класс инструмента (машина со щёткой-насадкой), а не тип двигателя.
+        # У METABO S 18 LTX (аккумуляторная) двигатель вполне может быть бесщёточным —
+        # голое «щеточн» записало бы прямо противоположное.
+        "Щеточный шлифователь METABO S 18 LTX",
+        "Щеточный шлифователь METABO SE 12-115 SET",
+        "Щеточный шлифователь METABO SE 17-200 RT SET 220в",
+        "Шлифмаш щеточная ИНТЕРСКОЛ ШМ-110/1400ЭМ",
+    ],
+)
+def test_shlifmashiny_brush_sander_is_not_motor_type(rules, name):
+    assert "motor_type" not in {v.slug: v for v in rules.extract("shlifmashiny", name)}
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Шлифмашина 1400Вт щеточный двигатель", "brushed"),
+        ("Шлифмашина коллекторный двигатель 900Вт", "brushed"),
+        ("Шлифмашина brushed 900Вт", "brushed"),
+        ("Шлифмашина бесщёточная 18В", "brushless"),
+        ("Шлифмашина б/щ 18В", "brushless"),
+    ],
+)
+def test_shlifmashiny_motor_type_real_signals(rules, name, expected):
+    assert {v.slug: v for v in rules.extract("shlifmashiny", name)}[
+        "motor_type"
+    ].option_slug == expected
+
+
+@pytest.mark.parametrize("tt", ["dreli-shurupoverty", "perforatory", "bolgarki-ushm", "pily"])
+def test_bare_shchetochn_still_works_for_other_tool_types(rules, tt):
+    # Сужение сделано ТОЛЬКО для shlifmashiny: там есть класс «щёточный шлифователь».
+    # В остальных типах «щёточный» означает двигатель — правило не трогали.
+    assert {v.slug: v for v in rules.extract(tt, "Инструмент щеточный 800Вт")}[
+        "motor_type"
+    ].option_slug == "brushed"
+
+
+# --- skip_if: у набора характеристики в единственном числе не существует ---------
+
+
+def test_skip_if_blocks_whole_rule():
+    """Движковый механизм: стоп-слово отключает правило целиком."""
+    doc = {
+        "source_priority": {"regex": 40},
+        "tool_types": [
+            {
+                "tool_type": "t",
+                "attributes": [
+                    {
+                        "slug": "size",
+                        "name": "Размер",
+                        "kind": "number",
+                        "unit": "мм",
+                        "source": "regex",
+                        "skip_if": ["набор"],
+                        "regex": [r"(\d{1,2})\s*мм"],
+                    }
+                ],
+            }
+        ],
+    }
+    r = AttributeRules.from_dict(doc)
+    assert {v.slug: v for v in r.extract("t", "Ключ 17мм")}["size"].number == Decimal("17")
+    assert "size" not in {v.slug: v for v in r.extract("t", "Набор ключей 17мм")}
+    # стоп-слово нормализуется так же, как keywords (регистр, ё)
+    assert "size" not in {v.slug: v for v in r.extract("t", "НАБОР ключей 17мм")}
+
+
+@pytest.mark.parametrize(
+    "skip_if,name,extracted",
+    [
+        # граница начала (по умолчанию): "комплект" глушит словоформы,
+        # но не матчит внутри другого слова (БОЕКОМПЛЕКТ).
+        (["комплект"], "Сверло по бетону 5х85мм БОЕКОМПЛЕКТ", True),
+        (["комплект"], "Комплект сверел 5 шт", False),
+        (["комплект"], "Сверла комплекта 5 шт", False),
+        # граница конца (ведущий пробел): " шт" глушит "10 шт",
+        # но не матчит "штампованный".
+        ([" шт"], "Ключ комб 17х19мм штампованный", True),
+        ([" шт"], "Ключ 17мм 10 шт", False),
+        ([" шт"], "Ключ 17мм 10шт", True),  # без пробела — не " шт"
+        # словоформы "набор" сохраняются: "наборе" всё ещё глушит.
+        (["набор"], "Наборе ключей 17мм", False),
+    ],
+)
+def test_skip_if_respects_word_boundary(skip_if, name, extracted):
+    """Стоп-слово с границей начала/конца: не ломает словоформы, не матчит внутри слов."""
+    doc = {
+        "source_priority": {"regex": 40},
+        "tool_types": [
+            {
+                "tool_type": "t",
+                "attributes": [
+                    {
+                        "slug": "size",
+                        "name": "Размер",
+                        "kind": "number",
+                        "unit": "мм",
+                        "source": "regex",
+                        "skip_if": skip_if,
+                        "regex": [r"(\d{1,2})\s*мм"],
+                    }
+                ],
+            }
+        ],
+    }
+    r = AttributeRules.from_dict(doc)
+    has_size = "size" in {v.slug: v for v in r.extract("t", name)}
+    assert has_size is extracted
+
+
+@pytest.mark.parametrize(
+    "tt,name",
+    [
+        # диапазон с ПРОБЕЛАМИ вокруг дефиса — lookbehind на один символ его не ловил
+        ("klyuchi-gaechnye", "Набор ключей комбинированных, 6 - 19 мм, 8 шт., CrV"),
+        # перечисление размеров в наборе
+        ("klyuchi-gaechnye", "Набор ключей комбинированных НКК-4 Арсенал 4 ключа 24; 27; 30; 32мм"),
+        # длина вставок, а не размер
+        ("klyuchi-gaechnye", "Набор вставок 3/8 Torx+Spline+шестигранники 40 предм. L-30 и 75 мм"),
+        ("golovki", "Набор головок 3/4 ударн.17-50 мм, 90 мм, 16 пред. Airline"),
+        ("golovki", "Комплект головок торцевых 10 шт 8-24мм"),
+    ],
+)
+def test_size_not_extracted_for_sets(rules, tt, name):
+    assert "size" not in {v.slug: v for v in rules.extract(tt, name)}
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        # «х» у коронок КОНСТРУКТИВНЫЙ: первое число пары — это диаметр.
+        # Отдельный паттерн «(\d{1,3})\s*[х*x]\s*\d» ради этого и написан.
+        ("Коронка алм. 42х10хМ16 бетон+переходник/SKYWER", Decimal("42")),
+        ("Коронка алм. 125х5хМ16 бетон+переходник/SKYWER", Decimal("125")),
+        ("Коронка биметалл 68 мм", Decimal("68")),
+    ],
+)
+def test_koronki_diameter_pair_is_constructive(rules, name, expected):
+    assert {v.slug: v for v in rules.extract("koronki", name)}["diameter"].number == expected
+
+
+@pytest.mark.parametrize(
+    "tt,name",
+    [
+        ("koronki", "Коронка карбид. 33-53-67-73-83 мм кольцевая по кафелю"),
+        ("sverla", "Сверло ступен. KRAFTOOL COBALT 4-12мм 9 ступ винт проточка"),
+        ("sverla", "Сверло по дереву перовое регулироемое 15-38мм STAYER"),
+    ],
+)
+def test_diameter_not_extracted_for_ranges(rules, tt, name):
+    assert "diameter" not in {v.slug: v for v in rules.extract(tt, name)}
+
+
+def test_sverla_step_count_is_not_taken_as_diameter(rules):
+    # После блокировки диапазона последний паттерн подхватывал ЧИСЛО СТУПЕНЕЙ:
+    # «Сверло ступенчатое 9 ступеней 4-12мм» давало diameter=9. Не должен.
+    assert "diameter" not in {
+        v.slug: v for v in rules.extract("sverla", "Сверло ступенчатое 9 ступеней 4-12мм")
+    }
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        # штатные форматы свёрл не задеты
+        ("Сверло по мет. к/х ф 8,5 Р18", Decimal("8.5")),
+        ("Сверло ц/х  ф10,5 сред серия класс А, нитрид титана", Decimal("10.5")),
+        ("Сверло алмазное трубчатое  10х10хHEX SKYWER гранит", Decimal("10")),
+    ],
+)
+def test_sverla_diameter_regular_formats(rules, name, expected):
+    assert {v.slug: v for v in rules.extract("sverla", name)}["diameter"].number == expected
+
+
+# --- disc_diameter: дефис блокируется ТОЛЬКО после цифры / «z» / «Р» --------------
+#
+# «32-200» — диапазон, «z-100» — число зубьев, «Р-180» — зернистость: всё это не
+# диаметр. Но после букв дефис блокировать нельзя: «МОК-300», «КЛТ-125» — это как раз
+# диаметр. Поэтому lookbehind сужен до `(?<![\dzр]-)`, а не до любого дефиса.
+# У `voltage` и `piki-dolota.length` дефис намеренно НЕ блокируется — см. тесты ниже.
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Державка с пруж.фиксатором для коронок 32-200, с шестигранным хвостовиком",
+        "Диск пильный 255х30мм z-100 ELITECH",
+        "Диск пильный 355х25,4 z-100 СЕБ по пластику",
+        "Мини-насадки с алмазным напылением ЗУБР в пластик боксе, Р-180, хвостовик",
+    ],
+)
+def test_disc_diameter_ignores_range_teeth_and_grit(rules, name):
+    assert "disc_diameter" not in {v.slug: v for v in rules.extract("krugi-shlif", name)}
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        # После БУКВ дефис не блокируется — там настоящий диаметр.
+        ("Чашка абразивная МОК-300, МОК-150 18.004", Decimal("300")),
+        ("Круг лепестковый торцевой 125х22 мм. Р24 КЛТ-125", Decimal("125")),
+        # Диск, диаметр которого есть в списке, читается как раньше.
+        ("Диск пильный 300х32 z-100 СЕБ", Decimal("300")),
+    ],
+)
+def test_disc_diameter_after_letters_is_kept(rules, name, expected):
+    assert {v.slug: v for v in rules.extract("krugi-shlif", name)}[
+        "disc_diameter"
+    ].number == expected
+
+
+# --- voltage: дефис НЕ блокируем — это модельная маркировка, а не диапазон --------
+
+
+@pytest.mark.parametrize(
+    "tt,name,expected",
+    [
+        # В русских названиях «ДА-18 В» дефис отделяет индекс модели, а за ним идёт
+        # НАСТОЯЩЕЕ напряжение. Проверено на стенде: все названия с дефисом перед
+        # напряжением (5 шт.) — реальные вольты, ни одного диапазона.
+        ("dreli-shurupoverty", "Шуруп. аккум. ЗУБР ДА-18 В, Li-Ion, 2 АКБ", Decimal("18")),
+        ("dreli-shurupoverty", "Шуруп. аккум. ДИОЛД ДЭА-12В-04, 12В", Decimal("12")),
+        ("shlifmashiny", "Шлифмаш угл аккум. ЗУБР AB-125- 20В бесщеточная без АКБ", Decimal("20")),
+    ],
+)
+def test_voltage_after_dash_is_real_voltage(rules, tt, name, expected):
+    assert {v.slug: v for v in rules.extract(tt, name)}["voltage"].number == expected
+
+
+def test_piki_dolota_length_takes_second_number_of_pair(rules):
+    # Группа правила — ВТОРОЕ число пары «18х400»: 18 это Ø хвостовика, 400 — длина.
+    # Блокировать дефис перед первым числом бессмысленно (он ничего не говорит о
+    # длине) и вредно: «ЗД-18х400» потеряло бы корректные 400.
+    assert {v.slug: v for v in rules.extract("piki-dolota", "Пика SDS-max 18х400 мм ЗУБР")}[
+        "length"
+    ].number == Decimal("400")
+    assert {v.slug: v for v in rules.extract("piki-dolota", "Долото ЗД-18х400 SDS-max")}[
+        "length"
+    ].number == Decimal("400")
+
+
 def test_vorotki_drive_and_type(rules):
     f = {v.slug: v for v in rules.extract("vorotki", "Вороток 1/2 250мм Т-образный с трещоткой")}
     assert f["drive"].option_slug == "d-1-2"
@@ -594,12 +1000,13 @@ def test_nabory_otvertok_piece_count_ignores_model_codes(rules):
     assert "piece_count" not in f
 
 
-# --- Метчики / Плашки (tool_type=metchiki/plashki): Ø + шаг + тип резьбы + материал ---
+# --- Метчики и плашки (tool_type=metchiki-plashki): Ø + шаг + тип резьбы + материал ---
+# CAT-14B: единый блок вместо metchiki/plashki (на старых слагах 0 товаров).
 
 
 def test_metchiki_metric_full(rules):
     # Метрический винтовой: Ø + шаг из «М 6х1,0», материал HSS, тип резьбы выведен (derive).
-    f = {v.slug: v for v in rules.extract("metchiki", "Метчик винтовой М 6х1,0 HSS STV")}
+    f = {v.slug: v for v in rules.extract("metchiki-plashki", "Метчик винтовой М 6х1,0 HSS STV")}
     assert f["diameter"].number == Decimal("6")
     assert f["thread_pitch"].number == Decimal("1.0")
     assert f["material"].option_slug == "hss"
@@ -610,7 +1017,7 @@ def test_metchiki_metric_full(rules):
 
 def test_metchiki_metric_keyword_din(rules):
     # DIN371 — keyword-метрическая (не derive); шаг с дробью; р6м5к5 → HSS.
-    f = {v.slug: v for v in rules.extract("metchiki", "Метчик М 8х1,25 DIN371 р6м5к5")}
+    f = {v.slug: v for v in rules.extract("metchiki-plashki", "Метчик М 8х1,25 DIN371 р6м5к5")}
     assert f["diameter"].number == Decimal("8")
     assert f["thread_pitch"].number == Decimal("1.25")
     assert f["thread_type"].option_slug == "metric"
@@ -620,7 +1027,7 @@ def test_metchiki_metric_keyword_din(rules):
 
 def test_metchiki_machine_hand_format(rules):
     # Машинно-ручной «м/р 10х1,5» (без префикса М) — Ø/шаг ловятся вторым паттерном; 9ХС → легированная.
-    f = {v.slug: v for v in rules.extract("metchiki", "Метчик м/р 10х1,5 9ХС")}
+    f = {v.slug: v for v in rules.extract("metchiki-plashki", "Метчик м/р 10х1,5 9ХС")}
     assert f["diameter"].number == Decimal("10")
     assert f["thread_pitch"].number == Decimal("1.5")
     assert f["material"].option_slug == "alloy"
@@ -628,21 +1035,529 @@ def test_metchiki_machine_hand_format(rules):
 
 def test_plashki_inch_thread(rules):
     # Дюймовая резьба по ключам UNF/ниток; метрического Ø нет.
-    f = {v.slug: v for v in rules.extract("plashki", 'Плашка 9/16" UNF 18 ниток STV')}
+    f = {v.slug: v for v in rules.extract("metchiki-plashki", 'Плашка 9/16" UNF 18 ниток STV')}
     assert f["thread_type"].option_slug == "inch"
     assert "diameter" not in f
 
 
 def test_plashki_pipe_thread(rules):
-    f = {v.slug: v for v in rules.extract("plashki", "Плашка G 1/2 трубная")}
+    f = {v.slug: v for v in rules.extract("metchiki-plashki", "Плашка G 1/2 трубная")}
     assert f["thread_type"].option_slug == "pipe"
 
 
 def test_metchiki_inch_has_no_metric_diameter(rules):
     # Дюймовый BSW не должен получить ложный метрический Ø/шаг.
-    f = {v.slug: v for v in rules.extract("metchiki", "Метчик дюймовый BSW 1/2 12ниток к-т 2шт")}
+    f = {
+        v.slug: v
+        for v in rules.extract("metchiki-plashki", "Метчик дюймовый BSW 1/2 12ниток к-т 2шт")
+    }
     assert "diameter" not in f
     assert f["thread_type"].option_slug == "inch"
+
+
+# --- CAT-14B: metchiki-plashki — держатели/наборы/воротки, tool_kind ---------------
+
+MP = "metchiki-plashki"
+
+
+def _mp(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(MP, name)}
+
+
+def test_old_metchiki_plashki_blocks_removed(rules):
+    # Владелец запретил состояние «две схемы на одну сущность»: старых блоков нет.
+    assert rules.rules_for("metchiki") == []
+    assert rules.rules_for("plashki") == []
+
+
+@pytest.mark.parametrize(
+    "name,diameter,pitch",
+    [
+        ("Метчик м/р М27х3,0 к-т  сталь Р6М5 ГОСТ 3266-81", "27", "3.0"),
+        ("Плашка М 16х1,0  класс точности 6g, сталь Р6М5, ГО", "16", "1.0"),
+        ("Метчик м/р М 6х0,5 к-т сталь 9ХC ГОСТ 3266-81", "6", "0.5"),
+        ("Плашка М 30х1,5  класс точности 6g, сталь Р6М5, ГОСТ 9740-71", "30", "1.5"),
+        ("Метчики ручные (комплект 2 шт) М6х1,0 ЗУБР 9ХС", "6", "1.0"),
+        ("Метчик м/р М14х1,25  сталь Р6М5 ГОСТ 3266-81", "14", "1.25"),
+    ],
+)
+def test_mp_metric_size(rules, name, diameter, pitch):
+    f = _mp(rules, name)
+    assert f["diameter"].number == Decimal(diameter)
+    assert f["thread_pitch"].number == Decimal(pitch)
+    # «Метрическая» выводится из наличия diameter (derive, источник inferred).
+    assert f["thread_type"].option_slug == "metric"
+    assert f["thread_type"].source == "inferred"
+
+
+def test_mp_latin_c_steel_grade(rules):
+    # «9ХC» с латинской C — реальный вариант написания в 1С → легированная.
+    f = _mp(rules, "Метчик м/р М 6х0,5 к-т сталь 9ХC ГОСТ 3266-81")
+    assert f["material"].option_slug == "alloy"
+
+
+@pytest.mark.parametrize(
+    "name,thread",
+    [
+        ("Плашка G  1/4 для трубной цилиндр резьбы, сталь 9Х", "pipe"),
+        ("Метчик трубный ручной K 1/2 конический сталь Р6М5, ГОСТ 6227", "pipe"),
+        ("Метчик трубный ручной G 1/2 к-т сталь Р6М5, ГОСТ 3", "pipe"),
+        ("Плашка K 1  для дюймовой конической резьбы, сталь 9ХС, ГОСТ 6228-80", "inch"),
+    ],
+)
+def test_mp_pipe_inch_thread(rules, name, thread):
+    f = _mp(rules, name)
+    assert f["thread_type"].option_slug == thread
+    assert "diameter" not in f  # трубная/дюймовая — без метрического Ø
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Метчикодержатель М 6-М24",
+        "Метчикодержатель М 3-М 8",
+        "Плашкодержатель М 16-М 20 (45х18 мм)",
+    ],
+)
+def test_mp_holder_range_no_size(rules, name):
+    # Держатель с диапазоном «М6-М24»: одного Ø/шага нет — правила не применяются.
+    f = _mp(rules, name)
+    assert "diameter" not in f
+    assert "thread_pitch" not in f
+    assert "thread_type" not in f
+    assert "material" not in f
+    assert f["tool_kind"].option_slug == "derzhatel"
+
+
+def test_mp_set_no_size(rules):
+    # Набор без единого значения — пропуск размерных правил.
+    f = _mp(rules, "Набор метчиков и плашек Станкоимпорт")
+    assert "diameter" not in f and "thread_pitch" not in f
+    assert f["tool_kind"].option_slug == "nabor"
+
+
+def test_mp_vorotok_no_size(rules):
+    f = _mp(rules, "Вороток для метчиков М 6-М 20")
+    assert "diameter" not in f and "thread_pitch" not in f
+    assert f["tool_kind"].option_slug == "vorotok"
+
+
+def test_mp_tool_kind_unknown_via_derive(rules):
+    # unknown ключевыми словами не матчится — только derive-фолбэк.
+    f = _mp(rules, "Приспособление универсальное 45х12")
+    assert f["tool_kind"].option_slug == "unknown"
+    assert f["tool_kind"].source == "inferred"
+
+
+# --- CAT-14B: Наборы инструмента (nabory-instrumenta) ----------------------------
+
+NI = "nabory-instrumenta"
+
+
+def _ni(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(NI, name)}
+
+
+@pytest.mark.parametrize(
+    "name,pieces",
+    [
+        ("Набор инструмента 142 пр  Force", 142),
+        ("Набор экстракторов F-63006: шпильковертов 8пр. FOR", 8),
+        ('Набор инструмента 115 предметов 1/4, 1/2", GROSS', 115),
+        ('Набор инструмента  94 предмета, 1/2", 1/4",ТРЕК', 94),
+        ('Набор инструмента  25 пр, 1/4" HiKoki', 25),
+        ("Набор инструмента  77пр  СЕРВИС КЛЮЧ", 77),
+        ("Набор торцевых ключей F-5074, 7пр.  6мм-19мм", 7),
+        ("Набор выколоток 6 предметов KING TONY 1006PR", 6),
+    ],
+)
+def test_ni_piece_count(rules, name, pieces):
+    v = _ni(rules, name).get("piece_count")
+    assert v is not None and v.number == Decimal(pieces)
+
+
+def test_ni_piece_count_ignores_latin_model_code(rules):
+    # «1006PR» — латиница, не «пр»: число предметов берётся только из «6 предметов».
+    f = _ni(rules, "Набор выколоток 6 предметов KING TONY 1006PR")
+    assert f["piece_count"].number == Decimal(6)
+
+
+@pytest.mark.parametrize(
+    "name,drive",
+    [
+        ('Набор инструмента 115 предметов 1/4, 1/2", GROSS', "d-1-4-1-2"),
+        ('Набор инструмента  94 предмета, 1/2", 1/4",ТРЕК', "d-1-4-1-2"),
+        ('Набор инструмента  25 пр, 1/4" HiKoki', "d-1-4"),
+        ('Набор инструмента  29 предметов 1/4", STELS', "d-1-4"),
+    ],
+)
+def test_ni_drive(rules, name, drive):
+    assert _ni(rules, name)["drive"].option_slug == drive
+
+
+def test_ni_pieces_and_drive_do_not_overlap(rules):
+    # Число предметов не попадает в привод, дробь привода — не в число предметов.
+    f = _ni(rules, "Набор инструмента 142 пр  Force")
+    assert "drive" not in f
+    f = _ni(rules, 'Набор инструмента  25 пр, 1/4" HiKoki')
+    assert f["piece_count"].number == Decimal(25)  # не 14 из «1/4»
+
+
+@pytest.mark.parametrize(
+    "name,kind",
+    [
+        ("Набор экстракторов F-63006: шпильковертов 8пр. FOR", "extractors"),
+        ("Набор выколоток чехле  6 предметов ЗУБР Профессионал", "punches"),
+        ("Набор торцевых ключей F-5074, 7пр.  6мм-19мм", "sockets"),
+        ("Набор инструмента 142 пр  Force", "universal"),
+    ],
+)
+def test_ni_set_kind(rules, name, kind):
+    assert _ni(rules, name)["set_kind"].option_slug == kind
+
+
+# --- CAT-14B: Болты и винты (krep-bolty) -----------------------------------------
+
+KB = "krep-bolty"
+
+
+def _kb(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(KB, name)}
+
+
+@pytest.mark.parametrize(
+    "name,diam,length",
+    [
+        ("Болт М 6х 55 шестигр.головка", "6", "55"),
+        ("Болт М12х 20 шестигр.головка", "12", "20"),
+        ("Болт М20х80 шестигр. головка", "20", "80"),
+        ("Болт специальный M6X20 942808", "6", "20"),
+        ("Фиксирующий болт М4Х10 949812", "4", "10"),
+    ],
+)
+def test_kb_size(rules, name, diam, length):
+    f = _kb(rules, name)
+    assert f["thread_diameter"].number == Decimal(diam)
+    assert f["length"].number == Decimal(length)
+
+
+def test_kb_article_code_no_size(rules):
+    # Размер, зашитый в артикул «B800A06X008», не угадываем (backlog CAT-15).
+    f = _kb(rules, "Болт крепежный с фланцем B800A06X008")
+    assert "thread_diameter" not in f
+    assert "length" not in f
+    assert f["head_type"].option_slug == "flange"
+
+
+@pytest.mark.parametrize(
+    "name,diam,length,head",
+    [
+        ("Винт 4х55 потай.цинк", "4", "55", "countersunk"),
+        ("Винт 4x55 потай.цинк", "4", "55", "countersunk"),
+        ("Винт 6х14 потай.цинк", "6", "14", "countersunk"),
+        ("Винт 5х45 полукруг.цинк ГОСТ 17473", "5", "45", "round"),
+        ("Винт 5х30 потай.цинк DIN 965", "5", "30", "countersunk"),
+        ("Винт 4х25 полукруг.цинк ГОСТ 17473", "4", "25", "round"),
+    ],
+)
+def test_kb_vint_bare_size(rules, name, diam, length, head):
+    # CAT-14C (решение 5): «Винт 4х55» без буквы «М» принимается внутри krep-bolty;
+    # первое число → диаметр, второе → длина; [хx] — кириллица и латиница.
+    f = _kb(rules, name)
+    assert f["thread_diameter"].number == Decimal(diam)
+    assert f["length"].number == Decimal(length)
+    assert f["head_type"].option_slug == head
+    assert f["coating"].option_slug == "zinc"
+
+
+@pytest.mark.parametrize(
+    "name,diam,length",
+    [
+        ("Болт М6х55", "6", "55"),
+        ("Болт М6x55", "6", "55"),
+    ],
+)
+def test_kb_m_format_compact(rules, name, diam, length):
+    # Точный формат «Мd×L» (без пробелов, обе буквы [хx]) — первый паттерн.
+    f = _kb(rules, name)
+    assert f["thread_diameter"].number == Decimal(diam)
+    assert f["length"].number == Decimal(length)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Винт 6х9х12",  # тройка размеров — не пара Ø×L
+        "Болт 10х20х30",
+        "Винт 2х25",  # Ø 2 вне ряда метизов
+        "Винт 7х50",  # Ø 7 вне ряда
+        "Болт 30х300",  # Ø 30 вне ряда
+        "Винт 5х5",  # длина < 6
+        "Винт 5х400",  # длина > 300 (и не «40» — хвост цифры запрещён)
+    ],
+)
+def test_kb_bare_size_rejected(rules, name):
+    f = _kb(rules, name)
+    assert "thread_diameter" not in f
+    assert "length" not in f
+
+
+def test_kb_set_no_size(rules):
+    f = _kb(rules, "Набор для выворачивания сломаных болтов и шпилек 2")
+    assert "thread_diameter" not in f
+    assert "length" not in f
+
+
+# --- CAT-14B: Угольные щётки (zap-shchetki-ugolnye) -------------------------------
+
+ZU = "zap-shchetki-ugolnye"
+
+
+def _zu(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(ZU, name)}
+
+
+@pytest.mark.parametrize(
+    "name,a,b,c",
+    [
+        ("Щетки угольные АНАЛОГ 6.5х9х17мм 13-102 HITACHI 999088", "6.5", "9", "17"),
+        ("Щетки угольные АНАЛОГ 5х8х11мм 18-102 MAKITA CB51", "5", "8", "11"),
+        ("Щетки угольные АНАЛОГ 6х12х20мм 02-101 SPARKY 2001", "6", "12", "20"),
+        ("Щетки угольные АНАЛОГ 5х8х20мм 21-108 РИТМ МЭС-450, МЭП-500", "5", "8", "20"),
+    ],
+)
+def test_zu_dims(rules, name, a, b, c):
+    f = _zu(rules, name)
+    assert f["dim_a"].number == Decimal(a)
+    assert f["dim_b"].number == Decimal(b)
+    assert f["dim_c"].number == Decimal(c)
+
+
+@pytest.mark.parametrize(
+    "name,brand",
+    [
+        ("Щетки угольные АНАЛОГ 6.5х9х17мм 13-102 HITACHI 999088", "hitachi"),
+        ("Угольные щетки BOSCH 1607000V37", "bosch"),
+        ("Угольные щетки CB-155 MAKITA", "makita"),
+    ],
+)
+def test_zu_compat_brand(rules, name, brand):
+    assert _zu(rules, name)["compat_brand"].option_slug == brand
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Щетка для пылесоса Hitachi; d=36мм, 290мм, д/сбора",
+        "Щетка для пылесоса Hitachi; d=36мм, маленькая, д/у",
+    ],
+)
+def test_zu_vacuum_brush_skipped(rules, name):
+    # Щётка пылесоса — не угольная: ни габаритов, ни бренда совместимости.
+    f = _zu(rules, name)
+    assert "dim_a" not in f and "dim_b" not in f and "dim_c" not in f
+    assert "compat_brand" not in f
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Держатель угольных щеток 323164",
+        "Крышка угольных щеток 935829",
+    ],
+)
+def test_zu_accessories_skipped(rules, name):
+    assert _zu(rules, name) == {}
+
+
+def test_zu_bare_name_no_values(rules):
+    assert _zu(rules, "Угольные щетки") == {}
+
+
+# --- CAT-14C: Перчатки и рукавицы (siz-perchatki) — material/coating ---------
+
+SP = "siz-perchatki"
+
+
+def _sp(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(SP, name)}
+
+
+@pytest.mark.parametrize(
+    "name,material",
+    [
+        ("Перчатки х/б с ПВХ 10/5-нит (протектор) БЕЛЫЕ (10/400)", "hb"),
+        ("Перчатки ANSELL ЭКСТРА 87-950 мт. латекс", "lateks"),
+        ("Рукавицы брезентовые с двойным наладонником (520 г", "brezent"),
+        (
+            "Перчатки KRAFTOOL NEOPREN неопреновые индустриальные противокислотные р-р XXL",
+            "neopren",
+        ),
+        ("Перчатки п/ш черные (полушерст)", "psh"),
+        ("Перчатки комбинированные STAYER искусственная кожа, зеленые", "kozha"),
+        ("Перчатки нитриловые одноразовые", "nitril"),
+    ],
+)
+def test_sp_material(rules, name, material):
+    assert _sp(rules, name)["material"].option_slug == material
+
+
+def test_sp_material_base_before_coating_material(rules):
+    # «полиэстер с нитриловым обливом»: нитрил — материал облива, не основы;
+    # базовые материалы стоят раньше латекса/нитрила/пвх (первый матч выигрывает).
+    assert (
+        _sp(rules, "Перчатки садовые из полиэстера с нитриловым обливо")["material"].option_slug
+        == "poliester"
+    )
+
+
+@pytest.mark.parametrize(
+    "name,coating",
+    [
+        ("Перчатки х/б с ПВХ 10/5-нит (протектор) БЕЛЫЕ (10/400)", "protektor"),
+        ("Перчатки х/б черные с ПВХ (точка) 10 кл.5-ти нитка (10/300)", "tochka"),
+        ("Перчатки ЗУБР ЗАЩИТА с двойным латексным обливом р-р S-M", "chastichny-obliv"),
+        ("Перчатки садовые из полиэстера с нитриловым обливо", "chastichny-obliv"),
+    ],
+)
+def test_sp_coating(rules, name, coating):
+    assert _sp(rules, name)["coating"].option_slug == coating
+
+
+def test_sp_coating_full_dip_before_partial(rules):
+    # «полный облив» обязан стоять раньше «облив» — иначе проиграет подстроке.
+    assert (
+        _sp(rules, "Перчатки ЗУБР МЕХАНИК+ маслобензостойкие тонкие полный облив р-р XL")[
+            "coating"
+        ].option_slug
+        == "polny-obliv"
+    )
+
+
+@pytest.mark.parametrize("name", ["Перчатки одноразовые", "Перчатки КЩС-2"])
+def test_sp_no_material_no_coating(rules, name):
+    f = _sp(rules, name)
+    assert "material" not in f
+    assert "coating" not in f
+
+
+# --- CAT-14C часть B: валидация после сведения с CODE-02 (CAT-14E) ------------
+# word_boundary / kind: text поддержаны движком CODE-02; skip-маркер CODE02
+# снят в CAT-14E, результаты — scratchpad/cat14/cat-14e-merge-validation-report.md.
+
+
+@pytest.mark.parametrize(
+    "name,size",
+    [
+        ("Перчатки садовые GRINDA бело-зеленые S", "s"),
+        ("Перчатки садовые GRINDA M", "m"),
+        ("Перчатки латексные экстратонкие, S, STAYER", "s"),
+        ("Перчатки ЗУБР FLEX красные комбинированные работа с сенсор экранами р.L", "l"),
+        ("Перчатки ЗУБР МЕХАНИК+ маслобензостойкие тонкие полный облив р-р XL", "xl"),
+        ("Перчатки KRAFTOOL NEOPREN неопреновые индустриальные противокислотные р-р XXL", "xxl"),
+        ("Перчатки ЗУБР ТОЧНАЯ РАБОТА с полиуретан покрытие размер XL", "xl"),
+        ("Перчатки ЗУБР ЗАЩИТА с двойным латексным обливом р-р S-M", "s-m"),
+        ("Перчатки садовые р-р L-XL", "l-xl"),
+    ],
+)
+def test_sp_size_letters(rules, name, size):
+    # word_boundary (обе границы): «S» в «, S,» — размер; диапазоны S-M/L-XL —
+    # самостоятельные значения и стоят раньше одиночных букв.
+    assert _sp(rules, name)["glove_size"].option_slug == size
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Перчатки STELS",  # «s» внутри бренда — не размер
+        "Перчатки ANSELL ЭКСТРА 87-950 мт. латекс",  # «l» внутри ANSELL
+        "Перчатки х/б с ПВХ 10/5-нит (протектор) БЕЛЫЕ (10/400)",
+        "Перчатки КЩС-2",
+    ],
+)
+def test_sp_size_letters_no_false_positive(rules, name):
+    assert "glove_size" not in _sp(rules, name)
+
+
+def test_sp_size_from_article_suffix_in_name(rules):
+    # «11299-L» внутри названия: дефис — граница слова, «l» матчится. У ЗУБР/
+    # KRAFTOOL суффикс артикула дублирует размер (11279-XL ↔ р-р XL), поэтому
+    # значение корректно, но артикул источником размера не считается (таблица §3).
+    name = "Перчатки KRAFTOOL ULTIMATE комбинированные, работа с сенсор экранами (арт. 11299-L)"
+    assert _sp(rules, name)["glove_size"].option_slug == "l"
+
+
+@pytest.mark.parametrize(
+    "name,num",
+    [
+        ("Перчатки ANSELL ALPHATEC 87-900 зел.-жел, р-р 11", "11"),
+        ("Перчатки х/б р-р 6", "6"),
+        ("Перчатки х/б р-р 13", "13"),
+        ("Перчатки размер 10", "10"),
+    ],
+)
+def test_sp_size_num_anchor(rules, name, num):
+    # Числовой размер 6–13 — только при якоре «р-р»/«размер»/«р.».
+    assert _sp(rules, name)["size_num"].number == Decimal(num)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Перчатки ANSELL ЭКСТРА 87-950 мт. латекс",  # модель — не размер
+        "Перчатки х/б с ПВХ 10/5-нит (протектор) БЕЛЫЕ (10/400)",  # нити/упаковка
+        "Перчатки х/б черные с ПВХ (точка) 10 кл.5-ти нитка (10/300)",  # класс вязки
+        "Перчатки КЩС-2",  # модель
+        "Перчатки х/б р-р 5",  # вне диапазона 6–13
+        "Перчатки х/б р-р 14",
+    ],
+)
+def test_sp_size_num_rejected(rules, name):
+    assert "size_num" not in _sp(rules, name)
+
+
+@pytest.mark.parametrize(
+    "name,code",
+    [
+        ("Щетки угольные АНАЛОГ 6.5х9х17мм 13-102 HITACHI 999088", "13-102"),
+        ("Щетки угольные АНАЛОГ 5х8х11мм 18-102 MAKITA CB51", "18-102"),
+        ("Угольные щетки CB-155 MAKITA", "CB-155"),
+        ("Щетки угольные АНАЛОГ 5х10х14мм 18-120 MAKITA CB325", "18-120"),
+    ],
+)
+def test_zu_analog_code(rules, name, code):
+    # kind: text — значение из исходного названия по span матча (регистр
+    # сохраняется), поле v.text.
+    assert _zu(rules, name)["analog_code"].text == code
+
+
+def test_zu_analog_code_cb_without_hyphen(rules):
+    # «CB325» без дефиса — тоже код (паттерн 2), если нет кода линейки «АНАЛОГ».
+    # Регистр сохраняется (значение из исходного названия).
+    assert _zu(rules, "Угольные щетки CB325 MAKITA")["analog_code"].text == "CB325"
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Угольные щетки BOSCH 1607000V37",
+        "Угольные щетки",
+        "Угольные щетки Hitachi (арт. 999016*)",
+        # CAT-14E (замер b31): номер модели, склеенный с брендом, — не код аналога.
+        "Угольная щетка WS13-125 4931428729",
+        "Угольная щетка WS13-125 4931428732",
+        "Щетка графитовая BOSCH GWS24-230BV к-т",
+    ],
+)
+def test_zu_analog_code_absent(rules, name):
+    assert "analog_code" not in _zu(rules, name)
+
+
+def test_zu_analog_code_separate_from_dims(rules):
+    # Код аналога хранится отдельно от габаритов dim_a/b/c (решение 3).
+    f = _zu(rules, "Щетки угольные АНАЛОГ 6.5х9х17мм 13-102 HITACHI 999088")
+    assert f["dim_a"].number == Decimal("6.5")
+    assert f["analog_code"].text == "13-102"
 
 
 # --- Измерительный: рулетки (длина/ширина ленты) и уровни (длина) -----------------
@@ -720,16 +1635,19 @@ def test_izm_dalnomery_max_distance(rules, name, expected):
 
 
 @pytest.mark.parametrize(
-    "name,expected",
+    "name",
     [
-        ("Угольник 250 мм Startul", 250),
-        ("Угольник 160х100 УП-1-160 Буревестник", 160),
-        ("Угольник кровельный 170мм высокоточный KRAFTOOL", 170),
+        "Угольник 250 мм Startul",
+        "Угольник 160х100 УП-1-160 Буревестник",
+        "Угольник кровельный 170мм высокоточный KRAFTOOL",
     ],
 )
-def test_izm_ugolniki_size(rules, name, expected):
-    f = {v.slug: v for v in rules.extract("izm-ugolniki", name)}
-    assert f["size"].number == Decimal(str(expected))
+def test_izm_ugolniki_excluded_from_ruleset(rules, name):
+    # Решение владельца 2026-08-03 (после аудита КАТ-15A): блок izm-ugolniki
+    # изъят из словаря до чистки типа. Правило size работало корректно, но в
+    # типе лежат чужие товары (соковыжималка, тележки, контейнеры медотходов),
+    # и enrich приписывал бы им размеры. Вернуть блок после чистки tool_type.
+    assert rules.extract("izm-ugolniki", name) == []
 
 
 @pytest.mark.parametrize(
@@ -838,3 +1756,205 @@ def test_attribute_coverage_command_counts():
     report = out.getvalue()
     assert "товаров 1" in report
     assert "voltage" in report and "100%" in report
+
+
+# --- CAT-10 якорь: svar-electrody / str-valiki / str-kisti ------------------
+
+
+def _by_slug_for(rules: AttributeRules, tt: str, name: str):
+    return {v.slug: v for v in rules.extract(tt, name)}
+
+
+@pytest.mark.parametrize(
+    "tt,name,expected",
+    [
+        ("svar-electrody", "Электрод вольфрамовый WC-20 ф 2,0/175", Decimal("2.0")),
+        ("svar-electrody", "Электрод вольфрамовый WC-20 ф 2,4/175 синий", Decimal("2.4")),
+        ("svar-electrody", "Электрод вольфрамовый WL-20 ф 3,2", Decimal("3.2")),
+        ("str-valiki", "Валик  70мм велюровый мини FIT", Decimal("70")),
+        ("str-valiki", "Валик 100мм меховой FIT", Decimal("100")),
+        ("str-valiki", "Валик 100х15мм СИНТЕКС ЗУБР мастер", Decimal("100")),
+        (
+            "str-kisti",
+            "Кисть круглая  30мм STAYER UNIVERSAL светлая щетина, дерев ручка",
+            Decimal("30"),
+        ),
+        (
+            "str-kisti",
+            "Кисть круглая  70мм STAYER UNIVERSAL светлая щетина, дерев ручка",
+            Decimal("70"),
+        ),
+        ("str-kisti", "Кисть круглая №  4 ф25мм, натуральная светлая щетина FIT", Decimal("25")),
+    ],
+)
+def test_cat10_rescued_rules_extract_numbers(rules, tt, name, expected):
+    assert tt in {"svar-electrody", "str-valiki", "str-kisti"}
+    attr = {"svar-electrody": "diameter", "str-valiki": "length", "str-kisti": "diameter"}[tt]
+    found = _by_slug_for(rules, tt, name)
+    value = found.get(attr)
+    assert value is not None, f"{attr} not extracted from {name!r}"
+    assert value.number == expected
+
+
+# --- word_boundary: opt-in граница слова для select (окно CODE-02) ----------
+#
+# Буквенные размеры (перчатки siz-perchatki): голая подстрока находит «s» внутри
+# STELS, «l» внутри ANSELL. Флаг word_boundary: true на правиле включает матч
+# целым словом — граница проверяется с ОБЕИХ сторон вхождения (механика
+# tool_type._keyword_starts_at_word_boundary / _WORD_CHAR + проверка конца,
+# иначе XL матчил бы XLR). По умолчанию флаг выключен и поведение select
+# не меняется ни на йоту.
+
+
+def _size_rules_wb(**rule_extra) -> AttributeRules:
+    """Правило размера перчаток инлайн (демонстрационное, НЕ из attribute_rules.json)."""
+    doc = {
+        "source_priority": {"keyword": 30},
+        "tool_types": [
+            {
+                "tool_type": "siz-perchatki",
+                "attributes": [
+                    {
+                        "slug": "size",
+                        "name": "Размер",
+                        "kind": "select",
+                        "source": "keyword",
+                        "options": [
+                            {"value": "XXL", "slug": "xxl", "keywords": ["XXL"]},
+                            {"value": "XL", "slug": "xl", "keywords": ["XL"]},
+                            {"value": "L", "slug": "l", "keywords": ["L"]},
+                            {"value": "M", "slug": "m", "keywords": ["M"]},
+                            {"value": "S", "slug": "s", "keywords": ["S"]},
+                        ],
+                        **rule_extra,
+                    }
+                ],
+            }
+        ],
+    }
+    return AttributeRules.from_dict(doc)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        # «s» внутри бренда STELS
+        "Перчатки нитриловые STELS, 100 шт.",
+        # «l» внутри бренда ANSELL
+        "Перчатки ANSELL HyFlex х/б",
+        # «m» внутри бренда MAKITA
+        "Перчатки MAKITA универсальные",
+        # ещё одна брендовая строка: «l» на конце KRAFTOOL
+        "Перчатки х/б KRAFTOOL с ПВХ точкой",
+        # модельная строка: «l» внутри кода модели L2000
+        "Перчатки нитриловые L2000 усиленные",
+        # конец вхождения тоже граница: XL не должно матчить XLR
+        "Перчатки XLR-200 усиленные",
+    ],
+)
+def test_word_boundary_ignores_brand_and_model_strings(name):
+    r = _size_rules_wb(word_boundary=True)
+    assert "size" not in {v.slug: v for v in r.extract("siz-perchatki", name)}
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("Перчатки нитриловые размер L", "l"),
+        ("Перчатки р-р XL х/б", "xl"),
+        ("Перчатки XXL нитриловые", "xxl"),
+        # диапазон: выигрывает первый вариант по порядку правила (m раньше s)
+        ("Перчатки S-M комбинированные", "m"),
+        ("Перчатки L-XL", "xl"),
+    ],
+)
+def test_word_boundary_matches_letter_sizes(name, expected):
+    r = _size_rules_wb(word_boundary=True)
+    found = {v.slug: v for v in r.extract("siz-perchatki", name)}
+    assert found["size"].option_slug == expected
+
+
+def test_select_without_word_boundary_matches_substring_as_before():
+    """Регрессия: правило БЕЗ флага на тех же данных матчит по-старому (default не изменился)."""
+    r = _size_rules_wb()  # word_boundary не задан — по умолчанию выключен
+    # «l» внутри STELS срабатывает подстрокой (вариант L в правиле раньше S)
+    found = {v.slug: v for v in r.extract("siz-perchatki", "Перчатки нитриловые STELS")}
+    assert found["size"].option_slug == "l"
+    assert found["size"].matched == "L"
+    # «m» внутри MAKITA срабатывает подстрокой
+    found = {v.slug: v for v in r.extract("siz-perchatki", "Перчатки MAKITA универсальные")}
+    assert found["size"].option_slug == "m"
+    assert found["size"].matched == "M"
+
+
+# --- kind: text — открытое строковое значение по regex (окно CODE-02) -------
+#
+# Первый потребитель — zap-shchetki-ugolnye.analog_code («13-102», «CB-155»).
+# regex с группой → СТРОКА (не Decimal); первый сработавший паттерн выигрывает,
+# как у number; значение берётся из исходного названия (регистр сохраняется) и
+# trim-ится; пустая строка после trim = значение не извлечено. ``matched`` —
+# полный матч (m.group(0)), как у number.
+
+
+def _analog_rules(patterns) -> AttributeRules:
+    doc = {
+        "source_priority": {"regex": 40},
+        "tool_types": [
+            {
+                "tool_type": "zap-shchetki-ugolnye",
+                "attributes": [
+                    {
+                        "slug": "analog_code",
+                        "name": "Код аналога",
+                        "kind": "text",
+                        "source": "regex",
+                        "regex": patterns,
+                    }
+                ],
+            }
+        ],
+    }
+    return AttributeRules.from_dict(doc)
+
+
+_ANALOG_PATTERNS = [r"\b(\d{1,3}-\d{1,4})\b", r"\b([a-z]{1,4}-?\d{1,5}[a-z0-9]?)\b"]
+
+
+def _extract_analog(r: AttributeRules, name: str):
+    return {v.slug: v for v in r.extract("zap-shchetki-ugolnye", name)}.get("analog_code")
+
+
+def test_text_kind_extracts_numeric_hyphen_code():
+    v = _extract_analog(_analog_rules(_ANALOG_PATTERNS), "Щётка угольная 13-102 для дрели")
+    assert v is not None
+    assert v.text == "13-102"
+    assert isinstance(v.text, str)
+    assert v.matched == "13-102"  # полный матч, как у number
+
+
+def test_text_kind_preserves_original_case():
+    # матч идёт по normalize()-нному названию, значение — из исходного (регистр!)
+    v = _extract_analog(_analog_rules(_ANALOG_PATTERNS), "Щётка угольная CB-155")
+    assert v.text == "CB-155"
+
+
+def test_text_kind_extracts_alphanumeric_marking():
+    v = _extract_analog(_analog_rules(_ANALOG_PATTERNS), "Щётка угольная A41X пара")
+    assert v.text == "A41X"
+
+
+def test_text_kind_first_pattern_wins():
+    # как у number: первый сработавший паттерн выигрывает
+    v = _extract_analog(_analog_rules(_ANALOG_PATTERNS), "Щётка 13-102 аналог CB-155")
+    assert v.text == "13-102"
+
+
+def test_text_kind_no_match_returns_nothing():
+    v = _extract_analog(_analog_rules(_ANALOG_PATTERNS), "Щётка угольная графитовая")
+    assert v is None
+
+
+def test_text_kind_empty_after_trim_is_not_extracted():
+    # группа совпала, но после trim пусто — значение не извлечено
+    r = _analog_rules([r"аналог\s*:(\s*);"])
+    assert _extract_analog(r, "Щётка аналог: ; графитовая") is None

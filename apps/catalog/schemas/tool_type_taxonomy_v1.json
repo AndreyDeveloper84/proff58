@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "tool_type taxonomy manifest v1",
+  "description": "Canonical versioned taxonomy manifest для Attribute(slug=\"tool_type\"). Runtime-контракт — только {slug, value}; origin_*/review_*/legacy_aliases — audit-only metadata.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "manifest_version",
+    "attribute_slug",
+    "status",
+    "options",
+    "taxonomy_identity_hash",
+    "manifest_semantic_hash"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "manifest_version": {"type": "integer", "minimum": 1},
+    "attribute_slug": {"const": "tool_type"},
+    "status": {"const": "canonical"},
+    "semantic_duplicate_allowlist": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {"type": "string"},
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "options": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["slug", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "slug": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+          "value": {"type": "string", "minLength": 1},
+          "sort_order": {"type": "integer", "minimum": 0},
+          "origin_kind": {"enum": ["seed", "manual_backport", "legacy_unknown"]},
+          "origin_ref": {"type": ["string", "null"]},
+          "review_status": {"enum": ["approved", "pending_business_review"]},
+          "review_reason": {"type": "string"},
+          "review_ref": {"type": ["string", "null"]},
+          "legacy_aliases": {
+            "type": "array",
+            "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"}
+          }
+        }
+      }
+    },
+    "taxonomy_identity_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "manifest_semantic_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

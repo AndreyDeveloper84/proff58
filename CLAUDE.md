@@ -1,97 +1,97 @@
 # CLAUDE.md
 
-Указания и карта репозитория для Claude Code при работе над проектом
-«Профессионал». Подробные контракты — в `docs/` и `README.md`; здесь — рабочий
-справочник, чтобы быстро ориентироваться и не нарушать границы модулей.
+Рабочий справочник Claude Code по проекту «Профессионал»: границы модулей и
+инварианты, которые нельзя нарушать. Подробности — по ссылкам в `docs/`.
 
 ## Общение
 - Вести общение с командой **только на русском языке**.
 
 ---
 
-## 1. Что это за проект
+## 1. Проект и принципы
 
 «Профессионал» — кастомная e-commerce-платформа (B2B + B2C) для магазина
-электро/ручного инструмента с доставкой по Пензе и области. Backend на Django,
-витрина-фронт на Next.js, интеграция с учётной системой **1С 7.7**.
-
-Ключевые принципы (см. `README.md`, `docs/ARCHITECTURE.md`):
+электро/ручного инструмента (Пенза и область). Django + DRF, витрина на Next.js,
+интеграция с **1С 7.7**. Код — переиспользуемый движок, «Профессионал» — первый
+инстанс.
 
 - **Catalog-first.** Каталог (дерево категорий + EAV-характеристики) — критический
-  путь. Большая часть логики и тестов — в `apps/catalog`.
-- **1С — источник истины** по цене, остатку и коду номенклатуры. **Сайт — мастер
-  по контенту** (витринные названия, категории, характеристики, фото, описания,
-  публикация). Связь — по `code_1c` / артикулу. Обмен **никогда** не перезаписывает
-  контент сайта из 1С.
-- **Граница важнее реализации.** Модули общаются через сервисный слой (`services.py`)
-  синхронно и через доменные события (`apps/core/events.py`) асинхронно. Запрещено
-  лазить в чужие таблицы (`OtherApp.models.X.objects...` из чужого приложения).
-- **Feature-флаги в `core`** включают/выключают модули — это фундамент
-  переиспользуемого движка (см. `apps/core/features.py`).
+  путь; большая часть логики и тестов в `apps/catalog`.
+- **1С — источник истины** по цене, остатку и `code_1c`. **Сайт — мастер по
+  контенту** (названия, категории, характеристики, фото, публикация). Обмен
+  **никогда** не перезаписывает контент сайта из 1С (ADR-0007).
+- **Граница важнее реализации.** Модули общаются через `services.py` (синхронно) и
+  доменные события `apps/core/events.py` (асинхронно). Запрещено читать чужие
+  таблицы (`OtherApp.models.X.objects...` из чужого приложения).
+- **Feature-флаги в `core`** (`apps/core/features.py`) включают/выключают модули.
+- **AI — не источник истины**: управляемое обогащение поверх детерминированного ядра.
+
+Ключевые документы: `README.md`, `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE-AI.md`,
+`docs/PROJECT-INDEX.md`.
 
 ## 2. Стек
 
-- **Backend:** Django 5.0 + Django REST Framework 3.15
-- **БД:** PostgreSQL 16 (используются JSONB-фасеты + GIN + pg_trgm — **SQLite не
-  подойдёт даже для тестов**)
-- **Очереди/кэш:** Celery 5 + Redis (worker `celery` + worker `onec` + beat)
-- **Фронт:** Next.js (App Router, TypeScript, Tailwind) — каталог `frontend/`
-- **Качество:** ruff + black + pre-commit; CI на GitHub Actions
-- **Админка:** django-jazzmin; дерево категорий — django-treebeard (MP_Node)
+Django 5.0 · DRF 3.15 · **PostgreSQL 16** (JSONB-фасеты + GIN + pg_trgm — **SQLite не
+подойдёт даже для тестов**) · Celery 5 + Redis (worker `celery` + worker `onec` +
+beat) · Next.js App Router/TS/Tailwind (`frontend/`) · ruff + black (line-length 100)
++ pre-commit · django-jazzmin, django-treebeard (MP_Node).
 
 ## 3. Структура репозитория
 
 ```
-config/                 # Django-проект
-  settings/             #   base.py / dev.py / prod.py (env-driven через django-environ)
-  celery.py, urls.py, wsgi.py, asgi.py
+config/                 # settings (base/dev/prod, django-environ), celery, urls
 apps/
-  core/                 # ядро: события (events.py), фичефлаги (features.py), health, TimeStampedModel
-  accounts/             # кастомный User (вход по телефону/e-mail), Profile, роли B2C/B2B
-  catalog/              # ★ каталог: Category(MP_Node), Product, Attribute/EAV, фасеты, поиск, импорт-пайплайн
-  pricing/              # цены (PriceRecord), ADR-0006; price_for() — единая точка расчёта цены
-  orders/              # Order/OrderItem/Cart, 3 оси статусов, матрица переходов (transitions.py)
-  sync_1c/              # ★ интеграция с 1С: API, импорт, заказы, Celery-задачи
-  ai/                   # AI-слой за адаптером (рекомендации; assist — каркас под V2)
-requirements/           # base.txt / dev.txt / prod.txt
-docs/                   # ARCHITECTURE.md, 1c-api-spec.md, 1c-developer-task.md, order-lifecycle.md, adr/
-frontend/               # Next.js витрина (своя CLAUDE.md и README)
-scripts/                # smoke_1c.py (контракт-проверка 1С API), backup.sh
-tests/                  # кросс-модульные regression/smoke тесты
-docker-compose.yml      # dev: db, redis, web, celery, celery-onec, celery-beat
-docker-compose.prod.yml # prod-стек (+ nginx, см. docker/nginx, docs/DEPLOY.md)
+  core/ accounts/                    # слой 0: события, фичефлаги, health, User/Profile
+  catalog/ pricing/ orders/          # слой 1: каталог, цены (ADR-0006), заказы/корзина
+  payments/ delivery/                # ЮKassa/инвойсы; методы, зоны, DeliverySlot
+  notifications/ integration_max/    # каналы уведомлений; MAX webhook и уведомления
+  integration_ship/ content/ reviews/
+  ai/                                # слой 3: enrichment/sourcing за адаптером
+  sync_1c/                           # слой 4: обмен с 1С
+  crm_*/ analytics/ leads/           # включаются по мере роста
+data/catalog_processing_rules/       # артефакты контура распознавания (см. §7)
+docs/                   # ARCHITECTURE, 1c-api-spec, order-lifecycle, adr/, catalog/, plans/
+frontend/ scripts/ tests/ requirements/
+docker-compose.yml · docker-compose.prod.yml
 ```
 
 ## 4. Слои и границы (правило зависимостей)
 
-Зависимости направлены строго вниз (`docs/ARCHITECTURE.md` §2):
+Зависимости строго вниз (`docs/ARCHITECTURE.md` §2):
 
 ```
-Слой 4  Интеграции   → sync_1c (знает обо всех, о нём — никто; вызывается по сигналам/Celery)
+Слой 4  Интеграции   → sync_1c (знает обо всех, о нём — никто)
 Слой 3  AI           → ai (за адаптером ai/services.py)
-Слой 2  CRM          → (каркас, по мере)
-Слой 1  Магазин      → catalog · pricing · orders
+Слой 2  CRM          → каркас
+Слой 1  Магазин      → catalog · pricing · orders · payments · delivery
 Слой 0  Ядро         → core · accounts
 ```
 
-- Ядро не зависит ни от кого. Магазин зависит только от ядра.
-- Магазин **не знает** о CRM/AI/интеграциях — общается с ними через сигналы.
-- `sync_1c` — единственное место, где встречаются 1С и каталог; каталог про 1С не знает.
+Магазин не знает о CRM/AI/интеграциях — только сигналы. `sync_1c` — единственное
+место, где встречаются 1С и каталог; каталог про 1С не знает.
 
-**Доменные события** (`apps/core/events.py`, Django Signals): `user_registered`,
-`b2b_verified`, `product_created/updated`, `order_created`, `order_paid`,
-`order_status_changed`, `payment_succeeded/failed`, `price_changed`. Издавать —
-через `transaction.on_commit` с идентификаторами/снимком в payload (подписчик
-читает закоммиченные данные).
+События (`apps/core/events.py`): `user_registered`, `b2b_verified`,
+`product_created/updated`, `order_created`, `order_paid`, `order_status_changed`,
+`payment_succeeded/failed`, `price_changed`. Издавать через `transaction.on_commit`
+с идентификаторами/снимком в payload.
 
-## 5. Интеграция с 1С (`apps/sync_1c`) — ключевая зона
+## 5. Интеграция с 1С — кратко
 
-Направление обмена: **1С сама стучится к сайту** (push). Сайт ничего не забирает
-из 1С напрямую. Авторизация — заголовок `X-Api-Key` (сверяется за константное время
-с `settings.ONEC_API_KEY`; пусто на сервере ⇒ API закрыт).
+Контракт: **`docs/1c-api-spec.md`** (финальный, для интегратора) и
+`docs/1c-developer-task.md`. Что нельзя забывать:
 
-Контракты: **`docs/1c-api-spec.md`** (для интегратора 1С, финальный контракт) и
-`docs/1c-developer-task.md`. Эндпоинты под префиксом `/api/1c/`:
+- **1С сама стучится к сайту** (push, префикс `/api/1c/`), авторизация `X-Api-Key`;
+  пустой `ONEC_API_KEY` на сервере ⇒ API закрыт.
+- **Кодировка Windows-1251** на входе и выходе (`api/parsers.py` / `api/renderers.py`);
+  свой HTTP-клиент обязан декодировать так же.
+- Конверт всегда `{"items": [...]}`, непустой, ≤ `ONEC_MAX_ITEMS` (1000).
+- Идемпотентность: матчинг `external_id`/`code_1c`, затем `sku`/`article`.
+- `products/import|update` — асинхронно через очередь `onec` (worker `-c 1`,
+  строго последовательно); `prices/update`, `stocks/update` — синхронно.
+- **Заказы реализованы** (`use_cases.py`), это не заглушки 501; `orders/new` не меняет
+  `sync_1c_status` (at-least-once до подтверждения от 1С).
+- Проверка живого API: `python scripts/smoke_1c.py --base <url> --key <ключ>`
+  (**пишет в БД — только staging**); симулятор round-trip: `manage.py demo_1c_orders`.
 
 | Эндпоинт | Метод | Назначение | Ответ |
 |---|---|---|---|
@@ -105,111 +105,134 @@ docker-compose.prod.yml # prod-стек (+ nginx, см. docker/nginx, docs/DEPLO
 | `orders/confirm` | POST | подтверждение приёма/резерва + движение `fulfillment_status` | 200 + per-item |
 | `sales/upload` | POST | продажи магазина за день (источник «Хитов продаж», **синхронно**) | 200 + счётчики |
 
-Важные детали реализации:
+## 6. Статусы заказа
 
-- **Кодировка.** 1С 7.7 шлёт/читает **Windows-1251**. Вход — `api/parsers.OneCJSONParser`
-  (UTF-8 → CP1251), выход — `api/renderers.OneCJSONRenderer` (всегда cp1251). Любой
-  свой HTTP-клиент к этому API должен декодировать ответ так же (иначе кириллица в
-  `detail`/ошибках «ломается»).
-- **Конверт** всегда `{"items": [...]}`, непустой, ≤ `ONEC_MAX_ITEMS` (1000). Числа —
-  строкой или числом, точка/запятая; булево — `true/false`, `1/0`, `"да"/"нет"`.
-- **Идемпотентность.** Матчинг по `external_id`/`code_1c`, затем `sku`/`article`.
-  Повторная отправка дублей не создаёт. Неизменившаяся цена → `skipped` (#111).
-- **Асинхронный импорт.** `products/import|update` ставятся в Celery-очередь `onec`
-  (worker `-c 1` — строго последовательно, без гонки «одна актуальная цена», #126).
-  Зависшие RUNNING-прогоны добивает janitor `mark_stale_syncs` (#57).
-- **Заказы реализованы (#50)** — это НЕ заглушки 501 (старые упоминания 501 в коде/доках
-  устарели; актуально — заказы работают). Логика — в `use_cases.py`
-  (`export_new_orders`, `confirm_orders`). `orders/new` не меняет `sync_1c_status`
-  (at-least-once: заказ остаётся `pending`, пока 1С не подтвердит приём).
+Три независимые оси (`docs/order-lifecycle.md` — источник истины):
+`fulfillment_status` (двигают 1С/менеджер/кладовщик, forward-only по
+`orders/transitions.py`), `payment_status` (только сайт, 1С не трогает),
+`sync_1c_status` (выгрузка в 1С). Производный статус — `Order.display_status`.
+Заказ хранит **снимки** покупателя, строк и цены.
 
-Карта файлов `sync_1c`: `api/` (views, serializers, permissions, parsers, renderers,
-urls) · `use_cases.py` (оркестрация) · `normalizers.py` · `matching.py` ·
-`product_writer.py` · `pricing.py` · `stock.py` · `bulk_import.py` · `importer.py` ·
-`parsers.py` (файловый импорт) · `tasks.py` (Celery) · `models.py`
-(`NomenclatureStaging`, `StockRecord`, `SyncLog`).
+## 7. Каталог: контур распознавания `tool_type` (текущая рабочая зона)
 
-### Проверка работоспособности 1С-обмена
+Детерминированный rules-engine, предлагающий `tool_type` для товаров из 1С.
+
+⚠️ **Две таксономии каталога** (дерево сайта vs 1С-таксономия в ключах
+`data/tool_type_rules.json`) расходятся по именам верхних категорий и ломают
+`enrich_tool_type` — карта соответствия и грабли в [`docs/catalog_trees.md`](docs/catalog_trees.md).
+С PR #628 часть расхождений закрыта слоем алиасов (`apps/catalog/tool_type_aliases.py`),
+но **только в `--dry-run`/`--report-only`**; боевая запись (`_handle_write`) алиасы
+не применяет и ведёт себя как раньше.
+
+| Артефакт / модуль | Роль |
+|---|---|
+| `data/catalog_processing_rules/tool_type_taxonomy.v1.json` | **canonical manifest**, 328 options — единственный источник правды по словарю типов |
+| `apps/catalog/taxonomy_manifest.py` | загрузка/валидация манифеста, оба хэша |
+| `data/.../tool_type.v2.json` | default ruleset (v2 promoted, Phase 7D Stage 5); `.v1.json` — исторический |
+| `data/.../applied_corpus_tool_type.v1.json` | applied corpus (54 items), из него выведены правила |
+| `apps/catalog/rules_engine.py` | matcher: `load_ruleset`, `load_corpus`, `evaluate_product` |
+| `apps/catalog/rules_gate.py` | **independent gate 2.0** — пересчитывает всё, declared-полям не доверяет |
+| `apps/catalog/rules_release.py` | release manifest — детерминированная версия контура (входы + хэши + метрики пройденного gate) |
+| `data/.../rules_release_manifest.v1.json` | зафиксированная версия контура; CI сверяет `--check` |
+| `apps/catalog/tool_type_rollback.py` | откат применённого `tool_type`: снимок → план (`noop`/`write`/`conflict`) → запись одной транзакцией + post-audit |
+| `apps/catalog/taxonomy_reverse.py` | reverse-map манифеста `N → N-1`: план понижения, fail-closed при неоднозначном откате |
+
+Команды: `catalog_rules_shadow` (proposal-only прогон), `catalog_rules_gate_validate`
+(gate, exit 0/1/2/3), `catalog_rules_release_manifest` (release manifest: генерация
+и `--check`), `catalog_taxonomy_reconcile` (read-only дрейф манифест↔БД),
+`load_tool_types` (seed из манифеста: fail-closed, no-delete),
+`catalog_tool_type_snapshot` / `catalog_tool_type_rollback` (откат применённого,
+dry-run по умолчанию), `catalog_taxonomy_downgrade` (понижение версии словаря).
+
+CI-джоба `catalog-rules-gate` (`.github/workflows/tests.yml`) гоняет gate на
+замороженном 7D sample против default ruleset + `release_manifest --check`; exit
+code команды = статус джобы.
+
+**Инварианты:**
+- Опции `tool_type` создаются **только** из манифеста; `enrich_tool_type` и
+  `backfill_option_slugs` не создают типы вне манифеста.
+- Gate не доверяет самодекларированным полям артефактов — всё пересчитывается
+  (`docs/catalog/rules-gate-h2.md`).
+- `taxonomy_identity_hash` = `ddf4b949…` (canonical; с ТТ-18A
+  2026-08-05 — 360 options, новый тип `tsangi-i-tsangovye-patrony`
+  (`Цанги и цанговые патроны`) и переименование `svar-cangi`:
+  `Цанги` → `Цанги сварочные`;
+  до этого `f7b73846…` TT-NEW-TYPES-BATCH-3 2026-08-01 — 359 options,
+  пакет из 4 типов P2: `drovokoly`, `hoz-motygi`, `zerkala-dosmotrovye`,
+  `zap-ognetushiteley`;
+  до этого `8eba9631…` TT-NEW-TYPES-BATCH-2 — 355 options, пакет из 10 типов:
+  `shtifty`, `nabory-uplotnitelnyh-kolets`, `nagruzochnye-vilki`,
+  `krepleniya-ognetushiteley`, `kompressometry`, `zap-tarelki-opornye`,
+  `prosekateli-profiley-gkl`, `shilya`, `izm-shchupy`, `siz-kremy-zashchitnye`;
+  `voronki` не создан — дубликат `hoz-voronki` из TT-14;
+  до этого `ea65486c…` TT-NEW-TYPES-BATCH — 345 options, `7ac7a9a2…` TT-14 —
+  336 options, `887eea5d…` TT-07 — 334 options, `524d4e31…` TT-01, `fc13be78…`). Legacy DB-order hash
+  `b357be60…` допустим только явным `--allow-legacy-taxonomy-hash` и в штатном
+  контуре не используется: с Wave 7.1 H4 замороженный gate-sample перевыпущен на
+  canonical binding, CI гоняет гейт без поблажки.
+- Shadow-контур **ничего не пишет в БД**; apply — отдельная авторизация.
+- Откат `tool_type` исполняется **парой снимков** (`--from` ожидаемое текущее,
+  `--to` цель): live вне обоих состояний → `conflict`, а не молчаливая перезапись;
+  план с любым конфликтом не применяется целиком (`docs/catalog/tool-type-reverse-migration.md`).
+  Сверка baseline делается **дважды** — при построении плана и повторно внутри
+  транзакции записи под `SELECT … FOR UPDATE` (H6), потому что план строится вне
+  этой транзакции; чужая запись, прошедшая между планом и применением, даёт
+  conflict, а не перезапись.
+- **`WAVE 7.1 ACCEPTED` — объявлено владельцем 2026-07-27.** Заморозка Phase 8 снята,
+  основание — сводный отчёт волны `docs/plans/2026-07-27-WAVE7_1_ACCEPTANCE_REPORT.md`.
+  Phase 8 (pilot rollout) идёт ступенями из
+  `docs/plans/2026-07-16-CATALOG_RESEARCH_QUEUE_ROADMAP.md` §Phase 8, **порядок менять
+  нельзя**: synthetic batch (5 фиктивных cases) → real batch 10 (только dry-run) →
+  real batch 20 (findings + ручная модерация) → batch 50 → после quality gate остальные
+  товары в наличии → товары без остатка. Один batch первой версии — не более 20–30
+  товаров, **одна ступень = одно окно**.
+
+Документы: **план текущей волны — `docs/plans/2026-07-26-WAVE7_1_H3_H5_PLAN.md`**,
+`docs/catalog/tool-type-taxonomy-manifest.md`, `docs/catalog/rules-gate-h2.md`,
+`docs/catalog/rules-release-manifest.md`, `docs/catalog/tool-type-reverse-migration.md`,
+`docs/plans/2026-07-*PHASE7*`; протоколы стадий — `scratchpad/wave7/wave7-h*-report.md`.
+
+Общий playbook изменений каталога (gate-cycle: read-only → preflight → dry-run →
+pg_dump → write → post-audit) — `docs/catalog/operations/README.md`.
+
+## 8. Запуск и тесты
 
 ```bash
-# Контракт-smoke живого API (HTTP, только stdlib; ПИШЕТ в БД — только staging!)
-python scripts/smoke_1c.py --base https://dev.proff58.ru --key <ONEC_API_KEY>
-python scripts/smoke_1c.py --base http://127.0.0.1:8000 --key <ключ>   # против локали
-
-# Демо/симулятор полного round-trip обмена заказами (играет роль 1С, без HTTP)
-python manage.py demo_1c_orders                       # confirmed + резерв
-python manage.py demo_1c_orders --scenario reserve-failed
-python manage.py demo_1c_orders --scenario shipped    # new→confirmed→ready→shipped
-python manage.py demo_1c_orders --keep                # не удалять демо-заказ
-```
-
-## 6. Модель статусов заказа (3 независимых оси)
-
-Источник истины — `docs/order-lifecycle.md`. Оси (`apps/orders/models.py`):
-
-| Ось | Поле | Кто двигает |
-|---|---|---|
-| Обработка | `fulfillment_status` | 1С / менеджер / кладовщик (forward-only, матрица в `orders/transitions.py`) |
-| Оплата | `payment_status` | сайт (ЮKassa / менеджер) — **1С не трогает** |
-| Выгрузка в 1С | `sync_1c_status` | сайт (`exported`, когда 1С подтвердила приём) |
-
-Производный человекочитаемый статус — `Order.display_status`. Заказ хранит **снимки**
-(покупатель, строки, цена) — данные не «плывут» при изменении товара/цены.
-
-## 7. Локальный запуск
-
-### Через Docker (рекомендуется)
-```bash
-cp .env.example .env
-docker compose up --build
+docker compose up --build        # весь стек; либо: docker compose up -d db
 docker compose exec web python manage.py migrate
-docker compose exec web python manage.py createsuperuser
-```
-Сайт: http://localhost:8000 · Админка: http://localhost:8000/admin/
-
-### Без Docker
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements/dev.txt
-cp .env.example .env                 # DATABASE_URL → localhost:5432
-python manage.py migrate
-python manage.py runserver
+pytest                           # нужен PostgreSQL; --reuse-db включён в pyproject
+pytest apps/catalog              # только каталог (~350 тестов)
 ```
 
-В dev (`config/settings/dev.py`): `DEBUG=True`, `ALLOWED_HOSTS=["*"]`, e-mail в
-консоль, **Celery работает inline** (`CELERY_TASK_ALWAYS_EAGER=True`) — Redis/worker
-для большинства задач не нужны (healthcheck `/healthz/` всё равно проверяет Redis и
-вернёт 503 без него — это норма для локалки).
+В dev (`config/settings/dev.py`): `DEBUG=True`, Celery inline
+(`CELERY_TASK_ALWAYS_EAGER=True`), e-mail в консоль; `/healthz/` без Redis вернёт
+503 — для локалки норма.
 
-Ключевые env (см. `.env.example`): `DATABASE_URL`, `CELERY_BROKER_URL`,
-`ONEC_API_KEY` (пусто = 1С-API закрыт), `ONEC_MAX_ITEMS`, `FEATURE_*`.
+**Baseline полного прогона: `2 failed, 2615 passed, 1 skipped` (~17 мин), замер
+2026-08-05.** Перечисленные падения — окружение, не регрессия:
+`test_regression_mvp.py::test_healthcheck_returns_ok` (нет Redis) и
+`test_deploy_release.py::test_release_script_is_executable` (Windows exec bit).
+Любое падение сверх перечисленных — регрессия.
 
-## 8. Тесты
+Ключевые env (`.env.example`): `DATABASE_URL`, `CELERY_BROKER_URL`, `ONEC_API_KEY`,
+`ONEC_MAX_ITEMS`, `FEATURE_*`.
 
-Тестам **нужен PostgreSQL** (JSONB/GIN/trgm). Подключение по `DATABASE_URL`
-(дефолт `localhost:5432`).
+## 9. Management-команды каталога
 
-```bash
-docker compose up -d db          # поднять только Postgres
-pytest                           # из venv; --reuse-db включён в pyproject
-pytest apps/sync_1c              # только 1С
-docker compose run --rm web pytest   # альтернатива: всё внутри контейнера
-```
-
-`config.settings.dev` — настройки тестов (см. `pyproject.toml`). Тестов > 540;
-покрытие 1С (≈109 в `apps/sync_1c`) и заказов — подробное.
-
-## 9. Полезные management-команды
-
+- **Импорт/структура:** `import_products`, `bootstrap_catalog`, `catalog_build_section`,
+  `catalog_build_skeleton`, `catalog_taxonomy_apply`, `catalog_v2_swap`, `publish_catalog`
+- **Типы и атрибуты:** `load_tool_types`, `load_attributes`, `enrich_attributes`,
+  `enrich_tool_type`, `backfill_option_slugs`, `rebuild_attrs_cache`
+- **Аудит:** `catalog_taxonomy_audit`, `catalog_taxonomy_reconcile`, `attribute_coverage`,
+  `coverage_report`, `tool_type_gaps`, `analyze_subgroup`, `catalog_v2_report`
+- **Откат и обратимость (H5):** `catalog_tool_type_snapshot`, `catalog_tool_type_rollback`,
+  `catalog_taxonomy_downgrade`
+- **Очередь исследования:** `catalog_queue_create|export|import|status|finalize`
 - **1С/обмен:** `import_1c`, `apply_stocks_1c`, `mark_stale_syncs`, `demo_1c_orders`
-- **Каталог (импорт/обогащение):** `import_products`, `bootstrap_catalog`,
-  `build_categories`, `load_tool_types`, `load_attributes`, `enrich_attributes`,
-  `enrich_tool_type`, `publish_catalog`, `rebuild_attrs_cache`, `attribute_coverage`,
-  `analyze_subgroup`, `tool_type_gaps`, `backfill_option_slugs`
 
-(скилл `characterize-subgroup` помогает расставлять характеристики подгрупп каталога.)
+Скилл `characterize-subgroup` — плейбук расстановки характеристик подгрупп.
 
-## 10. Публичные API (для фронта)
+## 10. Публичный API
 
 - `/api/catalog/` — `categories/`, `categories/<slug>/facets/`, `products/`,
   `products/<slug>/`, `products/<slug>/compatible/`, `search/suggest/`,
@@ -221,20 +244,17 @@ docker compose run --rm web pytest   # альтернатива: всё внут
 
 ## 11. Поток работы и стиль
 
-- Ветки: `main` (прод), `dev` (интеграция). Рабочие — от `dev`:
-  `feature/<area>-<кратко>`, `fix/...`, `chore/...`, `design/...`. PR в `dev`
-  (1 ревью + зелёный CI). **Коммиты — Conventional Commits** (`feat:`, `fix:`,
-  `chore:`, `docs:`, `test:`).
-- **Стиль кода:** ruff + black (line-length 100), `pre-commit` настроен
-  (`.pre-commit-config.yaml`). Хук Claude `format-python.sh` гоняет ruff+black после
-  правок `.py`. Миграции — исключены из линта.
-- **CI:** `.github/workflows/ci.yml` (PR) → `tests.yml`; `deploy.yml` катит
-  staging (push в `dev`) / production (push в `main`) после зелёных тестов.
+- Ветки: `main` (прод), `dev` (интеграция); рабочие — от `dev`:
+  `feature/<area>-<кратко>`, `fix/…`, `chore/…`, `design/…`. PR в `dev` (1 ревью +
+  зелёный CI). **Коммиты — Conventional Commits.**
+- Стиль: ruff + black (line-length 100), `pre-commit`; миграции исключены из линта.
+- CI: `.github/workflows/ci.yml` → `tests.yml`; `deploy.yml` катит staging (push в
+  `dev`) / production (push в `main`).
 
-> Текущая рабочая ветка задаётся заданием сессии. Не пушить в чужие ветки без
-> явного разрешения. PR не создавать, пока не попросили.
+> Рабочая ветка задаётся заданием сессии. Не пушить в чужие ветки без явного
+> разрешения. **Push и PR — только по явной просьбе.**
 
 ## 12. Внешние наборы Claude Code
-Подключённые плагины, агенты и скиллы (superpowers, ECC, gstack, agency-agents)
-описаны в [`.claude/EXTRAS.md`](.claude/EXTRAS.md): что включено и как активировать
-наборы «по запросу». Для фронта — отдельная `frontend/CLAUDE.md`.
+
+Плагины, агенты и скиллы (superpowers, ECC, gstack, agency-agents) — в
+[`.claude/EXTRAS.md`](.claude/EXTRAS.md). Для фронта — отдельная `frontend/CLAUDE.md`.
