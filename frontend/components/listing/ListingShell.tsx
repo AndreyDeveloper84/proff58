@@ -12,6 +12,7 @@ import {
   filtersAfterToolTypeChange,
   normalizeRangeFilters,
   sidebarFacets,
+  typeNavPanel,
 } from "@/lib/listing";
 import { track } from "@/lib/analytics";
 import { PER_PAGE_OPTIONS, SORT_OPTIONS } from "@/lib/constants";
@@ -104,7 +105,9 @@ export function ListingShell({
 
   // --- Навигация раздела: подкатегории-ссылки либо типы инструмента (§3.1) ---
   const navFacet = listing.facets.find((f) => f.isNav);
-  const nav = categoryNav(listing, query.category, query.toolType);
+  // Панель показываем не на всякой странице: правила A–D и порог редких типов живут
+  // в typeNavPanel, здесь только результат (DRF-992).
+  const nav = typeNavPanel(categoryNav(listing, query.category, query.toolType), query.toolType);
   const activeFiltersCount = Object.keys(query.filters).length;
   // Подпись активного типа: из nav-фасета, иначе (тип «вымылся» прочими фильтрами, §14)
   // humanizeToken(slug) — тот же фолбэк, что и в синтетическом пункте categoryNav (N3).
