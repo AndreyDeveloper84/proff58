@@ -19,6 +19,14 @@ path, что и боевой apply — решения (create/update/keep/prune/
 machine-readable JSON-отчёт (``--json-report <файл>``, иначе stdout; человекочитаемая
 сводка тогда идёт в stderr). Dry-run НЕ пишет PAV, НЕ меняет ``attrs_cache`` и НЕ
 создаёт ``ImportRun``.
+
+Граница выборки (окно ХАР-SCOPE): ``--tool-type`` / ``--category-id`` (оба
+repeatable), ``--include-descendants``, ``--in-stock-only``. Фильтры складываются
+**пересечением (AND)**: товар обязан быть в разрешённой ветке дерева И с ненулевым
+остатком И его tool_type обязан входить в волну. Без новых флагов выборка прежняя —
+все товары тех tool_type, для которых в ``attribute_rules.json`` есть блок правил.
+Отбор строится ОДИН раз до расхождения dry-run/apply, поэтому оба режима работают по
+одному и тому же набору ``product_id``.
 """
 
 from __future__ import annotations
@@ -26,7 +34,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
@@ -36,6 +44,7 @@ from apps.catalog.ingest import data_dir
 from apps.catalog.models import (
     Attribute,
     AttributeOption,
+    Category,
     ImportRun,
     ImportRunStatus,
     Product,
@@ -66,6 +75,23 @@ VALUE_FIELDS = ["value_text", "value_integer", "value_decimal", "value_boolean",
 UPDATE_FIELDS = VALUE_FIELDS + ["source", "confidence"]
 
 
+def resolve_category_ids(category_ids: list[int], include_descendants: bool) -> list[int]:
+    """id категорий выборки: сами узлы, с ``include_descendants`` — плюс всё поддерево.
+
+    Несуществующий id — ошибка (fail-closed): опечатка в номере категории иначе
+    даёт молча пустую выборку, а оператор считает, что скоуп сработал.
+    """
+    categories = list(Category.objects.filter(pk__in=category_ids))
+    missing = sorted(set(category_ids) - {category.pk for category in categories})
+    if missing:
+        raise CommandError(f"Категории не найдены: {missing}")
+    resolved = {category.pk for category in categories}
+    if include_descendants:
+        for category in categories:
+            resolved.update(category.get_descendants().values_list("pk", flat=True))
+    return sorted(resolved)
+
+
 class Command(BaseCommand):
     help = "Извлечь характеристики из названий и записать в EAV (идемпотентно, bulk)."
 
@@ -86,6 +112,39 @@ class Command(BaseCommand):
             dest="json_report",
             default=None,
             help="Файл для machine-readable JSON-отчёта dry-run (иначе — stdout).",
+        )
+        parser.add_argument(
+            "--tool-type",
+            dest="tool_type",
+            action="append",
+            default=None,
+            metavar="SLUG",
+            help=(
+                "Ограничить выборку типом инструмента (slug варианта tool_type). "
+                "Можно указывать несколько раз. Без флага — все типы, описанные "
+                "правилами."
+            ),
+        )
+        parser.add_argument(
+            "--category-id",
+            dest="category_id",
+            action="append",
+            type=int,
+            default=None,
+            metavar="ID",
+            help="Ограничить выборку категорией. Можно указывать несколько раз.",
+        )
+        parser.add_argument(
+            "--include-descendants",
+            dest="include_descendants",
+            action="store_true",
+            help="Вместе с --category-id: захватить все категории-потомки.",
+        )
+        parser.add_argument(
+            "--in-stock-only",
+            dest="in_stock_only",
+            action="store_true",
+            help="Только товары в наличии (available_quantity > 0).",
         )
 
     def handle(self, *args, **options):
@@ -120,16 +179,70 @@ class Command(BaseCommand):
         ):
             option_index.setdefault(opt.attribute.slug, {})[opt.slug] = opt
 
+        # --- граница выборки (ХАР-SCOPE): tool_type AND дерево AND остаток -----
+        requested_tt = sorted(set(options["tool_type"] or ()))
+        category_ids = sorted(set(options["category_id"] or ()))
+        include_descendants = options["include_descendants"]
+        in_stock_only = options["in_stock_only"]
+
+        if include_descendants and not category_ids:
+            raise CommandError("--include-descendants требует --category-id.")
+
+        selected_tt = tt_slugs
+        if requested_tt:
+            unknown = sorted(set(requested_tt) - set(tt_slugs))
+            if unknown:
+                # Не ошибка: в манифесте типов кратно больше, чем блоков правил.
+                # Такой тип просто не даёт товаров в выборку — предупреждаем, чтобы
+                # оператор не принял пустой прогон за «нечего обогащать».
+                self.stderr.write(
+                    f"Типы без блока правил в attribute_rules.json: {unknown} — "
+                    "товары этих типов в выборку не попадут."
+                )
+            selected_tt = [slug for slug in tt_slugs if slug in set(requested_tt)]
+
+        resolved_category_ids = (
+            resolve_category_ids(category_ids, include_descendants) if category_ids else []
+        )
+
+        # Фильтры по самому товару (дерево + остаток) — пересечением с типом.
+        # Наличие: available_quantity > 0. Канонического хелпера «в наличии» в
+        # проекте нет: витрина (queries.products_in, filters.filter_in_stock)
+        # считает по stock_quantity, а операционные команды каталога
+        # (catalog_queue_create --in-stock, catalog_rules_shadow, catalog_v2_report)
+        # и Product.recalc_stock_status — по available_quantity. Здесь операционный
+        # контур, поэтому берём available_quantity, как у соседних команд.
+        product_scope: dict[str, object] = {}
+        if resolved_category_ids:
+            product_scope["category_id__in"] = resolved_category_ids
+        if in_stock_only:
+            product_scope["available_quantity__gt"] = 0
+
         # product_id → slug его tool_type (только товары интересующих типов).
+        tt_values = ProductAttributeValue.objects.filter(
+            attribute__slug=TOOL_TYPE_SLUG,
+            value_option__isnull=False,
+            value_option__slug__in=selected_tt,
+        )
+        if product_scope:
+            tt_values = tt_values.filter(
+                product_id__in=Product.objects.filter(**product_scope).values("pk")
+            )
         product_tt = {
             row["product_id"]: row["value_option__slug"]
-            for row in ProductAttributeValue.objects.filter(
-                attribute__slug=TOOL_TYPE_SLUG,
-                value_option__isnull=False,
-                value_option__slug__in=tt_slugs,
-            ).values("product_id", "value_option__slug")
+            for row in tt_values.values("product_id", "value_option__slug")
         }
         product_ids = list(product_tt)
+
+        scope = {
+            "tool_types": requested_tt,
+            "category_ids": category_ids,
+            "include_descendants": include_descendants,
+            "in_stock_only": in_stock_only,
+            "resolved_category_ids": resolved_category_ids,
+            "selected_tool_types": sorted(selected_tt),
+            "selected_products": len(product_ids),
+        }
 
         # Существующие PAV управляемых атрибутов — объектами (bulk_update + проверка приоритета).
         # value_option нужен dry-run'у для current_value (attr_value_to_json) без N+1.
@@ -428,9 +541,23 @@ class Command(BaseCommand):
             f"удалено устаревших {pruned_total}{pruned_detail}. По атрибутам — {by_attr}."
         )
 
+        if requested_tt or category_ids or in_stock_only:
+            summary += (
+                f" Выборка: типы {scope['selected_tool_types'] or '—'}, "
+                f"категории {resolved_category_ids or '—'}"
+                f"{' (с потомками)' if include_descendants else ''}, "
+                f"только в наличии: {'да' if in_stock_only else 'нет'} — "
+                f"{scope['selected_products']} товаров."
+            )
+
         if dry_run:
             self._emit_dry_run_report(
-                report_rows, stats, summary, base=base, json_report_path=json_report_path
+                report_rows,
+                stats,
+                summary,
+                base=base,
+                json_report_path=json_report_path,
+                scope=scope,
             )
             # Вернуть непустую строку нельзя: BaseCommand.execute() автоматически
             # печатает возврат handle() в stdout и ломает чистый JSON.
@@ -442,7 +569,14 @@ class Command(BaseCommand):
     # --- dry-run отчёт -----------------------------------------------------
 
     def _emit_dry_run_report(
-        self, report_rows: list[dict], stats: dict, summary: str, *, base, json_report_path
+        self,
+        report_rows: list[dict],
+        stats: dict,
+        summary: str,
+        *,
+        base,
+        json_report_path,
+        scope: dict,
     ) -> None:
         """Собрать machine-readable JSON dry-run'а и выдать его в файл или stdout.
 
@@ -466,6 +600,7 @@ class Command(BaseCommand):
             "mode": "dry-run",
             "rules_path": str(Path(f"{base}/attribute_rules.json")),
             "generated_at": timezone.now().isoformat(),
+            "scope": scope,
             "totals": {
                 "processed": stats["processed"],
                 "no_attributes": stats["no_attributes"],
