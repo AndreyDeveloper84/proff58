@@ -4,6 +4,11 @@
 на старте их не применяет (только migrate --check). Иначе тяжёлый DDL/гонки на каждом
 рестарте контейнера. Тест ловит случайный возврат `migrate` в entrypoint или обрыв
 цепочки deploy → release.sh.
+
+Сюда же — exec-бит `scripts/backup.sh` (ИНФР-02): скрипт в git лежал режимом 100644,
+cron звал его как `./scripts/backup.sh`, и ночной бэкап staging молча не работал ~2
+месяца. `chmod +x` на сервере не лечит: `deploy.yml` делает `git reset --hard`, и бит
+слетает на следующем push. Лечится только режимом в индексе.
 """
 
 import re
@@ -13,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ENTRYPOINT = ROOT / "docker" / "entrypoint.prod.sh"
 RELEASE = ROOT / "docker" / "release.sh"
+BACKUP = ROOT / "scripts" / "backup.sh"
 DEPLOY = ROOT / ".github" / "workflows" / "deploy.yml"
 
 
@@ -40,6 +46,12 @@ def test_release_script_backs_up_and_migrates():
 def test_release_script_is_executable():
     mode = RELEASE.stat().st_mode
     assert mode & stat.S_IXUSR, "docker/release.sh должен быть исполняемым"
+
+
+def test_backup_script_is_executable():
+    assert BACKUP.is_file(), "нет scripts/backup.sh — бэкап БД/media не выделен"
+    mode = BACKUP.stat().st_mode
+    assert mode & stat.S_IXUSR, "scripts/backup.sh должен быть исполняемым (cron зовёт ./)"
 
 
 def test_deploy_invokes_release_step():
