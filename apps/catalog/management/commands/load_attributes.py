@@ -52,6 +52,22 @@ slug объявляется в нескольких блоках tool_type, и �
 ``bound:*:dead`` и свой статус ``dead_category``: по умолчанию — WARNING с указанием
 выбранного узла (fail-closed сломал бы bootstrap и наборы правил, где мёртвый узел
 единственный), ``--strict-live-categories`` делает его фатальным.
+
+Окно ХАР-BINDDIFF (2026-08-11) закрыло пятый.
+
+**5. Флаги существующей привязки не перезаписываются молча.** ``update_or_create``
+с ``defaults`` уместен только при создании: для уже существующей ``CategoryAttribute``
+он побочным эффектом загрузки схемы затирал ``is_filter``/``is_seo_facet`` значениями
+из файла правил. Настройка фасетов — это решение владельца каталога (её меняют
+руками и командой ``catalog_seed_tool_type_filters``), а не следствие того, что
+кто-то догрузил атрибуты. Теперь расхождение ``current`` ↔ ``planned`` — **отдельный
+semantic update**: он всегда виден в плане (``changes`` строки привязки и счётчик
+``summary.bindings.flag_diff``), но по умолчанию **не применяется** — строка остаётся
+``keep``, а расхождение уходит в ``suppressed`` с причиной
+``binding_flag_update_not_authorized``. Применить его можно только явным
+разрешением ``--allow-binding-flag-updates`` (стиль ``--allow-ambiguous``: разрешение
+на самостоятельное действие, а не ужесточение проверки). Создание привязки прежнее:
+у новой строки флаги берутся из правил.
 """
 
 from __future__ import annotations
@@ -91,6 +107,13 @@ CANDIDATE_FIELDS = ("id", "slug", "depth", "is_active", "on_site", "is_site_v2")
 
 # Суффикс кода причины для «узел найден, но мёртвый» (см. докстринг, дефект 4).
 DEAD_SUFFIX = ":dead"
+
+# Флаги привязки категория↔атрибут. У существующей строки они принадлежат владельцу
+# каталога и меняются только с явным разрешением (см. докстринг, дефект 5).
+BINDING_FLAGS = ("is_filter", "is_seo_facet")
+
+# Причина, по которой расхождение флагов существующей привязки не применено.
+BINDING_FLAG_SUPPRESS_REASON = "binding_flag_update_not_authorized"
 
 
 class Command(BaseCommand):
@@ -135,6 +158,15 @@ class Command(BaseCommand):
                 "найден, но is_active=False или on_site=False). По умолчанию — WARNING."
             ),
         )
+        parser.add_argument(
+            "--allow-binding-flag-updates",
+            action="store_true",
+            help=(
+                "Разрешить менять is_filter/is_seo_facet у УЖЕ существующих привязок "
+                "категория↔атрибут. По умолчанию текущие флаги сохраняются, а "
+                "расхождение с правилами только показывается в плане."
+            ),
+        )
 
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
@@ -142,7 +174,12 @@ class Command(BaseCommand):
         rules_path = Path(f"{base}/attribute_rules.json")
         data = json.loads(rules_path.read_text(encoding="utf-8"))
 
-        plan = self._build_plan(data, str(rules_path), dry_run)
+        plan = self._build_plan(
+            data,
+            str(rules_path),
+            dry_run,
+            allow_binding_flag_updates=options["allow_binding_flag_updates"],
+        )
         self._enforce_binding_policy(
             plan,
             allow_ambiguous=options["allow_ambiguous"],
@@ -176,7 +213,14 @@ class Command(BaseCommand):
     # План (read-only): решения принимаются здесь и только здесь
     # ------------------------------------------------------------------ #
 
-    def _build_plan(self, data: dict, rules_path: str, dry_run: bool) -> dict:
+    def _build_plan(
+        self,
+        data: dict,
+        rules_path: str,
+        dry_run: bool,
+        *,
+        allow_binding_flag_updates: bool = False,
+    ) -> dict:
         existing_attrs = {a.slug: a for a in Attribute.objects.all()}
         existing_options = {
             (o.attribute.slug, o.value): o
@@ -209,6 +253,7 @@ class Command(BaseCommand):
                         binding_rows,
                         existing_bindings,
                         category_cache,
+                        allow_binding_flag_updates,
                     )
 
         attributes = [attr_rows[s] for s in sorted(attr_rows)]
@@ -227,7 +272,8 @@ class Command(BaseCommand):
                 "attributes": _count_actions(attributes, ("create", "update", "keep")),
                 "options": _count_actions(options, ("create", "update", "keep")),
                 "bindings": _count_actions(bindings, ("create", "update", "keep", "skip"))
-                | _count_statuses(bindings),
+                | _count_statuses(bindings)
+                | _count_flag_diff(bindings),
             },
             "attributes": attributes,
             "options": options,
@@ -356,6 +402,7 @@ class Command(BaseCommand):
         binding_rows: dict[tuple[str, str], dict],
         existing_bindings: dict[tuple[int, str], CategoryAttribute],
         category_cache: dict[str, tuple],
+        allow_binding_flag_updates: bool = False,
     ) -> None:
         if category_name not in category_cache:
             category_cache[category_name] = self._resolve_category(category_name)
@@ -379,36 +426,49 @@ class Command(BaseCommand):
                 "current": None,
                 "target": target,
                 "changes": [],
+                "suppressed": [],
                 "candidates": candidates,
                 "reason": reason,
             }
             return
 
         existing = existing_bindings.get((category.pk, a["slug"]))
-        current = (
-            None
-            if existing is None
-            else {"is_filter": existing.is_filter, "is_seo_facet": existing.is_seo_facet}
-        )
+        current = None if existing is None else {f: getattr(existing, f) for f in BINDING_FLAGS}
+        # Диф считаем всегда — владелец должен видеть расхождение независимо от того,
+        # разрешено ли его применять (дефект 5).
         changes = (
             []
             if current is None
             else [
                 {"field": f, "from": current[f], "to": target[f]}
-                for f in ("is_filter", "is_seo_facet")
+                for f in BINDING_FLAGS
                 if current[f] != target[f]
             ]
         )
+        suppressed: list[dict] = []
+        if current is None:
+            action = "create"
+        elif not changes:
+            action = "keep"
+        elif allow_binding_flag_updates:
+            action = "update"
+        else:
+            # Без явного разрешения существующая привязка сохраняет свои флаги:
+            # план показывает расхождение, но apply его не исполняет.
+            action = "keep"
+            suppressed = [dict(c, reason=BINDING_FLAG_SUPPRESS_REASON) for c in changes]
+
         binding_rows[key] = {
             "category": category_name,
             "category_id": category.pk,
             "attribute": a["slug"],
             "tool_type": tt_slug,
-            "action": ("create" if current is None else ("update" if changes else "keep")),
+            "action": action,
             "status": status,
             "current": current,
             "target": target,
             "changes": changes,
+            "suppressed": suppressed,
             "candidates": candidates,
             "reason": reason,
         }
@@ -528,8 +588,17 @@ class Command(BaseCommand):
             f"пропущено {summary['bindings']['skip']} "
             f"(ambiguous {summary['bindings']['ambiguous']}, "
             f"not_found {summary['bindings']['not_found']})\n"
-            f"  из них в мёртвые узлы: dead_category {summary['bindings']['dead_category']}"
+            f"  из них в мёртвые узлы: dead_category {summary['bindings']['dead_category']}\n"
+            f"  существующих привязок с расхождением флагов: "
+            f"{summary['bindings']['flag_diff']}"
         )
+        for row in plan["bindings"]:
+            if not row.get("changes") or row.get("current") is None:
+                continue
+            diff = ", ".join(f"{c['field']}: {c['from']!r} → {c['to']!r}" for c in row["changes"])
+            mark = "=" if row["suppressed"] else "~"
+            tail = " (сохранено, нет --allow-binding-flag-updates)" if row["suppressed"] else ""
+            human += f"\n  {mark} привязка «{row['category']}» → {row['attribute']}: {diff}{tail}"
         for row in plan["bindings"]:
             if row["status"] != "dead_category":
                 continue
@@ -593,15 +662,25 @@ class Command(BaseCommand):
                 )
 
             for row in plan["bindings"]:
-                if row["action"] == "skip":
+                # keep/skip не пишем вообще: у существующей привязки флаги остаются
+                # такими, как есть (дефект 5), а skip — это нерешённая категория.
+                if row["action"] not in ("create", "update"):
+                    continue
+                defaults = {f: row["target"][f] for f in BINDING_FLAGS}
+                if row["action"] == "create":
+                    # get_or_create, а не update_or_create: если привязка появилась
+                    # между планом и записью — это уже существующая строка, и её
+                    # флаги молча не перезаписываются.
+                    CategoryAttribute.objects.get_or_create(
+                        category_id=row["category_id"],
+                        attribute=attrs[row["attribute"]],
+                        defaults=defaults,
+                    )
                     continue
                 CategoryAttribute.objects.update_or_create(
                     category_id=row["category_id"],
                     attribute=attrs[row["attribute"]],
-                    defaults=dict(
-                        is_filter=row["target"]["is_filter"],
-                        is_seo_facet=row["target"]["is_seo_facet"],
-                    ),
+                    defaults=defaults,
                 )
 
 
@@ -617,6 +696,18 @@ def _count_statuses(rows: list[dict]) -> dict[str, int]:
     for row in rows:
         counts[row["status"]] = counts.get(row["status"], 0) + 1
     return counts
+
+
+def _count_flag_diff(rows: list[dict]) -> dict[str, int]:
+    """Сколько СУЩЕСТВУЮЩИХ привязок расходятся с правилами по флагам.
+
+    Считается независимо от ``--allow-binding-flag-updates``: это масштаб проблемы —
+    ровно столько строк прежняя логика (``update_or_create`` с ``defaults``)
+    перезаписывала бы молча.
+    """
+    return {
+        "flag_diff": sum(1 for row in rows if row.get("current") is not None and row["changes"])
+    }
 
 
 def _binding_status(reason: str) -> str:

@@ -529,6 +529,142 @@ def test_real_rules_have_no_dead_bindings_left():
 
 
 # --------------------------------------------------------------------------- #
+# Дефект 5 (ХАР-BINDDIFF): флаги существующей привязки перезаписывались молча
+# --------------------------------------------------------------------------- #
+
+# Правила объявляют фасетный атрибут: is_filter=True, is_seo_facet=True.
+FACET_RULES = {
+    "tool_type": "klyuchi-gaechnye",
+    "category": "Ручной инструмент",
+    "attributes": [
+        {
+            "slug": "size",
+            "name": "Размер",
+            "kind": "number",
+            "unit": "мм",
+            "is_filter": True,
+            "is_seo_facet": True,
+        }
+    ],
+}
+
+
+def _binding_with_flags(*, is_filter: bool, is_seo_facet: bool) -> CategoryAttribute:
+    """Живой корень + существующая привязка с флагами, выставленными владельцем."""
+    category = Category.add_root(name="Ручной инструмент", slug="ruchnoy", on_site=True)
+    attribute = Attribute.objects.create(
+        slug="size", name="Размер", attribute_type=AttributeType.DECIMAL, unit="мм"
+    )
+    return CategoryAttribute.objects.create(
+        category=category,
+        attribute=attribute,
+        is_filter=is_filter,
+        is_seo_facet=is_seo_facet,
+    )
+
+
+@pytest.mark.django_db
+def test_new_binding_is_created_with_flags_from_rules(tmp_path):
+    """Создание привязки — defaults из правил остаются в силе (прежнее поведение)."""
+    Category.add_root(name="Ручной инструмент", slug="ruchnoy", on_site=True)
+    path = _write_rules(tmp_path, [FACET_RULES])
+
+    call_command("load_attributes", "--path", path)
+
+    binding = CategoryAttribute.objects.get(attribute__slug="size")
+    assert (binding.is_filter, binding.is_seo_facet) == (True, True)
+
+
+@pytest.mark.django_db
+def test_existing_binding_flags_are_kept_without_permission(tmp_path):
+    """Без разрешения флаги существующей привязки НЕ меняются, а расхождение — в плане."""
+    binding = _binding_with_flags(is_filter=False, is_seo_facet=False)
+    path = _write_rules(tmp_path, [FACET_RULES])
+
+    plan = _plan(path)
+    row = next(r for r in plan["bindings"] if r["attribute"] == "size")
+    assert row["action"] == "keep"
+    assert row["current"] == {"is_filter": False, "is_seo_facet": False}
+    assert row["target"] == {"is_filter": True, "is_seo_facet": True}
+    assert row["changes"] == [
+        {"field": "is_filter", "from": False, "to": True},
+        {"field": "is_seo_facet", "from": False, "to": True},
+    ]
+    assert [s["reason"] for s in row["suppressed"]] == [
+        "binding_flag_update_not_authorized",
+        "binding_flag_update_not_authorized",
+    ]
+    assert plan["summary"]["bindings"]["flag_diff"] == 1
+
+    call_command("load_attributes", "--path", path)
+
+    binding.refresh_from_db()
+    assert (binding.is_filter, binding.is_seo_facet) == (False, False)
+
+
+@pytest.mark.django_db
+def test_existing_binding_flags_are_updated_with_permission(tmp_path):
+    """С явным --allow-binding-flag-updates расхождение применяется."""
+    binding = _binding_with_flags(is_filter=False, is_seo_facet=False)
+    path = _write_rules(tmp_path, [FACET_RULES])
+
+    plan = _plan(path, "--allow-binding-flag-updates")
+    row = next(r for r in plan["bindings"] if r["attribute"] == "size")
+    assert row["action"] == "update"
+    assert row["suppressed"] == []
+    assert plan["summary"]["bindings"]["flag_diff"] == 1
+
+    call_command("load_attributes", "--path", path, "--allow-binding-flag-updates")
+
+    binding.refresh_from_db()
+    assert (binding.is_filter, binding.is_seo_facet) == (True, True)
+
+
+@pytest.mark.django_db
+def test_binding_flag_diff_shown_in_human_summary(tmp_path):
+    """Расхождение видно и в человекочитаемой сводке dry-run (stderr)."""
+    _binding_with_flags(is_filter=False, is_seo_facet=False)
+    path = _write_rules(tmp_path, [FACET_RULES])
+    err = StringIO()
+
+    call_command("load_attributes", "--path", path, "--dry-run", stdout=StringIO(), stderr=err)
+
+    text = err.getvalue()
+    assert "существующих привязок с расхождением флагов: 1" in text
+    assert "привязка «Ручной инструмент» → size" in text
+    assert "--allow-binding-flag-updates" in text
+
+
+@pytest.mark.django_db
+def test_binding_flag_dry_run_writes_nothing(tmp_path):
+    """--dry-run с разрешением всё равно не пишет в БД."""
+    binding = _binding_with_flags(is_filter=False, is_seo_facet=False)
+    path = _write_rules(tmp_path, [FACET_RULES])
+    before = CategoryAttribute.objects.count()
+
+    _plan(path, "--allow-binding-flag-updates")
+
+    binding.refresh_from_db()
+    assert (binding.is_filter, binding.is_seo_facet) == (False, False)
+    assert CategoryAttribute.objects.count() == before
+
+
+@pytest.mark.django_db
+def test_matching_flags_are_not_counted_as_diff(tmp_path):
+    """Совпадающие флаги — обычный keep, ни расхождения, ни подавления."""
+    _binding_with_flags(is_filter=True, is_seo_facet=True)
+    path = _write_rules(tmp_path, [FACET_RULES])
+
+    plan = _plan(path)
+    row = next(r for r in plan["bindings"] if r["attribute"] == "size")
+
+    assert row["action"] == "keep"
+    assert row["changes"] == []
+    assert row["suppressed"] == []
+    assert plan["summary"]["bindings"]["flag_diff"] == 0
+
+
+# --------------------------------------------------------------------------- #
 # dry-run / plan mode
 # --------------------------------------------------------------------------- #
 
