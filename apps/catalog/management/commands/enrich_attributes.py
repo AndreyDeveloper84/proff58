@@ -21,10 +21,11 @@ machine-readable JSON-отчёт (``--json-report <файл>``, иначе stdou
 создаёт ``ImportRun``.
 
 Граница выборки (окно ХАР-SCOPE): ``--tool-type`` / ``--category-id`` (оба
-repeatable), ``--include-descendants``, ``--in-stock-only``. Фильтры складываются
-**пересечением (AND)**: товар обязан быть в разрешённой ветке дерева И с ненулевым
-остатком И его tool_type обязан входить в волну. Без новых флагов выборка прежняя —
-все товары тех tool_type, для которых в ``attribute_rules.json`` есть блок правил.
+repeatable), ``--include-descendants``, ``--in-stock-only``, ``--active-only``.
+Фильтры складываются **пересечением (AND)**: товар обязан быть в разрешённой ветке
+дерева И с ненулевым остатком И активным И его tool_type обязан входить в волну.
+Без новых флагов выборка прежняя — все товары тех tool_type, для которых в
+``attribute_rules.json`` есть блок правил.
 Отбор строится ОДИН раз до расхождения dry-run/apply, поэтому оба режима работают по
 одному и тому же набору ``product_id``.
 """
@@ -146,6 +147,12 @@ class Command(BaseCommand):
             action="store_true",
             help="Только товары в наличии (available_quantity > 0).",
         )
+        parser.add_argument(
+            "--active-only",
+            dest="active_only",
+            action="store_true",
+            help="Только активные товары (is_active=True).",
+        )
 
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
@@ -184,6 +191,7 @@ class Command(BaseCommand):
         category_ids = sorted(set(options["category_id"] or ()))
         include_descendants = options["include_descendants"]
         in_stock_only = options["in_stock_only"]
+        active_only = options["active_only"]
 
         if include_descendants and not category_ids:
             raise CommandError("--include-descendants требует --category-id.")
@@ -217,6 +225,8 @@ class Command(BaseCommand):
             product_scope["category_id__in"] = resolved_category_ids
         if in_stock_only:
             product_scope["available_quantity__gt"] = 0
+        if active_only:
+            product_scope["is_active"] = True
 
         # product_id → slug его tool_type (только товары интересующих типов).
         tt_values = ProductAttributeValue.objects.filter(
@@ -239,6 +249,7 @@ class Command(BaseCommand):
             "category_ids": category_ids,
             "include_descendants": include_descendants,
             "in_stock_only": in_stock_only,
+            "active_only": active_only,
             "resolved_category_ids": resolved_category_ids,
             "selected_tool_types": sorted(selected_tt),
             "selected_products": len(product_ids),

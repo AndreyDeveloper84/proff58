@@ -1,9 +1,10 @@
 """Граница выборки ``enrich_attributes`` (окно ХАР-SCOPE).
 
 Проверяем новые флаги ``--tool-type`` / ``--category-id`` / ``--include-descendants``
-/ ``--in-stock-only``:
+/ ``--in-stock-only`` / ``--active-only``:
 
 - ``--in-stock-only`` выкидывает товары с нулевым остатком;
+- ``--active-only`` выкидывает товары с ``is_active=False``;
 - ``--category-id`` не захватывает соседнюю ветку дерева;
 - ``--include-descendants`` берёт 93 «Метчики» и 94 «Плашки» через родителя 92;
 - фильтры складываются пересечением (AND), а не альтернативами;
@@ -75,8 +76,11 @@ def tree(db):
     }
 
 
-def _make_product(tree, category, code, *, tool_type=DRILL, stock="5"):
-    """Товар в категории с проставленным tool_type (как после enrich_tool_type)."""
+def _make_product(tree, category, code, *, tool_type=DRILL, stock="5", is_active=False):
+    """Товар в категории с проставленным tool_type (как после enrich_tool_type).
+
+    ``is_active`` по умолчанию False — как у модели ``Product``.
+    """
     name = DRILL_NAME if tool_type == DRILL else HAMMER_NAME
     product = Product.objects.create(
         category=category,
@@ -84,6 +88,7 @@ def _make_product(tree, category, code, *, tool_type=DRILL, stock="5"):
         slug=code,
         code_1c=code,
         available_quantity=Decimal(stock),
+        is_active=is_active,
     )
     ProductAttributeValue.objects.create(
         product=product,
@@ -133,6 +138,36 @@ def test_without_in_stock_only_zero_stock_still_selected(tree):
     report = _dry_run()
 
     assert _selected(report) == {in_stock.id, out_of_stock.id}
+
+
+# --- 1b. активность ---------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_active_only_excludes_inactive_products(tree):
+    active = _make_product(tree, tree["metchiki"], "act-on", is_active=True)
+    _make_product(tree, tree["metchiki"], "act-off", is_active=False)
+    call_command("load_attributes")
+
+    report = _dry_run("--active-only")
+
+    assert report["scope"]["active_only"] is True
+    assert report["scope"]["selected_products"] == 1
+    assert report["totals"]["processed"] == 1
+    assert _selected(report) == {active.id}
+
+
+@pytest.mark.django_db
+def test_without_active_only_inactive_still_selected(tree):
+    """Флаг по умолчанию выключен: неактивный товар из выборки не выпадает."""
+    active = _make_product(tree, tree["metchiki"], "act-in", is_active=True)
+    inactive = _make_product(tree, tree["metchiki"], "act-out", is_active=False)
+    call_command("load_attributes")
+
+    report = _dry_run()
+
+    assert report["scope"]["active_only"] is False
+    assert _selected(report) == {active.id, inactive.id}
 
 
 # --- 2. категория: соседняя ветка ------------------------------------------
@@ -225,6 +260,33 @@ def test_filters_combine_as_and(tree):
 
 
 @pytest.mark.django_db
+def test_active_only_joins_the_and_with_other_filters(tree):
+    """Активность — ещё одно И: тип И ветка 92 И остаток И is_active."""
+    target = _make_product(
+        tree, tree["metchiki"], "aa-ok", tool_type=DRILL, stock="7", is_active=True
+    )
+    # каждый следующий нарушает ровно одно условие
+    _make_product(tree, tree["metchiki"], "aa-active", tool_type=DRILL, stock="7", is_active=False)
+    _make_product(tree, tree["metchiki"], "aa-type", tool_type=HAMMER, stock="7", is_active=True)
+    _make_product(tree, tree["other"], "aa-branch", tool_type=DRILL, stock="7", is_active=True)
+    _make_product(tree, tree["plashki"], "aa-stock", tool_type=DRILL, stock="0", is_active=True)
+    call_command("load_attributes")
+
+    report = _dry_run(
+        "--tool-type",
+        DRILL,
+        "--category-id",
+        "92",
+        "--include-descendants",
+        "--in-stock-only",
+        "--active-only",
+    )
+
+    assert report["scope"]["selected_products"] == 1
+    assert _selected(report) == {target.id}
+
+
+@pytest.mark.django_db
 def test_repeatable_tool_type_is_a_union_inside_the_and(tree):
     """Несколько --tool-type — объединение по типу, но всё равно И по ветке/остатку."""
     drill = _make_product(tree, tree["metchiki"], "u-drill", tool_type=DRILL)
@@ -294,6 +356,34 @@ def test_dry_run_and_apply_select_the_same_products(tree):
         assert product.attrs_cache == {}
 
 
+@pytest.mark.django_db
+def test_active_only_dry_run_and_apply_select_the_same_products(tree):
+    """С --active-only оба режима берут один и тот же набор product_id."""
+    _make_product(tree, tree["metchiki"], "ae-93", is_active=True)
+    _make_product(tree, tree["plashki"], "ae-94", is_active=True)
+    _make_product(tree, tree["plashki"], "ae-94-off", is_active=False)
+    _make_product(tree, tree["other"], "ae-95", is_active=False)
+    call_command("load_attributes")
+
+    scope = ["--active-only"]
+
+    report = _dry_run(*scope)
+    dry_run_ids = _selected(report)
+
+    before = set(ProductAttributeValue.objects.values_list("product_id", "attribute__slug"))
+    call_command("enrich_attributes", *scope, stdout=StringIO(), stderr=StringIO())
+    after = set(ProductAttributeValue.objects.values_list("product_id", "attribute__slug"))
+
+    touched = {product_id for product_id, _slug in after - before}
+    assert touched == dry_run_ids, "apply тронул не тот набор товаров, что показал dry-run"
+    assert report["scope"]["selected_products"] == len(dry_run_ids)
+
+    # Неактивные товары не получили ни одной характеристики.
+    for product in Product.objects.exclude(id__in=dry_run_ids):
+        assert not product.attribute_values.exclude(attribute__slug="tool_type").exists()
+        assert product.attrs_cache == {}
+
+
 # --- 6. обратная совместимость ---------------------------------------------
 
 
@@ -304,7 +394,7 @@ def test_no_new_flags_keeps_previous_selection(tree):
         _make_product(tree, tree["top"], "b-92").id,
         _make_product(tree, tree["metchiki"], "b-93", stock="0").id,
         _make_product(tree, tree["plashki"], "b-94", tool_type=HAMMER).id,
-        _make_product(tree, tree["other"], "b-95").id,
+        _make_product(tree, tree["other"], "b-95", is_active=True).id,
     }
     call_command("load_attributes")
 
@@ -317,6 +407,7 @@ def test_no_new_flags_keeps_previous_selection(tree):
         "category_ids": [],
         "include_descendants": False,
         "in_stock_only": False,
+        "active_only": False,
         "resolved_category_ids": [],
         "selected_tool_types": report["scope"]["selected_tool_types"],
         "selected_products": len(expected),
@@ -326,8 +417,8 @@ def test_no_new_flags_keeps_previous_selection(tree):
 @pytest.mark.django_db
 def test_apply_without_new_flags_writes_everything(tree):
     """Боевой режим без флагов не сузился: пишет всем, включая нулевой остаток."""
-    zero = _make_product(tree, tree["metchiki"], "a-zero", stock="0")
-    alien = _make_product(tree, tree["other"], "a-alien")
+    zero = _make_product(tree, tree["metchiki"], "a-zero", stock="0", is_active=True)
+    alien = _make_product(tree, tree["other"], "a-alien", is_active=False)
     call_command("load_attributes")
 
     call_command("enrich_attributes", stdout=StringIO(), stderr=StringIO())
