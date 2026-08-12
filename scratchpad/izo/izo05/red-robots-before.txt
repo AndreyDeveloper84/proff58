@@ -1,0 +1,20 @@
+
+parser\tests\test_robots.py:207: AssertionError
+=========================== short test summary info ===========================
+FAILED parser\tests\test_robots.py::test_star_in_the_middle[\wa-data\public\site\2\vihr-1000.jpg-False]
+FAILED parser\tests\test_robots.py::test_star_in_the_middle[\wa-data\public\site\2\utake-1000.jpg-False]
+FAILED parser\tests\test_robots.py::test_real_resanta_lines[https:\resanta.ru\category\dreli\filter\moshchnost-500\-False]
+FAILED parser\tests\test_robots.py::test_real_resanta_lines[https:\resanta.ru\product\drel-vihr-500\-False]
+FAILED parser\tests\test_robots.py::test_real_resanta_lines[https:\resanta.ru\category\dreli\?page=2-False]
+FAILED parser\tests\test_robots.py::test_real_resanta_lines[https:\resanta.ru\category\dreli\?sort=price-False]
+FAILED parser\tests\test_robots.py::test_real_vihr_lines[https:\vihr.su\wa-data\public\site\1\resanta-logo.png-False]
+FAILED parser\tests\test_robots.py::test_real_vihr_lines[https:\vihr.su\category\nasosy\market\-False]
+FAILED parser\tests\test_robots.py::test_real_vihr_lines[https:\vihr.su\wa-data\public\shop\themes\vihr\product.js?v=3-False]
+FAILED parser\tests\test_robots.py::test_dollar_anchors_end[https:\e.test\docs\a.pdf-False]
+FAILED parser\tests\test_robots.py::test_bare_dollar_disallow_blocks_only_root
+FAILED parser\tests\test_robots.py::test_longest_rule_wins_allow_after_disallow
+FAILED parser\tests\test_robots.py::test_allow_wins_on_equal_length - Asserti...
+FAILED parser\tests\test_robots.py::test_longest_match_counts_wildcard_rule_too
+FAILED parser\tests\test_robots.py::test_empty_allow_is_ignored_and_does_not_open_everything
+FAILED parser\tests\test_robots.py::test_named_group_does_not_apply_to_us - A...
+16 failed, 20 passed in 0.56s

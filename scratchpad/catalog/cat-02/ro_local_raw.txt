@@ -1,0 +1,116 @@
+Python 3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)] on win32
+Type "help", "copyright", "credits" or "license" for more information.
+(InteractiveConsole)
+>>> >>> ... ... ... 'CAT-02 read-only: что заведено в izmeritelnyy/* и какое покрытие атрибутов.\n\nПечатает JSON между ===JSON=== и ===END===. Ничего не пишет.\n'
+>>> >>> >>> ... ... ... ... ... ... >>> >>> >>> >>> >>> >>> ... ...   File "<console>", line 3
+    tree = []
+    ^^^^
+SyntaxError: invalid syntax
+>>> ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ...   File "<console>", line 33
+    out["tree"] = tree
+    ^^^
+SyntaxError: invalid syntax
+>>> >>> >>> >>> ... ... ... ... ... ... ... ... ... ... ... ... ... ... >>> >>> ... ... ... ... ... ... ... >>>   File "<console>", line 1
+    cov = {}
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    rows = (
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    PAV.objects.filter(product__category_id__in=sub_ids)
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    .values("attribute__slug", "attribute__name", "attribute__attribute_type",
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    "attribute__is_filterable", "attribute__unit")
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    .order_by()
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    )
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    from django.db.models import Count, Q
+IndentationError: unexpected indent
+>>> >>>   File "<console>", line 1
+    rows = rows.annotate(
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    n=Count("id"),
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    n_pub=Count("id", filter=Q(product__is_active=True, product__status="published")),
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    )
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    for r in rows:
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    cov[r["attribute__slug"]] = {
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    "name": r["attribute__name"],
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    "type": r["attribute__attribute_type"],
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    "is_filterable": r["attribute__is_filterable"],
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    "unit": r["attribute__unit"],
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    "n": r["n"],
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    "n_pub": r["n_pub"],
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    }
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    out["coverage_subtree"] = cov
+IndentationError: unexpected indent
+>>> >>> >>> ... ... ... ... ... ... ... ... >>> >>> >>> >>> ... ... ... ... ... ... ... ... ... ... ... ... >>>   File "<console>", line 1
+    for r in (
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    PAV.objects.filter(product_id__in=pids)
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    .exclude(attribute__slug="tool_type")
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    .values("attribute__slug")
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    .annotate(
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    n=Count("id"),
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    n_pub=Count("id", filter=Q(product__is_active=True, product__status="published")),
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    )
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    ):
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    attrs[r["attribute__slug"]] = {"n": r["n"], "pub": r["n_pub"]}
+IndentationError: unexpected indent
+>>>   File "<console>", line 1
+    by_tt[tt] = {"products": n_tt, "published": n_tt_pub, "attrs": attrs}
+IndentationError: unexpected indent
+>>> >>> >>> ===JSON===
+>>> {"root": {"id": 369, "slug": "izmeritelnyy", "name": "������������� ����������"}, "ancestors": [], "subtree_totals": {"products": 1406, "published": 715}, "tool_types_in_subtree": ["bp-generatory", "hoz-schetchiki", "hoz-truby-fitingi", "izm-analizatory", "izm-dalnomery", "izm-indikatory", "izm-kleshchi", "izm-lineyki", "izm-mikrometry", "izm-multimetry", "izm-niveliry", "izm-ruletki", "izm-shtangen", "izm-termometry", "izm-ugolniki", "izm-urovni", "klyuchi-gaechnye", "krugi-shlif", "prochaya-osnastka", "siz-vysota", "str-kelmy", "str-pravila", "svetilniki", "udliniteli-filtry", "zap-remkomplekty"], "by_tool_type": {}}
+>>> ===END===
+>>> 
+now exiting InteractiveConsole...

@@ -276,6 +276,9 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
   // лишь для технических фасетов — для base/nav группа игнорируется при разбиении на секции.
   const group: FacetGroupKind | undefined = af.group === "extra" ? "extra" : undefined;
   const isRange = af.type === "integer" || af.type === "decimal";
+  // Сколько товаров вообще имеют эту характеристику: у диапазонов значения схлопнутся
+  // в min/max, и после этого счётчики уже не восстановить (нужны sidebarFacets).
+  const covered = (af.values ?? []).reduce((sum, v) => sum + (Number(v.count) || 0), 0);
   if (isRange) {
     const nums = (af.values ?? [])
       .map((v) => num(v.value))
@@ -288,6 +291,7 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
       isNav,
       kind,
       group,
+      covered,
       min: nums.length ? Math.min(...nums) : undefined,
       max: nums.length ? Math.max(...nums) : undefined,
     };
@@ -300,6 +304,7 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
     isNav,
     kind,
     group,
+    covered,
     options: (af.values ?? []).map((v) => ({
       // value — токен для URL/фильтра: canonical slug, если он есть, иначе raw value (legacy)
       value: String(v.slug ?? v.value),

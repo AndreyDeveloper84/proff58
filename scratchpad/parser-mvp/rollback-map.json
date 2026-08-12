@@ -1,0 +1,6322 @@
+{
+ "559": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "18.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "battery_included",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": false,
+   "opt": null
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1.3000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "560": [
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "18.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "battery_included",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": false,
+   "opt": null
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1.2000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "561": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  }
+ ],
+ "562": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "battery_capacity",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.0000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "563": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "14.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "battery_capacity",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "564": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "14.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "battery_included",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": false,
+   "opt": null
+  }
+ ],
+ "565": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "battery_included",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": false,
+   "opt": null
+  }
+ ],
+ "566": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "24.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "battery_capacity",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "567": [
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "36.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "battery_capacity",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "568": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "18.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "motor_type",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "brushless"
+  },
+  {
+   "attr": "battery_capacity",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "4.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.2000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "569": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "18.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "570": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "18.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "571": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  }
+ ],
+ "572": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "battery_included",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": false,
+   "opt": null
+  }
+ ],
+ "573": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  }
+ ],
+ "574": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  }
+ ],
+ "575": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "battery_capacity",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "4.0000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "576": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "18.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "battery_included",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": false,
+   "opt": null
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.2000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "577": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "18.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "motor_type",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "brushless"
+  },
+  {
+   "attr": "battery_capacity",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "4.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "578": [
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "20.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "motor_type",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "brushless"
+  },
+  {
+   "attr": "battery_included",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": false,
+   "opt": null
+  }
+ ],
+ "579": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "20.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "motor_type",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "brushless"
+  },
+  {
+   "attr": "battery_capacity",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "4.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "580": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "14.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "battery_capacity",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1.3000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "1085": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "36.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "battery_capacity",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1.3000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "44402": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "710.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44403": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44404": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44405": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "880.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44406": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "790.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44407": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "790.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44408": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44409": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "900.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "5.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44410": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1050.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44411": [],
+ "44412": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1500.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "12.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44413": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "550.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44414": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "900.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  }
+ ],
+ "44415": [],
+ "44416": [],
+ "44417": [],
+ "44418": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "620.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1.6000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44419": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "620.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44420": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44421": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44422": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "730.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44423": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "730.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44424": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "730.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44425": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44426": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "830.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44427": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "830.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44428": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44429": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "720.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44430": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44431": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44432": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "720.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44433": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "900.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "motor_type",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "brushless"
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44434": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44435": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "5.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44436": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1100.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "10.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44437": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1150.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "11.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44438": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "950.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "10.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44439": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "950.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "10.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44440": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "950.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "10.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44441": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1500.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "13.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44442": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1500.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44443": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1200.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "15.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44444": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1400.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "20.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44445": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1400.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "20.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44446": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1500.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "22.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44447": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "500.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1.6000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44448": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1250.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44449": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "620.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44450": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "620.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44451": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.6000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44452": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44453": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "900.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44454": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.6000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44455": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1250.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "5.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44456": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1050.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "10.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44457": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "900.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44458": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "600.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44459": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "790.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.8000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44460": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44461": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44462": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44463": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "980.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.8000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44464": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "950.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44465": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1050.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44466": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "44467": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1100.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.3000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44468": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1500.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "6.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44469": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1600.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "15.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44470": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "7.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44471": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "19.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44472": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2100.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "20.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44473": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "440.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44474": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "710.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.3000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44475": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "780.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44476": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "780.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44477": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.9000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44478": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.9000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44479": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.9000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44480": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.9000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44481": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44482": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44483": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.9000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44484": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1050.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.9000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44485": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "5.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44486": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1100.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "9.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44487": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1100.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "11.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44488": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1350.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "13.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44489": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1500.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "20.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44490": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1100.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "10.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44491": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.8000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44492": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.8000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44493": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44494": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44495": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "880.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44496": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.1000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44497": [],
+ "44498": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "600.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.3000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "44499": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "920.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.3000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "44500": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "18.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "battery_capacity",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "44501": [
+  {
+   "attr": "power_source",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "battery"
+  },
+  {
+   "attr": "voltage",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "36.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "battery_capacity",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "44502": [],
+ "44503": [],
+ "44504": [],
+ "44505": [],
+ "44506": [],
+ "44507": [],
+ "44508": [],
+ "44509": [],
+ "44510": [],
+ "44511": [],
+ "44512": [],
+ "44513": [],
+ "44514": [],
+ "44515": [],
+ "44516": [
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44517": [
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "900.0000",
+   "bool": null,
+   "opt": null
+  }
+ ],
+ "44518": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "750.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44519": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44520": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "650.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44521": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "750.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.6000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44522": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "780.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44523": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44524": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.9000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44525": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44526": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44527": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "900.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44528": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "900.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44529": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "900.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44530": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1100.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44531": [
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44532": [
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44533": [
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44534": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1250.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "10.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44535": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1350.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "12.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44536": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1700.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "27.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44537": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1500.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "18.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44538": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "650.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44539": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "750.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44540": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44541": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1500.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "5.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44542": [],
+ "44543": [],
+ "44544": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "1000.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "5.5000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44545": [],
+ "44546": [
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44547": [
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2000.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "13.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "44548": [],
+ "44549": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "44550": [],
+ "44551": [],
+ "44552": [],
+ "45574": [
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "790.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "45575": [
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "45576": [
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "45577": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "730.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "45578": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "730.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "45579": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "650.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "45580": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "800.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.2000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "45581": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "830.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "45582": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "45583": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "3.4000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "45584": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "950.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "9.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-max"
+  }
+ ],
+ "45585": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "780.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "45586": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "780.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "energy_impact",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "2.7000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ],
+ "45587": [
+  {
+   "attr": "power",
+   "source": "regex",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": "850.0000",
+   "bool": null,
+   "opt": null
+  },
+  {
+   "attr": "power_source",
+   "source": "inferred",
+   "confidence": 100,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "mains"
+  },
+  {
+   "attr": "chuck",
+   "source": "keyword",
+   "confidence": 90,
+   "text": "",
+   "int": null,
+   "dec": null,
+   "bool": null,
+   "opt": "sds-plus"
+  }
+ ]
+}

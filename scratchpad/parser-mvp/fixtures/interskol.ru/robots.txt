@@ -1,0 +1,16 @@
+User-Agent: *
+Allow: /
+Disallow: /news/world/
+Disallow: /news/article/
+Disallow: /news/company/
+Disallow: *?_token=*
+Disallow: *?sbclid=*
+Disallow: *?page=*
+Disallow: *?search=*
+Disallow: *?etext=*
+Disallow: /dillers
+Disallow: /index.php
+Disallow: /*?
+Disallow: /catalog/osnactka/
+
+Sitemap: /sitemap.xml

@@ -1,0 +1,2 @@
+CommandError: Idempotency key уже используется run с другим scope.
+Найдено товаров: 2

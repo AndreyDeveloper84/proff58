@@ -56,14 +56,6 @@ NEW_VALUE = "Динамометрические ключи"
 TOP_CATEGORY = "Ручной инструмент"
 
 
-def _manifest_without_new_rule() -> dict:
-    """Манифест в состоянии до changeset'а (origin/dev): без нового правила."""
-    doc = json.loads(RULES_PATH.read_text(encoding="utf-8"))
-    for cat in doc["categories"]:
-        cat["rules"] = [r for r in cat["rules"] if r.get("slug") != NEW_SLUG]
-    return doc
-
-
 class ManifestTests(TestCase):
     """Новая option в manifest: секция, контракт и отсутствие новых дублей."""
 
@@ -103,7 +95,11 @@ class ManifestTests(TestCase):
 
 
 class LoadToolTypesDeltaTests(TestCase):
-    """Delta changeset'а на реальном manifest: ровно одна новая option, без side effects."""
+    """Delta changeset'а manifest: ровно одна новая option, без side effects (Wave 7.1/H1).
+
+    «До» — canonical manifest без новой option; «changeset» — текущий canonical
+    manifest (default). Существующие options: PK/slug/sort_order без изменений.
+    """
 
     def setUp(self):
         Category.add_root(name=TOP_CATEGORY, slug="ruchnoy-instrument")
@@ -114,21 +110,34 @@ class LoadToolTypesDeltaTests(TestCase):
             for opt in AttributeOption.objects.filter(attribute=attr)
         }
 
+    @staticmethod
+    def _manifest_without(tmp_dir, exclude_slugs):
+        from apps.catalog.taxonomy_manifest import (
+            MANIFEST_PATH,
+            manifest_semantic_hash,
+            taxonomy_identity_hash,
+        )
+
+        doc = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        doc["options"] = [o for o in doc["options"] if o["slug"] not in exclude_slugs]
+        doc["taxonomy_identity_hash"] = taxonomy_identity_hash(doc["options"])
+        doc["manifest_semantic_hash"] = manifest_semantic_hash(doc)
+        path = Path(tmp_dir) / "manifest.json"
+        path.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+        return str(path)
+
     def test_changeset_creates_exactly_one_option_without_side_effects(self):
-        # Seed состояния «до» — manifest без нового правила.
-        old_doc = _manifest_without_new_rule()
+        # Seed состояния «до» — canonical manifest без новой option.
         with tempfile.TemporaryDirectory() as tmp:
-            (Path(tmp) / "tool_type_rules.json").write_text(
-                json.dumps(old_doc, ensure_ascii=False), encoding="utf-8"
-            )
-            call_command("load_tool_types", path=tmp)
+            before_manifest = self._manifest_without(tmp, {NEW_SLUG})
+            call_command("load_tool_types", manifest=before_manifest)
 
         attr = Attribute.objects.get(slug="tool_type")
         before = self._snapshot_options(attr)
         self.assertNotIn(NEW_VALUE, before)
         cat_attr_before = CategoryAttribute.objects.count()
 
-        # --- Применяем changeset (реальный manifest из data/). ---
+        # --- Применяем changeset (текущий canonical manifest). ---
         created = call_command("load_tool_types")
 
         self.assertEqual(created, "1", "changeset должен создать ровно одну option")
@@ -141,13 +150,13 @@ class LoadToolTypesDeltaTests(TestCase):
                 after.get(value), identity, f"изменилась существующая option {value!r}"
             )
 
-        # Новая option: ожидаемый sort_order — последняя позиция в секции
-        # (правило добавлено в конец, существующие позиции не сдвинуты).
-        rules = ToolTypeRules.from_file(RULES_PATH)
-        expected_sort = len(rules.options(TOP_CATEGORY)) - 1
+        # Новая option: slug и sort_order — из canonical manifest.
+        from apps.catalog.taxonomy_manifest import load_manifest
+
+        expected = {o.slug: o for o in load_manifest().options}[NEW_SLUG]
         pk, slug, sort_order = after[NEW_VALUE]
         self.assertEqual(slug, NEW_SLUG)
-        self.assertEqual(sort_order, expected_sort)
+        self.assertEqual(sort_order, expected.sort_order)
 
         # Дублей slug/value для новой option нет.
         self.assertEqual(AttributeOption.objects.filter(attribute=attr, slug=NEW_SLUG).count(), 1)

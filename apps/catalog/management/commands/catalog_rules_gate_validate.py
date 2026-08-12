@@ -1,107 +1,169 @@
-"""Gate-валидация human labels против gate_sample (Phase 6.0, P0.3).
+"""Independent machine gate для human labels против gate_sample (Wave 7.1/H2).
 
-Читает оба файла, проверяет labels через ``validate_gate_labels`` (sample_hash,
-покрытие, enum decisions, соответствие ruleset/matcher), печатает сводку
-decisions, observed precision и gate_passed. Никаких записей — ни в БД,
-ни на диск.
+Команда — тонкий caller над ``apps.catalog.rules_gate.run_independent_gate``:
+все проверки (ruleset/corpus/manifest/schema/hashes/replay/overlap/metrics)
+пересчитываются независимо из первичных versioned inputs. Declared-поля
+артефактов не являются source of truth (Wave 7 finding B: ранее команда
+доверяла самодекларированным ``corpus_overlap_checked``/``collision_count``
+и self-consistent парам sample↔labels — negative probe воспроизведён и закрыт).
 
-Hotfix post-#579 (fail-closed): sample без ``corpus_overlap_checked: true``
-или без ``collision_count == 0`` gate НЕ проходит — violation в выводе,
-``gate_passed=false`` и ненулевой выход (CommandError). ``collision_count``
-проверяется строго по типу (review #580): JSON bool — НЕ валидный int.
+Exit codes: 0 — gate passed; 1 — валидно оценён, thresholds не пройдены;
+2 — invalid inputs/schema/hash/provenance/blocking; 3 — internal error.
+Команда ничего не пишет в БД и не применяет predictions.
 """
 
 from __future__ import annotations
 
 import json
-from collections import Counter
+import os
+import tempfile
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.catalog.rules_engine import GATE_LABEL_DECISIONS, validate_gate_labels
+from apps.catalog.rules_gate import (
+    DEFAULT_CORPUS_PATH,
+    EXIT_INTERNAL,
+    EXIT_PASSED,
+    EXIT_THRESHOLD_FAILED,
+    MIN_ROWS_GATE,
+    PRECISION_GATE,
+    run_independent_gate,
+)
 
-PRECISION_GATE = 0.99
-MIN_ROWS_GATE = 100
 
+def _write_json_atomic(payload: dict, path: Path, force: bool) -> str:
+    """Атомарная запись report (конвенция shadow): tempfile + os.replace,
+    защита от перезаписи без --force. Возвращает sha256 записанных байтов."""
+    import hashlib
 
-def _load_json(path: Path, kind: str):
-    """Чтение входного JSON: отсутствующий файл, не-UTF8 или битый JSON —
-    CommandError с понятным сообщением (стиль как у queue_import._load_json)."""
+    path = Path(path)
+    if path.exists() and not force:
+        raise CommandError(f"отчёт уже существует (используйте --force): {path}")
+    data = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8")
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=path.name + ".", suffix=".tmp")
     try:
-        with path.open("r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError as exc:
-        raise CommandError(f"Файл не найден ({kind}): {path}") from exc
-    except json.JSONDecodeError as exc:
-        raise CommandError(f"Невалидный JSON ({kind}): {exc}") from exc
-    except UnicodeDecodeError as exc:
-        raise CommandError(f"Файл не UTF-8 ({kind}): {exc}") from exc
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+    return hashlib.sha256(data).hexdigest()
 
 
 class Command(BaseCommand):
-    help = "Валидация labels против gate_sample: сводка decisions, precision, gate_passed."
+    help = (
+        "Независимая gate-валидация labels против gate_sample (per-rule replay, hashes, metrics)."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--gate-sample", type=str, required=True, help="Путь к gate_sample JSON."
         )
         parser.add_argument("--labels", type=str, required=True, help="Путь к labels JSON.")
+        parser.add_argument(
+            "--ruleset",
+            type=str,
+            default=None,
+            help="Путь к ruleset JSON (default: default RULESET_PATH).",
+        )
+        parser.add_argument(
+            "--corpus",
+            type=str,
+            default=None,
+            help="Путь к applied corpus JSON (default: applied_corpus_tool_type.v1.json).",
+        )
+        parser.add_argument(
+            "--taxonomy-manifest",
+            type=str,
+            default=None,
+            help="Путь к canonical taxonomy manifest (default: tool_type_taxonomy.v1.json).",
+        )
+        parser.add_argument(
+            "--allow-legacy-taxonomy-hash",
+            type=str,
+            default=None,
+            metavar="HASH",
+            help="Явно допустить legacy taxonomy_hash sample (DB-order recipe, "
+            "артефакты до H1). Без флага расхождение — blocking.",
+        )
+        parser.add_argument("--format", choices=["text", "json"], default="text")
+        parser.add_argument("--out", type=str, default=None, help="Путь для machine report JSON.")
+        parser.add_argument("--force", action="store_true", help="Разрешить перезапись --out.")
 
     def handle(self, *args, **options):
-        sample = _load_json(Path(options["gate_sample"]), "gate_sample")
-        labels = _load_json(Path(options["labels"]), "labels")
-        violations = validate_gate_labels(labels, sample)
-        if violations:
-            raise CommandError("gate labels невалидны: " + "; ".join(violations))
-
-        # fail-closed аудит sample-артефакта (review post-#579): отсутствие
-        # полей или недопустимые значения трактуются как НЕпрохождение gate,
-        # а не как допустимое состояние
-        sample_violations = []
-        if sample.get("corpus_overlap_checked") is not True:
-            sample_violations.append(
-                "corpus_overlap_checked is not true: пересечение sample ∩ training "
-                "corpus не проверено (неофициальный sample)"
+        try:
+            outcome = run_independent_gate(
+                ruleset_path=options["ruleset"],
+                corpus_path=options["corpus"] or DEFAULT_CORPUS_PATH,
+                manifest_path=options["taxonomy_manifest"],
+                sample_path=Path(options["gate_sample"]),
+                labels_path=Path(options["labels"]),
+                allow_legacy_taxonomy_hash=options["allow_legacy_taxonomy_hash"],
             )
-        collision_count = sample.get("collision_count")
-        # строгая type-проверка (review #580): isinstance(False, int) is True,
-        # поэтому JSON bool отклоняется явно — он НЕ валидный ноль
-        if (
-            isinstance(collision_count, bool)
-            or not isinstance(collision_count, int)
-            or collision_count < 0
-        ):
-            sample_violations.append(
-                "обязательное поле collision_count отсутствует или не int >= 0: "
-                f"{collision_count!r}"
-            )
-        elif collision_count != 0:
-            sample_violations.append(f"collision_count={collision_count} != 0")
+        except CommandError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            raise CommandError(f"internal gate error: {exc}", returncode=EXIT_INTERNAL) from exc
 
-        rows = len(sample.get("rows", []))
-        decisions = Counter(lb.get("decision") for lb in labels.get("labels", []))
-        correct = decisions.get("correct", 0)
-        # знаменатель — все строки sample (unverifiable/taxonomy_gap тоже снижают precision)
-        precision = correct / rows if rows else 0.0
-        # gate по НЕокруглённому precision; округление — только для вывода
-        gate_passed = (
-            precision >= PRECISION_GATE and rows >= MIN_ROWS_GATE and not sample_violations
-        )
+        report = outcome.report
+        if options["out"]:
+            digest = _write_json_atomic(report, Path(options["out"]), options["force"])
+            self.stdout.write(f"artifact={options['out']} sha256={digest}")
+        if options["format"] == "json":
+            self.stdout.write(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
+        else:
+            self._emit_text(report, outcome.exit_code)
 
-        summary = " ".join(f"{d}={decisions.get(d, 0)}" for d in sorted(GATE_LABEL_DECISIONS))
-        self.stdout.write(f"rows={rows} decisions: {summary}")
-        self.stdout.write(
-            f"observed_precision={round(precision, 4)} (correct={correct} / rows={rows})"
-        )
-        for violation in sample_violations:
-            self.stdout.write(f"violation: {violation}")
-        gate_rule = (
-            f"precision>={PRECISION_GATE} and rows>={MIN_ROWS_GATE} "
-            "and collision_count==0 and corpus_overlap_checked"
-        )
-        self.stdout.write(f"gate_passed={'true' if gate_passed else 'false'} ({gate_rule})")
-        if sample_violations:
+        if outcome.exit_code == EXIT_PASSED:
+            return
+        metrics = report["metrics"]
+        if outcome.exit_code == EXIT_THRESHOLD_FAILED:
             raise CommandError(
-                "gate sample не прошёл fail-closed аудит: " + "; ".join(sample_violations)
+                f"gate_passed=false: thresholds не пройдены "
+                f"(precision={metrics['precision']:.6f} < {PRECISION_GATE} "
+                f"или rows={metrics['rows']} < {MIN_ROWS_GATE})",
+                returncode=EXIT_THRESHOLD_FAILED,
             )
+        raise CommandError(
+            "gate_passed=false: blocking validation errors: "
+            + "; ".join(report["blocking_errors"][:5]),
+            returncode=outcome.exit_code,
+        )
+
+    def _emit_text(self, report: dict, exit_code: int) -> None:
+        metrics = report["metrics"]
+        decisions = metrics["decisions"]
+        summary = " ".join(f"{d}={decisions.get(d, 0)}" for d in sorted(decisions))
+        self.stdout.write(f"rows={metrics['rows']} decisions: {summary}")
+        self.stdout.write(
+            f"observed_precision={round(metrics['precision'], 4)} "
+            f"(recomputed: correct={metrics['correct']} / rows={metrics['rows']}; "
+            f"unrounded={metrics['precision']})"
+        )
+        lo, hi = metrics["wilson95"]
+        self.stdout.write(f"wilson95=[{lo:.6f}, {hi:.6f}]")
+        replay = report["replay"]
+        self.stdout.write(
+            f"independent replay: rows={replay['rows']} checked={replay['checked']} "
+            f"collisions_recomputed={replay['collisions_recomputed']} | "
+            f"overlap computed_empty={report['overlap']['computed_empty']}"
+        )
+        for m in report["declared_mismatches"]:
+            self.stdout.write(
+                f"mismatch[{m['severity']}] {m['field_path']}: "
+                f"declared={m['declared_value']!r} recomputed={m['recomputed_value']!r}"
+            )
+        for w in report["warnings"]:
+            self.stdout.write(self.style.WARNING(f"warning: {w}"))
+        for e in report["blocking_errors"]:
+            self.stdout.write(f"blocking: {e}")
+        rule = (
+            f"recomputed precision>={PRECISION_GATE} and rows>={MIN_ROWS_GATE} "
+            "and blocking_errors==0"
+        )
+        self.stdout.write(f"gate_passed={'true' if report['gate_passed'] else 'false'} ({rule})")

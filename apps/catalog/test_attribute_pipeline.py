@@ -180,13 +180,14 @@ def test_load_attributes_idempotent(catalog):
 
 @pytest.mark.django_db
 def test_load_attributes_binds_to_subcategory(db):
-    """krugi-almaznye биндит фасеты к под-категории «Алмазные круги», не к топу."""
-    top = Category.add_root(name="Оснастка и расходники", slug="osnastka", on_site=True)
-    sub = top.add_child(name="Алмазные круги", slug="almaznye-krugi", on_site=True)
+    """krugi-almaznye биндит фасеты к под-категории «Диски», не к топу."""
+    top = Category.add_root(name="Оснастка и расходные материалы", slug="osnastka", on_site=True)
+    mid = top.add_child(name="Алмазная оснастка", slug="almaznaya-osnastka", on_site=True)
+    sub = mid.add_child(name="Диски", slug="diski", on_site=True)
 
     call_command("load_attributes")
 
     ca = CategoryAttribute.objects.filter(category=sub, attribute__slug="bore").first()
-    assert ca is not None and ca.category.depth == 2  # привязано к под-категории
+    assert ca is not None and ca.category.depth == 3  # привязано к под-категории
     # и НЕ к широкой топ-категории (иначе bore засорит буры/биты/свёрла)
     assert not CategoryAttribute.objects.filter(category=top, attribute__slug="bore").exists()

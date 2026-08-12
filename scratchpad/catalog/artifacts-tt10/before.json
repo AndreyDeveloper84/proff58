@@ -1,0 +1,79 @@
+{
+  "canonical": {
+    "attribute_slug": "tool_type",
+    "live_taxonomy_identity_hash": "887eea5d442455fbb97c9eda888c0307f46a1f7e2e51bd56c2bd8a11d3949175",
+    "rows": [
+      {
+        "attrs_cache_tool_type": "Аккумуляторы",
+        "option_slug": "akkumulyatory",
+        "option_value": "Аккумуляторы",
+        "product_id": 1109
+      },
+      {
+        "attrs_cache_tool_type": "Сварочная проволока и прутки",
+        "option_slug": "svar-provoloka",
+        "option_value": "Сварочная проволока и прутки",
+        "product_id": 24866
+      },
+      {
+        "attrs_cache_tool_type": "Гвозди",
+        "option_slug": "krep-gvozdi",
+        "option_value": "Гвозди",
+        "product_id": 28886
+      },
+      {
+        "attrs_cache_tool_type": "Гвозди",
+        "option_slug": "krep-gvozdi",
+        "option_value": "Гвозди",
+        "product_id": 28887
+      },
+      {
+        "attrs_cache_tool_type": "Лебёдки и тали",
+        "option_slug": "lebedki-tali",
+        "option_value": "Лебёдки и тали",
+        "product_id": 34643
+      },
+      {
+        "attrs_cache_tool_type": "Лебёдки и тали",
+        "option_slug": "lebedki-tali",
+        "option_value": "Лебёдки и тали",
+        "product_id": 34644
+      },
+      {
+        "attrs_cache_tool_type": "Лебёдки и тали",
+        "option_slug": "lebedki-tali",
+        "option_value": "Лебёдки и тали",
+        "product_id": 35057
+      },
+      {
+        "attrs_cache_tool_type": "Лебёдки и тали",
+        "option_slug": "lebedki-tali",
+        "option_value": "Лебёдки и тали",
+        "product_id": 35058
+      },
+      {
+        "attrs_cache_tool_type": "Маски и щитки сварочные",
+        "option_slug": "svar-maski",
+        "option_value": "Маски и щитки сварочные",
+        "product_id": 36379
+      }
+    ],
+    "rows_count": 9,
+    "schema_version": 1,
+    "selector": {
+      "kind": "explicit_ids",
+      "value": [
+        1109,
+        24866,
+        28886,
+        28887,
+        34643,
+        34644,
+        35057,
+        35058,
+        36379
+      ]
+    }
+  },
+  "canonical_hash": "e89d200d8f65b3d0775d5186dabff7f613f5994f01d791ee8468eb6d55c81c77"
+}

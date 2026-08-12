@@ -1,0 +1,25 @@
+{
+  "total": 1,
+  "created": 0,
+  "would_create": 0,
+  "existing": 0,
+  "skipped": 0,
+  "errors": 1,
+  "dry_run": true,
+  "result_checksum": "c9808233526b48338b29044dd1668f32f8752a7461df5b34fdb845519f9f2fc2",
+  "export_checksum": "459a2c8e916d2b4246ee15eb51bfe2104de8186d52315794ed3e93a544a3d0eb"
+}
+Ошибки:
+  - product_ref 6: item не найден
+Dry-run завершён
+{
+  "total": 1,
+  "created": 0,
+  "would_create": 0,
+  "existing": 0,
+  "skipped": 0,
+  "errors": 1,
+  "dry_run": true,
+  "result_checksum": "c9808233526b48338b29044dd1668f32f8752a7461df5b34fdb845519f9f2fc2",
+  "export_checksum": "459a2c8e916d2b4246ee15eb51bfe2104de8186d52315794ed3e93a544a3d0eb"
+}

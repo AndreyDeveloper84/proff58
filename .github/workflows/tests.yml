@@ -75,7 +75,49 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements/dev.txt
+      # Ловит два класса дефектов, которые не видят ни линтеры, ни тесты:
+      # 1) модель изменилась, а миграции нет (так `Source.SCRAPER` покрыл
+      #    productattributevalue.source, но не catalogchange.source — PR #612);
+      # 2) ветвление миграций: две ветки создали по узлу 0028 и Django
+      #    отказывается стартовать на двух листьях (слияние с GitLab, PR #613).
+      # Шаг стоит до migrate — падает раньше и дешевле полного прогона.
+      - name: Дрейф моделей и миграций
+        run: python manage.py makemigrations --check --dry-run
       - name: Миграции
         run: python manage.py migrate --noinput
       - name: Тесты
         run: pytest
+
+  catalog-rules-gate:
+    # Wave 7.1 / H3: independent machine gate 2.0 на замороженном 7D-sample
+    # против DEFAULT ruleset. Exit code команды = статус джобы (0 pass;
+    # 1 thresholds; 2 invalid/blocking; 3 internal). Джоба падает при любом
+    # дрейфе ruleset / applied corpus / canonical manifest / matcher / метрик.
+    # Контур DB-independent (ничего не пишет и не читает в БД) — сервисы не нужны.
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DJANGO_SECRET_KEY: ci-secret
+      DATABASE_URL: postgres://proff:proff@localhost:5432/proff58
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      CELERY_RESULT_BACKEND: redis://localhost:6379/1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements/dev.txt
+      # H4: sample перевыпущен на canonical taxonomy binding (TT-NEW-TYPES-BATCH-3
+      # 2026-08-01: f7b73846…, до этого 8eba9631… (TT-NEW-TYPES-BATCH-2), ea65486c…
+      # (TT-NEW-TYPES-BATCH), 7ac7a9a2… (TT-14), 887eea5d… (TT-07), 524d4e31…
+      # (TT-01) и fc13be78…), поблажка --allow-legacy-taxonomy-hash снята из
+      # обоих шагов. Джоба проходит только на canonical identity — зелёный CI =
+      # полное доказательство.
+      - name: Gate — frozen 7D sample против default ruleset
+        run: |
+          python manage.py catalog_rules_gate_validate \
+            --gate-sample apps/catalog/tests/fixtures/phase7d-gate-sample-official.json \
+            --labels apps/catalog/tests/fixtures/phase7d-labels.json
+      - name: Release manifest — проверка зафиксированной версии контура
+        run: |
+          python manage.py catalog_rules_release_manifest --check

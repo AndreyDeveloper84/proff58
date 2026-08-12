@@ -11,6 +11,7 @@ import { useAuthState } from "@/components/auth/AuthStateProvider";
 import { accountLinkHref } from "@/lib/auth-state";
 import { formatDeliverySlot, formatPrice } from "@/lib/format";
 import { getGuestOrder } from "@/lib/orders";
+import { paymentMethodLabel } from "@/lib/payment-methods";
 import { readStashedOrder } from "@/lib/order-storage";
 import { decodeRouteParam } from "@/lib/route-params";
 import type { Order } from "@/lib/types";
@@ -20,10 +21,6 @@ const DELIVERY_LABELS: Record<string, string> = {
   pickup: "Самовывоз",
 };
 
-const PAYMENT_LABELS: Record<string, string> = {
-  online: "Онлайн-оплата",
-  invoice: "Счёт для организации",
-};
 
 export default function ThanksPage() {
   const params = useParams<{ id: string }>();
@@ -165,8 +162,10 @@ export default function ThanksPage() {
               <h2 className="text-lg font-semibold text-ink">Детали заказа</h2>
               <dl className="mt-3 divide-y divide-line text-sm">
                 <div className="flex justify-between gap-3 py-2"><dt className="text-ink-3">Номер</dt><dd className="font-semibold text-ink">{order.order_number}</dd></div>
-                <div className="flex justify-between gap-3 py-2"><dt className="text-ink-3">Статус</dt><dd className="text-right text-ink">{order.display_status}</dd></div>
-                <div className="flex justify-between gap-3 py-2"><dt className="text-ink-3">Оплата</dt><dd className="text-right text-ink">{PAYMENT_LABELS[order.payment_method] ?? order.payment_method}</dd></div>
+                {/* Строки «Статус» здесь нет намеренно: состояние заказа крупно
+                    сообщает OrderOutcome сверху. Дубль только спорил с ним — заказу
+                    с оплатой в магазине приписывалось «Ожидает оплаты». */}
+                <div className="flex justify-between gap-3 py-2"><dt className="text-ink-3">Оплата</dt><dd className="text-right text-ink">{paymentMethodLabel(order.payment_method)}</dd></div>
                 <div className="flex justify-between gap-3 py-2"><dt className="text-ink-3">Получатель</dt><dd className="text-right text-ink">{order.customer_name}</dd></div>
                 <div className="flex justify-between gap-3 py-2"><dt className="text-ink-3">Телефон</dt><dd className="text-right text-ink">{order.customer_phone}</dd></div>
               </dl>

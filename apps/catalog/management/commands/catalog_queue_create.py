@@ -33,6 +33,7 @@ from apps.catalog.models import (
 from apps.catalog.processing import canonical_hash, tool_type_snapshot
 from apps.catalog.queue_contract import (
     TOOL_TYPE_SLUG,
+    _canonical_taxonomy,
     _category_paths,
     _product_snapshot,
 )
@@ -123,6 +124,9 @@ class Command(BaseCommand):
         if not settings.FEATURES.get("catalog_processing", False):
             raise CommandError("Feature catalog_processing выключен.")
 
+        # Fail-closed сверка состава опций БД с canonical manifest (TT-13/G6).
+        _, taxonomy_identity = _canonical_taxonomy()
+
         mode = options["mode"]
         kind = options["kind"]
         only_untyped = options["only_untyped"]
@@ -200,6 +204,7 @@ class Command(BaseCommand):
                     status=CatalogProcessingRunStatus.RUNNING,
                     idempotency_key=idempotency_key,
                     scope=scope,
+                    taxonomy_hash=taxonomy_identity,
                     stats={"total_items": count},
                 )
                 items = self._build_items(run, products, mode, category_paths)

@@ -21,7 +21,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from apps.catalog.models import CatalogProcessingRun, CatalogProcessingRunStatus
-from apps.catalog.queue_contract import _allowed_tool_type_options, _taxonomy_hash
+from apps.catalog.queue_contract import _canonical_taxonomy
 
 SCHEMA_VERSION = "1.0"
 BASE_DIR = Path(settings.BASE_DIR) / "var" / "catalog-processing"
@@ -33,8 +33,7 @@ def _ensure_dirs() -> None:
 
 
 def _build_export(run: CatalogProcessingRun) -> dict[str, Any]:
-    options = _allowed_tool_type_options()
-    taxonomy_hash = _taxonomy_hash(options)
+    options, taxonomy_hash = _canonical_taxonomy()
     if run.taxonomy_hash and run.taxonomy_hash != taxonomy_hash:
         raise CommandError("Taxonomy изменилась после предыдущего export; создайте новый run.")
     items = []

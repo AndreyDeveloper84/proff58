@@ -86,12 +86,17 @@ describe("OrderOutcome", () => {
     expect(screen.queryByRole("button", { name: "Оплатить заказ" })).not.toBeInTheDocument();
   });
 
-  it("оплата при получении — заказ принят без всякой кассы", () => {
-    render(<OrderOutcome order={order({ payment_method: "cash" })} orderNumber="О-100" />);
+  // Наличные и карта на выдаче — одна и та же договорённость «плачу в магазине».
+  // Карта долго проваливалась в ветку онлайна и звала в кассу.
+  it.each(["cash", "card_on_pickup"])(
+    "оплата при получении (%s) — заказ принят без всякой кассы",
+    (method) => {
+      render(<OrderOutcome order={order({ payment_method: method })} orderNumber="О-100" />);
 
-    expect(screen.getByText("Заказ принят")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Оплатить заказ" })).not.toBeInTheDocument();
-  });
+      expect(screen.getByText("Заказ принят")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Оплатить заказ" })).not.toBeInTheDocument();
+    },
+  );
 
   // Касса легла — заказ уже оформлен, и человек должен это понимать,
   // а не думать, что потерял и деньги, и заказ.

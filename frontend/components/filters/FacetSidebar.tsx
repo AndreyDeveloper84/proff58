@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import type { Facet, ListingQuery, RangeFilterValue } from "@/lib/types";
-import { groupSidebarFacets } from "@/lib/listing";
+import { groupSidebarFacets, pricePresets } from "@/lib/listing";
+import { pluralize } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 // Шаг слайдера диапазона: для цены крупнее, прочее — 1.
 const RANGE_STEP: Record<string, number> = { price: 100 };
@@ -15,13 +17,20 @@ type Props = {
   onRange: (code: string, val: { min?: number; max?: number }) => void;
   /** Встроить в общую карточку с навигацией раздела. */
   connected?: boolean;
+  /** Сколько товаров в текущей выдаче — для кнопки «Показать N товаров» (макет Cat2). */
+  total?: number;
+  /** Якорь сетки товаров. Кнопка не применяет фильтры (они применяются сразу),
+      а прокручивает к результату — на десктопе сайдбар длиннее первого экрана. */
+  resultsHref?: string;
 };
 
-// Сворачиваемый блок фасета с заголовком и шевроном (по макету). По умолчанию открыт;
-// «дополнительные»/второстепенные группы приходят с defaultOpen=false.
+// Сворачиваемый блок фасета с заголовком и шевроном (по макету Cat2). Свёрнут по
+// умолчанию: открытыми все секции занимали два экрана, и до товаров нужно было
+// прокручивать мимо фильтров, которыми человек не пользовался. Открытым остаётся
+// только блок цены — им пользуются чаще всего.
 function FacetBlock({
   title,
-  defaultOpen = true,
+  defaultOpen = false,
   children,
 }: {
   title: string;
@@ -45,6 +54,8 @@ export function FacetSidebar({
   onToggle,
   onRange,
   connected = false,
+  total,
+  resultsHref,
 }: Props) {
   // tool_type (isNav) — навигация, рендерится капсулами в шапке раздела (CategoryNavStrip),
   // а НЕ фасетом сайдбара (§3.1, §23.5).
@@ -79,8 +90,18 @@ export function FacetSidebar({
           : "rounded-lg border border-line bg-surface p-4"
       }
     >
-      {sections.map((section) =>
-        section.facets.map((f) => renderFacet(f, section.key !== "extra")),
+      {sections.map((section) => section.facets.map((f) => renderFacet(f, f.code === "price")))}
+
+      {/* «Показать N товаров» — не «применить»: фильтры применяются сразу, кнопка
+          прокручивает к выдаче. В мобильном drawer своя такая кнопка (она ещё и
+          закрывает drawer), поэтому здесь только для десктопной колонки. */}
+      {resultsHref && total != null && (
+        <a
+          href={resultsHref}
+          className="mt-4 flex min-h-11 w-full items-center justify-center rounded-md border border-accent bg-surface text-sm font-semibold text-accent transition hover:bg-accent/5"
+        >
+          Показать {total} {pluralize(total, "товар", "товара", "товаров")}
+        </a>
       )}
     </div>
   );
@@ -239,19 +260,14 @@ function RangeFacet({
   const minPct = ((draft.min - lo) / span) * 100;
   const maxPct = ((draft.max - lo) / span) * 100;
 
-  // Пресеты цены (по макету): применяют готовый диапазон одним кликом.
-  const presets =
-    facet.code === "price"
-      ? ([
-          { label: "до 5 000", min: lo, max: 5000 },
-          { label: "5 000 – 10 000", min: 5000, max: 10000 },
-          { label: "10 000 – 20 000", min: 10000, max: 20000 },
-          { label: "от 20 000", min: 20000, max: hi },
-        ].filter((p) => p.min < hi && p.max > lo) as { label: string; min: number; max: number }[])
-      : [];
+  // Пресеты цены (макет Cat2). Пороги и отбор — в lib/listing.pricePresets: оттуда же
+  // их видят тесты, и оттуда же отсеиваются варианты, дающие ноль товаров или ничего
+  // не сужающие (такие normalizeRangeFilters всё равно сбросит, и нажатие выглядело бы
+  // как «ничего не произошло»).
+  const presets = facet.code === "price" ? pricePresets(lo, hi) : [];
 
-  const applyPreset = (min: number, max: number) => {
-    const d = { min: Math.max(min, lo), max: Math.min(max, hi) };
+  const applyPreset = (min?: number, max?: number) => {
+    const d = { min: Math.max(min ?? lo, lo), max: Math.min(max ?? hi, hi) };
     setDraft(d);
     flush(d);
   };

@@ -1,0 +1,145 @@
+{
+  "artifact": "extraction_report",
+  "phase": "7A",
+  "generated_at": "2026-07-21T20:25:21Z",
+  "plan": "docs/plans/2026-07-21-PHASE7A_CORPUS_AND_CANDIDATE_RULES_PLAN.md (v2, approved 2026-07-21)",
+  "staging": {
+    "host": "taximeter@194.87.99.126",
+    "expected_code": "dev@175d96a",
+    "code_evidence": "git в контейнере отсутствует; image digest sha256:42ee9178bf0d... совпал со строкой '#20 writing image sha256:42ee9178...' лога post-merge deploy run 29856046884 (dev@175d96a). F3 закрыт.",
+    "feature_flag_catalog_processing": false,
+    "healthz": "200 (проверено urllib внутри web-контейнера, pre и post)"
+  },
+  "backup": {
+    "path": "backups/pre_phase7a_20260721_225758.sql.gz",
+    "size_bytes": 21425542,
+    "sha256": "256050e8fb0fd2490659c76bba01dd7743d3a6ae96ba95fbf2d48857f47fbc3f",
+    "gzip_integrity": "ok",
+    "pg_dump_marker": "present ('PostgreSQL database dump complete' в tail; после маркера следует строка \\unrestrict)",
+    "pg_dump_errors": 0
+  },
+  "invariants": {
+    "pre": {
+      "pav_total": 60896,
+      "tool_type_options": 328,
+      "changes_total": 57,
+      "applied_tool_type_changes": 56,
+      "distinct_products_with_applied": 54,
+      "non_final_changes": 0,
+      "runs_total": 4,
+      "products_total": 47225,
+      "findings_total": 0,
+      "run_batch50_aa9b1df5": "completed",
+      "run_remediation_3afffd16": "completed"
+    },
+    "post": {
+      "pav_total": 60896,
+      "tool_type_options": 328,
+      "changes_total": 57,
+      "applied_tool_type_changes": 56,
+      "non_final_changes": 0,
+      "runs_total": 4,
+      "items_total_informational": 76,
+      "products_total": 47225,
+      "findings_total": 0,
+      "run_batch50_aa9b1df5": "completed",
+      "run_remediation_3afffd16": "completed",
+      "feature_flag_catalog_processing": false,
+      "healthz": 200
+    },
+    "zero_writes_proof": "Все pre-зарегистрированные счётчики идентичны post; extraction выполнялся в транзакции REPEATABLE READ READ ONLY (запись невозможна на уровне SQL); единственные staging-записи — артефакты в /app/logs/ (corpus, options export). items_total (76) снят только post — pre-значение в Stage 0 не регистрировалось; дрейф исключён неизменностью runs/changes/pav."
+  },
+  "deviations": [
+    {
+      "id": "DEVIATION-1",
+      "failure_ref": "F6",
+      "expected": "changes_total = 58 (56 applied + 2 rejected: batch-20 + batch-50 по истории сессии)",
+      "observed": "changes_total = 57 (applied 56 + rejected 1)",
+      "impact": "Отсутствует одна rejected-запись из ранее ожидавшихся двух. На corpus не влияет: extraction читает только status=applied (56/54 сошлось с baseline). Инфра-сбоем не является.",
+      "resolution": "Задокументировано как data finding; ACCEPTED пользователем как non-blocking data finding (Stage 7, 2026-07-21)."
+    },
+    {
+      "id": "DEVIATION-2",
+      "failure_ref": "taxonomy integrity (найдено при Stage 7 review)",
+      "observed": "tool_type options export: 328 строк, 327 уникальных slug; slug 'steplery' присутствует ДВАЖДЫ: 'Степлеры и заклёпочники' и 'Степлеры (скобозабивные)'. Следовательно, в БД существуют две записи AttributeOption с (attribute=tool_type, slug='steplery').",
+      "root_cause_local_code": "AttributeOption.Meta.unique_together = [(attribute, value)] — уникальность по (attribute, value), НЕ по (attribute, slug): дубль slug легален на уровне БД. Применение по slug: processing.py:328 и :581 используют AttributeOption.objects.filter(attribute=attr, slug=option_slug).first() БЕЗ order_by — выбор одной из двух записей недетерминирован контрактом (на практике min PK). rules_engine на slug-дубль не реагирует (validate_against_taxonomy работает со множеством slug).",
+      "impact": "На 11 текущих candidate-правил влияния НЕТ (ни одно не использует 'steplery'). Риск для будущих правил/apply по этому slug: неоднозначность option_id и отображаемого value.",
+      "resolution": "Зафиксировано как отдельное отклонение. Перед Phase 7B определить: PK/sort_order обеих записей, какую из них реально ссылаются PAV, канонический option, поведение importer/facets. ИСПРАВЛЕНИЕ taxonomy — отдельная операция, требует отдельной авторизации (изменение данных каталога)."
+    }
+  ],
+  "hash_registry": {
+    "note": "Разведение двух хэшей corpus (Stage 7 review, находка 5): значения различаются, потому что алгоритмы разные; оба зафиксированы явно.",
+    "artifact_content_hash": {
+      "value": "81c15c5fbcb94c61c0ec2ff9dce7c14d42f5325c9068756c6e32bef69e37361d",
+      "algorithm": "canonical_hash(doc БЕЗ volatile-поля extracted_at); источник content-addressed corpus_id; СТАБИЛЕН между прогонами (проверено run1==run2)",
+      "computed_by": "extraction script (scratchpad/phase7a/extract_corpus.py)"
+    },
+    "loader_corpus_hash": {
+      "value": "58566aef964b846d36fa644da7791c8a4fe0db79a9912dcdcaf0927191f752ce",
+      "algorithm": "canonical_hash(полный распарсенный dict, ВКЛЮЧАЯ extracted_at); fingerprint конкретного файла-артефакта; VOLATILE между прогонами (у run1 иное значение из-за extracted_at)",
+      "computed_by": "Command._replay (apps/catalog/management/commands/catalog_rules_shadow.py) — поле replay.corpus_hash, имя поля продакшн-кода, не переименовывалось"
+    },
+    "resolution": "Принято разделение имён (без code change): стабильный идентификатор — artifact_content_hash; replay-поле трактовать как loader_corpus_hash. corpus_id одинаковый у обоих прогонов, т.к. считается от content БЕЗ extracted_at."
+  },
+  "runs": {
+    "run1": {
+      "extracted_at_utc": "2026-07-21T20:03:42Z",
+      "duration_seconds": 6,
+      "corpus_id": "staging-tool-type-6ebb8ac9d856",
+      "corpus_hash": "81c15c5fbcb94c61c0ec2ff9dce7c14d42f5325c9068756c6e32bef69e37361d",
+      "sha256": "e3f234710d7842756d9e24821828e53a1016ee9fb58366d2e27df4bf262a10e4",
+      "counters": {
+        "raw_applied_changes": 56,
+        "distinct_products": 54,
+        "current_label_corpus": 54,
+        "historical_label_collisions": 2
+      },
+      "exclusions": []
+    },
+    "run2": {
+      "extracted_at_utc": "2026-07-21T20:04:20Z",
+      "duration_seconds": 6,
+      "corpus_id": "staging-tool-type-6ebb8ac9d856",
+      "corpus_hash": "81c15c5fbcb94c61c0ec2ff9dce7c14d42f5325c9068756c6e32bef69e37361d",
+      "sha256": "d5c0117e737db4b31149c237b60aebc7f02dbb0249da71e42089fb16703b0311",
+      "counters": {
+        "raw_applied_changes": 56,
+        "distinct_products": 54,
+        "current_label_corpus": 54,
+        "historical_label_collisions": 2
+      },
+      "exclusions": []
+    },
+    "idempotency": {
+      "byte_diff_lines_total": 2,
+      "byte_diff_lines_outside_extracted_at": 0,
+      "corpus_id_match": true,
+      "corpus_hash_match": true,
+      "verdict": "F9 closed: файлы идентичны вне единственной volatile-строки extracted_at"
+    },
+    "published_artifact": "scratchpad/phase7a/applied_corpus_tool_type.v1.json == run2 (sha256 d5c0117e..., 38160 bytes)"
+  },
+  "validation": {
+    "load_corpus": "accepted: 54 items, unique product_id, counters consistent, facts_hash пересчитаны без ошибок (F8 closed)",
+    "validation_seconds": 3,
+    "expected_recall_in_artifact": null
+  },
+  "taxonomy": {
+    "allowed_options_rows": 328,
+    "allowed_options_unique_slugs": 327,
+    "duplicate_slugs": ["steplery (2 записи: 'Степлеры и заклёпочники', 'Степлеры (скобозабивные)') — см. DEVIATION-2"],
+    "taxonomy_hash": "1100482c4c074499cf3950d902de84e1afe70c0e80b6ee363c777a4b7c1f5a9f",
+    "export_file": "scratchpad/phase7a/tool_type_options_export.json",
+    "validate_against_taxonomy": []
+  },
+  "performance_summary": {
+    "extraction_seconds_run1": 6,
+    "extraction_seconds_run2": 6,
+    "validation_seconds": 3,
+    "replay_seconds": 0.047,
+    "derivation_hours": 1.5,
+    "peak_ram_mb": 227.2,
+    "peak_ram_source": "docker stats --no-stream proff58_staging-web-1 (post-hoc снимок после extraction)",
+    "corpus_size_bytes": 38160
+  }
+}

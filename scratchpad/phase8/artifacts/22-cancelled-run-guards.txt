@@ -1,0 +1,16 @@
+### N8a: import в отменённый run
+CommandError: Run aa41cc90-ecac-410e-823a-66929c1fd2f8 не находится в status=running
+EXIT=1
+### N8b: export отменённого run
+CommandError: Run aa41cc90-ecac-410e-823a-66929c1fd2f8 в статусе cancelled, экспорт невозможен.
+EXIT=1
+### N8c: finalize отменённого run
+CommandError: Финализация невозможна: run_not_running:cancelled
+{
+  "run_id": "aa41cc90-ecac-410e-823a-66929c1fd2f8",
+  "status": "invalid",
+  "reason": "run_not_running:cancelled",
+  "already_finalized": false,
+  "outcome": ""
+}
+EXIT=1

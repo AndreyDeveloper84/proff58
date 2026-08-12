@@ -1,0 +1,7 @@
+ M apps/catalog/tests/fixtures/phase7d-gate-sample-official.json
+ M apps/catalog/tests/fixtures/phase7d-labels.json
+ M apps/catalog/tests/test_h5_canonical_downgrade_e2e.py
+ M apps/catalog/tests/test_rules_release.py
+ M apps/catalog/tests/test_taxonomy_manifest.py
+ M data/catalog_processing_rules/rules_release_manifest.v1.json
+ M data/catalog_processing_rules/tool_type_taxonomy.v1.json

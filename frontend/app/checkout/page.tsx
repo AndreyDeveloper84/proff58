@@ -16,6 +16,7 @@ import {
 } from "@/lib/delivery";
 import { formatPrice, formatSlotDay } from "@/lib/format";
 import { placeOrder, startOrderPayment } from "@/lib/orders";
+import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-methods";
 import {
   isLegalEntityInn,
   isValidEmail,
@@ -30,9 +31,8 @@ import { composeAddress, validateAddress } from "@/lib/delivery-address";
 
 type CustomerType = "b2c" | "b2b";
 type DeliveryMethod = "courier" | "pickup";
-// Способы оплаты заказа. Наличные и карта — только на выдаче в магазине;
-// доступность считает paymentOptions, авторитетно проверяет сервер.
-type PaymentMethod = "online" | "invoice" | "cash" | "card_on_pickup";
+// Способы оплаты и их названия — из lib/payment-methods (общий словарь витрины).
+// Доступность считает paymentOptions, авторитетно проверяет сервер.
 
 // #574: высота полей — как в дизайн-системе (components/ui/input.tsx): 44px на
 // мобильном (тач-таргет), компактнее на desktop. Раньше py-2 давал ~36px и все
@@ -101,14 +101,14 @@ export default function CheckoutPage() {
       return [
         {
           value: "invoice",
-          label: "Оплата по счёту",
+          label: PAYMENT_METHOD_LABELS.invoice,
           hint: "Счёт с реквизитами придёт на почту и будет доступен в кабинете",
         },
       ];
     }
     const online = {
       value: "online" as const,
-      label: "Онлайн-оплата",
+      label: PAYMENT_METHOD_LABELS.online,
       hint: "Банковской картой на сайте",
     };
     if (delivery !== "pickup") return [online];
@@ -116,12 +116,12 @@ export default function CheckoutPage() {
       online,
       {
         value: "cash" as const,
-        label: "Наличными при получении",
+        label: PAYMENT_METHOD_LABELS.cash,
         hint: "Оплата в магазине при выдаче заказа",
       },
       {
         value: "card_on_pickup" as const,
-        label: "Картой при получении",
+        label: PAYMENT_METHOD_LABELS.card_on_pickup,
         hint: "Банковской картой в магазине при выдаче",
       },
     ];

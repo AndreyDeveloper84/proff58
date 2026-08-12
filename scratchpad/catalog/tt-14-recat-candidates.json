@@ -1,0 +1,779 @@
+{
+  "task": "TT-14 candidates for recat (следующее окно; товары НЕ перенесены)",
+  "generated": "2026-07-31",
+  "source": "локальная dev БД; на стенде по step4: головок 108 (72 активных), воронок 21 (5 активных) — перед recat пересобрать на стенде",
+  "target_types": {
+    "bp-golovki-trimmernye": "Головки триммерные",
+    "hoz-voronki": "Воронки"
+  },
+  "counts_local": {
+    "golovki": 106,
+    "voronki": 21
+  },
+  "golovki_trimmernye": [
+    {
+      "product_id": 6741,
+      "original_name": "Головка триммерная HT41 CLS-5800,Stihl FS450,Hus 2",
+      "current_tool_type_slug": null,
+      "source_group": "Запасные части"
+    },
+    {
+      "product_id": 6742,
+      "original_name": "Головка триммерная АЛМАЗ DL 1201 10х1,25 левая",
+      "current_tool_type_slug": null,
+      "source_group": "Запасные части"
+    },
+    {
+      "product_id": 6743,
+      "original_name": "Головка триммерная с леской EASY LOAD для GGT.GET-1200. 1500. 1700",
+      "current_tool_type_slug": null,
+      "source_group": "Запасные части"
+    },
+    {
+      "product_id": 6744,
+      "original_name": "Головка триммерная с леской ETH-1000 для GGT.GET1000S",
+      "current_tool_type_slug": null,
+      "source_group": "Запасные части"
+    },
+    {
+      "product_id": 6745,
+      "original_name": "Головка триммерная с леской ETH-600 для GET600",
+      "current_tool_type_slug": null,
+      "source_group": "Запасные части"
+    },
+    {
+      "product_id": 26232,
+      "original_name": "Головка для триммера ПАУК с леской SKRAB",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26236,
+      "original_name": "Головка триммерная \"Tap&Go\" 2.4 мм, 725Ergo Oleo-M",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26237,
+      "original_name": "Головка триммерная DENZEL",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26238,
+      "original_name": "Головка триммерная DENZEL универсальная",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26240,
+      "original_name": "Головка триммерная HT20 CHAMPION М8*1,25 правая",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26241,
+      "original_name": "Головка триммерная HT24 CHAMPION крпелние клипса",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26242,
+      "original_name": "Головка триммерная HT28 CHAMPION (болт М6*1,00 правая)  Компактная ET1003",
+      "current_tool_type_slug": "krep-bolty",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26243,
+      "original_name": "Головка триммерная HT31 Быстрая загрузка+ 10х1,25 левая Т233-Т517,ЕТ1004 Champion",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26244,
+      "original_name": "Головка триммерная HT33 Быстрая загрузка+Повышенная прочность 10х1,25 леваяТ233-Т517,ЕТ1004 Champion",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26245,
+      "original_name": "Головка триммерная HT35 10х1,25 левая Т233-Т517,ЕТ1004 Champion",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26246,
+      "original_name": "Головка триммерная HT39 CHAMPION М10*1,0 левая Быстрая загрузка",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26247,
+      "original_name": "Головка триммерная HT40 CHAMPION М8*1,25 левая Повышенная прочность",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26248,
+      "original_name": "Головка триммерная HT41 CHAMPION М12*1,5+12[1.75 левая",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26249,
+      "original_name": "Головка триммерная HT43 CHAMPION М10*1,25 левая Быстрая загрузка",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26250,
+      "original_name": "Головка триммерная HT46 Champion М8х1,25 правая",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26251,
+      "original_name": "Головка триммерная HT56 Повышенная прочность Champion",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26252,
+      "original_name": "Головка триммерная HT57 Быстрая загрузка Champion М10х1,0 левая STIHL FS55",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26253,
+      "original_name": "Головка триммерная Husqvarna Трикат М-10",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26254,
+      "original_name": "Головка триммерная M10x1,25 левая (б/п) ETR1300A (",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26255,
+      "original_name": "Головка триммерная Oregon 559060 Pro Tap & Go 109мм",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26258,
+      "original_name": "Головка триммерная PATRIOT DL-1212 полуавтомат 10х1,25",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26259,
+      "original_name": "Головка триммерная PATRIOT DL-1214 полуавтомат 10х1,25",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26260,
+      "original_name": "Головка триммерная RedVerg",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26261,
+      "original_name": "Головка триммерная RedVerg",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26262,
+      "original_name": "Головка триммерная SKRAB М10 автомат",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26263,
+      "original_name": "Головка триммерная STIHL AutoCut 25-2",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26264,
+      "original_name": "Головка триммерная STIHL PolyCut для триммеров",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26265,
+      "original_name": "Головка триммерная stihl supercut 40-2",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26266,
+      "original_name": "Головка триммерная STURM BT925D-999 УНИВЕРСАЛЬНАЯ М8/10/12",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26267,
+      "original_name": "Головка триммерная STURM GT3513-25, М10х1,25",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26268,
+      "original_name": "Головка триммерная STURM GT3513-25E, М10х1,25 БЫСТРАЯ ЗАПРАВКА",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26269,
+      "original_name": "Головка триммерная STURM GT3513-35A М10х1,25 полуавтомат БЫСТРАЯ ЗАПРАВКА",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26270,
+      "original_name": "Головка триммерная STURM GT3513-35M12 М12х1,75",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26271,
+      "original_name": "Головка триммерная STURM GT3513-45 М10х1,25 БЫСТРАЯ ЗАПРАВКА",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26272,
+      "original_name": "Головка триммерная STURM GT3513-55 аналог ST FS55",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26273,
+      "original_name": "Головка триммерная STURM GT3513-65M усиленный корпус метал подшипник",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26274,
+      "original_name": "Головка триммерная STURM GT3513-65P усиленный корпус М10х1,25",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26275,
+      "original_name": "Головка триммерная STURM GT3513-66 М10х1,25 4 выхода лески",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26276,
+      "original_name": "Головка триммерная STURM GT3513M-23, ПАУК М8/10/12",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26277,
+      "original_name": "Головка триммерная STURM GT3513M-26 М10х1,25 ПАУК боковой",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26278,
+      "original_name": "Головка триммерная STURM GT3513P-69, М10х1,25 быстрая заправка прочный корпус",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26279,
+      "original_name": "Головка триммерная T25 M10",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26280,
+      "original_name": "Головка триммерная T25 М10 HUSQVARNA",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26281,
+      "original_name": "Головка триммерная T35 Universal",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26282,
+      "original_name": "Головка триммерная T35 М10",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26283,
+      "original_name": "Головка триммерная T35 М12",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26284,
+      "original_name": "Головка триммерная T35X M10",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26285,
+      "original_name": "Головка триммерная T45 М12 HUSQVARNA",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26286,
+      "original_name": "Головка триммерная TH 52 PRO-MET (М10*1,25 левая)",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26287,
+      "original_name": "Головка триммерная Z5 ECHO",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26288,
+      "original_name": "Головка триммерная автомат Makita д/DBC250/291-BCM",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26289,
+      "original_name": "Головка триммерная гайка 8*1,25 TORGWIN 18C",
+      "current_tool_type_slug": "krep-gaiki",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26290,
+      "original_name": "Головка триммерная гайка 8*1,25 левая Denzel",
+      "current_tool_type_slug": "krep-gaiki",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26291,
+      "original_name": "Головка триммерная для MTD 710",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26292,
+      "original_name": "Головка триммерная М10х1,25 с облегченной заправко",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26293,
+      "original_name": "Головка триммерная Мастер (М10; шаг 1.25; левая резьба) для триммера Gigant GT-104",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26294,
+      "original_name": "Головка триммерная металлическая бочка ON",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26295,
+      "original_name": "Головка триммерная полуавтоматическая DL-1211 (807",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26296,
+      "original_name": "Головка триммерная полуавтоматическая DL-1212 (807",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26297,
+      "original_name": "Головка триммерная с леской  универсальная ПАУК",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26298,
+      "original_name": "Головка триммерная с леской AutoCut C25-2 Stihl гайка М10x1.25 левая резьба TORGWIN",
+      "current_tool_type_slug": "krep-gaiki",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26299,
+      "original_name": "Головка триммерная с леской BF-4; 109 MM M8X1.25",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26300,
+      "original_name": "Головка триммерная с леской BF-5 M10-NUT + 6Q2-1 (",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26301,
+      "original_name": "Головка триммерная с леской GTH для GGTи GET-1200S",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26302,
+      "original_name": "Головка триммерная с леской LH М10х1,25 + болт М8х",
+      "current_tool_type_slug": "krep-bolty",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26303,
+      "original_name": "Головка триммерная с леской №1 10*1,25 аналог HUSQUARNA 125",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26304,
+      "original_name": "Головка триммерная с леской №10  гайка 6х1,0 , адаптер 6х1,25,8х1,25, 8х1,25LH",
+      "current_tool_type_slug": "krep-gaiki",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26305,
+      "original_name": "Головка триммерная с леской №14 аналог Husqvarna S35, гайка 10х1,25LH",
+      "current_tool_type_slug": "krep-gaiki",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26306,
+      "original_name": "Головка триммерная с леской №19 SEB аналог HITACHI BF-5 М10х1,25LH",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26307,
+      "original_name": "Головка триммерная с леской №19 TORGWIN аналог HITACHI BF-5 М10х1,25LH",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26308,
+      "original_name": "Головка триммерная с леской №2 болт 8ю1,25LH",
+      "current_tool_type_slug": "krep-bolty",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26309,
+      "original_name": "Головка триммерная с леской №20, 10х1,25 аналог OLEO-MAC",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26310,
+      "original_name": "Головка триммерная с леской №23 универсальная",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26311,
+      "original_name": "Головка триммерная с леской №26 ПАУК",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26312,
+      "original_name": "Головка триммерная с леской №30 10х125 быстрая замена",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26313,
+      "original_name": "Головка триммерная с леской №32 ПАУК",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26314,
+      "original_name": "Головка триммерная с леской №33 универсальная цепная",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26315,
+      "original_name": "Головка триммерная с леской №34 10х125 аналог HUSQUARNA Т25",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26316,
+      "original_name": "Головка триммерная с леской №35 10х125 аналог HUSQUARNA S35",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26317,
+      "original_name": "Головка триммерная с леской №38 TORGWIN (быстрая замена лески) М10х1,25 Lh",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26318,
+      "original_name": "Головка триммерная с леской №5 болт 8ю1,25LH, адаптер М10х1,25",
+      "current_tool_type_slug": "krep-bolty",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26319,
+      "original_name": "Головка триммерная с леской №7 10х125 аналог HUSQUARNA Т25",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26320,
+      "original_name": "Головка триммерная с леской №7 10х125 аналог HUSQUARNA Т25 адаптеры 8х1,25, 10х1,25",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26321,
+      "original_name": "Головка триммерная с леской №7В 10х1,25 аналог Husqvarna S35",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26322,
+      "original_name": "Головка триммерная с леской №7С аналог Husqvarna S45, гайка 10х1,25LH",
+      "current_tool_type_slug": "krep-gaiki",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26323,
+      "original_name": "Головка триммерная с леской SEB 8х1,25мм",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26324,
+      "original_name": "Головка триммерная с леской TORGWIN 9 (быстрая замена лески) М10х1,25/М8х1,25",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26325,
+      "original_name": "Головка триммерная с леской Z-5, 130 мм, М8х1,25 н",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26326,
+      "original_name": "Головка триммерная с леской для триммеров BF-4 M8x",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26327,
+      "original_name": "Головка триммерная с леской ЗУБР посадка 6мм",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26328,
+      "original_name": "Головка триммерная с леской полуавтоматическая 109",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26329,
+      "original_name": "Головка триммерная с леской; 109мм, М10х1,25 налево OLD 6684755/6696454/791106/6695777",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26330,
+      "original_name": "Головка триммерная с леской; CG31EBS/CG40EAS/CG40EAF,130 мм, М10х1,25LH, (OLD 6695784/790321)",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26331,
+      "original_name": "Головка триммерная с леской; CG40EY-TP/CG40EA-TP/C",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26332,
+      "original_name": "Головка триммерная С5123 НТ33 Champion",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26333,
+      "original_name": "Головка триммерная серия WIND Wind 1 безразборная",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 26334,
+      "original_name": "Головка триммерная Т25, M10 L, полуавтоматическая,",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 28157,
+      "original_name": "яяГоловка триммерная НТ35 Champion М10х1,25 левая",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 28158,
+      "original_name": "яяГоловка триммерная с леской; BF-4; для бензокос",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 28159,
+      "original_name": "яяГоловка триммерная с леской; BF-4; для бензокос",
+      "current_tool_type_slug": "prochaya-osnastka",
+      "source_group": "Оснастка"
+    },
+    {
+      "product_id": 38680,
+      "original_name": "Замена головки триммерной",
+      "current_tool_type_slug": null,
+      "source_group": "Услуги"
+    }
+  ],
+  "voronki": [
+    {
+      "product_id": 11,
+      "original_name": "Ареометр универсальный KRAFT электролит+тосол, в пластиковой тубе с воронкой KT",
+      "current_tool_type_slug": null,
+      "source_group": "Автомобильный инструмент"
+    },
+    {
+      "product_id": 6170,
+      "original_name": "Фильтр-воронка для краски, 190 мкр REMIX",
+      "current_tool_type_slug": null,
+      "source_group": "Герметики, пены, клеи и пр отделочные материалы"
+    },
+    {
+      "product_id": 11056,
+      "original_name": "Мундштук-воронка к алкотестеру Динго Е-200",
+      "current_tool_type_slug": "svar-sopla",
+      "source_group": "Измерительный инструмент"
+    },
+    {
+      "product_id": 35608,
+      "original_name": "Воронка GROZ пластиковая 1,7л",
+      "current_tool_type_slug": null,
+      "source_group": "Смазочное оборудование"
+    },
+    {
+      "product_id": 38368,
+      "original_name": "Конус КА (Абрамса) с воронкой для определения подв",
+      "current_tool_type_slug": null,
+      "source_group": "Строительное оборудование"
+    },
+    {
+      "product_id": 39279,
+      "original_name": "Воронка  80мм",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39280,
+      "original_name": "Воронка 100мм",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39281,
+      "original_name": "Воронка 160мм г. Самара",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39282,
+      "original_name": "Воронка 160мм с гибким носиком Inforce",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39283,
+      "original_name": "Воронка d200, 3,2литра из белой жести",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39284,
+      "original_name": "Воронка автомобильная пластиковая 135мм с гофр шла",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39285,
+      "original_name": "Воронка автомобильная пластиковая 160мм",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39286,
+      "original_name": "Воронка бытовая",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39287,
+      "original_name": "Воронка металлическая с гибким наконечником 370мм",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39288,
+      "original_name": "Воронка металлическая с гибким наконечником 630мм",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39289,
+      "original_name": "Воронка пластиковая с сетчатым фильтром 160 мм // Stels",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39290,
+      "original_name": "Воронка разборная с гибкой ножкой,с сеточкой",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39291,
+      "original_name": "Воронка техническая",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 39292,
+      "original_name": "Воронка, пластик, 19*16см FIT  РОС",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 40109,
+      "original_name": "Колпак к воронке ВР-100",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    },
+    {
+      "product_id": 40354,
+      "original_name": "Крышка к колпаку воронки ВР-100",
+      "current_tool_type_slug": null,
+      "source_group": "Хозтовары, сад, огород"
+    }
+  ]
+}

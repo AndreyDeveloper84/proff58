@@ -1,0 +1,92 @@
+=== 5.3 CONTROLS (main report) ===
+  OK  ruleset_hash = 9bf0271a61e729a900cda57705bdf785b96496efc462448894b27650a04bf330
+  OK  taxonomy_hash = b357be604801197e33182b84fde1755361e29653d98bd49429623b3ba604326b
+  OK  input_universe_hash = 82536a4698688c927f6decd35787d1bb0d3deb8f3c298f698f9bf6387b749db8
+  OK  pool.size = 1593
+  OK  pool.rewrite_attempts = 0
+  OK  counts.collisions = 0
+  OK  len(collisions list) = 0
+  OK  counts.predictions = 325
+  OK  len(predictions) = 325
+  OK  args.skip_corpus_overlap_check = False
+  OK  snapshot_isolation = repeatable_read_read_only
+  corpus_overlap_checked = true (derived: skip_corpus_overlap_check=false, corpus set, exit 0, fail-closed design)
+  counts: {'collisions': 0, 'excluded_existing_tool_type': 18123, 'no_match': 1268, 'predictions': 325, 'regression_tier_collisions': 0, 'regression_tier_hits': 0}
+  pool: {'excluded_existing_tool_type': 18123, 'name': 'all', 'rewrite_attempts': 0, 'size': 1593, 'typed_eligible_universe': 18123}
+  CONTROLS: ALL OK
+  duration_seconds main = 2.129, replay = 1.756
+=== 5.4 REPLAY DETERMINISM ===
+  normalized full report diff: EMPTY
+  gate sample byte sha256: main=9243ba6f5ef59c80… replay=9243ba6f5ef59c80… equal=True
+  gate sample canonical hash: main=a01ca546daf2d396… replay=a01ca546daf2d396… equal=True
+  counts equal: True
+  predictions list equal (ordered): True
+  per_rule counters (raw/prediction/collision/same_slug_multi) all equal: True (38 rules)
+=== 5.5 V1 REGRESSION (63 predictions) ===
+  v1 predictions: 63; present in v2: 63
+  missing: none
+  slug changed: none
+  REGRESSION: 63/63 OK
+  total_v2 unique product_ids = 325; new_independent = 262
+=== 5.6 PER-RULE TABLE (38 rules, main run) ===
+  rule_ref                                       raw pred coll ssm  tier
+  tt-obor-nasosy-nasos                            30   30    0   0  candidate
+  tt-hoz-izolenta-izolenta                        27   27    0   0  candidate
+  tt-krep-takelazh-styazhka                       27   27    0   0  candidate
+  tt-lomy-gvozdodery-lom                          20   20    0   0  candidate
+  tt-bp-gazonokosilki-gazonokosilka               18   18    0   0  candidate
+  tt-dinamometricheskie-klyuchi-klyuch            16   16    0   0  candidate
+  tt-payalniki-elektro                            15   15    0   0  candidate
+  tt-siz-ochki-shitok                             15   15    0  10  candidate
+  tt-yashchiki-sumki-keys-prochee                 13   13    0   0  candidate
+  tt-fonari-akkum                                 12   12    0   0  candidate
+  tt-siz-ochki-zashchitnye                        11   11    0  10  candidate
+  tt-bp-kompressory-avto                          10   10    0   0  candidate
+  tt-raskhodniki-pajki-pripoy                     10   10    0   0  candidate
+  tt-svar-apparaty-truby                          10   10    0   0  candidate
+  tt-nabory-instrumenta-zvezdochki                 9    9    0   0  candidate
+  tt-sterzhni-kleevye-kleevye                      8    8    0   0  candidate
+  tt-bp-trimmery-akkum                             7    7    0   0  candidate
+  tt-izm-ruletki-mernaya-lenta                     6    6    0   0  candidate
+  tt-passatizhi-tonkonosy                          6    6    0   0  candidate
+  tt-bp-podgotovka-vozduha-vlagootdelitel          5    5    0   0  candidate
+  tt-obor-pena-shampun                             5    5    0   0  candidate
+  tt-svar-reduktory-regulyator                     5    5    0   0  candidate
+  tt-zap-svechi-zazhiganiya                        5    5    0   0  candidate
+  tt-adaptery-universal                            4    4    0   0  candidate
+  tt-bp-pnevmosteplery-gvozde                      4    4    0   0  candidate
+  tt-bp-vozdukhoduvki-akkum                        4    4    0   0  candidate
+  tt-izm-kolesa-dorozhnoe                          4    4    0   0  candidate
+  tt-obor-mebel-verstak                            4    4    0   0  candidate
+  tt-yashchiki-sumki-benzopila                     4    4    0   0  candidate
+  tt-hoz-lenty-malyarnaya                          3    3    0   0  candidate
+  tt-siz-izveshchateli-gromkogovoritel             3    3    0   0  candidate
+  tt-siz-pozh-inventar-polotno                     3    3    0   0  candidate
+  tt-sumki-poyasnye-podsumok                       3    3    0   0  candidate
+  tt-izm-shtativy-derzhatel                        2    2    0   0  candidate
+  tt-kobury-dlya-instrumenta-kobura                2    2    0   0  candidate
+  tt-krep-shplinty-nabor                           2    2    0   0  candidate
+  tt-puskovye-provoda-startovye                    2    2    0   0  candidate
+  tt-nabory-instrumenta-dielektr                   1    1    0   0  candidate
+=== MONITORING RULES ===
+  tt-svar-apparaty-truby: raw=10 pred=10 coll=0 ssm=0 ids=[43680, 43682, 43689, 43691, 43692, 43693, 43696, 43697, 43698, 43699]
+  tt-bp-vozdukhoduvki-akkum: raw=4 pred=4 coll=0 ssm=0 ids=[422, 423, 424, 425]
+  tt-obor-mebel-verstak: raw=4 pred=4 coll=0 ssm=0 ids=[31973, 31974, 31975, 31976]
+  tt-izm-kolesa-dorozhnoe: raw=4 pred=4 coll=0 ssm=0 ids=[10807, 10808, 10810, 10811]
+  tt-yashchiki-sumki-benzopila: raw=4 pred=4 coll=0 ssm=0 ids=[1856, 1857, 1858, 1859]
+  tt-siz-pozh-inventar-polotno: raw=3 pred=3 coll=0 ssm=0 ids=[29733, 29734, 29735]
+  tt-siz-izveshchateli-gromkogovoritel: raw=3 pred=3 coll=0 ssm=0 ids=[29557, 29558, 29559]
+  tt-siz-ochki-shitok: raw=15 pred=15 coll=0 ssm=10 ids=[36299, 36301, 36303, 36305, 36306, 36307, 36308, 36309, 36310, 36311, 36877, 36881, 36882, 36887, 36888]
+=== SAME-SLUG MULTI-MATCH ===
+  predictions with >1 rule_refs: 10
+   product_id=36299 slug=siz-ochki refs=['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye']
+   product_id=36301 slug=siz-ochki refs=['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye']
+   product_id=36303 slug=siz-ochki refs=['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye']
+   product_id=36305 slug=siz-ochki refs=['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye']
+   product_id=36306 slug=siz-ochki refs=['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye']
+   product_id=36307 slug=siz-ochki refs=['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye']
+   product_id=36308 slug=siz-ochki refs=['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye']
+   product_id=36309 slug=siz-ochki refs=['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye']
+   product_id=36310 slug=siz-ochki refs=['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye']
+   product_id=36311 slug=siz-ochki refs=['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye']
+  products with >1 distinct slugs (would be collision): none

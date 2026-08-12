@@ -1,0 +1,1933 @@
+{
+  "category": "perforatory",
+  "dry_run": true,
+  "cards_total": 61,
+  "matched": [
+    {
+      "source": "interskol",
+      "card": "П-32/1100АВС",
+      "product_id": 44507,
+      "product": "Перф. ИНТЕРСКОЛ П-32/1100АВС",
+      "model_key": "p321100avs",
+      "article": null
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор Ресанта П-28-800К",
+      "product_id": 44542,
+      "product": "Перф.РЕСАНТА П-28-800К",
+      "model_key": "p28800k",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор Ресанта П-30-900К",
+      "product_id": 44543,
+      "product": "Перф.РЕСАНТА П-30-900к",
+      "model_key": "p30900k",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор Ресанта П-32-1000К",
+      "product_id": 44544,
+      "product": "Перф.РЕСАНТА П-32-1000к SDS+ 1000 Вт, 5,5 Дж",
+      "model_key": "p321000k",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор Ресанта П-32-1400КВ",
+      "product_id": 44545,
+      "product": "Перф.РЕСАНТА П-32-1400КВ",
+      "model_key": "p321400kv",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор Ресанта П-40-1600КМ SDS-Max",
+      "product_id": 44546,
+      "product": "Перф.РЕСАНТА П-40-1600КМ SDS-MAX",
+      "model_key": "p401600km",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор Ресанта П-42-2000КМ SDS-Max",
+      "product_id": 44547,
+      "product": "Перф.РЕСАНТА П-42-2000КМ SDS-MAX 2000Вт 13Дж",
+      "model_key": "p422000km",
+      "article": "confirmed"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-1400К-В",
+      "product_id": 44509,
+      "product": "Перф. П-1400 к-в 72/3/8 ВИХРЬ",
+      "model_key": "p1400kv",
+      "article": null
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-650К",
+      "product_id": 44503,
+      "product": "Перф. ВИХРЬ П-650к",
+      "model_key": "p650k",
+      "article": "confirmed"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-800К",
+      "product_id": 44514,
+      "product": "Перф. П-800к 72/3/6 ВИХРЬ",
+      "model_key": "p800k",
+      "article": null
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-900К",
+      "product_id": 44505,
+      "product": "Перф. ВИХРЬ П-900к",
+      "model_key": "p900k",
+      "article": null
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus с металлическим редуктором ЗП-28-800 К",
+      "product_id": 44525,
+      "product": "Перф.ЗУБР ЗП-28-800 К, SDS+, реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "model_key": "zp28800k",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus с металлическим редуктором ЗП-28-800 КМ",
+      "product_id": 44526,
+      "product": "Перф.ЗУБР ЗП-28-800 КМ, SDS+, + БЗП реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "model_key": "zp28800km",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus с металлическим редуктором ЗП-2890 мс",
+      "product_id": 44528,
+      "product": "Перф.ЗУБР ЗП-2890мс, SDS+, реверс, 900Вт, 3,2Дж, 3режима + патрон БЗП ПРОФЕССИОНАЛ",
+      "model_key": "zp2890ms",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus с металлическим редуктором ЗП-30-900 К",
+      "product_id": 44529,
+      "product": "Перф.ЗУБР ЗП-30-900 К, SDS+, реверс, 900Вт, ПРОФЕССИОНАЛ",
+      "model_key": "zp30900k",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus с металлическим редуктором ЗП-32-1100 К",
+      "product_id": 44530,
+      "product": "Перф.ЗУБР ЗП-32-1100 К, SDS+, реверс, 1100Вт, ПРОФЕССИОНАЛ",
+      "model_key": "zp321100k",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus ЗП-2470",
+      "product_id": 44522,
+      "product": "Перф.ЗУБР ЗП-2470, SDS+, реверс, 780Вт, 2.7Дж, 3режима ПРОФЕССИОНАЛ",
+      "model_key": "zp2470",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus ЗП-2680",
+      "product_id": 44524,
+      "product": "Перф.ЗУБР ЗП-2680, SDS+, реверс, 850Вт, 2.9Дж, 3режима ПРОФЕССИОНАЛ",
+      "model_key": "zp2680",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus П-22-650",
+      "product_id": 44538,
+      "product": "Перф.ЗУБР П-22-650, SDS+, реверс, 650Вт,",
+      "model_key": "p22650",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus П-26-800",
+      "product_id": 44540,
+      "product": "Перф.ЗУБР П-26-800, SDS+, реверс, 800Вт, 3Дж",
+      "model_key": "p26800",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus П-24-750",
+      "product_id": 44539,
+      "product": "Перф.ЗУБР П-24-750, SDS+, реверс, 750Вт,",
+      "model_key": "p24750",
+      "article": "confirmed"
+    }
+  ],
+  "ambiguous": [
+    {
+      "source": "interskol",
+      "card": "П-26/800ЭР",
+      "model_key": "p26800er",
+      "candidates": [
+        {
+          "id": 44511,
+          "name": "Перф. П-26/800ЭР-2 (кейс) \"Интерскол\""
+        },
+        {
+          "id": 44510,
+          "name": "Перф. П-26/800ЭР (кейс) \"Интерскол\""
+        }
+      ]
+    },
+    {
+      "source": "interskol",
+      "card": "П-30/900ЭР",
+      "model_key": "p30900er",
+      "candidates": [
+        {
+          "id": 44513,
+          "name": "Перф. П-30/900ЭР-2  (кейс) \"Интерскол\""
+        },
+        {
+          "id": 44512,
+          "name": "Перф. П-30/900ЭР (кейс) \"Интерскол\""
+        }
+      ]
+    },
+    {
+      "source": "interskol",
+      "card": "П-26/800ЭР-2 Interskol",
+      "model_key": "p26800er",
+      "candidates": [
+        {
+          "id": 44511,
+          "name": "Перф. П-26/800ЭР-2 (кейс) \"Интерскол\""
+        },
+        {
+          "id": 44510,
+          "name": "Перф. П-26/800ЭР (кейс) \"Интерскол\""
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-1000К",
+      "model_key": "p1000k",
+      "candidates": [
+        {
+          "id": 44502,
+          "name": "Перф. ВИХРЬ П-1000к"
+        },
+        {
+          "id": 44550,
+          "name": "Перфоратор П-1000К Вихрь"
+        }
+      ]
+    },
+    {
+      "reason": "многие к одному: несколько карточек -> один товар",
+      "product_id": 44506,
+      "product": "Перф. ИНТЕРСКОЛ П-24/700ЭР (кейс)",
+      "cards": [
+        "П-24/700ЭР",
+        "П-24/700ЭР-2 Interskol"
+      ]
+    }
+  ],
+  "not_found": [
+    {
+      "source": "interskol",
+      "card": "П-40/1100ЭВ",
+      "model_key": "p401100ev",
+      "url": "https://www.interskol.ru/product/perforator-sds-max-interskol-p-40-1100ev-interskol"
+    },
+    {
+      "source": "interskol",
+      "card": "П-18/450ЭР",
+      "model_key": "p18450er",
+      "url": "https://www.interskol.ru/product/perforator-sds-plus-interskol-p-18-450er-interskol"
+    },
+    {
+      "source": "interskol",
+      "card": "П-22/620ЭР",
+      "model_key": "p22620er",
+      "url": "https://www.interskol.ru/product/perforator-sds-plus-interskol-p-22-620er-interskol"
+    },
+    {
+      "source": "interskol",
+      "card": "П-23/650ЭР",
+      "model_key": "p23650er",
+      "url": "https://www.interskol.ru/product/perforator-sds-plus-interskol-p-23-650er"
+    },
+    {
+      "source": "interskol",
+      "card": "П-24/700АВС",
+      "model_key": "p24700avs",
+      "url": "https://www.interskol.ru/product/perforator-sds-plus-interskol-p-24-700avs"
+    },
+    {
+      "source": "interskol",
+      "card": "П-28/850ЭР",
+      "model_key": "p28850er",
+      "url": "https://www.interskol.ru/product/perforator-sds-plus-interskol-p-28-850er"
+    },
+    {
+      "source": "interskol",
+      "card": "П-32/1000Э",
+      "model_key": "p321000e",
+      "url": "https://www.interskol.ru/product/perforator-sds-plus-interskol-p-32-1000ee-interskol"
+    },
+    {
+      "source": "interskol",
+      "card": "П-35/1100Э Interskol",
+      "model_key": "p351100e",
+      "url": "https://www.interskol.ru/product/perforator-sds-max-interskol-p-35-1100e-interskol"
+    },
+    {
+      "source": "interskol",
+      "card": "П-35/1100ЭВ-2 Interskol",
+      "model_key": "p351100ev",
+      "url": "https://www.interskol.ru/product/perforator-sds-max-interskol-p-35-1100ev-2-interskol"
+    },
+    {
+      "source": "interskol",
+      "card": "П-40/1100ЭВ-2 Interskol",
+      "model_key": "p401100ev",
+      "url": "https://www.interskol.ru/product/perforator-sds-max-interskol-p-40-1100ev-2-interskol"
+    },
+    {
+      "source": "interskol",
+      "card": "П-45/1000Э Interskol",
+      "model_key": "p451000e",
+      "url": "https://www.interskol.ru/product/perforator-sds-max-interskol-p-45-1000e-interskol"
+    },
+    {
+      "source": "interskol",
+      "card": "П-48/1300ЭВ-2 Interskol",
+      "model_key": "p481300ev",
+      "url": "https://www.interskol.ru/product/perforator-sds-max-interskol-p-48-1300ev-2-interskol"
+    },
+    {
+      "source": "interskol",
+      "card": "П-50/1200Э Interskol",
+      "model_key": "p501200e",
+      "url": "https://www.interskol.ru/product/perforator-sds-max-interskol-p-50-1200e-interskol"
+    },
+    {
+      "source": "interskol",
+      "card": "П-26/750ЭВ Interskol",
+      "model_key": "p26750ev",
+      "url": "https://www.interskol.ru/product/perforator-sds-plus-interskol-p-26-750ev-interskol"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор Ресанта П-24-650К",
+      "model_key": "p24650k",
+      "url": "https://resanta.ru/perforator-p-24-650k-resanta/"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор Ресанта П-800-3,4А",
+      "model_key": "p80034a",
+      "url": "https://resanta.ru/perforator-resanta-p-800-3-4a/"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор аккумуляторный Ресанта АП-20Li/4",
+      "model_key": null,
+      "url": "https://resanta.ru/perforator-akkumulyatornyy-ap-20li-4-v-komplekte-2-akb-i-zu-v-keyse-resanta/"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-1600К-М SDS-Max",
+      "model_key": "p1600km",
+      "url": "https://vihr.su/perforator-vihr-p-1200k-m/"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-750",
+      "model_key": "p750",
+      "url": "https://vihr.su/perforator-vihr-p-750/"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-850К",
+      "model_key": "p850k",
+      "url": "https://vihr.su/perforator-vikhr-p-850k/"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-5А-1000",
+      "model_key": "p5a1000",
+      "url": "https://vihr.su/perforator-vikhr-p-5a-1000/"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-2000К-М SDS-Max",
+      "model_key": "p2000km",
+      "url": "https://vihr.su/perforator-p-2000k-m-sds-max-vikhr/"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор аккумуляторный Вихрь АП-20Li/4",
+      "model_key": null,
+      "url": "https://vihr.su/perforator-akkumulyatornyy-ap-20li-4-v-komplekte-2-akb-i-zu-v-keyse-vikhr/"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор П-1350К Вихрь",
+      "model_key": "p1350k",
+      "url": "https://vihr.su/perforator-p-1350k-vikhr/"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus с металлическим редуктором ЗП-2890 м",
+      "model_key": "zp2890m",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/perforator-sds-plus-s-metallicheskim-reduktorom/zp-2890-m-4l0a/?ID=1088910"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus с металлическим редуктором П-30-950 М",
+      "model_key": "p30950m",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/perforator-sds-plus-s-metallicheskim-reduktorom/p-30-950-m-4l0e/?ID=1096569"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus с металлическим редуктором П-32-1200 М",
+      "model_key": "p321200m",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/perforator-sds-plus-s-metallicheskim-reduktorom/p-32-1200-m-4l0f/?ID=1093178"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus ЗП-18-470",
+      "model_key": "zp18470",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/perforatory-sds-plus/zp-18-470-2akn/?ID=515623"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus ЗП-22-650 К",
+      "model_key": "zp22650k",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/perforatory-sds-plus/zp-22-650-k-2ako/?ID=515625"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus ЗП-24-750 К",
+      "model_key": "zp24750k",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/perforatory-sds-plus/zp-24-750-k-2akp/?ID=515627"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus ЗП-26-800 К",
+      "model_key": "zp26800k",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/perforatory-sds-plus/zp-26-800-k-2akq/?ID=515631"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus П-28-850",
+      "model_key": "p28850",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/perforatory-sds-plus/p-28-850-4l0d/?ID=1089031"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus ЗП-26-750 ЭК",
+      "model_key": "zp26750ek",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/perforatory-sds-plus/zp-26-750-ek-34h4/?ID=515629"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus ЗПВ-30-900 ВК",
+      "model_key": "zpv30900vk",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/perforatory/perforatory-sds-plus/zpv-30-900-vk-2al2/?ID=515655"
+    }
+  ],
+  "fuzzy_suggestions": [
+    {
+      "source": "resanta",
+      "card": "Перфоратор Ресанта П-24-650К",
+      "candidates": [
+        {
+          "id": 44542,
+          "name": "Перф.РЕСАНТА П-28-800К",
+          "similarity": 0.429
+        }
+      ]
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор Ресанта П-800-3,4А",
+      "candidates": [
+        {
+          "id": 44542,
+          "name": "Перф.РЕСАНТА П-28-800К",
+          "similarity": 0.457
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-1600К-М SDS-Max",
+      "candidates": [
+        {
+          "id": 44550,
+          "name": "Перфоратор П-1000К Вихрь",
+          "similarity": 0.568
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-750",
+      "candidates": [
+        {
+          "id": 44550,
+          "name": "Перфоратор П-1000К Вихрь",
+          "similarity": 0.643
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-850К",
+      "candidates": [
+        {
+          "id": 44550,
+          "name": "Перфоратор П-1000К Вихрь",
+          "similarity": 0.679
+        },
+        {
+          "id": 44503,
+          "name": "Перф. ВИХРЬ П-650к",
+          "similarity": 0.481
+        },
+        {
+          "id": 44504,
+          "name": "Перф. ВИХРЬ П-800к-в",
+          "similarity": 0.464
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-5А-1000",
+      "candidates": [
+        {
+          "id": 44550,
+          "name": "Перфоратор П-1000К Вихрь",
+          "similarity": 0.786
+        },
+        {
+          "id": 44502,
+          "name": "Перф. ВИХРЬ П-1000к",
+          "similarity": 0.517
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-2000К-М SDS-Max",
+      "candidates": [
+        {
+          "id": 44550,
+          "name": "Перфоратор П-1000К Вихрь",
+          "similarity": 0.568
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор П-1350К Вихрь",
+      "candidates": [
+        {
+          "id": 44550,
+          "name": "Перфоратор П-1000К Вихрь",
+          "similarity": 0.714
+        },
+        {
+          "id": 44503,
+          "name": "Перф. ВИХРЬ П-650к",
+          "similarity": 0.464
+        },
+        {
+          "id": 44502,
+          "name": "Перф. ВИХРЬ П-1000к",
+          "similarity": 0.448
+        }
+      ]
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus ЗП-24-750 К",
+      "candidates": [
+        {
+          "id": 44518,
+          "name": "Перф.ЗУБР 750 Вт, 26 мм,  SDS Plus",
+          "similarity": 0.422
+        }
+      ]
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus ЗП-26-750 ЭК",
+      "candidates": [
+        {
+          "id": 44518,
+          "name": "Перф.ЗУБР 750 Вт, 26 мм,  SDS Plus",
+          "similarity": 0.477
+        }
+      ]
+    }
+  ],
+  "unmapped_attributes": {
+    "Вес, кг": 31,
+    "Количество режимов": 30,
+    "Предохранительная муфта": 30,
+    "Виброзащита": 29,
+    "Регулировка частоты вращения": 29,
+    "Длина кабеля, м": 28,
+    "Частота ударов, уд/мин": 22,
+    "Режим сверления с ударом": 21,
+    "Макс. диаметр бурения (бетон), мм": 20,
+    "Макс. диаметр сверления (дерево), мм": 20,
+    "Макс. диаметр сверления (сталь), мм": 20,
+    "Режимы работы": 20,
+    "Сменный патрон": 20,
+    "Регулировка частоты вращения/ударов": 20,
+    "Регулировка углового положения долота": 20,
+    "Поддержание оборотов под нагрузкой": 20,
+    "Масса изделия, кг": 20,
+    "Масса в упаковке, кг": 20,
+    "Режим сверления": 19,
+    "Настройка углового положения инструмента": 19,
+    "Максимальный диаметр сверления: сталь/бетон/дерево, мм": 18,
+    "Режим удара": 18,
+    "Макс. диаметр бурения коронкой (бетон), мм": 18,
+    "Частота ударов при ударно-вращательном режиме, уд/мин": 17,
+    "Режим реверса": 15,
+    "Реверс": 11,
+    "Частота ударов на холостом ходу, уд/мин": 10,
+    "Наличие режима долбления": 10,
+    "Режим Vario-lock": 10,
+    "Max диаметр сверления буром (бетон), мм": 9,
+    "Max диаметр сверления буром (кирпич), мм": 9,
+    "Перфоратор с вертикальным двигателем (бочка)": 9,
+    "Max диаметр сверления коронкой (кирпич), мм": 8,
+    "Сверлильный патрон в комплекте": 8,
+    "Мах диаметр сверления (дерево), мм": 8,
+    "Max диаметр сверления (металл), мм": 8,
+    "Антивибрационная система": 8,
+    "Макс. диаметр сверления (бетон), мм": 2,
+    "Масса": 1,
+    "Частота ударов": 1,
+    "Диаметр сверления в бетоне": 1,
+    "Диаметр сверления в стали": 1,
+    "Диаметр сверления в древесине": 1,
+    "Буровой коронкой в кирпиче": 1,
+    "Предустановка углового положения ударного инструмента": 1,
+    "Антивибрация": 1,
+    "Длина сетевого шнура питания": 1,
+    "Съемный ключевой патрон": 1
+  },
+  "created": [],
+  "overwritten": [],
+  "skipped_priority": [],
+  "skipped_voltage": [
+    {
+      "product_id": 44542,
+      "product": "Перф.РЕСАНТА П-28-800К",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44543,
+      "product": "Перф.РЕСАНТА П-30-900к",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44544,
+      "product": "Перф.РЕСАНТА П-32-1000к SDS+ 1000 Вт, 5,5 Дж",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44545,
+      "product": "Перф.РЕСАНТА П-32-1400КВ",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44546,
+      "product": "Перф.РЕСАНТА П-40-1600КМ SDS-MAX",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44547,
+      "product": "Перф.РЕСАНТА П-42-2000КМ SDS-MAX 2000Вт 13Дж",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44509,
+      "product": "Перф. П-1400 к-в 72/3/8 ВИХРЬ",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44503,
+      "product": "Перф. ВИХРЬ П-650к",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44514,
+      "product": "Перф. П-800к 72/3/6 ВИХРЬ",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44505,
+      "product": "Перф. ВИХРЬ П-900к",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44525,
+      "product": "Перф.ЗУБР ЗП-28-800 К, SDS+, реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "field": "Напряжение питания, В/Гц",
+      "raw": "230/50",
+      "value": "230.0"
+    },
+    {
+      "product_id": 44526,
+      "product": "Перф.ЗУБР ЗП-28-800 КМ, SDS+, + БЗП реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "field": "Напряжение питания, В/Гц",
+      "raw": "230/50",
+      "value": "230.0"
+    },
+    {
+      "product_id": 44528,
+      "product": "Перф.ЗУБР ЗП-2890мс, SDS+, реверс, 900Вт, 3,2Дж, 3режима + патрон БЗП ПРОФЕССИОНАЛ",
+      "field": "Напряжение питания, В/Гц",
+      "raw": "220-240/50",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44529,
+      "product": "Перф.ЗУБР ЗП-30-900 К, SDS+, реверс, 900Вт, ПРОФЕССИОНАЛ",
+      "field": "Напряжение питания, В/Гц",
+      "raw": "230/50",
+      "value": "230.0"
+    },
+    {
+      "product_id": 44530,
+      "product": "Перф.ЗУБР ЗП-32-1100 К, SDS+, реверс, 1100Вт, ПРОФЕССИОНАЛ",
+      "field": "Напряжение питания, В/Гц",
+      "raw": "230/50",
+      "value": "230.0"
+    },
+    {
+      "product_id": 44522,
+      "product": "Перф.ЗУБР ЗП-2470, SDS+, реверс, 780Вт, 2.7Дж, 3режима ПРОФЕССИОНАЛ",
+      "field": "Напряжение питания, В/Гц",
+      "raw": "220-240/50",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44524,
+      "product": "Перф.ЗУБР ЗП-2680, SDS+, реверс, 850Вт, 2.9Дж, 3режима ПРОФЕССИОНАЛ",
+      "field": "Напряжение питания, В/Гц",
+      "raw": "220-240/50",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44538,
+      "product": "Перф.ЗУБР П-22-650, SDS+, реверс, 650Вт,",
+      "field": "Напряжение питания, В/Гц",
+      "raw": "230/50",
+      "value": "230.0"
+    },
+    {
+      "product_id": 44540,
+      "product": "Перф.ЗУБР П-26-800, SDS+, реверс, 800Вт, 3Дж",
+      "field": "Напряжение питания, В/Гц",
+      "raw": "230/50",
+      "value": "230.0"
+    },
+    {
+      "product_id": 44539,
+      "product": "Перф.ЗУБР П-24-750, SDS+, реверс, 750Вт,",
+      "field": "Напряжение питания, В/Гц",
+      "raw": "220-240/50",
+      "value": "220.0"
+    }
+  ],
+  "dropped": [
+    {
+      "source": "interskol",
+      "card": "П-32/1000Э",
+      "field": "Тип двигателя",
+      "raw": "коллекторный",
+      "reason": "значение не в словаре опций"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор аккумуляторный Ресанта АП-20Li/4",
+      "field": "Макс. диаметр сверления (сталь), мм",
+      "raw": "13",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор аккумуляторный Ресанта АП-20Li/4",
+      "field": "Тип двигателя",
+      "raw": "Бесщёточный",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор аккумуляторный Ресанта АП-20Li/4",
+      "field": "Подсветка рабочей зоны",
+      "raw": "Есть",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор аккумуляторный Ресанта АП-20Li/4",
+      "field": "Тип аккумулятора",
+      "raw": "Li-Ion",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор аккумуляторный Ресанта АП-20Li/4",
+      "field": "Макс. диаметр сверления (дерево), мм",
+      "raw": "40",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор аккумуляторный Ресанта АП-20Li/4",
+      "field": "Напряжение аккумулятора, В",
+      "raw": "20",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор аккумуляторный Ресанта АП-20Li/4",
+      "field": "Емкость аккумулятора, А*ч",
+      "raw": "4",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "resanta",
+      "card": "Перфоратор аккумуляторный Ресанта АП-20Li/4",
+      "field": "summary_raw",
+      "raw": "4 Ач, 20 В, SDS-Plus, 3.2 Дж, 1050 об/мин, 4260 уд/мин, 2,7 кг, ЕА+",
+      "reason": "fallback: значение не извлечено"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-2000К-М SDS-Max",
+      "field": "Частота питающей сети, ГЦ",
+      "raw": "~50 Гц",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-2000К-М SDS-Max",
+      "field": "Номинальная мощность",
+      "raw": "2000 Вт",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-2000К-М SDS-Max",
+      "field": "Частота вращения",
+      "raw": "0-600 об/мин.",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор Вихрь П-2000К-М SDS-Max",
+      "field": "Частота ударов, уд/мин",
+      "raw": "3750 —",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор аккумуляторный Вихрь АП-20Li/4",
+      "field": "Подсветка рабочей зоны",
+      "raw": "Есть",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор аккумуляторный Вихрь АП-20Li/4",
+      "field": "Напряжение сети, В",
+      "raw": "220-230",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор аккумуляторный Вихрь АП-20Li/4",
+      "field": "Частота, Гц",
+      "raw": "50",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор аккумуляторный Вихрь АП-20Li/4",
+      "field": "Частота ударов, уд/мин",
+      "raw": "0 — 4260",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор аккумуляторный Вихрь АП-20Li/4",
+      "field": "Макс. диаметр сверления (дерево), мм",
+      "raw": "40",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор аккумуляторный Вихрь АП-20Li/4",
+      "field": "Макс. диаметр сверления (металл), мм",
+      "raw": "13",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор аккумуляторный Вихрь АП-20Li/4",
+      "field": "Макс. диаметр сверления (бетон), мм",
+      "raw": "26",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор аккумуляторный Вихрь АП-20Li/4",
+      "field": "Тип двигателя",
+      "raw": "Бесщеточный",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор аккумуляторный Вихрь АП-20Li/4",
+      "field": "Тип аккумулятора",
+      "raw": "Li-ion",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор аккумуляторный Вихрь АП-20Li/4",
+      "field": "Напряжение аккумулятора, В",
+      "raw": "20",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vihr",
+      "card": "Перфоратор аккумуляторный Вихрь АП-20Li/4",
+      "field": "Емкость аккумулятора, А*ч",
+      "raw": "3",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus ЗП-26-750 ЭК",
+      "field": "Максимальная сила удара, Дж",
+      "raw": "2.6",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "zubr",
+      "card": "Перфоратор SDS-plus ЗПВ-30-900 ВК",
+      "field": "Максимальная сила удара, Дж",
+      "raw": "4.2",
+      "reason": "поле отсутствует в карте"
+    }
+  ],
+  "confirmed": [
+    {
+      "product_id": 44507,
+      "product": "Перф. ИНТЕРСКОЛ П-32/1100АВС",
+      "attribute": "chuck",
+      "field": "Тип хвостовика",
+      "value": "sds-plus",
+      "source": "scraper",
+      "raw": "sds-plus"
+    },
+    {
+      "product_id": 44507,
+      "product": "Перф. ИНТЕРСКОЛ П-32/1100АВС",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "value": "brushed",
+      "source": "scraper",
+      "raw": "щеточный"
+    },
+    {
+      "product_id": 44507,
+      "product": "Перф. ИНТЕРСКОЛ П-32/1100АВС",
+      "attribute": "power",
+      "field": "Мощность, Вт.",
+      "value": "1100",
+      "source": "scraper",
+      "raw": "1100"
+    },
+    {
+      "product_id": 44507,
+      "product": "Перф. ИНТЕРСКОЛ П-32/1100АВС",
+      "attribute": "energy_impact",
+      "field": "Max сила удара, Дж",
+      "value": "3.4",
+      "source": "scraper",
+      "raw": "3.4"
+    },
+    {
+      "product_id": 44507,
+      "product": "Перф. ИНТЕРСКОЛ П-32/1100АВС",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения на холостом ходу, об/мин",
+      "value": "1200.0",
+      "source": "scraper",
+      "raw": "0-1200"
+    },
+    {
+      "product_id": 44507,
+      "product": "Перф. ИНТЕРСКОЛ П-32/1100АВС",
+      "attribute": "power_source",
+      "field": "derived:category_context_mains",
+      "value": "mains",
+      "source": "scraper",
+      "raw": "category_context_mains"
+    },
+    {
+      "product_id": 44542,
+      "product": "Перф.РЕСАНТА П-28-800К",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "value": "1100.0",
+      "source": "scraper",
+      "raw": "0-1100"
+    },
+    {
+      "product_id": 44542,
+      "product": "Перф.РЕСАНТА П-28-800К",
+      "attribute": "energy_impact",
+      "field": "Энергия удара, Дж",
+      "value": "3.4",
+      "source": "scraper",
+      "raw": "3.4"
+    },
+    {
+      "product_id": 44542,
+      "product": "Перф.РЕСАНТА П-28-800К",
+      "attribute": "chuck",
+      "field": "Тип хвостовика",
+      "value": "sds-plus",
+      "source": "scraper",
+      "raw": "SDS-PLUS"
+    },
+    {
+      "product_id": 44542,
+      "product": "Перф.РЕСАНТА П-28-800К",
+      "attribute": "power",
+      "field": "summary_raw",
+      "value": "800",
+      "source": "scraper",
+      "raw": "SDS-Plus, 800 Вт, 3,4 Дж, 1100 об/мин, 5200 уд/мин, 2.7 кг, кейс"
+    },
+    {
+      "product_id": 44542,
+      "product": "Перф.РЕСАНТА П-28-800К",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "scraper",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44543,
+      "product": "Перф.РЕСАНТА П-30-900к",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "value": "1100.0",
+      "source": "scraper",
+      "raw": "0-1100"
+    },
+    {
+      "product_id": 44543,
+      "product": "Перф.РЕСАНТА П-30-900к",
+      "attribute": "energy_impact",
+      "field": "Энергия удара, Дж",
+      "value": "4.3",
+      "source": "scraper",
+      "raw": "4.3"
+    },
+    {
+      "product_id": 44543,
+      "product": "Перф.РЕСАНТА П-30-900к",
+      "attribute": "chuck",
+      "field": "Тип хвостовика",
+      "value": "sds-plus",
+      "source": "scraper",
+      "raw": "SDS-PLUS"
+    },
+    {
+      "product_id": 44543,
+      "product": "Перф.РЕСАНТА П-30-900к",
+      "attribute": "power",
+      "field": "summary_raw",
+      "value": "900",
+      "source": "scraper",
+      "raw": "SDS-Plus, 900 Вт, 4,3 Дж, 1100 об/мин, 5200 уд/мин, 2.7 кг, кейс"
+    },
+    {
+      "product_id": 44543,
+      "product": "Перф.РЕСАНТА П-30-900к",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "scraper",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44544,
+      "product": "Перф.РЕСАНТА П-32-1000к SDS+ 1000 Вт, 5,5 Дж",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "value": "1100.0",
+      "source": "scraper",
+      "raw": "0-1100"
+    },
+    {
+      "product_id": 44544,
+      "product": "Перф.РЕСАНТА П-32-1000к SDS+ 1000 Вт, 5,5 Дж",
+      "attribute": "energy_impact",
+      "field": "Энергия удара, Дж",
+      "value": "5.2",
+      "source": "scraper",
+      "raw": "5.2"
+    },
+    {
+      "product_id": 44544,
+      "product": "Перф.РЕСАНТА П-32-1000к SDS+ 1000 Вт, 5,5 Дж",
+      "attribute": "chuck",
+      "field": "Тип хвостовика",
+      "value": "sds-plus",
+      "source": "keyword",
+      "raw": "SDS-PLUS"
+    },
+    {
+      "product_id": 44544,
+      "product": "Перф.РЕСАНТА П-32-1000к SDS+ 1000 Вт, 5,5 Дж",
+      "attribute": "power",
+      "field": "summary_raw",
+      "value": "1000",
+      "source": "regex",
+      "raw": "SDS-Plus, 1000 Вт, 5,2 Дж, 1100 об/мин, 4900 уд/мин, 3 кг, кейс"
+    },
+    {
+      "product_id": 44544,
+      "product": "Перф.РЕСАНТА П-32-1000к SDS+ 1000 Вт, 5,5 Дж",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "inferred",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44545,
+      "product": "Перф.РЕСАНТА П-32-1400КВ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "value": "800.0",
+      "source": "scraper",
+      "raw": "0-800"
+    },
+    {
+      "product_id": 44545,
+      "product": "Перф.РЕСАНТА П-32-1400КВ",
+      "attribute": "chuck",
+      "field": "Тип хвостовика",
+      "value": "sds-plus",
+      "source": "scraper",
+      "raw": "SDS-PLUS"
+    },
+    {
+      "product_id": 44545,
+      "product": "Перф.РЕСАНТА П-32-1400КВ",
+      "attribute": "energy_impact",
+      "field": "Энергия удара, Дж",
+      "value": "5.2",
+      "source": "scraper",
+      "raw": "5.2"
+    },
+    {
+      "product_id": 44545,
+      "product": "Перф.РЕСАНТА П-32-1400КВ",
+      "attribute": "power",
+      "field": "summary_raw",
+      "value": "1400",
+      "source": "scraper",
+      "raw": "SDS-Plus, 1400 Вт, 5,2 Дж, 800 об/мин, 3900 уд/мин, 5 кг, кейс"
+    },
+    {
+      "product_id": 44545,
+      "product": "Перф.РЕСАНТА П-32-1400КВ",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "scraper",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44546,
+      "product": "Перф.РЕСАНТА П-40-1600КМ SDS-MAX",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "value": "620.0",
+      "source": "scraper",
+      "raw": "0-620"
+    },
+    {
+      "product_id": 44546,
+      "product": "Перф.РЕСАНТА П-40-1600КМ SDS-MAX",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "1600",
+      "source": "scraper",
+      "raw": "1600"
+    },
+    {
+      "product_id": 44546,
+      "product": "Перф.РЕСАНТА П-40-1600КМ SDS-MAX",
+      "attribute": "chuck",
+      "field": "Тип хвостовика",
+      "value": "sds-max",
+      "source": "keyword",
+      "raw": "SDS-MAX"
+    },
+    {
+      "product_id": 44546,
+      "product": "Перф.РЕСАНТА П-40-1600КМ SDS-MAX",
+      "attribute": "energy_impact",
+      "field": "Энергия удара, Дж",
+      "value": "11.3",
+      "source": "scraper",
+      "raw": "11.3"
+    },
+    {
+      "product_id": 44546,
+      "product": "Перф.РЕСАНТА П-40-1600КМ SDS-MAX",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "scraper",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44547,
+      "product": "Перф.РЕСАНТА П-42-2000КМ SDS-MAX 2000Вт 13Дж",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "value": "600.0",
+      "source": "scraper",
+      "raw": "600"
+    },
+    {
+      "product_id": 44547,
+      "product": "Перф.РЕСАНТА П-42-2000КМ SDS-MAX 2000Вт 13Дж",
+      "attribute": "energy_impact",
+      "field": "Энергия удара, Дж",
+      "value": "13.0",
+      "source": "regex",
+      "raw": "13"
+    },
+    {
+      "product_id": 44547,
+      "product": "Перф.РЕСАНТА П-42-2000КМ SDS-MAX 2000Вт 13Дж",
+      "attribute": "chuck",
+      "field": "Тип хвостовика",
+      "value": "sds-max",
+      "source": "keyword",
+      "raw": "SDS-MAX"
+    },
+    {
+      "product_id": 44547,
+      "product": "Перф.РЕСАНТА П-42-2000КМ SDS-MAX 2000Вт 13Дж",
+      "attribute": "power",
+      "field": "summary_raw",
+      "value": "2000",
+      "source": "regex",
+      "raw": "SDS-Max, 2000 Вт, 13 Дж, 600 об/мин, 3750 уд/мин, 7.5 кг, кейс"
+    },
+    {
+      "product_id": 44547,
+      "product": "Перф.РЕСАНТА П-42-2000КМ SDS-MAX 2000Вт 13Дж",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "inferred",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44509,
+      "product": "Перф. П-1400 к-в 72/3/8 ВИХРЬ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "1400",
+      "source": "scraper",
+      "raw": "1400"
+    },
+    {
+      "product_id": 44509,
+      "product": "Перф. П-1400 к-в 72/3/8 ВИХРЬ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "value": "800.0",
+      "source": "scraper",
+      "raw": "0-800"
+    },
+    {
+      "product_id": 44509,
+      "product": "Перф. П-1400 к-в 72/3/8 ВИХРЬ",
+      "attribute": "chuck",
+      "field": "Тип хвостовика",
+      "value": "sds-plus",
+      "source": "scraper",
+      "raw": "SDS-PLUS"
+    },
+    {
+      "product_id": 44509,
+      "product": "Перф. П-1400 к-в 72/3/8 ВИХРЬ",
+      "attribute": "energy_impact",
+      "field": "Энергия удара, Дж",
+      "value": "5.0",
+      "source": "scraper",
+      "raw": "5"
+    },
+    {
+      "product_id": 44509,
+      "product": "Перф. П-1400 к-в 72/3/8 ВИХРЬ",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "scraper",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44503,
+      "product": "Перф. ВИХРЬ П-650к",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "650",
+      "source": "scraper",
+      "raw": "650"
+    },
+    {
+      "product_id": 44503,
+      "product": "Перф. ВИХРЬ П-650к",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "value": "1000.0",
+      "source": "scraper",
+      "raw": "0-1000"
+    },
+    {
+      "product_id": 44503,
+      "product": "Перф. ВИХРЬ П-650к",
+      "attribute": "chuck",
+      "field": "Тип хвостовика",
+      "value": "sds-plus",
+      "source": "scraper",
+      "raw": "SDS-PLUS"
+    },
+    {
+      "product_id": 44503,
+      "product": "Перф. ВИХРЬ П-650к",
+      "attribute": "energy_impact",
+      "field": "Энергия удара, Дж",
+      "value": "2.6",
+      "source": "scraper",
+      "raw": "2.6"
+    },
+    {
+      "product_id": 44503,
+      "product": "Перф. ВИХРЬ П-650к",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "scraper",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44514,
+      "product": "Перф. П-800к 72/3/6 ВИХРЬ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "800",
+      "source": "scraper",
+      "raw": "800"
+    },
+    {
+      "product_id": 44514,
+      "product": "Перф. П-800к 72/3/6 ВИХРЬ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "value": "1100.0",
+      "source": "scraper",
+      "raw": "0-1100"
+    },
+    {
+      "product_id": 44514,
+      "product": "Перф. П-800к 72/3/6 ВИХРЬ",
+      "attribute": "chuck",
+      "field": "Тип хвостовика",
+      "value": "sds-plus",
+      "source": "scraper",
+      "raw": "SDS-PLUS"
+    },
+    {
+      "product_id": 44514,
+      "product": "Перф. П-800к 72/3/6 ВИХРЬ",
+      "attribute": "energy_impact",
+      "field": "Энергия удара, Дж",
+      "value": "3.2",
+      "source": "scraper",
+      "raw": "3.2"
+    },
+    {
+      "product_id": 44514,
+      "product": "Перф. П-800к 72/3/6 ВИХРЬ",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "scraper",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44505,
+      "product": "Перф. ВИХРЬ П-900к",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "900",
+      "source": "scraper",
+      "raw": "900"
+    },
+    {
+      "product_id": 44505,
+      "product": "Перф. ВИХРЬ П-900к",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "value": "1100.0",
+      "source": "scraper",
+      "raw": "0-1100"
+    },
+    {
+      "product_id": 44505,
+      "product": "Перф. ВИХРЬ П-900к",
+      "attribute": "chuck",
+      "field": "Тип хвостовика",
+      "value": "sds-plus",
+      "source": "scraper",
+      "raw": "SDS-PLUS"
+    },
+    {
+      "product_id": 44505,
+      "product": "Перф. ВИХРЬ П-900к",
+      "attribute": "energy_impact",
+      "field": "Энергия удара, Дж",
+      "value": "4.0",
+      "source": "scraper",
+      "raw": "4"
+    },
+    {
+      "product_id": 44505,
+      "product": "Перф. ВИХРЬ П-900к",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "scraper",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44525,
+      "product": "Перф.ЗУБР ЗП-28-800 К, SDS+, реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "800",
+      "source": "regex",
+      "raw": "800"
+    },
+    {
+      "product_id": 44525,
+      "product": "Перф.ЗУБР ЗП-28-800 К, SDS+, реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "value": "1200.0",
+      "source": "scraper",
+      "raw": "0-1200"
+    },
+    {
+      "product_id": 44525,
+      "product": "Перф.ЗУБР ЗП-28-800 К, SDS+, реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "attribute": "energy_impact",
+      "field": "Максимальная энергия удара, Дж",
+      "value": "3.2",
+      "source": "regex",
+      "raw": "3.2"
+    },
+    {
+      "product_id": 44525,
+      "product": "Перф.ЗУБР ЗП-28-800 К, SDS+, реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "attribute": "chuck",
+      "field": "Патрон",
+      "value": "sds-plus",
+      "source": "keyword",
+      "raw": "SDS Plus"
+    },
+    {
+      "product_id": 44525,
+      "product": "Перф.ЗУБР ЗП-28-800 К, SDS+, реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "inferred",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44526,
+      "product": "Перф.ЗУБР ЗП-28-800 КМ, SDS+, + БЗП реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "800",
+      "source": "regex",
+      "raw": "800"
+    },
+    {
+      "product_id": 44526,
+      "product": "Перф.ЗУБР ЗП-28-800 КМ, SDS+, + БЗП реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "value": "1200.0",
+      "source": "scraper",
+      "raw": "0-1200"
+    },
+    {
+      "product_id": 44526,
+      "product": "Перф.ЗУБР ЗП-28-800 КМ, SDS+, + БЗП реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "attribute": "energy_impact",
+      "field": "Максимальная энергия удара, Дж",
+      "value": "3.2",
+      "source": "regex",
+      "raw": "3.2"
+    },
+    {
+      "product_id": 44526,
+      "product": "Перф.ЗУБР ЗП-28-800 КМ, SDS+, + БЗП реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "attribute": "chuck",
+      "field": "Патрон",
+      "value": "sds-plus",
+      "source": "keyword",
+      "raw": "SDS Plus + БЗП"
+    },
+    {
+      "product_id": 44526,
+      "product": "Перф.ЗУБР ЗП-28-800 КМ, SDS+, + БЗП реверс, 800Вт, 3,2Дж ПРОФЕССИОНАЛ",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "inferred",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44528,
+      "product": "Перф.ЗУБР ЗП-2890мс, SDS+, реверс, 900Вт, 3,2Дж, 3режима + патрон БЗП ПРОФЕССИОНАЛ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "900",
+      "source": "regex",
+      "raw": "900"
+    },
+    {
+      "product_id": 44528,
+      "product": "Перф.ЗУБР ЗП-2890мс, SDS+, реверс, 900Вт, 3,2Дж, 3режима + патрон БЗП ПРОФЕССИОНАЛ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "value": "1200.0",
+      "source": "scraper",
+      "raw": "0-1200"
+    },
+    {
+      "product_id": 44528,
+      "product": "Перф.ЗУБР ЗП-2890мс, SDS+, реверс, 900Вт, 3,2Дж, 3режима + патрон БЗП ПРОФЕССИОНАЛ",
+      "attribute": "energy_impact",
+      "field": "Максимальная энергия удара, Дж",
+      "value": "3.2",
+      "source": "regex",
+      "raw": "3.2"
+    },
+    {
+      "product_id": 44528,
+      "product": "Перф.ЗУБР ЗП-2890мс, SDS+, реверс, 900Вт, 3,2Дж, 3режима + патрон БЗП ПРОФЕССИОНАЛ",
+      "attribute": "chuck",
+      "field": "Патрон",
+      "value": "sds-plus",
+      "source": "keyword",
+      "raw": "SDS Plus + БЗП"
+    },
+    {
+      "product_id": 44528,
+      "product": "Перф.ЗУБР ЗП-2890мс, SDS+, реверс, 900Вт, 3,2Дж, 3режима + патрон БЗП ПРОФЕССИОНАЛ",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "inferred",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44529,
+      "product": "Перф.ЗУБР ЗП-30-900 К, SDS+, реверс, 900Вт, ПРОФЕССИОНАЛ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "900",
+      "source": "regex",
+      "raw": "900"
+    },
+    {
+      "product_id": 44529,
+      "product": "Перф.ЗУБР ЗП-30-900 К, SDS+, реверс, 900Вт, ПРОФЕССИОНАЛ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "value": "1000.0",
+      "source": "scraper",
+      "raw": "0-1000"
+    },
+    {
+      "product_id": 44529,
+      "product": "Перф.ЗУБР ЗП-30-900 К, SDS+, реверс, 900Вт, ПРОФЕССИОНАЛ",
+      "attribute": "energy_impact",
+      "field": "Максимальная энергия удара, Дж",
+      "value": "3.3",
+      "source": "scraper",
+      "raw": "3.3"
+    },
+    {
+      "product_id": 44529,
+      "product": "Перф.ЗУБР ЗП-30-900 К, SDS+, реверс, 900Вт, ПРОФЕССИОНАЛ",
+      "attribute": "chuck",
+      "field": "Патрон",
+      "value": "sds-plus",
+      "source": "keyword",
+      "raw": "SDS Plus"
+    },
+    {
+      "product_id": 44529,
+      "product": "Перф.ЗУБР ЗП-30-900 К, SDS+, реверс, 900Вт, ПРОФЕССИОНАЛ",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "inferred",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44530,
+      "product": "Перф.ЗУБР ЗП-32-1100 К, SDS+, реверс, 1100Вт, ПРОФЕССИОНАЛ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "1100",
+      "source": "regex",
+      "raw": "1100"
+    },
+    {
+      "product_id": 44530,
+      "product": "Перф.ЗУБР ЗП-32-1100 К, SDS+, реверс, 1100Вт, ПРОФЕССИОНАЛ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "value": "920.0",
+      "source": "scraper",
+      "raw": "0-920"
+    },
+    {
+      "product_id": 44530,
+      "product": "Перф.ЗУБР ЗП-32-1100 К, SDS+, реверс, 1100Вт, ПРОФЕССИОНАЛ",
+      "attribute": "energy_impact",
+      "field": "Максимальная энергия удара, Дж",
+      "value": "3.4",
+      "source": "scraper",
+      "raw": "3.4"
+    },
+    {
+      "product_id": 44530,
+      "product": "Перф.ЗУБР ЗП-32-1100 К, SDS+, реверс, 1100Вт, ПРОФЕССИОНАЛ",
+      "attribute": "chuck",
+      "field": "Патрон",
+      "value": "sds-plus",
+      "source": "keyword",
+      "raw": "SDS Plus"
+    },
+    {
+      "product_id": 44530,
+      "product": "Перф.ЗУБР ЗП-32-1100 К, SDS+, реверс, 1100Вт, ПРОФЕССИОНАЛ",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "inferred",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44522,
+      "product": "Перф.ЗУБР ЗП-2470, SDS+, реверс, 780Вт, 2.7Дж, 3режима ПРОФЕССИОНАЛ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "780",
+      "source": "regex",
+      "raw": "780"
+    },
+    {
+      "product_id": 44522,
+      "product": "Перф.ЗУБР ЗП-2470, SDS+, реверс, 780Вт, 2.7Дж, 3режима ПРОФЕССИОНАЛ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "value": "1100.0",
+      "source": "scraper",
+      "raw": "0-1100"
+    },
+    {
+      "product_id": 44522,
+      "product": "Перф.ЗУБР ЗП-2470, SDS+, реверс, 780Вт, 2.7Дж, 3режима ПРОФЕССИОНАЛ",
+      "attribute": "energy_impact",
+      "field": "Максимальная энергия удара, Дж",
+      "value": "2.7",
+      "source": "regex",
+      "raw": "2.7"
+    },
+    {
+      "product_id": 44522,
+      "product": "Перф.ЗУБР ЗП-2470, SDS+, реверс, 780Вт, 2.7Дж, 3режима ПРОФЕССИОНАЛ",
+      "attribute": "chuck",
+      "field": "Патрон",
+      "value": "sds-plus",
+      "source": "keyword",
+      "raw": "SDS Plus"
+    },
+    {
+      "product_id": 44522,
+      "product": "Перф.ЗУБР ЗП-2470, SDS+, реверс, 780Вт, 2.7Дж, 3режима ПРОФЕССИОНАЛ",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "inferred",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44524,
+      "product": "Перф.ЗУБР ЗП-2680, SDS+, реверс, 850Вт, 2.9Дж, 3режима ПРОФЕССИОНАЛ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "850",
+      "source": "regex",
+      "raw": "850"
+    },
+    {
+      "product_id": 44524,
+      "product": "Перф.ЗУБР ЗП-2680, SDS+, реверс, 850Вт, 2.9Дж, 3режима ПРОФЕССИОНАЛ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "value": "900.0",
+      "source": "scraper",
+      "raw": "0-900"
+    },
+    {
+      "product_id": 44524,
+      "product": "Перф.ЗУБР ЗП-2680, SDS+, реверс, 850Вт, 2.9Дж, 3режима ПРОФЕССИОНАЛ",
+      "attribute": "energy_impact",
+      "field": "Максимальная энергия удара, Дж",
+      "value": "2.9",
+      "source": "regex",
+      "raw": "2.9"
+    },
+    {
+      "product_id": 44524,
+      "product": "Перф.ЗУБР ЗП-2680, SDS+, реверс, 850Вт, 2.9Дж, 3режима ПРОФЕССИОНАЛ",
+      "attribute": "chuck",
+      "field": "Патрон",
+      "value": "sds-plus",
+      "source": "keyword",
+      "raw": "SDS Plus"
+    },
+    {
+      "product_id": 44524,
+      "product": "Перф.ЗУБР ЗП-2680, SDS+, реверс, 850Вт, 2.9Дж, 3режима ПРОФЕССИОНАЛ",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "inferred",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44538,
+      "product": "Перф.ЗУБР П-22-650, SDS+, реверс, 650Вт,",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "650",
+      "source": "regex",
+      "raw": "650"
+    },
+    {
+      "product_id": 44538,
+      "product": "Перф.ЗУБР П-22-650, SDS+, реверс, 650Вт,",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "value": "870.0",
+      "source": "scraper",
+      "raw": "0-870"
+    },
+    {
+      "product_id": 44538,
+      "product": "Перф.ЗУБР П-22-650, SDS+, реверс, 650Вт,",
+      "attribute": "energy_impact",
+      "field": "Максимальная энергия удара, Дж",
+      "value": "2.3",
+      "source": "scraper",
+      "raw": "2.3"
+    },
+    {
+      "product_id": 44538,
+      "product": "Перф.ЗУБР П-22-650, SDS+, реверс, 650Вт,",
+      "attribute": "chuck",
+      "field": "Патрон",
+      "value": "sds-plus",
+      "source": "keyword",
+      "raw": "SDS Plus"
+    },
+    {
+      "product_id": 44538,
+      "product": "Перф.ЗУБР П-22-650, SDS+, реверс, 650Вт,",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "inferred",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44540,
+      "product": "Перф.ЗУБР П-26-800, SDS+, реверс, 800Вт, 3Дж",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "800",
+      "source": "regex",
+      "raw": "800"
+    },
+    {
+      "product_id": 44540,
+      "product": "Перф.ЗУБР П-26-800, SDS+, реверс, 800Вт, 3Дж",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "value": "1300.0",
+      "source": "scraper",
+      "raw": "0-1300"
+    },
+    {
+      "product_id": 44540,
+      "product": "Перф.ЗУБР П-26-800, SDS+, реверс, 800Вт, 3Дж",
+      "attribute": "energy_impact",
+      "field": "Максимальная энергия удара, Дж",
+      "value": "3.0",
+      "source": "regex",
+      "raw": "3"
+    },
+    {
+      "product_id": 44540,
+      "product": "Перф.ЗУБР П-26-800, SDS+, реверс, 800Вт, 3Дж",
+      "attribute": "chuck",
+      "field": "Патрон",
+      "value": "sds-plus",
+      "source": "keyword",
+      "raw": "SDS Plus"
+    },
+    {
+      "product_id": 44540,
+      "product": "Перф.ЗУБР П-26-800, SDS+, реверс, 800Вт, 3Дж",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "inferred",
+      "raw": "mains_if_voltage_field"
+    },
+    {
+      "product_id": 44539,
+      "product": "Перф.ЗУБР П-24-750, SDS+, реверс, 750Вт,",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "value": "750",
+      "source": "regex",
+      "raw": "750"
+    },
+    {
+      "product_id": 44539,
+      "product": "Перф.ЗУБР П-24-750, SDS+, реверс, 750Вт,",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "value": "870.0",
+      "source": "scraper",
+      "raw": "0-870"
+    },
+    {
+      "product_id": 44539,
+      "product": "Перф.ЗУБР П-24-750, SDS+, реверс, 750Вт,",
+      "attribute": "energy_impact",
+      "field": "Максимальная энергия удара, Дж",
+      "value": "2.4",
+      "source": "scraper",
+      "raw": "2.4"
+    },
+    {
+      "product_id": 44539,
+      "product": "Перф.ЗУБР П-24-750, SDS+, реверс, 750Вт,",
+      "attribute": "chuck",
+      "field": "Патрон",
+      "value": "sds-plus",
+      "source": "keyword",
+      "raw": "SDS Plus"
+    },
+    {
+      "product_id": 44539,
+      "product": "Перф.ЗУБР П-24-750, SDS+, реверс, 750Вт,",
+      "attribute": "power_source",
+      "field": "derived:mains_if_voltage_field",
+      "value": "mains",
+      "source": "inferred",
+      "raw": "mains_if_voltage_field"
+    }
+  ],
+  "stats": {
+    "cards": 61,
+    "not_found": 34,
+    "ambiguous": 6,
+    "dropped": 26,
+    "matched": 21,
+    "confirm": 106,
+    "skipped_voltage": 20
+  }
+}

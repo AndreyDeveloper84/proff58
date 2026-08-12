@@ -1,0 +1,65 @@
+{
+  "canonical": {
+    "attribute_slug": "tool_type",
+    "live_taxonomy_identity_hash": "7ac7a9a26eeffcb6360993b3c1a5942ddee4da7c80b8e31ad9b47853e2a06ef9",
+    "rows": [
+      {
+        "attrs_cache_tool_type": "Автоматы и предохранители",
+        "option_slug": "avtomaty-predohraniteli",
+        "option_value": "Автоматы и предохранители",
+        "product_id": 23743
+      },
+      {
+        "attrs_cache_tool_type": "Автоматы и предохранители",
+        "option_slug": "avtomaty-predohraniteli",
+        "option_value": "Автоматы и предохранители",
+        "product_id": 23744
+      },
+      {
+        "attrs_cache_tool_type": "Автоматы и предохранители",
+        "option_slug": "avtomaty-predohraniteli",
+        "option_value": "Автоматы и предохранители",
+        "product_id": 23745
+      },
+      {
+        "attrs_cache_tool_type": "Автоматы и предохранители",
+        "option_slug": "avtomaty-predohraniteli",
+        "option_value": "Автоматы и предохранители",
+        "product_id": 23746
+      },
+      {
+        "attrs_cache_tool_type": "Автоматы и предохранители",
+        "option_slug": "avtomaty-predohraniteli",
+        "option_value": "Автоматы и предохранители",
+        "product_id": 23747
+      },
+      {
+        "attrs_cache_tool_type": "Автоматы и предохранители",
+        "option_slug": "avtomaty-predohraniteli",
+        "option_value": "Автоматы и предохранители",
+        "product_id": 23748
+      },
+      {
+        "attrs_cache_tool_type": "Автоматы и предохранители",
+        "option_slug": "avtomaty-predohraniteli",
+        "option_value": "Автоматы и предохранители",
+        "product_id": 23749
+      }
+    ],
+    "rows_count": 7,
+    "schema_version": 1,
+    "selector": {
+      "kind": "explicit_ids",
+      "value": [
+        23743,
+        23744,
+        23745,
+        23746,
+        23747,
+        23748,
+        23749
+      ]
+    }
+  },
+  "canonical_hash": "bafa93c8aeaa7670de677ca7711b14c0e855d5b2e988d85db271a54bc1c67d45"
+}

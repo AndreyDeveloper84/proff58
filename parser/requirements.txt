@@ -1,0 +1,7 @@
+httpx==0.28.1
+beautifulsoup4==4.15.0
+lxml==6.1.1
+pydantic==2.13.4
+# Только для режима B (браузер): добор карточек с закрытых источников.
+# После установки один раз: .venv/Scripts/python.exe -m playwright install chromium
+playwright==1.61.0

@@ -1,0 +1,40 @@
+== кластеры ==
+stropy                    208 (pub   15)  → NEW:stropy-gruzovye
+leska                     190 (pub  124)  → bp-leska
+semniki                   137 (pub   35)  → NEW:semniki
+patrony-sverlilnye        109 (pub   64)  → NEW:patrony-sverlilnye
+golovki-trimmernye         93 (pub   64)  → NEW:golovki-trimmernye
+smazki                     88 (pub   32)  → str-smazki
+lebedki-tali               82 (pub   16)  → lebedki-tali
+yashchiki                  48 (pub   12)  → yashchiki-sumki
+dovodchiki                 42 (pub    4)  → hoz-furnitura
+telezhki                   41 (pub    9)  → obor-telezhki
+nozhi-trimmernye           33 (pub   22)  → NEW:nozhi-diski-trimmernye
+konteinery                 33 (pub    4)  → yashchiki-sumki
+pily-lentochnye            31 (pub    0)  → NEW:pily-lentochnye
+magnity                    28 (pub    4)  → None
+zazhimy                    23 (pub   11)  → None
+adaptery-vtulki            21 (pub   12)  → zap-vtulki
+nasadki-payalnye           20 (pub    0)  → NEW:nasadki-payalnye
+pressy                     19 (pub    0)  → None
+opravki                    18 (pub   15)  → None
+ventili                    17 (pub    2)  → None
+kozhuhi                    16 (pub   11)  → None
+stanki                     16 (pub    3)  → None
+centry-tokarnye            15 (pub   11)  → None
+ochistiteli                14 (pub    1)  → str-rastvoriteli
+tablichki                  14 (pub    0)  → None
+krimpery                   13 (pub    4)  → NEW:krimpery
+krugi-parts                12 (pub    7)  → None
+nasosy                     12 (pub    0)  → None
+trubogiby                  11 (pub    4)  → NEW:trubogiby
+truborezy                   9 (pub    4)  → truborezy
+klyuchi-dlya-patronov       8 (pub    7)  → aksessuary-dlya-klyuchey
+sverla-parts                8 (pub    3)  → None
+katushki-trimmernye         4 (pub    3)  → NEW:katushki-trimmernye
+nasadki-miksera             3 (pub    2)  → str-miksery
+trimmery-parts              2 (pub    1)  → None
+kustorezy-parts             1 (pub    1)  → None
+
+== НЕ РАЗОБРАНО: 602 (pub 154) ==
+первое слово топ-30: [('набор', 42), ('насадка', 21), ('переходник', 15), ('телефон', 12), ('блок', 11), ('комплект', 11), ('пластина', 11), ('полог', 11), ('пломба', 10), ('кран', 8), ('крюк', 8), ('стержень', 8), ('шпильковерт', 8), ('конус', 7), ('техпластина', 7), ('точка', 7), ('этикетка', 7), ('дезковрик', 6), ('звено', 6), ('инструмент', 6), ('пробойник', 6), ('ремень', 6), ('сканер', 6), ('стойка', 6), ('кулачки', 5), ('наковальня', 5), ('платформа', 5), ('рукав', 5), ('сопло', 5), ('держатель', 4)]

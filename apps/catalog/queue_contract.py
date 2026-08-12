@@ -11,7 +11,10 @@ import hashlib
 import json
 from typing import Any
 
+from django.core.management.base import CommandError
+
 from apps.catalog.models import Attribute, AttributeOption, Category, Product
+from apps.catalog.taxonomy_manifest import load_manifest
 
 TOOL_TYPE_SLUG = "tool_type"
 
@@ -77,3 +80,29 @@ def _taxonomy_hash(options: list[dict[str, Any]]) -> str:
     """Стабильный SHA-256 от списка options."""
     payload = json.dumps(options, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _canonical_taxonomy() -> tuple[list[dict[str, Any]], str]:
+    """Опции tool_type из БД + canonical identity_hash манифеста (TT-13/G6).
+
+    Fail-closed: множество slug опций в БД обязано совпадать с canonical
+    taxonomy manifest; расхождение — CommandError, тихий пересчёт хэша от
+    опций БД запрещён. Возвращает (options, manifest.identity_hash).
+    """
+    manifest = load_manifest()
+    options = _allowed_tool_type_options()
+    db_slugs = {opt["slug"] for opt in options}
+    if db_slugs != manifest.slugs:
+        missing = sorted(manifest.slugs - db_slugs)
+        extra = sorted(db_slugs - manifest.slugs)
+        parts = []
+        if missing:
+            parts.append(f"нет в БД ({len(missing)}): {missing[:10]}")
+        if extra:
+            parts.append(f"лишние в БД ({len(extra)}): {extra[:10]}")
+        raise CommandError(
+            "Состав опций tool_type в БД расходится с canonical taxonomy manifest: "
+            + "; ".join(parts)
+            + ". Синхронизируйте БД с manifest (load_tool_types)."
+        )
+    return options, manifest.identity_hash

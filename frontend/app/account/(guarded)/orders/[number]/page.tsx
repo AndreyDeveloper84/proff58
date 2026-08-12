@@ -34,6 +34,7 @@ import {
   pluralize,
 } from "@/lib/format";
 import { isDelivered, statusBadgeClass } from "@/lib/order-status";
+import { paymentMethodLabel } from "@/lib/payment-methods";
 import { getMyReviewForOrder, reviewStatusText } from "@/lib/reviews";
 import { decodeRouteParam } from "@/lib/route-params";
 import type { MyReview } from "@/lib/types";
@@ -46,14 +47,6 @@ const PAYMENT_STATUS_LABELS: Record<Order["payment_status"], string> = {
   expired: "Срок оплаты истёк",
   partially_refunded: "Частичный возврат",
   refunded: "Возвращён",
-};
-
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  card: "Банковская карта",
-  cash: "Наличными",
-  online: "Онлайн-оплата",
-  invoice: "Оплата по счёту",
-  yookassa: "Онлайн-оплата",
 };
 
 const DELIVERY_METHOD_LABELS: Record<string, string> = {
@@ -317,7 +310,7 @@ export default function OrderDetailsPage() {
           <InfoCard icon={CreditCard} title="Оплата">
             <InfoRow
               label="Способ оплаты"
-              value={displayToken(order.payment_method, PAYMENT_METHOD_LABELS)}
+              value={paymentMethodLabel(order.payment_method)}
             />
             <InfoRow label="Статус" value={PAYMENT_STATUS_LABELS[order.payment_status]} />
           </InfoCard>

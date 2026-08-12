@@ -1,0 +1,330 @@
+# tool_type options (staging snapshot, hash b357be60…)
+
+- `adaptery` — Адаптеры и переходники
+- `akkumulyatory` — Аккумуляторы
+- `aksessuary-dlya-klyuchey` — Аксессуары для ключей
+- `armiruyushchie-lenty-binty` — Армирующие ленты и бинты
+- `avtomaty-predohraniteli` — Автоматы и предохранители
+- `batarejki-akkumulyatory` — Батарейки и аккумуляторы
+- `betonosmesiteli` — Бетоносмесители
+- `bity` — Биты
+- `bloki-pitaniya` — Блоки питания
+- `bokorezy` — Бокорезы и кусачки
+- `bolgarki-ushm` — Болгарки (УШМ)
+- `boltorezy` — Болторезы
+- `bp-benzopily` — Бензопилы
+- `bp-cepi` — Цепи
+- `bp-fitingi` — Фитинги и переходники
+- `bp-gazonokosilki` — Газонокосилки
+- `bp-generatory` — Генераторы
+- `bp-kompressory` — Компрессоры
+- `bp-kraskoraspyliteli` — Краскораспылители и краскопульты
+- `bp-motobloki` — Мотоблоки и культиваторы
+- `bp-motobury` — Мотобуры и шнеки
+- `bp-motopompy` — Мотопомпы
+- `bp-nabory-pnevmoinstrumenta` — Наборы пневмоинструмента
+- `bp-osnastka-pnevmomolotkov` — Оснастка и запчасти для пневмомолотков
+- `bp-pnevmocilindry` — Пневмоцилиндры
+- `bp-pnevmodreli` — Пневмодрели
+- `bp-pnevmogaikoverty` — Пневмогайковёрты
+- `bp-pnevmomolotki` — Пневмомолотки и зубила
+- `bp-pnevmopistolety` — Пневмопистолеты
+- `bp-pnevmoshlif` — Пневмошлифмашины
+- `bp-pnevmosteplery` — Пневмостеплеры и нейлеры
+- `bp-podgotovka-vozduha` — Подготовка сжатого воздуха
+- `bp-shiny` — Шины направляющие
+- `bp-shlangi` — Шланги и рукава
+- `bp-snegouborshchiki` — Снегоуборщики
+- `bp-trimmery` — Триммеры и мотокосы
+- `bp-vibroplity` — Виброплиты и трамбовки
+- `bp-vozdukhoduvki` — Воздуходувки
+- `bruski-shlif` — Бруски и оселки
+- `bury` — Буры
+- `chashki-shlif` — Шлифовальные чашки
+- `dinamometricheskie-klyuchi` — Динамометрические ключи
+- `domkraty` — Домкраты
+- `dreli-shurupoverty` — Дрели и шуруповёрты
+- `elektronozhnitsy` — Электроножницы по металлу
+- `elektroustanovochnye-izdeliya` — Электроустановочные изделия
+- `feny` — Фены строительные
+- `fiksatory-germetiki-rezby` — Фиксаторы и герметики резьбы
+- `fonari` — Фонари
+- `frezery` — Фрезеры
+- `girlyandy` — Гирлянды
+- `golovki` — Головки и торцевые ключи
+- `golovki-shlif` — Шлифовальные головки
+- `gravery` — Граверы
+- `hoz-furnitura` — Дверная и оконная фурнитура
+- `hoz-grabli` — Грабли
+- `hoz-himiya` — Бытовая химия и пасты
+- `hoz-homuty` — Хомуты
+- `hoz-izolenta` — Изолента
+- `hoz-kolesa` — Колёса и комплектующие
+- `hoz-kovriki` — Коврики
+- `hoz-krany` — Краны и смесители
+- `hoz-lenty` — Ленты клейкие и сигнальные
+- `hoz-lezviya` — Лезвия и полотна
+- `hoz-lopaty` — Лопаты и движки снеговые
+- `hoz-masla` — Масла и смазки
+- `hoz-meshki` — Мешки и пакеты
+- `hoz-metly` — Мётлы, веники, черенки
+- `hoz-nozhi` — Ножи
+- `hoz-nozhnitsy` — Ножницы
+- `hoz-opryskivateli` — Опрыскиватели и лейки
+- `hoz-plenka` — Плёнка
+- `hoz-podvodki` — Подводки сантехнические
+- `hoz-radiatory` — Радиаторы и отопление
+- `hoz-schetchiki` — Счётчики воды
+- `hoz-sekatory` — Секаторы и сучкорезы
+- `hoz-setki` — Сетки и укрывной материал
+- `hoz-shchetki` — Щётки и швабры
+- `hoz-shlangi` — Шланги
+- `hoz-sifony` — Сифоны
+- `hoz-steklorezy` — Стеклорезы
+- `hoz-tachki` — Тачки и тележки
+- `hoz-trosy` — Тросы, верёвки, шнуры
+- `hoz-truby-fitingi` — Трубы и фитинги
+- `hoz-uplotniteli` — Уплотнители
+- `hoz-vedra` — Вёдра, тазы, канистры
+- `hoz-vily` — Вилы
+- `ibp-preobrazovateli` — ИБП и преобразователи
+- `izm-analizatory` — Влагомеры, анализаторы, приборы
+- `izm-dalnomery` — Дальномеры
+- `izm-indikatory` — Индикаторы, детекторы, пробники
+- `izm-kalibry` — Калибры
+- `izm-kleshchi` — Токоизмерительные клещи
+- `izm-kleyma` — Клейма и шаблоны
+- `izm-kolesa` — Измерительные колёса (курвиметры)
+- `izm-lineyki` — Линейки и рейки
+- `izm-lupy` — Лупы
+- `izm-mikrometry` — Микрометры и нутромеры
+- `izm-multimetry` — Мультиметры и тестеры
+- `izm-niveliry` — Нивелиры и построители
+- `izm-ruletki` — Рулетки
+- `izm-shtangen` — Штангенциркули и глубиномеры
+- `izm-shtativy` — Штативы, отражатели, держатели
+- `izm-termometry` — Термометры, пирометры, тепловизоры
+- `izm-ugolniki` — Угольники, угломеры, транспортиры
+- `izm-urovni` — Уровни
+- `kabel-provod` — Кабель и провод
+- `klemmy-nakonechniki` — Клеммы, наконечники и гильзы
+- `klyuchi-gaechnye` — Гаечные ключи
+- `kobury-dlya-instrumenta` — Кобуры для инструмента
+- `koronki` — Коронки
+- `korshchetki` — Корщётки
+- `kovshi-shtukaturnye` — Ковши штукатурные
+- `kraskoraspyliteli` — Краскораспылители
+- `krep-bolty` — Болты и винты
+- `krep-dyubeli` — Дюбели и анкеры
+- `krep-gaiki` — Гайки
+- `krep-gvozdi` — Гвозди
+- `krep-karabiny` — Карабины, крюки, рымы
+- `krep-provoloka` — Проволока
+- `krep-samorezy` — Саморезы
+- `krep-shaiby` — Шайбы
+- `krep-shpilki` — Шпильки
+- `krep-shplinty` — Шплинты
+- `krep-shurupy` — Шурупы и глухари
+- `krep-skoby` — Скобы
+- `krep-styazhki` — Хомуты-стяжки
+- `krep-svp` — Системы выравнивания плитки
+- `krep-takelazh` — Тросы, канаты, такелаж
+- `krep-zaklepki` — Заклёпки
+- `krep-zamki` — Замки и скобянка
+- `krugi-almaznye` — Алмазные круги
+- `krugi-shlif` — Отрезные и шлифовальные круги
+- `kukhonnye-razdelochnye-nozhi` — Кухонные и разделочные ножи
+- `lampy` — Лампы
+- `lebedki-tali` — Лебёдки и тали
+- `lenty-shlif` — Ленты шлифовальные
+- `lobziki` — Лобзики
+- `lomy-gvozdodery` — Ломы, гвоздодёры, монтировки
+- `meshki-pylesos` — Мешки для пылесосов
+- `metchiki` — Метчики
+- `metchiki-plashki` — Метчики и плашки
+- `mfi` — Многофункциональные инструменты
+- `miksery` — Строительные миксеры
+- `molotki` — Молотки и кувалды
+- `montazhnye-korobki` — Монтажные коробки
+- `nabory-bit` — Наборы бит и насадок
+- `nabory-burov` — Наборы буров
+- `nabory-elektro` — Наборы электроинструмента
+- `nabory-instrumenta` — Наборы инструмента
+- `nabory-koronok` — Наборы коронок
+- `nabory-metchikov-plashek` — Наборы метчиков и плашек
+- `nabory-otvertok` — Наборы отвёрток
+- `nabory-piki` — Наборы пик и долот
+- `nabory-pilok` — Наборы пилок и полотен
+- `nabory-shlif` — Наборы абразива
+- `nabory-sverel` — Наборы свёрл
+- `nadfili-shlif` — Надфили
+- `napilniki` — Напильники и надфили
+- `nazhdachka` — Наждачная бумага и сетка
+- `nozhi` — Ножи строительные
+- `nozhnitsy-ruchnye` — Ножницы ручные
+- `nozhovki` — Ножовки и пилы ручные
+- `obor-mebel` — Верстаки и мебель мастерской
+- `obor-moyki` — Мойки высокого давления
+- `obor-nasosy` — Насосы
+- `obor-obogrevateli` — Обогреватели и конвекторы
+- `obor-pena` — Пеногенераторы и автохимия
+- `obor-pushki` — Тепловые пушки
+- `obor-shlangi` — Шланги, трубки, насадки
+- `obor-smazka` — Пресс-маслёнки, шприцы, нагнетатели
+- `obor-telezhki` — Тележки
+- `osnastka-bit` — Оснастка для бит
+- `osnastka-burov` — Оснастка для буров
+- `osnastka-koronok` — Оснастка для коронок
+- `osnastka-rezbonarez` — Оснастка для нарезания резьбы
+- `osnastka-reztsov` — Оснастка для резцов
+- `osnastka-sverel` — Оснастка для свёрл
+- `otboynye-molotki` — Отбойные молотки
+- `otreznye-mashiny-metall` — Отрезные машины по металлу
+- `otvertki` — Отвёртки
+- `passatizhi` — Пассатижи и плоскогубцы
+- `payalniki` — Паяльники
+- `payalniki-stancii` — Паяльники и паяльные станции
+- `perehodnye-koltsa` — Переходные кольца
+- `perenoski` — Переноски
+- `perforatory` — Перфораторы
+- `piki-dolota` — Пики и долота
+- `pilki-polotna` — Пилки и полотна
+- `pily` — Пилы
+- `pintsety` — Пинцеты
+- `pistolety-dlya-peny` — Пистолеты для монтажной пены
+- `pistolety-kleevye` — Клеевые пистолеты
+- `plashki` — Плашки
+- `plitkorezy` — Плиткорезы
+- `polirovalnye` — Полировальные машины
+- `prisposobleniya-osnastka` — Приспособления для оснастки
+- `prochaya-osnastka` — Прочая оснастка
+- `protyazhki-uzk` — Протяжки для кабеля (УЗК)
+- `prozhektory` — Прожекторы
+- `puskovye-provoda` — Пусковые провода
+- `pusko-zaryadnye` — Пуско-зарядные устройства
+- `pylesosy` — Строительные пылесосы
+- `raskhodniki-pajki` — Расходники для пайки
+- `razemy-soediniteli` — Разъёмы и соединители
+- `razvertki-frezy` — Развёртки и фрезы
+- `rele` — Реле
+- `reztsy` — Резцы
+- `rubanki` — Электрорубанки
+- `rukoyatki-dlya-instrumenta` — Рукоятки для ручного инструмента
+- `sadovye-bury` — Садовые буры
+- `sharoshki` — Шарошки и борфрезы
+- `shlifmashiny` — Шлифовальные машины
+- `shtoborezy` — Штроборезы и бороздоделы
+- `siz-aptechki` — Аптечки
+- `siz-golovki` — Пожарные головки и стволы
+- `siz-izveshchateli` — Извещатели и оповещатели
+- `siz-kaski` — Каски и подшлемники
+- `siz-maski` — Маски и полумаски
+- `siz-nakolenniki` — Наколенники и налокотники
+- `siz-naushniki` — Наушники и беруши
+- `siz-obuv` — Обувь
+- `siz-ochki` — Очки и щитки защитные
+- `siz-odezhda` — Костюмы, комбинезоны, одежда
+- `siz-ognetushiteli` — Огнетушители
+- `siz-perchatki` — Перчатки и рукавицы
+- `siz-pozh-inventar` — Пожарный инвентарь
+- `siz-respiratory` — Респираторы, противогазы, фильтры
+- `siz-rukava` — Пожарные рукава
+- `siz-shkafy` — Пожарные шкафы и щиты
+- `siz-stekla` — Стёкла и светофильтры
+- `siz-vysota` — СИЗ от падения (привязи, пояса, стропы)
+- `siz-znaki` — Знаки безопасности
+- `skruchevateli-provoloki` — Скручиватели проволоки
+- `spetsialnye-klyuchi` — Специальные ключи
+- `spetsialnye-nozhi` — Специальные ножи
+- `stabilizatory-napryazheniya` — Стабилизаторы напряжения
+- `stameski` — Стамески и долота
+- `stanki-zatochnye` — Станки заточные
+- `steplery` — Степлеры (скобозабивные)
+- `steplery-i-zaklepochniki` — Степлеры и заклёпочники
+- `sterzhni-kleevye` — Клеевые стержни
+- `str-germetiki` — Герметики
+- `strippery` — Стрипперы и обжимной инструмент
+- `str-kelmy` — Кельмы, гладилки, тёрки
+- `str-kisti` — Кисти
+- `str-klei` — Клеи
+- `str-kraski` — Эмали, краски, грунтовки
+- `str-laki` — Лаки, пропитки, морилки
+- `str-lestnicy` — Лестницы и стремянки
+- `str-markery` — Маркеры и карандаши
+- `str-miksery` — Строительные миксеры и насадки
+- `stroitelnye-lesa-vyshki` — Строительные леса и вышки-туры
+- `str-pena` — Монтажная пена
+- `str-pistolety` — Пистолеты монтажные
+- `str-pravila` — Правила и отвесы
+- `str-rastvoriteli` — Растворители и очистители
+- `str-shpateli` — Шпатели
+- `str-skoby` — Скобы и гвозди для степлера
+- `str-smazki` — Смазки и аэрозоли
+- `str-smesi` — Шпаклёвки, штукатурки, смеси
+- `strubtsiny` — Струбцины
+- `str-valiki` — Валики и ролики
+- `sumki-poyasnye` — Сумки поясные
+- `svar-apparaty` — Сварочные аппараты, инверторы, плазморезы
+- `svar-ballony` — Газовые баллоны и газ
+- `svar-cangi` — Цанги
+- `svar-derzhateli` — Электрододержатели
+- `svar-electrody` — Электроды
+- `svar-gorelki` — Горелки и резаки
+- `svar-klemmy` — Клеммы, зажимы, кабели
+- `svar-manometry` — Манометры
+- `svar-maski` — Маски и щитки сварочные
+- `svar-provoloka` — Сварочная проволока и прутки
+- `svar-reduktory` — Газовые редукторы
+- `svar-rukava` — Газовые рукава
+- `svar-sopla` — Сопла, мундштуки, наконечники
+- `svar-sprei` — Спреи и химия сварочная
+- `svar-zatvory` — Затворы и обратные клапаны
+- `sverla` — Сверла
+- `sverlilnye-stanki` — Сверлильные станки
+- `svetilniki` — Светильники
+- `syomniki` — Съёмники
+- `termousadka` — Термоусадка
+- `tiski` — Тиски
+- `tochila-nazhdaki` — Точила и наждаки
+- `topory` — Топоры и колуны
+- `transformatory` — Трансформаторы
+- `trosorezy-kabelerezy` — Тросорезы и кабелерезы
+- `truborezy` — Труборезы
+- `udliniteli-filtry` — Удлинители и сетевые фильтры
+- `ustanovki-almaznogo-bureniya` — Установки алмазного бурения
+- `vibratory-betona` — Вибраторы для бетона
+- `vorotki` — Воротки и трещотки
+- `yashchiki-sumki` — Ящики, сумки, органайзеры
+- `zaklepochniki` — Заклёпочники ручные
+- `zap-baki` — Топливные баки
+- `zap-dempfery` — Демпферы и амортизаторы
+- `zap-dvigateli` — Двигатели
+- `zap-filtry` — Фильтры
+- `zap-karbyuratory` — Карбюраторы
+- `zap-katushki` — Катушки зажигания
+- `zap-kolenval-shatun` — Коленвалы и шатуны
+- `zap-korpusa-kryshki` — Корпуса, крышки, кожухи
+- `zap-krepezh` — Крепёж (болты, шурупы, гайки)
+- `zap-mufty` — Муфты и сцепления
+- `zap-platy-bloki` — Платы и блоки управления
+- `zap-podshipniki` — Подшипники
+- `zap-porshni-tsilindry` — Поршни и цилиндры
+- `zap-pruzhiny` — Пружины
+- `zap-reduktory` — Редукторы
+- `zap-remkomplekty` — Ремкомплекты
+- `zap-remni` — Ремни приводные
+- `zap-shchetki-ugolnye` — Угольные щётки
+- `zap-shesterni` — Шестерни и зубчатые колёса
+- `zap-shpindeli-valy` — Шпиндели, валы, стволы, патроны
+- `zap-startery` — Стартеры
+- `zap-statory-yakorya` — Статоры, якоря, роторы
+- `zap-stopornye-koltsa` — Стопорные и опорные кольца
+- `zap-svechi` — Свечи зажигания
+- `zap-uplotneniya` — Уплотнения и прокладки
+- `zap-vtulki` — Втулки
+- `zap-vyklyuchateli` — Выключатели и кнопки
+- `zap-zvezdochki` — Звёздочки и барабаны
+- `zaryadnye` — Зарядные устройства
+- `zenkovki` — Зенковки и зенкеры
+- `zubila` — Зубила, керны, пробойники
+- `zvonki` — Звонки

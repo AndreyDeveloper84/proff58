@@ -1,0 +1,24 @@
+{
+  "total": 5,
+  "created": 0,
+  "would_create": 0,
+  "existing": 2,
+  "skipped": 5,
+  "errors": 0,
+  "dry_run": false,
+  "result_checksum": "b4b3ffb086eef8764360f83bdfebbbd39ca5facd70086a02963ef6203e8eb112",
+  "export_checksum": "9b027e1a40e81db97376ddf7c04187fc8c36cc27041b4e86de253f8d43c4bd84"
+}
+Импорт завершён: {'total': 5, 'created': 0, 'would_create': 0, 'existing': 2, 'skipped': 5, 'errors': 0, 'dry_run': False, 'result_checksum': 'b4b3ffb086eef8764360f83bdfebbbd39ca5facd70086a02963ef6203e8eb112', 'export_checksum': '9b027e1a40e81db97376ddf7c04187fc8c36cc27041b4e86de253f8d43c4bd84'}
+{
+  "total": 5,
+  "created": 0,
+  "would_create": 0,
+  "existing": 2,
+  "skipped": 5,
+  "errors": 0,
+  "dry_run": false,
+  "result_checksum": "b4b3ffb086eef8764360f83bdfebbbd39ca5facd70086a02963ef6203e8eb112",
+  "export_checksum": "9b027e1a40e81db97376ddf7c04187fc8c36cc27041b4e86de253f8d43c4bd84"
+}
+EXIT=0

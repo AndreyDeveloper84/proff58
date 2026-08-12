@@ -1,0 +1,1 @@
+CommandError: JSON Schema: <root>: 'items' is a required property

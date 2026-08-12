@@ -1,0 +1,3 @@
+rows=103 decisions: correct=102 identity_problem=0 incorrect=0 taxonomy_gap=0 unverifiable=1
+observed_precision=0.9903 (correct=102 / rows=103)
+gate_passed=true (precision>=0.99 and rows>=100 and collision_count==0 and corpus_overlap_checked)

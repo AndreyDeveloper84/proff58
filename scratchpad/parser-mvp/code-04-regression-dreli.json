@@ -1,0 +1,1673 @@
+{
+  "category": "dreli-shurupoverty",
+  "dry_run": true,
+  "cards_total": 60,
+  "matched": [
+    {
+      "source": "resanta",
+      "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-18-2ЛК-У",
+      "product_id": 997,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-18-2ЛК-У (Li-ion) ударный",
+      "model_key": "da182lku",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-24-2ЛК",
+      "product_id": 1000,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-24-2ЛК (Li-ion)",
+      "model_key": "da242lk",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель ударная Ресанта ДУ-15/850",
+      "product_id": 43975,
+      "product": "Дрель удар.РЕСАНТА ДУ-15/850",
+      "model_key": "du15850",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель ударная Ресанта ДУ-15/680",
+      "product_id": 43974,
+      "product": "Дрель удар.РЕСАНТА ДУ-15/680",
+      "model_key": "du15680",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель ударная Ресанта ДУ-15/950М",
+      "product_id": 43976,
+      "product": "Дрель удар.РЕСАНТА ДУ-15/950",
+      "model_key": "du15950m",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-12-2ЛК",
+      "product_id": 994,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-12-2ЛК (Li-ion)",
+      "model_key": "da122lk",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель ударная Ресанта ДУ-16/1100МК",
+      "product_id": 43977,
+      "product": "Дрель удар.РЕСАНТА ДУ-16/1100МК",
+      "model_key": "du161100mk",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-14-2ЛК",
+      "product_id": 995,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-14,4-2ЛК (Li-ion)",
+      "model_key": "da142lk",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-18-2ЛК",
+      "product_id": 996,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-18-2ЛК (Li-ion)",
+      "model_key": "da182lk",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-20-2ЛК-Б",
+      "product_id": 998,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-20-2ЛК-Б (Li-ion) бесщеточный",
+      "model_key": "da202lkb",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель ударная Вихрь ДУ-1100",
+      "product_id": 43947,
+      "product": "Дрель удар. ДУ-1100 72/8/4 ВИХРЬ",
+      "model_key": "du1100",
+      "matched_by": "exact_model",
+      "article": null
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель ударная Вихрь ДУ-550",
+      "product_id": 43945,
+      "product": "Дрель удар. ВИХРЬ ДУ-550",
+      "model_key": "du550",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель ударная Вихрь ДУ-700",
+      "product_id": 43957,
+      "product": "Дрель удар. ДУ-700 72/8/2 ВИХРЬ",
+      "model_key": "du700",
+      "matched_by": "exact_model",
+      "article": null
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель ударная Вихрь ДУ-850",
+      "product_id": 43958,
+      "product": "Дрель удар. ДУ-850  72/8/3 ВИХРЬ",
+      "model_key": "du850",
+      "matched_by": "exact_model",
+      "article": null
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-12-2К",
+      "product_id": 942,
+      "product": "Шуруп. аккум. ДА-12-2к 72/14/4 ВИХРЬ",
+      "model_key": "da122k",
+      "matched_by": "exact_model",
+      "article": null
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-12-1",
+      "product_id": 930,
+      "product": "Шуруп. аккум. Вихрь ДА-12-1 (1,5 А/ч)",
+      "model_key": "da121",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-12Л-2К",
+      "product_id": 943,
+      "product": "Шуруп. аккум. ДА-12Л-2к 72/14/4 ВИХРЬ",
+      "model_key": "da12l2k",
+      "matched_by": "exact_model",
+      "article": null
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-14,4Л-2К",
+      "product_id": 949,
+      "product": "Шуруп. аккум. ДА-14,4Л-2К (Li-ion) ВИХРЬ",
+      "model_key": "da144l2k",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-18Л-2К",
+      "product_id": 953,
+      "product": "Шуруп. аккум. ДА-18Л-2К (Li-ion) ВИХРЬ",
+      "model_key": "da18l2k",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель безударная Вихрь Д-550Б",
+      "product_id": 43885,
+      "product": "Дрель Д-550Б ВИХРЬ",
+      "model_key": "d550b",
+      "matched_by": "exact_model",
+      "article": "mismatch"
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-24Л-2К",
+      "product_id": 957,
+      "product": "Шуруп. аккум. ДА-24Л-2к ВИХРЬ",
+      "model_key": "da24l2k",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vihr",
+      "card": "Сетевой шуруповерт Вихрь СШ-550/2",
+      "product_id": 45508,
+      "product": "Шуруп. сетев.СШ-550/2 ВИХРЬ",
+      "model_key": "ssh5502",
+      "matched_by": "exact_model",
+      "article": null
+    },
+    {
+      "source": "interskol",
+      "card": "ДУ-13/780ЭР",
+      "product_id": 43952,
+      "product": "Дрель удар. ДУ-13/780ЭР (780Вт) \"Интерскол\"",
+      "model_key": "du13780er",
+      "matched_by": "exact_model",
+      "article": null
+    },
+    {
+      "source": "interskol",
+      "card": "ДА-13/18ВК 45",
+      "product_id": 499,
+      "product": "Дрель-шуруповерт аккум. бесщеточ.  ДА-13/18ВК Li-ion АПИ (кейс, 2 аккум. 2Ач, ЗУ) ИНТЕРСКОЛ",
+      "model_key": "da1318vk",
+      "matched_by": "sku",
+      "article": "mismatch"
+    },
+    {
+      "source": "interskol",
+      "card": "Д-10/350ЭР Interskol",
+      "product_id": 43880,
+      "product": "Дрель Д-10/350 ЭР (350ВТ) Интерскол",
+      "model_key": "d10350er",
+      "matched_by": "normalized_model",
+      "article": null
+    },
+    {
+      "source": "zubr",
+      "card": "Бесщеточная дрель-шуруповерт КОМПАКТ Комби #2, 2 АКБ LMS (2 Ач), в кейсе DB-50-22-H3",
+      "product_id": 972,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ КОМБИ модульная 20В 50Нм бесщеточная 2АКБ LMS 2Ач ПРОФ кейс",
+      "model_key": "db5022h3",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Бесщеточная дрель-шуруповерт КОМПАКТ #2, 2 АКБ LMS (2 Ач), в кейсе DB-50-22",
+      "product_id": 970,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ 20В 50Нм бесщеточная 2АКБ LMS 2Ач  и ЗУ ПРОФ кейс",
+      "model_key": "db5022",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Дрель реверсивная ЗД-П421 ЭР",
+      "product_id": 43891,
+      "product": "Дрель ЗУБР ЗД-П421 ЭР 420 Вт, 10 мм БЗП патрон, электронная регулировка скорости, 0-3000 об/мин, Про",
+      "model_key": "zdp421er",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Дрель реверсивная ЗД-П550 ЭР",
+      "product_id": 43892,
+      "product": "Дрель ЗУБР ЗД-П550 ЭР, 550 Вт безударная, Профессионал",
+      "model_key": "zdp550er",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Дрель-шуруповерт сетевая ДШ-М1-400",
+      "product_id": 45502,
+      "product": "Шуруп. сетев.ДШ-М1-400 ЗУБР 400Вт,28Нм",
+      "model_key": "dshm1400",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Дрель-шуруповерт сетевая ДШ-М1-400-2",
+      "product_id": 45503,
+      "product": "Шуруп. сетев.ДШ-М1-400-2 ЗУБР 400Вт, 0-450/0-1800 об/мин",
+      "model_key": "dshm14002",
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "zubr",
+      "card": "Дрель-шуруповерт сетевая ДШ-М3-500-2",
+      "product_id": 45504,
+      "product": "Шуруп. сетев.ДШ-М3-500-2 ЗУБР 500Вт, 0-450/0-1800 об/мин",
+      "model_key": "dshm35002",
+      "matched_by": "sku",
+      "article": "confirmed"
+    }
+  ],
+  "ambiguous": [
+    {
+      "source": "interskol",
+      "card": "ДА-13/18ВК 45 КОМБИ",
+      "model_key": "da1318vk",
+      "candidates": [
+        {
+          "id": 499,
+          "name": "Дрель-шуруповерт аккум. бесщеточ.  ДА-13/18ВК Li-ion АПИ (кейс, 2 аккум. 2Ач, ЗУ) ИНТЕРСКОЛ"
+        },
+        {
+          "id": 1055,
+          "name": "Шуруп.аккум. ДА-13/18ВК Li-ion АПИ (кейс, 2 аккум. 2Ач, ЗУ) \"Интерскол\" 575.2.2.70"
+        },
+        {
+          "id": 1045,
+          "name": "Шуруп. аккум. удар. ДА-13/18ВК Li-ion АПИ (кейс, 2 аккум. 1,5Ач, ЗУ) \"Интерскол\" 575.1.2.70"
+        }
+      ]
+    },
+    {
+      "reason": "менее точный матч отброшен",
+      "source": "resanta",
+      "product_id": 1000,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-24-2ЛК (Li-ion)",
+      "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-24-2ЛК-У",
+      "matched_by": "alias",
+      "kept": "Дрель-шуруповерт аккумуляторная Ресанта ДА-24-2ЛК",
+      "kept_matched_by": "sku"
+    },
+    {
+      "reason": "менее точный матч отброшен",
+      "source": "zubr",
+      "product_id": 45503,
+      "product": "Шуруп. сетев.ДШ-М1-400-2 ЗУБР 400Вт, 0-450/0-1800 об/мин",
+      "card": "Дрель-шуруповерт сетевая ДШ-М1-400-2 К",
+      "matched_by": "alias",
+      "kept": "Дрель-шуруповерт сетевая ДШ-М1-400-2",
+      "kept_matched_by": "sku"
+    },
+    {
+      "reason": "менее точный матч отброшен",
+      "source": "zubr",
+      "product_id": 45504,
+      "product": "Шуруп. сетев.ДШ-М3-500-2 ЗУБР 500Вт, 0-450/0-1800 об/мин",
+      "card": "Дрель-шуруповерт сетевая ДШ-М3-500-2 К",
+      "matched_by": "alias",
+      "kept": "Дрель-шуруповерт сетевая ДШ-М3-500-2",
+      "kept_matched_by": "sku"
+    }
+  ],
+  "not_found": [
+    {
+      "source": "resanta",
+      "card": "Дрель ударная Ресанта ДУ-13/580",
+      "model_key": "du13580",
+      "url": "https://resanta.ru/udarnaya-drel-du-13-580-resanta/"
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-12-2Л",
+      "model_key": "da122l",
+      "url": "https://resanta.ru/drel-shurupovert-akkumulyatornaya-da-12-2l-resanta/"
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-14-2Л",
+      "model_key": "da142l",
+      "url": "https://resanta.ru/drel-shurupovert-akkumulyatornaya-da-14-2l-resanta/"
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-50Л2-18А",
+      "model_key": "da50l218a",
+      "url": "https://resanta.ru/drel-shurupovert-akkumulyatornaya-resanta-da-50l2-18a/"
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-12Л-2",
+      "model_key": "da12l2",
+      "url": "https://vihr.su/drel-shurupovert-akkumulyatornaya-vihr-da-12l-2/"
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-14,4Л-2",
+      "model_key": "da144l2",
+      "url": "https://vihr.su/drel-shurupovert-akkumulyatornaya-vihr-da-14-4l-2/"
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-18Л-2",
+      "model_key": "da18l2",
+      "url": "https://vihr.su/drel-shurupovert-vikhr-da-18l-2/"
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель ударная Вихрь ДУ-550Б",
+      "model_key": "du550b",
+      "url": "https://vihr.su/udarnaya-drel-vihr-du-550b/"
+    },
+    {
+      "source": "vihr",
+      "card": "Сетевой шуруповерт Вихрь СШ-550/1",
+      "model_key": "ssh5501",
+      "url": "https://vihr.su/setevoj-shurupovert-vihr-ssh-550-1/"
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-24Л-2КУ",
+      "model_key": "da24l2ku",
+      "url": "https://vihr.su/drel-shurupovert-vikhr-da-24l-2ku/"
+    },
+    {
+      "source": "interskol",
+      "card": "Ударная дрель-шуруповерт ДАУ-13 38 мультимодульной системы МультиМАКС 18",
+      "model_key": "dau13",
+      "url": "https://www.interskol.ru/news/udarnaia-drel-surupovert-dau-13-38-multimodulnoi-sistemy-multimaks-18"
+    },
+    {
+      "source": "interskol",
+      "card": "Аккумуляторная ударная дрель-шуруповерт ДАУ-10/18В 44 МиниМАКС с бесщеточным двигателем",
+      "model_key": "dau1018v",
+      "url": "https://www.interskol.ru/product/akkumulyatornaya-udarnaya-drel--shurupovert-dau-10-18v-44-minimaks-s-besschetochnym-dvigatelem"
+    },
+    {
+      "source": "interskol",
+      "card": "ДА-10/18В 44 МиниМАКС в систейнере МультиБОКС 100",
+      "model_key": "da1018v",
+      "url": "https://www.interskol.ru/product/besschetochnaya-professional-naya-akkumulyatornaya-dvuhskorostnaya-drel--shurupovert-interskol-da-10-18v-44-minimaks-multibox-100"
+    },
+    {
+      "source": "interskol",
+      "card": "ДА-13/18В 50",
+      "model_key": "da1318v",
+      "url": "https://www.interskol.ru/product/professional-naya-udarnaya-drel--shurupovert-s-besschetochnym-dvigatelem-interskol-da-13-18v-50"
+    },
+    {
+      "source": "interskol",
+      "card": "ДА-13/18В 50 Комби",
+      "model_key": "da1318v",
+      "url": "https://www.interskol.ru/product/professional-naya-udarnaya-drel--shurupovert-s-besschetochnym-dvigatelem-interskol-da-13-18v-50-kombi"
+    },
+    {
+      "source": "interskol",
+      "card": "ДА-13/18В 55 МиниМАКС 3",
+      "model_key": "da1318v",
+      "url": "https://www.interskol.ru/product/besshchetochnaya-akkumulyatornaya-dvukhskorostnaya-drel-shurupovert-interskol-da-13-18v-55-minimaks-"
+    },
+    {
+      "source": "interskol",
+      "card": "Д-10/300ЭР Interskol",
+      "model_key": "d10300er",
+      "url": "https://www.interskol.ru/product/drel-bezudarnaya-interskol-d-10-300er-interskol"
+    },
+    {
+      "source": "interskol",
+      "card": "Д-10/350Т Interskol",
+      "model_key": "d10350t",
+      "url": "https://www.interskol.ru/product/drel-bezudarnaya-interskol-d-10-350t-interskol"
+    },
+    {
+      "source": "zubr",
+      "card": "Бесщеточная дрель-шуруповерт КОМПАКТ Комби #1, без АКБ (LMS), в коробке DB-50-H3",
+      "model_key": "db50h3",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/akkumulyatornyy-instrument/akkumulyatornye-dreli-shurupoverty/brushless-dreli-shurupoverty-so-smennymi-patronami-professional-sistema-lms/db-50-h3-ff60/?ID=1111202"
+    },
+    {
+      "source": "zubr",
+      "card": "Бесщеточная дрель-шуруповерт КОМПАКТ Комби #3, 2 АКБ LMS (4 Ач), в кейсе DB-50-42-H3",
+      "model_key": "db5042h3",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/akkumulyatornyy-instrument/akkumulyatornye-dreli-shurupoverty/brushless-dreli-shurupoverty-so-smennymi-patronami-professional-sistema-lms/db-50-42-h3-ff62/?ID=1116559"
+    },
+    {
+      "source": "zubr",
+      "card": "Бесщеточная дрель-шуруповерт КОМПАКТ #1, без АКБ (LMS),в коробке DB-50",
+      "model_key": "db50",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/akkumulyatornyy-instrument/akkumulyatornye-dreli-shurupoverty/brushless-dreli-shurupoverty-professional-sistema-lms/db-50-ff5r/?ID=1093501"
+    },
+    {
+      "source": "zubr",
+      "card": "Дрель-миксер ЗДМ-820 РМ",
+      "model_key": null,
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/dreli/dreli-miksery/zdm-820-rm-2adc/?ID=515483"
+    },
+    {
+      "source": "zubr",
+      "card": "Дрель-миксер ЗДМ-1200 РММ2",
+      "model_key": null,
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/dreli/dreli-miksery/zdm-1200-rmm2-2add/?ID=515479"
+    },
+    {
+      "source": "zubr",
+      "card": "Дрели безударные Д-П900-2",
+      "model_key": "dp9002",
+      "url": "https://zubr.ru/mekhanizirovannye-instrumenty/elektroinstrumenty/dreli/dreli-bezudarnye-dvukhskorostnye/d-p900-2-4hab/?ID=1023414"
+    }
+  ],
+  "fuzzy_suggestions": [
+    {
+      "source": "resanta",
+      "card": "Дрель ударная Ресанта ДУ-13/580",
+      "candidates": [
+        {
+          "id": 43974,
+          "name": "Дрель удар.РЕСАНТА ДУ-15/680",
+          "similarity": 0.595
+        },
+        {
+          "id": 43976,
+          "name": "Дрель удар.РЕСАНТА ДУ-15/950",
+          "similarity": 0.553
+        },
+        {
+          "id": 43975,
+          "name": "Дрель удар.РЕСАНТА ДУ-15/850",
+          "similarity": 0.553
+        }
+      ]
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-12-2Л",
+      "candidates": [
+        {
+          "id": 994,
+          "name": "Шуруп. аккум. РЕСАНТА ДА-12-2ЛК (Li-ion)",
+          "similarity": 0.441
+        }
+      ]
+    },
+    {
+      "source": "resanta",
+      "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-14-2Л",
+      "candidates": [
+        {
+          "id": 995,
+          "name": "Шуруп. аккум. РЕСАНТА ДА-14,4-2ЛК (Li-ion)",
+          "similarity": 0.426
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-12Л-2",
+      "candidates": [
+        {
+          "id": 943,
+          "name": "Шуруп. аккум. ДА-12Л-2к 72/14/4 ВИХРЬ",
+          "similarity": 0.404
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-14,4Л-2",
+      "candidates": [
+        {
+          "id": 949,
+          "name": "Шуруп. аккум. ДА-14,4Л-2К (Li-ion) ВИХРЬ",
+          "similarity": 0.429
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-18Л-2",
+      "candidates": [
+        {
+          "id": 952,
+          "name": "Шуруп. аккум. ДА-18-2к ВИХРЬ",
+          "similarity": 0.415
+        },
+        {
+          "id": 953,
+          "name": "Шуруп. аккум. ДА-18Л-2К (Li-ion) ВИХРЬ",
+          "similarity": 0.404
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель ударная Вихрь ДУ-550Б",
+      "candidates": [
+        {
+          "id": 43945,
+          "name": "Дрель удар. ВИХРЬ ДУ-550",
+          "similarity": 0.724
+        },
+        {
+          "id": 43885,
+          "name": "Дрель Д-550Б ВИХРЬ",
+          "similarity": 0.607
+        },
+        {
+          "id": 43957,
+          "name": "Дрель удар. ДУ-700 72/8/2 ВИХРЬ",
+          "similarity": 0.474
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Сетевой шуруповерт Вихрь СШ-550/1",
+      "candidates": [
+        {
+          "id": 45508,
+          "name": "Шуруп. сетев.СШ-550/2 ВИХРЬ",
+          "similarity": 0.595
+        }
+      ]
+    },
+    {
+      "source": "vihr",
+      "card": "Дрель-шуруповерт Вихрь ДА-24Л-2КУ",
+      "candidates": [
+        {
+          "id": 957,
+          "name": "Шуруп. аккум. ДА-24Л-2к ВИХРЬ",
+          "similarity": 0.475
+        }
+      ]
+    },
+    {
+      "source": "zubr",
+      "card": "Бесщеточная дрель-шуруповерт КОМПАКТ Комби #3, 2 АКБ LMS (4 Ач), в кейсе DB-50-42-H3",
+      "candidates": [
+        {
+          "id": 972,
+          "name": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ КОМБИ модульная 20В 50Нм бесщеточная 2АКБ LMS 2Ач ПРОФ кейс",
+          "similarity": 0.431
+        },
+        {
+          "id": 971,
+          "name": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ 20В 50Нм бесщеточная 2АКБ LMS 4Ач  и ЗУ ПРОФ кейс",
+          "similarity": 0.429
+        },
+        {
+          "id": 970,
+          "name": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ 20В 50Нм бесщеточная 2АКБ LMS 2Ач  и ЗУ ПРОФ кейс",
+          "similarity": 0.423
+        }
+      ]
+    }
+  ],
+  "unmapped_attributes": {
+    "Диаметр патрона, мм": 38,
+    "Вес, кг": 33,
+    "Габариты упаковки": 15,
+    "Масса изделия, кг": 15,
+    "Масса в упаковке, кг": 15,
+    "Размер патрона, мм": 10,
+    "Длина кабеля, м": 8,
+    "Масса": 6,
+    "Посадка патрона, дюйм": 5,
+    "Диапазон зажима патрона": 4,
+    "Масса изделия с АКБ, кг": 3,
+    "Длина кабеля, мм": 2,
+    "Масса согласно процедуре ЕРТА, кг": 1
+  },
+  "created": [
+    {
+      "product_id": 997,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-18-2ЛК-У (Li-ion) ударный",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "1400.0",
+      "raw": "0-400; 0-1400"
+    },
+    {
+      "product_id": 997,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-18-2ЛК-У (Li-ion) ударный",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "new": "brushed",
+      "raw": "Щеточный"
+    },
+    {
+      "product_id": 997,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-18-2ЛК-У (Li-ion) ударный",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "50.0",
+      "raw": "50/25"
+    },
+    {
+      "product_id": 1000,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-24-2ЛК (Li-ion)",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "1400.0",
+      "raw": "0-400; 0-1400"
+    },
+    {
+      "product_id": 1000,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-24-2ЛК (Li-ion)",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "new": "brushed",
+      "raw": "Щеточный"
+    },
+    {
+      "product_id": 1000,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-24-2ЛК (Li-ion)",
+      "attribute": "voltage",
+      "field": "Напряжение аккумулятора, В",
+      "new": "24.0",
+      "raw": "24"
+    },
+    {
+      "product_id": 1000,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-24-2ЛК (Li-ion)",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "60.0",
+      "raw": "60/30"
+    },
+    {
+      "product_id": 43975,
+      "product": "Дрель удар.РЕСАНТА ДУ-15/850",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "3000.0",
+      "raw": "0-3000"
+    },
+    {
+      "product_id": 43975,
+      "product": "Дрель удар.РЕСАНТА ДУ-15/850",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "850",
+      "raw": "850"
+    },
+    {
+      "product_id": 43974,
+      "product": "Дрель удар.РЕСАНТА ДУ-15/680",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "3000.0",
+      "raw": "0-3000"
+    },
+    {
+      "product_id": 43974,
+      "product": "Дрель удар.РЕСАНТА ДУ-15/680",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "680",
+      "raw": "680"
+    },
+    {
+      "product_id": 43976,
+      "product": "Дрель удар.РЕСАНТА ДУ-15/950",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "3000.0",
+      "raw": "0-3000"
+    },
+    {
+      "product_id": 43976,
+      "product": "Дрель удар.РЕСАНТА ДУ-15/950",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "950",
+      "raw": "950"
+    },
+    {
+      "product_id": 994,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-12-2ЛК (Li-ion)",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "1400.0",
+      "raw": "0-400; 0-1400"
+    },
+    {
+      "product_id": 994,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-12-2ЛК (Li-ion)",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "new": "brushed",
+      "raw": "Щеточный"
+    },
+    {
+      "product_id": 994,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-12-2ЛК (Li-ion)",
+      "attribute": "voltage",
+      "field": "Напряжение аккумулятора, В",
+      "new": "12.0",
+      "raw": "12"
+    },
+    {
+      "product_id": 994,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-12-2ЛК (Li-ion)",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "40.0",
+      "raw": "40/20"
+    },
+    {
+      "product_id": 43977,
+      "product": "Дрель удар.РЕСАНТА ДУ-16/1100МК",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "3000.0",
+      "raw": "0-3000"
+    },
+    {
+      "product_id": 995,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-14,4-2ЛК (Li-ion)",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "1400.0",
+      "raw": "0-400; 0-1400"
+    },
+    {
+      "product_id": 995,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-14,4-2ЛК (Li-ion)",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "new": "brushed",
+      "raw": "Щеточный"
+    },
+    {
+      "product_id": 995,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-14,4-2ЛК (Li-ion)",
+      "attribute": "voltage",
+      "field": "Напряжение аккумулятора, В",
+      "new": "14.4",
+      "raw": "14.4"
+    },
+    {
+      "product_id": 995,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-14,4-2ЛК (Li-ion)",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "45.0",
+      "raw": "45/23"
+    },
+    {
+      "product_id": 996,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-18-2ЛК (Li-ion)",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "1400.0",
+      "raw": "0-400; 0-1400"
+    },
+    {
+      "product_id": 996,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-18-2ЛК (Li-ion)",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "new": "brushed",
+      "raw": "Щеточный"
+    },
+    {
+      "product_id": 996,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-18-2ЛК (Li-ion)",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "50.0",
+      "raw": "50/25"
+    },
+    {
+      "product_id": 998,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-20-2ЛК-Б (Li-ion) бесщеточный",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "1400.0",
+      "raw": "0-400; 0-1400"
+    },
+    {
+      "product_id": 998,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-20-2ЛК-Б (Li-ion) бесщеточный",
+      "attribute": "voltage",
+      "field": "Напряжение аккумулятора, В",
+      "new": "20.0",
+      "raw": "20"
+    },
+    {
+      "product_id": 998,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-20-2ЛК-Б (Li-ion) бесщеточный",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "55.0",
+      "raw": "55/27"
+    },
+    {
+      "product_id": 43947,
+      "product": "Дрель удар. ДУ-1100 72/8/4 ВИХРЬ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "1100",
+      "raw": "1100"
+    },
+    {
+      "product_id": 43947,
+      "product": "Дрель удар. ДУ-1100 72/8/4 ВИХРЬ",
+      "attribute": "chuck",
+      "field": "Тип патрона",
+      "new": "keyed",
+      "raw": "Ключевой"
+    },
+    {
+      "product_id": 43947,
+      "product": "Дрель удар. ДУ-1100 72/8/4 ВИХРЬ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "3000.0",
+      "raw": "0-3000"
+    },
+    {
+      "product_id": 43945,
+      "product": "Дрель удар. ВИХРЬ ДУ-550",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "550",
+      "raw": "550"
+    },
+    {
+      "product_id": 43945,
+      "product": "Дрель удар. ВИХРЬ ДУ-550",
+      "attribute": "chuck",
+      "field": "Тип патрона",
+      "new": "keyed",
+      "raw": "Ключевой"
+    },
+    {
+      "product_id": 43945,
+      "product": "Дрель удар. ВИХРЬ ДУ-550",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "3000.0",
+      "raw": "0-3000"
+    },
+    {
+      "product_id": 43957,
+      "product": "Дрель удар. ДУ-700 72/8/2 ВИХРЬ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "700",
+      "raw": "700"
+    },
+    {
+      "product_id": 43957,
+      "product": "Дрель удар. ДУ-700 72/8/2 ВИХРЬ",
+      "attribute": "chuck",
+      "field": "Тип патрона",
+      "new": "keyed",
+      "raw": "Ключевой"
+    },
+    {
+      "product_id": 43957,
+      "product": "Дрель удар. ДУ-700 72/8/2 ВИХРЬ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "3000.0",
+      "raw": "0-3000"
+    },
+    {
+      "product_id": 43958,
+      "product": "Дрель удар. ДУ-850  72/8/3 ВИХРЬ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "850",
+      "raw": "850"
+    },
+    {
+      "product_id": 43958,
+      "product": "Дрель удар. ДУ-850  72/8/3 ВИХРЬ",
+      "attribute": "chuck",
+      "field": "Тип патрона",
+      "new": "keyed",
+      "raw": "Ключевой"
+    },
+    {
+      "product_id": 43958,
+      "product": "Дрель удар. ДУ-850  72/8/3 ВИХРЬ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "3000.0",
+      "raw": "0-3000"
+    },
+    {
+      "product_id": 942,
+      "product": "Шуруп. аккум. ДА-12-2к 72/14/4 ВИХРЬ",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "new": "brushed",
+      "raw": "Щеточный"
+    },
+    {
+      "product_id": 942,
+      "product": "Шуруп. аккум. ДА-12-2к 72/14/4 ВИХРЬ",
+      "attribute": "voltage",
+      "field": "Напряжение аккумулятора, В",
+      "new": "12.0",
+      "raw": "12"
+    },
+    {
+      "product_id": 942,
+      "product": "Шуруп. аккум. ДА-12-2к 72/14/4 ВИХРЬ",
+      "attribute": "battery_capacity",
+      "field": "Емкость аккумулятора, А*ч",
+      "new": "2.0",
+      "raw": "2"
+    },
+    {
+      "product_id": 942,
+      "product": "Шуруп. аккум. ДА-12-2к 72/14/4 ВИХРЬ",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "30.0",
+      "raw": "30/15"
+    },
+    {
+      "product_id": 942,
+      "product": "Шуруп. аккум. ДА-12-2к 72/14/4 ВИХРЬ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "1400.0",
+      "raw": "0-400; 0-1400"
+    },
+    {
+      "product_id": 930,
+      "product": "Шуруп. аккум. Вихрь ДА-12-1 (1,5 А/ч)",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "new": "brushed",
+      "raw": "Щеточный"
+    },
+    {
+      "product_id": 930,
+      "product": "Шуруп. аккум. Вихрь ДА-12-1 (1,5 А/ч)",
+      "attribute": "voltage",
+      "field": "Напряжение аккумулятора, В",
+      "new": "12.0",
+      "raw": "12"
+    },
+    {
+      "product_id": 930,
+      "product": "Шуруп. аккум. Вихрь ДА-12-1 (1,5 А/ч)",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "30.0",
+      "raw": "30"
+    },
+    {
+      "product_id": 930,
+      "product": "Шуруп. аккум. Вихрь ДА-12-1 (1,5 А/ч)",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "600.0",
+      "raw": "0-600"
+    },
+    {
+      "product_id": 943,
+      "product": "Шуруп. аккум. ДА-12Л-2к 72/14/4 ВИХРЬ",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "new": "brushed",
+      "raw": "Щеточный"
+    },
+    {
+      "product_id": 943,
+      "product": "Шуруп. аккум. ДА-12Л-2к 72/14/4 ВИХРЬ",
+      "attribute": "voltage",
+      "field": "Напряжение аккумулятора, В",
+      "new": "12.0",
+      "raw": "12"
+    },
+    {
+      "product_id": 943,
+      "product": "Шуруп. аккум. ДА-12Л-2к 72/14/4 ВИХРЬ",
+      "attribute": "battery_capacity",
+      "field": "Емкость аккумулятора, А*ч",
+      "new": "2.0",
+      "raw": "2"
+    },
+    {
+      "product_id": 943,
+      "product": "Шуруп. аккум. ДА-12Л-2к 72/14/4 ВИХРЬ",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "30.0",
+      "raw": "30/15"
+    },
+    {
+      "product_id": 943,
+      "product": "Шуруп. аккум. ДА-12Л-2к 72/14/4 ВИХРЬ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "1400.0",
+      "raw": "0-400; 0-1400"
+    },
+    {
+      "product_id": 949,
+      "product": "Шуруп. аккум. ДА-14,4Л-2К (Li-ion) ВИХРЬ",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "new": "brushed",
+      "raw": "Щеточный"
+    },
+    {
+      "product_id": 949,
+      "product": "Шуруп. аккум. ДА-14,4Л-2К (Li-ion) ВИХРЬ",
+      "attribute": "voltage",
+      "field": "Напряжение аккумулятора, В",
+      "new": "14.4",
+      "raw": "14.4"
+    },
+    {
+      "product_id": 949,
+      "product": "Шуруп. аккум. ДА-14,4Л-2К (Li-ion) ВИХРЬ",
+      "attribute": "battery_capacity",
+      "field": "Емкость аккумулятора, А*ч",
+      "new": "2.0",
+      "raw": "2"
+    },
+    {
+      "product_id": 949,
+      "product": "Шуруп. аккум. ДА-14,4Л-2К (Li-ion) ВИХРЬ",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "40.0",
+      "raw": "40/20"
+    },
+    {
+      "product_id": 949,
+      "product": "Шуруп. аккум. ДА-14,4Л-2К (Li-ion) ВИХРЬ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "1400.0",
+      "raw": "0-400; 0-1400"
+    },
+    {
+      "product_id": 953,
+      "product": "Шуруп. аккум. ДА-18Л-2К (Li-ion) ВИХРЬ",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "new": "brushed",
+      "raw": "Щеточный"
+    },
+    {
+      "product_id": 953,
+      "product": "Шуруп. аккум. ДА-18Л-2К (Li-ion) ВИХРЬ",
+      "attribute": "voltage",
+      "field": "Напряжение аккумулятора, В",
+      "new": "18.0",
+      "raw": "18"
+    },
+    {
+      "product_id": 953,
+      "product": "Шуруп. аккум. ДА-18Л-2К (Li-ion) ВИХРЬ",
+      "attribute": "battery_capacity",
+      "field": "Емкость аккумулятора, А*ч",
+      "new": "2.0",
+      "raw": "2"
+    },
+    {
+      "product_id": 953,
+      "product": "Шуруп. аккум. ДА-18Л-2К (Li-ion) ВИХРЬ",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "45.0",
+      "raw": "45/22"
+    },
+    {
+      "product_id": 953,
+      "product": "Шуруп. аккум. ДА-18Л-2К (Li-ion) ВИХРЬ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "1400.0",
+      "raw": "0-400; 0-1400"
+    },
+    {
+      "product_id": 43885,
+      "product": "Дрель Д-550Б ВИХРЬ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "550",
+      "raw": "550"
+    },
+    {
+      "product_id": 43885,
+      "product": "Дрель Д-550Б ВИХРЬ",
+      "attribute": "chuck",
+      "field": "Тип патрона",
+      "new": "keyless",
+      "raw": "Быстрозажимной (БЗП)"
+    },
+    {
+      "product_id": 43885,
+      "product": "Дрель Д-550Б ВИХРЬ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "3000.0",
+      "raw": "0-3000"
+    },
+    {
+      "product_id": 957,
+      "product": "Шуруп. аккум. ДА-24Л-2к ВИХРЬ",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "new": "brushed",
+      "raw": "Щеточный"
+    },
+    {
+      "product_id": 957,
+      "product": "Шуруп. аккум. ДА-24Л-2к ВИХРЬ",
+      "attribute": "voltage",
+      "field": "Напряжение аккумулятора, В",
+      "new": "24.0",
+      "raw": "24"
+    },
+    {
+      "product_id": 957,
+      "product": "Шуруп. аккум. ДА-24Л-2к ВИХРЬ",
+      "attribute": "battery_capacity",
+      "field": "Емкость аккумулятора, А*ч",
+      "new": "2.0",
+      "raw": "2"
+    },
+    {
+      "product_id": 957,
+      "product": "Шуруп. аккум. ДА-24Л-2к ВИХРЬ",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "55.0",
+      "raw": "55/27"
+    },
+    {
+      "product_id": 957,
+      "product": "Шуруп. аккум. ДА-24Л-2к ВИХРЬ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "1400.0",
+      "raw": "0-400; 0-1400"
+    },
+    {
+      "product_id": 45508,
+      "product": "Шуруп. сетев.СШ-550/2 ВИХРЬ",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "550",
+      "raw": "550"
+    },
+    {
+      "product_id": 45508,
+      "product": "Шуруп. сетев.СШ-550/2 ВИХРЬ",
+      "attribute": "torque",
+      "field": "Максимальный крутящий момент, Нм",
+      "new": "34.0",
+      "raw": "34"
+    },
+    {
+      "product_id": 45508,
+      "product": "Шуруп. сетев.СШ-550/2 ВИХРЬ",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения, об/мин",
+      "new": "1500.0",
+      "raw": "0-450 / 0-1500"
+    },
+    {
+      "product_id": 43952,
+      "product": "Дрель удар. ДУ-13/780ЭР (780Вт) \"Интерскол\"",
+      "attribute": "power",
+      "field": "Мощность",
+      "new": "780",
+      "raw": "780"
+    },
+    {
+      "product_id": 43952,
+      "product": "Дрель удар. ДУ-13/780ЭР (780Вт) \"Интерскол\"",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения",
+      "new": "2700.0",
+      "raw": "0-2700"
+    },
+    {
+      "product_id": 499,
+      "product": "Дрель-шуруповерт аккум. бесщеточ.  ДА-13/18ВК Li-ion АПИ (кейс, 2 аккум. 2Ач, ЗУ) ИНТЕРСКОЛ",
+      "attribute": "voltage",
+      "field": "Напряжение аккумулятора, В",
+      "new": "18.0",
+      "raw": "АПИ Li-ion / 18"
+    },
+    {
+      "product_id": 972,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ КОМБИ модульная 20В 50Нм бесщеточная 2АКБ LMS 2Ач ПРОФ кейс",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "new": "1750.0",
+      "raw": "0-500/0-1750"
+    },
+    {
+      "product_id": 972,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ КОМБИ модульная 20В 50Нм бесщеточная 2АКБ LMS 2Ач ПРОФ кейс",
+      "attribute": "chuck",
+      "field": "Тип патрона",
+      "new": "keyless",
+      "raw": "БЗП, угловой, эксцентриковый"
+    },
+    {
+      "product_id": 970,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ 20В 50Нм бесщеточная 2АКБ LMS 2Ач  и ЗУ ПРОФ кейс",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "new": "1750.0",
+      "raw": "0-500/0-1750"
+    },
+    {
+      "product_id": 970,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ 20В 50Нм бесщеточная 2АКБ LMS 2Ач  и ЗУ ПРОФ кейс",
+      "attribute": "chuck",
+      "field": "Тип патрона",
+      "new": "keyless",
+      "raw": "быстрозажимной"
+    },
+    {
+      "product_id": 43891,
+      "product": "Дрель ЗУБР ЗД-П421 ЭР 420 Вт, 10 мм БЗП патрон, электронная регулировка скорости, 0-3000 об/мин, Про",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "420",
+      "raw": "420"
+    },
+    {
+      "product_id": 43891,
+      "product": "Дрель ЗУБР ЗД-П421 ЭР 420 Вт, 10 мм БЗП патрон, электронная регулировка скорости, 0-3000 об/мин, Про",
+      "attribute": "no_load_speed",
+      "field": "Макс. число оборотов холостого хода, об/мин",
+      "new": "3300.0",
+      "raw": "0-3300"
+    },
+    {
+      "product_id": 43891,
+      "product": "Дрель ЗУБР ЗД-П421 ЭР 420 Вт, 10 мм БЗП патрон, электронная регулировка скорости, 0-3000 об/мин, Про",
+      "attribute": "chuck",
+      "field": "Тип патрона",
+      "new": "keyless",
+      "raw": "быстрозажимной"
+    },
+    {
+      "product_id": 43892,
+      "product": "Дрель ЗУБР ЗД-П550 ЭР, 550 Вт безударная, Профессионал",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "550",
+      "raw": "550"
+    },
+    {
+      "product_id": 43892,
+      "product": "Дрель ЗУБР ЗД-П550 ЭР, 550 Вт безударная, Профессионал",
+      "attribute": "no_load_speed",
+      "field": "Макс. число оборотов холостого хода, об/мин",
+      "new": "3000.0",
+      "raw": "0-3000"
+    },
+    {
+      "product_id": 43892,
+      "product": "Дрель ЗУБР ЗД-П550 ЭР, 550 Вт безударная, Профессионал",
+      "attribute": "chuck",
+      "field": "Тип патрона",
+      "new": "keyed",
+      "raw": "ключевой"
+    },
+    {
+      "product_id": 45502,
+      "product": "Шуруп. сетев.ДШ-М1-400 ЗУБР 400Вт,28Нм",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "400",
+      "raw": "400"
+    },
+    {
+      "product_id": 45502,
+      "product": "Шуруп. сетев.ДШ-М1-400 ЗУБР 400Вт,28Нм",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "new": "750.0",
+      "raw": "0-750"
+    },
+    {
+      "product_id": 45502,
+      "product": "Шуруп. сетев.ДШ-М1-400 ЗУБР 400Вт,28Нм",
+      "attribute": "chuck",
+      "field": "Тип патрона",
+      "new": "keyless",
+      "raw": "бесключевой"
+    },
+    {
+      "product_id": 45503,
+      "product": "Шуруп. сетев.ДШ-М1-400-2 ЗУБР 400Вт, 0-450/0-1800 об/мин",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "400",
+      "raw": "400"
+    },
+    {
+      "product_id": 45503,
+      "product": "Шуруп. сетев.ДШ-М1-400-2 ЗУБР 400Вт, 0-450/0-1800 об/мин",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "new": "1800.0",
+      "raw": "0-450/0-1800"
+    },
+    {
+      "product_id": 45503,
+      "product": "Шуруп. сетев.ДШ-М1-400-2 ЗУБР 400Вт, 0-450/0-1800 об/мин",
+      "attribute": "torque",
+      "field": "Крутящий момент, Н*м",
+      "new": "40.0",
+      "raw": "40"
+    },
+    {
+      "product_id": 45503,
+      "product": "Шуруп. сетев.ДШ-М1-400-2 ЗУБР 400Вт, 0-450/0-1800 об/мин",
+      "attribute": "chuck",
+      "field": "Тип патрона",
+      "new": "keyless",
+      "raw": "бесключевой"
+    },
+    {
+      "product_id": 45504,
+      "product": "Шуруп. сетев.ДШ-М3-500-2 ЗУБР 500Вт, 0-450/0-1800 об/мин",
+      "attribute": "power",
+      "field": "Мощность, Вт",
+      "new": "500",
+      "raw": "500"
+    },
+    {
+      "product_id": 45504,
+      "product": "Шуруп. сетев.ДШ-М3-500-2 ЗУБР 500Вт, 0-450/0-1800 об/мин",
+      "attribute": "no_load_speed",
+      "field": "Частота вращения шпинделя, об/мин",
+      "new": "1800.0",
+      "raw": "0-500/0-1800"
+    },
+    {
+      "product_id": 45504,
+      "product": "Шуруп. сетев.ДШ-М3-500-2 ЗУБР 500Вт, 0-450/0-1800 об/мин",
+      "attribute": "torque",
+      "field": "Крутящий момент, Н*м",
+      "new": "45.0",
+      "raw": "45"
+    },
+    {
+      "product_id": 45504,
+      "product": "Шуруп. сетев.ДШ-М3-500-2 ЗУБР 500Вт, 0-450/0-1800 об/мин",
+      "attribute": "chuck",
+      "field": "Тип патрона",
+      "new": "keyless",
+      "raw": "бесключевой"
+    }
+  ],
+  "confirmed": [
+    {
+      "product_id": 998,
+      "product": "Шуруп. аккум. РЕСАНТА ДА-20-2ЛК-Б (Li-ion) бесщеточный",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "value": "brushless",
+      "source": "keyword",
+      "raw": "Бесщеточный"
+    },
+    {
+      "product_id": 972,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ КОМБИ модульная 20В 50Нм бесщеточная 2АКБ LMS 2Ач ПРОФ кейс",
+      "attribute": "voltage",
+      "field": "Напряжение изделия, В",
+      "value": "20.0",
+      "source": "regex",
+      "raw": "20"
+    },
+    {
+      "product_id": 972,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ КОМБИ модульная 20В 50Нм бесщеточная 2АКБ LMS 2Ач ПРОФ кейс",
+      "attribute": "torque",
+      "field": "Жесткий крутящий момент, Н×м",
+      "value": "50.0",
+      "source": "regex",
+      "raw": "50"
+    },
+    {
+      "product_id": 972,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ КОМБИ модульная 20В 50Нм бесщеточная 2АКБ LMS 2Ач ПРОФ кейс",
+      "attribute": "battery_capacity",
+      "field": "Емкость аккумулятора, А·ч",
+      "value": "2.0",
+      "source": "regex",
+      "raw": "2.0"
+    },
+    {
+      "product_id": 972,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ КОМБИ модульная 20В 50Нм бесщеточная 2АКБ LMS 2Ач ПРОФ кейс",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "value": "brushless",
+      "source": "keyword",
+      "raw": "BRUSHLESS, бесщеточный"
+    },
+    {
+      "product_id": 970,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ 20В 50Нм бесщеточная 2АКБ LMS 2Ач  и ЗУ ПРОФ кейс",
+      "attribute": "voltage",
+      "field": "Напряжение изделия, В",
+      "value": "20.0",
+      "source": "regex",
+      "raw": "20"
+    },
+    {
+      "product_id": 970,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ 20В 50Нм бесщеточная 2АКБ LMS 2Ач  и ЗУ ПРОФ кейс",
+      "attribute": "torque",
+      "field": "Жесткий крутящий момент, Н×м",
+      "value": "50.0",
+      "source": "regex",
+      "raw": "50"
+    },
+    {
+      "product_id": 970,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ 20В 50Нм бесщеточная 2АКБ LMS 2Ач  и ЗУ ПРОФ кейс",
+      "attribute": "battery_capacity",
+      "field": "Емкость аккумулятора, А·ч",
+      "value": "2.0",
+      "source": "regex",
+      "raw": "2.0"
+    },
+    {
+      "product_id": 970,
+      "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ 20В 50Нм бесщеточная 2АКБ LMS 2Ач  и ЗУ ПРОФ кейс",
+      "attribute": "motor_type",
+      "field": "Тип двигателя",
+      "value": "brushless",
+      "source": "keyword",
+      "raw": "BRUSHLESS, бесщеточный"
+    },
+    {
+      "product_id": 45502,
+      "product": "Шуруп. сетев.ДШ-М1-400 ЗУБР 400Вт,28Нм",
+      "attribute": "torque",
+      "field": "Крутящий момент, Н*м",
+      "value": "28.0",
+      "source": "regex",
+      "raw": "28"
+    }
+  ],
+  "conflicts": [
+    {
+      "product_id": 930,
+      "product": "Шуруп. аккум. Вихрь ДА-12-1 (1,5 А/ч)",
+      "attribute": "battery_capacity",
+      "field": "Емкость аккумулятора, А*ч",
+      "catalog_value": "1.5000",
+      "catalog_source": "regex",
+      "catalog_article": "72/14/11",
+      "scraped_value": "2.0",
+      "scraped_sku": "72/14/11",
+      "scraped_source": "vihr",
+      "raw": "2"
+    }
+  ],
+  "skipped_voltage": [
+    {
+      "product_id": 43975,
+      "product": "Дрель удар.РЕСАНТА ДУ-15/850",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 43974,
+      "product": "Дрель удар.РЕСАНТА ДУ-15/680",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 43976,
+      "product": "Дрель удар.РЕСАНТА ДУ-15/950",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 43977,
+      "product": "Дрель удар.РЕСАНТА ДУ-16/1100МК",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 43947,
+      "product": "Дрель удар. ДУ-1100 72/8/4 ВИХРЬ",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 43945,
+      "product": "Дрель удар. ВИХРЬ ДУ-550",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 43957,
+      "product": "Дрель удар. ДУ-700 72/8/2 ВИХРЬ",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 43958,
+      "product": "Дрель удар. ДУ-850  72/8/3 ВИХРЬ",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 43885,
+      "product": "Дрель Д-550Б ВИХРЬ",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 45508,
+      "product": "Шуруп. сетев.СШ-550/2 ВИХРЬ",
+      "field": "Напряжение питающей сети, В",
+      "raw": "220-230В, ~50 Гц",
+      "value": "220.0"
+    },
+    {
+      "product_id": 43891,
+      "product": "Дрель ЗУБР ЗД-П421 ЭР 420 Вт, 10 мм БЗП патрон, электронная регулировка скорости, 0-3000 об/мин, Про",
+      "field": "Напряжение питания, В/Гц",
+      "raw": "230~/50",
+      "value": "230.0"
+    },
+    {
+      "product_id": 43892,
+      "product": "Дрель ЗУБР ЗД-П550 ЭР, 550 Вт безударная, Профессионал",
+      "field": "Напряжение питания, В/Гц",
+      "raw": "220-240~ /50",
+      "value": "220.0"
+    },
+    {
+      "product_id": 45502,
+      "product": "Шуруп. сетев.ДШ-М1-400 ЗУБР 400Вт,28Нм",
+      "field": "Напряжение, В/Гц",
+      "raw": "230 / 50",
+      "value": "230.0"
+    },
+    {
+      "product_id": 45503,
+      "product": "Шуруп. сетев.ДШ-М1-400-2 ЗУБР 400Вт, 0-450/0-1800 об/мин",
+      "field": "Напряжение, В/Гц",
+      "raw": "230 / 50",
+      "value": "230.0"
+    },
+    {
+      "product_id": 45504,
+      "product": "Шуруп. сетев.ДШ-М3-500-2 ЗУБР 500Вт, 0-450/0-1800 об/мин",
+      "field": "Напряжение, В/Гц",
+      "raw": "230 / 50",
+      "value": "230.0"
+    }
+  ],
+  "dropped": [],
+  "stats": {
+    "cards": 60,
+    "not_found": 24,
+    "ambiguous": 4,
+    "matched": 32,
+    "create": 99,
+    "skipped_voltage": 15,
+    "confirm": 10,
+    "conflict": 1
+  }
+}

@@ -43,3 +43,19 @@ export function categorySkeleton(name: string): string | null {
   const skeleton = match(name)?.skeleton;
   return skeleton ? `/catalog/skeletons/${skeleton}` : null;
 }
+
+/**
+ * Картинка типа инструмента для плитки навигации (DRF-996).
+ *
+ * Карта пока пуста намеренно: файлов в `public/catalog/tool-types/` ещё нет, а
+ * рисовать их — контентная работа, которая не должна задерживать выкатку плиток.
+ * Плитка без картинки рендерится текстом на всю ширину и выглядит законченной —
+ * ровно так же, как hero категории живёт без чертежа. Наполнять карту по мере
+ * появления файлов: ключ — slug типа из nav-фасета.
+ */
+const TOOL_TYPE_ARTWORK: Record<string, string> = {};
+
+export function toolTypeArtwork(slug: string): string | null {
+  const file = TOOL_TYPE_ARTWORK[slug];
+  return file ? `/catalog/tool-types/${file}` : null;
+}

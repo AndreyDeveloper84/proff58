@@ -1,0 +1,23 @@
+{
+  "total": 5,
+  "created": 0,
+  "would_create": 2,
+  "existing": 0,
+  "skipped": 3,
+  "errors": 0,
+  "dry_run": true,
+  "result_checksum": "7b5a0afacdc1b9e509333de5ea0c81e50e72a885cda7c8d7eeaef02d578210c5",
+  "export_checksum": "459a2c8e916d2b4246ee15eb51bfe2104de8186d52315794ed3e93a544a3d0eb"
+}
+Dry-run завершён
+{
+  "total": 5,
+  "created": 0,
+  "would_create": 2,
+  "existing": 0,
+  "skipped": 3,
+  "errors": 0,
+  "dry_run": true,
+  "result_checksum": "7b5a0afacdc1b9e509333de5ea0c81e50e72a885cda7c8d7eeaef02d578210c5",
+  "export_checksum": "459a2c8e916d2b4246ee15eb51bfe2104de8186d52315794ed3e93a544a3d0eb"
+}

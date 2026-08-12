@@ -1,31 +1,108 @@
 # apps/catalog/image_pipeline.py
 """Минимальный pipeline изображений: скачать → валидировать → ресайз → WebP → thumb.
 
-Вызывается вручную (admin/CLI). Enrich-поток фото не тянет. Идемпотентность —
-по URL (хранится в alt-маркере). content_locked уважается.
+Вызывается вручную (admin/CLI). Enrich-поток фото не тянет. content_locked
+уважается. Идемпотентность (ИЗО-02) — по `(product, source_url)` до скачивания
+и по `(product, checksum)` после обработки; оба ключа подпёрты частичными
+unique-ограничениями в БД, так что дубль не проходит даже мимо этого кода.
 
 Безопасность (M-13): только https и порт 443; хост обязан резолвиться в публичный
 IP (защита от SSRF во внутреннюю сеть); соединение пиннится к уже проверенному IP
 (без повторного DNS — защита от DNS-rebinding/TOCTOU), с проверкой TLS по имени
 хоста; redirects запрещены; тело качается с жёстким лимитом MAX_BYTES; Pillow
 ограничен по числу пикселей (decompression bomb).
+
+Вежливость (ИЗО-09): темп запросов ограничен ПО ХОСТУ — `HostThrottle`. Раньше
+троттлинга не было вовсе, и пилот выгреб 189 кадров за 78 секунд (~2,4 req/s к
+чужому серверу). Интервал по умолчанию — `settings.IMAGE_FETCH_INTERVAL_SECONDS`
+(3 секунды), env `IMAGE_FETCH_INTERVAL_SECONDS`.
 """
 from __future__ import annotations
 
+import hashlib
 import io
 import ipaddress
 import logging
 import socket
+import threading
+import time
 from urllib.parse import urlparse
 
 import certifi
 import urllib3
+from django.conf import settings
 from django.core.files.base import ContentFile
+from django.utils import timezone
 from PIL import Image, ImageOps
 
-from .models import Product, ProductImage
+from .models import ImageSource, Product, ProductImage
 
 log = logging.getLogger(__name__)
+
+#: Запасной интервал, если настройка не объявлена (нештатные settings в тестах).
+DEFAULT_FETCH_INTERVAL = 3.0
+
+
+class HostThrottle:
+    """Реестр «когда последний раз ходили к хосту» + выдержка интервала.
+
+    Троттлинг именно **по хосту**, а не глобальный: чужому серверу важен темп
+    обращений к нему, а параллельная работа по другим площадкам его не касается.
+
+    Реестр общий на процесс (`_HOST_THROTTLE`) — иначе два экземпляра
+    `ImagePipeline` в одном процессе независимо друг от друга долбили бы один
+    хост, и заявленный темп не соблюдался бы. Интервал приходит аргументом в
+    `wait()`, а не хранится здесь: состояние про хост, а политика — про вызов.
+
+    Потокобезопасность: у каждого хоста свой замок, реестр замков защищён общим.
+    Замок хоста держится и на время паузы — иначе два потока «увидели, что можно»
+    одновременно и ушли бы в сеть парой. Разные хосты при этом не ждут друг друга,
+    потому что общий замок берётся только на поиск записи.
+
+    `monotonic`/`sleep` подменяемы, чтобы тесты гоняли логику без реальных пауз.
+    """
+
+    def __init__(self, *, monotonic=time.monotonic, sleep=time.sleep) -> None:
+        self._monotonic = monotonic
+        self._sleep = sleep
+        self._registry_lock = threading.Lock()
+        # host -> [замок хоста, момент последнего запроса или None]
+        self._hosts: dict[str, list] = {}
+
+    def _host_entry(self, key: str) -> list:
+        with self._registry_lock:
+            entry = self._hosts.get(key)
+            if entry is None:
+                entry = [threading.Lock(), None]
+                self._hosts[key] = entry
+            return entry
+
+    def wait(self, host: str, interval: float) -> float:
+        """Выдержать `interval` секунд с прошлого запроса к `host`.
+
+        Возвращает фактическую длительность паузы (0.0 — ждать не пришлось).
+        Момент запроса фиксируется ПОСЛЕ паузы: интервал считается от старта
+        одного запроса до старта следующего.
+        """
+        if interval <= 0:
+            return 0.0
+        entry = self._host_entry(host.lower())
+        lock = entry[0]
+        with lock:
+            previous = entry[1]
+            now = self._monotonic()
+            delay = 0.0 if previous is None else previous + interval - now
+            if delay > 0:
+                self._sleep(delay)
+                now = self._monotonic()
+            else:
+                delay = 0.0
+            entry[1] = now
+            return delay
+
+
+#: Общий на процесс реестр темпа. Экземпляры `ImagePipeline` делят его по умолчанию.
+_HOST_THROTTLE = HostThrottle()
 
 
 class ImagePipeline:
@@ -36,6 +113,24 @@ class ImagePipeline:
     MIN_SIDE = 100
     MAX_BYTES = 10 * 1024 * 1024
     MAX_PIXELS = 40_000_000  # ~40 Мп — потолок против decompression bomb
+
+    def __init__(
+        self,
+        *,
+        throttle_interval: float | None = None,
+        throttle: HostThrottle | None = None,
+    ) -> None:
+        """`throttle_interval` — секунды между запросами к одному хосту (ИЗО-09).
+
+        None — берём `settings.IMAGE_FETCH_INTERVAL_SECONDS` (по умолчанию 3.0).
+        `throttle` подменяется в тестах; по умолчанию — общий на процесс реестр.
+        """
+        if throttle_interval is None:
+            throttle_interval = getattr(
+                settings, "IMAGE_FETCH_INTERVAL_SECONDS", DEFAULT_FETCH_INTERVAL
+            )
+        self.throttle_interval = float(throttle_interval)
+        self.throttle = throttle if throttle is not None else _HOST_THROTTLE
 
     @staticmethod
     def _ip_is_public(ip_str: str) -> bool:
@@ -80,6 +175,13 @@ class ImagePipeline:
         if not ips:
             log.warning("image url отклонён (private/непубличный host): %s", url)
             return None
+
+        # ИЗО-09: вежливый темп. Ждём ПОСЛЕ всех проверок и ПЕРЕД выходом в сеть —
+        # отбракованный URL (не https, приватный хост, чужой порт) чужой сервер не
+        # видит, тратить на него окно темпа незачем.
+        waited = self.throttle.wait(parsed.hostname, self.throttle_interval)
+        if waited:
+            log.debug("throttle: пауза %.3fs перед запросом к %s", waited, parsed.hostname)
 
         # Пиннимся к проверенному IP (без повторного DNS), TLS проверяем по имени хоста.
         pool = urllib3.HTTPSConnectionPool(
@@ -154,11 +256,33 @@ class ImagePipeline:
         return ContentFile(main_buf.getvalue()), ContentFile(thumb_buf.getvalue())
 
     def process_url(
-        self, product: Product, url: str, *, is_main: bool = False, source: str = "manual"
+        self,
+        product: Product,
+        url: str,
+        *,
+        is_main: bool = False,
+        source: str = ImageSource.MANUAL,
+        alt: str = "",
     ) -> ProductImage | None:
+        """Скачать URL и положить товару, идемпотентно (ИЗО-02).
+
+        Две ступени защиты от дубля, обе подпёрты ограничениями БД:
+
+        1. `(product, source_url)` — ДО скачивания: повторный прогон не тратит
+           ни запроса на уже взятую картинку;
+        2. `(product, checksum)` — ПОСЛЕ обработки: та же картинка под другим
+           URL (CDN, `?v=2`, зеркало пути) не ложится вторым файлом.
+
+        Одна и та же картинка у РАЗНЫХ товаров — законна: оба ограничения
+        частичные и привязаны к товару, глобального уникального checksum нет.
+        """
         if product.content_locked:
             return None
-        existing = product.images.filter(alt=url).first()  # идемпотентность по URL
+        existing = (
+            product.images.filter(source_url=url).first()
+            # legacy: до ИЗО-02 URL хранился в alt — старые записи не перекачиваем
+            or product.images.filter(alt=url).first()
+        )
         if existing is not None:
             return existing
         raw = self._download(url)
@@ -168,17 +292,56 @@ class ImagePipeline:
         if processed is None:
             return None
         main_file, _thumb = processed
+        payload = main_file.read()
+        main_file.seek(0)
+        checksum = hashlib.sha256(payload).hexdigest()
+
+        same_bytes = product.images.filter(checksum=checksum).first()
+        if same_bytes is not None:
+            return same_bytes  # та же картинка под другим URL — второй раз не пишем
+
         first = not product.images.exists()
-        image = ProductImage(product=product, alt=url, is_main=is_main or first)
-        image.image.save(
-            f"products/{product.pk}/{abs(hash(url)) % 10**8}.webp", main_file, save=True
+        image = ProductImage(
+            product=product,
+            alt=alt,
+            is_main=is_main or first,
+            source=source,
+            source_url=url,
+            checksum=checksum,
+            fetched_at=timezone.now(),
         )
+        image.image.save(f"products/{product.pk}/{checksum[:16]}.webp", main_file, save=True)
         return image
 
-    def process_batch(self, product: Product, urls: list[str]) -> list[ProductImage]:
+    def process_batch(
+        self, product: Product, urls: list[str], *, source: str
+    ) -> list[ProductImage]:
+        """Пачка URL одного прогона сбора. `source` обязателен (ИЗО-05).
+
+        Раньше параметр не передавался вовсе, и вся пачка ложилась дефолтным
+        `manual`. Это ломало обратимость: миграция 0036 помечает ручные записи
+        `manual` именно затем, чтобы откат прогона обходил их стороной
+        (`build_rollback_plan` отказывает на `manual`). Записи прогона под
+        `manual` были бы неоткатываемы и неотличимы от загруженных руками.
+
+        Поэтому источник — обязательный keyword, а `manual` в прогоне сбора
+        запрещён так же, как он запрещён в `build_plan` и в откате.
+
+        Темп (ИЗО-09): пачка больше не выгребается подряд — каждый реальный
+        сетевой запрос выдерживает интервал по хосту, так что N кадров с одной
+        площадки займут ~(N-1)*interval секунд. Уже скачанные URL и повторы по
+        checksum до сети не доходят и окно темпа не тратят.
+        """
+        if source not in ImageSource.values:
+            raise ValueError(f"неизвестный source={source!r}; допустимы {ImageSource.values}")
+        if source == ImageSource.MANUAL:
+            raise ValueError(
+                "source=manual в прогоне сбора недопустим: такие записи неоткатываемы "
+                "и неотличимы от загруженных руками"
+            )
         out: list[ProductImage] = []
         for i, url in enumerate(urls):
-            img = self.process_url(product, url, is_main=(i == 0))
+            img = self.process_url(product, url, is_main=(i == 0), source=source)
             if img is not None:
                 out.append(img)
         return out

@@ -87,6 +87,27 @@ def test_enrich_rerun_fixes_changed_value_via_bulk():
     assert len(bulk_updates) >= 1  # обновление было — и оно bulk (одно на батч)
 
 
+@pytest.mark.django_db
+def test_enrich_attributes_rerun_idempotent_no_updates():
+    """Повторный enrich_attributes без изменения названий — ни одного UPDATE PAV."""
+    product = _make_ushm("Шлифмаш угл DENZEL AG125-1500")
+    call_command("load_attributes")
+    call_command("enrich_attributes")
+
+    with CaptureQueriesContext(connection) as ctx:
+        call_command("enrich_attributes")
+
+    pav_updates = [
+        q["sql"]
+        for q in ctx.captured_queries
+        if q["sql"].lstrip().upper().startswith("UPDATE")
+        and "productattributevalue" in q["sql"].lower()
+    ]
+    assert pav_updates == [], f"ожидали 0 UPDATE PAV, получили: {pav_updates}"
+    product.refresh_from_db()
+    assert product.attrs_cache  # кэш не пуст
+
+
 def _make_ushm(name, code="u1"):
     """Товар-УШМ с tool_type=bolgarki-ushm (как после enrich_tool_type)."""
     top = Category.add_root(name="Электроинструмент", slug="elektro", on_site=True)
