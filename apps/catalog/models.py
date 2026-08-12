@@ -560,7 +560,14 @@ class Product(TimeStampedModel):
     stock_quantity = models.DecimalField(_("Остаток"), max_digits=14, decimal_places=3, default=0)
     reserved_quantity = models.DecimalField(_("Резерв"), max_digits=14, decimal_places=3, default=0)
     available_quantity = models.DecimalField(
-        _("Доступно"), max_digits=14, decimal_places=3, default=0
+        _("Доступно"),
+        max_digits=14,
+        decimal_places=3,
+        default=0,
+        # DRF-1003: минус означает, что одну единицу продали дважды. В БД это
+        # запрещено constraint'ом; валидатор нужен, чтобы форма админки показала
+        # понятную ошибку вместо IntegrityError.
+        validators=[MinValueValidator(0)],
     )
     stock_status = models.CharField(
         _("Наличие"), max_length=12, choices=StockStatus.choices, default=StockStatus.OUT_OF_STOCK
@@ -617,6 +624,15 @@ class Product(TimeStampedModel):
             ),
             GinIndex(
                 fields=["brand"], opclasses=["gin_trgm_ops"], name="catalog_product_brand_trgm"
+            ),
+        ]
+        constraints = [
+            # DRF-1003: страховка на уровне БД. Причина минуса может быть любой —
+            # зависший резерв, гонка при оформлении, кривая выгрузка, ручная правка.
+            # Constraint ловит их все и превращает тихую порчу данных в ошибку.
+            CheckConstraint(
+                name="catalog_product_available_qty_non_negative",
+                check=Q(available_quantity__gte=0),
             ),
         ]
 

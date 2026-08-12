@@ -16,6 +16,11 @@
 Мастер ``available``/``reserved`` на сайте — сайт. Обмен 1С присылает абсолютный
 свободный остаток (``stocks/update``), перезаписывая ``available``; ``reserved``
 остаётся сайтовым счётчиком. Полная сверка reserved с 1С — вне объёма B-03.
+
+Удаление заказа мимо ``release_reservation`` (админка, shell, каскад) закрыто
+сигналом ``pre_delete`` в ``receivers.py`` (DRF-1002). Удаление самого товара
+резерв не «подвешивает»: ``OrderItem.product`` — SET_NULL, возвращать остаток
+некуда, и ``_adjust_stock`` такие строки пропускает.
 """
 
 from __future__ import annotations

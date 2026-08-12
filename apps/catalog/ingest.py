@@ -58,8 +58,13 @@ def iter_products(tree: list[dict]) -> Iterator[tuple[dict, str | None]]:
 
 
 def stock_value(node: dict) -> float:
-    """Остаток товара как число (в 1С приходит строкой)."""
+    """Остаток товара как число (в 1С приходит строкой), не меньше нуля.
+
+    Отрицательный остаток из выгрузки зажимаем: он кормит сразу stock_quantity,
+    available_quantity и stock_status, а минус в available_quantity запрещён
+    constraint'ом (DRF-1003).
+    """
     try:
-        return float(node.get("stock") or 0)
+        return max(0.0, float(node.get("stock") or 0))
     except (TypeError, ValueError):
         return 0.0

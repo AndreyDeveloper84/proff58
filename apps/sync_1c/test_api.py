@@ -276,6 +276,39 @@ def test_stocks_update_zero_stock_is_valid(auth_client):
 
 @override_settings(ONEC_API_KEY=API_KEY)
 @pytest.mark.django_db
+def test_stocks_update_reserved_over_stock_clamps_to_zero(auth_client):
+    """Резерв больше остатка → available_quantity = 0, обмен не падает (DRF-1003)."""
+    Product.objects.create(name="Т", code_1c="1c-302", slug="t-302")
+    resp = auth_client.post(
+        "/api/1c/stocks/update",
+        {"items": [{"external_id": "1c-302", "stock": "1", "reserved": "4"}]},
+        format="json",
+    )
+    assert resp.status_code == 200
+    p = Product.objects.get(code_1c="1c-302")
+    assert p.stock_quantity == 1
+    assert p.reserved_quantity == 4
+    assert p.available_quantity == 0  # 1 - 4 зажато, а не записано минусом
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
+def test_stocks_update_negative_available_clamps_to_zero(auth_client):
+    """Явно отрицательный available из 1С тоже зажимается (DRF-1003)."""
+    Product.objects.create(name="Т", code_1c="1c-303", slug="t-303")
+    resp = auth_client.post(
+        "/api/1c/stocks/update",
+        {"items": [{"external_id": "1c-303", "stock": "5", "available_stock": "-2"}]},
+        format="json",
+    )
+    assert resp.status_code == 200
+    p = Product.objects.get(code_1c="1c-303")
+    assert p.stock_quantity == 5  # строка применилась целиком, а не отвалилась
+    assert p.available_quantity == 0
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
 def test_orders_endpoints_implemented(auth_client):
     """orders/new и orders/confirm реализованы (#50): не 501.
 

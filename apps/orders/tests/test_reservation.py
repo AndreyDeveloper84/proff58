@@ -310,3 +310,75 @@ def test_guest_b2b_ttl_stays_24_hours(cart, product):
     after = timezone.now()
     lo, hi = _ttl_window(before, after, timedelta(hours=24))
     assert lo <= order.reserved_until <= hi
+
+
+# ── удаление заказа мимо release_reservation (DRF-1002) ────────────────
+
+
+@pytest.mark.django_db
+def test_delete_order_instance_returns_stock():
+    """Удаление объекта (админка вызывает именно его) снимает резерв."""
+    p = _product(qty="7", reserved="3")
+    order = _order_with_item(p, qty=3)
+
+    order.delete()
+
+    p.refresh_from_db()
+    assert p.available_quantity == Decimal("10")  # 7 + 3
+    assert p.reserved_quantity == Decimal("0")
+
+
+@pytest.mark.django_db
+def test_delete_order_via_queryset_returns_stock():
+    """Массовое удаление тоже снимает резерв: сигнал отключает fast-delete."""
+    p = _product(qty="7", reserved="3")
+    order = _order_with_item(p, qty=3)
+
+    Order.objects.filter(pk=order.pk).delete()
+
+    p.refresh_from_db()
+    assert p.available_quantity == Decimal("10")
+    assert p.reserved_quantity == Decimal("0")
+
+
+@pytest.mark.django_db
+def test_delete_after_release_does_not_restore_twice():
+    """Штатный путь не ломается: резерв уже возвращён, удаление ничего не добавляет."""
+    p = _product(qty="7", reserved="3")
+    order = _order_with_item(p, qty=3)
+    assert release_reservation(order.pk) is True
+
+    order.delete()
+
+    p.refresh_from_db()
+    assert p.available_quantity == Decimal("10")  # ровно один возврат
+    assert p.reserved_quantity == Decimal("0")
+
+
+@pytest.mark.django_db
+def test_delete_confirmed_order_keeps_stock():
+    """CONFIRMED — товар уже ушёл; удаление заказа не возвращает его на склад."""
+    p = _product(qty="7", reserved="3")
+    order = _order_with_item(p, qty=3)
+    assert confirm_reservation(order.pk) is True
+
+    order.delete()
+
+    p.refresh_from_db()
+    assert p.available_quantity == Decimal("7")
+    assert p.reserved_quantity == Decimal("0")
+
+
+@pytest.mark.django_db
+def test_delete_product_then_order_does_not_break():
+    """Удалили товар — возвращать остаток некуда; строка заказа переживает (SET_NULL)."""
+    p = _product(qty="7", reserved="3")
+    order = _order_with_item(p, qty=3)
+
+    p.delete()
+    item = OrderItem.objects.get(order=order)
+    assert item.product_id is None
+
+    order.delete()  # не падает: строки без товара пропускаются
+
+    assert not Order.objects.filter(pk=order.pk).exists()
