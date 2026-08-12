@@ -21,6 +21,24 @@ _STOCK_FIELDS = [
     "stock_updated_at",
 ]
 
+_ZERO = Decimal("0")
+
+
+def _available_from(product: Product, item: Item) -> Decimal | None:
+    """Свободный остаток по данным 1С, зажатый в ноль. None — данных нет.
+
+    1С может прислать резерв больше остатка (или прямо отрицательный `available`).
+    Минус в `available_quantity` запрещён constraint'ом (DRF-1003), а ронять из-за
+    одной такой строки весь пакетный обмен нельзя — поэтому зажимаем, а не падаем.
+    """
+    if item.available_stock is not None:
+        value = item.available_stock
+    elif item.stock is not None:
+        value = item.stock - (item.reserved or product.reserved_quantity or _ZERO)
+    else:
+        return None
+    return max(_ZERO, value)
+
 
 def set_current_stock(product: Product, item: Item) -> bool:
     """Записать остаток в Product и StockRecord по складу. Не сохраняет Product."""
@@ -33,10 +51,9 @@ def set_current_stock(product: Product, item: Item) -> bool:
         product.stock_quantity = item.stock
     if item.reserved is not None:
         product.reserved_quantity = item.reserved
-    if item.available_stock is not None:
-        product.available_quantity = item.available_stock
-    elif item.stock is not None:
-        product.available_quantity = item.stock - (item.reserved or product.reserved_quantity or 0)
+    available = _available_from(product, item)
+    if available is not None:
+        product.available_quantity = available
 
     product.recalc_stock_status()
     product.stock_updated_at = timezone.now()
@@ -86,10 +103,9 @@ def plan_stock(product: Product, item: Item) -> StockPlan | None:
         product.stock_quantity = item.stock
     if item.reserved is not None:
         product.reserved_quantity = item.reserved
-    if item.available_stock is not None:
-        product.available_quantity = item.available_stock
-    elif item.stock is not None:
-        product.available_quantity = item.stock - (item.reserved or product.reserved_quantity or 0)
+    available = _available_from(product, item)
+    if available is not None:
+        product.available_quantity = available
     product.recalc_stock_status()
     product.stock_updated_at = timezone.now()
     if product.code_1c and item.stock is not None:

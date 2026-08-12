@@ -88,6 +88,7 @@ export const SITE = {
     {
       title: "Помощь",
       links: [
+        { label: "О компании", href: "/about" },
         { label: "Поиск по каталогу", href: "/search" },
         { label: "Статьи и обзоры", href: "/articles" },
       ],
