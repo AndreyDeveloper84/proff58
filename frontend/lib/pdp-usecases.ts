@@ -135,7 +135,9 @@ export function toolTypeOf(specs: ProductSpec[]): string | null {
   return specs.find((spec) => /тип инструмента/i.test(spec.label))?.value ?? null;
 }
 
-export function useCasesFor(specs: ProductSpec[]): { cases: UseCase[]; isGeneric: boolean } {
+// Имя намеренно не начинается с «use»: это обычная функция, а не React-хук, и
+// префикс заставлял eslint требовать от неё правил вызова хуков.
+export function pickUseCases(specs: ProductSpec[]): { cases: UseCase[]; isGeneric: boolean } {
   const toolType = toolTypeOf(specs);
   if (toolType) {
     const match = BY_TOOL_TYPE.find((entry) => entry.test.test(toolType));

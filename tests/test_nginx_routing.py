@@ -52,6 +52,10 @@ FRONTEND_PATHS = [
     "/api/orders/max-track/xyz/status",
     "/api/catalog/products/drel/availability-subscription",
     "/api/catalog/compare",
+    # Зоны и слоты доставки: фронт зовёт их без хвостового слэша, и без
+    # собственных локаций запрос уходил в Django за редиректом 301.
+    "/api/delivery/zones",
+    "/api/delivery/slots",
     "/api/search/suggest",
 ]
 

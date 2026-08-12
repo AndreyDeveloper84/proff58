@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, List, SlidersHorizontal, X } from "lucide-react";
+import { ChevronLeft, LayoutGrid, List, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Listing, ListingQuery, RangeFilterValue, SortOption } from "@/lib/types";
 import { serializeQuery } from "@/lib/url-state";
@@ -12,12 +12,15 @@ import {
   filtersAfterToolTypeChange,
   normalizeRangeFilters,
   sidebarFacets,
+  typeNavPanel,
 } from "@/lib/listing";
+import { allTypesLabel } from "@/lib/category-phrases";
 import { track } from "@/lib/analytics";
 import { PER_PAGE_OPTIONS, SORT_OPTIONS } from "@/lib/constants";
 import { ProductCard } from "@/components/product/ProductCard";
 import { FacetSidebar } from "@/components/filters/FacetSidebar";
 import { CategoryNavStrip } from "@/components/listing/CategoryNav";
+import { TypeTiles } from "@/components/listing/TypeTiles";
 import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
 import { BreadcrumbsJsonLd } from "./BreadcrumbsJsonLd";
 import { CategoryHero } from "@/components/listing/CategoryHero";
@@ -104,7 +107,9 @@ export function ListingShell({
 
   // --- Навигация раздела: подкатегории-ссылки либо типы инструмента (§3.1) ---
   const navFacet = listing.facets.find((f) => f.isNav);
-  const nav = categoryNav(listing, query.category, query.toolType);
+  // Панель показываем не на всякой странице: правила A–D и порог редких типов живут
+  // в typeNavPanel, здесь только результат (DRF-992).
+  const nav = typeNavPanel(categoryNav(listing, query.category, query.toolType), query.toolType);
   const activeFiltersCount = Object.keys(query.filters).length;
   // Подпись активного типа: из nav-фасета, иначе (тип «вымылся» прочими фильтрами, §14)
   // humanizeToken(slug) — тот же фолбэк, что и в синтетическом пункте categoryNav (N3).
@@ -142,16 +147,12 @@ export function ListingShell({
 
   const sortOptions = listing.sort.length ? listing.sort : SORT_OPTIONS;
 
-  // Чипы применённых фильтров (C-lite). Каждый чип знает свой сброс. Тип — отдельный спокойный
-  // чип «Тип: <Имя>» (§9.1), диапазоны — по-русски с единицами «… от 10,5 до 20 мм» (§9.2).
+  // Чипы применённых фильтров (C-lite). Каждый чип знает свой сброс; диапазоны —
+  // по-русски с единицами «… от 10,5 до 20 мм» (§9.2).
+  // Чипа «Тип: X» здесь намеренно нет (DRF-994): человек уже стоит на странице
+  // выбранного типа, и чип повторяет то, что написано строкой возврата выше, —
+  // а заодно накручивал счётчик на кнопке «Фильтры», который считает эти чипы.
   const chips: { key: string; label: string; onRemove: () => void }[] = [];
-  if (query.toolType) {
-    chips.push({
-      key: "tool_type",
-      label: `Тип: ${activeToolTypeLabel}`,
-      onRemove: () => applyToolType(null, activeToolTypeLabel),
-    });
-  }
   for (const [code, val] of Object.entries(query.filters)) {
     const facet = listing.facets.find((f) => f.code === code);
     if (Array.isArray(val)) {
@@ -306,6 +307,8 @@ export function ListingShell({
               onToggle={toggleCheckbox}
               onRange={setRange}
               connected
+              total={listing.total}
+              resultsHref="#products"
             />
           </div>
         </aside>
@@ -332,7 +335,32 @@ export function ListingShell({
               Отдельным блоком, а не внутри шапки: там ряд попадал под
               overflow-hidden и узкую колонку с чертежом — часть капсул просто
               обрезалась, и человек их не видел. */}
-          {nav && <CategoryNavStrip nav={nav} onSelect={onSelectType} />}
+          {nav &&
+            (nav.isNavigation ? (
+              <CategoryNavStrip nav={nav} onSelect={onSelectType} />
+            ) : (
+              <TypeTiles
+                categoryTitle={listing.category.title}
+                items={nav.items}
+                onSelect={onSelectType}
+              />
+            ))}
+
+          {/* Тип выбран — панели типов нет (правило D), вместо неё выход обратно.
+              Выбор уже сделан: показывать остальные 43 типа значит занимать
+              половину первого экрана предложением сделать его заново (DRF-994).
+              Название типа несёт эта строка, а не H1: заголовок обязан совпадать
+              с хлебными крошками и generateMetadata. */}
+          {query.toolType && (
+            <button
+              type="button"
+              onClick={() => applyToolType(null, activeToolTypeLabel)}
+              className="mb-4 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-accent hover:underline lg:min-h-9"
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden />
+              {allTypesLabel(listing.category.title)}
+            </button>
+          )}
 
           {listing.promo && (
             <a
@@ -464,7 +492,9 @@ export function ListingShell({
             </div>
           </div>
 
-          <div aria-busy={isPending}>
+          {/* Якорь для кнопки «Показать N товаров» из сайдбара: на десктопе колонка
+              фильтров длиннее первого экрана, и после выбора нужно вернуться к выдаче. */}
+          <div id="products" aria-busy={isPending} className="scroll-mt-24">
           {isPending ? (
             // §15: skeleton карточек на время навигации, без full-page spinner.
             <ProductGridSkeleton view={query.view} count={Math.min(query.perPage, 12)} />
