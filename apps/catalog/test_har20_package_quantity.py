@@ -16,6 +16,13 @@ Corrective-миграция исполняется ШТАТНЫМ движком
   создаётся ``package_quantity``;
 * после corrective прогона transitional-правило из ruleset УДАЛЯЕТСЯ.
 
+Миграция на стенде выполнена, поэтому в боевом ``data/attribute_rules.json``
+transitional-правила уже нет. Прогон миграции тесты воспроизводят через фикстуру
+``corrective``: она собирает ruleset одного corrective-прогона программно и
+отдаёт его команде через ``--path``. Кейсы, проверяющие ПОСТОЯННОЕ состояние
+(1–4, 14), работают против боевого файла — иначе расхождение «данные
+мигрированы, правила нет» прошло бы мимо тестов.
+
 Доказательство невозможности извлечения (тест
 ``test_transitional_piece_count_never_extracts_any_name``): для любого имени либо
 «шт» стоит на границе слова — тогда срабатывает ``skip_if`` и правило целиком не
@@ -96,9 +103,9 @@ def _managed_by_tt(raw: dict) -> dict[str, set[str]]:
     return {t["tool_type"]: {a["slug"] for a in t["attributes"]} for t in raw["tool_types"]}
 
 
-def _write_ruleset(tmp_path: Path, raw: dict) -> Path:
+def _write_ruleset(tmp_path: Path, raw: dict, name: str = "data") -> Path:
     """Каталог с подменённым attribute_rules.json для ``--path``."""
-    base = tmp_path / "data"
+    base = tmp_path / name
     base.mkdir(exist_ok=True)
     for src in DATA_DIR.glob("*.json"):
         shutil.copy(src, base / src.name)
@@ -106,6 +113,37 @@ def _write_ruleset(tmp_path: Path, raw: dict) -> Path:
         json.dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     return base
+
+
+#: transitional-правило corrective-прогона. В ПОСТОЯННОМ ruleset его нет — по
+#: контракту ХАР-20 §6 оно удаляется сразу после миграции, иначе `load_attributes`
+#: при каждом деплое снова создавал бы привязку `piece_count ↔ «Скобы и стержни
+#: клеевые»` и возвращал бы на витрину пустой фасет «Предметов в наборе».
+#: Тесты строят его программно — так механика остаётся под проверкой, а
+#: одноразовое правило не живёт в боевом файле.
+TRANSITIONAL_PIECE_COUNT = {
+    "slug": "piece_count",
+    "name": "Предметов в наборе",
+    "kind": "number",
+    "unit": "шт",
+    "source": "regex",
+    "priority": 40,
+    "is_filter": True,
+    "_note": "TRANSITIONAL (ХАР-20): удерживает piece_count в managed-множестве блока.",
+    "skip_if": ["шт"],
+    "regex": ["(?<!\\d)(\\d{3,5})\\s+шт"],
+}
+
+
+def _corrective_ruleset(raw: dict) -> dict:
+    """Ruleset одного corrective-прогона: постоянный + transitional ``piece_count``.
+
+    Извлечение им невозможно by construction (``skip_if`` + ``\\s+`` перед «шт»),
+    но ``piece_count`` попадает в managed-множество блока, и штатный prune видит
+    старые PAV.
+    """
+    _block(raw, SKOBY)["attributes"].append(dict(TRANSITIONAL_PIECE_COUNT))
+    return raw
 
 
 def _rollback_ruleset(raw: dict) -> dict:
@@ -122,11 +160,12 @@ def _rollback_ruleset(raw: dict) -> dict:
             a["skip_if"] = ["шт"]
             a["regex"] = ["(?<!\\d)(\\d{3,5})\\s+шт"]
             a["_note"] = "TRANSITIONAL (откат ХАР-20)."
-        elif a["slug"] == "piece_count":
-            a.pop("skip_if", None)
-            a["regex"] = ["(?<!\\d)(\\d{3,5})\\s*шт"]
-            a["_note"] = "Возврат к состоянию до ХАР-20."
         attrs.append(a)
+    restored = dict(TRANSITIONAL_PIECE_COUNT)
+    restored.pop("skip_if")
+    restored["regex"] = ["(?<!\\d)(\\d{3,5})\\s*шт"]
+    restored["_note"] = "Возврат к состоянию до ХАР-20."
+    attrs.append(restored)
     block["attributes"] = attrs
     return raw
 
@@ -195,6 +234,18 @@ def _seed_legacy_piece_count(product, value: int) -> ProductAttributeValue:
     product.attrs_cache = cache
     product.save(update_fields=["attrs_cache"])
     return pav
+
+
+@pytest.fixture
+def corrective(tmp_path) -> tuple[str, str]:
+    """Аргументы ОДНОГО corrective-прогона: ``--path`` на ruleset с transitional-правилом.
+
+    Постоянный ruleset transitional-правила не содержит, поэтому прогон миграции
+    воспроизводится через подменённый каталог правил — механика остаётся под
+    проверкой, а одноразовое правило не живёт в боевом файле.
+    """
+    base = _write_ruleset(tmp_path, _corrective_ruleset(_ruleset()), name="corrective")
+    return ("--path", str(base))
 
 
 @pytest.fixture
@@ -267,22 +318,34 @@ def test_set_of_114_pieces_is_not_globally_package_quantity():
 
 
 def test_transitional_rule_keeps_piece_count_in_managed_set():
-    """4. piece_count остаётся в managed-множестве str-skoby — иначе prune слеп."""
-    managed = _managed_by_tt(_ruleset())
+    """4. piece_count в managed-множестве str-skoby — только на corrective прогон.
 
-    assert managed[SKOBY] == {"length", "package_quantity", "piece_count"}
-    # Блоки-владельцы «настоящего» piece_count не тронуты.
-    assert "piece_count" in managed[OTVERTKI]
-    assert "piece_count" in managed[SHAROSHKI]
+    Два состояния ruleset, оба обязательны:
+
+    * corrective — ``piece_count`` объявлен, иначе штатный prune слеп и 22 старых
+      PAV осиротеют рядом с новым ``package_quantity``;
+    * постоянный — ``piece_count`` у скоб больше нет, иначе ``load_attributes`` на
+      каждом деплое возвращал бы привязку `piece_count ↔ «Скобы и стержни клеевые»`
+      и пустой фасет «Предметов в наборе» на витрину.
+    """
+    permanent = _managed_by_tt(_ruleset())
+    corrective = _managed_by_tt(_corrective_ruleset(_ruleset()))
+
+    assert corrective[SKOBY] == {"length", "package_quantity", "piece_count"}
+    assert permanent[SKOBY] == {"length", "package_quantity"}
+    # Блоки-владельцы «настоящего» piece_count не тронуты ни в одном состоянии.
+    assert "piece_count" in permanent[OTVERTKI]
+    assert "piece_count" in permanent[SHAROSHKI]
 
 
 def test_transitional_piece_count_never_extracts_any_name():
     """5. Transitional-правило не создаёт НИ ОДНОГО нового piece_count.
 
     Проверяем и целевые формы фасовки, и фаззинг по алфавиту, из которого
-    собираются реальные имена скоб.
+    собираются реальные имена скоб. Ruleset — именно corrective: на постоянном
+    правила ``piece_count`` у скоб нет вовсе, и проверка была бы вхолостую.
     """
-    rules = AttributeRules.from_dict(_ruleset())
+    rules = AttributeRules.from_dict(_corrective_ruleset(_ruleset()))
 
     targeted = [
         "скобы 5000 шт",
@@ -311,23 +374,27 @@ def test_transitional_piece_count_never_extracts_any_name():
 
 
 @pytest.mark.django_db
-def test_prune_removes_legacy_piece_count(skoby_22):
+def test_prune_removes_legacy_piece_count(skoby_22, corrective):
     """6. Штатный prune удаляет старый piece_count ровно у целевых скоб."""
     ids = [p.id for p in skoby_22]
     assert len(_pav_map(ids, "piece_count")) == 22
 
-    call_command("enrich_attributes", "--tool-type", SKOBY, "--in-stock-only", "--active-only")
+    call_command(
+        "enrich_attributes", "--tool-type", SKOBY, "--in-stock-only", "--active-only", *corrective
+    )
 
     assert _pav_map(ids, "piece_count") == {}
 
 
 @pytest.mark.django_db
-def test_package_quantity_created_with_same_numeric_value(skoby_22):
+def test_package_quantity_created_with_same_numeric_value(skoby_22, corrective):
     """7. package_quantity создаётся с тем же числом: 1000→1000, 5000→5000."""
     ids = [p.id for p in skoby_22]
     before = _pav_map(ids, "piece_count")
 
-    call_command("enrich_attributes", "--tool-type", SKOBY, "--in-stock-only", "--active-only")
+    call_command(
+        "enrich_attributes", "--tool-type", SKOBY, "--in-stock-only", "--active-only", *corrective
+    )
 
     after = _pav_map(ids, "package_quantity")
     assert len(after) == 22
@@ -335,7 +402,7 @@ def test_package_quantity_created_with_same_numeric_value(skoby_22):
 
 
 @pytest.mark.django_db
-def test_create_and_prune_are_atomic(skoby_22, monkeypatch):
+def test_create_and_prune_are_atomic(skoby_22, monkeypatch, corrective):
     """8. Создание package_quantity и удаление piece_count — одна транзакция.
 
     Роняем команду на последнем шаге (сброс attrs_cache), уже ПОСЛЕ того как
@@ -352,7 +419,14 @@ def test_create_and_prune_are_atomic(skoby_22, monkeypatch):
     monkeypatch.setattr(cmd, "flush_attrs_cache_merged", boom)
 
     with pytest.raises(RuntimeError):
-        call_command("enrich_attributes", "--tool-type", SKOBY, "--in-stock-only", "--active-only")
+        call_command(
+            "enrich_attributes",
+            "--tool-type",
+            SKOBY,
+            "--in-stock-only",
+            "--active-only",
+            *corrective,
+        )
 
     assert len(_pav_map(ids, "piece_count")) == 22
     assert _pav_map(ids, "package_quantity") == {}
@@ -364,13 +438,17 @@ def test_create_and_prune_are_atomic(skoby_22, monkeypatch):
 
 
 @pytest.mark.django_db
-def test_nabory_otvertok_keeps_piece_count(catalog, skoby_22):
-    """9. Наборы отвёрток продолжают жить на piece_count (160 PAV на стенде)."""
+def test_nabory_otvertok_keeps_piece_count(catalog, skoby_22, corrective):
+    """9. Наборы отвёрток продолжают жить на piece_count (160 PAV на стенде).
+
+    Прогон — corrective и по всему каталогу: именно в нём prune ``piece_count``
+    включён, и именно тут чужой PAV мог бы пострадать.
+    """
     product = _make_product(catalog, "Набор отверток и бит 114 шт", "no-114", tool_type=OTVERTKI)
     _seed_legacy_piece_count(product, 114)
     pav_id = ProductAttributeValue.objects.get(product=product, attribute__slug="piece_count").id
 
-    call_command("enrich_attributes", "--in-stock-only", "--active-only")
+    call_command("enrich_attributes", "--in-stock-only", "--active-only", *corrective)
 
     pav = ProductAttributeValue.objects.get(product=product, attribute__slug="piece_count")
     assert pav.id == pav_id
@@ -381,14 +459,14 @@ def test_nabory_otvertok_keeps_piece_count(catalog, skoby_22):
 
 
 @pytest.mark.django_db
-def test_sharoshki_keep_piece_count(catalog, skoby_22):
+def test_sharoshki_keep_piece_count(catalog, skoby_22, corrective):
     """10. Шарошки продолжают жить на piece_count (5 PAV на стенде)."""
     product = _make_product(
         catalog, "Набор шарошек по металлу 5 предметов", "sh-5", tool_type=SHAROSHKI
     )
     _seed_legacy_piece_count(product, 5)
 
-    call_command("enrich_attributes", "--in-stock-only", "--active-only")
+    call_command("enrich_attributes", "--in-stock-only", "--active-only", *corrective)
 
     pav = ProductAttributeValue.objects.get(product=product, attribute__slug="piece_count")
     assert pav.value_decimal == Decimal(5)
@@ -398,7 +476,7 @@ def test_sharoshki_keep_piece_count(catalog, skoby_22):
 
 
 @pytest.mark.django_db
-def test_zero_stock_skoby_stays_out_of_corrective_scope(catalog, skoby_22):
+def test_zero_stock_skoby_stays_out_of_corrective_scope(catalog, skoby_22, corrective):
     """11. Скобы с нулевым остатком в corrective scope не попадают.
 
     Владелец отложил остальные 40 позиций типа: их piece_count остаётся как есть
@@ -407,8 +485,10 @@ def test_zero_stock_skoby_stays_out_of_corrective_scope(catalog, skoby_22):
     zero = _make_product(catalog, "Скобы для степлера тип 53 FIT  4мм/1000шт", "sk-zero", stock="0")
     _seed_legacy_piece_count(zero, 1000)
 
-    report = _dry_run("--tool-type", SKOBY, "--in-stock-only", "--active-only")
-    call_command("enrich_attributes", "--tool-type", SKOBY, "--in-stock-only", "--active-only")
+    report = _dry_run("--tool-type", SKOBY, "--in-stock-only", "--active-only", *corrective)
+    call_command(
+        "enrich_attributes", "--tool-type", SKOBY, "--in-stock-only", "--active-only", *corrective
+    )
 
     assert zero.id not in {row["product_id"] for row in report["rows"]}
     assert report["scope"]["selected_products"] == 22
@@ -417,17 +497,18 @@ def test_zero_stock_skoby_stays_out_of_corrective_scope(catalog, skoby_22):
 
 
 @pytest.mark.django_db
-def test_other_tool_type_piece_count_not_pruned(catalog, skoby_22):
+def test_other_tool_type_piece_count_not_pruned(catalog, skoby_22, corrective):
     """12. Товар чужого tool_type под prune не попадает.
 
     У ``molotki`` блок правил есть, но ``piece_count`` в нём не объявлен, значит
-    атрибут вне managed-множества типа — движок его не трогает.
+    атрибут вне managed-множества типа — движок его не трогает. Проверяем на
+    corrective ruleset: transitional-правило добавлено только скобам.
     """
     hammer = _make_product(catalog, "Молоток слесарный 500 г", "ml-1", tool_type=MOLOTKI)
     _seed_legacy_piece_count(hammer, 3)
-    assert "piece_count" not in _managed_by_tt(_ruleset())[MOLOTKI]
+    assert "piece_count" not in _managed_by_tt(_corrective_ruleset(_ruleset()))[MOLOTKI]
 
-    call_command("enrich_attributes", "--in-stock-only", "--active-only")
+    call_command("enrich_attributes", "--in-stock-only", "--active-only", *corrective)
 
     assert ProductAttributeValue.objects.get(
         product=hammer, attribute__slug="piece_count"
@@ -435,7 +516,7 @@ def test_other_tool_type_piece_count_not_pruned(catalog, skoby_22):
 
 
 @pytest.mark.django_db
-def test_no_cross_tool_type_prune(catalog, skoby_22):
+def test_no_cross_tool_type_prune(catalog, skoby_22, corrective):
     """13. Прогон, ограниченный скобами, не удаляет ни одного чужого PAV."""
     others = []
     for name, code, tt, value in (
@@ -449,8 +530,10 @@ def test_no_cross_tool_type_prune(catalog, skoby_22):
     other_ids = [p.id for p in others]
     before = _pav_map(other_ids, "piece_count")
 
-    report = _dry_run("--tool-type", SKOBY, "--in-stock-only", "--active-only")
-    call_command("enrich_attributes", "--tool-type", SKOBY, "--in-stock-only", "--active-only")
+    report = _dry_run("--tool-type", SKOBY, "--in-stock-only", "--active-only", *corrective)
+    call_command(
+        "enrich_attributes", "--tool-type", SKOBY, "--in-stock-only", "--active-only", *corrective
+    )
 
     pruned_products = {row["product_id"] for row in report["rows"] if row["action"] == "prune"}
     assert pruned_products == {p.id for p in skoby_22}
@@ -464,12 +547,18 @@ def test_no_cross_tool_type_prune(catalog, skoby_22):
 
 
 @pytest.mark.django_db
-def test_rerun_is_idempotent(skoby_22):
-    """14. Повторный прогон ничего не меняет: ни PAV id, ни значений, ни prune."""
-    ids = [p.id for p in skoby_22]
-    args = ("--tool-type", SKOBY, "--in-stock-only", "--active-only")
+def test_rerun_is_idempotent(skoby_22, corrective):
+    """14. После миграции штатный прогон на ПОСТОЯННОМ ruleset ничего не меняет.
 
-    call_command("enrich_attributes", *args)
+    Это состояние стенда после мержа: миграция уже применена, transitional-правила
+    в боевом файле нет. Любой штатный прогон обязан дать только ``keep`` — ни
+    ``create`` (иначе вернутся 22 piece_count и на витрине окажутся два фасета
+    сразу, что владелец прямо запретил), ни ``prune``, ни ``update``.
+    """
+    ids = [p.id for p in skoby_22]
+    scope = ("--tool-type", SKOBY, "--in-stock-only", "--active-only")
+
+    call_command("enrich_attributes", *scope, *corrective)
     snapshot = {
         (pav.product_id, pav.attribute.slug): (pav.id, pav.value_decimal)
         for pav in ProductAttributeValue.objects.filter(
@@ -477,8 +566,8 @@ def test_rerun_is_idempotent(skoby_22):
         ).select_related("attribute")
     }
 
-    report = _dry_run(*args)
-    call_command("enrich_attributes", *args)
+    report = _dry_run(*scope)
+    call_command("enrich_attributes", *scope)
 
     again = {
         (pav.product_id, pav.attribute.slug): (pav.id, pav.value_decimal)
@@ -487,12 +576,12 @@ def test_rerun_is_idempotent(skoby_22):
         ).select_related("attribute")
     }
     assert again == snapshot
-    assert [r for r in report["rows"] if r["action"] in ("prune", "create")] == []
+    assert set(report["totals"]["by_action"]) == {"keep"}
     assert _pav_map(ids, "piece_count") == {}
 
 
 @pytest.mark.django_db
-def test_rollback_restores_original_attribute_and_value(skoby_22, tmp_path):
+def test_rollback_restores_original_attribute_and_value(skoby_22, tmp_path, corrective):
     """15. Откат возвращает исходную пару «атрибут + значение».
 
     Откат исполняется тем же движком по зеркальному ruleset: piece_count снова
@@ -503,7 +592,7 @@ def test_rollback_restores_original_attribute_and_value(skoby_22, tmp_path):
     manifest = _pav_map(ids, "piece_count")
     args = ("--tool-type", SKOBY, "--in-stock-only", "--active-only")
 
-    call_command("enrich_attributes", *args)
+    call_command("enrich_attributes", *args, *corrective)
     assert len(_pav_map(ids, "package_quantity")) == 22
 
     base = _write_ruleset(tmp_path, _rollback_ruleset(_ruleset()))
@@ -514,11 +603,13 @@ def test_rollback_restores_original_attribute_and_value(skoby_22, tmp_path):
 
 
 @pytest.mark.django_db
-def test_attrs_cache_matches_db_after_migration(skoby_22):
+def test_attrs_cache_matches_db_after_migration(skoby_22, corrective):
     """16. attrs_cache после миграции соответствует БД: piece_count вычищен."""
     ids = [p.id for p in skoby_22]
 
-    call_command("enrich_attributes", "--tool-type", SKOBY, "--in-stock-only", "--active-only")
+    call_command(
+        "enrich_attributes", "--tool-type", SKOBY, "--in-stock-only", "--active-only", *corrective
+    )
 
     values = _pav_map(ids, "package_quantity")
     for product in Product.objects.filter(id__in=ids):
