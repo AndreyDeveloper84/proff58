@@ -25,6 +25,18 @@
    ``bound:*:dead``, по умолчанию — WARNING с указанием выбранного узла,
    ``--strict-live-categories`` делает её фатальной.
 
+Окно ХАР-21 (задание владельца 2026-08-13) добавило шестой:
+
+6. **Дефект «порядок вариантов переставляется молча»** — ``sort_order`` у
+   ``AttributeOption`` выводится из позиции элемента в массиве ``options`` (поля в
+   правилах нет), а ``_apply`` писал его через ``update_or_create`` **всем** строкам
+   плана, не глядя на ``action``. Любая правка словаря переставляла значения в
+   фасетах витрины (``sort_order`` — первичный ключ сортировки). Инвариант:
+   существующий ``sort_order`` пишется только при создании варианта; расхождение
+   всегда видно в плане (``suppressed`` + ``summary.options.sort_diff`` + таблица
+   ``attribute · option · current · target · action · reason``), но применяется
+   только с ``--allow-option-sort-updates``.
+
 Плюс сам dry-run: ничего не пишет, печатает machine-readable план
 (create/update/keep + было→станет) и совпадает с тем, что реально делает apply.
 """
@@ -665,6 +677,240 @@ def test_matching_flags_are_not_counted_as_diff(tmp_path):
 
 
 # --------------------------------------------------------------------------- #
+# Дефект 6 (ХАР-21): sort_order существующего варианта переставлялся молча
+# --------------------------------------------------------------------------- #
+
+# Позиция в массиве — единственный источник sort_order: Держатель 0, Вороток 1, Набор 2.
+TOOL_KIND_SLUGS = {"Держатель": "derzhatel", "Вороток": "vorotok", "Набор": "nabor"}
+TOOL_KIND_RULES = {
+    "tool_type": "metchiki-plashki",
+    "category": "Ручной инструмент",
+    "attributes": [
+        {
+            "slug": "tool_kind",
+            "name": "Вид",
+            "kind": "select",
+            "options": [{"value": v, "slug": s} for v, s in TOOL_KIND_SLUGS.items()],
+        }
+    ],
+}
+
+
+def _existing_tool_kind(options: dict[str, int], *, slugs: dict[str, str] | None = None) -> None:
+    """Живой корень + атрибут ``tool_kind`` с вариантами «значение → текущий sort_order»."""
+    Category.add_root(name="Ручной инструмент", slug="ruchnoy", is_active=True, on_site=True)
+    attribute = Attribute.objects.create(
+        slug="tool_kind", name="Вид", attribute_type=AttributeType.SELECT
+    )
+    for value, sort_order in options.items():
+        AttributeOption.objects.create(
+            attribute=attribute,
+            value=value,
+            slug=(slugs or TOOL_KIND_SLUGS)[value],
+            sort_order=sort_order,
+        )
+
+
+def _sort_orders() -> dict[str, int]:
+    return dict(
+        AttributeOption.objects.filter(attribute__slug="tool_kind").values_list(
+            "value", "sort_order"
+        )
+    )
+
+
+@pytest.mark.django_db
+def test_existing_option_sort_order_is_kept_without_permission(tmp_path):
+    """Кейс 1: чужой ``sort_order`` не тронут, а в плане виден как расхождение ``keep``."""
+    _existing_tool_kind({"Набор": 0, "Вороток": 1})
+    path = _write_rules(tmp_path, [TOOL_KIND_RULES])
+
+    plan = _plan(path)
+    row = next(r for r in plan["options"] if r["value"] == "Набор")
+    assert row["action"] == "keep"
+    assert row["current"] == {"slug": "nabor", "sort_order": 0}
+    assert row["target"] == {"slug": "nabor", "sort_order": 2}
+    assert row["changes"] == []
+    assert row["suppressed"] == [
+        {
+            "field": "sort_order",
+            "from": 0,
+            "to": 2,
+            "reason": "option_sort_update_not_authorized",
+        }
+    ]
+    assert row["reason"] == "option_sort_update_not_authorized"
+    assert plan["summary"]["options"]["sort_diff"] == 1
+
+    call_command("load_attributes", "--path", path, stderr=StringIO())
+
+    # Порядок владельца сохранён; новый вариант при этом создан.
+    assert _sort_orders() == {"Набор": 0, "Вороток": 1, "Держатель": 0}
+
+
+@pytest.mark.django_db
+def test_existing_option_sort_order_is_updated_with_permission(tmp_path):
+    """Кейс 2: с ``--allow-option-sort-updates`` тот же вариант получает ``update``."""
+    _existing_tool_kind({"Набор": 0, "Вороток": 1})
+    path = _write_rules(tmp_path, [TOOL_KIND_RULES])
+
+    plan = _plan(path, "--allow-option-sort-updates")
+    row = next(r for r in plan["options"] if r["value"] == "Набор")
+    assert row["action"] == "update"
+    assert row["changes"] == [{"field": "sort_order", "from": 0, "to": 2}]
+    assert row["suppressed"] == []
+    assert row["reason"] == "option_sort_update_authorized"
+    assert plan["summary"]["options"]["sort_diff"] == 1
+
+    call_command(
+        "load_attributes", "--path", path, "--allow-option-sort-updates", stderr=StringIO()
+    )
+
+    assert _sort_orders() == {"Держатель": 0, "Вороток": 1, "Набор": 2}
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("extra", [(), ("--allow-option-sort-updates",)])
+def test_new_option_gets_sort_order_from_rules(tmp_path, extra):
+    """Кейс 3: у ВНОВЬ создаваемого варианта порядок берётся из позиции — в обоих режимах."""
+    Category.add_root(name="Ручной инструмент", slug="ruchnoy", is_active=True, on_site=True)
+    path = _write_rules(tmp_path, [TOOL_KIND_RULES])
+
+    call_command("load_attributes", "--path", path, *extra, stderr=StringIO())
+
+    assert _sort_orders() == {"Держатель": 0, "Вороток": 1, "Набор": 2}
+
+
+@pytest.mark.django_db
+def test_option_plan_counts_without_permission(tmp_path):
+    """Кейс 4а: без флага расхождение не попадает в ``update``, но считается в ``sort_diff``."""
+    _existing_tool_kind({"Набор": 0, "Вороток": 1})
+    path = _write_rules(tmp_path, [TOOL_KIND_RULES])
+
+    plan = _plan(path)
+
+    # Держатель — create; Набор — расхождение подавлено (keep); Вороток — совпал (keep).
+    assert plan["summary"]["options"] == {
+        "create": 1,
+        "update": 0,
+        "keep": 2,
+        "sort_diff": 1,
+    }
+
+
+@pytest.mark.django_db
+def test_option_plan_counts_with_permission(tmp_path):
+    """Кейс 4б: с флагом то же расхождение становится ``update``, ``sort_diff`` не меняется."""
+    _existing_tool_kind({"Набор": 0, "Вороток": 1})
+    path = _write_rules(tmp_path, [TOOL_KIND_RULES])
+
+    plan = _plan(path, "--allow-option-sort-updates")
+
+    assert plan["summary"]["options"] == {
+        "create": 1,
+        "update": 1,
+        "keep": 1,
+        "sort_diff": 1,
+    }
+
+
+@pytest.mark.django_db
+def test_matching_sort_order_is_not_counted_as_diff(tmp_path):
+    """Совпадающий порядок — обычный keep: ни расхождения, ни подавления, ни причины."""
+    _existing_tool_kind({"Держатель": 0, "Вороток": 1, "Набор": 2})
+    path = _write_rules(tmp_path, [TOOL_KIND_RULES])
+
+    plan = _plan(path)
+
+    assert plan["summary"]["options"] == {"create": 0, "update": 0, "keep": 3, "sort_diff": 0}
+    assert [r for r in plan["options"] if r["reason"]] == []
+
+
+@pytest.mark.django_db
+def test_option_sort_diff_table_in_dry_run_summary(tmp_path):
+    """Диф печатается таблицей заказанных колонок — и без флага, и с ним."""
+    _existing_tool_kind({"Набор": 0, "Вороток": 1})
+    path = _write_rules(tmp_path, [TOOL_KIND_RULES])
+
+    err = StringIO()
+    call_command("load_attributes", "--path", path, "--dry-run", stdout=StringIO(), stderr=err)
+    kept = err.getvalue()
+
+    assert "существующих вариантов с расхождением sort_order: 1" in kept
+    assert "attribute · option · current · target · action · reason" in kept
+    assert "tool_kind · Набор · 0 · 2 · keep · option_sort_update_not_authorized" in kept
+
+    err = StringIO()
+    call_command(
+        "load_attributes",
+        "--path",
+        path,
+        "--dry-run",
+        "--allow-option-sort-updates",
+        stdout=StringIO(),
+        stderr=err,
+    )
+    allowed = err.getvalue()
+
+    assert "tool_kind · Набор · 0 · 2 · update · option_sort_update_authorized" in allowed
+
+
+@pytest.mark.django_db
+def test_option_sort_diff_is_shown_before_apply_in_real_run(tmp_path):
+    """Диф виден ДО записи и в боевом прогоне, а не только постфактум в dry-run."""
+    _existing_tool_kind({"Набор": 0, "Вороток": 1})
+    path = _write_rules(tmp_path, [TOOL_KIND_RULES])
+
+    err = StringIO()
+    call_command("load_attributes", "--path", path, stderr=err)
+
+    assert "tool_kind · Набор · 0 · 2 · keep · option_sort_update_not_authorized" in err.getvalue()
+
+
+@pytest.mark.django_db
+def test_option_slug_is_still_updated_while_sort_order_is_kept(tmp_path):
+    """Защита узкая: ``slug`` варианта обновляется как раньше, замирает только ``sort_order``."""
+    _existing_tool_kind({"Набор": 0}, slugs={"Набор": "nabor-old"})
+    path = _write_rules(tmp_path, [TOOL_KIND_RULES])
+
+    plan = _plan(path)
+    row = next(r for r in plan["options"] if r["value"] == "Набор")
+    assert row["action"] == "update"
+    assert row["changes"] == [{"field": "slug", "from": "nabor-old", "to": "nabor"}]
+    assert [s["field"] for s in row["suppressed"]] == ["sort_order"]
+
+    call_command("load_attributes", "--path", path, stderr=StringIO())
+
+    option = AttributeOption.objects.get(attribute__slug="tool_kind", value="Набор")
+    assert (option.slug, option.sort_order) == ("nabor", 0)
+
+
+@pytest.mark.django_db
+def test_option_sort_dry_run_writes_nothing(tmp_path):
+    """--dry-run с разрешением всё равно не пишет в БД."""
+    _existing_tool_kind({"Набор": 0, "Вороток": 1})
+    path = _write_rules(tmp_path, [TOOL_KIND_RULES])
+    before = AttributeOption.objects.count()
+
+    _plan(path, "--allow-option-sort-updates")
+
+    assert _sort_orders() == {"Набор": 0, "Вороток": 1}
+    assert AttributeOption.objects.count() == before
+
+
+@pytest.mark.django_db
+def test_option_sort_permission_does_not_touch_binding_flags(tmp_path):
+    """Кейс 5: разрешение на порядок вариантов не ослабляет guard флагов привязки."""
+    binding = _binding_with_flags(is_filter=False, is_seo_facet=False)
+    path = _write_rules(tmp_path, [FACET_RULES])
+
+    call_command("load_attributes", "--path", path, "--allow-option-sort-updates")
+
+    binding.refresh_from_db()
+    assert (binding.is_filter, binding.is_seo_facet) == (False, False)
+
+
+# --------------------------------------------------------------------------- #
 # dry-run / plan mode
 # --------------------------------------------------------------------------- #
 
@@ -701,7 +947,7 @@ def test_plan_structure_and_counts(tmp_path):
     assert plan["dry_run"] is True
     assert REQUIRED_ATTRIBUTE_FIELDS <= set(plan["attributes"][0])
     assert plan["summary"]["attributes"] == {"create": 1, "update": 0, "keep": 0}
-    assert plan["summary"]["options"] == {"create": 1, "update": 0, "keep": 0}
+    assert plan["summary"]["options"] == {"create": 1, "update": 0, "keep": 0, "sort_diff": 0}
     assert plan["summary"]["bindings"]["create"] == 2
     assert plan["summary"]["bindings"]["ambiguous"] == 0
     assert plan["summary"]["bindings"]["not_found"] == 0
@@ -752,6 +998,6 @@ def test_plan_matches_apply(tmp_path):
     # Повторный план на уже загруженной схеме — всё keep, писать нечего.
     replan = _plan(path)
     assert replan["summary"]["attributes"] == {"create": 0, "update": 0, "keep": 1}
-    assert replan["summary"]["options"] == {"create": 0, "update": 0, "keep": 1}
+    assert replan["summary"]["options"] == {"create": 0, "update": 0, "keep": 1, "sort_diff": 0}
     assert replan["summary"]["bindings"]["create"] == 0
     assert replan["summary"]["bindings"]["keep"] == 2
