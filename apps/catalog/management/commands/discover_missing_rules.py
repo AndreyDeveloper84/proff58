@@ -442,7 +442,9 @@ class Command(BaseCommand):
                 ),
             },
             "candidates": rows,
-            "cumulative_by_volume": _cumulative_by_volume(by_type, block_attrs),
+            "cumulative_by_volume": _cumulative_by_volume(
+                by_type, block_attrs, scope["with_attrs"]
+            ),
         }
 
     def _analyse_type(
@@ -708,13 +710,15 @@ class Command(BaseCommand):
                     out.write(f"    ЛОЖНОЕ:  {example[:110]}")
 
         control = report["cumulative_by_volume"]
-        out.write("\n=== Контрольный кумулятив по объёму (типы без блока, по числу товаров) ===")
-        out.write(
-            f"типов без блока {control['types']} на {control['products']} товаров; "
-            "первые N типов закрывают:"
-        )
-        for n, value in control["checkpoints"].items():
-            out.write(f"  {n:>4} типов → {value} товаров")
+        out.write("\n=== Контрольный кумулятив (типы без блока, по убыванию объёма) ===")
+        for key, title in (
+            ("all", "все товары типа"),
+            ("gap", "только товары без характеристик"),
+        ):
+            block = control[key]
+            out.write(f"\n{key} — {title}: {block['types']} типов на {block['products']} товаров")
+            for n, value in block["checkpoints"].items():
+                out.write(f"  {n:>4} типов → {value} товаров")
 
 
 # ---------------------------------------------------------------------- #
@@ -851,30 +855,59 @@ def _totals(scope, by_type, untyped, block_attrs) -> dict:
     }
 
 
-def _cumulative_by_volume(by_type, block_attrs) -> dict:
+CUMULATIVE_MARKS = (10, 20, 50, 100, 150, 200)
+
+
+def _checkpoints(sizes) -> dict[str, int]:
+    checkpoints: dict[int, int] = {}
+    running = 0
+    for index, size in enumerate(sizes, start=1):
+        running += size
+        if index in CUMULATIVE_MARKS:
+            checkpoints[index] = running
+    for mark in CUMULATIVE_MARKS:
+        if mark > len(sizes):
+            checkpoints.setdefault(mark, running)
+    return {str(k): v for k, v in sorted(checkpoints.items())}
+
+
+def _cumulative_by_volume(by_type, block_attrs, with_attrs) -> dict:
     """Кумулятив по объёму: сколько товаров закрывают N крупнейших типов без блока.
 
     Отдельно от таблицы (та отсортирована по score) — это контрольный ряд для
     сверки с ручными замерами каталога.
+
+    Рядов два, и их **нельзя путать** — именно на этом расходятся ручные замеры:
+
+    ``all``
+        все товары типов без блока. Отвечает на вопрос «какой объём каталога
+        вообще относится к неописанным типам».
+    ``gap``
+        только товары **без характеристик**. Отвечает на вопрос «сколько
+        товаров реально получат значения», и тип, полностью охарактеризованный
+        вручную, в этот ряд не попадает вовсе — поэтому типов в нём меньше.
     """
-    sizes = sorted(
-        (len(pids) for slug, pids in by_type.items() if slug not in block_attrs),
+    without_block = {slug: pids for slug, pids in by_type.items() if slug not in block_attrs}
+    all_sizes = sorted((len(pids) for pids in without_block.values()), reverse=True)
+    gap_sizes = sorted(
+        (
+            gap
+            for pids in without_block.values()
+            if (gap := sum(1 for pid in pids if pid not in with_attrs))
+        ),
         reverse=True,
     )
-    checkpoints = {}
-    running = 0
-    marks = (10, 20, 50, 100, 150, 200)
-    for index, size in enumerate(sizes, start=1):
-        running += size
-        if index in marks:
-            checkpoints[index] = running
-    for mark in marks:
-        if mark > len(sizes):
-            checkpoints.setdefault(mark, running)
     return {
-        "types": len(sizes),
-        "products": sum(sizes),
-        "checkpoints": {str(k): v for k, v in sorted(checkpoints.items())},
+        "all": {
+            "types": len(all_sizes),
+            "products": sum(all_sizes),
+            "checkpoints": _checkpoints(all_sizes),
+        },
+        "gap": {
+            "types": len(gap_sizes),
+            "products": sum(gap_sizes),
+            "checkpoints": _checkpoints(gap_sizes),
+        },
     }
 
 
