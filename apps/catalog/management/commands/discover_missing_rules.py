@@ -122,6 +122,13 @@ RULES_FILE = "attribute_rules.json"
 # Пороги по умолчанию. Вынесены в флаги: числа отчёта зависят от них, поэтому
 # любой прогон обязан печатать использованные значения (см. _scope_meta).
 DEFAULT_MIN_PATTERN_SHARE = 0.25
+# Доля ложных срабатываний наивной регулярки, выше которой шаблон НЕ предлагается.
+# Шаблон, который на своём же корпусе ошибается чаще, чем в трети случаев, —
+# это не характеристика, а совпадение символов: у свёрл наивный «N м» даёт 124
+# попадания и 188 ложных («ф 3,2 мм» → «2 м»). Предлагать такое правило значит
+# советовать оператору заведомый мусор, поэтому шаблон уходит в отдельный список
+# «отклонено по шуму» — с числами, а не молча.
+DEFAULT_MAX_FALSE_POSITIVE_RATE = 0.33
 DEFAULT_TAIL_THRESHOLD = 6
 DEFAULT_HETEROGENEITY_DOMINANCE = 0.35
 DEFAULT_HETEROGENEITY_MIN_HEADS = 10
@@ -141,13 +148,32 @@ STATUS_CLASSIFICATION = "BLOCKED_BY_CLASSIFICATION"
 STATUS_ATTRIBUTE = "BLOCKED_BY_ATTRIBUTE"
 STATUS_CATEGORY = "BLOCKED_BY_CATEGORY"
 
-# Признаки типа-набора: slug семейства nabory-* или ведущее слово названия.
+# Признаки типа-набора: slug семейства nabory-* или ведущее слово названий.
 SET_SLUG_PREFIX = "nabory-"
-SET_HEADS = frozenset({"набор", "наборы", "комплект"})
+SET_HEADS = frozenset({"набор", "наборы", "комплект", "комплекты"})
+# Доля названий, начинающихся с «Набор…», при которой тип считается типом-набором.
+# Порог именно долевой: у почти любого обычного типа найдётся один-два товара
+# «Набор головок», и признак «есть хоть одно такое название» пометил бы наборами
+# половину каталога (проверено на стенде: golovki, otvertki, klyuchi-gaechnye).
+# Отдельные наборы внутри обычного типа — это задача карантина, а не статуса типа.
+SET_HEAD_SHARE = 0.5
 
 
-def _is_set_type(slug: str, heads: set[str]) -> bool:
-    return slug.startswith(SET_SLUG_PREFIX) or bool(heads & SET_HEADS)
+def _set_head_share(names) -> float:
+    """Доля названий, у которых ведущее слово — «набор»/«комплект»."""
+    total = 0
+    sets = 0
+    for name in names:
+        head = head_token(name)
+        if not head:
+            continue
+        total += 1
+        sets += head in SET_HEADS
+    return (sets / total) if total else 0.0
+
+
+def _is_set_type(slug: str, set_head_share: float) -> bool:
+    return slug.startswith(SET_SLUG_PREFIX) or set_head_share >= SET_HEAD_SHARE
 
 
 class Command(BaseCommand):
@@ -204,6 +230,14 @@ class Command(BaseCommand):
             metavar="DOLYA",
             help="Порог доли товаров типа, с которого шаблон предлагается как "
             f"характеристика (по умолчанию {DEFAULT_MIN_PATTERN_SHARE}).",
+        )
+        parser.add_argument(
+            "--max-false-positive-rate",
+            type=float,
+            default=DEFAULT_MAX_FALSE_POSITIVE_RATE,
+            metavar="DOLYA",
+            help="Доля ложных срабатываний, выше которой шаблон не предлагается, а "
+            f"уходит в «отклонено по шуму» (по умолчанию {DEFAULT_MAX_FALSE_POSITIVE_RATE}).",
         )
         parser.add_argument(
             "--tail-threshold",
@@ -346,6 +380,7 @@ class Command(BaseCommand):
         products = scope["products"]
         product_tt = scope["product_tt"]
         min_share = options["min_pattern_share"]
+        max_fp_rate = options["max_false_positive_rate"]
         tail_threshold = options["tail_threshold"]
         dominance_threshold = options["heterogeneity_dominance"]
         n_examples = options["examples"]
@@ -378,6 +413,7 @@ class Command(BaseCommand):
                     ancestors=ancestors,
                     sales_absent=sales_absent,
                     min_share=min_share,
+                    max_fp_rate=max_fp_rate,
                     tail_threshold=tail_threshold,
                     dominance_threshold=dominance_threshold,
                     n_examples=n_examples,
@@ -419,6 +455,7 @@ class Command(BaseCommand):
         ancestors,
         sales_absent,
         min_share,
+        max_fp_rate,
         tail_threshold,
         dominance_threshold,
         n_examples,
@@ -432,8 +469,8 @@ class Command(BaseCommand):
         has_block = covered is not None
         covered = covered or set()
 
-        heads = {head_token(name) for name in names if head_token(name)}
-        is_set = _is_set_type(slug, heads)
+        set_head_share = _set_head_share(names)
+        is_set = _is_set_type(slug, set_head_share)
 
         patterns_out = []
         proposed_shares = []
@@ -447,7 +484,19 @@ class Command(BaseCommand):
                 if (is_set and pattern.set_attribute_slug)
                 else pattern.attribute_slug
             )
-            proposed = share >= min_share and attr_slug not in covered
+            # Шумный шаблон не предлагаем: правило, ошибающееся чаще порога,
+            # оператору вредно. Но и не прячем — он остаётся в отчёте с
+            # rejected_reason, чтобы решение было видимым.
+            too_noisy = hit.false_positive_rate > max_fp_rate
+            passes_share = share >= min_share
+            proposed = passes_share and attr_slug not in covered and not too_noisy
+            rejected_reason = ""
+            if passes_share and attr_slug not in covered and too_noisy:
+                rejected_reason = (
+                    f"шум: {hit.false_positives} ложных на {hit.naive_hits} попаданий "
+                    f"наивной регулярки ({hit.false_positive_rate * 100:.0f}% > "
+                    f"{max_fp_rate * 100:.0f}%)"
+                )
             row = {
                 "pattern": pattern.key,
                 "title": pattern.title,
@@ -464,6 +513,7 @@ class Command(BaseCommand):
                 "false_positive_rate": round(hit.false_positive_rate, 4),
                 "already_in_block": attr_slug in covered,
                 "proposed": proposed,
+                "rejected_reason": rejected_reason,
                 "attribute_exists": attr_slug in scope["known_attributes"],
                 "examples": list(hit.examples),
                 "false_positive_examples": list(hit.false_positive_examples),
@@ -537,6 +587,7 @@ class Command(BaseCommand):
             "proposed_attributes": sorted(set(proposed_slugs)),
             "missing_attributes": missing_attributes,
             "is_set_type": is_set,
+            "set_head_share": round(set_head_share, 4),
             "heterogeneity": {
                 "distinct_heads": hetero.distinct_heads,
                 "top_head": hetero.top_head,
@@ -631,19 +682,25 @@ class Command(BaseCommand):
 
         out.write("\n=== Что предлагается писать (топ показанных) ===")
         for row in shown:
-            if row["status"] != STATUS_CREATE:
-                out.write(f"\n{row['tool_type']}: {row['status']} — {row['reason']}")
-                continue
-            out.write(f"\n{row['tool_type']} ({row['products']} тов.), score {row['score']}:")
+            # Предложения печатаем при любом статусе: блокер объясняет, что
+            # мешает, но не отменяет уже посчитанную картину — оператору нужно
+            # видеть, ради чего блокер стоит снимать.
+            out.write(
+                f"\n{row['tool_type']} ({row['products']} тов., "
+                f"score {row['score']}) — {row['status']}: {row['reason']}"
+            )
             for pattern in row["patterns"]:
-                if not pattern["proposed"]:
+                if not pattern["proposed"] and not pattern["rejected_reason"]:
                     continue
+                mark = "  " if pattern["proposed"] else "  ~"
                 out.write(
-                    f"  {pattern['attribute_slug']:20} {pattern['kind']:7} "
+                    f"{mark}{pattern['attribute_slug']:20} {pattern['kind']:7} "
                     f"{pattern['title']:16} попаданий {pattern['hits']} "
                     f"({pattern['share'] * 100:.0f}%), ложных {pattern['false_positives']}"
                     + ("" if pattern["attribute_exists"] else "  [АТРИБУТА НЕТ В БД]")
                 )
+                if pattern["rejected_reason"]:
+                    out.write(f"    ОТКЛОНЁН: {pattern['rejected_reason']}")
                 out.write(f"    regex: {pattern['regex']}")
                 for example in pattern["examples"]:
                     out.write(f"    пример: {example[:110]}")
@@ -830,6 +887,7 @@ def _scope_meta(options, scope, totals) -> dict:
         "min_pattern_share": options["min_pattern_share"],
         "tail_threshold": options["tail_threshold"],
         "heterogeneity_dominance": options["heterogeneity_dominance"],
+        "max_false_positive_rate": options["max_false_positive_rate"],
         "sales_min_share": options["sales_min_share"],
         "heterogeneity_min_heads": DEFAULT_HETEROGENEITY_MIN_HEADS,
         "heterogeneity_min_products": DEFAULT_HETEROGENEITY_MIN_PRODUCTS,
