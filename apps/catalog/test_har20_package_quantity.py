@@ -108,6 +108,11 @@ def _write_ruleset(tmp_path: Path, raw: dict, name: str = "data") -> Path:
     base = tmp_path / name
     base.mkdir(exist_ok=True)
     for src in DATA_DIR.glob("*.json"):
+        # Реестр карантина не копируем: он ссылается на боевые product_id, которых
+        # в тестовой БД нет, а enrich_attributes на неизвестный товар падает
+        # (контракт P2 — fail-closed). Карантин проверяется своим модулем тестов.
+        if src.name == "attribute_quarantine.json":
+            continue
         shutil.copy(src, base / src.name)
     (base / "attribute_rules.json").write_text(
         json.dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8"
