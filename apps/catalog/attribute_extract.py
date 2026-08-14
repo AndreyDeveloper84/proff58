@@ -26,6 +26,13 @@
 существует: «Набор ключей 6-19 мм, 8 шт.» не имеет одного «размера под ключ». Выразить
 это в regex нельзя — Python не поддерживает lookbehind переменной длины.
 
+Рядом с ``skip_if`` живёт опциональный ``skip_regex`` — список регулярных выражений,
+проверяемых по тому же нормализованному названию. Если хоть одно совпало, **текущий
+атрибут** не извлекается (остальные атрибуты товара обрабатываются как обычно).
+Нужен там, где стоп-слово выразить списком литералов нельзя: «М8/10/12», «М6/8/10» —
+класс трёхчастных комбинаций посадочной резьбы, у которых одного значения не
+существует. Некорректный паттерн — fail-closed: ``ValueError`` при загрузке ruleset.
+
 Приоритет источника берётся из правила (поле ``priority`` / карта
 ``source_priority``), а НЕ хардкодится в движке: ``enrich_attributes`` сравнивает
 приоритет нового значения с уже сохранённым (``ProductAttributeValue.source``),
@@ -79,6 +86,9 @@ class AttrRule:
     false_keywords: tuple[str, ...] = ()  # boolean
     derive: dict | None = None  # инференс по другим атрибутам (см. _derive_one)
     skip_if: tuple[str, ...] = ()  # стоп-слова: правило целиком не применяется
+    # Негативный гейт по regex (опционально): совпадение по нормализованному
+    # названию отключает ТОЛЬКО это правило. Компилируется при загрузке ruleset.
+    skip_patterns: tuple[re.Pattern, ...] = ()
     # select: матчить ключевые слова только целым словом (границы с обеих сторон).
     # По умолчанию выключено — поведение существующих select-правил не меняется.
     word_boundary: bool = False
@@ -119,12 +129,32 @@ class AttributeRules:
         by_tt: dict[str, list[AttrRule]] = {}
         for tt in data.get("tool_types", []):
             by_tt[tt["tool_type"]] = [
-                cls._rule(a, source_priority) for a in tt.get("attributes", [])
+                cls._rule(a, source_priority, tt["tool_type"]) for a in tt.get("attributes", [])
             ]
         return cls(by_tt, source_priority)
 
     @staticmethod
-    def _rule(a: dict, source_priority: dict[str, int]) -> AttrRule:
+    def _compile_skip_regex(a: dict, tool_type: str) -> tuple[re.Pattern, ...]:
+        """Скомпилировать ``skip_regex`` правила — fail-closed на битом паттерне.
+
+        Молча игнорировать невалидный негативный гейт нельзя: правило бы «ожило»
+        и записало значение там, где его запретили. Поэтому ruleset с битым
+        ``skip_regex`` не загружается вовсе, а ошибка называет блок, атрибут и
+        сам паттерн.
+        """
+        compiled: list[re.Pattern] = []
+        for pattern in a.get("skip_regex", []):
+            try:
+                compiled.append(re.compile(pattern))
+            except re.error as exc:
+                raise ValueError(
+                    f"Некорректный skip_regex в блоке tool_type={tool_type!r}, "
+                    f"атрибут {a.get('slug')!r}: {pattern!r} — {exc}"
+                ) from exc
+        return tuple(compiled)
+
+    @staticmethod
+    def _rule(a: dict, source_priority: dict[str, int], tool_type: str = "") -> AttrRule:
         source = a.get("source", "regex")
         return AttrRule(
             slug=a["slug"],
@@ -145,6 +175,7 @@ class AttributeRules:
             false_keywords=tuple(a.get("false_keywords", [])),
             derive=a.get("derive"),
             skip_if=tuple(a.get("skip_if", [])),
+            skip_patterns=AttributeRules._compile_skip_regex(a, tool_type),
             word_boundary=a.get("word_boundary", False),
         )
 
@@ -236,6 +267,12 @@ class AttributeRules:
         # («Набор ключей 6-19 мм, 8 шт.»), поэтому правило не применяется целиком —
         # это надёжнее, чем пытаться выразить исключение в regex.
         if any(AttributeRules._skip_if_matches(norm, normalize(kw)) for kw in rule.skip_if):
+            return None
+
+        # Негативный гейт по regex — там же и по тому же нормализованному названию,
+        # что и skip_if (иначе поведение двух механизмов разъедется). Блокирует
+        # только это правило: остальные атрибуты товара извлекаются как обычно.
+        if any(pat.search(norm) for pat in rule.skip_patterns):
             return None
 
         if rule.kind == SELECT:
