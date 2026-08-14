@@ -171,6 +171,13 @@ code команды = статус джобы.
   контуре не используется: с Wave 7.1 H4 замороженный gate-sample перевыпущен на
   canonical binding, CI гоняет гейт без поблажки.
 - Shadow-контур **ничего не пишет в БД**; apply — отдельная авторизация.
+- **Карантин характеристик** (`data/attribute_quarantine.json`) запрещает
+  `enrich_attributes` писать значения по товару/оси, но **никогда не удаляет уже
+  записанные PAV** — гейт стоит в команде ДО prune-цикла, иначе строка в реестре
+  молча стирала бы данные; уборка старого — отдельная команда. Реестр
+  валидируется fail-closed (неизвестный `product_id` или ключ записи = отказ
+  прогона), запись не удаляется — снятие только через `status: "lifted"`
+  (`docs/catalog/attribute-quarantine.md`).
 - Откат `tool_type` исполняется **парой снимков** (`--from` ожидаемое текущее,
   `--to` цель): live вне обоих состояний → `conflict`, а не молчаливая перезапись;
   план с любым конфликтом не применяется целиком (`docs/catalog/tool-type-reverse-migration.md`).
@@ -221,8 +228,11 @@ pytest apps/catalog              # только каталог (~350 тесто�
 
 - **Импорт/структура:** `import_products`, `bootstrap_catalog`, `catalog_build_section`,
   `catalog_build_skeleton`, `catalog_taxonomy_apply`, `catalog_v2_swap`, `publish_catalog`
-- **Типы и атрибуты:** `load_tool_types`, `load_attributes`, `enrich_attributes`,
-  `enrich_tool_type`, `backfill_option_slugs`, `rebuild_attrs_cache`
+- **Типы и атрибуты:** `load_tool_types`, `load_attributes`, `enrich_attributes`
+  (флаг `--quarantine` — реестр карантина), `enrich_tool_type`,
+  `backfill_option_slugs`, `rebuild_attrs_cache`,
+  `catalog_attribute_cleanup_quarantine` (удаление ранее записанного по
+  карантинным товарам; dry-run по умолчанию, `--apply` требует `--snapshot`)
 - **Аудит:** `catalog_taxonomy_audit`, `catalog_taxonomy_reconcile`, `attribute_coverage`,
   `coverage_report`, `tool_type_gaps`, `analyze_subgroup`, `catalog_v2_report`
 - **Откат и обратимость (H5):** `catalog_tool_type_snapshot`, `catalog_tool_type_rollback`,
