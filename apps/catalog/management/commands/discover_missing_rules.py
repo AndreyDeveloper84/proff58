@@ -35,16 +35,27 @@ Rule Impact Score
     характеристик — ноль выгоды, тип уже закрыт.
 ``sales_weight``
     Продажи за окно ``SALES_WINDOW_DAYS`` (``ProductSalesStat``, наполняется
-    через ``/api/1c/sales/upload`` и заказы сайта)::
+    из фактов ``ProductSalesFact``: заказы сайта и выгрузка
+    ``/api/1c/sales/upload``)::
 
-        нет данных о продажах вообще → 1.0 для всех типов + флаг
-            sales_data_absent (метрика деградирует явно: продажи не участвуют,
-            score сопоставим только внутри прогона)
+        доля товаров скоупа с продажами за окно < --sales-min-share
+            → 1.0 для всех типов + флаг sales_data_absent: коммерческого веса
+              в рейтинге нет, и это ограничение ДАННЫХ, а не кода
         иначе → 0.5 + 1.5 × доля товаров типа с продажами, диапазон [0.5, 2.0]
 
     Тип без продаж получает 0.5 — вдвое ниже среднего, но **не ноль**: иначе
     товар, который не продавался просто потому, что у него нет характеристик и
     его не находят фильтром, навсегда остался бы без правил.
+
+    Деградация нейтральная (1.0), а не нулевая, намеренно: с нулём весь рейтинг
+    схлопнулся бы в ноль и команда стала бы бесполезной ровно там, где она
+    нужнее всего. Порог ``--sales-min-share`` отсекает не только пустую
+    таблицу, но и единичные строки: на стенде это 1 факт продажи на 47 225
+    товаров — таблица формально не пуста, а сигнала в ней нет. Долевой порог
+    (а не абсолютный) выбран потому, что осмысленность продаж зависит от
+    размера каталога, а не от числа строк.  Пока 1С не начнёт слать ``sales/upload``,
+    приоритизация идёт без коммерческого веса — команда обязана сказать об этом
+    вслух, а не молча посчитать.
 ``extraction_confidence``
     Средняя доля товаров типа под одним предложенным шаблоном (100 % → 1.0,
     половина → 0.5). Правило, срабатывающее у четверти корпуса, стоит вчетверо
@@ -115,6 +126,13 @@ DEFAULT_TAIL_THRESHOLD = 6
 DEFAULT_HETEROGENEITY_DOMINANCE = 0.35
 DEFAULT_HETEROGENEITY_MIN_HEADS = 10
 DEFAULT_HETEROGENEITY_MIN_PRODUCTS = 20
+# Доля товаров скоупа с продажами за окно, ниже которой коммерческий вес
+# нейтрализуется. 1 % — не круглое число «на глаз», а точка, где множитель
+# перестаёт что-либо различать: при базовой частоте продаж 1 % у типа медианного
+# размера (6 товаров) ожидаемое число продавшихся — 0.06, то есть почти все типы
+# получают sold_share=0 и один и тот же вес 0.5. Такой множитель не приоритизирует,
+# а просто делит весь рейтинг на два, изображая при этом учёт продаж.
+DEFAULT_SALES_MIN_SHARE = 0.01
 
 STATUS_CREATE = "CREATE_RULE"
 STATUS_SET = "SKIP_SET"
@@ -194,6 +212,15 @@ class Command(BaseCommand):
             metavar="N",
             help=f"Тип с числом товаров меньше N — длинный хвост, статус {STATUS_TAIL} "
             f"(по умолчанию {DEFAULT_TAIL_THRESHOLD}).",
+        )
+        parser.add_argument(
+            "--sales-min-share",
+            type=float,
+            default=DEFAULT_SALES_MIN_SHARE,
+            metavar="DOLYA",
+            help="Минимальная доля товаров скоупа с продажами за окно, при которой "
+            "коммерческий вес учитывается. Меньше — sales_weight=1.0 у всех типов "
+            f"с явной пометкой «н/д» (по умолчанию {DEFAULT_SALES_MIN_SHARE}).",
         )
         parser.add_argument(
             "--heterogeneity-dominance",
@@ -332,7 +359,12 @@ class Command(BaseCommand):
             else:
                 untyped.append(pid)
 
-        sales_absent = scope["sales_total"] == 0
+        # Коммерческий вес учитываем только если продажи вообще различают типы.
+        # Иначе множитель одинаков у всех и лишь делит рейтинг на два, изображая
+        # учёт продаж — деградируем в нейтральный 1.0 и говорим об этом вслух.
+        sold_in_scope = len(scope["sold"] & set(products))
+        sold_scope_share = sold_in_scope / len(products) if products else 0.0
+        sales_absent = sold_scope_share < options["sales_min_share"]
         ancestors = _ancestor_index(scope["categories"])
 
         rows = []
@@ -359,12 +391,16 @@ class Command(BaseCommand):
             "totals": totals,
             "sales": {
                 "window_days": (sales_window()[1] - sales_window()[0]).days + 1,
-                "products_with_sales_in_scope": len(scope["sold"] & set(products)),
+                "products_with_sales_in_scope": sold_in_scope,
+                "scope_share": round(sold_scope_share, 6),
+                "min_share": options["sales_min_share"],
                 "sales_stat_rows_total": scope["sales_total"],
                 "data_absent": sales_absent,
                 "degradation": (
-                    "нет ни одной строки ProductSalesStat: sales_weight=1.0 у всех типов, "
-                    "продажи в приоритизации не участвуют"
+                    f"продажи есть у {sold_in_scope} товаров скоупа "
+                    f"({sold_scope_share * 100:.3f}% < порога "
+                    f"{options['sales_min_share'] * 100:.1f}%): sales_weight=1.0 у всех "
+                    "типов, коммерческий вес в приоритизации НЕ участвует"
                     if sales_absent
                     else "sales_weight = 0.5 + 1.5 × доля товаров типа с продажами за окно"
                 ),
@@ -794,6 +830,7 @@ def _scope_meta(options, scope, totals) -> dict:
         "min_pattern_share": options["min_pattern_share"],
         "tail_threshold": options["tail_threshold"],
         "heterogeneity_dominance": options["heterogeneity_dominance"],
+        "sales_min_share": options["sales_min_share"],
         "heterogeneity_min_heads": DEFAULT_HETEROGENEITY_MIN_HEADS,
         "heterogeneity_min_products": DEFAULT_HETEROGENEITY_MIN_PRODUCTS,
         "products": totals["products"],
