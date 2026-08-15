@@ -98,10 +98,10 @@ Read-only команда каталога, отвечающая на два во
 
 ```
 === Значения: потенциал / исполнимое / запертое ===
-potential_values:  4180
-actionable_values: 1633
-blocked_values:    2547
-actionable_ratio:  39.1%
+potential_values:  <N>
+actionable_values: <N>
+blocked_values:    <N>
+actionable_ratio:  <N>%
 ```
 
 * `potential_values` — сколько значений **технически** можно извлечь;
@@ -165,10 +165,10 @@ klyuchi-gaechnye (210 тов., score 216.0) — CREATE_RULE: можно писа
 
 ```
 === Топ осей по actionable_values (что писать) ===
-  diameter             potential  1204 actionable  1204 blocked     0  типов  38  READY×38
+  diameter             potential     84 actionable     84 blocked      0  типов   2  READY×2
 
 === Топ осей по blocked_values (очередь архитектурной работы) ===
-  material             potential   612 actionable     0 blocked   612  типов   9  BLOCKED_BY_FACET×9
+  package_quantity     potential     24 actionable      0 blocked     24  типов   1  BLOCKED_BY_FACET×1
 ```
 
 Второй ряд и есть **очередь архитектурной работы**: что создать (`load_attributes`)
@@ -183,6 +183,10 @@ klyuchi-gaechnye (210 тов., score 216.0) — CREATE_RULE: можно писа
   sverla       Оснастка            74   1      402     0         2416   16.6%  КОРЕНЬ
   klyuchi-...  Ручной инструмент  339   1      173    37         1031   13.8%  КОРЕНЬ
 ```
+
+> Числа строк — из замера блоков 2026-08-15 (см. таблицу расхождений ниже);
+> проценты заполненности выведены из них. Сводные счётчики верхней строки —
+> оттуда же: 28 блоков из 48 бьют в корень.
 
 * `накрыто` / `вне` — сколько товаров типа цель накрывает и сколько остаётся
   снаружи. `вне > 0` значит, что часть товаров значения не получит даже после
@@ -202,10 +206,10 @@ klyuchi-gaechnye (210 тов., score 216.0) — CREATE_RULE: можно писа
 
 ```
 === Очередь facet-binding (что привязать, чтобы разблокировать) ===
-всего заперто привязками: 612 значений; порог полезной заполненности 10%
+всего заперто привязками: 74 значений; порог полезной заполненности 10%
   атрибут                кат.   уровень  разблок под фасетом  заполн  типы
   material                346    direct       74          210   35.2%  klyuchi-gaechnye
-  material                339  ancestor      612         4180   14.6%  klyuchi-gaechnye, ...
+  material                339  ancestor       74         1031    7.2%  klyuchi-gaechnye
 ```
 
 * `уровень` — `direct` (категория товаров) или `ancestor` (узел выше). Предок
