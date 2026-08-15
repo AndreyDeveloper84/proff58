@@ -236,8 +236,11 @@ pytest apps/catalog              # только каталог (~350 тесто�
 - **Аудит:** `catalog_taxonomy_audit`, `catalog_taxonomy_reconcile`, `attribute_coverage`,
   `coverage_report`, `tool_type_gaps`, `analyze_subgroup`, `catalog_v2_report`,
   `discover_missing_rules` (read-only: какое правило характеристик писать
-  следующим — Rule Impact Score и статусы вида `CREATE_RULE` /
-  `BLOCKED_BY_CLASSIFICATION`; см. `docs/catalog/discover-missing-rules.md`)
+  следующим — счёт **по каждой оси**: `potential`/`actionable`/`blocked`,
+  статусы оси с `next_action`, рейтинг по `actionable_score`, очередь
+  facet-binding и раздел «куда уйдёт привязка» — поле `category` блока
+  разрешается лестницей `load_attributes` и у 28 блоков из 48 попадает в корень
+  раздела; см. `docs/catalog/discover-missing-rules.md`)
 - **Откат и обратимость (H5):** `catalog_tool_type_snapshot`, `catalog_tool_type_rollback`,
   `catalog_taxonomy_downgrade`
 - **Очередь исследования:** `catalog_queue_create|export|import|status|finalize`
