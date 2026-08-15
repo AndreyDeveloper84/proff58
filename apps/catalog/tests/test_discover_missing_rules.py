@@ -7,12 +7,15 @@
 * частоты шаблонов и ложные срабатывания считаются по фактическим названиям;
 * разнородный корпус помечается по признаку, а не по списку slug'ов;
 * score получается ровно перемножением пяти множителей из самого отчёта;
-* пустой скоуп не падает, а честно говорит, что смотреть нечего.
+* пустой скоуп не падает, а честно говорит, что смотреть нечего;
+* Markdown-отчёт содержит те же числа и остаётся валидной разметкой — регулярка
+  с ``|`` внутри не должна разваливать таблицу.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from decimal import Decimal
 
 import pytest
@@ -112,8 +115,49 @@ def run(rules_dir, **kwargs) -> dict:
     return json.loads(report_path.read_text(encoding="utf-8"))
 
 
+def run_md(rules_dir, **kwargs) -> str:
+    """Прогнать команду и вернуть текст Markdown-отчёта."""
+    md_path = rules_dir / "report.md"
+    call_command(
+        "discover_missing_rules",
+        path=str(rules_dir),
+        md_report=str(md_path),
+        **kwargs,
+    )
+    return md_path.read_text(encoding="utf-8")
+
+
 def candidate(report: dict, slug: str) -> dict:
     return next(row for row in report["candidates"] if row["tool_type"] == slug)
+
+
+_PIPE_RE = re.compile(r"(?<!\\)\|")
+
+
+def assert_markdown_tables_are_valid(text: str) -> int:
+    """Проверить таблицы Markdown: одинаковое число колонок и строка выравнивания.
+
+    Проверяем именно неэкранированные трубы: значение с ``|`` внутри обязано быть
+    экранировано, иначе таблица молча разъезжается — а отчёт вставляют в задачу.
+    """
+    tables = 0
+    block: list[str] = []
+    for line in text.splitlines() + [""]:
+        if line.startswith("|"):
+            block.append(line)
+            continue
+        if block:
+            assert len(block) >= 2, f"таблица без строки выравнивания: {block}"
+            columns = len(_PIPE_RE.findall(block[0]))
+            assert all(
+                set(cell.strip()) <= {"-", ":"} and cell.strip()
+                for cell in block[1].strip("|").split("|")
+            ), f"вторая строка таблицы не выравнивание: {block[1]}"
+            for row in block:
+                assert len(_PIPE_RE.findall(row)) == columns, f"колонки разъехались: {row}"
+            tables += 1
+            block = []
+    return tables
 
 
 # --------------------------------------------------------------------- #
@@ -482,3 +526,158 @@ def test_faceted_category_raises_visibility(rules_dir, tool_type_attr, live_cate
     with_binding = candidate(run(rules_dir, in_stock_only=True), "krep-styazhki")
     assert with_binding["score_factors"]["facet_visibility"] == pytest.approx(1.0)
     assert with_binding["score"] > without_binding["score"]
+
+
+# --------------------------------------------------------------------- #
+# Markdown-отчёт
+# --------------------------------------------------------------------- #
+
+
+def test_md_report_is_written_with_key_sections(rules_dir, tool_type_attr, live_category):
+    """Файл создаётся и содержит все обязательные разделы отчёта."""
+    for index in range(10):
+        product = make_product(f"md{index}", f"Хомут-стяжка {index + 3} мм 50 шт", live_category)
+        set_tool_type(product, tool_type_attr, "krep-styazhki")
+
+    text = run_md(rules_dir, in_stock_only=True)
+    assert (rules_dir / "report.md").exists()
+    for section in (
+        "# Кандидаты на блоки правил характеристик",
+        "## Скоуп",
+        "## Итоги пула",
+        "## Кандидаты (по убыванию Rule Impact Score)",
+        "## Что предлагается писать",
+        "## Контрольный кумулятив",
+    ):
+        assert section in text, section
+    # Read-only заявлено в самом отчёте, а не только в документации.
+    assert "read-only" in text
+    # Строка про продажи — с явной деградацией, раз продаж нет.
+    assert "ПРОДАЖИ:" in text and "НЕ участвует" in text
+    # Числа те же, что в JSON.
+    report = run(rules_dir, in_stock_only=True)
+    row = candidate(report, "krep-styazhki")
+    assert f"| {row['products']} |" in text
+    assert f"{row['score']:.1f}" in text
+    assert "krep-styazhki" in text
+
+
+def test_md_report_lists_axes_with_numbers_and_examples(rules_dir, tool_type_attr, live_category):
+    """По каждому кандидату — оси с попаданиями, долей, ложными и примерами."""
+    for index in range(10):
+        product = make_product(f"ax{index}", f"Хомут-стяжка {index + 3} мм 50 шт", live_category)
+        set_tool_type(product, tool_type_attr, "krep-styazhki")
+
+    text = run_md(rules_dir, in_stock_only=True)
+    assert "`diameter`" in text
+    assert "`package_quantity`" in text
+    assert "regex: " in text
+    assert "пример: " in text
+    # Доля печатается процентом, ложные — числом.
+    assert "100%" in text
+    assert "| 10 | 100% | 0 |" in text
+
+
+def test_md_report_stays_valid_markdown_with_pipes_in_regex(
+    rules_dir, tool_type_attr, live_category
+):
+    """Регулярка бит содержит ``|`` — таблицы обязаны это пережить."""
+    for index in range(10):
+        product = make_product(f"bit{index}", f"Бита PH{index % 3 + 1} 50 мм", live_category)
+        set_tool_type(product, tool_type_attr, "bity")
+
+    text = run_md(rules_dir, in_stock_only=True)
+    # Не меньше четырёх таблиц: скоуп, итоги, кандидаты, оси, кумулятив.
+    assert assert_markdown_tables_are_valid(text) >= 4
+    # Регулярка с трубой уехала в инлайн-код, а не в текст.
+    assert "`(?<![а-яёa-z\\d])(ph|pz|tx|t|sl|hex|torx)" in text
+
+
+def test_md_report_respects_limit(rules_dir, tool_type_attr, live_category):
+    for index in range(10):
+        product = make_product(f"l1{index}", f"Хомут-стяжка {index + 3} мм 50 шт", live_category)
+        set_tool_type(product, tool_type_attr, "krep-styazhki")
+    for index in range(10):
+        product = make_product(f"l2{index}", f"Молоток слесарный {index + 1} кг", live_category)
+        set_tool_type(product, tool_type_attr, "molotki-slesarnye")
+
+    full = run_md(rules_dir, in_stock_only=True)
+    assert "molotki-slesarnye" in full
+
+    limited = run_md(rules_dir, in_stock_only=True, limit=1)
+    assert "и ещё 1 типов" in limited
+    # Итоги считаются по всему скоупу, срез влияет только на вывод.
+    assert "| товаров в скоупе | 20 |" in limited
+
+
+def test_md_report_survives_empty_scope(rules_dir, tool_type_attr):
+    text = run_md(rules_dir, in_stock_only=True)
+    assert "Кандидатов нет" in text
+    assert assert_markdown_tables_are_valid(text) >= 3
+
+
+def test_both_reports_are_written_independently(rules_dir, tool_type_attr, live_category):
+    """Оба формата можно попросить одновременно, и они не мешают друг другу."""
+    for index in range(10):
+        product = make_product(f"b{index}", f"Хомут-стяжка {index + 3} мм 50 шт", live_category)
+        set_tool_type(product, tool_type_attr, "krep-styazhki")
+
+    json_path = rules_dir / "both.json"
+    md_path = rules_dir / "both.md"
+    call_command(
+        "discover_missing_rules",
+        path=str(rules_dir),
+        json_report=str(json_path),
+        md_report=str(md_path),
+        in_stock_only=True,
+    )
+    report = json.loads(json_path.read_text(encoding="utf-8"))
+    text = md_path.read_text(encoding="utf-8")
+    assert report["candidates"][0]["tool_type"] == "krep-styazhki"
+    assert "krep-styazhki" in text
+    assert assert_markdown_tables_are_valid(text) >= 4
+
+    # И каждый формат работает в одиночку.
+    only_json = rules_dir / "only.json"
+    call_command(
+        "discover_missing_rules",
+        path=str(rules_dir),
+        json_report=str(only_json),
+        in_stock_only=True,
+    )
+    assert only_json.exists()
+    only_md = rules_dir / "only.md"
+    call_command(
+        "discover_missing_rules",
+        path=str(rules_dir),
+        md_report=str(only_md),
+        in_stock_only=True,
+    )
+    assert only_md.exists()
+
+
+def test_md_report_writes_nothing_to_db(rules_dir, tool_type_attr, live_category):
+    """Второй формат выхода не отменяет главного свойства команды."""
+    for index in range(8):
+        product = make_product(f"mdw{index}", f"Отвертка {index * 2} мм PH2", live_category)
+        set_tool_type(product, tool_type_attr, "otvertki")
+
+    def snapshot() -> tuple:
+        return (
+            Product.objects.count(),
+            ProductAttributeValue.objects.count(),
+            Attribute.objects.count(),
+            AttributeOption.objects.count(),
+            Category.objects.count(),
+            CategoryAttribute.objects.count(),
+            sorted(Product.objects.values_list("pk", "name", "attrs_cache")),
+            sorted(
+                ProductAttributeValue.objects.values_list(
+                    "pk", "product_id", "attribute_id", "value_option_id", "source"
+                )
+            ),
+        )
+
+    before = snapshot()
+    run_md(rules_dir, in_stock_only=True, active_only=True)
+    assert snapshot() == before

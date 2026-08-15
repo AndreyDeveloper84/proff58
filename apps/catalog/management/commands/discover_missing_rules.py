@@ -92,15 +92,27 @@ Rule Impact Score
 ``BLOCKED_BY_CATEGORY``
     Товары типа стоят в мёртвых категориях — фасет не появится на витрине.
 
+Форматы выхода
+--------------
+Консольная таблица — всегда; кроме неё два независимых файла, флаги можно
+указывать вместе:
+
+``--json-report`` — machine-readable снимок отчёта (тот же словарь, что строит
+``_analyse``), для скриптов и сверок.
+``--md-report`` — тот же отчёт в Markdown: для чтения человеком и для вставки в
+задачу без переверстки.
+
 Примеры::
 
     ./manage.py discover_missing_rules --in-stock-only --active-only --limit 20
     ./manage.py discover_missing_rules --in-stock-only --json-report /tmp/dmr.json
+    ./manage.py discover_missing_rules --in-stock-only --md-report /tmp/dmr.md
 """
 
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
@@ -218,6 +230,14 @@ class Command(BaseCommand):
             help="Записать machine-readable отчёт в файл (без флага — только таблица).",
         )
         parser.add_argument(
+            "--md-report",
+            dest="md_report",
+            default=None,
+            metavar="FILE",
+            help="Записать отчёт в Markdown (для чтения человеком и вставки в задачу). "
+            "Независим от --json-report, можно указывать оба.",
+        )
+        parser.add_argument(
             "--examples",
             type=int,
             default=3,
@@ -286,6 +306,7 @@ class Command(BaseCommand):
         report = self._analyse(scope, block_attrs, options)
         self._render(report, options)
 
+        # Форматы независимы: можно попросить оба сразу, можно ни одного.
         json_report = options["json_report"]
         if json_report:
             Path(json_report).write_text(
@@ -293,6 +314,14 @@ class Command(BaseCommand):
                 encoding="utf-8",
             )
             self.stdout.write(f"\nJSON-отчёт: {json_report}")
+
+        md_report = options["md_report"]
+        if md_report:
+            Path(md_report).write_text(
+                render_markdown(report, limit=options["limit"]),
+                encoding="utf-8",
+            )
+            self.stdout.write(f"\nMarkdown-отчёт: {md_report}")
         return ""
 
     # ------------------------------------------------------------------ #
@@ -720,6 +749,281 @@ class Command(BaseCommand):
             out.write(f"\n{key} — {title}: {block['types']} типов на {block['products']} товаров")
             for n, value in block["checkpoints"].items():
                 out.write(f"  {n:>4} типов → {value} товаров")
+
+
+# ---------------------------------------------------------------------- #
+# Markdown-отчёт
+# ---------------------------------------------------------------------- #
+#
+# Тот же отчёт, что печатается в консоль, но в виде, который можно вставить в
+# задачу без переверстки. Функция чистая: на вход словарь ``_analyse``, на выход
+# строка — её можно проверить тестом, не гоняя команду.
+
+_BACKTICKS_RE = re.compile(r"`+")
+
+
+def _md_cell(value) -> str:
+    """Значение для ячейки таблицы: труба и перевод строки ломают разметку."""
+    return str(value).replace("|", "\\|").replace("\n", " ").strip()
+
+
+def _md_code(value) -> str:
+    """Инлайн-код с фенсом, который не рвётся о содержимое.
+
+    Регулярки шаблонов содержат ``|``, ``*`` и ``_``: вне кода Markdown прочитал
+    бы их как разметку, а внутри кода с одиночным бэктиком — сломался бы о
+    бэктик в самом значении. Поэтому длина фенса считается по содержимому.
+    """
+    text = str(value).replace("\n", " ")
+    longest = max((len(match) for match in _BACKTICKS_RE.findall(text)), default=0)
+    fence = "`" * (longest + 1)
+    pad = " " if text.startswith("`") or text.endswith("`") else ""
+    return f"{fence}{pad}{text}{pad}{fence}"
+
+
+def _md_table(header: list[str], align: list[str], rows: list[list[str]]) -> list[str]:
+    """Строки Markdown-таблицы с явным выравниванием колонок."""
+    lines = ["| " + " | ".join(header) + " |", "|" + "|".join(align) + "|"]
+    lines.extend("| " + " | ".join(row) + " |" for row in rows)
+    return lines
+
+
+def _md_flag(value: bool) -> str:
+    return "да" if value else "нет"
+
+
+def render_markdown(report: dict, *, limit: int = 0) -> str:
+    """Собрать Markdown-версию отчёта. ``limit`` — как у таблицы в консоли."""
+    meta = report["scope"]
+    totals = report["totals"]
+    sales = report["sales"]
+    rows = report["candidates"]
+    shown = rows[:limit] if limit else rows
+
+    out: list[str] = ["# Кандидаты на блоки правил характеристик", ""]
+    out.append(
+        "Отчёт команды `discover_missing_rules`. Команда **строго read-only**: "
+        "ни одной записи в БД — ни `ProductAttributeValue`, ни `attrs_cache`."
+    )
+    out.append("")
+
+    out.append("## Скоуп")
+    out.append("")
+    out.extend(
+        _md_table(
+            ["Параметр", "Значение"],
+            ["---", "---"],
+            [
+                ["`--in-stock-only`", _md_flag(meta["in_stock_only"])],
+                ["`--active-only`", _md_flag(meta["active_only"])],
+                ["`--tool-type`", _md_cell(", ".join(meta["tool_type"]) or "—")],
+                ["`--min-pattern-share`", _md_cell(meta["min_pattern_share"])],
+                ["`--max-false-positive-rate`", _md_cell(meta["max_false_positive_rate"])],
+                ["`--tail-threshold`", _md_cell(meta["tail_threshold"])],
+                ["`--heterogeneity-dominance`", _md_cell(meta["heterogeneity_dominance"])],
+                ["`--sales-min-share`", _md_cell(meta["sales_min_share"])],
+            ],
+        )
+    )
+    out.append("")
+
+    out.append("## Итоги пула")
+    out.append("")
+    out.extend(
+        _md_table(
+            ["Показатель", "Значение"],
+            ["---", "---:"],
+            [
+                ["товаров в скоупе", _md_cell(totals["products"])],
+                [
+                    "есть характеристики",
+                    f"{totals['with_attributes']} ({totals['with_attributes_pct']}%)",
+                ],
+                ["нет характеристик", _md_cell(totals["without_attributes"])],
+                ["— из них тип без блока", _md_cell(totals["without_attributes_no_block"])],
+                ["— блок есть, но пусто", _md_cell(totals["without_attributes_block_empty"])],
+                ["без `tool_type`", _md_cell(totals["untyped"])],
+                ["типов в пуле", _md_cell(totals["tool_types"])],
+                ["блоков в `attribute_rules.json`", _md_cell(totals["rule_blocks"])],
+                [
+                    "типов без блока",
+                    f"{totals['tool_types_without_block']} на "
+                    f"{totals['products_in_types_without_block']} товаров",
+                ],
+                [
+                    f"длинный хвост (< {meta['tail_threshold']} тов.)",
+                    f"{totals['tail_types']} типов на {totals['tail_products']} товаров",
+                ],
+            ],
+        )
+    )
+    out.append("")
+
+    if sales["data_absent"]:
+        out.append(f"> **ПРОДАЖИ:** {_md_cell(sales['degradation'])}.")
+    else:
+        out.append(
+            f"**Продажи:** окно {sales['window_days']} дн., товаров с продажами в скоупе "
+            f"{sales['products_with_sales_in_scope']}; {_md_cell(sales['degradation'])}."
+        )
+    out.append("")
+
+    out.append("## Кандидаты (по убыванию Rule Impact Score)")
+    out.append("")
+    if not rows:
+        out.append("Кандидатов нет — в скоупе не нашлось ни одного типа.")
+        out.append("")
+    else:
+        table_rows = []
+        cumulative = 0
+        gap_total = sum(row["without_attributes"] for row in rows) or 1
+        for index, row in enumerate(rows, start=1):
+            cumulative += row["without_attributes"]
+            if limit and index > limit:
+                continue
+            factors = row["score_factors"]
+            table_rows.append(
+                [
+                    str(index),
+                    _md_code(row["tool_type"]),
+                    str(row["products"]),
+                    str(row["without_attributes"]),
+                    _md_cell(row["block"]),
+                    str(factors["attributes"]),
+                    f"{factors['sales_weight']:.2f}",
+                    f"{factors['extraction_confidence']:.2f}",
+                    f"{factors['facet_visibility']:.2f}",
+                    f"{row['score']:.1f}",
+                    f"{cumulative * 100 // gap_total}%",
+                    _md_cell(row["status"]),
+                ]
+            )
+        out.extend(
+            _md_table(
+                [
+                    "#",
+                    "Тип",
+                    "Товаров",
+                    "Без характеристик",
+                    "Блок",
+                    "Новых",
+                    "sales",
+                    "extr",
+                    "facet",
+                    "Score",
+                    "Кум. %",
+                    "Статус",
+                ],
+                ["---:", "---", "---:", "---:", "---", "---:", "---:", "---:", "---:", "---:"]
+                + ["---:", "---"],
+                table_rows,
+            )
+        )
+        out.append("")
+        if limit and len(rows) > limit:
+            out.append(f"… и ещё {len(rows) - limit} типов (полный список — в `--json-report`).")
+            out.append("")
+
+    out.append("## Что предлагается писать")
+    out.append("")
+    if not shown:
+        out.append("Предлагать нечего — кандидатов в скоупе нет.")
+        out.append("")
+    for index, row in enumerate(shown, start=1):
+        out.extend(_markdown_candidate(index, row))
+
+    control = report["cumulative_by_volume"]
+    out.append("## Контрольный кумулятив (типы без блока, по убыванию объёма)")
+    out.append("")
+    out.append(
+        "Ряды **нельзя путать**: `all` — все товары типов без блока, `gap` — только "
+        "товары без характеристик, то есть те, что реально получат значения."
+    )
+    out.append("")
+    marks = sorted(
+        {int(mark) for block in control.values() for mark in block["checkpoints"]},
+    )
+    control_rows = [
+        [
+            str(mark),
+            _md_cell(control["all"]["checkpoints"].get(str(mark), "—")),
+            _md_cell(control["gap"]["checkpoints"].get(str(mark), "—")),
+        ]
+        for mark in marks
+    ]
+    control_rows.append(
+        [
+            "итого",
+            f"{control['all']['types']} типов / {control['all']['products']} товаров",
+            f"{control['gap']['types']} типов / {control['gap']['products']} товаров",
+        ]
+    )
+    out.extend(
+        _md_table(
+            ["N типов", "`all` — все товары типа", "`gap` — только без характеристик"],
+            ["---:", "---:", "---:"],
+            control_rows,
+        )
+    )
+    out.append("")
+    return "\n".join(out)
+
+
+def _markdown_candidate(index: int, row: dict) -> list[str]:
+    """Раздел одного кандидата: предлагаемые оси с числами и примерами."""
+    out = [
+        f"### {index}. {_md_code(row['tool_type'])} — {row['products']} тов., "
+        f"score {row['score']}",
+        "",
+        f"**{row['status']}:** {_md_cell(row['reason'])}",
+        "",
+    ]
+    # Печатаем при любом статусе: блокер объясняет, что мешает, но не отменяет
+    # уже посчитанную картину — видно, ради чего блокер стоит снимать.
+    interesting = [p for p in row["patterns"] if p["proposed"] or p["rejected_reason"]]
+    if not interesting:
+        out.append("Предложений нет: ни один шаблон не прошёл порог или всё описано блоком.")
+        out.append("")
+        return out
+
+    out.extend(
+        _md_table(
+            ["Ось", "Характеристика", "Вид", "Шаблон", "Попаданий", "Доля", "Ложных", "Итог"],
+            ["---", "---", "---", "---", "---:", "---:", "---:", "---"],
+            [
+                [
+                    _md_code(pattern["attribute_slug"]),
+                    _md_cell(pattern["attribute_name"]),
+                    _md_cell(pattern["kind"]),
+                    _md_cell(pattern["title"]),
+                    str(pattern["hits"]),
+                    f"{pattern['share'] * 100:.0f}%",
+                    str(pattern["false_positives"]),
+                    (
+                        "предлагается"
+                        if pattern["proposed"]
+                        else ("отклонён по шуму" if pattern["rejected_reason"] else "—")
+                    )
+                    + ("" if pattern["attribute_exists"] else ", **атрибута нет в БД**"),
+                ]
+                for pattern in interesting
+            ],
+        )
+    )
+    out.append("")
+
+    for pattern in interesting:
+        out.append(f"**{_md_code(pattern['attribute_slug'])}** — {_md_cell(pattern['title'])}")
+        out.append("")
+        if pattern["rejected_reason"]:
+            out.append(f"- ОТКЛОНЁН: {_md_cell(pattern['rejected_reason'])}")
+        out.append(f"- regex: {_md_code(pattern['regex'])}")
+        for example in pattern["examples"]:
+            out.append(f"- пример: {_md_code(example)}")
+        for example in pattern["false_positive_examples"]:
+            out.append(f"- ложное: {_md_code(example)}")
+        out.append("")
+    return out
 
 
 # ---------------------------------------------------------------------- #
