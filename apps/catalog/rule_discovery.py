@@ -35,6 +35,7 @@ __all__ = [
     "PatternHit",
     "corpus_heterogeneity",
     "head_token",
+    "scan_items",
     "scan_names",
 ]
 
@@ -74,6 +75,10 @@ class PatternHit:
     examples: list[str] = field(default_factory=list)
     false_positive_examples: list[str] = field(default_factory=list)
     values: Counter = field(default_factory=Counter)
+    # Ключи объектов, у которых сработала защищённая регулярка. Нужны там, где
+    # агрегата мало: видимость оси считается по КАЖДОМУ товару (в какой он
+    # категории, привязан ли к ней фасет), а не долей на весь тип.
+    matched_keys: list = field(default_factory=list)
 
     @property
     def false_positives(self) -> int:
@@ -260,16 +265,21 @@ PATTERNS: tuple[Pattern, ...] = (
 PATTERNS_BY_KEY = {p.key: p for p in PATTERNS}
 
 
-def scan_names(names, patterns=PATTERNS, *, examples: int = 3) -> dict[str, PatternHit]:
-    """Прогнать каталог шаблонов по названиям и посчитать попадания.
+def scan_items(items, patterns=PATTERNS, *, examples: int = 3) -> dict[str, PatternHit]:
+    """Прогнать каталог шаблонов по парам ``(ключ, название)``.
 
     Возвращает ``{ключ шаблона: PatternHit}``. Считаются два числа на шаблон:
     попадания наивной регулярки и защищённой. Их разность — ложные
     срабатывания; примеры таких названий собираются отдельно, чтобы оператор
     видел, на чём именно ошибается регулярка, а не только счётчик.
+
+    Ключи попаданий защищённой регулярки сохраняются в
+    :attr:`PatternHit.matched_keys`: доля на весь тип не отвечает на вопрос
+    «а этим конкретным товарам значение вообще будет видно», а поимённый список
+    — отвечает.
     """
     hits = {p.key: PatternHit(pattern=p) for p in patterns}
-    for name in names:
+    for key, name in items:
         text = name or ""
         for pattern in patterns:
             naive_match = pattern.naive.search(text)
@@ -283,10 +293,20 @@ def scan_names(names, patterns=PATTERNS, *, examples: int = 3) -> dict[str, Patt
                     hit.false_positive_examples.append(text)
                 continue
             hit.guarded_hits += 1
+            hit.matched_keys.append(key)
             hit.values[guarded_match.group(0).strip()] += 1
             if len(hit.examples) < examples:
                 hit.examples.append(text)
     return hits
+
+
+def scan_names(names, patterns=PATTERNS, *, examples: int = 3) -> dict[str, PatternHit]:
+    """То же, что :func:`scan_items`, но по голому списку названий.
+
+    Ключом становится порядковый номер названия — для вызовов, где привязки к
+    товарам нет (тесты, разовые прогоны по выгрузке имён).
+    """
+    return scan_items(enumerate(names), patterns, examples=examples)
 
 
 # --- признак разнородности корпуса ----------------------------------------- #

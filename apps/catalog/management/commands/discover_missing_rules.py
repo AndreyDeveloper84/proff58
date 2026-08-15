@@ -19,10 +19,44 @@
    поддаются извлечению — и **сколько названий наивная регулярка ловит
    ошибочно** (``(\\d+)\\s*м`` читает «ф 3,2 мм» как «3,2 метра»: на стенде у
    свёрл это 188 ложных срабатываний против 124 верных).
-4. Считает Rule Impact Score и выдаёт список типов по убыванию выгоды.
+4. Считает по **каждой оси отдельно** три числа — потенциал, исполнимое сейчас и
+   запертое — и выдаёт список типов по убыванию ``actionable_score``.
 
-Rule Impact Score
------------------
+Три числа на ось
+----------------
+``potential_values``
+    Сколько значений технически извлекается шаблоном.
+``actionable_values``
+    Сколько из них можно **безопасно записать и показать покупателю сейчас**.
+``blocked_values``
+    Разница: значения, упирающиеся в отсутствие ``Attribute``, в отсутствие
+    facet-привязки, в мёртвую категорию, в разнородный пул или в шум шаблона.
+
+Считать это одним коэффициентом на весь тип нельзя: усреднение маскирует
+различие между осями и ухудшает приоритизацию. Доказанный случай —
+``klyuchi-gaechnye``: у оси ``wrench_type`` 142 значения видны покупателю
+полностью, у оси ``material`` все 74 не видны (атрибут в БД есть, но к
+категориям ключей не привязан). Один коэффициент на тип показал бы «блок на 216
+значений», хотя безопасно реализуемы только 142.
+
+Итог типа **агрегируется снизу вверх, из осей**:
+``potential_score = Σ potential_values × sales_weight``,
+``actionable_score = Σ actionable_values × sales_weight``. Рейтинг сортируется
+по ``actionable_score``, ``potential`` показывается рядом — их разница и есть
+объём работы, запертой за архитектурой.
+
+Видимость оси
+-------------
+Ось видима, если её ``Attribute`` существует в БД **и** привязан через
+``CategoryAttribute(is_filter=True)`` к категории товара **или любому её живому
+предку** — фасеты наследуются вниз. Проверка идёт по каждому товару, а не долей
+на тип.
+
+Rule Impact Score (legacy)
+--------------------------
+Поле ``score`` осталось прежним — оно считает потенциал типа одним
+коэффициентом и сохранено для преемственности отчётов. Рейтинг им больше не
+управляет.
 Метрика приоритета, воспроизводимая по числам самого отчёта::
 
     RIS = products × attributes × sales_weight × extraction_confidence
@@ -72,8 +106,38 @@ Rule Impact Score
     Значение без фасетной привязки к категории товара или её предку витрине не
     видно, поэтому мёртвая категория обнуляет выгоду правила.
 
-Статусы
--------
+Статусы оси
+-----------
+``READY``
+    Ось готова к работе (``next_action: WRITE_RULE``).
+``BLOCKED_BY_ATTRIBUTE``
+    ``Attribute`` нет в БД. Лечится ``load_attributes`` **после** того, как
+    правило появится в ``attribute_rules.json`` (``LOAD_ATTRIBUTES``).
+``BLOCKED_BY_FACET``
+    Атрибут есть, но не привязан к нужным категориям — витрине значение не
+    видно. Лечится решением владельца о привязке (``FACET_BINDING_AUDIT``).
+``BLOCKED_BY_CATEGORY``
+    Все товары оси стоят в мёртвых категориях (``CATEGORY_REVIVAL``).
+``BLOCKED_BY_CLASSIFICATION``
+    Тип — «свалка», сначала разбор на подтипы (``SPLIT_TOOL_TYPE``).
+``BLOCKED_BY_PURITY``
+    Пул грязный: шаблон ошибается чаще ``--max-false-positive-rate``, значения
+    получились бы мусорными (``POOL_PURITY_AUDIT``).
+``SKIP_SET``
+    Тип-набор: ось описывает состав набора, а не предмет
+    (``SET_COMPOSITION_REVIEW``).
+
+Очередь facet-binding
+---------------------
+Агрегат по каталогу: «привязка атрибута X к категории Y разблокирует N значений
+на M товарах», по убыванию выигрыша. Привязка к предку накрывает всех потомков,
+поэтому у каждого предложения посчитан **blast radius** (сколько товаров скоупа
+окажется под фасетом) и заполненность; ниже ``--min-facet-fill-rate``
+предложение помечено как малополезное — фасет с заполненностью в единицы
+процентов не помогает выбрать, а засоряет фильтры.
+
+Статусы типа
+------------
 ``CREATE_RULE``
     Можно писать блок правил.
 ``SKIP_SET``
@@ -126,7 +190,7 @@ from apps.catalog.models import (
     ProductAttributeValue,
     ProductSalesStat,
 )
-from apps.catalog.rule_discovery import PATTERNS, corpus_heterogeneity, head_token, scan_names
+from apps.catalog.rule_discovery import PATTERNS, corpus_heterogeneity, head_token, scan_items
 from apps.catalog.sales import sales_window
 
 TOOL_TYPE_SLUG = "tool_type"
@@ -160,6 +224,36 @@ STATUS_TAIL = "TAIL_GENERIC"
 STATUS_CLASSIFICATION = "BLOCKED_BY_CLASSIFICATION"
 STATUS_ATTRIBUTE = "BLOCKED_BY_ATTRIBUTE"
 STATUS_CATEGORY = "BLOCKED_BY_CATEGORY"
+
+# --- статусы уровня ОСИ ---------------------------------------------------- #
+#
+# Причины блокировки не смешиваются: у «атрибута нет в БД» и «атрибут есть, но
+# не привязан» разная цена и разное лечение, поэтому это два разных статуса, а
+# не один «что-то не так с осью». К каждому блокирующему статусу приложен
+# next_action — конкретный следующий шаг, а не общее пожелание.
+AXIS_READY = "READY"
+AXIS_ATTRIBUTE = "BLOCKED_BY_ATTRIBUTE"
+AXIS_FACET = "BLOCKED_BY_FACET"
+AXIS_CATEGORY = "BLOCKED_BY_CATEGORY"
+AXIS_CLASSIFICATION = "BLOCKED_BY_CLASSIFICATION"
+AXIS_PURITY = "BLOCKED_BY_PURITY"
+AXIS_SET = "SKIP_SET"
+
+NEXT_ACTION = {
+    AXIS_READY: "WRITE_RULE",
+    AXIS_ATTRIBUTE: "LOAD_ATTRIBUTES",
+    AXIS_FACET: "FACET_BINDING_AUDIT",
+    AXIS_CATEGORY: "CATEGORY_REVIVAL",
+    AXIS_CLASSIFICATION: "SPLIT_TOOL_TYPE",
+    AXIS_PURITY: "POOL_PURITY_AUDIT",
+    AXIS_SET: "SET_COMPOSITION_REVIEW",
+}
+
+# Заполненность фасета, ниже которой привязку предлагать вредно: фильтр с
+# единицами процентов заполнения не помогает выбрать, а засоряет сайдбар
+# (прецедент каталога — фасет на 1,5 %). Порог не блокирует предложение, а
+# помечает его флагом: решение о привязке всё равно за владельцем.
+DEFAULT_MIN_FACET_FILL_RATE = 0.10
 
 # Признаки типа-набора: slug семейства nabory-* или ведущее слово названий.
 SET_SLUG_PREFIX = "nabory-"
@@ -278,6 +372,14 @@ class Command(BaseCommand):
             f"с явной пометкой «н/д» (по умолчанию {DEFAULT_SALES_MIN_SHARE}).",
         )
         parser.add_argument(
+            "--min-facet-fill-rate",
+            type=float,
+            default=DEFAULT_MIN_FACET_FILL_RATE,
+            metavar="DOLYA",
+            help="Заполненность фасета, ниже которой предложение о привязке помечается "
+            f"как малополезное (по умолчанию {DEFAULT_MIN_FACET_FILL_RATE}).",
+        )
+        parser.add_argument(
             "--heterogeneity-dominance",
             type=float,
             default=DEFAULT_HETEROGENEITY_DOMINANCE,
@@ -299,11 +401,16 @@ class Command(BaseCommand):
             block["tool_type"]: {a["slug"] for a in block.get("attributes", ())}
             for block in raw.get("tool_types", ())
         }
+        # Имя категории из блока — это НЕ справочная информация: именно по нему
+        # load_attributes создаёт привязку, и именно туда уйдёт фасет новой оси.
+        block_categories = {
+            block["tool_type"]: block.get("category") or "" for block in raw.get("tool_types", ())
+        }
 
         scope = self._collect_scope(options)
         if not scope["products"]:
             self.stdout.write(self.style.WARNING("Скоуп пуст — ни одного товара."))
-        report = self._analyse(scope, block_attrs, options)
+        report = self._analyse(scope, block_attrs, block_categories, options)
         self._render(report, options)
 
         # Форматы независимы: можно попросить оба сразу, можно ни одного.
@@ -376,13 +483,21 @@ class Command(BaseCommand):
 
         categories = {
             row["pk"]: row
-            for row in Category.objects.values("pk", "path", "depth", "is_active", "on_site")
+            for row in Category.objects.values(
+                "pk", "name", "path", "depth", "is_active", "on_site"
+            )
         }
-        faceted = set(
-            CategoryAttribute.objects.filter(is_filter=True)
-            .values_list("category_id", flat=True)
-            .distinct()
-        )
+        faceted = set()
+        # Привязки поимённо: ось видна витрине, только если фасетом объявлен
+        # ИМЕННО её атрибут. «У категории есть хоть какой-то фильтр» — другой,
+        # более слабый признак, и путать их нельзя: у ключей `wrench_type`
+        # привязан, а `material` — нет, при одном и том же наборе категорий.
+        bound_by_attribute: dict[str, set[int]] = {}
+        for slug, category_id in CategoryAttribute.objects.filter(is_filter=True).values_list(
+            "attribute__slug", "category_id"
+        ):
+            faceted.add(category_id)
+            bound_by_attribute.setdefault(slug, set()).add(category_id)
 
         requested_tt = sorted(set(options["tool_type"] or ()))
         if requested_tt:
@@ -398,6 +513,7 @@ class Command(BaseCommand):
             "sales_total": sales_total,
             "categories": categories,
             "faceted": faceted,
+            "bound_by_attribute": bound_by_attribute,
             "requested_tt": requested_tt,
             "known_attributes": set(Attribute.objects.values_list("slug", flat=True)),
         }
@@ -406,7 +522,7 @@ class Command(BaseCommand):
     # Анализ
     # ------------------------------------------------------------------ #
 
-    def _analyse(self, scope, block_attrs, options) -> dict:
+    def _analyse(self, scope, block_attrs, block_categories, options) -> dict:
         products = scope["products"]
         product_tt = scope["product_tt"]
         min_share = options["min_pattern_share"]
@@ -431,6 +547,7 @@ class Command(BaseCommand):
         sold_scope_share = sold_in_scope / len(products) if products else 0.0
         sales_absent = sold_scope_share < options["sales_min_share"]
         ancestors = _ancestor_index(scope["categories"])
+        descendant_scope = _descendant_scope(scope, ancestors)
 
         rows = []
         for slug, pids in by_type.items():
@@ -440,18 +557,33 @@ class Command(BaseCommand):
                     pids,
                     scope=scope,
                     block_attrs=block_attrs,
+                    block_categories=block_categories,
                     ancestors=ancestors,
+                    descendant_scope=descendant_scope,
                     sales_absent=sales_absent,
                     min_share=min_share,
                     max_fp_rate=max_fp_rate,
+                    min_facet_fill_rate=options["min_facet_fill_rate"],
                     tail_threshold=tail_threshold,
                     dominance_threshold=dominance_threshold,
                     n_examples=n_examples,
                 )
             )
-        rows.sort(key=lambda r: (-r["score"], -r["products"], r["tool_type"]))
+        # Рейтинг — по actionable: он отвечает на вопрос «что можно безопасно
+        # сделать следующим». potential идёт рядом, вторым ключом сортировки:
+        # разница между ними и есть объём работы, запертой за архитектурой.
+        rows.sort(
+            key=lambda r: (
+                -r["actionable_score"],
+                -r["potential_score"],
+                -r["products"],
+                r["tool_type"],
+            )
+        )
+        binding_gaps = [gap for row in rows for gap in row.pop("binding_gaps")]
 
         totals = _totals(scope, by_type, untyped, block_attrs)
+        totals.update(_axis_totals(rows))
         return {
             "scope": _scope_meta(options, scope, totals),
             "totals": totals,
@@ -472,6 +604,15 @@ class Command(BaseCommand):
                 ),
             },
             "candidates": rows,
+            "binding_targets": _binding_target_report(rows),
+            "axis_ranking": _axis_ranking(rows),
+            "facet_binding_queue": _facet_binding_queue(
+                binding_gaps,
+                scope,
+                ancestors,
+                descendant_scope,
+                options["min_facet_fill_rate"],
+            ),
             "cumulative_by_volume": _cumulative_by_volume(
                 by_type, block_attrs, scope["with_attrs"]
             ),
@@ -484,10 +625,13 @@ class Command(BaseCommand):
         *,
         scope,
         block_attrs,
+        block_categories,
         ancestors,
+        descendant_scope,
         sales_absent,
         min_share,
         max_fp_rate,
+        min_facet_fill_rate,
         tail_threshold,
         dominance_threshold,
         n_examples,
@@ -496,7 +640,7 @@ class Command(BaseCommand):
         names = [products[pid]["original_name"] or products[pid]["name"] or "" for pid in pids]
         total = len(pids)
 
-        hits = scan_names(names, examples=n_examples)
+        hits = scan_items(zip(pids, names, strict=True), examples=n_examples)
         covered = block_attrs.get(slug)
         has_block = covered is not None
         covered = covered or set()
@@ -504,7 +648,23 @@ class Command(BaseCommand):
         set_head_share = _set_head_share(names)
         is_set = _is_set_type(slug, set_head_share)
 
+        # Куда уйдёт привязка новой оси. Считать видимость по категории ТОВАРА
+        # нельзя: привязку создаёт load_attributes по полю `category` блока, и у
+        # 28 блоков из 48 это имя разрешается в корень раздела.
+        target = _binding_target(slug, block_categories, has_block, scope)
+
+        # Разнородность нужна ДО разбора осей: «свалка» блокирует каждую ось
+        # типа, а не только итог, — иначе ось выглядела бы готовой к работе.
+        hetero = corpus_heterogeneity(names)
+        heterogeneous = (
+            total >= DEFAULT_HETEROGENEITY_MIN_PRODUCTS
+            and hetero.dominance < dominance_threshold
+            and hetero.distinct_heads >= DEFAULT_HETEROGENEITY_MIN_HEADS
+        )
+
         patterns_out = []
+        axes = []
+        binding_gaps = []
         proposed_shares = []
         proposed_slugs = []
         for pattern in PATTERNS:
@@ -557,6 +717,76 @@ class Command(BaseCommand):
                 proposed_shares.append(share)
                 proposed_slugs.append(attr_slug)
 
+            # --- ось: три числа и собственный статус --------------------- #
+            #
+            # Ось попадает в разбор, если шаблон прошёл порог доли и его
+            # характеристика ещё не описана блоком. Шумную ось не выбрасываем:
+            # её потенциал реален, блокирует его чистота пула, и это отдельный
+            # статус, а не молчание.
+            if not passes_share or attr_slug in covered:
+                continue
+            visibility = _axis_visibility(
+                hit.matched_keys,
+                attr_slug,
+                scope=scope,
+                ancestors=ancestors,
+                products=products,
+                target=target,
+            )
+            axis_status = _axis_status(
+                is_set=is_set,
+                heterogeneous=heterogeneous,
+                too_noisy=too_noisy,
+                attribute_exists=row["attribute_exists"],
+                live_values=visibility["live"],
+                visible_values=visibility["visible"],
+            )
+            potential_values = hit.guarded_hits
+            actionable_values = visibility["visible"] if axis_status == AXIS_READY else 0
+            axes.append(
+                {
+                    "attribute_slug": attr_slug,
+                    "attribute_name": pattern.attribute_name,
+                    "pattern": pattern.key,
+                    "kind": pattern.kind,
+                    "potential_values": potential_values,
+                    "actionable_values": actionable_values,
+                    "blocked_values": potential_values - actionable_values,
+                    "visibility": round(
+                        visibility["visible"] / potential_values if potential_values else 0.0, 4
+                    ),
+                    "live_values": visibility["live"],
+                    # Уже привязано против «привяжет load_attributes»: первое —
+                    # факт, второе — предсказание, и они не одно и то же.
+                    "already_visible_values": visibility["already_bound"],
+                    "unlocked_by_binding_target": visibility["visible"]
+                    - visibility["already_bound"],
+                    "status": axis_status,
+                    "next_action": NEXT_ACTION[axis_status],
+                    "share": round(share, 4),
+                    "false_positive_rate": round(hit.false_positive_rate, 4),
+                }
+            )
+            row["axis_status"] = axis_status
+            row["axis_next_action"] = NEXT_ACTION[axis_status]
+            row["potential_values"] = potential_values
+            row["actionable_values"] = actionable_values
+            # Очередь привязок собирается только с осей, которым мешает именно
+            # привязка: у мёртвой категории и отсутствующего атрибута лечение
+            # другое, и смешивать их в один список значит подсунуть владельцу
+            # работу, которая ничего не разблокирует.
+            if axis_status == AXIS_FACET:
+                for cid, count in visibility["unbound_live_categories"].items():
+                    binding_gaps.append(
+                        {
+                            "attribute_slug": attr_slug,
+                            "attribute_name": pattern.attribute_name,
+                            "category_id": cid,
+                            "tool_type": slug,
+                            "values": count,
+                        }
+                    )
+
         # --- множители RIS --------------------------------------------- #
         attributes = len(proposed_slugs)
         extraction_confidence = (
@@ -572,12 +802,54 @@ class Command(BaseCommand):
 
         score = total * attributes * sales_weight * extraction_confidence * facet_visibility
 
-        hetero = corpus_heterogeneity(names)
-        heterogeneous = (
-            total >= DEFAULT_HETEROGENEITY_MIN_PRODUCTS
-            and hetero.dominance < dominance_threshold
-            and hetero.distinct_heads >= DEFAULT_HETEROGENEITY_MIN_HEADS
+        # Итог типа агрегируется СНИЗУ ВВЕРХ — из осей, а не считается отдельно:
+        # один коэффициент на весь тип усредняет несопоставимые оси и маскирует
+        # различие (у ключей `wrench_type` виден покупателю целиком, `material` —
+        # не виден вовсе), из-за чего приоритизация врёт.
+        potential_total = sum(axis["potential_values"] for axis in axes)
+        actionable_total = sum(axis["actionable_values"] for axis in axes)
+        potential_score = potential_total * sales_weight
+        actionable_score = actionable_total * sales_weight
+
+        # Цена привязки: сколько товаров окажется под фасетом и какая доля из них
+        # получит значение. Корень раздела накрывает тысячи товаров — фасет с
+        # заполненностью в единицы процентов засоряет фильтры всего раздела.
+        own_categories = {
+            products[pid]["category_id"] for pid in pids if products[pid]["category_id"] is not None
+        }
+        # Товар накрыт, только если его категория ещё и жива: под скрытым узлом
+        # фасета не будет независимо от того, куда легла привязка.
+        target_products = sum(
+            1
+            for pid in pids
+            if _is_live(products[pid]["category_id"], scope["categories"])
+            and _covered_by_target(products[pid]["category_id"], target, ancestors)
         )
+        blast_radius = (
+            descendant_scope.get(target["covers"], 0)
+            if target["covers"] is not None
+            else sum(
+                1 for row in scope["products"].values() if row["category_id"] in own_categories
+            )
+        )
+        target_fill_rate = (actionable_total / blast_radius) if blast_radius else 0.0
+        target.update(
+            {
+                "products_at_target": sum(
+                    1 for pid in pids if products[pid]["category_id"] == target["covers"]
+                ),
+                "products_covered": target_products,
+                "products_outside": total - target_products,
+                "blast_radius": blast_radius,
+                "fill_rate": round(target_fill_rate, 4),
+                "low_fill_rate": bool(
+                    target["covers"] is not None
+                    and potential_total
+                    and target_fill_rate < min_facet_fill_rate
+                ),
+            }
+        )
+
         missing_attributes = sorted(set(proposed_slugs) - scope["known_attributes"])
 
         status, reason = _status(
@@ -605,6 +877,17 @@ class Command(BaseCommand):
             "block_attributes": sorted(covered),
             "status": status,
             "reason": reason,
+            "potential_values": potential_total,
+            "actionable_values": actionable_total,
+            "blocked_values": potential_total - actionable_total,
+            "actionable_ratio": round(
+                actionable_total / potential_total if potential_total else 0.0, 4
+            ),
+            "potential_score": round(potential_score, 2),
+            "actionable_score": round(actionable_score, 2),
+            "binding_target": target,
+            "axes": axes,
+            "binding_gaps": binding_gaps,
             "score": round(score, 2),
             "score_factors": {
                 "products": total,
@@ -687,11 +970,17 @@ class Command(BaseCommand):
         shown = rows[:limit] if limit else rows
         gap_total = sum(r["without_attributes"] for r in rows) or 1
 
-        out.write("\n=== Кандидаты (по убыванию Rule Impact Score) ===")
+        out.write("\n=== Значения: потенциал / исполнимое / запертое ===")
+        out.write(f"potential_values:  {totals['potential_values']}")
+        out.write(f"actionable_values: {totals['actionable_values']}")
+        out.write(f"blocked_values:    {totals['blocked_values']}")
+        out.write(f"actionable_ratio:  {totals['actionable_ratio'] * 100:.1f}%")
+
+        out.write("\n=== Кандидаты (по убыванию actionable_score) ===")
         header = (
             f"{'#':>3} {'tool_type':32} {'тов':>5} {'без хар':>7} {'блок':>7} "
-            f"{'нов':>3} {'sales':>5} {'extr':>5} {'facet':>5} {'score':>9} "
-            f"{'кум%':>5}  статус"
+            f"{'нов':>3} {'pot':>7} {'act':>7} {'act%':>5} {'a-score':>9} "
+            f"{'p-score':>9} {'кум%':>5}  статус"
         )
         out.write(header)
         out.write("-" * len(header))
@@ -704,13 +993,17 @@ class Command(BaseCommand):
             out.write(
                 f"{index:>3} {row['tool_type'][:32]:32} {row['products']:>5} "
                 f"{row['without_attributes']:>7} {row['block']:>7} "
-                f"{factors['attributes']:>3} {factors['sales_weight']:>5.2f} "
-                f"{factors['extraction_confidence']:>5.2f} "
-                f"{factors['facet_visibility']:>5.2f} {row['score']:>9.1f} "
+                f"{factors['attributes']:>3} {row['potential_values']:>7} "
+                f"{row['actionable_values']:>7} {row['actionable_ratio'] * 100:>4.0f}% "
+                f"{row['actionable_score']:>9.1f} {row['potential_score']:>9.1f} "
                 f"{cumulative * 100 // gap_total:>4}%  {row['status']}"
             )
         if limit and len(rows) > limit:
             out.write(f"... и ещё {len(rows) - limit} типов (см. --json-report)")
+
+        self._render_axis_ranking(report)
+        self._render_binding_targets(report)
+        self._render_binding_queue(report)
 
         out.write("\n=== Что предлагается писать (топ показанных) ===")
         for row in shown:
@@ -721,6 +1014,32 @@ class Command(BaseCommand):
                 f"\n{row['tool_type']} ({row['products']} тов., "
                 f"score {row['score']}) — {row['status']}: {row['reason']}"
             )
+            target = row["binding_target"]
+            out.write(
+                "  привязка уйдёт в: "
+                + (
+                    f"«{target['category_name']}» → id {target['category_id']} "
+                    f"({target['reason']}), накроет {target['products_covered']} из "
+                    f"{row['products']}, под фасетом {target['blast_radius']}, "
+                    f"заполненность {target['fill_rate'] * 100:.1f}%"
+                    if target["source"] == "block"
+                    else "блока нет — цель выберет оператор (число предположительное)"
+                )
+            )
+            out.write("")
+            for axis in row["axes"]:
+                out.write(f"  {axis['attribute_slug']}")
+                out.write(
+                    f"    potential: {axis['potential_values']:<5} "
+                    f"actionable: {axis['actionable_values']:<5} "
+                    f"visibility: {axis['visibility'] * 100:.0f}%   "
+                    f"status: {axis['status']}"
+                )
+                if axis["status"] != AXIS_READY:
+                    out.write(f"    next_action: {axis['next_action']}")
+            out.write(f"\n  potential_total:  {row['potential_values']}")
+            out.write(f"  actionable_total: {row['actionable_values']}")
+            out.write(f"  actionable_ratio: {row['actionable_ratio'] * 100:.1f}%\n")
             for pattern in row["patterns"]:
                 if not pattern["proposed"] and not pattern["rejected_reason"]:
                     continue
@@ -739,6 +1058,101 @@ class Command(BaseCommand):
                 for example in pattern["false_positive_examples"]:
                     out.write(f"    ЛОЖНОЕ:  {example[:110]}")
 
+        self._render_control(report)
+
+    def _render_axis_ranking(self, report) -> None:
+        """Рейтинг осей сквозной по каталогу — работу выбирают по осям, не по типам."""
+        out = self.stdout
+        ranking = report["axis_ranking"]
+        for key, title in (
+            ("by_actionable", "Топ осей по actionable_values (что писать)"),
+            ("by_blocked", "Топ осей по blocked_values (очередь архитектурной работы)"),
+        ):
+            out.write(f"\n=== {title} ===")
+            entries = ranking[key][:10]
+            if not entries:
+                out.write("— пусто")
+                continue
+            for entry in entries:
+                statuses = ", ".join(
+                    f"{status}×{count}" for status, count in sorted(entry["statuses"].items())
+                )
+                out.write(
+                    f"  {entry['attribute_slug']:20} potential {entry['potential_values']:>6} "
+                    f"actionable {entry['actionable_values']:>6} "
+                    f"blocked {entry['blocked_values']:>6}  "
+                    f"типов {entry['tool_types']:>3}  {statuses}"
+                )
+
+    def _render_binding_targets(self, report) -> None:
+        """Куда уйдут привязки блоков и во что это обойдётся витрине."""
+        out = self.stdout
+        block = report["binding_targets"]
+        out.write("\n=== Куда уйдёт привязка (поле category блока) ===")
+        out.write(
+            f"привязок в корень раздела: {block['root_bindings']}; "
+            f"с низкой заполненностью: {block['low_fill_rate']}; "
+            f"неразрешимых (нет узла / неоднозначно / мёртвый): {block['unresolved']}"
+        )
+        if not block["items"]:
+            out.write("— пусто: у типов с предложенными осями блоков нет")
+            return
+        header = (
+            f"  {'tool_type':28} {'категория блока':28} {'кат.':>6} {'гл':>3} "
+            f"{'накрыто':>8} {'вне':>5} {'под фасетом':>11} {'заполн':>7}  флаги"
+        )
+        out.write(header)
+        out.write("  " + "-" * (len(header) - 2))
+        for item in block["items"][:20]:
+            flags = ",".join(
+                name
+                for name, value in (
+                    ("КОРЕНЬ", item["root_binding"]),
+                    ("МАЛО", item["low_fill_rate"]),
+                    ("НЕ РАЗРЕШЕНО", item["unresolved"]),
+                )
+                if value
+            )
+            out.write(
+                f"  {item['tool_type'][:28]:28} {item['category_name'][:28]:28} "
+                f"{str(item['category_id'] or '—'):>6} {str(item['category_depth'] or '—'):>3} "
+                f"{item['products_covered']:>8} {item['products_outside']:>5} "
+                f"{item['blast_radius']:>11} {item['fill_rate'] * 100:>6.1f}%  {flags}"
+            )
+        if len(block["items"]) > 20:
+            out.write(f"  ... и ещё {len(block['items']) - 20} типов (см. --json-report)")
+
+    def _render_binding_queue(self, report) -> None:
+        """Очередь facet-binding с blast radius и заполненностью."""
+        out = self.stdout
+        queue = report["facet_binding_queue"]
+        out.write("\n=== Очередь facet-binding (что привязать, чтобы разблокировать) ===")
+        out.write(
+            f"всего заперто привязками: {queue['unlocked_values_total']} значений; "
+            f"порог полезной заполненности {queue['min_fill_rate'] * 100:.0f}%"
+        )
+        if not queue["items"]:
+            out.write("— пусто: осей, запертых только привязкой, нет")
+            return
+        header = (
+            f"  {'атрибут':20} {'кат.':>6} {'уровень':>9} {'разблок':>8} {'под фасетом':>11} "
+            f"{'заполн':>7}  типы"
+        )
+        out.write(header)
+        out.write("  " + "-" * (len(header) - 2))
+        for item in queue["items"][:20]:
+            mark = " ⚠" if item["low_fill_rate"] else ""
+            out.write(
+                f"  {item['attribute_slug']:20} {item['category_id']:>6} "
+                f"{item['binding_level']:>9} {item['unlocked_values']:>8} "
+                f"{item['blast_radius']:>11} {item['fill_rate'] * 100:>6.1f}%{mark}  "
+                f"{', '.join(item['tool_types'][:3])}"
+            )
+        if len(queue["items"]) > 20:
+            out.write(f"  ... и ещё {len(queue['items']) - 20} предложений (см. --json-report)")
+
+    def _render_control(self, report) -> None:
+        out = self.stdout
         control = report["cumulative_by_volume"]
         out.write("\n=== Контрольный кумулятив (типы без блока, по убыванию объёма) ===")
         for key, title in (
@@ -822,6 +1236,7 @@ def render_markdown(report: dict, *, limit: int = 0) -> str:
                 ["`--tail-threshold`", _md_cell(meta["tail_threshold"])],
                 ["`--heterogeneity-dominance`", _md_cell(meta["heterogeneity_dominance"])],
                 ["`--sales-min-share`", _md_cell(meta["sales_min_share"])],
+                ["`--min-facet-fill-rate`", _md_cell(meta["min_facet_fill_rate"])],
             ],
         )
     )
@@ -854,6 +1269,10 @@ def render_markdown(report: dict, *, limit: int = 0) -> str:
                     f"длинный хвост (< {meta['tail_threshold']} тов.)",
                     f"{totals['tail_types']} типов на {totals['tail_products']} товаров",
                 ],
+                ["`potential_values`", _md_cell(totals["potential_values"])],
+                ["`actionable_values`", _md_cell(totals["actionable_values"])],
+                ["`blocked_values`", _md_cell(totals["blocked_values"])],
+                ["`actionable_ratio`", f"{totals['actionable_ratio'] * 100:.1f}%"],
             ],
         )
     )
@@ -868,7 +1287,13 @@ def render_markdown(report: dict, *, limit: int = 0) -> str:
         )
     out.append("")
 
-    out.append("## Кандидаты (по убыванию Rule Impact Score)")
+    out.append("## Кандидаты (по убыванию `actionable_score`)")
+    out.append("")
+    out.append(
+        "`potential` — сколько значений технически извлекается; `actionable` — сколько "
+        "из них можно безопасно записать и показать покупателю сейчас. Разница — "
+        "объём работы, запертой за привязками, атрибутами и разбором пулов."
+    )
     out.append("")
     if not rows:
         out.append("Кандидатов нет — в скоупе не нашлось ни одного типа.")
@@ -890,9 +1315,12 @@ def render_markdown(report: dict, *, limit: int = 0) -> str:
                     str(row["without_attributes"]),
                     _md_cell(row["block"]),
                     str(factors["attributes"]),
-                    f"{factors['sales_weight']:.2f}",
-                    f"{factors['extraction_confidence']:.2f}",
-                    f"{factors['facet_visibility']:.2f}",
+                    str(row["potential_values"]),
+                    str(row["actionable_values"]),
+                    str(row["blocked_values"]),
+                    f"{row['actionable_ratio'] * 100:.0f}%",
+                    f"{row['actionable_score']:.1f}",
+                    f"{row['potential_score']:.1f}",
                     f"{row['score']:.1f}",
                     f"{cumulative * 100 // gap_total}%",
                     _md_cell(row["status"]),
@@ -907,15 +1335,18 @@ def render_markdown(report: dict, *, limit: int = 0) -> str:
                     "Без характеристик",
                     "Блок",
                     "Новых",
-                    "sales",
-                    "extr",
-                    "facet",
-                    "Score",
+                    "potential",
+                    "actionable",
+                    "blocked",
+                    "act. %",
+                    "actionable_score",
+                    "potential_score",
+                    "Score (RIS)",
                     "Кум. %",
                     "Статус",
                 ],
                 ["---:", "---", "---:", "---:", "---", "---:", "---:", "---:", "---:", "---:"]
-                + ["---:", "---"],
+                + ["---:", "---:", "---:", "---:", "---"],
                 table_rows,
             )
         )
@@ -923,6 +1354,10 @@ def render_markdown(report: dict, *, limit: int = 0) -> str:
         if limit and len(rows) > limit:
             out.append(f"… и ещё {len(rows) - limit} типов (полный список — в `--json-report`).")
             out.append("")
+
+    out.extend(_markdown_axis_ranking(report["axis_ranking"]))
+    out.extend(_markdown_binding_targets(report["binding_targets"]))
+    out.extend(_markdown_binding_queue(report["facet_binding_queue"]))
 
     out.append("## Что предлагается писать")
     out.append("")
@@ -969,15 +1404,227 @@ def render_markdown(report: dict, *, limit: int = 0) -> str:
     return "\n".join(out)
 
 
+def _markdown_axis_ranking(ranking: dict) -> list[str]:
+    """Сквозной рейтинг осей: что писать и что разблокировать."""
+    out = ["## Рейтинг осей (сквозной по каталогу)", ""]
+    out.append(
+        "Работу выбирают **не по `tool_type`, а по оси**: одна ось набирает объём "
+        "сразу в нескольких типах, и по типам этот объём не виден. Порядок "
+        "`by_blocked` — очередь архитектурной работы: что создать и что привязать."
+    )
+    out.append("")
+    for key, title in (
+        ("by_actionable", "Топ осей по `actionable_values` — что писать"),
+        ("by_blocked", "Топ осей по `blocked_values` — очередь архитектурной работы"),
+    ):
+        out.append(f"### {title}")
+        out.append("")
+        entries = ranking[key][:10]
+        if not entries:
+            out.append("Пусто — предложенных осей в скоупе нет.")
+            out.append("")
+            continue
+        out.extend(
+            _md_table(
+                ["Ось", "Характеристика", "potential", "actionable", "blocked", "Типов", "Статусы"],
+                ["---", "---", "---:", "---:", "---:", "---:", "---"],
+                [
+                    [
+                        _md_code(entry["attribute_slug"]),
+                        _md_cell(entry["attribute_name"]),
+                        str(entry["potential_values"]),
+                        str(entry["actionable_values"]),
+                        str(entry["blocked_values"]),
+                        str(entry["tool_types"]),
+                        _md_cell(
+                            ", ".join(
+                                f"{status}×{count}"
+                                for status, count in sorted(entry["statuses"].items())
+                            )
+                        ),
+                    ]
+                    for entry in entries
+                ],
+            )
+        )
+        out.append("")
+    return out
+
+
+def _markdown_binding_targets(block: dict) -> list[str]:
+    """Куда уйдёт привязка блока: корень раздела, заполненность, неразрешимые имена."""
+    out = ["## Куда уйдёт привязка (поле `category` блока)", ""]
+    out.append(
+        "Видимость новой оси считается по категории, **куда фактически уйдёт "
+        "привязка**: её создаёт `load_attributes` по полю `category` блока, разрешая "
+        "имя лестницей, которая среди одноимённых узлов предпочитает `depth == 1`. "
+        "Считать по категории товара значит учитывать привязку, которой не будет."
+    )
+    out.append("")
+    out.append(
+        f"Привязок в корень раздела: **{block['root_bindings']}**; с низкой "
+        f"заполненностью: **{block['low_fill_rate']}**; неразрешимых "
+        f"(нет узла / неоднозначно / мёртвый узел): **{block['unresolved']}**."
+    )
+    out.append("")
+    if not block["items"]:
+        out.append("Пусто: у типов с предложенными осями блоков правил нет.")
+        out.append("")
+        return out
+    out.extend(
+        _md_table(
+            [
+                "Тип",
+                "Категория блока",
+                "id",
+                "Глубина",
+                "Накрыто",
+                "Вне цели",
+                "Blast radius",
+                "Заполненность",
+                "Флаги",
+            ],
+            ["---", "---", "---:", "---:", "---:", "---:", "---:", "---:", "---"],
+            [
+                [
+                    _md_code(item["tool_type"]),
+                    _md_cell(item["category_name"] or "—"),
+                    str(item["category_id"] or "—"),
+                    str(item["category_depth"] or "—"),
+                    str(item["products_covered"]),
+                    str(item["products_outside"]),
+                    str(item["blast_radius"]),
+                    f"{item['fill_rate'] * 100:.1f}%",
+                    _md_cell(
+                        ", ".join(
+                            name
+                            for name, value in (
+                                ("корень раздела", item["root_binding"]),
+                                ("низкая заполненность", item["low_fill_rate"]),
+                                ("не разрешено", item["unresolved"]),
+                            )
+                            if value
+                        )
+                        or "—"
+                    ),
+                ]
+                for item in block["items"][:20]
+            ],
+        )
+    )
+    out.append("")
+    if len(block["items"]) > 20:
+        out.append(f"… и ещё {len(block['items']) - 20} типов (полный список — в `--json-report`).")
+        out.append("")
+    return out
+
+
+def _markdown_binding_queue(queue: dict) -> list[str]:
+    """Очередь facet-binding: что привязать, что это разблокирует и какой ценой."""
+    out = ["## Очередь facet-binding", ""]
+    out.append(
+        f"Заперто привязками: **{queue['unlocked_values_total']}** значений. "
+        "`blast radius` — сколько товаров скоупа окажется под фасетом, если привязать "
+        "к этому узлу (привязка наследуется всем потомкам), `заполненность` — какая "
+        "доля из них получит значение. Фасет с заполненностью ниже "
+        f"{queue['min_fill_rate'] * 100:.0f}% помечен как малополезный: он не помогает "
+        "выбрать, а засоряет сайдбар."
+    )
+    out.append("")
+    if not queue["items"]:
+        out.append("Пусто: осей, запертых **только** привязкой, в скоупе нет.")
+        out.append("")
+        return out
+    out.extend(
+        _md_table(
+            [
+                "Ось",
+                "Категория",
+                "Уровень",
+                "Разблокирует значений",
+                "Blast radius",
+                "Заполненность",
+                "Типы",
+            ],
+            ["---", "---:", "---", "---:", "---:", "---:", "---"],
+            [
+                [
+                    _md_code(item["attribute_slug"]),
+                    str(item["category_id"]),
+                    _md_cell(item["binding_level"]),
+                    str(item["unlocked_values"]),
+                    str(item["blast_radius"]),
+                    f"{item['fill_rate'] * 100:.1f}%"
+                    + (" **мало**" if item["low_fill_rate"] else ""),
+                    _md_cell(", ".join(item["tool_types"][:3])),
+                ]
+                for item in queue["items"][:20]
+            ],
+        )
+    )
+    out.append("")
+    if len(queue["items"]) > 20:
+        out.append(
+            f"… и ещё {len(queue['items']) - 20} предложений (полный список — в `--json-report`)."
+        )
+        out.append("")
+    return out
+
+
 def _markdown_candidate(index: int, row: dict) -> list[str]:
     """Раздел одного кандидата: предлагаемые оси с числами и примерами."""
     out = [
         f"### {index}. {_md_code(row['tool_type'])} — {row['products']} тов., "
-        f"score {row['score']}",
+        f"actionable_score {row['actionable_score']} / potential_score "
+        f"{row['potential_score']} (RIS {row['score']})",
         "",
         f"**{row['status']}:** {_md_cell(row['reason'])}",
         "",
     ]
+    target = row["binding_target"]
+    if target["source"] == "block":
+        out.append(
+            f"Привязка уйдёт в **{_md_cell(target['category_name'])}** "
+            f"(id {target['category_id']}, `{target['reason']}`): накроет "
+            f"{target['products_covered']} из {row['products']} товаров типа, под фасетом "
+            f"окажется {target['blast_radius']}, заполненность "
+            f"{target['fill_rate'] * 100:.1f}%."
+        )
+    else:
+        out.append(
+            "Блока правил нет — категорию привязки выберет оператор; `actionable` "
+            "посчитан по презумпции «привяжем туда, где лежат товары»."
+        )
+    out.append("")
+    if row["axes"]:
+        out.extend(
+            _md_table(
+                ["Ось", "potential", "actionable", "visibility", "Статус", "next_action"],
+                ["---", "---:", "---:", "---:", "---", "---"],
+                [
+                    [
+                        _md_code(axis["attribute_slug"]),
+                        str(axis["potential_values"]),
+                        str(axis["actionable_values"]),
+                        f"{axis['visibility'] * 100:.0f}%",
+                        _md_cell(axis["status"]),
+                        _md_cell(axis["next_action"]),
+                    ]
+                    for axis in row["axes"]
+                ]
+                + [
+                    [
+                        "**итого**",
+                        f"**{row['potential_values']}**",
+                        f"**{row['actionable_values']}**",
+                        f"**{row['actionable_ratio'] * 100:.1f}%**",
+                        "",
+                        "",
+                    ]
+                ],
+            )
+        )
+        out.append("")
     # Печатаем при любом статусе: блокер объясняет, что мешает, но не отменяет
     # уже посчитанную картину — видно, ради чего блокер стоит снимать.
     interesting = [p for p in row["patterns"] if p["proposed"] or p["rejected_reason"]]
@@ -1073,6 +1720,385 @@ def _category_stats(pids, scope, ancestors, products) -> tuple[float, int, set[i
             if cid in faceted or any(a in faceted for a in ancestors.get(cid, ())):
                 faceted_count += 1
     return (live / len(pids) if pids else 0.0), faceted_count, category_ids
+
+
+def resolve_binding_category(name: str, categories: dict[int, dict]) -> tuple[int | None, str]:
+    """Куда ``load_attributes`` фактически поставит привязку для имени категории.
+
+    Повторяет лестницу ``load_attributes._resolve_category`` по уже прочитанному
+    словарю категорий (лишних запросов не делаем — команда read-only и не должна
+    дёргать БД ради справки): живые кандидаты важнее мёртвых, внутри отобранных
+    приоритет у ``depth == 1``; если после этого кандидат не один — ``ambiguous``.
+
+    Повторение нужно ровно потому, что предсказать эффект правила без него нельзя:
+    у 28 блоков из 48 имя категории разрешается в **корень раздела**, а не в
+    профильный узел, где лежат товары (``sverla`` → «Оснастка», ``klyuchi-gaechnye``
+    → «Ручной инструмент»). Оценивать видимость новой оси по категории товара
+    значит считать привязку, которой не будет.
+    """
+    if not name:
+        return None, "no_category"
+    objects = [row for row in categories.values() if row["name"] == name]
+    if not objects:
+        return None, "not_found"
+    live = [row for row in objects if row["is_active"] and row["on_site"]]
+    pool = live or objects
+    tops = [row for row in pool if row["depth"] == 1]
+    scope_rows = tops or pool
+    level = "top" if tops else "tree"
+    if len(scope_rows) != 1:
+        return None, f"ambiguous:{level}"
+    node = scope_rows[0]
+    if not (node["is_active"] and node["on_site"]):
+        return node["pk"], f"bound:{level}:dead"
+    return node["pk"], f"bound:{level}"
+
+
+def _binding_target(slug, block_categories, has_block, scope) -> dict:
+    """Узел, куда уйдёт привязка новой оси этого типа, и его цена.
+
+    У типа с блоком цель берётся из поля ``category`` блока и разрешается той же
+    лестницей, что и в ``load_attributes``. У типа **без** блока цели ещё не
+    существует: её выберет оператор, когда напишет блок, — тогда считаем по
+    категориям самих товаров и честно помечаем результат ``presumed``, чтобы
+    предположение нельзя было принять за замер.
+    """
+    categories = scope["categories"]
+    if not has_block:
+        return {
+            "category_name": "",
+            "category_id": None,
+            "category_depth": None,
+            "reason": "no_block",
+            "source": "presumed",
+            "is_live": True,
+            "covers": None,  # None = «категории самих товаров»
+        }
+    name = block_categories.get(slug, "")
+    category_id, reason = resolve_binding_category(name, categories)
+    row = categories.get(category_id) if category_id is not None else None
+    return {
+        "category_name": name,
+        "category_id": category_id,
+        "category_depth": row["depth"] if row else None,
+        "reason": reason,
+        "source": "block",
+        "is_live": bool(row and row["is_active"] and row["on_site"]),
+        "covers": category_id,
+    }
+
+
+def _is_live(cid, categories) -> bool:
+    """Категория видна витрине: существует, активна и выведена на сайт."""
+    row = categories.get(cid) if cid is not None else None
+    return bool(row and row["is_active"] and row["on_site"])
+
+
+def _covered_by_target(cid, target, ancestors) -> bool:
+    """Накроет ли привязка к цели товар из категории ``cid``.
+
+    Привязка наследуется вниз, поэтому цель накрывает товар, если она и есть его
+    категория либо её предок. Мёртвая цель не накрывает ничего: узел скрыт, а
+    живым потомкам характеристика от скрытого узла не наследуется — ровно так
+    блок ``metchiki-plashki`` уезжал в мёртвую категорию и фасет не появлялся.
+    """
+    if not target["is_live"]:
+        return False
+    node = target["covers"]
+    if node is None:  # блока нет — цель выберет оператор, презумпция «где товары»
+        return True
+    return cid == node or node in ancestors.get(cid, ())
+
+
+def _axis_visibility(matched_pids, attr_slug, *, scope, ancestors, products, target) -> dict:
+    """Видимость ОДНОЙ оси: сколько её значений дойдёт до покупателя.
+
+    Значение видно, если категория товара жива (``is_active AND on_site``) и
+    фасетом объявлен **именно этот** атрибут — у самой категории или у любого её
+    предка (фасеты наследуются вниз). Считается по каждому товару, а не долей на
+    тип: у ключей ``wrench_type`` виден целиком, ``material`` — не виден вовсе,
+    при одном и том же наборе категорий.
+
+    Учитываются два источника видимости:
+
+    ``already`` — привязка уже существует, значение будет видно сразу;
+    ``target`` — привязку создаст ``load_attributes`` из поля ``category`` блока.
+    Второй источник обязателен: у 28 блоков из 48 имя разрешается в корень
+    раздела, а не в категорию товаров, и оценивать по категории товара значит
+    считать привязку, которой не будет.
+    """
+    categories = scope["categories"]
+    bound = scope["bound_by_attribute"].get(attr_slug, frozenset())
+    live = 0
+    already = 0
+    visible = 0
+    unbound: dict[int, int] = {}
+    for pid in matched_pids:
+        cid = products[pid]["category_id"]
+        if not _is_live(cid, categories):
+            continue
+        live += 1
+        is_bound = cid in bound or any(parent in bound for parent in ancestors.get(cid, ()))
+        already += is_bound
+        if is_bound or _covered_by_target(cid, target, ancestors):
+            visible += 1
+        else:
+            unbound[cid] = unbound.get(cid, 0) + 1
+    return {
+        "live": live,
+        "already_bound": already,
+        "visible": visible,
+        "unbound_live_categories": unbound,
+    }
+
+
+def _axis_status(
+    *,
+    is_set,
+    heterogeneous,
+    too_noisy,
+    attribute_exists,
+    live_values,
+    visible_values,
+) -> str:
+    """Статус оси. Порядок проверок = порядок приоритета причин.
+
+    Причины не смешиваются намеренно: ``BLOCKED_BY_ATTRIBUTE`` (атрибута нет в
+    БД, лечится ``load_attributes`` после появления правила) и
+    ``BLOCKED_BY_FACET`` (атрибут есть, привязки нет, лечится решением владельца
+    о привязке) — разная работа и разная цена.
+    """
+    if is_set:
+        return AXIS_SET
+    if heterogeneous:
+        return AXIS_CLASSIFICATION
+    if too_noisy:
+        return AXIS_PURITY
+    if not attribute_exists:
+        return AXIS_ATTRIBUTE
+    if live_values == 0:
+        return AXIS_CATEGORY
+    if visible_values == 0:
+        return AXIS_FACET
+    return AXIS_READY
+
+
+def _axis_totals(rows) -> dict:
+    """Три числа по каталогу: потенциал, безопасно исполнимое и запертое."""
+    potential = sum(row["potential_values"] for row in rows)
+    actionable = sum(row["actionable_values"] for row in rows)
+    return {
+        "potential_values": potential,
+        "actionable_values": actionable,
+        "blocked_values": potential - actionable,
+        "actionable_ratio": round(actionable / potential if potential else 0.0, 4),
+    }
+
+
+def _binding_target_report(rows) -> dict:
+    """Куда фактически уйдут привязки и во что это обойдётся.
+
+    Отдельный раздел, потому что дефект здесь системный, а не разовый: поле
+    ``category`` блока разрешается лестницей ``load_attributes``, которая среди
+    одноимённых узлов предпочитает ``depth == 1``, и у большинства блоков имя
+    попадает в **корень раздела**, а не в профильную категорию с товарами.
+    Привязка при этом «работает» (корень — предок, фасет наследуется вниз), но
+    накрывает весь раздел: у `sverla` это «Оснастка» с тысячами товаров.
+
+    Три исхода, которые нужно видеть отдельно:
+
+    ``root_binding``
+        цель — корень раздела (``depth == 1``), а товары лежат глубже;
+    ``low_fill_rate``
+        под фасетом окажется много товаров, а значения получат единицы;
+    ``unresolved``
+        имя не разрешается (``not_found``/``ambiguous``) или узел мёртв —
+        привязки не будет вовсе, и ось не станет видимой ни при каком правиле.
+    """
+    items = []
+    for row in rows:
+        target = row["binding_target"]
+        if target["source"] != "block" or not row["potential_values"]:
+            continue
+        resolved = target["reason"].startswith("bound:") and target["is_live"]
+        items.append(
+            {
+                "tool_type": row["tool_type"],
+                "category_name": target["category_name"],
+                "category_id": target["category_id"],
+                "category_depth": target.get("category_depth"),
+                "reason": target["reason"],
+                "products": row["products"],
+                "products_covered": target["products_covered"],
+                "products_outside": target["products_outside"],
+                "products_at_target": target["products_at_target"],
+                "blast_radius": target["blast_radius"],
+                "fill_rate": target["fill_rate"],
+                # Привязка уходит в корень раздела, а товары лежат глубже:
+                # фасет накрывает весь раздел ради одного типа.
+                "root_binding": bool(
+                    resolved
+                    and target.get("category_depth") == 1
+                    and target["products_at_target"] < row["products"]
+                ),
+                "low_fill_rate": target["low_fill_rate"],
+                "unresolved": not resolved,
+            }
+        )
+    items.sort(key=lambda item: (-item["blast_radius"], item["tool_type"]))
+    return {
+        "items": items,
+        "root_bindings": sum(1 for item in items if item["root_binding"]),
+        "low_fill_rate": sum(1 for item in items if item["low_fill_rate"]),
+        "unresolved": sum(1 for item in items if item["unresolved"]),
+    }
+
+
+def _axis_ranking(rows) -> dict:
+    """Сквозной по каталогу рейтинг ОСЕЙ, а не типов.
+
+    Работу выбирают не по ``tool_type``, а по конкретной оси: одна и та же ось
+    набирает объём сразу в нескольких типах, и по типам этот объём не виден.
+    Два порядка: по ``actionable`` — что писать, по ``blocked`` — очередь
+    архитектурной работы (что создать, что привязать).
+    """
+    merged: dict[str, dict] = {}
+    for row in rows:
+        for axis in row["axes"]:
+            entry = merged.setdefault(
+                axis["attribute_slug"],
+                {
+                    "attribute_slug": axis["attribute_slug"],
+                    "attribute_name": axis["attribute_name"],
+                    "potential_values": 0,
+                    "actionable_values": 0,
+                    "blocked_values": 0,
+                    "tool_types": 0,
+                    "statuses": {},
+                    "top_tool_types": [],
+                },
+            )
+            entry["potential_values"] += axis["potential_values"]
+            entry["actionable_values"] += axis["actionable_values"]
+            entry["blocked_values"] += axis["blocked_values"]
+            entry["tool_types"] += 1
+            entry["statuses"][axis["status"]] = entry["statuses"].get(axis["status"], 0) + 1
+            entry["top_tool_types"].append(
+                {
+                    "tool_type": row["tool_type"],
+                    "potential_values": axis["potential_values"],
+                    "actionable_values": axis["actionable_values"],
+                    "status": axis["status"],
+                }
+            )
+    for entry in merged.values():
+        entry["top_tool_types"].sort(
+            key=lambda item: (-item["potential_values"], item["tool_type"])
+        )
+        del entry["top_tool_types"][5:]
+    entries = list(merged.values())
+    return {
+        "by_actionable": sorted(
+            entries,
+            key=lambda e: (-e["actionable_values"], -e["potential_values"], e["attribute_slug"]),
+        ),
+        "by_blocked": sorted(
+            entries,
+            key=lambda e: (-e["blocked_values"], -e["potential_values"], e["attribute_slug"]),
+        ),
+    }
+
+
+def _descendant_scope(scope, ancestors) -> dict[int, int]:
+    """Сколько товаров скоупа стоит в категории и во всех её потомках.
+
+    Это знаменатель заполненности фасета: привязка к узлу накрывает всё поддерево,
+    поэтому «сколько товаров окажется под фасетом» считается по потомкам, а не по
+    той единственной категории, из-за которой привязку предложили.
+    """
+    counts: dict[int, int] = {}
+    for row in scope["products"].values():
+        cid = row["category_id"]
+        if cid is None:
+            continue
+        counts[cid] = counts.get(cid, 0) + 1
+        for parent in ancestors.get(cid, ()):
+            counts[parent] = counts.get(parent, 0) + 1
+    return counts
+
+
+def _facet_binding_queue(binding_gaps, scope, ancestors, descendant_scope, min_fill_rate) -> dict:
+    """Очередь привязок: «привязать X к Y — разблокирует N значений на M товарах».
+
+    До сих пор такой список собирался вручную по одному типу. Здесь он строится
+    сам и сразу с **blast radius**: привязка к узлу выше накрывает всех потомков,
+    поэтому у каждого предложения посчитано, сколько товаров окажется под фасетом
+    и какова будет его заполненность. Фасет с заполненностью в единицы процентов
+    бесполезен и засоряет фильтры — такие предложения помечены флагом
+    ``low_fill_rate``, а не тихо выданы наравне с остальными.
+
+    Узел-предок предлагается, только если он объединяет **две и более** прямые
+    категории: иначе это тот же самый фасет, но с большим радиусом и худшей
+    заполненностью.
+    """
+    categories = scope["categories"]
+    # attr → node → сведения; узел = прямая категория товара либо её предок.
+    nodes: dict[tuple[str, int], dict] = {}
+    for gap in binding_gaps:
+        attr = gap["attribute_slug"]
+        direct = gap["category_id"]
+        for node in (direct, *ancestors.get(direct, ())):
+            entry = nodes.setdefault(
+                (attr, node),
+                {
+                    "attribute_slug": attr,
+                    "attribute_name": gap["attribute_name"],
+                    "category_id": node,
+                    "binding_level": "direct" if node == direct else "ancestor",
+                    "unlocked_values": 0,
+                    "direct_categories": set(),
+                    "tool_types": set(),
+                },
+            )
+            if node == direct:
+                entry["binding_level"] = "direct"
+            entry["unlocked_values"] += gap["values"]
+            entry["direct_categories"].add(direct)
+            entry["tool_types"].add(gap["tool_type"])
+
+    items = []
+    for entry in nodes.values():
+        direct_categories = entry.pop("direct_categories")
+        if entry["binding_level"] == "ancestor" and len(direct_categories) < 2:
+            continue
+        node = entry["category_id"]
+        blast_radius = descendant_scope.get(node, 0)
+        fill_rate = entry["unlocked_values"] / blast_radius if blast_radius else 0.0
+        category = categories.get(node, {})
+        items.append(
+            {
+                **entry,
+                "category_depth": category.get("depth"),
+                "category_is_live": bool(category.get("is_active") and category.get("on_site")),
+                "covers_categories": len(direct_categories),
+                "blast_radius": blast_radius,
+                "fill_rate": round(fill_rate, 4),
+                "low_fill_rate": fill_rate < min_fill_rate,
+                "tool_types": sorted(entry["tool_types"]),
+            }
+        )
+    items.sort(
+        key=lambda item: (
+            -item["unlocked_values"],
+            item["binding_level"] != "direct",
+            item["category_id"],
+        )
+    )
+    return {
+        "min_fill_rate": min_fill_rate,
+        "unlocked_values_total": sum(gap["values"] for gap in binding_gaps),
+        "items": items,
+    }
 
 
 def _status(
@@ -1227,6 +2253,7 @@ def _scope_meta(options, scope, totals) -> dict:
         "heterogeneity_dominance": options["heterogeneity_dominance"],
         "max_false_positive_rate": options["max_false_positive_rate"],
         "sales_min_share": options["sales_min_share"],
+        "min_facet_fill_rate": options["min_facet_fill_rate"],
         "heterogeneity_min_heads": DEFAULT_HETEROGENEITY_MIN_HEADS,
         "heterogeneity_min_products": DEFAULT_HETEROGENEITY_MIN_PRODUCTS,
         "products": totals["products"],
