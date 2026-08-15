@@ -607,7 +607,11 @@ class Command(BaseCommand):
             "binding_targets": _binding_target_report(rows),
             "axis_ranking": _axis_ranking(rows),
             "facet_binding_queue": _facet_binding_queue(
-                binding_gaps, scope, ancestors, options["min_facet_fill_rate"]
+                binding_gaps,
+                scope,
+                ancestors,
+                descendant_scope,
+                options["min_facet_fill_rate"],
             ),
             "cumulative_by_volume": _cumulative_by_volume(
                 by_type, block_attrs, scope["with_attrs"]
@@ -2012,7 +2016,7 @@ def _descendant_scope(scope, ancestors) -> dict[int, int]:
     return counts
 
 
-def _facet_binding_queue(binding_gaps, scope, ancestors, min_fill_rate) -> dict:
+def _facet_binding_queue(binding_gaps, scope, ancestors, descendant_scope, min_fill_rate) -> dict:
     """Очередь привязок: «привязать X к Y — разблокирует N значений на M товарах».
 
     До сих пор такой список собирался вручную по одному типу. Здесь он строится
@@ -2027,7 +2031,6 @@ def _facet_binding_queue(binding_gaps, scope, ancestors, min_fill_rate) -> dict:
     заполненностью.
     """
     categories = scope["categories"]
-    descendant_scope = _descendant_scope(scope, ancestors)
     # attr → node → сведения; узел = прямая категория товара либо её предок.
     nodes: dict[tuple[str, int], dict] = {}
     for gap in binding_gaps:
