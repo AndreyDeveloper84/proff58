@@ -651,7 +651,7 @@ class Command(BaseCommand):
         # Куда уйдёт привязка новой оси. Считать видимость по категории ТОВАРА
         # нельзя: привязку создаёт load_attributes по полю `category` блока, и у
         # 28 блоков из 48 это имя разрешается в корень раздела.
-        target = _binding_target(slug, block_categories, has_block, scope, ancestors, pids)
+        target = _binding_target(slug, block_categories, has_block, scope)
 
         # Разнородность нужна ДО разбора осей: «свалка» блокирует каждую ось
         # типа, а не только итог, — иначе ось выглядела бы готовой к работе.
@@ -817,8 +817,13 @@ class Command(BaseCommand):
         own_categories = {
             products[pid]["category_id"] for pid in pids if products[pid]["category_id"] is not None
         }
+        # Товар накрыт, только если его категория ещё и жива: под скрытым узлом
+        # фасета не будет независимо от того, куда легла привязка.
         target_products = sum(
-            1 for pid in pids if _covered_by_target(products[pid]["category_id"], target, ancestors)
+            1
+            for pid in pids
+            if _is_live(products[pid]["category_id"], scope["categories"])
+            and _covered_by_target(products[pid]["category_id"], target, ancestors)
         )
         blast_radius = (
             descendant_scope.get(target["covers"], 0)
@@ -1749,7 +1754,7 @@ def resolve_binding_category(name: str, categories: dict[int, dict]) -> tuple[in
     return node["pk"], f"bound:{level}"
 
 
-def _binding_target(slug, block_categories, has_block, scope, ancestors, pids) -> dict:
+def _binding_target(slug, block_categories, has_block, scope) -> dict:
     """Узел, куда уйдёт привязка новой оси этого типа, и его цена.
 
     У типа с блоком цель берётся из поля ``category`` блока и разрешается той же
@@ -1780,6 +1785,12 @@ def _binding_target(slug, block_categories, has_block, scope, ancestors, pids) -
         "is_live": bool(row and row["is_active"] and row["on_site"]),
         "covers": category_id,
     }
+
+
+def _is_live(cid, categories) -> bool:
+    """Категория видна витрине: существует, активна и выведена на сайт."""
+    row = categories.get(cid) if cid is not None else None
+    return bool(row and row["is_active"] and row["on_site"])
 
 
 def _covered_by_target(cid, target, ancestors) -> bool:
@@ -1823,8 +1834,7 @@ def _axis_visibility(matched_pids, attr_slug, *, scope, ancestors, products, tar
     unbound: dict[int, int] = {}
     for pid in matched_pids:
         cid = products[pid]["category_id"]
-        row = categories.get(cid) if cid is not None else None
-        if row is None or not (row["is_active"] and row["on_site"]):
+        if not _is_live(cid, categories):
             continue
         live += 1
         is_bound = cid in bound or any(parent in bound for parent in ancestors.get(cid, ()))
