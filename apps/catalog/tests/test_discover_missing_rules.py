@@ -21,6 +21,7 @@ from decimal import Decimal
 import pytest
 from django.core.management import call_command
 
+from apps.catalog.management.commands.discover_missing_rules import resolve_binding_category
 from apps.catalog.models import (
     Attribute,
     AttributeOption,
@@ -489,6 +490,7 @@ def test_json_report_is_valid_and_self_describing(rules_dir, tool_type_attr, liv
         "totals",
         "sales",
         "candidates",
+        "binding_targets",
         "axis_ranking",
         "facet_binding_queue",
         "cumulative_by_volume",
@@ -540,55 +542,253 @@ def axis(row: dict, slug: str) -> dict:
     return next(item for item in row["axes"] if item["attribute_slug"] == slug)
 
 
-def make_axis_fixture(live_category: Category, tool_type_attr: Attribute) -> dict:
-    """Тип с двумя осями: одна привязана фасетом, вторая — нет.
+def write_rules(tmp_path, blocks) -> object:
+    """Свой файл правил с блоками и их полем ``category``.
 
-    Это воспроизведение случая `klyuchi-gaechnye`, ради которого счёт по осям и
-    делался: у одной оси значения доходят до покупателя, у другой — нет, и один
-    коэффициент на весь тип это различие усредняет.
+    Отдельная фикстура, а не общая ``RULES``: поле ``category`` блока — это не
+    справка, а адрес, куда ``load_attributes`` поставит привязку. Проверять
+    поведение, зависящее от него, на файле без блоков значит проверять презумпцию
+    вместо факта.
     """
-    attributes = {}
-    for slug, name in (("diameter", "Диаметр"), ("package_quantity", "Фасовка")):
-        attributes[slug] = Attribute.objects.create(
-            slug=slug, name=name, attribute_type=AttributeType.DECIMAL
-        )
-    for index in range(10):
-        product = make_product(f"ax{index}", f"Хомут-стяжка {index + 3} мм 50 шт", live_category)
-        set_tool_type(product, tool_type_attr, "krep-styazhki")
-    return attributes
+    (tmp_path / "attribute_rules.json").write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "source_priority": {"manual": 100, "regex": 40},
+                "tool_types": blocks,
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    return tmp_path
 
 
-def test_unbound_attribute_axis_is_blocked_by_facet(rules_dir, tool_type_attr, live_category):
-    """Атрибут в БД есть, привязки нет → BLOCKED_BY_FACET и ноль actionable."""
-    attributes = make_axis_fixture(live_category, tool_type_attr)
-    CategoryAttribute.objects.create(
-        category=live_category, attribute=attributes["diameter"], is_filter=True
+def block(tool_type: str, category: str) -> dict:
+    """Блок правил с одной уже описанной осью, не пересекающейся с шаблонами.
+
+    ``weight`` берётся намеренно: он не мешает шаблонам «N мм» и «N шт»
+    предлагать новые оси, но делает блок существующим — а значит цель привязки
+    известной.
+    """
+    return {
+        "tool_type": tool_type,
+        "category": category,
+        "attributes": [
+            {
+                "slug": "weight",
+                "name": "Вес",
+                "kind": "number",
+                "unit": "кг",
+                "source": "regex",
+                "priority": 40,
+                "regex": [r"(\d+(?:[.,]\d+)?)\s*кг"],
+            }
+        ],
+    }
+
+
+@pytest.fixture()
+def hand_tools_tree():
+    """Дерево владельца в миниатюре: корень раздела и профильный лист под ним."""
+    root = Category.add_root(name="Ручной инструмент", slug="ruchnoy", is_active=True, on_site=True)
+    leaf = root.add_child(name="Ключи", slug="klyuchi", is_active=True, on_site=True)
+    other_root = Category.add_root(name="Оснастка", slug="osnastka", is_active=True, on_site=True)
+    return {"root": root, "leaf": leaf, "other_root": other_root}
+
+
+def make_wrenches(tool_type_attr: Attribute, category: Category, count: int = 10) -> None:
+    for index in range(count):
+        product = make_product(f"kg{index}", f"Ключ гаечный {index + 8} мм", category)
+        set_tool_type(product, tool_type_attr, "klyuchi-gaechnye")
+
+
+def make_diameter_attribute() -> Attribute:
+    return Attribute.objects.create(
+        slug="diameter", name="Диаметр", attribute_type=AttributeType.DECIMAL
     )
 
-    row = candidate(run(rules_dir, in_stock_only=True), "krep-styazhki")
-    bound = axis(row, "diameter")
-    unbound = axis(row, "package_quantity")
 
-    assert bound["status"] == "READY"
-    assert bound["potential_values"] == 10
-    assert bound["actionable_values"] == 10
-    assert bound["visibility"] == pytest.approx(1.0)
-    assert bound["next_action"] == "WRITE_RULE"
+# --- лестница разрешения имени категории ------------------------------- #
 
-    # Причина блокировки — именно привязка, а не отсутствие атрибута: у них
-    # разная цена и разное лечение, смешивать нельзя.
-    assert unbound["status"] == "BLOCKED_BY_FACET"
-    assert unbound["potential_values"] == 10
-    assert unbound["actionable_values"] == 0
-    assert unbound["blocked_values"] == 10
-    assert unbound["visibility"] == pytest.approx(0.0)
-    assert unbound["next_action"] == "FACET_BINDING_AUDIT"
 
-    # Итог типа агрегируется снизу вверх — из осей.
-    assert row["potential_values"] == 20
-    assert row["actionable_values"] == 10
-    assert row["blocked_values"] == 10
-    assert row["actionable_ratio"] == pytest.approx(0.5)
+def test_resolve_binding_category_repeats_load_attributes_ladder(live_category):
+    """Живой узел важнее мёртвого, ``depth == 1`` важнее вложенного, иначе — ambiguous."""
+    root = Category.add_root(name="Ключи", slug="klyuchi-root", is_active=True, on_site=True)
+    root.add_child(name="Ключи", slug="klyuchi-child", is_active=True, on_site=True)
+    dead = Category.add_root(name="Мёртвые", slug="mertvye", is_active=False, on_site=False)
+    dead.add_child(name="Уникальные", slug="unikalnye", is_active=False, on_site=False)
+    twin_root = Category.add_root(name="Дубли", slug="dubli", is_active=True, on_site=True)
+    twin_root.add_child(name="Двойник", slug="dvoynik-1", is_active=True, on_site=True)
+    twin_root.add_child(name="Двойник", slug="dvoynik-2", is_active=True, on_site=True)
+
+    categories = {
+        row["pk"]: row
+        for row in Category.objects.values("pk", "name", "path", "depth", "is_active", "on_site")
+    }
+
+    # Одноимённые узлы: побеждает верхний уровень.
+    category_id, reason = resolve_binding_category("Ключи", categories)
+    assert category_id == root.pk
+    assert reason == "bound:top"
+
+    # Живых нет вовсе — выбирается мёртвый, но исход помечен отдельно.
+    category_id, reason = resolve_binding_category("Уникальные", categories)
+    assert reason.endswith(":dead")
+
+    # Два живых одноуровневых кандидата — гадать нельзя.
+    assert resolve_binding_category("Двойник", categories) == (None, "ambiguous:tree")
+    assert resolve_binding_category("Нет такой", categories) == (None, "not_found")
+    assert resolve_binding_category("", categories) == (None, "no_category")
+
+
+# --- видимость оси считается по цели привязки --------------------------- #
+
+
+def test_visibility_is_counted_by_block_binding_category(tmp_path, tool_type_attr, hand_tools_tree):
+    """Видимость — по категории, куда уйдёт привязка, а не где лежат товары.
+
+    Случай владельца: блок `klyuchi-gaechnye` указывает «Ручной инструмент» —
+    корень раздела, — а товары лежат в «Ключах». Корень товары накрывает
+    (фасеты наследуются вниз), но фасет ложится на весь раздел.
+    """
+    make_diameter_attribute()
+    make_wrenches(tool_type_attr, hand_tools_tree["leaf"])
+    rules = write_rules(tmp_path, [block("klyuchi-gaechnye", "Ручной инструмент")])
+
+    row = candidate(run(rules, in_stock_only=True), "klyuchi-gaechnye")
+    target = row["binding_target"]
+    assert target["category_id"] == hand_tools_tree["root"].pk
+    assert target["reason"] == "bound:top"
+    assert target["source"] == "block"
+    assert target["products_covered"] == 10
+    # Товары стоят НЕ в целевой категории — фасет уходит выше, чем нужно.
+    assert target["products_at_target"] == 0
+    assert axis(row, "diameter")["status"] == "READY"
+    assert axis(row, "diameter")["actionable_values"] == 10
+    # Привязки ещё нет, значит видимость даёт именно будущая цель.
+    assert axis(row, "diameter")["already_visible_values"] == 0
+    assert axis(row, "diameter")["unlocked_by_binding_target"] == 10
+
+
+def test_axis_blocked_when_binding_target_does_not_cover_products(
+    tmp_path, tool_type_attr, hand_tools_tree
+):
+    """Цель привязки не накрывает товары → BLOCKED_BY_FACET и ноль actionable.
+
+    Без этой проверки оценка была бы завышенной: команда посчитала бы привязку к
+    категории товара, которой ``load_attributes`` не создаст.
+    """
+    make_diameter_attribute()
+    make_wrenches(tool_type_attr, hand_tools_tree["leaf"])
+    rules = write_rules(tmp_path, [block("klyuchi-gaechnye", "Оснастка")])
+
+    row = candidate(run(rules, in_stock_only=True), "klyuchi-gaechnye")
+    blocked = axis(row, "diameter")
+    assert row["binding_target"]["category_id"] == hand_tools_tree["other_root"].pk
+    assert row["binding_target"]["products_covered"] == 0
+    assert blocked["status"] == "BLOCKED_BY_FACET"
+    assert blocked["next_action"] == "FACET_BINDING_AUDIT"
+    assert blocked["potential_values"] == 10
+    assert blocked["actionable_values"] == 0
+    assert blocked["visibility"] == pytest.approx(0.0)
+    assert row["actionable_values"] == 0
+    assert row["blocked_values"] == row["potential_values"]
+
+
+def test_dead_binding_target_blocks_axis(tmp_path, tool_type_attr, hand_tools_tree):
+    """Мёртвая цель фасета не даёт: живым потомкам от скрытого узла не наследуется."""
+    make_diameter_attribute()
+    Category.add_root(name="Метчики и плашки", slug="metchiki", is_active=False, on_site=False)
+    make_wrenches(tool_type_attr, hand_tools_tree["leaf"])
+    rules = write_rules(tmp_path, [block("klyuchi-gaechnye", "Метчики и плашки")])
+
+    report = run(rules, in_stock_only=True)
+    row = candidate(report, "klyuchi-gaechnye")
+    assert row["binding_target"]["reason"].endswith(":dead")
+    assert row["binding_target"]["is_live"] is False
+    assert axis(row, "diameter")["status"] == "BLOCKED_BY_FACET"
+    assert report["binding_targets"]["unresolved"] == 1
+
+
+def test_ambiguous_binding_target_blocks_axis(tmp_path, tool_type_attr, hand_tools_tree):
+    """Неоднозначное имя — привязки не будет вовсе, гадать команда не имеет права."""
+    make_diameter_attribute()
+    twin = Category.add_root(name="Дубли", slug="dubli", is_active=True, on_site=True)
+    twin.add_child(name="Двойник", slug="dvoynik-1", is_active=True, on_site=True)
+    twin.add_child(name="Двойник", slug="dvoynik-2", is_active=True, on_site=True)
+    make_wrenches(tool_type_attr, hand_tools_tree["leaf"])
+    rules = write_rules(tmp_path, [block("klyuchi-gaechnye", "Двойник")])
+
+    report = run(rules, in_stock_only=True)
+    row = candidate(report, "klyuchi-gaechnye")
+    assert row["binding_target"]["category_id"] is None
+    assert row["binding_target"]["reason"] == "ambiguous:tree"
+    assert axis(row, "diameter")["status"] == "BLOCKED_BY_FACET"
+    assert report["binding_targets"]["unresolved"] == 1
+
+
+def test_existing_binding_counts_even_when_target_is_wrong(
+    tmp_path, tool_type_attr, hand_tools_tree
+):
+    """Уже существующая привязка делает ось видимой независимо от цели блока."""
+    attribute = make_diameter_attribute()
+    make_wrenches(tool_type_attr, hand_tools_tree["leaf"])
+    CategoryAttribute.objects.create(
+        category=hand_tools_tree["leaf"], attribute=attribute, is_filter=True
+    )
+    rules = write_rules(tmp_path, [block("klyuchi-gaechnye", "Оснастка")])
+
+    ready = axis(candidate(run(rules, in_stock_only=True), "klyuchi-gaechnye"), "diameter")
+    assert ready["status"] == "READY"
+    assert ready["already_visible_values"] == 10
+    assert ready["unlocked_by_binding_target"] == 0
+    assert ready["actionable_values"] == 10
+
+
+def test_visibility_counts_existing_binding_on_ancestor(tmp_path, tool_type_attr, hand_tools_tree):
+    """Фасеты наследуются вниз: привязка у предка засчитывается товарам листа."""
+    attribute = make_diameter_attribute()
+    make_wrenches(tool_type_attr, hand_tools_tree["leaf"])
+    rules = write_rules(tmp_path, [block("klyuchi-gaechnye", "Оснастка")])
+
+    before = axis(candidate(run(rules, in_stock_only=True), "klyuchi-gaechnye"), "diameter")
+    assert before["status"] == "BLOCKED_BY_FACET"
+
+    # Привязка стоит у КОРНЯ, товары — в листе.
+    CategoryAttribute.objects.create(
+        category=hand_tools_tree["root"], attribute=attribute, is_filter=True
+    )
+    after = axis(candidate(run(rules, in_stock_only=True), "klyuchi-gaechnye"), "diameter")
+    assert after["status"] == "READY"
+    assert after["already_visible_values"] == 10
+    assert after["visibility"] == pytest.approx(1.0)
+
+
+def test_binding_of_other_attribute_does_not_make_axis_visible(
+    tmp_path, tool_type_attr, hand_tools_tree
+):
+    """Привязан чужой атрибут — ось всё равно невидима.
+
+    Прежняя мерка «у категории есть хоть какой-то фильтр» засчитала бы этот
+    случай как видимый: ровно так 74 значения `material` у ключей выглядели
+    работоспособными при непривязанном атрибуте.
+    """
+    make_diameter_attribute()
+    alien = Attribute.objects.create(
+        slug="voltage", name="Напряжение", attribute_type=AttributeType.DECIMAL
+    )
+    make_wrenches(tool_type_attr, hand_tools_tree["leaf"])
+    CategoryAttribute.objects.create(
+        category=hand_tools_tree["leaf"], attribute=alien, is_filter=True
+    )
+    rules = write_rules(tmp_path, [block("klyuchi-gaechnye", "Оснастка")])
+
+    row = candidate(run(rules, in_stock_only=True), "klyuchi-gaechnye")
+    assert axis(row, "diameter")["status"] == "BLOCKED_BY_FACET"
+    assert row["actionable_values"] == 0
+    # А тип-уровневая facet_visibility «какой-то фильтр есть» — 1.0.
+    assert row["score_factors"]["facet_visibility"] == pytest.approx(1.0)
 
 
 def test_axis_without_attribute_in_db_is_blocked_by_attribute(
@@ -608,64 +808,40 @@ def test_axis_without_attribute_in_db_is_blocked_by_attribute(
     assert row["actionable_values"] == 0
 
 
-def test_visibility_counts_binding_on_ancestor(rules_dir, tool_type_attr):
-    """Фасеты наследуются вниз: привязка к предку делает ось видимой."""
-    root = Category.add_root(name="Крепёж", slug="krepezh", is_active=True, on_site=True)
-    leaf = root.add_child(name="Стяжки", slug="styazhki", is_active=True, on_site=True)
-    attribute = Attribute.objects.create(
-        slug="diameter", name="Диаметр", attribute_type=AttributeType.DECIMAL
-    )
+def test_type_without_block_is_marked_presumed(rules_dir, tool_type_attr, live_category):
+    """У типа без блока цели ещё нет — число помечено презумпцией, а не замером."""
+    make_diameter_attribute()
     for index in range(10):
-        product = make_product(f"an{index}", f"Хомут-стяжка {index + 3} мм", leaf)
+        product = make_product(f"pr{index}", f"Хомут-стяжка {index + 3} мм", live_category)
         set_tool_type(product, tool_type_attr, "krep-styazhki")
 
-    before = axis(candidate(run(rules_dir, in_stock_only=True), "krep-styazhki"), "diameter")
-    assert before["status"] == "BLOCKED_BY_FACET"
-
-    # Привязка стоит у КОРНЯ, товары — в листе. Фасет обязан засчитаться.
-    CategoryAttribute.objects.create(category=root, attribute=attribute, is_filter=True)
-    after = axis(candidate(run(rules_dir, in_stock_only=True), "krep-styazhki"), "diameter")
-    assert after["status"] == "READY"
-    assert after["actionable_values"] == 10
-    assert after["visibility"] == pytest.approx(1.0)
+    report = run(rules_dir, in_stock_only=True)
+    row = candidate(report, "krep-styazhki")
+    assert row["binding_target"]["source"] == "presumed"
+    assert row["binding_target"]["reason"] == "no_block"
+    assert axis(row, "diameter")["status"] == "READY"
+    # В раздел «куда уйдёт привязка» презумпции не попадают: там только факты.
+    assert report["binding_targets"]["items"] == []
 
 
-def test_binding_of_other_attribute_does_not_make_axis_visible(
-    rules_dir, tool_type_attr, live_category
-):
-    """Привязан чужой атрибут — ось всё равно невидима.
-
-    Прежняя мерка «у категории есть хоть какой-то фильтр» засчитала бы этот
-    случай как видимый: ровно так 74 значения `material` у ключей выглядели
-    работоспособными при непривязанном атрибуте.
-    """
-    make_axis_fixture(live_category, tool_type_attr)
-    alien = Attribute.objects.create(
-        slug="voltage", name="Напряжение", attribute_type=AttributeType.DECIMAL
-    )
-    CategoryAttribute.objects.create(category=live_category, attribute=alien, is_filter=True)
-
-    row = candidate(run(rules_dir, in_stock_only=True), "krep-styazhki")
-    assert axis(row, "diameter")["status"] == "BLOCKED_BY_FACET"
-    assert row["actionable_values"] == 0
-    # А вот тип-уровневая facet_visibility «какой-то фильтр есть» — 1.0.
-    assert row["score_factors"]["facet_visibility"] == pytest.approx(1.0)
+# --- инварианты и рейтинг ----------------------------------------------- #
 
 
-def test_actionable_score_never_exceeds_potential_score(rules_dir, tool_type_attr, live_category):
+def test_actionable_score_never_exceeds_potential_score(tmp_path, tool_type_attr, hand_tools_tree):
     """actionable ≤ potential — инвариант по всем типам любого скоупа."""
-    attributes = make_axis_fixture(live_category, tool_type_attr)
-    CategoryAttribute.objects.create(
-        category=live_category, attribute=attributes["diameter"], is_filter=True
-    )
+    make_diameter_attribute()
+    make_wrenches(tool_type_attr, hand_tools_tree["leaf"])
     for index in range(8):
-        product = make_product(f"nb{index}", f"Набор бит {index + 4} шт", live_category)
+        product = make_product(f"nb{index}", f"Набор бит {index + 4} шт", hand_tools_tree["leaf"])
         set_tool_type(product, tool_type_attr, "nabory-bit")
     for index in range(21):
-        product = make_product(f"mo{index}", f"Молоток слесарный {index + 1} кг", live_category)
+        product = make_product(
+            f"mo{index}", f"Молоток слесарный {index + 1} кг", hand_tools_tree["leaf"]
+        )
         set_tool_type(product, tool_type_attr, "molotki-slesarnye")
+    rules = write_rules(tmp_path, [block("klyuchi-gaechnye", "Оснастка")])
 
-    report = run(rules_dir, in_stock_only=True)
+    report = run(rules, in_stock_only=True)
     assert report["candidates"]
     for row in report["candidates"]:
         assert row["actionable_score"] <= row["potential_score"]
@@ -677,38 +853,44 @@ def test_actionable_score_never_exceeds_potential_score(rules_dir, tool_type_att
     assert totals["blocked_values"] == totals["potential_values"] - totals["actionable_values"]
 
 
-def test_ranking_is_sorted_by_actionable_not_potential(rules_dir, tool_type_attr):
+def test_ranking_is_sorted_by_actionable_not_potential(tmp_path, tool_type_attr, hand_tools_tree):
     """Тип с меньшим потенциалом, но видимый, идёт выше запертого гиганта."""
-    live = Category.add_root(name="Живая", slug="live-cat", is_active=True, on_site=True)
-    blocked = Category.add_root(name="Без фасета", slug="nofacet", is_active=True, on_site=True)
-    attribute = Attribute.objects.create(
-        slug="diameter", name="Диаметр", attribute_type=AttributeType.DECIMAL
-    )
-    CategoryAttribute.objects.create(category=live, attribute=attribute, is_filter=True)
-
-    for index in range(8):
-        product = make_product(f"sm{index}", f"Хомут-стяжка {index + 3} мм", live)
-        set_tool_type(product, tool_type_attr, "malenkiy-vidimyy")
+    make_diameter_attribute()
+    make_wrenches(tool_type_attr, hand_tools_tree["leaf"], count=8)
+    # treebeard кэширует состояние узла: после add_child в фикстуре экземпляр
+    # устарел, и повторный add_child на нём падает — берём свежий из БД.
+    root = Category.objects.get(pk=hand_tools_tree["root"].pk)
+    big = root.add_child(name="Трубы", slug="truby", is_active=True, on_site=True)
     for index in range(30):
-        product = make_product(f"bg{index}", f"Труба стальная {index + 3} мм", blocked)
+        product = make_product(f"bg{index}", f"Труба стальная {index + 3} мм", big)
         set_tool_type(product, tool_type_attr, "bolshoy-zapertyy")
+    rules = write_rules(
+        tmp_path,
+        [
+            block("klyuchi-gaechnye", "Ключи"),
+            block("bolshoy-zapertyy", "Оснастка"),
+        ],
+    )
 
-    report = run(rules_dir, in_stock_only=True)
-    order = [row["tool_type"] for row in report["candidates"]]
-    assert order[0] == "malenkiy-vidimyy"
-    big = candidate(report, "bolshoy-zapertyy")
-    small = candidate(report, "malenkiy-vidimyy")
-    assert big["potential_values"] > small["potential_values"]
-    assert big["actionable_score"] == 0.0
-    assert small["actionable_score"] > 0
+    report = run(rules, in_stock_only=True)
+    assert [row["tool_type"] for row in report["candidates"]][0] == "klyuchi-gaechnye"
+    blocked = candidate(report, "bolshoy-zapertyy")
+    visible = candidate(report, "klyuchi-gaechnye")
+    assert blocked["potential_values"] > visible["potential_values"]
+    assert blocked["actionable_score"] == 0.0
+    assert visible["actionable_score"] > 0
 
 
-def test_facet_binding_queue_counts_unlocked_values(rules_dir, tool_type_attr):
+# --- очередь привязок и цена цели --------------------------------------- #
+
+
+def test_facet_binding_queue_counts_unlocked_values(tmp_path, tool_type_attr):
     """Очередь привязок считает выигрыш и blast radius по поддереву."""
     root = Category.add_root(name="Крепёж", slug="krepezh", is_active=True, on_site=True)
     left = root.add_child(name="Стяжки", slug="styazhki", is_active=True, on_site=True)
     right = root.add_child(name="Хомуты", slug="homuty", is_active=True, on_site=True)
-    Attribute.objects.create(slug="diameter", name="Диаметр", attribute_type=AttributeType.DECIMAL)
+    Category.add_root(name="Оснастка", slug="osnastka", is_active=True, on_site=True)
+    make_diameter_attribute()
 
     for index in range(10):
         product = make_product(f"ql{index}", f"Стяжка {index + 3} мм", left)
@@ -716,8 +898,12 @@ def test_facet_binding_queue_counts_unlocked_values(rules_dir, tool_type_attr):
     for index in range(6):
         product = make_product(f"qr{index}", f"Хомут {index + 3} мм", right)
         set_tool_type(product, tool_type_attr, "krep-homuty")
+    rules = write_rules(
+        tmp_path,
+        [block("krep-styazhki", "Оснастка"), block("krep-homuty", "Оснастка")],
+    )
 
-    queue = run(rules_dir, in_stock_only=True)["facet_binding_queue"]
+    queue = run(rules, in_stock_only=True)["facet_binding_queue"]
     assert queue["unlocked_values_total"] == 16
     items = {(item["attribute_slug"], item["category_id"]): item for item in queue["items"]}
 
@@ -735,27 +921,26 @@ def test_facet_binding_queue_counts_unlocked_values(rules_dir, tool_type_attr):
     assert ancestor["blast_radius"] == 16
     assert ancestor["covers_categories"] == 2
     assert sorted(ancestor["tool_types"]) == ["krep-homuty", "krep-styazhki"]
-    # Первым идёт предложение с максимальным выигрышем.
     assert queue["items"][0]["unlocked_values"] == 16
 
 
-def test_facet_binding_queue_flags_low_fill_rate(rules_dir, tool_type_attr):
+def test_facet_binding_queue_flags_low_fill_rate(tmp_path, tool_type_attr):
     """Фасет с заполненностью в единицы процентов помечается как малополезный."""
     root = Category.add_root(name="Всё", slug="vse", is_active=True, on_site=True)
     narrow = root.add_child(name="Стяжки", slug="styazhki", is_active=True, on_site=True)
     wide = root.add_child(name="Прочее", slug="prochee", is_active=True, on_site=True)
-    Attribute.objects.create(slug="diameter", name="Диаметр", attribute_type=AttributeType.DECIMAL)
+    Category.add_root(name="Оснастка", slug="osnastka", is_active=True, on_site=True)
+    make_diameter_attribute()
 
     for index in range(8):
         product = make_product(f"fl{index}", f"Стяжка {index + 3} мм", narrow)
         set_tool_type(product, tool_type_attr, "krep-styazhki")
-    # Соседний лист без единого «мм» в названиях: он попадёт под фасет, если
-    # привязать к корню, но значения не получит — заполненность рухнет.
     for index in range(400):
         product = make_product(f"fw{index}", f"Прочий предмет {index}", wide)
         set_tool_type(product, tool_type_attr, "prochee")
+    rules = write_rules(tmp_path, [block("krep-styazhki", "Оснастка")])
 
-    queue = run(rules_dir, in_stock_only=True)["facet_binding_queue"]
+    queue = run(rules, in_stock_only=True)["facet_binding_queue"]
     items = {(item["attribute_slug"], item["category_id"]): item for item in queue["items"]}
     assert items[("diameter", narrow.pk)]["low_fill_rate"] is False
     # Предложение к корню в очередь не попадает: оно накрывает одну прямую
@@ -763,11 +948,47 @@ def test_facet_binding_queue_flags_low_fill_rate(rules_dir, tool_type_attr):
     assert ("diameter", root.pk) not in items
 
 
+def test_binding_target_report_flags_root_binding_and_fill_rate(tmp_path, tool_type_attr):
+    """Привязка в корень раздела и её цена показаны отдельно, а не спрятаны.
+
+    Это системный дефект: имя категории блока разрешается лестницей, которая
+    предпочитает ``depth == 1``, поэтому фасет ложится на весь раздел ради одного
+    типа. Заполненность при этом падает до единиц процентов.
+    """
+    root = Category.add_root(name="Оснастка", slug="osnastka", is_active=True, on_site=True)
+    leaf = root.add_child(name="Свёрла", slug="sverla-cat", is_active=True, on_site=True)
+    neighbour = root.add_child(name="Прочее", slug="prochee", is_active=True, on_site=True)
+    make_diameter_attribute()
+
+    for index in range(10):
+        product = make_product(f"sv{index}", f"Сверло {index + 3} мм", leaf)
+        set_tool_type(product, tool_type_attr, "sverla")
+    for index in range(300):
+        product = make_product(f"pv{index}", f"Прочий предмет {index}", neighbour)
+        set_tool_type(product, tool_type_attr, "prochee")
+    rules = write_rules(tmp_path, [block("sverla", "Оснастка")])
+
+    report = run(rules, in_stock_only=True)
+    targets = {item["tool_type"]: item for item in report["binding_targets"]["items"]}
+    sverla = targets["sverla"]
+    assert sverla["category_id"] == root.pk
+    assert sverla["category_depth"] == 1
+    assert sverla["root_binding"] is True
+    assert sverla["products_at_target"] == 0
+    # Под фасетом окажется весь раздел, а значения получат только свёрла.
+    assert sverla["blast_radius"] == 310
+    assert sverla["fill_rate"] < 0.1
+    assert sverla["low_fill_rate"] is True
+    assert report["binding_targets"]["root_bindings"] == 1
+    assert report["binding_targets"]["unresolved"] == 0
+
+
+# --- сквозной рейтинг осей и прочие статусы ----------------------------- #
+
+
 def test_axis_ranking_is_catalog_wide(rules_dir, tool_type_attr, live_category):
     """Рейтинг осей сквозной: одна ось складывается по всем типам сразу."""
-    attribute = Attribute.objects.create(
-        slug="diameter", name="Диаметр", attribute_type=AttributeType.DECIMAL
-    )
+    attribute = make_diameter_attribute()
     CategoryAttribute.objects.create(category=live_category, attribute=attribute, is_filter=True)
     for index in range(10):
         product = make_product(f"r1{index}", f"Стяжка {index + 3} мм", live_category)
@@ -857,7 +1078,7 @@ def test_set_and_heterogeneous_axes_carry_type_level_reason(
 def test_dead_category_axis_is_blocked_by_category(rules_dir, tool_type_attr):
     """Мёртвая категория — своя причина, не facet и не attribute."""
     dead = Category.add_root(name="Мёртвая", slug="dead", is_active=False, on_site=False)
-    Attribute.objects.create(slug="diameter", name="Диаметр", attribute_type=AttributeType.DECIMAL)
+    make_diameter_attribute()
     for index in range(10):
         product = make_product(f"dc{index}", f"Хомут-стяжка {index + 3} мм", dead)
         set_tool_type(product, tool_type_attr, "krep-styazhki")
@@ -1002,13 +1223,28 @@ def test_both_reports_are_written_independently(rules_dir, tool_type_attr, live_
 
 
 def test_both_formats_print_axis_breakdown_and_two_scores(
-    rules_dir, tool_type_attr, live_category, capsys
+    tmp_path, tool_type_attr, hand_tools_tree, capsys
 ):
-    """Разбивку по осям со статусами и оба score печатают ОБА формата."""
-    attributes = make_axis_fixture(live_category, tool_type_attr)
-    CategoryAttribute.objects.create(
-        category=live_category, attribute=attributes["diameter"], is_filter=True
+    """Разбивку по осям со статусами и оба score печатают ОБА формата.
+
+    Тип собран так, что оси расходятся: `diameter` уже привязан к категории
+    товаров и виден, `package_quantity` — нет, а цель блока («Оснастка») товары
+    не накрывает. Ровно случай `klyuchi-gaechnye`, ради которого счёт по осям и
+    делался.
+    """
+    diameter = make_diameter_attribute()
+    Attribute.objects.create(
+        slug="package_quantity", name="Фасовка", attribute_type=AttributeType.DECIMAL
     )
+    for index in range(10):
+        product = make_product(
+            f"bf{index}", f"Ключ гаечный {index + 8} мм 50 шт", hand_tools_tree["leaf"]
+        )
+        set_tool_type(product, tool_type_attr, "klyuchi-gaechnye")
+    CategoryAttribute.objects.create(
+        category=hand_tools_tree["leaf"], attribute=diameter, is_filter=True
+    )
+    rules_dir = write_rules(tmp_path, [block("klyuchi-gaechnye", "Оснастка")])
 
     md_path = rules_dir / "axes.md"
     json_path = rules_dir / "axes.json"
@@ -1021,7 +1257,7 @@ def test_both_formats_print_axis_breakdown_and_two_scores(
     )
     console = capsys.readouterr().out
     text = md_path.read_text(encoding="utf-8")
-    row = candidate(json.loads(json_path.read_text(encoding="utf-8")), "krep-styazhki")
+    row = candidate(json.loads(json_path.read_text(encoding="utf-8")), "klyuchi-gaechnye")
 
     for output in (console, text):
         # Обе оси названы поимённо, с обоими статусами.

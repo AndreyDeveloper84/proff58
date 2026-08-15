@@ -401,11 +401,16 @@ class Command(BaseCommand):
             block["tool_type"]: {a["slug"] for a in block.get("attributes", ())}
             for block in raw.get("tool_types", ())
         }
+        # Имя категории из блока — это НЕ справочная информация: именно по нему
+        # load_attributes создаёт привязку, и именно туда уйдёт фасет новой оси.
+        block_categories = {
+            block["tool_type"]: block.get("category") or "" for block in raw.get("tool_types", ())
+        }
 
         scope = self._collect_scope(options)
         if not scope["products"]:
             self.stdout.write(self.style.WARNING("Скоуп пуст — ни одного товара."))
-        report = self._analyse(scope, block_attrs, options)
+        report = self._analyse(scope, block_attrs, block_categories, options)
         self._render(report, options)
 
         # Форматы независимы: можно попросить оба сразу, можно ни одного.
@@ -478,7 +483,9 @@ class Command(BaseCommand):
 
         categories = {
             row["pk"]: row
-            for row in Category.objects.values("pk", "path", "depth", "is_active", "on_site")
+            for row in Category.objects.values(
+                "pk", "name", "path", "depth", "is_active", "on_site"
+            )
         }
         faceted = set()
         # Привязки поимённо: ось видна витрине, только если фасетом объявлен
@@ -515,7 +522,7 @@ class Command(BaseCommand):
     # Анализ
     # ------------------------------------------------------------------ #
 
-    def _analyse(self, scope, block_attrs, options) -> dict:
+    def _analyse(self, scope, block_attrs, block_categories, options) -> dict:
         products = scope["products"]
         product_tt = scope["product_tt"]
         min_share = options["min_pattern_share"]
@@ -540,6 +547,7 @@ class Command(BaseCommand):
         sold_scope_share = sold_in_scope / len(products) if products else 0.0
         sales_absent = sold_scope_share < options["sales_min_share"]
         ancestors = _ancestor_index(scope["categories"])
+        descendant_scope = _descendant_scope(scope, ancestors)
 
         rows = []
         for slug, pids in by_type.items():
@@ -549,10 +557,13 @@ class Command(BaseCommand):
                     pids,
                     scope=scope,
                     block_attrs=block_attrs,
+                    block_categories=block_categories,
                     ancestors=ancestors,
+                    descendant_scope=descendant_scope,
                     sales_absent=sales_absent,
                     min_share=min_share,
                     max_fp_rate=max_fp_rate,
+                    min_facet_fill_rate=options["min_facet_fill_rate"],
                     tail_threshold=tail_threshold,
                     dominance_threshold=dominance_threshold,
                     n_examples=n_examples,
@@ -593,6 +604,7 @@ class Command(BaseCommand):
                 ),
             },
             "candidates": rows,
+            "binding_targets": _binding_target_report(rows),
             "axis_ranking": _axis_ranking(rows),
             "facet_binding_queue": _facet_binding_queue(
                 binding_gaps, scope, ancestors, options["min_facet_fill_rate"]
@@ -609,10 +621,13 @@ class Command(BaseCommand):
         *,
         scope,
         block_attrs,
+        block_categories,
         ancestors,
+        descendant_scope,
         sales_absent,
         min_share,
         max_fp_rate,
+        min_facet_fill_rate,
         tail_threshold,
         dominance_threshold,
         n_examples,
@@ -628,6 +643,11 @@ class Command(BaseCommand):
 
         set_head_share = _set_head_share(names)
         is_set = _is_set_type(slug, set_head_share)
+
+        # Куда уйдёт привязка новой оси. Считать видимость по категории ТОВАРА
+        # нельзя: привязку создаёт load_attributes по полю `category` блока, и у
+        # 28 блоков из 48 это имя разрешается в корень раздела.
+        target = _binding_target(slug, block_categories, has_block, scope, ancestors, pids)
 
         # Разнородность нужна ДО разбора осей: «свалка» блокирует каждую ось
         # типа, а не только итог, — иначе ось выглядела бы готовой к работе.
@@ -702,7 +722,12 @@ class Command(BaseCommand):
             if not passes_share or attr_slug in covered:
                 continue
             visibility = _axis_visibility(
-                hit.matched_keys, attr_slug, scope=scope, ancestors=ancestors, products=products
+                hit.matched_keys,
+                attr_slug,
+                scope=scope,
+                ancestors=ancestors,
+                products=products,
+                target=target,
             )
             axis_status = _axis_status(
                 is_set=is_set,
@@ -727,6 +752,11 @@ class Command(BaseCommand):
                         visibility["visible"] / potential_values if potential_values else 0.0, 4
                     ),
                     "live_values": visibility["live"],
+                    # Уже привязано против «привяжет load_attributes»: первое —
+                    # факт, второе — предсказание, и они не одно и то же.
+                    "already_visible_values": visibility["already_bound"],
+                    "unlocked_by_binding_target": visibility["visible"]
+                    - visibility["already_bound"],
                     "status": axis_status,
                     "next_action": NEXT_ACTION[axis_status],
                     "share": round(share, 4),
@@ -777,6 +807,40 @@ class Command(BaseCommand):
         potential_score = potential_total * sales_weight
         actionable_score = actionable_total * sales_weight
 
+        # Цена привязки: сколько товаров окажется под фасетом и какая доля из них
+        # получит значение. Корень раздела накрывает тысячи товаров — фасет с
+        # заполненностью в единицы процентов засоряет фильтры всего раздела.
+        own_categories = {
+            products[pid]["category_id"] for pid in pids if products[pid]["category_id"] is not None
+        }
+        target_products = sum(
+            1 for pid in pids if _covered_by_target(products[pid]["category_id"], target, ancestors)
+        )
+        blast_radius = (
+            descendant_scope.get(target["covers"], 0)
+            if target["covers"] is not None
+            else sum(
+                1 for row in scope["products"].values() if row["category_id"] in own_categories
+            )
+        )
+        target_fill_rate = (actionable_total / blast_radius) if blast_radius else 0.0
+        target.update(
+            {
+                "products_at_target": sum(
+                    1 for pid in pids if products[pid]["category_id"] == target["covers"]
+                ),
+                "products_covered": target_products,
+                "products_outside": total - target_products,
+                "blast_radius": blast_radius,
+                "fill_rate": round(target_fill_rate, 4),
+                "low_fill_rate": bool(
+                    target["covers"] is not None
+                    and potential_total
+                    and target_fill_rate < min_facet_fill_rate
+                ),
+            }
+        )
+
         missing_attributes = sorted(set(proposed_slugs) - scope["known_attributes"])
 
         status, reason = _status(
@@ -812,6 +876,7 @@ class Command(BaseCommand):
             ),
             "potential_score": round(potential_score, 2),
             "actionable_score": round(actionable_score, 2),
+            "binding_target": target,
             "axes": axes,
             "binding_gaps": binding_gaps,
             "score": round(score, 2),
@@ -928,6 +993,7 @@ class Command(BaseCommand):
             out.write(f"... и ещё {len(rows) - limit} типов (см. --json-report)")
 
         self._render_axis_ranking(report)
+        self._render_binding_targets(report)
         self._render_binding_queue(report)
 
         out.write("\n=== Что предлагается писать (топ показанных) ===")
@@ -938,6 +1004,18 @@ class Command(BaseCommand):
             out.write(
                 f"\n{row['tool_type']} ({row['products']} тов., "
                 f"score {row['score']}) — {row['status']}: {row['reason']}"
+            )
+            target = row["binding_target"]
+            out.write(
+                "  привязка уйдёт в: "
+                + (
+                    f"«{target['category_name']}» → id {target['category_id']} "
+                    f"({target['reason']}), накроет {target['products_covered']} из "
+                    f"{row['products']}, под фасетом {target['blast_radius']}, "
+                    f"заполненность {target['fill_rate'] * 100:.1f}%"
+                    if target["source"] == "block"
+                    else "блока нет — цель выберет оператор (число предположительное)"
+                )
             )
             out.write("")
             for axis in row["axes"]:
@@ -996,6 +1074,44 @@ class Command(BaseCommand):
                     f"blocked {entry['blocked_values']:>6}  "
                     f"типов {entry['tool_types']:>3}  {statuses}"
                 )
+
+    def _render_binding_targets(self, report) -> None:
+        """Куда уйдут привязки блоков и во что это обойдётся витрине."""
+        out = self.stdout
+        block = report["binding_targets"]
+        out.write("\n=== Куда уйдёт привязка (поле category блока) ===")
+        out.write(
+            f"привязок в корень раздела: {block['root_bindings']}; "
+            f"с низкой заполненностью: {block['low_fill_rate']}; "
+            f"неразрешимых (нет узла / неоднозначно / мёртвый): {block['unresolved']}"
+        )
+        if not block["items"]:
+            out.write("— пусто: у типов с предложенными осями блоков нет")
+            return
+        header = (
+            f"  {'tool_type':28} {'категория блока':28} {'кат.':>6} {'гл':>3} "
+            f"{'накрыто':>8} {'вне':>5} {'под фасетом':>11} {'заполн':>7}  флаги"
+        )
+        out.write(header)
+        out.write("  " + "-" * (len(header) - 2))
+        for item in block["items"][:20]:
+            flags = ",".join(
+                name
+                for name, value in (
+                    ("КОРЕНЬ", item["root_binding"]),
+                    ("МАЛО", item["low_fill_rate"]),
+                    ("НЕ РАЗРЕШЕНО", item["unresolved"]),
+                )
+                if value
+            )
+            out.write(
+                f"  {item['tool_type'][:28]:28} {item['category_name'][:28]:28} "
+                f"{str(item['category_id'] or '—'):>6} {str(item['category_depth'] or '—'):>3} "
+                f"{item['products_covered']:>8} {item['products_outside']:>5} "
+                f"{item['blast_radius']:>11} {item['fill_rate'] * 100:>6.1f}%  {flags}"
+            )
+        if len(block["items"]) > 20:
+            out.write(f"  ... и ещё {len(block['items']) - 20} типов (см. --json-report)")
 
     def _render_binding_queue(self, report) -> None:
         """Очередь facet-binding с blast radius и заполненностью."""
@@ -1231,6 +1347,7 @@ def render_markdown(report: dict, *, limit: int = 0) -> str:
             out.append("")
 
     out.extend(_markdown_axis_ranking(report["axis_ranking"]))
+    out.extend(_markdown_binding_targets(report["binding_targets"]))
     out.extend(_markdown_binding_queue(report["facet_binding_queue"]))
 
     out.append("## Что предлагается писать")
@@ -1325,6 +1442,74 @@ def _markdown_axis_ranking(ranking: dict) -> list[str]:
     return out
 
 
+def _markdown_binding_targets(block: dict) -> list[str]:
+    """Куда уйдёт привязка блока: корень раздела, заполненность, неразрешимые имена."""
+    out = ["## Куда уйдёт привязка (поле `category` блока)", ""]
+    out.append(
+        "Видимость новой оси считается по категории, **куда фактически уйдёт "
+        "привязка**: её создаёт `load_attributes` по полю `category` блока, разрешая "
+        "имя лестницей, которая среди одноимённых узлов предпочитает `depth == 1`. "
+        "Считать по категории товара значит учитывать привязку, которой не будет."
+    )
+    out.append("")
+    out.append(
+        f"Привязок в корень раздела: **{block['root_bindings']}**; с низкой "
+        f"заполненностью: **{block['low_fill_rate']}**; неразрешимых "
+        f"(нет узла / неоднозначно / мёртвый узел): **{block['unresolved']}**."
+    )
+    out.append("")
+    if not block["items"]:
+        out.append("Пусто: у типов с предложенными осями блоков правил нет.")
+        out.append("")
+        return out
+    out.extend(
+        _md_table(
+            [
+                "Тип",
+                "Категория блока",
+                "id",
+                "Глубина",
+                "Накрыто",
+                "Вне цели",
+                "Blast radius",
+                "Заполненность",
+                "Флаги",
+            ],
+            ["---", "---", "---:", "---:", "---:", "---:", "---:", "---:", "---"],
+            [
+                [
+                    _md_code(item["tool_type"]),
+                    _md_cell(item["category_name"] or "—"),
+                    str(item["category_id"] or "—"),
+                    str(item["category_depth"] or "—"),
+                    str(item["products_covered"]),
+                    str(item["products_outside"]),
+                    str(item["blast_radius"]),
+                    f"{item['fill_rate'] * 100:.1f}%",
+                    _md_cell(
+                        ", ".join(
+                            name
+                            for name, value in (
+                                ("корень раздела", item["root_binding"]),
+                                ("низкая заполненность", item["low_fill_rate"]),
+                                ("не разрешено", item["unresolved"]),
+                            )
+                            if value
+                        )
+                        or "—"
+                    ),
+                ]
+                for item in block["items"][:20]
+            ],
+        )
+    )
+    out.append("")
+    if len(block["items"]) > 20:
+        out.append(f"… и ещё {len(block['items']) - 20} типов (полный список — в `--json-report`).")
+        out.append("")
+    return out
+
+
 def _markdown_binding_queue(queue: dict) -> list[str]:
     """Очередь facet-binding: что привязать, что это разблокирует и какой ценой."""
     out = ["## Очередь facet-binding", ""]
@@ -1387,6 +1572,21 @@ def _markdown_candidate(index: int, row: dict) -> list[str]:
         f"**{row['status']}:** {_md_cell(row['reason'])}",
         "",
     ]
+    target = row["binding_target"]
+    if target["source"] == "block":
+        out.append(
+            f"Привязка уйдёт в **{_md_cell(target['category_name'])}** "
+            f"(id {target['category_id']}, `{target['reason']}`): накроет "
+            f"{target['products_covered']} из {row['products']} товаров типа, под фасетом "
+            f"окажется {target['blast_radius']}, заполненность "
+            f"{target['fill_rate'] * 100:.1f}%."
+        )
+    else:
+        out.append(
+            "Блока правил нет — категорию привязки выберет оператор; `actionable` "
+            "посчитан по презумпции «привяжем туда, где лежат товары»."
+        )
+    out.append("")
     if row["axes"]:
         out.extend(
             _md_table(
@@ -1513,19 +1713,108 @@ def _category_stats(pids, scope, ancestors, products) -> tuple[float, int, set[i
     return (live / len(pids) if pids else 0.0), faceted_count, category_ids
 
 
-def _axis_visibility(matched_pids, attr_slug, *, scope, ancestors, products) -> dict:
+def resolve_binding_category(name: str, categories: dict[int, dict]) -> tuple[int | None, str]:
+    """Куда ``load_attributes`` фактически поставит привязку для имени категории.
+
+    Повторяет лестницу ``load_attributes._resolve_category`` по уже прочитанному
+    словарю категорий (лишних запросов не делаем — команда read-only и не должна
+    дёргать БД ради справки): живые кандидаты важнее мёртвых, внутри отобранных
+    приоритет у ``depth == 1``; если после этого кандидат не один — ``ambiguous``.
+
+    Повторение нужно ровно потому, что предсказать эффект правила без него нельзя:
+    у 28 блоков из 48 имя категории разрешается в **корень раздела**, а не в
+    профильный узел, где лежат товары (``sverla`` → «Оснастка», ``klyuchi-gaechnye``
+    → «Ручной инструмент»). Оценивать видимость новой оси по категории товара
+    значит считать привязку, которой не будет.
+    """
+    if not name:
+        return None, "no_category"
+    objects = [row for row in categories.values() if row["name"] == name]
+    if not objects:
+        return None, "not_found"
+    live = [row for row in objects if row["is_active"] and row["on_site"]]
+    pool = live or objects
+    tops = [row for row in pool if row["depth"] == 1]
+    scope_rows = tops or pool
+    level = "top" if tops else "tree"
+    if len(scope_rows) != 1:
+        return None, f"ambiguous:{level}"
+    node = scope_rows[0]
+    if not (node["is_active"] and node["on_site"]):
+        return node["pk"], f"bound:{level}:dead"
+    return node["pk"], f"bound:{level}"
+
+
+def _binding_target(slug, block_categories, has_block, scope, ancestors, pids) -> dict:
+    """Узел, куда уйдёт привязка новой оси этого типа, и его цена.
+
+    У типа с блоком цель берётся из поля ``category`` блока и разрешается той же
+    лестницей, что и в ``load_attributes``. У типа **без** блока цели ещё не
+    существует: её выберет оператор, когда напишет блок, — тогда считаем по
+    категориям самих товаров и честно помечаем результат ``presumed``, чтобы
+    предположение нельзя было принять за замер.
+    """
+    categories = scope["categories"]
+    if not has_block:
+        return {
+            "category_name": "",
+            "category_id": None,
+            "reason": "no_block",
+            "source": "presumed",
+            "is_live": True,
+            "covers": None,  # None = «категории самих товаров»
+        }
+    name = block_categories.get(slug, "")
+    category_id, reason = resolve_binding_category(name, categories)
+    row = categories.get(category_id) if category_id is not None else None
+    return {
+        "category_name": name,
+        "category_id": category_id,
+        "category_depth": row["depth"] if row else None,
+        "reason": reason,
+        "source": "block",
+        "is_live": bool(row and row["is_active"] and row["on_site"]),
+        "covers": category_id,
+    }
+
+
+def _covered_by_target(cid, target, ancestors) -> bool:
+    """Накроет ли привязка к цели товар из категории ``cid``.
+
+    Привязка наследуется вниз, поэтому цель накрывает товар, если она и есть его
+    категория либо её предок. Мёртвая цель не накрывает ничего: узел скрыт, а
+    живым потомкам характеристика от скрытого узла не наследуется — ровно так
+    блок ``metchiki-plashki`` уезжал в мёртвую категорию и фасет не появлялся.
+    """
+    if not target["is_live"]:
+        return False
+    node = target["covers"]
+    if node is None:  # блока нет — цель выберет оператор, презумпция «где товары»
+        return True
+    return cid == node or node in ancestors.get(cid, ())
+
+
+def _axis_visibility(matched_pids, attr_slug, *, scope, ancestors, products, target) -> dict:
     """Видимость ОДНОЙ оси: сколько её значений дойдёт до покупателя.
 
-    Значение видно, если категория товара жива (``is_active AND on_site``) **и**
-    именно этот атрибут объявлен фасетом (``CategoryAttribute(is_filter=True)``)
-    у самой категории или у любого её предка — фасеты наследуются вниз.
+    Значение видно, если категория товара жива (``is_active AND on_site``) и
+    фасетом объявлен **именно этот** атрибут — у самой категории или у любого её
+    предка (фасеты наследуются вниз). Считается по каждому товару, а не долей на
+    тип: у ключей ``wrench_type`` виден целиком, ``material`` — не виден вовсе,
+    при одном и том же наборе категорий.
 
-    Возвращает живые/видимые попадания и разбивку «живая категория без
-    привязки» — из неё собирается очередь facet-binding.
+    Учитываются два источника видимости:
+
+    ``already`` — привязка уже существует, значение будет видно сразу;
+    ``target`` — привязку создаст ``load_attributes`` из поля ``category`` блока.
+    Второй источник обязателен: у 28 блоков из 48 имя разрешается в корень
+    раздела, а не в категорию товаров, и оценивать по категории товара значит
+    считать привязку, которой не будет.
     """
     categories = scope["categories"]
     bound = scope["bound_by_attribute"].get(attr_slug, frozenset())
     live = 0
+    already = 0
     visible = 0
     unbound: dict[int, int] = {}
     for pid in matched_pids:
@@ -1534,11 +1823,18 @@ def _axis_visibility(matched_pids, attr_slug, *, scope, ancestors, products) -> 
         if row is None or not (row["is_active"] and row["on_site"]):
             continue
         live += 1
-        if cid in bound or any(parent in bound for parent in ancestors.get(cid, ())):
+        is_bound = cid in bound or any(parent in bound for parent in ancestors.get(cid, ()))
+        already += is_bound
+        if is_bound or _covered_by_target(cid, target, ancestors):
             visible += 1
         else:
             unbound[cid] = unbound.get(cid, 0) + 1
-    return {"live": live, "visible": visible, "unbound_live_categories": unbound}
+    return {
+        "live": live,
+        "already_bound": already,
+        "visible": visible,
+        "unbound_live_categories": unbound,
+    }
 
 
 def _axis_status(
@@ -1581,6 +1877,65 @@ def _axis_totals(rows) -> dict:
         "actionable_values": actionable,
         "blocked_values": potential - actionable,
         "actionable_ratio": round(actionable / potential if potential else 0.0, 4),
+    }
+
+
+def _binding_target_report(rows) -> dict:
+    """Куда фактически уйдут привязки и во что это обойдётся.
+
+    Отдельный раздел, потому что дефект здесь системный, а не разовый: поле
+    ``category`` блока разрешается лестницей ``load_attributes``, которая среди
+    одноимённых узлов предпочитает ``depth == 1``, и у большинства блоков имя
+    попадает в **корень раздела**, а не в профильную категорию с товарами.
+    Привязка при этом «работает» (корень — предок, фасет наследуется вниз), но
+    накрывает весь раздел: у `sverla` это «Оснастка» с тысячами товаров.
+
+    Три исхода, которые нужно видеть отдельно:
+
+    ``root_binding``
+        цель — корень раздела (``depth == 1``), а товары лежат глубже;
+    ``low_fill_rate``
+        под фасетом окажется много товаров, а значения получат единицы;
+    ``unresolved``
+        имя не разрешается (``not_found``/``ambiguous``) или узел мёртв —
+        привязки не будет вовсе, и ось не станет видимой ни при каком правиле.
+    """
+    items = []
+    for row in rows:
+        target = row["binding_target"]
+        if target["source"] != "block" or not row["potential_values"]:
+            continue
+        resolved = target["reason"].startswith("bound:") and target["is_live"]
+        items.append(
+            {
+                "tool_type": row["tool_type"],
+                "category_name": target["category_name"],
+                "category_id": target["category_id"],
+                "category_depth": target.get("category_depth"),
+                "reason": target["reason"],
+                "products": row["products"],
+                "products_covered": target["products_covered"],
+                "products_outside": target["products_outside"],
+                "products_at_target": target["products_at_target"],
+                "blast_radius": target["blast_radius"],
+                "fill_rate": target["fill_rate"],
+                # Привязка уходит в корень раздела, а товары лежат глубже:
+                # фасет накрывает весь раздел ради одного типа.
+                "root_binding": bool(
+                    resolved
+                    and target.get("category_depth") == 1
+                    and target["products_at_target"] < row["products"]
+                ),
+                "low_fill_rate": target["low_fill_rate"],
+                "unresolved": not resolved,
+            }
+        )
+    items.sort(key=lambda item: (-item["blast_radius"], item["tool_type"]))
+    return {
+        "items": items,
+        "root_bindings": sum(1 for item in items if item["root_binding"]),
+        "low_fill_rate": sum(1 for item in items if item["low_fill_rate"]),
+        "unresolved": sum(1 for item in items if item["unresolved"]),
     }
 
 
