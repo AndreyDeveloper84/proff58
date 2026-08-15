@@ -645,6 +645,153 @@ def test_klyuchi_type_and_size(rules):
     assert f["size"].number == Decimal("17")
 
 
+# --- ХАР-КЛЮЧИ: wrench_type сокращениями + латинский «mm» в size ---------------
+#
+# Правка аддитивная: сокращения ловятся ТОЧНЫМИ ФРАЗАМИ («ключ комб», «ключ рож»),
+# три новые опции дописаны в КОНЕЦ списка, вторая регулярка size стоит ПОСЛЕ старой.
+# Наивный корень «рож» отвергнут замером (377 попаданий вне типа по 47 225 названиям:
+# «Барьер дорожный», «Прожектор»), поэтому у него здесь свой негативный тест.
+
+KG = "klyuchi-gaechnye"
+
+
+def _kg(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(KG, name)}
+
+
+@pytest.mark.parametrize(
+    "name,wrench_type,size",
+    [
+        # сокращения 1С: «комб» — 66 товаров пула, «рож» — 13
+        ("Ключ комб 13х17 мм CrV", "kombinir", "17"),
+        ("Ключ комб трещ. 13 мм ЗУБР", "kombinir", "13"),
+        ("Ключ рож 12х13 мм", "rozhkovy", "13"),
+    ],
+)
+def test_kg_abbreviations_give_type_and_size(rules, name, wrench_type, size):
+    f = _kg(rules, name)
+    assert f["wrench_type"].option_slug == wrench_type
+    assert f["size"].number == Decimal(size)
+
+
+@pytest.mark.parametrize(
+    "name,wrench_type",
+    [
+        # три опции, добавленные в конец списка
+        ("Ключ шестигранный 8 мм", "hex"),
+        ("Набор шестигранников 1.5-10mm, 9 шт.", "hex"),
+        ("Ключ имбусовый 6мм", "hex"),
+        ("Ключ баллонный 24х27мм торцовый ЗУБР МАСТЕР", "ballonny"),
+        ("Ключ разрезной 13х17 мм", "razreznoy"),
+    ],
+)
+def test_kg_new_options_extracted(rules, name, wrench_type):
+    assert _kg(rules, name)["wrench_type"].option_slug == wrench_type
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        # ЯКОРЬ отвергнутого корня «рож»: без слова «ключ» слева типа быть не должно.
+        # Если кто-то «упростит» фразу до корня — эти кейсы упадут.
+        "Прожектор светодиодный 50 Вт",
+        "Барьер дорожный пластиковый 1200 мм",
+        "Башмак тормозной железнодорожный",
+        # то же для «комб» — сокращение без слова «ключ» типом ключа не является
+        "Комбинезон рабочий 52 р.",
+    ],
+)
+def test_kg_bare_root_does_not_yield_wrench_type(rules, name):
+    assert "wrench_type" not in _kg(rules, name)
+
+
+def test_kg_abbreviation_keywords_are_phrases_not_roots(rules):
+    """Структурный guard: в ruleset лежат фразы «ключ рож»/«ключ комб», а не корни."""
+    rule = next(r for r in rules.rules_for(KG) if r.slug == "wrench_type")
+    keywords = {kw for opt in rule.options for kw in opt.keywords}
+    assert "ключ рож" in keywords and "ключ комб" in keywords
+    assert "рож" not in keywords and "комб" not in keywords
+    # word_boundary включать нельзя — он отрезал бы «рожков»/«комбинир» от сокращений
+    assert rule.word_boundary is False
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        # Отклонённые по замеру опции: «Ступичный» (0 попаданий внутри типа) и
+        # «Торцевой/трубчатый» (ось принадлежит golovki) в блок НЕ возвращены.
+        "Ключ ступичный  50мм торцевой восьмигранный ЗУБР",
+        "Ключ торцевой 14х14 мм изогнутый",
+        "Ключ трубчатый 8х9мм KWB",
+    ],
+)
+def test_kg_rejected_options_absent(rules, name):
+    assert "wrench_type" not in _kg(rules, name)
+
+
+def test_kg_rejected_option_slugs_not_in_ruleset(rules):
+    rule = next(r for r in rules.rules_for(KG) if r.slug == "wrench_type")
+    values = {opt.value for opt in rule.options}
+    assert "Ступичный" not in values
+    assert not any("орцев" in v or "рубчат" in v for v in values)
+
+
+def test_kg_new_options_appended_to_the_end(rules):
+    """Аддитивность по построению: старый порядок разбора — префикс нового."""
+    rule = next(r for r in rules.rules_for(KG) if r.slug == "wrench_type")
+    slugs = [opt.slug for opt in rule.options]
+    assert slugs[:7] == [
+        "nakidnoy",
+        "rozhkovy",
+        "kombinir",
+        "razvodnoy",
+        "trubny",
+        "dinamo",
+        "treshch",
+    ]
+    assert slugs[7:] == ["hex", "ballonny", "razreznoy"]
+
+
+@pytest.mark.parametrize(
+    "name,size",
+    [
+        # латинское «mm» — вторая регулярка, стоит ПОСЛЕ кириллической
+        ("Ключ шестигранный 10mm", "10"),
+        ("Ключ шестигранный 8 MM", "8"),
+    ],
+)
+def test_kg_latin_mm_size(rules, name, size):
+    assert _kg(rules, name)["size"].number == Decimal(size)
+
+
+def test_kg_cyrillic_mm_regex_stays_first(rules):
+    """Старый паттерн — первый: движок берёт первый сработавший, значения не плывут."""
+    rule = next(r for r in rules.rules_for(KG) if r.slug == "size")
+    assert len(rule.patterns) == 2
+    assert rule.patterns[0].pattern.endswith(r"\s*мм")
+    assert rule.patterns[1].pattern.endswith(r"\s*mm(?![а-яa-z])")
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        # Товары, у которых значения уже записаны: результат после правки тот же.
+        ("Ключ комбинированный 17мм CrV ЗУБР", {"wrench_type": "kombinir", "size": "17"}),
+        ("Ключ накидной 10х11 мм  СК", {"wrench_type": "nakidnoy", "size": "11"}),
+        ("Ключ разводной 150мм 0-19 мм W27AT6 Jonnesway", {"wrench_type": "razvodnoy"}),
+        ("Ключ трубный рычажный №1 10 - 36 мм CrV", {"wrench_type": "trubny"}),
+        ("Ключ динамометрический 1/2 28-210 Нм", {"wrench_type": "dinamo"}),
+        ("Ключ Т-образный 10мм KING TONY", {"size": "10"}),
+    ],
+)
+def test_kg_existing_behaviour_unchanged(rules, name, expected):
+    f = _kg(rules, name)
+    assert set(f) == set(expected)
+    for slug, want in expected.items():
+        got = f[slug]
+        assert (got.option_slug or str(got.number)) == want
+
+
 def test_golovki_drive_and_size(rules):
     f = {v.slug: v for v in rules.extract("golovki", 'Головка торцевая 1/2" 13мм 6-гранная')}
     assert f["drive"].option_slug == "d-1-2"
