@@ -768,27 +768,63 @@ def test_visibility_counts_existing_binding_on_ancestor(tmp_path, tool_type_attr
 def test_binding_of_other_attribute_does_not_make_axis_visible(
     tmp_path, tool_type_attr, hand_tools_tree
 ):
-    """Привязан чужой атрибут — ось всё равно невидима.
+    """Привязан только `tool_type` — прочие оси всё равно невидимы.
 
-    Прежняя мерка «у категории есть хоть какой-то фильтр» засчитала бы этот
-    случай как видимый: ровно так 74 значения `material` у ключей выглядели
-    работоспособными при непривязанном атрибуте.
+    Это не выдуманный случай, а состояние каталога: `tool_type` привязан с
+    `is_filter=True` ко всем 26 корням, и из 70 «фасетных» категорий 20 фасетны
+    исключительно за счёт него. Мерка «у категории есть хоть какой-то фильтр»
+    поэтому зафиксирована в 1.0 почти везде и слепа: ровно так 74 значения
+    `material` у ключей выглядели работоспособными при непривязанном атрибуте.
+    Сверять надо slug конкретной оси с цепочкой привязок.
     """
     make_diameter_attribute()
-    alien = Attribute.objects.create(
-        slug="voltage", name="Напряжение", attribute_type=AttributeType.DECIMAL
-    )
     make_wrenches(tool_type_attr, hand_tools_tree["leaf"])
     CategoryAttribute.objects.create(
-        category=hand_tools_tree["leaf"], attribute=alien, is_filter=True
+        category=hand_tools_tree["root"], attribute=tool_type_attr, is_filter=True
     )
     rules = write_rules(tmp_path, [block("klyuchi-gaechnye", "Оснастка")])
 
     row = candidate(run(rules, in_stock_only=True), "klyuchi-gaechnye")
     assert axis(row, "diameter")["status"] == "BLOCKED_BY_FACET"
     assert row["actionable_values"] == 0
-    # А тип-уровневая facet_visibility «какой-то фильтр есть» — 1.0.
+    # А тип-уровневая facet_visibility «какой-то фильтр есть» — 1.0: слепа.
     assert row["score_factors"]["facet_visibility"] == pytest.approx(1.0)
+
+
+def test_two_axes_of_one_type_get_different_visibility(tmp_path, tool_type_attr, hand_tools_tree):
+    """Контроль: две оси ОДНОГО типа обязаны получить разную видимость.
+
+    Воспроизводит `klyuchi-gaechnye`: одна ось привязана к 346 «Ключи» и видна
+    (там `wrench_type` и `size`), вторая к ней не привязана и не видна (так
+    лежит `material`, атрибут id 23). Если обе оси получают одно и то же число —
+    расчёт всё ещё усредняет на уровне типа, а именно это и чинилось.
+    """
+    diameter = make_diameter_attribute()
+    Attribute.objects.create(
+        slug="package_quantity", name="Фасовка", attribute_type=AttributeType.DECIMAL
+    )
+    # Название даёт обе оси сразу: «N мм» → diameter, «N шт» → package_quantity.
+    for index in range(12):
+        product = make_product(
+            f"tw{index}", f"Ключ гаечный {index + 8} мм 50 шт", hand_tools_tree["leaf"]
+        )
+        set_tool_type(product, tool_type_attr, "klyuchi-gaechnye")
+    # Привязана ровно ОДНА из двух осей — как `wrench_type` у 346 «Ключи».
+    CategoryAttribute.objects.create(
+        category=hand_tools_tree["leaf"], attribute=diameter, is_filter=True
+    )
+    rules = write_rules(tmp_path, [block("klyuchi-gaechnye", "Оснастка")])
+
+    row = candidate(run(rules, in_stock_only=True), "klyuchi-gaechnye")
+    visibilities = {item["attribute_slug"]: item["visibility"] for item in row["axes"]}
+    # Оси есть обе, и их видимость РАЗНАЯ — усреднения нет.
+    assert len(visibilities) >= 2
+    assert len(set(visibilities.values())) > 1, visibilities
+    statuses = {item["attribute_slug"]: item["status"] for item in row["axes"]}
+    assert "READY" in statuses.values()
+    assert "BLOCKED_BY_FACET" in statuses.values()
+    # И итог типа лежит строго между «всё видно» и «ничего не видно».
+    assert 0 < row["actionable_values"] < row["potential_values"]
 
 
 def test_axis_without_attribute_in_db_is_blocked_by_attribute(
