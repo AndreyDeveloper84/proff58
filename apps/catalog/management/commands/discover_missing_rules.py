@@ -1768,6 +1768,7 @@ def _binding_target(slug, block_categories, has_block, scope) -> dict:
         return {
             "category_name": "",
             "category_id": None,
+            "category_depth": None,
             "reason": "no_block",
             "source": "presumed",
             "is_live": True,
