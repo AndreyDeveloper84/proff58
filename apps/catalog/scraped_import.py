@@ -83,21 +83,89 @@ MODEL_RE = re.compile(
     re.I,
 )
 
-# источник/бренд карточки → токен, который обязан быть в названии нашего товара
-BRAND_TOKEN_BY_SOURCE = {
-    "resanta": "ресанта",
-    "vihr": "вихрь",
-    "interskol": "интерскол",
-    "zubr": "зубр",
-}
-BRAND_TOKEN_BY_CARD_BRAND = {
-    "ресанта": "ресанта",
-    "вихрь": "вихрь",
-    "зубр": "зубр",
-    "интерскол": "интерскол",
-}
+# --- словарь брендов -------------------------------------------------------
+#
+# Словарь живёт в data/catalog_processing_rules/brand_vocabulary.json и описывает
+# ИДЕНТИЧНОСТЬ бренда, а не подстроку для поиска. Он общий для трёх потребителей
+# (индекс матчинга, заполнение Product.brand, сверка с внешним источником), и
+# копии списка в коде больше нет: раньше BRAND_TOKENS выводился из реестра
+# источников, из-за чего в индекс попадали товары лишь четырёх брендов — тех,
+# чьи сайты мы парсили, а не тех, что есть в каталоге.
+
+BRAND_VOCABULARY_PATH = (
+    Path(__file__).resolve().parent.parent.parent
+    / "data"
+    / "catalog_processing_rules"
+    / "brand_vocabulary.json"
+)
+
+
+@dataclass(frozen=True)
+class BrandVocabulary:
+    """Загруженный словарь: канонические имена, алиасы и режим сопоставления."""
+
+    canonical_by_alias: dict[str, str]
+    alias_patterns: tuple[tuple[str, re.Pattern], ...]  # (canonical, скомпилированный алиас)
+    source_defaults: dict[str, str]
+    compatibility_markers: tuple[str, ...]
+    series_exclusions: frozenset[str]
+    mode: str
+
+    def canonicals(self) -> list[str]:
+        out: list[str] = []
+        for canonical, _ in self.alias_patterns:
+            if canonical not in out:
+                out.append(canonical)
+        return out
+
+
+def _compile_alias(alias: str, mode: str) -> re.Pattern:
+    """Алиас → шаблон. ``word`` требует границу слова с обеих сторон.
+
+    Подстрочный режим оставлен только для сверки: он даёт ложные срабатывания
+    («калибр» в «калибровочная», «луга» в «плуга», «koki» в «HiKOKI»), а
+    множество совпадений по слову — строгое подмножество подстрочных, поэтому
+    переход на ``word`` сужает индекс, а не ослабляет brand gate.
+    """
+    escaped = re.escape(alias)
+    if mode == "substring":
+        return re.compile(escaped)
+    return re.compile(rf"(?<![a-zа-я0-9]){escaped}(?![a-zа-я0-9])")
+
+
+def load_brand_vocabulary(path: Path | None = None) -> BrandVocabulary:
+    data = json.loads((path or BRAND_VOCABULARY_PATH).read_text(encoding="utf-8"))
+    mode = (data.get("matching") or {}).get("mode", "word")
+    canonical_by_alias: dict[str, str] = {}
+    patterns: list[tuple[str, re.Pattern]] = []
+    source_defaults: dict[str, str] = {}
+    for entry in data.get("brands", []):
+        canonical = entry["canonical"]
+        for alias in entry.get("aliases", []):
+            low = alias.lower()
+            canonical_by_alias[low] = canonical
+            patterns.append((canonical, _compile_alias(low, mode)))
+        for source in entry.get("source_default_for", []):
+            source_defaults[source] = canonical
+    return BrandVocabulary(
+        canonical_by_alias=canonical_by_alias,
+        alias_patterns=tuple(patterns),
+        source_defaults=source_defaults,
+        compatibility_markers=tuple(data.get("compatibility_markers", [])),
+        series_exclusions=frozenset(s.lower() for s in data.get("series_exclusions", [])),
+        mode=mode,
+    )
+
+
+BRAND_VOCABULARY = load_brand_vocabulary()
+
+# Дефолт бренда для ОДНО-брендового источника: у mono-brand сайта бренд карточки
+# может быть пустым, и тогда его задаёт сам источник. Для мультибрендового
+# источника (маркетплейс) дефолта нет — бренд обязан прийти из карточки.
+BRAND_TOKEN_BY_SOURCE = dict(BRAND_VOCABULARY.source_defaults)
+BRAND_TOKEN_BY_CARD_BRAND = dict(BRAND_VOCABULARY.canonical_by_alias)
 # порядок стабилен и без дублей: имя товара может содержать несколько брендов
-BRAND_TOKENS = list(dict.fromkeys(BRAND_TOKEN_BY_SOURCE.values()))
+BRAND_TOKENS = BRAND_VOCABULARY.canonicals()
 
 # Мусорные артикулы 1С: не уникальны, один и тот же код висит на разных товарах.
 # Тот же список игнорирует ``article_check`` — индекс обязан вести себя так же,
@@ -403,14 +471,27 @@ class MatchIndex:
 
 
 def product_brand_tokens(name: str) -> list[str]:
-    """Все брендовые токены в названии товара, в стабильном порядке.
+    """Все брендовые идентичности в названии товара, в стабильном порядке.
+
+    Возвращает КАНОНИЧЕСКИЕ имена брендов, а не найденные подстроки: иначе три
+    потребителя словаря (индекс, Product.brand, сверка с источником) со временем
+    разошлись бы по нормализации — «hikoki» и «hitachi» стали бы разными брендами.
 
     Раньше брался только первый: товар, в имени которого упомянуты два бренда
     (совместимая оснастка, аккумулятор «для X и Y»), был виден карточкам лишь
     одного из них.
+
+    Маркеры совместимости здесь НЕ применяются сознательно: для индекса важно
+    «с какими карточками товар может сойтись», и совместимая оснастка обязана
+    оставаться видимой обоим брендам. Отсечение «для X» — забота BRAND-02, где
+    вопрос другой: кто произвёл товар.
     """
     low = name.lower()
-    return [t for t in BRAND_TOKENS if t in low]
+    out: list[str] = []
+    for canonical, pattern in BRAND_VOCABULARY.alias_patterns:
+        if canonical not in out and pattern.search(low):
+            out.append(canonical)
+    return out
 
 
 def product_article_keys(product: Product) -> list[str]:
