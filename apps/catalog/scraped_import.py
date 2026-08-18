@@ -107,7 +107,11 @@ class BrandVocabulary:
     canonical_by_alias: dict[str, str]
     alias_patterns: tuple[tuple[str, re.Pattern], ...]  # (canonical, скомпилированный алиас)
     source_defaults: dict[str, str]
-    compatibility_markers: tuple[str, ...]
+    # Маркеры совместимости отдаются КАК ЕСТЬ из файла: их семантику знает только
+    # brand_identity (BRAND-02), а этот модуль их не применяет сознательно.
+    # Приводить их здесь к плоскому кортежу нельзя — схема с классами маркеров
+    # превратилась бы в список ключей словаря.
+    compatibility_markers: object
     series_exclusions: frozenset[str]
     mode: str
 
@@ -151,7 +155,7 @@ def load_brand_vocabulary(path: Path | None = None) -> BrandVocabulary:
         canonical_by_alias=canonical_by_alias,
         alias_patterns=tuple(patterns),
         source_defaults=source_defaults,
-        compatibility_markers=tuple(data.get("compatibility_markers", [])),
+        compatibility_markers=data.get("compatibility_markers", []),
         series_exclusions=frozenset(s.lower() for s in data.get("series_exclusions", [])),
         mode=mode,
     )
