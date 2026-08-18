@@ -79,10 +79,20 @@ class OrderAdmin(admin.ModelAdmin):
         "created_at",
         "customer",
         "total_money",
+        "payment_way",
         "status_badge",
         "next_action",
     )
-    list_filter = ("fulfillment_status", "payment_status", "sync_1c_status", "customer_type")
+    # DRF-1177: способ оплаты — в списке и в фильтрах. С оплатой при получении
+    # (DRF-948) заказы требуют разных действий: онлайн ждёт платежа, наличные —
+    # выдачи в магазине. В общем списке они выглядели одинаково.
+    list_filter = (
+        "fulfillment_status",
+        "payment_status",
+        "payment_method",
+        "sync_1c_status",
+        "customer_type",
+    )
     search_fields = ("order_number", "customer_name", "customer_phone", "inn")
     # «Заказы за сегодня» без этого было нечем отфильтровать.
     date_hierarchy = "created_at"
@@ -237,6 +247,11 @@ class OrderAdmin(admin.ModelAdmin):
     @admin.display(description="Сумма", ordering="total")
     def total_money(self, obj):
         return f"{obj.total} {obj.currency}"
+
+    @admin.display(description="Оплата", ordering="payment_method")
+    def payment_way(self, obj):
+        """Чем платят — словами. Пусто у старых заказов, оформленных до DRF-948."""
+        return obj.get_payment_method_display() or "—"
 
     @admin.display(description="Статус")
     def status_badge(self, obj):

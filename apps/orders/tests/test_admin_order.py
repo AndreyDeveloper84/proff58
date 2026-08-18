@@ -179,3 +179,26 @@ def test_ручной_расчёт_доставки_остаётся_досту�
     admin_obj = OrderAdmin(Order, AdminSite())
 
     assert field not in admin_obj.readonly_fields
+
+
+# DRF-1177: с оплатой при получении (DRF-948) заказы требуют разных действий —
+# онлайн ждёт платежа, наличные ждут выдачи. В списке они выглядели одинаково.
+def test_способ_оплаты_виден_в_списке_словами(order):
+    order.payment_method = "cash"
+    admin_obj = OrderAdmin(Order, AdminSite())
+
+    assert "payment_way" in admin_obj.list_display
+    assert admin_obj.payment_way(order) == "Наличными при получении"
+
+
+def test_список_фильтруется_по_способу_оплаты():
+    admin_obj = OrderAdmin(Order, AdminSite())
+
+    assert "payment_method" in admin_obj.list_filter
+
+
+def test_у_старого_заказа_без_способа_оплаты_прочерк(order):
+    """Заказы до DRF-948 оформлялись без payment_method — колонка не должна пустовать."""
+    admin_obj = OrderAdmin(Order, AdminSite())
+
+    assert admin_obj.payment_way(order) == "—"
