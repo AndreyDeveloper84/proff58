@@ -25,6 +25,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
+from apps.catalog.brand_vocabulary import BRAND_VOCABULARY
 from apps.catalog.ingest import group_index, iter_products
 from apps.catalog.tool_type import normalize
 
@@ -34,23 +35,17 @@ BIG_LEAF = 800  # крупный лист: кандидат на дроблен�
 
 # --- Лексика находок ---------------------------------------------------------
 # Узлы-бренды в дереве (бренд должен жить в Product.brand, не в категории).
-BRAND_TOKENS = (
-    "hitachi",
-    "хитачи",
-    "зубр",
-    "эхо",
-    "echo",
-    "makita",
-    "макита",
-    "bosch",
-    "бош",
-    "dewalt",
-    "metabo",
-    "метабо",
-    "интерскол",
-    "patriot",
-    "ryobi",
-)
+#
+# Список брендов больше не дублируется здесь: он живёт в общем словаре
+# data/catalog_processing_rules/brand_vocabulary.json. Раньше это была четвёртая
+# копия бренд-знания в коде — свой список у индекса матчинга, у заполнения
+# Product.brand и здесь; копии расходились по составу и написанию.
+#
+# Аудиту нужна ТОЛЬКО часть словаря: алиасы и вопрос «является ли имя узла
+# брендом». Маркеры совместимости и списки серий он не применяет — они про
+# названия ТОВАРОВ, а здесь разбираются имена КАТЕГОРИЙ, и «для Makita» в имени
+# узла дерева было бы такой же находкой F4, как «Makita».
+
 # Мусорные/смешанные листья («свалки»).
 GARBAGE_TOKENS = ("проч", "разное", "прочая", "прочие", "прочее")
 # Деление по питанию вместо типа товара (питание — это фасет power_source).
@@ -105,6 +100,18 @@ class AuditResult:
 def _has_token(name: str, tokens) -> bool:
     n = normalize(name)
     return any(t in n for t in tokens)
+
+
+def _is_brand_node(name: str) -> bool:
+    """Имя узла дерева — это бренд?
+
+    Сопоставление берётся из общего словаря и идёт по ГРАНИЦЕ СЛОВА, как у
+    остальных потребителей. Подстрока здесь опаснее, чем кажется: узел
+    «Калибровочные приборы» не должен становиться находкой из-за бренда
+    «КАЛИБР», а «Технологическая оснастка» — из-за «ЭХО».
+    """
+    n = normalize(name)
+    return any(pattern.search(n) for _, pattern in BRAND_VOCABULARY.alias_patterns)
 
 
 def analyze(
@@ -231,7 +238,7 @@ def _collect_findings(
     brand_nodes = [
         (" / ".join(s.path), s.count)
         for s in categories
-        if any(_has_token(part, BRAND_TOKENS) for part in s.path)
+        if any(_is_brand_node(part) for part in s.path)
     ]
     if brand_nodes:
         findings.append(

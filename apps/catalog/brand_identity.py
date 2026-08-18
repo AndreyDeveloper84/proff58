@@ -19,7 +19,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from apps.catalog.scraped_import import BRAND_VOCABULARY, BrandVocabulary
+from apps.catalog.brand_vocabulary import BRAND_VOCABULARY, BrandVocabulary
 
 # Статусы идентичности бренда по названию.
 IDENTITY_HIGH = "HIGH_CONFIDENCE"

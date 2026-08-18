@@ -25,8 +25,8 @@ from apps.catalog.brand_identity import (
     IDENTITY_NONE,
     decide_brand,
 )
+from apps.catalog.brand_vocabulary import load_brand_vocabulary
 from apps.catalog.models import Product
-from apps.catalog.scraped_import import load_brand_vocabulary
 
 # Исходы по товару. Сумма обязана покрывать весь scope без остатка.
 CREATE = "CREATE"
