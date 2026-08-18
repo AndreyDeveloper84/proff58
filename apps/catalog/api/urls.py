@@ -23,6 +23,11 @@ urlpatterns = [
         views.ProductSuggestView.as_view(),
         name="product-suggest",
     ),
+    path(
+        "search/facets/",
+        views.SearchFacetsView.as_view(),
+        name="search-facets",
+    ),
     re_path(
         rf"^products/{_SLUG}/compatible/$",
         views.ProductCompatibleView.as_view(),

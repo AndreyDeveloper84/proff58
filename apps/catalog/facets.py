@@ -22,7 +22,7 @@ from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast, Lower
 
 from .brand_slugs import build_brand_slug_map
-from .filters import filtered_products
+from .filters import filtered_products, search_match, visible_products
 from .models import Attribute, AttributeOption, AttributeType, FacetGroup, StockStatus
 from .queries import TOOL_TYPE_SLUG, _category_filter_attributes, _subtree_ids
 
@@ -527,6 +527,107 @@ def build_facets(
             "attr_ranges": {s: list(b) for s, b in ranges.items()},
         },
         "facets": facets,
+    }
+
+
+def build_search_facets(
+    q,
+    *,
+    brands=None,
+    stock_status=None,
+    price_min=None,
+    price_max=None,
+) -> dict:
+    """Базовые фасеты поисковой выдачи: цена, бренды, наличие (DRF-1166).
+
+    Отличие от ``build_facets`` — нет категории, а значит нет и EAV-характеристик.
+    В выдаче поиска товары разных типов вперемешку: по запросу «дрель» приезжают
+    дрели, патроны и перчатки, и фасет «Мощность, Вт» относился бы к трети списка.
+    Поэтому здесь только три оси, осмысленные для любой смеси.
+
+    Drill-down тот же, что в категории: каждая ось считается со всеми активными
+    фильтрами, КРОМЕ своей, — иначе выбранный бренд схлопывал бы список брендов
+    до одного пункта.
+
+    Отбор товаров — ``filters.search_match``, то есть ровно тот же, что у списка
+    ``?search=``: счётчики и выдача не расходятся по построению.
+    """
+    brand_slug_to_brand, brand_to_slug = build_brand_slug_map()
+    resolved_brands = None
+    if brands:
+        resolved_brands = []
+        seen: set = set()
+        for token in brands:
+            brand = brand_slug_to_brand.get(token, token)
+            if brand not in seen:
+                seen.add(brand)
+                resolved_brands.append(brand)
+
+    def drilldown(*, brands=resolved_brands, stock_status=stock_status, price=True):
+        qs = search_match(visible_products(), q)
+        if brands:
+            qs = qs.filter(reduce(operator.or_, (Q(brand__iexact=b) for b in brands)))
+        if stock_status:
+            qs = qs.filter(stock_status=stock_status)
+        if price:
+            qs = _apply_price(qs, price_min, price_max)
+        return qs
+
+    total = drilldown().count()
+
+    pa = (
+        drilldown(price=False)
+        .filter(price__isnull=False)
+        .aggregate(lo=Min("price"), hi=Max("price"))
+    )
+    price = {
+        "min": float(pa["lo"]) if pa["lo"] is not None else None,
+        "max": float(pa["hi"]) if pa["hi"] is not None else None,
+    }
+
+    # Группировка по Lower(brand) — как в build_facets: фильтр товаров использует
+    # brand__iexact и объединяет «Bosch»/«BOSCH», раздельные счётчики разошлись бы
+    # со списком.
+    selected_brands = {b.lower() for b in (resolved_brands or [])}
+    brands_out = [
+        {
+            "value": brand_to_slug.get(r["label"], r["label"]),
+            "label": r["label"],
+            "count": r["c"],
+            "selected": r["brand_lc"] in selected_brands,
+        }
+        for r in drilldown(brands=None)
+        .exclude(brand="")
+        .annotate(brand_lc=Lower("brand"))
+        .values("brand_lc")
+        .annotate(c=Count("id"), label=Max("brand"))
+        .order_by("-c", "brand_lc")[:MAX_BRAND_FACETS]
+    ]
+
+    stock_labels = dict(StockStatus.choices)
+    stock_out = [
+        {
+            "value": r["stock_status"],
+            "label": str(stock_labels.get(r["stock_status"], r["stock_status"])),
+            "count": r["c"],
+            "selected": r["stock_status"] == stock_status,
+        }
+        for r in drilldown(stock_status=None)
+        .values("stock_status")
+        .annotate(c=Count("id"))
+        .order_by("-c")
+    ]
+
+    return {
+        "query": (q or "").strip(),
+        "price": price,
+        "brands": brands_out,
+        "stock": stock_out,
+        "total_products": total,
+        "applied_filters": {
+            "brands": list(brands or []),
+            "stock_status": stock_status or None,
+        },
     }
 
 

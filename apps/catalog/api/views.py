@@ -27,6 +27,7 @@ from ..services import (
     FacetError,
     apply_product_attr_filters,
     build_facets_cached,
+    build_search_facets,
     compatibility_sections,
 )
 from .serializers import (
@@ -142,8 +143,11 @@ class ProductListView(generics.ListAPIView):
         attr_filters, attr_ranges = parse_attr_params(self.request.query_params)
         qs = apply_product_attr_filters(qs, attr_filters, attr_ranges)
         q = (self.request.query_params.get("search") or "").strip()
-        if len(q) >= 2:
-            return qs  # поиск → релевантность (filter_search); ?sort игнорируется
+        # DRF-1166: у страницы поиска появился тулбар сортировки. Молчаливый выбор
+        # (?sort не передан) по-прежнему релевантность — иначе поиск перестанет быть
+        # поиском; явный ?sort уважаем, человек попросил именно его.
+        if len(q) >= 2 and not self.request.query_params.get("sort"):
+            return qs
         return self._apply_sort(qs)
 
     def _annotate_effective_price(self, qs):
@@ -366,6 +370,57 @@ class CategoryFacetsView(APIView):
             "ctaHref": category.hero_cta_href,
         }
         return Response(data)
+
+
+class SearchFacetsView(APIView):
+    """Базовые фасеты поисковой выдачи: цена, бренды, наличие (DRF-1166).
+
+    Категории у поиска нет, поэтому EAV-характеристик здесь не бывает — только три
+    оси, осмысленные для смешанной выдачи. Параметры те же, что у ``products/?search=``,
+    чтобы сайдбар и список читались из одного URL.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        params = request.query_params
+        q = (params.get("search") or "").strip()
+        if len(q) < 2:
+            # Короткий запрос ничего не ищет (см. filters.search_match) — фасетам
+            # тоже нечего показывать; пустой ответ вместо фасетов всего каталога.
+            return Response(
+                {
+                    "query": q,
+                    "price": {"min": None, "max": None},
+                    "brands": [],
+                    "stock": [],
+                    "total_products": 0,
+                    "applied_filters": {"brands": [], "stock_status": None},
+                }
+            )
+
+        stock_status = params.get("stock_status")
+        if stock_status and stock_status not in StockStatus.values:
+            return Response({"detail": "Недопустимый stock_status"}, status=400)
+
+        def _price(name):
+            raw = params.get(name)
+            if not raw:
+                return None
+            try:
+                return float(raw)
+            except ValueError:
+                return None  # мусор в цене игнорируем (фасеты не должны падать)
+
+        return Response(
+            build_search_facets(
+                q,
+                brands=params.getlist("brand") or None,
+                stock_status=stock_status or None,
+                price_min=_price("price_min"),
+                price_max=_price("price_max"),
+            )
+        )
 
 
 class ProductAvailabilitySubscriptionView(APIView):
