@@ -11,6 +11,7 @@
   "consumers": {
     "scraped_import": "Использует ТОЛЬКО canonical + aliases. compatibility_markers НЕ применяет сознательно: товар, совместимый с двумя брендами, должен быть виден карточкам обоих (решение ПАРС, docstring product_brand_tokens).",
     "brand_02": "Использует canonical + aliases + compatibility_markers + series_exclusions: там вопрос «кто произвёл», и бренд после «для»/«аналог» производителем не является.",
+    "taxonomy_audit": "Использует ТОЛЬКО aliases и только для одного вопроса: является ли ИМЯ УЗЛА дерева брендом (находка F4). Маркеры совместимости и серии ему не нужны — он смотрит на категории, а не на товары.",
     "external_identity": "Сверка нашего canonical с source_brand карточки источника."
   },
   "compatibility_markers": {
@@ -28,9 +29,9 @@
     {"canonical": "ЗУБР", "aliases": ["зубр"], "catalog_hits": 3475, "pool_hits": 1419, "source_default_for": ["zubr"]},
     {"canonical": "KRAFTOOL", "aliases": ["kraftool"], "catalog_hits": 1204, "pool_hits": 885},
     {"canonical": "STAYER", "aliases": ["stayer"], "catalog_hits": 1160, "pool_hits": 202},
-    {"canonical": "HITACHI", "aliases": ["hitachi", "hikoki"], "catalog_hits": 1337, "pool_hits": 209,
+    {"canonical": "HITACHI", "aliases": ["hitachi", "hikoki", "хитачи"], "catalog_hits": 1337, "pool_hits": 209,
      "_note": "HiKOKI — текущее имя бренда Hitachi Power Tools. Отдельным брендом не заводится: 179 названий каталога содержат «hikoki» и ни одно — самостоятельное «koki»."},
-    {"canonical": "BOSCH", "aliases": ["bosch"], "catalog_hits": 580, "pool_hits": 36},
+    {"canonical": "BOSCH", "aliases": ["bosch", "бош"], "catalog_hits": 580, "pool_hits": 36},
     {"canonical": "MAKITA", "aliases": ["makita", "макита"], "catalog_hits": 508, "pool_hits": 20},
     {"canonical": "STURM", "aliases": ["sturm"], "catalog_hits": 378, "pool_hits": 48},
     {"canonical": "СЕБ", "aliases": ["себ"], "catalog_hits": 355, "pool_hits": 256},
@@ -47,7 +48,7 @@
     {"canonical": "HOBBI", "aliases": ["hobbi"], "catalog_hits": 176, "pool_hits": 34},
     {"canonical": "ЛУГА", "aliases": ["луга"], "catalog_hits": 151, "pool_hits": 32},
     {"canonical": "ВИХРЬ", "aliases": ["вихрь"], "catalog_hits": 147, "pool_hits": 18, "source_default_for": ["vihr"]},
-    {"canonical": "METABO", "aliases": ["metabo"], "catalog_hits": 147, "pool_hits": 3},
+    {"canonical": "METABO", "aliases": ["metabo", "метабо"], "catalog_hits": 147, "pool_hits": 3},
     {"canonical": "GRINDA", "aliases": ["grinda"], "catalog_hits": 145, "pool_hits": 40},
     {"canonical": "HARDAX", "aliases": ["hardax"], "catalog_hits": 148, "pool_hits": 22},
     {"canonical": "STELS", "aliases": ["stels"], "catalog_hits": 130, "pool_hits": 27},
@@ -79,6 +80,10 @@
     {"canonical": "ЭНЕРГОМАШ", "aliases": ["энергомаш"], "catalog_hits": 11, "pool_hits": 0},
     {"canonical": "ФИОЛЕНТ", "aliases": ["фиолент"], "catalog_hits": 4, "pool_hits": 0},
     {"canonical": "ТУНДРА", "aliases": ["тундра"], "catalog_hits": 4, "pool_hits": 0},
-    {"canonical": "COFRA", "aliases": ["cofra"], "catalog_hits": 2, "pool_hits": 2}
+    {"canonical": "COFRA", "aliases": ["cofra"], "catalog_hits": 2, "pool_hits": 2},
+    {"canonical": "ECHO", "aliases": ["echo", "эхо"], "catalog_hits": 34, "pool_hits": 2,
+     "_note": "Добавлен при переводе taxonomy_audit на общий словарь: узел «ЭХО» есть в дереве категорий (43 товара), и без этого бренда находка F4 была бы потеряна."},
+    {"canonical": "PATRIOT", "aliases": ["patriot"], "catalog_hits": 75, "pool_hits": 6},
+    {"canonical": "RYOBI", "aliases": ["ryobi"], "catalog_hits": 30, "pool_hits": 0}
   ]
 }

@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
 
+from apps.catalog.brand_vocabulary import BRAND_VOCABULARY
 from apps.catalog.models import Attribute, AttributeOption, Product, ProductAttributeValue, Source
 
 # --- нормализация ключей модели --------------------------------------------
@@ -85,83 +86,13 @@ MODEL_RE = re.compile(
 
 # --- словарь брендов -------------------------------------------------------
 #
-# Словарь живёт в data/catalog_processing_rules/brand_vocabulary.json и описывает
-# ИДЕНТИЧНОСТЬ бренда, а не подстроку для поиска. Он общий для трёх потребителей
-# (индекс матчинга, заполнение Product.brand, сверка с внешним источником), и
-# копии списка в коде больше нет: раньше BRAND_TOKENS выводился из реестра
-# источников, из-за чего в индекс попадали товары лишь четырёх брендов — тех,
-# чьи сайты мы парсили, а не тех, что есть в каталоге.
-
-BRAND_VOCABULARY_PATH = (
-    Path(__file__).resolve().parent.parent.parent
-    / "data"
-    / "catalog_processing_rules"
-    / "brand_vocabulary.json"
-)
-
-
-@dataclass(frozen=True)
-class BrandVocabulary:
-    """Загруженный словарь: канонические имена, алиасы и режим сопоставления."""
-
-    canonical_by_alias: dict[str, str]
-    alias_patterns: tuple[tuple[str, re.Pattern], ...]  # (canonical, скомпилированный алиас)
-    source_defaults: dict[str, str]
-    # Маркеры совместимости отдаются КАК ЕСТЬ из файла: их семантику знает только
-    # brand_identity (BRAND-02), а этот модуль их не применяет сознательно.
-    # Приводить их здесь к плоскому кортежу нельзя — схема с классами маркеров
-    # превратилась бы в список ключей словаря.
-    compatibility_markers: object
-    series_exclusions: frozenset[str]
-    mode: str
-
-    def canonicals(self) -> list[str]:
-        out: list[str] = []
-        for canonical, _ in self.alias_patterns:
-            if canonical not in out:
-                out.append(canonical)
-        return out
-
-
-def _compile_alias(alias: str, mode: str) -> re.Pattern:
-    """Алиас → шаблон. ``word`` требует границу слова с обеих сторон.
-
-    Подстрочный режим оставлен только для сверки: он даёт ложные срабатывания
-    («калибр» в «калибровочная», «луга» в «плуга», «koki» в «HiKOKI»), а
-    множество совпадений по слову — строгое подмножество подстрочных, поэтому
-    переход на ``word`` сужает индекс, а не ослабляет brand gate.
-    """
-    escaped = re.escape(alias)
-    if mode == "substring":
-        return re.compile(escaped)
-    return re.compile(rf"(?<![a-zа-я0-9]){escaped}(?![a-zа-я0-9])")
-
-
-def load_brand_vocabulary(path: Path | None = None) -> BrandVocabulary:
-    data = json.loads((path or BRAND_VOCABULARY_PATH).read_text(encoding="utf-8"))
-    mode = (data.get("matching") or {}).get("mode", "word")
-    canonical_by_alias: dict[str, str] = {}
-    patterns: list[tuple[str, re.Pattern]] = []
-    source_defaults: dict[str, str] = {}
-    for entry in data.get("brands", []):
-        canonical = entry["canonical"]
-        for alias in entry.get("aliases", []):
-            low = alias.lower()
-            canonical_by_alias[low] = canonical
-            patterns.append((canonical, _compile_alias(low, mode)))
-        for source in entry.get("source_default_for", []):
-            source_defaults[source] = canonical
-    return BrandVocabulary(
-        canonical_by_alias=canonical_by_alias,
-        alias_patterns=tuple(patterns),
-        source_defaults=source_defaults,
-        compatibility_markers=data.get("compatibility_markers", []),
-        series_exclusions=frozenset(s.lower() for s in data.get("series_exclusions", [])),
-        mode=mode,
-    )
-
-
-BRAND_VOCABULARY = load_brand_vocabulary()
+# Словарь живёт в data/catalog_processing_rules/brand_vocabulary.json, загрузчик —
+# в apps/catalog/brand_vocabulary.py. Здесь его копии нет: раньше BRAND_TOKENS
+# выводился из реестра источников, из-за чего в индекс попадали товары лишь
+# четырёх брендов — тех, чьи сайты мы парсили, а не тех, что есть в каталоге.
+#
+# Этот потребитель читает только canonical + aliases. compatibility_markers НЕ
+# применяет сознательно (см. docstring product_brand_tokens).
 
 # Дефолт бренда для ОДНО-брендового источника: у mono-brand сайта бренд карточки
 # может быть пустым, и тогда его задаёт сам источник. Для мультибрендового
