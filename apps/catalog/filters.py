@@ -159,24 +159,38 @@ class ProductFilter(django_filters.FilterSet):
             default=Value(0.0),
             output_field=FloatField(),
         ) + TrigramSimilarity("name", q)
-        return (
-            queryset.annotate(_rank=rank, _availability=availability_rank())
-            .filter(
-                Q(name__icontains=q)
-                | Q(name__trigram_similar=q)
-                # word_similar — пословное сходство (%>): «перфоратр» матчит слово
-                # «Перфоратор» внутри длинного name, где similar по всей строке
-                # проседает ниже порога. Тот же gin_trgm_ops индекс.
-                | Q(name__trigram_word_similar=q)
-                | Q(article__icontains=q)
-                | Q(article__trigram_similar=q)
-                | Q(brand__icontains=q)
-                | Q(brand__trigram_similar=q)
-                | Q(code_1c__iexact=q)
-                | Q(code_1c__istartswith=q)
-            )
-            .order_by("_availability", "-_rank", "name", "id")
-        )
+        return search_match(
+            queryset.annotate(_rank=rank, _availability=availability_rank()), q
+        ).order_by("_availability", "-_rank", "name", "id")
+
+
+def search_match(queryset, q):
+    """Товары, попадающие под поисковый запрос: только отбор, без ранга и порядка.
+
+    Вынесено из ``ProductFilter.filter_search`` ради фасетов поиска (DRF-1166,
+    ``facets.build_search_facets``): счётчики обязаны считаться по тем же товарам,
+    что попадают в список. Два независимых набора Q-условий разъехались бы при
+    первой же правке матчинга, и сайдбар начал бы обещать выдачу, которой нет.
+
+    Запрос короче двух символов ничего не отбирает — как и в фильтре списка.
+    """
+    q = (q or "").strip()
+    if len(q) < 2:
+        return queryset
+    return queryset.filter(
+        Q(name__icontains=q)
+        | Q(name__trigram_similar=q)
+        # word_similar — пословное сходство (%>): «перфоратр» матчит слово
+        # «Перфоратор» внутри длинного name, где similar по всей строке
+        # проседает ниже порога. Тот же gin_trgm_ops индекс.
+        | Q(name__trigram_word_similar=q)
+        | Q(article__icontains=q)
+        | Q(article__trigram_similar=q)
+        | Q(brand__icontains=q)
+        | Q(brand__trigram_similar=q)
+        | Q(code_1c__iexact=q)
+        | Q(code_1c__istartswith=q)
+    )
 
 
 def filtered_products(category, *, brands=None, stock_status=None, subtree_ids=None):

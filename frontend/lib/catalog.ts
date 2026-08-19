@@ -9,6 +9,7 @@ import {
   fetchListingFromApi,
   fetchProductFromApi,
   fetchSearchFromApi,
+  fetchSearchListingFromApi,
   fetchCategoryTreeFromApi,
   fetchCategoryProductsFromApi,
   fetchBestsellersFromApi,
@@ -52,6 +53,15 @@ export async function searchProducts(q: string): Promise<Product[]> {
     return await fetchSearchFromApi(API_BASE, q);
   }
   return [];
+}
+
+// Выдача поиска с фильтрами, сортировкой и пагинацией (DRF-1166). Без API (фикстуры)
+// возвращаем null — страница покажет «ничего не найдено», как и searchProducts.
+export async function searchListing(q: string, query: ListingQuery): Promise<Listing | null> {
+  if (API_BASE && !FORCE_FIXTURES) {
+    return await fetchSearchListingFromApi(API_BASE, q, query);
+  }
+  return null;
 }
 
 // Карточка товара (PDP). Только режим API (фикстуры товара нет): без API_BASE или при
