@@ -23,6 +23,8 @@ from django.utils.translation import gettext_lazy as _
 from apps.accounts.models import CustomerType
 from apps.core.models import TimeStampedModel
 
+from .payment_methods import PaymentMethod
+
 
 # ---------------------------------------------------------------------------
 # Оси статусов заказа (строго по docs/order-lifecycle.md)
@@ -172,7 +174,12 @@ class Order(TimeStampedModel):
         _("Способ оплаты"),
         max_length=32,
         blank=True,
-        help_text=_("Заглушка-выбор (без онлайн-оплаты в #26)."),
+        # DRF-1177: словарь способов жил в payment_methods.py, а поле про него не
+        # знало — админка показывала сырой код, а фильтр по нему был бесполезен.
+        choices=PaymentMethod.choices,
+        help_text=_(
+            "Чем оплачен заказ. Набор доступных способов считает available_payment_methods()."
+        ),
     )
 
     # --- Снимок доставки (#429, M-05, ADR #444) ---
