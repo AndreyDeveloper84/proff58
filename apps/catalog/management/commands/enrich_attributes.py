@@ -19,6 +19,24 @@ path, что и боевой apply — решения (create/update/keep/prune/
 machine-readable JSON-отчёт (``--json-report <файл>``, иначе stdout; человекочитаемая
 сводка тогда идёт в stderr). Dry-run НЕ пишет PAV, НЕ меняет ``attrs_cache`` и НЕ
 создаёт ``ImportRun``.
+
+Карантин (трек P2, ``apps.catalog.attribute_quarantine``): файловый реестр
+``data/attribute_quarantine.json`` перечисляет товары, для которых движок НЕ должен
+извлекать значения — целиком (``attributes: null``) или по конкретным атрибутам.
+Короткое замыкание стоит ДО prune-цикла: карантин запрещает писать новое, но
+**никогда** не удаляет уже записанные PAV (пустой ``values`` иначе увёл бы все
+engine-значения товара в prune). Удаление ранее записанного — отдельная команда
+``catalog_attribute_cleanup_quarantine``. Реестр валидируется fail-closed до любой
+записи; неизвестный ``product_id`` — ошибка.
+
+Граница выборки (окно ХАР-SCOPE): ``--tool-type`` / ``--category-id`` (оба
+repeatable), ``--include-descendants``, ``--in-stock-only``, ``--active-only``.
+Фильтры складываются **пересечением (AND)**: товар обязан быть в разрешённой ветке
+дерева И с ненулевым остатком И активным И его tool_type обязан входить в волну.
+Без новых флагов выборка прежняя — все товары тех tool_type, для которых в
+``attribute_rules.json`` есть блок правил.
+Отбор строится ОДИН раз до расхождения dry-run/apply, поэтому оба режима работают по
+одному и тому же набору ``product_id``.
 """
 
 from __future__ import annotations
@@ -26,16 +44,18 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.catalog import attribute_quarantine as quarantine
 from apps.catalog.attribute_extract import BOOLEAN, NUMBER, SELECT, TEXT, AttributeRules
 from apps.catalog.attrs_cache import flush_attrs_cache_merged
 from apps.catalog.ingest import data_dir
 from apps.catalog.models import (
     Attribute,
     AttributeOption,
+    Category,
     ImportRun,
     ImportRunStatus,
     Product,
@@ -66,11 +86,38 @@ VALUE_FIELDS = ["value_text", "value_integer", "value_decimal", "value_boolean",
 UPDATE_FIELDS = VALUE_FIELDS + ["source", "confidence"]
 
 
+def resolve_category_ids(category_ids: list[int], include_descendants: bool) -> list[int]:
+    """id категорий выборки: сами узлы, с ``include_descendants`` — плюс всё поддерево.
+
+    Несуществующий id — ошибка (fail-closed): опечатка в номере категории иначе
+    даёт молча пустую выборку, а оператор считает, что скоуп сработал.
+    """
+    categories = list(Category.objects.filter(pk__in=category_ids))
+    missing = sorted(set(category_ids) - {category.pk for category in categories})
+    if missing:
+        raise CommandError(f"Категории не найдены: {missing}")
+    resolved = {category.pk for category in categories}
+    if include_descendants:
+        for category in categories:
+            resolved.update(category.get_descendants().values_list("pk", flat=True))
+    return sorted(resolved)
+
+
 class Command(BaseCommand):
     help = "Извлечь характеристики из названий и записать в EAV (идемпотентно, bulk)."
 
     def add_arguments(self, parser):
         parser.add_argument("--path", default=None, help="Каталог с attribute_rules.json")
+        parser.add_argument(
+            "--quarantine",
+            dest="quarantine",
+            default=None,
+            metavar="FILE",
+            help=(
+                "Файл реестра карантина. По умолчанию — "
+                f"<--path|data>/{quarantine.FILENAME}; отсутствие файла = пустой реестр."
+            ),
+        )
         parser.add_argument(
             "--dry-run",
             "--report-only",
@@ -86,6 +133,45 @@ class Command(BaseCommand):
             dest="json_report",
             default=None,
             help="Файл для machine-readable JSON-отчёта dry-run (иначе — stdout).",
+        )
+        parser.add_argument(
+            "--tool-type",
+            dest="tool_type",
+            action="append",
+            default=None,
+            metavar="SLUG",
+            help=(
+                "Ограничить выборку типом инструмента (slug варианта tool_type). "
+                "Можно указывать несколько раз. Без флага — все типы, описанные "
+                "правилами."
+            ),
+        )
+        parser.add_argument(
+            "--category-id",
+            dest="category_id",
+            action="append",
+            type=int,
+            default=None,
+            metavar="ID",
+            help="Ограничить выборку категорией. Можно указывать несколько раз.",
+        )
+        parser.add_argument(
+            "--include-descendants",
+            dest="include_descendants",
+            action="store_true",
+            help="Вместе с --category-id: захватить все категории-потомки.",
+        )
+        parser.add_argument(
+            "--in-stock-only",
+            dest="in_stock_only",
+            action="store_true",
+            help="Только товары в наличии (available_quantity > 0).",
+        )
+        parser.add_argument(
+            "--active-only",
+            dest="active_only",
+            action="store_true",
+            help="Только активные товары (is_active=True).",
         )
 
     def handle(self, *args, **options):
@@ -105,6 +191,32 @@ class Command(BaseCommand):
             for tt in raw.get("tool_types", [])
         }
 
+        # --- карантин (P2): fail-closed ДО любого чтения товаров и любой записи ---
+        quarantine_path = options["quarantine"] or quarantine.default_registry_path(base)
+        try:
+            registry = quarantine.load_registry(quarantine_path, managed_slugs=managed_slugs)
+        except quarantine.QuarantineError as exc:
+            raise CommandError(f"Реестр карантина отвергнут: {exc}") from exc
+        # Неизвестный product_id — ошибка, а не молчаливый пропуск: иначе опечатка
+        # в номере товара выглядит как «карантин настроен», а движок пишет как раньше.
+        # Один запрос на весь реестр (включая lifted) до цикла.
+        declared_ids = registry.product_ids
+        if declared_ids:
+            known_ids = set(
+                Product.objects.filter(pk__in=declared_ids).values_list("pk", flat=True)
+            )
+            unknown_ids = sorted(set(declared_ids) - known_ids)
+            if unknown_ids:
+                raise CommandError(
+                    f"Реестр карантина {registry.path}: товары не найдены в каталоге: "
+                    f"{unknown_ids}."
+                )
+        for entry in registry.expired:
+            self.stderr.write(
+                f"ВНИМАНИЕ: карантин товара {entry.product_id} истёк "
+                f"{entry.expires_at.isoformat()} — запись больше не действует."
+            )
+
         attr_by_slug = {a.slug: a for a in Attribute.objects.filter(slug__in=managed_slugs)}
         missing = managed_slugs - set(attr_by_slug)
         if missing:
@@ -120,16 +232,91 @@ class Command(BaseCommand):
         ):
             option_index.setdefault(opt.attribute.slug, {})[opt.slug] = opt
 
+        # --- граница выборки (ХАР-SCOPE): tool_type AND дерево AND остаток -----
+        requested_tt = sorted(set(options["tool_type"] or ()))
+        category_ids = sorted(set(options["category_id"] or ()))
+        include_descendants = options["include_descendants"]
+        in_stock_only = options["in_stock_only"]
+        active_only = options["active_only"]
+
+        if include_descendants and not category_ids:
+            raise CommandError("--include-descendants требует --category-id.")
+
+        selected_tt = tt_slugs
+        if requested_tt:
+            unknown = sorted(set(requested_tt) - set(tt_slugs))
+            if unknown:
+                # Не ошибка: в манифесте типов кратно больше, чем блоков правил.
+                # Такой тип просто не даёт товаров в выборку — предупреждаем, чтобы
+                # оператор не принял пустой прогон за «нечего обогащать».
+                self.stderr.write(
+                    f"Типы без блока правил в attribute_rules.json: {unknown} — "
+                    "товары этих типов в выборку не попадут."
+                )
+            selected_tt = [slug for slug in tt_slugs if slug in set(requested_tt)]
+
+        resolved_category_ids = (
+            resolve_category_ids(category_ids, include_descendants) if category_ids else []
+        )
+
+        # Фильтры по самому товару (дерево + остаток) — пересечением с типом.
+        # Наличие: available_quantity > 0. Канонического хелпера «в наличии» в
+        # проекте нет: витрина (queries.products_in, filters.filter_in_stock)
+        # считает по stock_quantity, а операционные команды каталога
+        # (catalog_queue_create --in-stock, catalog_rules_shadow, catalog_v2_report)
+        # и Product.recalc_stock_status — по available_quantity. Здесь операционный
+        # контур, поэтому берём available_quantity, как у соседних команд.
+        product_scope: dict[str, object] = {}
+        if resolved_category_ids:
+            product_scope["category_id__in"] = resolved_category_ids
+        if in_stock_only:
+            product_scope["available_quantity__gt"] = 0
+        if active_only:
+            product_scope["is_active"] = True
+
         # product_id → slug его tool_type (только товары интересующих типов).
+        tt_values = ProductAttributeValue.objects.filter(
+            attribute__slug=TOOL_TYPE_SLUG,
+            value_option__isnull=False,
+            value_option__slug__in=selected_tt,
+        )
+        if product_scope:
+            tt_values = tt_values.filter(
+                product_id__in=Product.objects.filter(**product_scope).values("pk")
+            )
         product_tt = {
             row["product_id"]: row["value_option__slug"]
-            for row in ProductAttributeValue.objects.filter(
-                attribute__slug=TOOL_TYPE_SLUG,
-                value_option__isnull=False,
-                value_option__slug__in=tt_slugs,
-            ).values("product_id", "value_option__slug")
+            for row in tt_values.values("product_id", "value_option__slug")
         }
         product_ids = list(product_tt)
+
+        scope = {
+            "tool_types": requested_tt,
+            "category_ids": category_ids,
+            "include_descendants": include_descendants,
+            "in_stock_only": in_stock_only,
+            "active_only": active_only,
+            "resolved_category_ids": resolved_category_ids,
+            "selected_tool_types": sorted(selected_tt),
+            "selected_products": len(product_ids),
+        }
+
+        # Действующие записи карантина, попавшие в текущую выборку.
+        quarantined_in_scope = {
+            pid: entry for pid, entry in registry.effective.items() if pid in product_tt
+        }
+        partial_in_scope = sum(1 for e in quarantined_in_scope.values() if not e.is_whole_product)
+        quarantine_meta = registry.meta()
+        quarantine_meta["in_scope"] = len(quarantined_in_scope)
+        quarantine_meta["in_scope_partial"] = partial_in_scope
+        registry_line = (
+            f"Карантин: {registry.path}"
+            + ("" if registry.exists else " (файла нет — реестр пуст)")
+            + f", версия {registry.version}, записей active {quarantine_meta['active']}"
+            f" (истёкших {quarantine_meta['expired']}), lifted {quarantine_meta['lifted']}; "
+            f"в выборке {len(quarantined_in_scope)}, из них частичных {partial_in_scope}."
+        )
+        self.stderr.write(registry_line)
 
         # Существующие PAV управляемых атрибутов — объектами (bulk_update + проверка приоритета).
         # value_option нужен dry-run'у для current_value (attr_value_to_json) без N+1.
@@ -146,6 +333,16 @@ class Command(BaseCommand):
             "by_attribute": {},
             "skipped_priority": 0,
             "pruned": {},
+            # Карантин — ОТДЕЛЬНАЯ ось, не SKIPPED: «пропущено по приоритету» про
+            # конкуренцию источников, а карантин — про запрет на извлечение.
+            "quarantined": 0,
+            "quarantined_partial": 0,
+            "quarantine": {
+                "path": quarantine_meta["path"],
+                "version": quarantine_meta["version"],
+                "active": quarantine_meta["active"],
+                "product_ids": [],
+            },
         }
 
         pav_create: list[ProductAttributeValue] = []
@@ -154,6 +351,8 @@ class Command(BaseCommand):
         cache_updates: list[Product] = []
         # По-позиционные решения dry-run (только в режиме отчёта).
         report_rows: list[dict] = []
+        # Карантинные срабатывания текущего прогона (нужны и отчёту, и ImportRun.stats).
+        quarantine_rows: list[dict] = []
 
         # Ключи attrs_cache, которыми владеет команда для конкретного товара (его
         # tool_type). Нужно для безопасной записи: чужие ключи не трогаем (#5).
@@ -188,12 +387,68 @@ class Command(BaseCommand):
                 }
             )
 
+        # Строка карантинного отчёта. Значения читаются из уже загруженного
+        # `existing` и `managed_by_tt` — НИ ОДНОГО дополнительного запроса к БД.
+        def add_quarantine_row(product: Product, tt_slug: str, entry) -> None:
+            managed = sorted(managed_by_tt.get(tt_slug, ()))
+            protected = managed if entry.is_whole_product else sorted(entry.attributes)
+            preserved = []
+            for slug in protected:
+                pav = existing.get((product.id, slug))
+                if pav is None or pav.pk is None:
+                    continue
+                preserved.append(
+                    {
+                        "attribute": slug,
+                        "value": attr_value_to_json(pav),
+                        "source": pav.source,
+                    }
+                )
+            row = entry.to_json()
+            row["tool_type"] = tt_slug
+            row["managed_attributes"] = managed
+            row["preserved_pav"] = preserved
+            quarantine_rows.append(row)
+            stats["quarantine"]["product_ids"].append(product.id)
+            # Расхождения снимка с фактом — предупреждение, не отказ: запись
+            # карантина остаётся действующей, но оператор должен её освежить.
+            if entry.tool_type and entry.tool_type != tt_slug:
+                self.stderr.write(
+                    f"ВНИМАНИЕ: карантин товара {product.id}: tool_type записи "
+                    f"{entry.tool_type!r} ≠ фактического {tt_slug!r}."
+                )
+            actual_name = product.original_name or product.name
+            if entry.name_snapshot and entry.name_snapshot != actual_name:
+                self.stderr.write(
+                    f"ВНИМАНИЕ: карантин товара {product.id}: name_snapshot записи "
+                    f"не совпадает с текущим названием ({actual_name!r})."
+                )
+
         qs = Product.objects.filter(id__in=product_ids).iterator(chunk_size=2000)
         try:
             with transaction.atomic():
                 for product in qs:
                     stats["processed"] += 1
                     tt_slug = product_tt[product.id]
+
+                    # --- карантин (P2) --------------------------------------
+                    # Короткое замыкание стоит ИМЕННО ЗДЕСЬ, а не в
+                    # attribute_extract рядом со skip_if. Гейт на уровне движка
+                    # вернул бы пустой values → пустой current → prune-цикл ниже
+                    # счёл бы ВСЕ engine-PAV товара устаревшими и удалил их.
+                    # `continue` пропускает разом prune, no_attributes и запись.
+                    entry = quarantined_in_scope.get(product.id)
+                    if entry is not None and entry.is_whole_product:
+                        stats["quarantined"] += 1
+                        add_quarantine_row(product, tt_slug, entry)
+                        continue
+                    quarantined_slugs = (
+                        frozenset(entry.attributes) if entry is not None else frozenset()
+                    )
+                    if quarantined_slugs:
+                        stats["quarantined_partial"] += 1
+                        add_quarantine_row(product, tt_slug, entry)
+
                     name = product.original_name or product.name
                     values = rules.extract(tt_slug, name)
                     current = {av.slug for av in values}
@@ -205,6 +460,23 @@ class Command(BaseCommand):
                     # не извлекает (устаревший regex/keyword/inferred). Авторитетные
                     # источники (manual/import_1c) и llm не трогаем.
                     for slug in managed_by_tt.get(tt_slug, ()):
+                        if slug in quarantined_slugs:
+                            # Частичный карантин НИЧЕГО не удаляет: значение могло
+                            # быть записано до заведения записи в реестре.
+                            pav = existing.get((product.id, slug))
+                            if pav is not None and pav.pk is not None:
+                                add_report_row(
+                                    product,
+                                    tt_slug,
+                                    "keep",
+                                    slug,
+                                    attr_value_to_json(pav),
+                                    None,
+                                    "",
+                                    pav.source,
+                                    "атрибут в карантине — существующее значение сохраняется",
+                                )
+                            continue
                         if slug in current:
                             continue
                         pav = existing.get((product.id, slug))
@@ -249,6 +521,21 @@ class Command(BaseCommand):
                         stats["no_attributes"] += 1
 
                     for av in values:
+                        if av.slug in quarantined_slugs:
+                            # Карантин по атрибуту: не создаём и не обновляем.
+                            pav0 = existing.get((product.id, av.slug))
+                            add_report_row(
+                                product,
+                                tt_slug,
+                                "skip",
+                                av.slug,
+                                attr_value_to_json(pav0) if pav0 is not None else None,
+                                None,
+                                av.matched,
+                                av.source,
+                                "атрибут в карантине — значение не записывается",
+                            )
+                            continue
                         attribute = attr_by_slug[av.slug]
                         option = None
                         if av.kind == SELECT:
@@ -423,14 +710,32 @@ class Command(BaseCommand):
         )
         summary = (
             f"Характеристики: обработано {stats['processed']}, "
+            f"в карантине {stats['quarantined']} "
+            f"(частично {stats['quarantined_partial']}), "
             f"без характеристик {stats['no_attributes']}, "
             f"пропущено по приоритету {stats['skipped_priority']}, "
             f"удалено устаревших {pruned_total}{pruned_detail}. По атрибутам — {by_attr}."
         )
 
+        if requested_tt or category_ids or in_stock_only:
+            summary += (
+                f" Выборка: типы {scope['selected_tool_types'] or '—'}, "
+                f"категории {resolved_category_ids or '—'}"
+                f"{' (с потомками)' if include_descendants else ''}, "
+                f"только в наличии: {'да' if in_stock_only else 'нет'} — "
+                f"{scope['selected_products']} товаров."
+            )
+
         if dry_run:
             self._emit_dry_run_report(
-                report_rows, stats, summary, base=base, json_report_path=json_report_path
+                report_rows,
+                stats,
+                summary,
+                base=base,
+                json_report_path=json_report_path,
+                scope=scope,
+                quarantine_meta=quarantine_meta,
+                quarantine_rows=quarantine_rows,
             )
             # Вернуть непустую строку нельзя: BaseCommand.execute() автоматически
             # печатает возврат handle() в stdout и ломает чистый JSON.
@@ -442,7 +747,16 @@ class Command(BaseCommand):
     # --- dry-run отчёт -----------------------------------------------------
 
     def _emit_dry_run_report(
-        self, report_rows: list[dict], stats: dict, summary: str, *, base, json_report_path
+        self,
+        report_rows: list[dict],
+        stats: dict,
+        summary: str,
+        *,
+        base,
+        json_report_path,
+        scope: dict,
+        quarantine_meta: dict,
+        quarantine_rows: list[dict],
     ) -> None:
         """Собрать machine-readable JSON dry-run'а и выдать его в файл или stdout.
 
@@ -466,15 +780,20 @@ class Command(BaseCommand):
             "mode": "dry-run",
             "rules_path": str(Path(f"{base}/attribute_rules.json")),
             "generated_at": timezone.now().isoformat(),
+            "scope": scope,
+            "quarantine": quarantine_meta,
             "totals": {
                 "processed": stats["processed"],
                 "no_attributes": stats["no_attributes"],
                 "skipped_priority": stats["skipped_priority"],
                 "pruned": sum(stats["pruned"].values()),
+                "quarantined": stats["quarantined"],
+                "quarantined_partial": stats["quarantined_partial"],
                 "by_action": by_action,
             },
             "by_tool_type": by_tool_type,
             "by_attribute": by_attribute,
+            "quarantined": quarantine_rows,
             "rows": report_rows,
         }
         payload = json.dumps(report, ensure_ascii=False, indent=2)

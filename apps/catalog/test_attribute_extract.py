@@ -18,6 +18,7 @@ from apps.catalog.models import (
     Product,
     ProductAttributeValue,
 )
+from apps.catalog.tool_type import normalize
 
 RULES_PATH = Path(settings.BASE_DIR) / "data" / "attribute_rules.json"
 TT = "dreli-shurupoverty"
@@ -642,6 +643,153 @@ def test_klyuchi_type_and_size(rules):
     f = {v.slug: v for v in rules.extract("klyuchi-gaechnye", "Ключ комбинированный 17мм CrV ЗУБР")}
     assert f["wrench_type"].option_slug == "kombinir"
     assert f["size"].number == Decimal("17")
+
+
+# --- ХАР-КЛЮЧИ: wrench_type сокращениями + латинский «mm» в size ---------------
+#
+# Правка аддитивная: сокращения ловятся ТОЧНЫМИ ФРАЗАМИ («ключ комб», «ключ рож»),
+# три новые опции дописаны в КОНЕЦ списка, вторая регулярка size стоит ПОСЛЕ старой.
+# Наивный корень «рож» отвергнут замером (377 попаданий вне типа по 47 225 названиям:
+# «Барьер дорожный», «Прожектор»), поэтому у него здесь свой негативный тест.
+
+KG = "klyuchi-gaechnye"
+
+
+def _kg(rules: AttributeRules, name: str):
+    return {v.slug: v for v in rules.extract(KG, name)}
+
+
+@pytest.mark.parametrize(
+    "name,wrench_type,size",
+    [
+        # сокращения 1С: «комб» — 66 товаров пула, «рож» — 13
+        ("Ключ комб 13х17 мм CrV", "kombinir", "17"),
+        ("Ключ комб трещ. 13 мм ЗУБР", "kombinir", "13"),
+        ("Ключ рож 12х13 мм", "rozhkovy", "13"),
+    ],
+)
+def test_kg_abbreviations_give_type_and_size(rules, name, wrench_type, size):
+    f = _kg(rules, name)
+    assert f["wrench_type"].option_slug == wrench_type
+    assert f["size"].number == Decimal(size)
+
+
+@pytest.mark.parametrize(
+    "name,wrench_type",
+    [
+        # три опции, добавленные в конец списка
+        ("Ключ шестигранный 8 мм", "hex"),
+        ("Набор шестигранников 1.5-10mm, 9 шт.", "hex"),
+        ("Ключ имбусовый 6мм", "hex"),
+        ("Ключ баллонный 24х27мм торцовый ЗУБР МАСТЕР", "ballonny"),
+        ("Ключ разрезной 13х17 мм", "razreznoy"),
+    ],
+)
+def test_kg_new_options_extracted(rules, name, wrench_type):
+    assert _kg(rules, name)["wrench_type"].option_slug == wrench_type
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        # ЯКОРЬ отвергнутого корня «рож»: без слова «ключ» слева типа быть не должно.
+        # Если кто-то «упростит» фразу до корня — эти кейсы упадут.
+        "Прожектор светодиодный 50 Вт",
+        "Барьер дорожный пластиковый 1200 мм",
+        "Башмак тормозной железнодорожный",
+        # то же для «комб» — сокращение без слова «ключ» типом ключа не является
+        "Комбинезон рабочий 52 р.",
+    ],
+)
+def test_kg_bare_root_does_not_yield_wrench_type(rules, name):
+    assert "wrench_type" not in _kg(rules, name)
+
+
+def test_kg_abbreviation_keywords_are_phrases_not_roots(rules):
+    """Структурный guard: в ruleset лежат фразы «ключ рож»/«ключ комб», а не корни."""
+    rule = next(r for r in rules.rules_for(KG) if r.slug == "wrench_type")
+    keywords = {kw for opt in rule.options for kw in opt.keywords}
+    assert "ключ рож" in keywords and "ключ комб" in keywords
+    assert "рож" not in keywords and "комб" not in keywords
+    # word_boundary включать нельзя — он отрезал бы «рожков»/«комбинир» от сокращений
+    assert rule.word_boundary is False
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        # Отклонённые по замеру опции: «Ступичный» (0 попаданий внутри типа) и
+        # «Торцевой/трубчатый» (ось принадлежит golovki) в блок НЕ возвращены.
+        "Ключ ступичный  50мм торцевой восьмигранный ЗУБР",
+        "Ключ торцевой 14х14 мм изогнутый",
+        "Ключ трубчатый 8х9мм KWB",
+    ],
+)
+def test_kg_rejected_options_absent(rules, name):
+    assert "wrench_type" not in _kg(rules, name)
+
+
+def test_kg_rejected_option_slugs_not_in_ruleset(rules):
+    rule = next(r for r in rules.rules_for(KG) if r.slug == "wrench_type")
+    values = {opt.value for opt in rule.options}
+    assert "Ступичный" not in values
+    assert not any("орцев" in v or "рубчат" in v for v in values)
+
+
+def test_kg_new_options_appended_to_the_end(rules):
+    """Аддитивность по построению: старый порядок разбора — префикс нового."""
+    rule = next(r for r in rules.rules_for(KG) if r.slug == "wrench_type")
+    slugs = [opt.slug for opt in rule.options]
+    assert slugs[:7] == [
+        "nakidnoy",
+        "rozhkovy",
+        "kombinir",
+        "razvodnoy",
+        "trubny",
+        "dinamo",
+        "treshch",
+    ]
+    assert slugs[7:] == ["hex", "ballonny", "razreznoy"]
+
+
+@pytest.mark.parametrize(
+    "name,size",
+    [
+        # латинское «mm» — вторая регулярка, стоит ПОСЛЕ кириллической
+        ("Ключ шестигранный 10mm", "10"),
+        ("Ключ шестигранный 8 MM", "8"),
+    ],
+)
+def test_kg_latin_mm_size(rules, name, size):
+    assert _kg(rules, name)["size"].number == Decimal(size)
+
+
+def test_kg_cyrillic_mm_regex_stays_first(rules):
+    """Старый паттерн — первый: движок берёт первый сработавший, значения не плывут."""
+    rule = next(r for r in rules.rules_for(KG) if r.slug == "size")
+    assert len(rule.patterns) == 2
+    assert rule.patterns[0].pattern.endswith(r"\s*мм")
+    assert rule.patterns[1].pattern.endswith(r"\s*mm(?![а-яa-z])")
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        # Товары, у которых значения уже записаны: результат после правки тот же.
+        ("Ключ комбинированный 17мм CrV ЗУБР", {"wrench_type": "kombinir", "size": "17"}),
+        ("Ключ накидной 10х11 мм  СК", {"wrench_type": "nakidnoy", "size": "11"}),
+        ("Ключ разводной 150мм 0-19 мм W27AT6 Jonnesway", {"wrench_type": "razvodnoy"}),
+        ("Ключ трубный рычажный №1 10 - 36 мм CrV", {"wrench_type": "trubny"}),
+        ("Ключ динамометрический 1/2 28-210 Нм", {"wrench_type": "dinamo"}),
+        ("Ключ Т-образный 10мм KING TONY", {"size": "10"}),
+    ],
+)
+def test_kg_existing_behaviour_unchanged(rules, name, expected):
+    f = _kg(rules, name)
+    assert set(f) == set(expected)
+    for slug, want in expected.items():
+        got = f[slug]
+        assert (got.option_slug or str(got.number)) == want
 
 
 def test_golovki_drive_and_size(rules):
@@ -1958,3 +2106,175 @@ def test_text_kind_empty_after_trim_is_not_extracted():
     # группа совпала, но после trim пусто — значение не извлечено
     r = _analog_rules([r"аналог\s*:(\s*);"])
     assert _extract_analog(r, "Щётка аналог: ; графитовая") is None
+
+
+# --- skip_regex: негативный гейт уровня атрибута (окно SKIP-01) --------------
+#
+# Класс неоднозначных записей, который списком литералов не закрыть: «М8/10/12»,
+# «М6/8/10» — трёхчастные комбинации посадочной резьбы, у которых ОДНОГО значения
+# не существует, писать нельзя ничего. Целевой паттерн требует границы слева
+# (?<![а-яa-z]), иначе «350Нм 1/2"» и «60мм 1/4"» — реальные названия каталога —
+# пролезали бы через «м» внутри «Нм»/«мм».
+
+THREAD_SKIP_RE = r"(?<![а-яa-z])[мm]\s?\d{1,2}/\d{1,2}/\d{1,2}"
+# Извлекающий regex намеренно наивный: на «М8/10/12» он взял бы «8» — именно это
+# и должен пресечь skip_regex (иначе тест гейта зеленел бы вхолостую).
+THREAD_NUM_RE = r"(?<![а-яa-z])[мm]\s?(\d{1,2})"
+
+
+def _thread_rules(skip_regex: list[str] | None = None) -> AttributeRules:
+    attr: dict = {
+        "slug": "thread_diameter",
+        "name": "Посадочная резьба",
+        "kind": "number",
+        "unit": "мм",
+        "source": "regex",
+        "regex": [THREAD_NUM_RE],
+    }
+    if skip_regex is not None:
+        attr["skip_regex"] = skip_regex
+    return AttributeRules.from_dict(
+        {
+            "source_priority": {"regex": 40},
+            "tool_types": [{"tool_type": "t", "attributes": [attr]}],
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        # 1: кириллическая «М» + трёхчастная комбинация
+        "Головка триммерная STURM BT925D-999 УНИВЕРСАЛЬНАЯ М8/10/12",
+        # 2: латиница пишется 1С наравне с кириллицей
+        "Головка триммерная STURM BT925D-999 УНИВЕРСАЛЬНАЯ M8/10/12",
+    ],
+)
+def test_skip_regex_blocks_ambiguous_thread(name):
+    r = _thread_rules([THREAD_SKIP_RE])
+    assert "thread_diameter" not in {v.slug: v for v in r.extract("t", name)}
+    # без гейта то же название дало бы значение — гейт не холостой
+    assert "thread_diameter" in {v.slug: v for v in _thread_rules().extract("t", name)}
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        # 3: «350Нм 1/2"» — без границы слева «м 1/2» уводило бы гейт вхолостую
+        'Гайковерт аккум 18В 350Нм 1/2"',
+        # 4: дюймовые дроби шага цепи
+        "Бензопила Stihl MS 170 (35см 3/8 1,1 50)",
+        # 5: «60мм 1/4"» — «мм» перед дробью
+        'Держатель бит быстрос. 60мм 1/4"',
+    ],
+)
+def test_skip_regex_does_not_fire_on_real_catalog_names(name):
+    r = _thread_rules([THREAD_SKIP_RE])
+    # гейт молчит — результат ровно такой же, как у правила без skip_regex
+    assert r.extract("t", name) == _thread_rules().extract("t", name)
+    assert not any(pat.search(normalize(name)) for pat in r.rules_for("t")[0].skip_patterns)
+
+
+def test_skip_regex_blocks_only_its_own_attribute():
+    """Гейт атрибутный: соседнее правило того же блока продолжает работать."""
+    doc = {
+        "source_priority": {"regex": 40, "keyword": 40},
+        "tool_types": [
+            {
+                "tool_type": "t",
+                "attributes": [
+                    {
+                        "slug": "thread_diameter",
+                        "name": "Посадочная резьба",
+                        "kind": "number",
+                        "unit": "мм",
+                        "source": "regex",
+                        "skip_regex": [THREAD_SKIP_RE],
+                        "regex": [THREAD_NUM_RE],
+                    },
+                    {
+                        "slug": "head_design",
+                        "name": "Конструкция головки",
+                        "kind": "select",
+                        "source": "keyword",
+                        "options": [{"value": "ПАУК", "slug": "pauk", "keywords": ["паук"]}],
+                    },
+                ],
+            }
+        ],
+    }
+    r = AttributeRules.from_dict(doc)
+    got = {v.slug: v for v in r.extract("t", "STURM GT3513M-23, ПАУК М8/10/12")}
+    assert "thread_diameter" not in got
+    assert got["head_design"].option_value == "ПАУК"
+
+
+def test_rule_without_skip_regex_behaves_as_before():
+    """Обратная совместимость: старый ruleset без skip_regex работает как раньше."""
+    r = _thread_rules()  # поля skip_regex в JSON нет вовсе
+    assert r.rules_for("t")[0].skip_patterns == ()
+    got = {v.slug: v for v in r.extract("t", "Головка триммерная М8")}
+    assert got["thread_diameter"].number == Decimal("8")
+
+
+def test_skip_regex_does_not_change_skip_if():
+    """skip_if сохраняет прежнюю семантику и работает вместе со skip_regex."""
+    doc = {
+        "source_priority": {"regex": 40},
+        "tool_types": [
+            {
+                "tool_type": "t",
+                "attributes": [
+                    {
+                        "slug": "size",
+                        "name": "Размер",
+                        "kind": "number",
+                        "unit": "мм",
+                        "source": "regex",
+                        "skip_if": ["набор"],
+                        "skip_regex": [THREAD_SKIP_RE],
+                        "regex": [r"(\d{1,2})\s*мм"],
+                    }
+                ],
+            }
+        ],
+    }
+    r = AttributeRules.from_dict(doc)
+    assert {v.slug: v for v in r.extract("t", "Ключ 17мм")}["size"].number == Decimal("17")
+    assert "size" not in {v.slug: v for v in r.extract("t", "Набор ключей 17мм")}
+    assert "size" not in {v.slug: v for v in r.extract("t", "Ключ 17мм М8/10/12")}
+
+
+def test_broken_skip_regex_fails_closed_with_clear_message():
+    """Битый паттерн — ValueError при загрузке, а не молчаливое игнорирование."""
+    doc = {
+        "source_priority": {"regex": 40},
+        "tool_types": [
+            {
+                "tool_type": "golovki-trimmernye",
+                "attributes": [
+                    {
+                        "slug": "thread_diameter",
+                        "name": "Посадочная резьба",
+                        "kind": "number",
+                        "source": "regex",
+                        "skip_regex": ["["],
+                        "regex": [r"(\d+)"],
+                    }
+                ],
+            }
+        ],
+    }
+    with pytest.raises(ValueError) as exc:
+        AttributeRules.from_dict(doc)
+    message = str(exc.value)
+    assert "skip_regex" in message
+    assert "golovki-trimmernye" in message
+    assert "thread_diameter" in message
+    assert "'['" in message
+
+
+def test_production_ruleset_loads_unchanged(rules):
+    """Боевой data/attribute_rules.json грузится и не объявляет skip_regex."""
+    assert rules.rules_for(TT), "правила dreli-shurupoverty должны загрузиться"
+    assert all(rule.skip_patterns == () for rule in rules.rules_for(TT))

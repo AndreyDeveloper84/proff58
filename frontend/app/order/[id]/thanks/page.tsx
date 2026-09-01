@@ -63,7 +63,13 @@ export default function ThanksPage() {
     };
   }, [stashed]);
 
-  const order = fresh ?? stashed;
+  // Свежие данные накладываем НА снимок, а не заменяем им: гостевой ответ не
+  // содержит access_token (и не должен — незачем светить его в каждом ответе),
+  // а без токена со страницы исчезала уже показанная кнопка «Отслеживать заказ
+  // в MAX» — через секунду после загрузки, когда приходил ответ сервера.
+  const order = fresh
+    ? { ...fresh, access_token: fresh.access_token || stashed?.access_token || "" }
+    : stashed;
   // Заказ часто оформляют без входа, поэтому «в личном кабинете» для гостя ведёт
   // на форму входа — оттуда его вернут в заказы.
   const ordersHref = accountLinkHref("/account/orders", useAuthState());

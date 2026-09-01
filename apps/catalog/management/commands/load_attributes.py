@@ -52,6 +52,47 @@ slug объявляется в нескольких блоках tool_type, и �
 ``bound:*:dead`` и свой статус ``dead_category``: по умолчанию — WARNING с указанием
 выбранного узла (fail-closed сломал бы bootstrap и наборы правил, где мёртвый узел
 единственный), ``--strict-live-categories`` делает его фатальным.
+
+Окно ХАР-BINDDIFF (2026-08-11) закрыло пятый.
+
+**5. Флаги существующей привязки не перезаписываются молча.** ``update_or_create``
+с ``defaults`` уместен только при создании: для уже существующей ``CategoryAttribute``
+он побочным эффектом загрузки схемы затирал ``is_filter``/``is_seo_facet`` значениями
+из файла правил. Настройка фасетов — это решение владельца каталога (её меняют
+руками и командой ``catalog_seed_tool_type_filters``), а не следствие того, что
+кто-то догрузил атрибуты. Теперь расхождение ``current`` ↔ ``planned`` — **отдельный
+semantic update**: он всегда виден в плане (``changes`` строки привязки и счётчик
+``summary.bindings.flag_diff``), но по умолчанию **не применяется** — строка остаётся
+``keep``, а расхождение уходит в ``suppressed`` с причиной
+``binding_flag_update_not_authorized``. Применить его можно только явным
+разрешением ``--allow-binding-flag-updates`` (стиль ``--allow-ambiguous``: разрешение
+на самостоятельное действие, а не ужесточение проверки). Создание привязки прежнее:
+у новой строки флаги берутся из правил.
+
+Окно ХАР-21 (2026-08-13) закрыло шестой — тот же дефект этажом ниже.
+
+**6. Порядок существующего варианта не переставляется молча.** У ``AttributeOption``
+поля ``sort_order`` в правилах нет вообще: он выводился из **позиции элемента в
+массиве** ``options`` блока ``tool_type``. То есть любая правка словаря — вставка
+значения в середину списка, перестановка, объединение блоков — меняла номера у всех
+последующих вариантов, а ``_apply`` вызывал ``update_or_create`` и писал ``sort_order``
+**всем** строкам плана, не глядя на ``row["action"]``. Это была единственная из трёх
+сущностей, где решение плана игнорировалось: у привязок и атрибутов ``action``
+уважается. Ущерб не косметический — ``sort_order`` это первичный ключ сортировки
+фасетов витрины (:func:`apps.catalog.facets._sort_facet_values`, панель типов), то
+есть порядок значений в фильтре менялся как побочный эффект догрузки схемы.
+
+Теперь ``sort_order`` существующего варианта принадлежит владельцу каталога:
+он пишется **только при создании** варианта. Расхождение «позиция в правилах ↔
+значение в БД» считается **всегда** и всегда видно до записи — отдельной таблицей
+``attribute · option · current · target · action · reason`` и счётчиком
+``summary.options.sort_diff``, — но по умолчанию **не применяется**: строка
+остаётся ``keep``, расхождение уходит в ``suppressed`` с причиной
+``option_sort_update_not_authorized``. Применить его можно только явным
+``--allow-option-sort-updates`` (стиль ``--allow-binding-flag-updates``); тогда
+причина строки — ``option_sort_update_authorized``, а действие — ``update``.
+Защита узкая: ``slug`` варианта обновляется как раньше, ограничение только на
+``sort_order``.
 """
 
 from __future__ import annotations
@@ -91,6 +132,20 @@ CANDIDATE_FIELDS = ("id", "slug", "depth", "is_active", "on_site", "is_site_v2")
 
 # Суффикс кода причины для «узел найден, но мёртвый» (см. докстринг, дефект 4).
 DEAD_SUFFIX = ":dead"
+
+# Флаги привязки категория↔атрибут. У существующей строки они принадлежат владельцу
+# каталога и меняются только с явным разрешением (см. докстринг, дефект 5).
+BINDING_FLAGS = ("is_filter", "is_seo_facet")
+
+# Причина, по которой расхождение флагов существующей привязки не применено.
+BINDING_FLAG_SUPPRESS_REASON = "binding_flag_update_not_authorized"
+
+# Поля варианта характеристики, которые план сравнивает и умеет писать.
+OPTION_FIELDS = ("slug", "sort_order")
+
+# Причины по ``sort_order`` существующего варианта (см. докстринг, дефект 6).
+OPTION_SORT_SUPPRESS_REASON = "option_sort_update_not_authorized"
+OPTION_SORT_ALLOWED_REASON = "option_sort_update_authorized"
 
 
 class Command(BaseCommand):
@@ -135,6 +190,24 @@ class Command(BaseCommand):
                 "найден, но is_active=False или on_site=False). По умолчанию — WARNING."
             ),
         )
+        parser.add_argument(
+            "--allow-binding-flag-updates",
+            action="store_true",
+            help=(
+                "Разрешить менять is_filter/is_seo_facet у УЖЕ существующих привязок "
+                "категория↔атрибут. По умолчанию текущие флаги сохраняются, а "
+                "расхождение с правилами только показывается в плане."
+            ),
+        )
+        parser.add_argument(
+            "--allow-option-sort-updates",
+            action="store_true",
+            help=(
+                "Разрешить менять sort_order у УЖЕ существующих вариантов "
+                "характеристики. По умолчанию текущий порядок сохраняется, а "
+                "расхождение с позицией в правилах только показывается в плане."
+            ),
+        )
 
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
@@ -142,7 +215,13 @@ class Command(BaseCommand):
         rules_path = Path(f"{base}/attribute_rules.json")
         data = json.loads(rules_path.read_text(encoding="utf-8"))
 
-        plan = self._build_plan(data, str(rules_path), dry_run)
+        plan = self._build_plan(
+            data,
+            str(rules_path),
+            dry_run,
+            allow_binding_flag_updates=options["allow_binding_flag_updates"],
+            allow_option_sort_updates=options["allow_option_sort_updates"],
+        )
         self._enforce_binding_policy(
             plan,
             allow_ambiguous=options["allow_ambiguous"],
@@ -153,6 +232,11 @@ class Command(BaseCommand):
         if dry_run:
             self._emit_plan(plan, options["json_report"])
             return ""
+
+        # Диф sort_order виден ДО записи и в боевом прогоне, а не только в dry-run.
+        sort_diff = _option_sort_diff_report(plan)
+        if sort_diff:
+            self.stderr.write(self.style.WARNING(sort_diff))
 
         self._apply(plan)
         summary = plan["summary"]
@@ -176,7 +260,15 @@ class Command(BaseCommand):
     # План (read-only): решения принимаются здесь и только здесь
     # ------------------------------------------------------------------ #
 
-    def _build_plan(self, data: dict, rules_path: str, dry_run: bool) -> dict:
+    def _build_plan(
+        self,
+        data: dict,
+        rules_path: str,
+        dry_run: bool,
+        *,
+        allow_binding_flag_updates: bool = False,
+        allow_option_sort_updates: bool = False,
+    ) -> dict:
         existing_attrs = {a.slug: a for a in Attribute.objects.all()}
         existing_options = {
             (o.attribute.slug, o.value): o
@@ -200,7 +292,7 @@ class Command(BaseCommand):
                 occurrences += 1
                 self._plan_attribute(a, tt_slug, attr_rows, existing_attrs)
                 if a.get("kind") == "select":
-                    self._plan_options(a, option_rows, existing_options)
+                    self._plan_options(a, option_rows, existing_options, allow_option_sort_updates)
                 if category_name:
                     self._plan_binding(
                         a,
@@ -209,6 +301,7 @@ class Command(BaseCommand):
                         binding_rows,
                         existing_bindings,
                         category_cache,
+                        allow_binding_flag_updates,
                     )
 
         attributes = [attr_rows[s] for s in sorted(attr_rows)]
@@ -225,9 +318,11 @@ class Command(BaseCommand):
             "occurrences": occurrences,
             "summary": {
                 "attributes": _count_actions(attributes, ("create", "update", "keep")),
-                "options": _count_actions(options, ("create", "update", "keep")),
+                "options": _count_actions(options, ("create", "update", "keep"))
+                | _count_option_sort_diff(options),
                 "bindings": _count_actions(bindings, ("create", "update", "keep", "skip"))
-                | _count_statuses(bindings),
+                | _count_statuses(bindings)
+                | _count_flag_diff(bindings),
             },
             "attributes": attributes,
             "options": options,
@@ -321,6 +416,7 @@ class Command(BaseCommand):
         a: dict,
         option_rows: dict[tuple[str, str], dict],
         existing_options: dict[tuple[str, str], AttributeOption],
+        allow_option_sort_updates: bool = False,
     ) -> None:
         for sort, opt in enumerate(a.get("options", [])):
             key = (a["slug"], opt["value"])
@@ -336,17 +432,55 @@ class Command(BaseCommand):
                     "current": current,
                     "target": target,
                     "changes": [],
+                    "suppressed": [],
+                    "reason": "",
                 }
                 option_rows[key] = row
             else:
                 row["target"] = target
-            if row["current"] is not None:
-                row["changes"] = [
-                    {"field": f, "from": row["current"][f], "to": row["target"][f]}
-                    for f in ("slug", "sort_order")
-                    if row["current"][f] != row["target"][f]
-                ]
-                row["action"] = "update" if row["changes"] else "keep"
+            self._finalize_option(row, allow_option_sort_updates)
+
+    @staticmethod
+    def _finalize_option(row: dict, allow_option_sort_updates: bool) -> None:
+        """Решить судьбу варианта: что записать, что сохранить, с какой причиной.
+
+        ``changes`` — то, что apply реально запишет (конвенция ветки атрибутов:
+        ``update_fields`` берутся именно оттуда). ``suppressed`` — расхождение,
+        которое показано, но не применено. Диф по ``sort_order`` считается всегда,
+        независимо от разрешения: владелец должен видеть масштаб расхождения.
+        """
+        if row["current"] is None:
+            # У нового варианта порядок берётся из позиции в правилах — как раньше.
+            row["action"] = "create"
+            row["changes"] = []
+            row["suppressed"] = []
+            row["reason"] = ""
+            return
+
+        diff = [
+            {"field": f, "from": row["current"][f], "to": row["target"][f]}
+            for f in OPTION_FIELDS
+            if row["current"][f] != row["target"][f]
+        ]
+        sort_diff = [c for c in diff if c["field"] == "sort_order"]
+        if allow_option_sort_updates:
+            changes, suppressed = diff, []
+        else:
+            # sort_order существующего варианта принадлежит владельцу каталога:
+            # это первичный ключ сортировки фасетов (apps/catalog/facets.py), и
+            # загрузка схемы не имеет права переставлять его молча (вариант А).
+            changes = [c for c in diff if c["field"] != "sort_order"]
+            suppressed = [dict(c, reason=OPTION_SORT_SUPPRESS_REASON) for c in sort_diff]
+
+        row["changes"] = changes
+        row["suppressed"] = suppressed
+        row["action"] = "update" if changes else "keep"
+        if not sort_diff:
+            row["reason"] = ""
+        elif allow_option_sort_updates:
+            row["reason"] = OPTION_SORT_ALLOWED_REASON
+        else:
+            row["reason"] = OPTION_SORT_SUPPRESS_REASON
 
     def _plan_binding(
         self,
@@ -356,6 +490,7 @@ class Command(BaseCommand):
         binding_rows: dict[tuple[str, str], dict],
         existing_bindings: dict[tuple[int, str], CategoryAttribute],
         category_cache: dict[str, tuple],
+        allow_binding_flag_updates: bool = False,
     ) -> None:
         if category_name not in category_cache:
             category_cache[category_name] = self._resolve_category(category_name)
@@ -379,36 +514,49 @@ class Command(BaseCommand):
                 "current": None,
                 "target": target,
                 "changes": [],
+                "suppressed": [],
                 "candidates": candidates,
                 "reason": reason,
             }
             return
 
         existing = existing_bindings.get((category.pk, a["slug"]))
-        current = (
-            None
-            if existing is None
-            else {"is_filter": existing.is_filter, "is_seo_facet": existing.is_seo_facet}
-        )
+        current = None if existing is None else {f: getattr(existing, f) for f in BINDING_FLAGS}
+        # Диф считаем всегда — владелец должен видеть расхождение независимо от того,
+        # разрешено ли его применять (дефект 5).
         changes = (
             []
             if current is None
             else [
                 {"field": f, "from": current[f], "to": target[f]}
-                for f in ("is_filter", "is_seo_facet")
+                for f in BINDING_FLAGS
                 if current[f] != target[f]
             ]
         )
+        suppressed: list[dict] = []
+        if current is None:
+            action = "create"
+        elif not changes:
+            action = "keep"
+        elif allow_binding_flag_updates:
+            action = "update"
+        else:
+            # Без явного разрешения существующая привязка сохраняет свои флаги:
+            # план показывает расхождение, но apply его не исполняет.
+            action = "keep"
+            suppressed = [dict(c, reason=BINDING_FLAG_SUPPRESS_REASON) for c in changes]
+
         binding_rows[key] = {
             "category": category_name,
             "category_id": category.pk,
             "attribute": a["slug"],
             "tool_type": tt_slug,
-            "action": ("create" if current is None else ("update" if changes else "keep")),
+            "action": action,
             "status": status,
             "current": current,
             "target": target,
             "changes": changes,
+            "suppressed": suppressed,
             "candidates": candidates,
             "reason": reason,
         }
@@ -528,8 +676,22 @@ class Command(BaseCommand):
             f"пропущено {summary['bindings']['skip']} "
             f"(ambiguous {summary['bindings']['ambiguous']}, "
             f"not_found {summary['bindings']['not_found']})\n"
-            f"  из них в мёртвые узлы: dead_category {summary['bindings']['dead_category']}"
+            f"  из них в мёртвые узлы: dead_category {summary['bindings']['dead_category']}\n"
+            f"  существующих привязок с расхождением флагов: "
+            f"{summary['bindings']['flag_diff']}\n"
+            f"  существующих вариантов с расхождением sort_order: "
+            f"{summary['options']['sort_diff']}"
         )
+        sort_diff = _option_sort_diff_report(plan)
+        if sort_diff:
+            human += "\n" + sort_diff
+        for row in plan["bindings"]:
+            if not row.get("changes") or row.get("current") is None:
+                continue
+            diff = ", ".join(f"{c['field']}: {c['from']!r} → {c['to']!r}" for c in row["changes"])
+            mark = "=" if row["suppressed"] else "~"
+            tail = " (сохранено, нет --allow-binding-flag-updates)" if row["suppressed"] else ""
+            human += f"\n  {mark} привязка «{row['category']}» → {row['attribute']}: {diff}{tail}"
         for row in plan["bindings"]:
             if row["status"] != "dead_category":
                 continue
@@ -584,24 +746,47 @@ class Command(BaseCommand):
                 attrs[row["slug"]] = attribute
 
             for row in plan["options"]:
-                AttributeOption.objects.update_or_create(
-                    attribute=attrs[row["attribute"]],
-                    value=row["value"],
-                    defaults=dict(
-                        slug=row["target"]["slug"], sort_order=row["target"]["sort_order"]
-                    ),
-                )
+                attribute = attrs[row["attribute"]]
+                if row["action"] == "create":
+                    # get_or_create, а не update_or_create: если вариант появился
+                    # между планом и записью — это уже существующая строка, и её
+                    # порядок молча не перезаписывается (дефект 6).
+                    AttributeOption.objects.get_or_create(
+                        attribute=attribute,
+                        value=row["value"],
+                        defaults={f: row["target"][f] for f in OPTION_FIELDS},
+                    )
+                    continue
+                # keep не пишем вообще: у существующего варианта sort_order остаётся
+                # таким, как есть, пока нет --allow-option-sort-updates.
+                if row["action"] != "update":
+                    continue
+                fields = [c["field"] for c in row["changes"]]
+                option = AttributeOption.objects.get(attribute=attribute, value=row["value"])
+                for field in fields:
+                    setattr(option, field, row["target"][field])
+                option.save(update_fields=fields)
 
             for row in plan["bindings"]:
-                if row["action"] == "skip":
+                # keep/skip не пишем вообще: у существующей привязки флаги остаются
+                # такими, как есть (дефект 5), а skip — это нерешённая категория.
+                if row["action"] not in ("create", "update"):
+                    continue
+                defaults = {f: row["target"][f] for f in BINDING_FLAGS}
+                if row["action"] == "create":
+                    # get_or_create, а не update_or_create: если привязка появилась
+                    # между планом и записью — это уже существующая строка, и её
+                    # флаги молча не перезаписываются.
+                    CategoryAttribute.objects.get_or_create(
+                        category_id=row["category_id"],
+                        attribute=attrs[row["attribute"]],
+                        defaults=defaults,
+                    )
                     continue
                 CategoryAttribute.objects.update_or_create(
                     category_id=row["category_id"],
                     attribute=attrs[row["attribute"]],
-                    defaults=dict(
-                        is_filter=row["target"]["is_filter"],
-                        is_seo_facet=row["target"]["is_seo_facet"],
-                    ),
+                    defaults=defaults,
                 )
 
 
@@ -617,6 +802,49 @@ def _count_statuses(rows: list[dict]) -> dict[str, int]:
     for row in rows:
         counts[row["status"]] = counts.get(row["status"], 0) + 1
     return counts
+
+
+def _count_option_sort_diff(rows: list[dict]) -> dict[str, int]:
+    """Сколько СУЩЕСТВУЮЩИХ вариантов расходятся с правилами по ``sort_order``.
+
+    Считается независимо от ``--allow-option-sort-updates``: это масштаб проблемы —
+    ровно столько строк прежняя логика (``update_or_create`` с ``defaults``)
+    переставляла бы молча.
+    """
+    return {"sort_diff": sum(1 for row in rows if row.get("reason"))}
+
+
+def _option_sort_diff_report(plan: dict) -> str:
+    """Таблица расхождений ``sort_order``: attribute · option · current · target · action · reason.
+
+    Пустая строка, если расхождений нет. Одна и та же таблица печатается и в
+    ``--dry-run``, и перед записью боевого прогона — диф виден ДО apply.
+    """
+    rows = [r for r in plan["options"] if r.get("reason")]
+    if not rows:
+        return ""
+    header = (
+        f"  варианты с расхождением sort_order: {len(rows)}\n"
+        "    attribute · option · current · target · action · reason"
+    )
+    lines = [
+        f"    {r['attribute']} · {r['value']} · {r['current']['sort_order']} · "
+        f"{r['target']['sort_order']} · {r['action']} · {r['reason']}"
+        for r in rows
+    ]
+    return "\n".join([header, *lines])
+
+
+def _count_flag_diff(rows: list[dict]) -> dict[str, int]:
+    """Сколько СУЩЕСТВУЮЩИХ привязок расходятся с правилами по флагам.
+
+    Считается независимо от ``--allow-binding-flag-updates``: это масштаб проблемы —
+    ровно столько строк прежняя логика (``update_or_create`` с ``defaults``)
+    перезаписывала бы молча.
+    """
+    return {
+        "flag_diff": sum(1 for row in rows if row.get("current") is not None and row["changes"])
+    }
 
 
 def _binding_status(reason: str) -> str:

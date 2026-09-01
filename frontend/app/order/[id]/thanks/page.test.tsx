@@ -6,12 +6,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // а checkout кладёт снимок под обычным номером — на этой паре и ломался поиск.
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "%D0%9F-1" }) }));
 vi.mock("@/lib/order-storage", () => ({ readStashedOrder: vi.fn() }));
-vi.mock("@/components/order/TrackOrderInMaxCta", () => ({ TrackOrderInMaxCta: () => null }));
+vi.mock("@/components/order/TrackOrderInMaxCta", () => ({
+  TrackOrderInMaxCta: () => <div data-testid="max-cta" />,
+}));
+vi.mock("@/lib/orders", () => ({ getGuestOrder: vi.fn(), startOrderPayment: vi.fn() }));
 
 import { readStashedOrder } from "@/lib/order-storage";
+import { getGuestOrder } from "@/lib/orders";
 import ThanksPage from "./page";
 
 const mockedRead = readStashedOrder as unknown as ReturnType<typeof vi.fn>;
+const mockedGuest = getGuestOrder as unknown as ReturnType<typeof vi.fn>;
 
 function order(overrides: Record<string, unknown> = {}) {
   return {
@@ -35,7 +40,12 @@ function order(overrides: Record<string, unknown> = {}) {
 }
 
 describe("ThanksPage (#574)", () => {
-  beforeEach(() => mockedRead.mockReset());
+  beforeEach(() => {
+    mockedRead.mockReset();
+    // Без снимка с токеном догрузки не будет — по умолчанию тесты её и не ждут.
+    mockedGuest.mockReset();
+    mockedGuest.mockResolvedValue(order());
+  });
 
   it("итог разложен на товары и доставку", () => {
     mockedRead.mockReturnValue(order());
@@ -94,5 +104,26 @@ describe("ThanksPage (#574)", () => {
 
     expect(mockedRead).toHaveBeenCalledWith("П-1");
     expect(screen.getByText(/№ П-1/)).toBeTruthy();
+  });
+
+  // DRF-951: гостевой ответ приходит БЕЗ access_token, и раньше он затирал снимок
+  // целиком — кнопка «Отслеживать заказ в MAX» показывалась на секунду и исчезала,
+  // как только догрузка доезжала. Токен обязан пережить слияние.
+  it("догрузка свежего заказа не уносит кнопку MAX", async () => {
+    mockedRead.mockReturnValue(order({ access_token: "guest-token" }));
+    mockedGuest.mockResolvedValue(order({ payment_status: "paid" }));
+
+    render(<ThanksPage />);
+    // Дожидаемся именно свежих данных: заголовок меняется только по ответу сервера.
+    await screen.findByText("Заказ оплачен");
+
+    expect(screen.getByTestId("max-cta")).toBeTruthy();
+  });
+
+  it("без токена в снимке кнопки MAX нет", () => {
+    mockedRead.mockReturnValue(order());
+    render(<ThanksPage />);
+
+    expect(screen.queryByTestId("max-cta")).toBeNull();
   });
 });

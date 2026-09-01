@@ -383,7 +383,11 @@ def test_product_with_two_brands_indexed_under_both(catalog):
     """Имя упоминает два бренда — товар виден карточкам обоих источников."""
     p = _product(catalog, "Аккумулятор для ДА-24-2ЛК Зубр, Ресанта", article="ACC-1")
     index = si.build_product_index(list(Product.objects.all()))
-    assert index.entries[0].tokens == ["ресанта", "зубр"]
+    # Токены — КАНОНИЧЕСКИЕ идентичности бренда из brand_vocabulary.json, а не
+    # найденные в имени подстроки: иначе потребители словаря разошлись бы по
+    # нормализации. Порядок — порядок словаря, поэтому сверяем составом.
+    assert set(index.entries[0].tokens) == {"ЗУБР", "РЕСАНТА"}
+    assert len(index.entries[0].tokens) == 2
     for source in ("zubr", "resanta"):
         m = si.match_card(_card("Аккумулятор ДА-24-2ЛК", "ACC-1"), source, index)
         assert m.status == "matched", source
