@@ -587,3 +587,335 @@ def test_validate_model_prefixes_rejects_regex_metacharacters():
     si.validate_model_prefixes(["ЗЛШМ", "ПШМ", "DCG405"])
     # унаследованный generic разрешён
     si.validate_model_prefixes(si.LEGACY_MODEL_PREFIXES)
+
+
+# --- оси бензопил и триммеров: нормализаторы и boolean (DRF-1439) -------------
+
+
+HUTER_MAP_PATH = "data/catalog_processing_rules/scraped_attr_map.benzopily-trimmery.json"
+
+
+def _huter_map():
+    from pathlib import Path
+
+    return si.load_attr_map(Path(HUTER_MAP_PATH))
+
+
+def _huter_extract(attributes):
+    card = {
+        "source_url": "https://huter.su/x/",
+        "name": "Бензопила Huter BS-45",
+        "brand": "Huter",
+        "manufacturer_sku": "70/6/1",
+        "attributes": attributes,
+    }
+    return si.extract_card_values(card, "huter", _huter_map())
+
+
+def test_decimal_normalizer_accepts_comma():
+    """Десятичная запятая источника («25,4») не уезжает в текст."""
+    assert si.normalize_scalar("25,4", "decimal") == 25.4
+    assert si.normalize_scalar("51,7", "decimal") == 51.7
+    assert si.normalize_scalar("1,3", "decimal") == 1.3
+
+
+def test_bar_length_exact_inch_snaps_to_nominal():
+    """152.4 = 6.0 × 25.4 — та же 6-дюймовая шина, что источник зовёт «150/6»."""
+    assert si.normalize_scalar("152.4", "bar_length_mm") == 150
+    assert si.normalize_scalar("254", "bar_length_mm") == 250
+
+
+@pytest.mark.parametrize("raw", ["350", "400", "450", "500", "505"])
+def test_bar_length_nominal_series_untouched(raw):
+    """Номиналы ряда целыми дюймами не делятся и остаются как есть."""
+    assert si.normalize_scalar(raw, "bar_length_mm") == float(raw)
+
+
+def test_bar_length_takes_millimetres_from_pair_field():
+    """«400/16"», «150/6», «250/10”» — берётся первое число (миллиметры)."""
+    assert si.normalize_scalar('400/16"', "bar_length_mm") == 400
+    assert si.normalize_scalar("150/6", "bar_length_mm") == 150
+    assert si.normalize_scalar("250/10”", "bar_length_mm") == 250
+
+
+def test_option_key_strips_quotes_and_spaces():
+    """«Easy Load», « Easy Load » и Easy Load — один ключ, а не три опции."""
+    assert si.option_key("Easy Load") == "easy load"
+    assert si.option_key("«Easy Load»") == "easy load"
+    assert si.option_key("« Easy Load »") == "easy load"
+    assert si.option_key('"Easy Load"') == "easy load"
+
+
+def test_spool_type_maps_to_existing_quick_load():
+    """«Тип катушки» — существующий quick_load, новая ось не заводится."""
+    for raw in ("Easy Load", "«Easy Load»", "« Easy Load »"):
+        values = _huter_extract({"Тип катушки": raw}).values
+        assert [(v.attribute_slug, v.value) for v in values] == [("quick_load", True)]
+    values = _huter_extract({"Тип катушки": "Стандартная"}).values
+    assert [(v.attribute_slug, v.value) for v in values] == [("quick_load", False)]
+
+
+def test_boolean_unknown_value_drops_to_report():
+    res = _huter_extract({"Автоматическая смазка цепи": "Опционально"})
+    assert res.values == []
+    assert res.dropped and "boolean" in res.dropped[0][2]
+
+
+def test_chain_pitch_broken_fraction_is_resolved_not_swallowed():
+    """«1.4» — потерянная косая дроби 1/4, а не шаг 0.404 и не новая опция."""
+    entry = _huter_map()["sources"]["huter"]["fields"]["Шаг цепи, дюйм"]
+    assert entry["values"]["1.4"] == "pitch-1-4"
+    assert entry["values"]["0.25"] == "pitch-1-4"
+    assert entry["values_confidence"]["1.4"] == "low"
+    values = _huter_extract({"Шаг цепи, дюйм": "1.4"}).values
+    assert [(v.attribute_slug, v.value, v.confidence) for v in values] == [
+        ("chain_pitch", "pitch-1-4", si.MAP_CONFIDENCE["low"])
+    ]
+
+
+def test_combined_field_feeds_two_axes():
+    """«Толщина звена и шаг цепи, мм/дюймы» несёт две оси в одном поле."""
+    got = {
+        (v.attribute_slug, v.value)
+        for v in _huter_extract({"Толщина звена и шаг цепи, мм/дюймы": "1,3 / 3/8"}).values
+    }
+    assert got == {("chain_gauge", Decimal("1.3")), ("chain_pitch", "pitch-3-8")}
+    got = {
+        (v.attribute_slug, v.value)
+        for v in _huter_extract({"Толщина звена и шаг цепи, мм/дюймы": "1.5/0.325"}).values
+    }
+    assert got == {("chain_gauge", Decimal("1.5")), ("chain_pitch", "pitch-0-325")}
+
+
+def test_huter_map_declares_family_scope_and_skips_foreign_tracks():
+    """Карта покрывает семейство типов, не трогает tool_type, мощность и вес."""
+    amap = _huter_map()
+    assert amap["scope_tool_types"] == [
+        "bp-benzopily",
+        "bp-cepi",
+        "bp-shiny",
+        "bp-trimmery",
+        "pily",
+    ]
+    managed = {
+        e["attribute"]
+        for _, e in si.iter_field_entries(amap["sources"]["huter"])
+        if "attribute" in e
+    }
+    assert "tool_type" not in managed
+    # мощность и вес — трек DRF-1440, карта их не мапит
+    assert managed.isdisjoint({"power", "weight", "weight_kg"})
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "Антивибрационная система",
+        "Тормоз цепи",
+        "Уровень звукового давления, дБ",
+        "Ширина скоса диском, мм",
+        "Ширина скоса леской, мм",
+    ],
+)
+def test_huter_map_rejects_single_valued_axes(label):
+    """Оси с одним значением в замере отклонены (правило DRF-1428)."""
+    entry = _huter_map()["sources"]["huter"]["fields"][label]
+    assert entry["action"] == "unmapped"
+    assert "DRF-1428" in entry["reason"]
+
+
+# --- сквозной прогон карты benzopily-trimmery (DRF-1439) ----------------------
+
+
+HUTER_ATTRS = {
+    "bar_length": (AttributeType.DECIMAL, "мм"),
+    "chain_pitch": (AttributeType.SELECT, ""),
+    "chain_links": (AttributeType.DECIMAL, "шт."),
+    "chain_gauge": (AttributeType.DECIMAL, "мм"),
+    "engine_displacement": (AttributeType.DECIMAL, "см³"),
+    "chain_auto_oiling": (AttributeType.BOOLEAN, ""),
+    "split_shaft": (AttributeType.BOOLEAN, ""),
+    "quick_load": (AttributeType.BOOLEAN, ""),
+    "battery_capacity": (AttributeType.DECIMAL, "А·ч"),
+    "voltage": (AttributeType.DECIMAL, "В"),
+    "no_load_speed": (AttributeType.DECIMAL, "об/мин"),
+    "motor_type": (AttributeType.SELECT, ""),
+    "tool_type": (AttributeType.SELECT, ""),
+}
+HUTER_TOOL_TYPES = ["bp-benzopily", "bp-cepi", "bp-shiny", "bp-trimmery", "pily"]
+
+
+@pytest.fixture
+def huter_catalog(db):
+    cat = Category.add_root(name="Сад", slug="sad")
+    attrs = {}
+    for slug, (atype, unit) in HUTER_ATTRS.items():
+        attrs[slug] = Attribute.objects.create(
+            slug=slug, name=slug, attribute_type=atype, unit=unit
+        )
+    opts = {}
+    for oslug in HUTER_TOOL_TYPES:
+        opts[("tool_type", oslug)] = AttributeOption.objects.create(
+            attribute=attrs["tool_type"], value=oslug, slug=oslug
+        )
+    for oslug in ("pitch-1-4", "pitch-0-325", "pitch-3-8", "pitch-0-404"):
+        opts[("chain_pitch", oslug)] = AttributeOption.objects.create(
+            attribute=attrs["chain_pitch"], value=oslug, slug=oslug
+        )
+    for oslug in ("brushed", "brushless"):
+        opts[("motor_type", oslug)] = AttributeOption.objects.create(
+            attribute=attrs["motor_type"], value=oslug, slug=oslug
+        )
+    return {"category": cat, "attrs": attrs, "opts": opts}
+
+
+def _huter_product(cat, name, article, tool_type):
+    p = Product.objects.create(
+        category=cat["category"],
+        name=name,
+        slug=f"h{Product.objects.count()}",
+        article=article,
+        status=ProductStatus.IMPORTED,
+        is_active=False,
+        price="1000",
+    )
+    ProductAttributeValue.objects.create(
+        product=p,
+        attribute=cat["attrs"]["tool_type"],
+        value_option=cat["opts"][("tool_type", tool_type)],
+        source=Source.RULES,
+    )
+    return p
+
+
+def _huter_card(name, sku, attributes):
+    return {
+        "source_url": f"https://huter.su/{sku}/",
+        "name": name,
+        "brand": "Huter",
+        "manufacturer_sku": sku,
+        "description": None,
+        "summary_raw": None,
+        "attributes": attributes,
+    }
+
+
+def _run_huter(export_path, tmp_path, *extra):
+    report_path = tmp_path / "huter_report.json"
+    call_command(
+        "catalog_import_scraped",
+        export_path,
+        "--category",
+        "benzopily-trimmery",
+        "--report",
+        str(report_path),
+        *extra,
+        verbosity=0,
+    )
+    return json.loads(report_path.read_text(encoding="utf-8"))
+
+
+@pytest.mark.django_db
+def test_huter_family_scope_covers_five_tool_types(huter_catalog, tmp_path):
+    """Одна карта пишет во все пять типов семейства, а не только в свой slug."""
+    saw = _huter_product(huter_catalog, "Бензопила HUTER BS-45", "70/6/1", "bp-benzopily")
+    chain = _huter_product(
+        huter_catalog, "Цепь 36 звеньев C9 1/4 для ELS-20LI HUTER", "71/4/1", "bp-cepi"
+    )
+    trimmer = _huter_product(
+        huter_catalog, "Триммер бензиновый Huter GGT-2500S", "70/2/13", "bp-trimmery"
+    )
+    export = _export(
+        tmp_path,
+        [
+            _huter_card(
+                "Бензопила Huter BS-45",
+                "70/6/1",
+                {
+                    "Длина шины, мм/дюйм": "450/18",
+                    "Толщина звена и шаг цепи, мм/дюймы": "1.5/0.325",
+                    "Количество звеньев цепи, шт": "72",
+                    "Объём двигателя, см³": "45",
+                    "Автоматическая смазка цепи": "Есть",
+                    "Антивибрационная система": "Есть",
+                    "Вес, кг": "6.3 кг",
+                },
+            ),
+            _huter_card(
+                "Цепь С9 Huter для аккумуляторной пилы ELS-20Li",
+                "71/4/1",
+                {
+                    "Длина шины, мм": "152.4",
+                    "Шаг цепи, дюйм": "0.25",
+                    "Количество звеньев, шт.": "36",
+                },
+            ),
+            _huter_card(
+                "Триммер бензиновый Huter GGT-2500S",
+                "70/2/13",
+                {
+                    "Тип катушки": "«Easy Load»",
+                    "Разъемная штанга": "Есть",
+                    "Объём двигателя, см³": "51,7",
+                    "Напряжение питающей сети, В": "220-230В, ~50 Гц",
+                },
+            ),
+        ],
+        source="huter",
+    )
+    report = _run_huter(export, tmp_path)
+    assert report["scope_tool_types"] == HUTER_TOOL_TYPES
+    assert report["stats"]["matched"] == 3
+
+    def vals(p):
+        return {
+            pav.attribute.slug: (
+                pav.value_option.slug
+                if pav.value_option_id
+                else (pav.value_boolean if pav.value_boolean is not None else pav.value_decimal)
+            )
+            for pav in p.attribute_values.select_related("attribute", "value_option")
+            if pav.attribute.slug != "tool_type"
+        }
+
+    assert vals(saw) == {
+        "bar_length": Decimal("450"),
+        "chain_gauge": Decimal("1.5"),
+        "chain_pitch": "pitch-0-325",
+        "chain_links": Decimal("72"),
+        "engine_displacement": Decimal("45"),
+        "chain_auto_oiling": True,
+    }
+    # 152.4 = 6" ровно -> номинал 150, а не отдельное значение фасета
+    assert vals(chain) == {
+        "bar_length": Decimal("150"),
+        "chain_pitch": "pitch-1-4",
+        "chain_links": Decimal("36"),
+    }
+    # кавычки вокруг «Easy Load» не создали второй опции; сеть 220 В в voltage не ушла
+    assert vals(trimmer) == {
+        "quick_load": True,
+        "split_shaft": True,
+        "engine_displacement": Decimal("51.7"),
+    }
+    assert report["stats"]["skipped_voltage"] == 1
+    # отклонённые оси остались кандидатами, а не значениями
+    assert "Антивибрационная система" in report["unmapped_attributes"]
+    assert "Вес, кг" in report["unmapped_attributes"]
+
+
+@pytest.mark.django_db
+def test_huter_boolean_second_run_is_confirm_not_conflict(huter_catalog, tmp_path):
+    """Boolean-значение сравнивается как boolean: повтор — confirm, не conflict."""
+    _huter_product(huter_catalog, "Бензопила HUTER BS-45", "70/6/1", "bp-benzopily")
+    export = _export(
+        tmp_path,
+        [_huter_card("Бензопила Huter BS-45", "70/6/1", {"Автоматическая смазка цепи": "Нет"})],
+        source="huter",
+    )
+    _run_huter(export, tmp_path)
+    pav = ProductAttributeValue.objects.get(attribute__slug="chain_auto_oiling")
+    assert pav.value_boolean is False
+    report = _run_huter(export, tmp_path)
+    assert report["stats"]["confirm"] == 1
+    assert report["stats"].get("conflict", 0) == 0

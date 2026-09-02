@@ -12,6 +12,14 @@
 - перезапись решает ``source_priority`` из ``data/attribute_rules.json``:
   ``scraper=50`` — выше ``regex``(40), ниже ``import_1c``(60);
 - неоднозначные совпадения и «многие к одному» — в отчёт, не в базу.
+
+Карта категории (``scraped_attr_map.<slug>.json``) умеет три вещи сверх базовых
+map/ignore/unmapped (DRF-1439):
+
+- ``attribute_type: "boolean"`` со словарём ``values`` («Есть»/«Нет» → True/False);
+- одно поле источника → НЕСКОЛЬКО осей: на месте правила стоит список правил,
+  каждое со своим ``extract`` (regex по сырому значению до нормализации);
+- ``scope_tool_types`` — карта покрывает семейство типов, а не один slug.
 """
 
 from __future__ import annotations
@@ -260,7 +268,89 @@ def normalize_scalar(raw: str, rule: str):
         return _to_float(nums[-1]) if re.search(r"\d\s*-\s*\d", raw) else _to_float(nums[0])
     if rule == "voltage_first":
         return _to_float(_NUM_RE.search(raw).group(0))
+    if rule == "bar_length_mm":
+        return _bar_length_mm(raw)
     raise ValueError(f"неизвестный нормализатор: {rule}")
+
+
+# Номинальный метрический ряд длин шин (дюймы -> мм), которым производители
+# подписывают шины и цепи. Источник может отдать в том же поле ТОЧНЫЙ перевод
+# из дюймов (6" = 152.4 мм) — физически это та же шина, но в фасете она встанет
+# отдельным значением рядом с номинальными 150/350/400. Приводим к номиналу.
+#
+# Ряд взят НЕ из общих соображений, а из самого источника: huter.su в поле
+# «Длина шины, мм/дюйм» пишет обе величины разом — 150/6, 250/10, 300/12,
+# 400/16, 450/18, 505/20. Отсюда и таблица; 8" и 14" добавлены по общему ряду
+# (пар в выгрузке нет). Новую строку добавлять только с такой же парой в данных.
+BAR_LENGTH_NOMINAL_MM = {
+    6: 150,
+    8: 200,
+    10: 250,
+    12: 300,
+    14: 350,
+    16: 400,
+    18: 450,
+    20: 505,
+}
+_INCH_MM = 25.4
+
+
+def _bar_length_mm(raw: str) -> float:
+    """Длина шины в мм: первое число строки, точный перевод из дюймов — к номиналу.
+
+    ``«350»`` → 350, ``«400/16"»`` → 400, ``«150/6»`` → 150 (первое число — мм).
+    ``«152.4»`` → 150: 152.4 = 6.0 × 25.4 ровно, это 6-дюймовая шина, которую тот
+    же источник в соседнем поле подписывает как ``150/6``. Номинальные значения
+    ряда (350, 400, 450, 500, 505) целыми дюймами не делятся и не трогаются.
+    """
+    value = _to_float(_NUM_RE.search(raw).group(0))
+    inches = value / _INCH_MM
+    rounded = round(inches)
+    if abs(inches - rounded) < 0.01 and rounded in BAR_LENGTH_NOMINAL_MM:
+        return float(BAR_LENGTH_NOMINAL_MM[rounded])
+    return value
+
+
+# Кавычки вокруг значения select — оформление источника, а не часть значения:
+# «Easy Load», « Easy Load » и Easy Load — одна опция, не три.
+_QUOTES = "«»“”„‟‘’\"'"
+
+
+def option_key(raw: str) -> str:
+    """Ключ для поиска значения в словаре опций карты.
+
+    Снимает кавычки любого начертания и схлопывает внутренние пробелы. Для карт
+    без кавычек в значениях (perforatory, dreli-shurupoverty, shlifmashiny) —
+    no-op: там ключи и так одно-двухсловные без кавычек.
+    """
+    return re.sub(r"\s+", " ", raw.strip().strip(_QUOTES).strip()).lower()
+
+
+def normalize_boolean(raw: str, values: dict) -> bool:
+    """Boolean-значение по словарю карты: «Есть»/«Нет» → True/False.
+
+    Словарь обязателен и живёт в карте: источники пишут «Есть»/«Нет»,
+    «Да»/«Нет», «есть»/«отсутствует» — молчаливой эвристики здесь нет.
+    """
+    key = option_key(raw)
+    if key not in values:
+        raise ValueError(f"значение не в словаре boolean: {raw!r}")
+    return bool(values[key])
+
+
+def iter_field_entries(sdata: dict):
+    """Все правила полей источника: значение поля — правило ИЛИ список правил.
+
+    Одно поле источника может нести две оси сразу («Толщина звена и шаг цепи,
+    мм/дюймы» = ``1,3 / 3/8``). Тогда в карте на месте правила стоит список, и
+    каждый его элемент — обычное правило с собственным ``extract``.
+    """
+    for fname, entry in sdata["fields"].items():
+        if isinstance(entry, list):
+            for sub in entry:
+                yield fname, sub
+        else:
+            yield fname, entry
 
 
 @dataclass
@@ -293,35 +383,50 @@ def extract_card_values(card: dict, source: str, amap: dict) -> CardExtraction:
     res = CardExtraction()
     sdata = amap["sources"][source]
     attrs = card.get("attributes") or {}
+    rules: dict[str, list[dict]] = {}
+    for fname, entry in iter_field_entries(sdata):
+        rules.setdefault(fname, []).append(entry)
     for fname, raw in attrs.items():
-        entry = sdata["fields"].get(fname)
-        if entry is None:
+        entries = rules.get(fname)
+        if entries is None:
             res.dropped.append((fname, raw, "поле отсутствует в карте"))
             continue
-        if entry["action"] == "unmapped":
-            res.unmapped.append(fname)
-            continue
-        if entry["action"] != "map":
-            continue  # ignore
-        conf = MAP_CONFIDENCE[entry["confidence"]]
-        try:
-            if entry["attribute_type"] == "select":
-                key = raw.strip().lower()
-                if key not in entry["values"]:
-                    res.dropped.append((fname, raw, "значение не в словаре опций"))
-                    continue
-                val = entry["values"][key]
-                conf = MAP_CONFIDENCE[
-                    entry.get("values_confidence", {}).get(key, entry["confidence"])
-                ]
-                res.values.append(ScrapedValue(entry["attribute"], fname, raw, val, True, conf))
-            else:
-                num = normalize_scalar(raw, entry["normalize"])
-                res.values.append(
-                    ScrapedValue(entry["attribute"], fname, raw, Decimal(str(num)), False, conf)
-                )
-        except (ValueError, AttributeError) as exc:
-            res.dropped.append((fname, raw, f"ошибка нормализации: {exc}"))
+        for entry in entries:
+            if entry["action"] == "unmapped":
+                res.unmapped.append(fname)
+                continue
+            if entry["action"] != "map":
+                continue  # ignore
+            conf = MAP_CONFIDENCE[entry["confidence"]]
+            try:
+                piece = raw
+                if entry.get("extract"):
+                    m = re.search(entry["extract"], raw)
+                    if m is None:
+                        raise ValueError(f"extract не сработал: {entry['extract']}")
+                    piece = m.group(1)
+                if entry["attribute_type"] == "select":
+                    key = option_key(piece)
+                    if key not in entry["values"]:
+                        res.dropped.append((fname, raw, "значение не в словаре опций"))
+                        continue
+                    val = entry["values"][key]
+                    conf = MAP_CONFIDENCE[
+                        entry.get("values_confidence", {}).get(key, entry["confidence"])
+                    ]
+                    res.values.append(ScrapedValue(entry["attribute"], fname, raw, val, True, conf))
+                elif entry["attribute_type"] == "boolean":
+                    flag = normalize_boolean(piece, entry["values"])
+                    res.values.append(
+                        ScrapedValue(entry["attribute"], fname, raw, flag, False, conf)
+                    )
+                else:
+                    num = normalize_scalar(piece, entry["normalize"])
+                    res.values.append(
+                        ScrapedValue(entry["attribute"], fname, raw, Decimal(str(num)), False, conf)
+                    )
+            except (ValueError, AttributeError) as exc:
+                res.dropped.append((fname, raw, f"ошибка нормализации: {exc}"))
     # fallback (например, power Ресанты из summary_raw)
     for fb in sdata.get("fallbacks", []):
         if any(f in attrs for f in fb["applies_when_missing"]):
@@ -592,6 +697,9 @@ def _same_value(pav: ProductAttributeValue, value: object, is_option: bool) -> b
         return False
     if is_option:
         return cur == value
+    if isinstance(value, bool) or isinstance(cur, bool):
+        # bool сравниваем как bool: Decimal(str(True)) падает, а True == 1 врёт.
+        return isinstance(cur, bool) and isinstance(value, bool) and cur is value
     try:
         return Decimal(str(cur)) == Decimal(str(value))
     except Exception:
@@ -606,6 +714,7 @@ def is_battery_values(values: list[ScrapedValue]) -> bool:
         if (
             v.attribute_slug == VOLTAGE_SLUG
             and not v.is_option
+            and not isinstance(v.value, bool)
             and v.value < BATTERY_VOLTAGE_CEILING
         ):
             return True
@@ -730,6 +839,8 @@ def apply_plan_items(
         pav.value_option = None
         if item.is_option:
             pav.value_option = option
+        elif isinstance(item.new_value, bool):
+            pav.value_boolean = item.new_value
         else:
             pav.value_decimal = item.new_value
         pav.source = Source.SCRAPER
