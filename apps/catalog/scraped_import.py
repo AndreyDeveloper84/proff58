@@ -278,6 +278,18 @@ CONVERTERS: dict[str, tuple[str, str, Decimal]] = {
 }
 CONVERTER_BY_UNITS: dict[tuple[str, str], str] = {}
 
+# Конвертеры, которые считать умеют, но подключать в карту запрещено.
+# Правило остаётся рабочим и покрытым тестами (чтобы решение можно было
+# пересмотреть, не переписывая математику), но гейт не пропустит карту,
+# которая его объявит.
+DISABLED_CONVERTERS: dict[str, str] = {
+    "decimal_hp_to_w": (
+        "решение владельца 2026-09-02: лошадиные силы в ватты не пересчитываются, "
+        "у них своя ось power_hp (единица «л.с.») — потребляемая мощность сетевого "
+        "инструмента и мощность на валу бензинового несравнимы в одном фильтре"
+    ),
+}
+
 # Оси, закрытые для автоматической записи (ДРФ-1440, решение владельца, вариант A).
 # slug -> причина. Карта парсера, нацеленная на такую ось, не проходит гейт:
 # сузить область оси и при этом оставить её открытой для автоматов — значит
@@ -392,7 +404,8 @@ def validate_attr_map_units(amap: dict, attr_by_slug: dict | None = None) -> Non
     без ``source_unit``/конвертера 0.07 кг легло бы в фасет как 0.07 г.
 
     Отдельно (и раньше всех единиц) проверяется, что карта не целится в ось из
-    :data:`RESTRICTED_ATTRIBUTES` — оси, закрытые для автоматической записи.
+    :data:`RESTRICTED_ATTRIBUTES` — оси, закрытые для автоматической записи, —
+    и не подключает нормализатор из :data:`DISABLED_CONVERTERS`.
     """
     problems: list[str] = []
     for source, fname, entry in _all_map_entries(amap):
@@ -411,6 +424,11 @@ def validate_attr_map_units(amap: dict, attr_by_slug: dict | None = None) -> Non
 
         if rule not in PLAIN_NORMALIZERS and rule not in CONVERTERS:
             problems.append(f"{where}: неизвестный нормализатор {rule!r}")
+            continue
+
+        disabled = DISABLED_CONVERTERS.get(rule)
+        if disabled:
+            problems.append(f"{where}: нормализатор {rule!r} запрещён к подключению — {disabled}")
             continue
 
         if source_unit is not None and _canon_unit(source_unit) != _canon_unit(unit):

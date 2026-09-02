@@ -33,7 +33,7 @@ from apps.catalog.models import (
     ProductStatus,
     Source,
 )
-from apps.catalog.rule_discovery import corpus_heterogeneity, scan_names
+from apps.catalog.rule_discovery import PATTERNS, PATTERNS_BY_KEY, corpus_heterogeneity, scan_names
 
 pytestmark = pytest.mark.django_db
 
@@ -1345,3 +1345,23 @@ def test_md_report_writes_nothing_to_db(rules_dir, tool_type_attr, live_category
     before = snapshot()
     run_md(rules_dir, in_stock_only=True, active_only=True)
     assert snapshot() == before
+
+
+def test_kg_pattern_targets_the_kilogram_axis_not_the_gram_one():
+    """ДРФ-1440: шаблон «N кг» обязан вести в weight_kg (кг), а не в weight (г).
+
+    Прежняя версия предлагала писать килограммы в ось weight, у которой единица
+    «г» и область молотков, — та же ошибка в тысячу раз, что и у парсера, только
+    другим каналом: не из карты источника, а из regex по названиям.
+    """
+    kg = PATTERNS_BY_KEY["kg"]
+    assert kg.attribute_slug == "weight_kg"
+    assert kg.unit == "кг"
+    assert all(p.attribute_slug != "weight" for p in PATTERNS)
+
+
+def test_kg_pattern_still_matches_kilogram_names():
+    """Смена оси не сломала само распознавание."""
+    hits = scan_names(["Молоток слесарный 0,5 кг", "Гвозди 5 кг", "Сверло 16 мм"])["kg"]
+    assert hits.guarded_hits == 2
+    assert hits.pattern.attribute_slug == "weight_kg"
