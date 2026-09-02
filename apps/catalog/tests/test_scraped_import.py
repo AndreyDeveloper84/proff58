@@ -8,9 +8,11 @@
 
 import json
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 from django.core.management import call_command
+from django.core.management.base import CommandError
 
 from apps.catalog import scraped_import as si
 from apps.catalog.models import (
@@ -587,3 +589,396 @@ def test_validate_model_prefixes_rejects_regex_metacharacters():
     si.validate_model_prefixes(["ЗЛШМ", "ПШМ", "DCG405"])
     # унаследованный generic разрешён
     si.validate_model_prefixes(si.LEGACY_MODEL_PREFIXES)
+
+
+# --- единицы измерения и нормализаторы-конвертеры (ДРФ-1440) ------------------
+#
+# Три подписи мощности (Вт, кВт, л.с.) ведут в одну ось power с единицей «Вт»,
+# а подпись «Вес, кг» — в ось weight с единицей «г». Без пересчёта значение
+# уходит в ФИЛЬТРУЕМЫЙ фасет с ошибкой в тысячу раз. Ниже — по тесту на каждый
+# нормализатор и на каждый пункт fail-closed контракта карты.
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("2,3", "2300"),  # десятичная запятая
+        ("2,3 кВт", "2300"),  # единица внутри значения
+        ("1,2", "1200"),
+        ("2", "2000"),
+        ("2.8", "2800"),  # точка как разделитель
+        ("0,75 кВт", "750"),
+    ],
+)
+def test_kw_to_w_converts_and_keeps_comma_decimals(raw, expected):
+    """кВт -> Вт: ×1000, запятая как разделитель, единица внутри значения."""
+    assert si.normalize_scalar(raw, "decimal_kw_to_w") == Decimal(expected)
+
+
+def test_kw_to_w_is_exact_decimal_not_float():
+    """Пересчёт идёт в Decimal: 2,3 кВт — ровно 2300, без float-хвоста."""
+    value = si.normalize_scalar("2,3 кВт", "decimal_kw_to_w")
+    assert isinstance(value, Decimal)
+    assert str(value) == "2300"
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("0.07 кг", "70"),  # ключевой случай ДРФ-1440
+        ("0,07 кг", "70"),
+        ("4.926 кг", "4926"),
+        ("2,7", "2700"),
+        ("0.5кг", "500"),  # без пробела перед единицей
+    ],
+)
+def test_kg_to_g_converts_value_with_unit_inside(raw, expected):
+    """«0.07 кг» в ось с единицей «г» — это 70 г, а не 0.07."""
+    assert si.normalize_scalar(raw, "decimal_kg_to_g") == Decimal(expected)
+
+
+def test_kg_to_g_070_is_exactly_70_without_float_tail():
+    """0.07 × 1000 во float даёт 70.00000000000001 — в Decimal ровно 70."""
+    value = si.normalize_scalar("0.07 кг", "decimal_kg_to_g")
+    assert isinstance(value, Decimal)
+    assert str(value) == "70"
+    assert value == Decimal("70")
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("500 г", "0.5"),
+        ("2700", "2.7"),
+        ("100", "0.1"),
+    ],
+)
+def test_g_to_kg_converts(raw, expected):
+    assert si.normalize_scalar(raw, "decimal_g_to_kg") == Decimal(expected)
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("4,5", "3309.75"),  # метрическая л.с. = 735,5 Вт
+        ("1,6", "1176.8"),
+        ("3,1 л.с.", "2280.05"),
+    ],
+)
+def test_hp_to_w_uses_metric_horsepower(raw, expected):
+    """л.с. -> Вт по метрической л.с. (735,5 Вт), не механической (745,7)."""
+    assert si.normalize_scalar(raw, "decimal_hp_to_w") == Decimal(expected)
+
+
+def test_converter_without_number_raises():
+    """Строка без числа — ValueError, значение уйдёт в dropped, а не в базу."""
+    with pytest.raises(ValueError, match="нет числа"):
+        si.normalize_scalar("н/д", "decimal_kw_to_w")
+
+
+def test_unknown_normalizer_still_raises():
+    with pytest.raises(ValueError, match="неизвестный нормализатор"):
+        si.normalize_scalar("2,3", "decimal_kw_to_hp")
+
+
+def test_plain_decimal_keeps_comma_and_ignores_unit():
+    """Базовый decimal не пересчитывает: «0.07 кг» -> 0.07, «2,8» -> 2.8."""
+    assert si.normalize_scalar("0.07 кг", "decimal") == 0.07
+    assert si.normalize_scalar("2,8", "decimal") == 2.8
+
+
+@pytest.mark.parametrize(
+    "left,right,same",
+    [
+        ("Нм", "Н·м", True),
+        ("А*ч", "А·ч", True),
+        ("Вт", "вт", True),
+        ("кВт", "Вт", False),
+        ("кг", "г", False),
+    ],
+)
+def test_canon_unit_collapses_typography_only(left, right, same):
+    """Типографика схлопывается, приставка величины — нет."""
+    assert (si._canon_unit(left) == si._canon_unit(right)) is same
+
+
+# --- fail-closed сверка карты (validate_attr_map_units) ------------------------
+
+
+def _unit_map(**entry_overrides) -> dict:
+    """Минимальная карта из одного числового поля."""
+    entry = {
+        "action": "map",
+        "attribute": "power",
+        "attribute_type": "decimal",
+        "unit": "Вт",
+        "normalize": "int",
+        "confidence": "high",
+    }
+    entry.update(entry_overrides)
+    return {"sources": {"huter": {"fields": {"Мощность": entry}}}}
+
+
+def _attrs(**slug_to_unit):
+    class _A:
+        def __init__(self, unit):
+            self.unit = unit
+
+    return {slug: _A(unit) for slug, unit in slug_to_unit.items()}
+
+
+def test_map_without_source_unit_passes():
+    si.validate_attr_map_units(_unit_map(), _attrs(power="Вт"))
+
+
+def test_kg_signature_into_gram_axis_is_rejected():
+    """«Вес, кг» -> ось weight с единицей «г»: карта не проходит гейт.
+
+    Это ровно тот случай, ради которого заведён ДРФ-1440: без гейта 0.07 кг
+    легло бы в фильтруемый фасет как 0.07 г.
+    """
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {
+                    "Вес, кг": {
+                        "action": "map",
+                        "attribute": "weight",
+                        "attribute_type": "decimal",
+                        "unit": "кг",
+                        "normalize": "decimal",
+                        "confidence": "high",
+                    }
+                }
+            }
+        }
+    }
+    with pytest.raises(ValueError, match="в БД имеет единицу 'г'"):
+        si.validate_attr_map_units(amap, _attrs(weight="г"))
+
+
+def test_kg_signature_with_declared_converter_passes():
+    """Та же подпись с объявленным пересчётом кг -> г проходит."""
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {
+                    "Вес, кг": {
+                        "action": "map",
+                        "attribute": "weight",
+                        "attribute_type": "decimal",
+                        "source_unit": "кг",
+                        "unit": "г",
+                        "normalize": "decimal_kg_to_g",
+                        "confidence": "high",
+                    }
+                }
+            }
+        }
+    }
+    si.validate_attr_map_units(amap, _attrs(weight="г"))
+
+
+def test_kw_signature_without_converter_is_rejected():
+    """source_unit=кВт при оси «Вт» обязывает взять decimal_kw_to_w."""
+    amap = _unit_map(source_unit="кВт", normalize="int")
+    with pytest.raises(ValueError, match="требует normalize='decimal_kw_to_w'"):
+        si.validate_attr_map_units(amap, _attrs(power="Вт"))
+
+
+def test_kw_signature_with_converter_passes():
+    si.validate_attr_map_units(
+        _unit_map(source_unit="кВт", normalize="decimal_kw_to_w"), _attrs(power="Вт")
+    )
+
+
+def test_converter_without_source_unit_is_rejected():
+    """Молчаливый пересчёт запрещён: конвертер обязан объявить единицу источника."""
+    amap = _unit_map(normalize="decimal_kw_to_w")
+    with pytest.raises(ValueError, match="молчаливый пересчёт запрещён"):
+        si.validate_attr_map_units(amap, _attrs(power="Вт"))
+
+
+def test_unsupported_unit_pair_is_rejected():
+    """Пары без конвертера («Дж» -> «Вт») сопоставлять нельзя вовсе."""
+    amap = _unit_map(source_unit="Дж", normalize="decimal")
+    with pytest.raises(ValueError, match="нет конвертера"):
+        si.validate_attr_map_units(amap, _attrs(power="Вт"))
+
+
+def test_unknown_normalizer_in_map_is_rejected():
+    amap = _unit_map(normalize="decimal_kw_to_hp")
+    with pytest.raises(ValueError, match="неизвестный нормализатор"):
+        si.validate_attr_map_units(amap, _attrs(power="Вт"))
+
+
+def test_unit_typography_mismatch_is_tolerated():
+    """«Нм» в карте и «Н·м» в БД — одна единица, гейт не срабатывает."""
+    amap = _unit_map(attribute="torque", unit="Нм", normalize="decimal")
+    si.validate_attr_map_units(amap, _attrs(torque="Н·м"))
+
+
+def test_fallback_entries_are_checked_too():
+    """Fallback (power из summary_raw) проходит ту же сверку единиц."""
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {},
+                "fallbacks": [
+                    {
+                        "attribute": "power",
+                        "attribute_type": "decimal",
+                        "unit": "кВт",
+                        "applies_when_missing": ["Мощность"],
+                        "source_field": "summary_raw",
+                        "normalize": "summary_power_w",
+                        "confidence": "medium",
+                    }
+                ],
+            }
+        }
+    }
+    with pytest.raises(ValueError, match="fallback:summary_raw"):
+        si.validate_attr_map_units(amap, _attrs(power="Вт"))
+
+
+def test_select_fields_are_not_unit_checked():
+    """Словарные поля единиц не имеют — гейт их не трогает."""
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {
+                    "Патрон": {
+                        "action": "map",
+                        "attribute": "chuck",
+                        "attribute_type": "select",
+                        "values": {"sds plus": "sds-plus"},
+                        "confidence": "high",
+                    }
+                }
+            }
+        }
+    }
+    si.validate_attr_map_units(amap, _attrs(chuck=""))
+
+
+def test_shipped_maps_pass_the_unit_gate():
+    """Три действующие карты проходят гейт без DB-части (самосогласованность)."""
+    base = Path(si.__file__).resolve().parents[2] / "data" / "catalog_processing_rules"
+    paths = sorted(base.glob("scraped_attr_map.*.json"))
+    assert paths, "карты парсера не найдены"
+    for path in paths:
+        si.validate_attr_map_units(si.load_attr_map(path))
+
+
+# --- извлечение значений с пересчётом (extract_card_values) --------------------
+
+
+def test_extract_converts_kw_signature_to_watts():
+    amap = _unit_map(source_unit="кВт", normalize="decimal_kw_to_w")
+    card = {"attributes": {"Мощность": "2,3"}}
+    res = si.extract_card_values(card, "huter", amap)
+    assert [(v.attribute_slug, v.value) for v in res.values] == [("power", Decimal("2300"))]
+
+
+def test_extract_converts_kg_signature_to_grams():
+    """«0.07 кг» из выгрузки -> 70 в оси с единицей «г»."""
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {
+                    "Вес, кг": {
+                        "action": "map",
+                        "attribute": "weight",
+                        "attribute_type": "decimal",
+                        "source_unit": "кг",
+                        "unit": "г",
+                        "normalize": "decimal_kg_to_g",
+                        "confidence": "high",
+                    }
+                }
+            }
+        }
+    }
+    card = {"attributes": {"Вес, кг": "0.07 кг"}}
+    res = si.extract_card_values(card, "huter", amap)
+    assert [(v.attribute_slug, v.value) for v in res.values] == [("weight", Decimal("70"))]
+    assert res.dropped == []
+
+
+def test_extract_drops_unparsable_value_instead_of_writing():
+    amap = _unit_map(source_unit="кВт", normalize="decimal_kw_to_w")
+    card = {"attributes": {"Мощность": "н/д"}}
+    res = si.extract_card_values(card, "huter", amap)
+    assert res.values == []
+    assert res.dropped and "ошибка нормализации" in res.dropped[0][2]
+
+
+# --- гейт стоит в команде: карта с чужой единицей не пишет ничего --------------
+
+
+def _broken_rules_dir(tmp_path, unit: str, normalize: str = "int", **extra) -> Path:
+    """Копия перфораторной карты, где мощность объявлена с чужой единицей."""
+    base = tmp_path / "rules"
+    (base / "catalog_processing_rules").mkdir(parents=True)
+    (base / "attribute_rules.json").write_text(
+        json.dumps({"source_priority": {"manual": 100, "rules": 90, "scraper": 50, "regex": 40}}),
+        encoding="utf-8",
+    )
+    entry = {
+        "action": "map",
+        "attribute": "power",
+        "attribute_type": "decimal",
+        "unit": unit,
+        "normalize": normalize,
+        "confidence": "high",
+        "on_ambiguous": "drop_to_report",
+        **extra,
+    }
+    amap = {
+        "schema_version": 1,
+        "category": "perforatory",
+        "policy": {},
+        "normalizers": {},
+        "sources": {"zubr": {"fields": {"Мощность, Вт": entry}}},
+    }
+    (base / "catalog_processing_rules" / "scraped_attr_map.perforatory.json").write_text(
+        json.dumps(amap, ensure_ascii=False), encoding="utf-8"
+    )
+    return base
+
+
+def test_command_refuses_map_with_foreign_unit(catalog, tmp_path):
+    """Карта объявляет кВт там, где ось «Вт» — команда падает ДО записи."""
+    product = _product(catalog, "Перф.ЗУБР ЗП-26-800 SDS+", article="ЗП-26-800")
+    export = _export(tmp_path, [_zubr_card("Перфоратор ЗП-26-800", "ЗП-26-800", power="2,3")])
+    rules = _broken_rules_dir(tmp_path, unit="кВт")
+
+    with pytest.raises(CommandError, match="в БД имеет единицу 'Вт'"):
+        _run(export, "--rules-path", str(rules))
+
+    assert not ProductAttributeValue.objects.filter(
+        product=product, attribute__slug="power"
+    ).exists()
+    assert not ImportRun.objects.exists()
+
+
+def test_command_refuses_silent_conversion(catalog, tmp_path):
+    """Конвертер без source_unit — тоже стоп, даже в --dry-run."""
+    rules = _broken_rules_dir(tmp_path, unit="Вт", normalize="decimal_kw_to_w")
+    export = _export(tmp_path, [_zubr_card("Перфоратор ЗП-26-800", "ЗП-26-800")])
+    with pytest.raises(CommandError, match="молчаливый пересчёт запрещён"):
+        _run(export, "--dry-run", "--rules-path", str(rules))
+
+
+def test_command_accepts_declared_conversion_and_writes_watts(catalog, tmp_path):
+    """С объявленным source_unit=кВт мощность 2,3 записывается как 2300 Вт."""
+    product = _product(catalog, "Перф.ЗУБР ЗП-26-800 SDS+", article="ЗП-26-800")
+    export = _export(tmp_path, [_zubr_card("Перфоратор ЗП-26-800", "ЗП-26-800", power="2,3")])
+    rules = _broken_rules_dir(tmp_path, unit="Вт", normalize="decimal_kw_to_w", source_unit="кВт")
+
+    _run(export, "--rules-path", str(rules))
+
+    pav = ProductAttributeValue.objects.get(product=product, attribute__slug="power")
+    assert pav.value_decimal == Decimal("2300")
+    assert pav.source == Source.SCRAPER
