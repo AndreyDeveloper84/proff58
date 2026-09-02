@@ -99,6 +99,12 @@ class Command(BaseCommand):
         missing = managed_slugs - set(attr_by_slug)
         if missing:
             raise CommandError(f"Атрибуты карты отсутствуют в БД: {sorted(missing)}")
+        # Fail-closed сверка единиц карты с осями в БД (ДРФ-1440): «Мощность, кВт»
+        # в ось «Вт» или «Вес, кг» в ось «г» без объявленного пересчёта — стоп.
+        try:
+            si.validate_attr_map_units(amap, attr_by_slug)
+        except ValueError as exc:
+            raise CommandError(str(exc)) from exc
         option_index: dict[str, dict[str, AttributeOption]] = {}
         for opt in AttributeOption.objects.filter(attribute__slug__in=managed_slugs).select_related(
             "attribute"

@@ -11,7 +11,15 @@
   или напряжение < 60 В) — сетевые значения 220/230 не попадают в фасет;
 - перезапись решает ``source_priority`` из ``data/attribute_rules.json``:
   ``scraper=50`` — выше ``regex``(40), ниже ``import_1c``(60);
-- неоднозначные совпадения и «многие к одному» — в отчёт, не в базу.
+- неоднозначные совпадения и «многие к одному» — в отчёт, не в базу;
+- единицы измерения сверяются fail-closed (ДРФ-1440): подпись с чужой единицей
+  («Мощность, кВт» в ось «Вт», «Вес, кг» в ось «г») обязана нести ``source_unit``
+  и нормализатор-конвертер, иначе карта не проходит ``validate_attr_map_units``
+  и импорт не стартует — молчаливая ошибка в тысячу раз в фасете невозможна;
+- лошадиные силы в ватты НЕ пересчитываются: у них своя ось ``power_hp``
+  (решение владельца, см. комментарий к ``CONVERTERS``);
+- оси из ``RESTRICTED_ATTRIBUTES`` (сейчас — ``weight``, «г», область молотков)
+  закрыты для автоматической записи: карта, нацеленная в такую ось, не проходит.
 
 Карта категории (``scraped_attr_map.<slug>.json``) умеет три вещи сверх базовых
 map/ignore/unmapped (DRF-1439):
@@ -252,8 +260,107 @@ MAP_CONFIDENCE = {"high": 90, "medium": 70, "low": 40}
 BATTERY_VOLTAGE_CEILING = 60  # напряжение ниже — признак аккумуляторного инструмента
 
 
+# Нормализаторы-конвертеры (ДРФ-1440): имя правила -> (единица источника,
+# единица оси, множитель). Пересчёт живёт в карте атрибутов, а не в голове
+# оператора: подпись «Мощность, кВт» обязана нести normalize=decimal_kw_to_w,
+# иначе карта не пройдёт validate_attr_map_units и импорт не стартует.
+#
+# ``decimal_hp_to_w`` — НАМЕРЕННО НЕ ИСПОЛЬЗУЕТСЯ НИ В ОДНОЙ КАРТЕ.
+# Решение владельца от 2026-09-02: лошадиные силы живут отдельной осью
+# ``power_hp`` (единица «л.с.»), в ватты не пересчитываются. Причины:
+#   1. это разные величины — у сетевого инструмента паспортные ватты это
+#      ПОТРЕБЛЯЕМАЯ мощность, у бензинового л.с. — мощность НА ВАЛУ; между ними
+#      КПД, а не константа, поэтому в одном фильтре они несравнимы;
+#   2. ось ``power`` фильтруемая и населена сетевыми значениями 90…2850 Вт;
+#      4,5 л.с. -> 3310 Вт переопределили бы верх шкалы фильтра;
+#   3. множитель неоднозначен: метрическая л.с. 735,5 Вт против механической
+#      745,7 Вт — здесь взята метрическая, её используют российские
+#      производители бензоинструмента.
+# Правило оставлено рабочим и покрыто тестами на случай пересмотра решения;
+# подключать его в карту без нового решения владельца нельзя.
+CONVERTERS: dict[str, tuple[str, str, Decimal]] = {
+    "decimal_kw_to_w": ("кВт", "Вт", Decimal("1000")),
+    "decimal_hp_to_w": ("л.с.", "Вт", Decimal("735.5")),
+    "decimal_kg_to_g": ("кг", "г", Decimal("1000")),
+    "decimal_g_to_kg": ("г", "кг", Decimal("0.001")),
+}
+CONVERTER_BY_UNITS: dict[tuple[str, str], str] = {}
+
+# Конвертеры, которые считать умеют, но подключать в карту запрещено.
+# Правило остаётся рабочим и покрытым тестами (чтобы решение можно было
+# пересмотреть, не переписывая математику), но гейт не пропустит карту,
+# которая его объявит.
+DISABLED_CONVERTERS: dict[str, str] = {
+    "decimal_hp_to_w": (
+        "решение владельца 2026-09-02: лошадиные силы в ватты не пересчитываются, "
+        "у них своя ось power_hp (единица «л.с.») — потребляемая мощность сетевого "
+        "инструмента и мощность на валу бензинового несравнимы в одном фильтре"
+    ),
+}
+
+# Оси, закрытые для автоматической записи (ДРФ-1440, решение владельца, вариант A).
+# slug -> причина. Карта парсера, нацеленная на такую ось, не проходит гейт:
+# сузить область оси и при этом оставить её открытой для автоматов — значит
+# не сузить ничего.
+RESTRICTED_ATTRIBUTES: dict[str, str] = {
+    "weight": (
+        "ось «Вес» (единица «г») сужена до молотков (правило объявлено только в "
+        "блоке tool_type=molotki) и закрыта для автоматической записи; "
+        "каноническая ось веса каталога — weight_kg (кг)"
+    ),
+}
+
+# Нормализаторы без пересчёта единиц (значение остаётся в единице источника).
+PLAIN_NORMALIZERS = frozenset(
+    {
+        "int",
+        "decimal",
+        "range_upper_decimal",
+        "voltage_first",
+        "summary_power_w",
+        # ДРФ-1439: приводит точный дюймовый перевод к номинальному ряду
+        # источника (152.4 -> 150). Единицу НЕ меняет, поэтому не конвертер.
+        "bar_length_mm",
+    }
+)
+
+_UNIT_NOISE_RE = re.compile(r"[\s.·*×]")
+
+
+def _canon_unit(unit: str | None) -> str:
+    """Каноническая форма единицы для сверки: «А*ч» == «А·ч», «Нм» == «Н·м».
+
+    Схлопывается только типографика (пробелы, точки, знаки умножения) —
+    «кВт» и «Вт», «кг» и «г» остаются разными единицами.
+    """
+    return _UNIT_NOISE_RE.sub("", (unit or "")).lower()
+
+
+for _rule, (_src_unit, _dst_unit, _factor) in CONVERTERS.items():
+    CONVERTER_BY_UNITS[(_canon_unit(_src_unit), _canon_unit(_dst_unit))] = _rule
+
+
 def _to_float(s: str) -> float:
     return float(s.replace(",", "."))
+
+
+def _first_number(raw: str) -> Decimal:
+    """Первое число строки как Decimal; десятичная запятая -> точка.
+
+    Единица внутри значения снимается самим regex: «0.07 кг» -> Decimal("0.07"),
+    «2,3 кВт» -> Decimal("2.3"). Decimal, а не float, — чтобы пересчёт
+    ×1000 не давал 70.00000000000001.
+    """
+    m = _NUM_RE.search(raw)
+    if m is None:
+        raise ValueError(f"нет числа: {raw!r}")
+    return Decimal(m.group(0).replace(",", "."))
+
+
+def _trim(value: Decimal) -> Decimal:
+    """Убрать хвостовые нули без экспоненты: 70.000 -> 70, 3310.750 -> 3310.75."""
+    value = value.normalize()
+    return value.quantize(Decimal(1)) if value == value.to_integral_value() else value
 
 
 def normalize_scalar(raw: str, rule: str):
@@ -270,6 +377,9 @@ def normalize_scalar(raw: str, rule: str):
         return _to_float(_NUM_RE.search(raw).group(0))
     if rule == "bar_length_mm":
         return _bar_length_mm(raw)
+    if rule in CONVERTERS:
+        _, _, factor = CONVERTERS[rule]
+        return _trim(_first_number(raw) * factor)
     raise ValueError(f"неизвестный нормализатор: {rule}")
 
 
@@ -351,6 +461,112 @@ def iter_field_entries(sdata: dict):
                 yield fname, sub
         else:
             yield fname, entry
+
+
+def _all_map_entries(amap: dict):
+    """(источник, подпись поля, запись) по всем записям карты, пишущим значение."""
+    for source, sdata in amap.get("sources", {}).items():
+        # ДРФ-1439 разрешила одному полю источника быть СПИСКОМ правил (одно
+        # поле → несколько осей), поэтому обходим через iter_field_entries, а не
+        # по .items() напрямую: иначе гейт единиц падает на списке с
+        # AttributeError вместо того, чтобы его проверить.
+        for fname, entry in iter_field_entries(sdata):
+            if entry.get("action") != "map":
+                continue
+            yield source, fname, entry
+        for entry in sdata.get("fallbacks", []):
+            yield source, f"fallback:{entry.get('source_field')}", entry
+        for entry in sdata.get("derived", []):
+            yield source, f"derived:{entry.get('rule')}", entry
+
+
+def _numeric_map_entries(amap: dict):
+    """(источник, подпись поля, запись) по всем числовым полям карты с action=map."""
+    for source, fname, entry in _all_map_entries(amap):
+        # select и boolean — не числовые оси, единиц у них нет. boolean принесла
+        # ДРФ-1439; без этой строки гейт требовал бы конвертер единиц от
+        # «Есть/Нет».
+        if entry.get("attribute_type") in ("select", "boolean"):
+            continue
+        if fname.startswith("derived:"):
+            continue
+        yield source, fname, entry
+
+
+def validate_attr_map_units(amap: dict, attr_by_slug: dict | None = None) -> None:
+    """Fail-closed сверка единиц карты (ДРФ-1440). Ошибки — ValueError списком.
+
+    Для каждого числового поля с ``action=map`` (и для fallback-ов):
+
+    1. ``normalize`` обязан быть известным правилом;
+    2. если задан ``source_unit`` и он отличается от ``unit`` оси — ``normalize``
+       обязан быть конвертером ровно этой пары единиц;
+    3. если ``source_unit`` не задан или совпадает с ``unit`` — ``normalize``
+       конвертером быть НЕ должен (молчаливый пересчёт запрещён);
+    4. при переданном ``attr_by_slug`` — ``unit`` карты обязан совпасть с
+       ``Attribute.unit`` в БД (сверка по канонической форме: «Нм» == «Н·м»).
+
+    Именно пункт 4 ловит подпись «Вес, кг» -> ось ``weight`` с единицей «г»:
+    без ``source_unit``/конвертера 0.07 кг легло бы в фасет как 0.07 г.
+
+    Отдельно (и раньше всех единиц) проверяется, что карта не целится в ось из
+    :data:`RESTRICTED_ATTRIBUTES` — оси, закрытые для автоматической записи, —
+    и не подключает нормализатор из :data:`DISABLED_CONVERTERS`.
+    """
+    problems: list[str] = []
+    for source, fname, entry in _all_map_entries(amap):
+        slug = entry.get("attribute")
+        reason = RESTRICTED_ATTRIBUTES.get(slug)
+        if reason:
+            problems.append(
+                f"{source}/{fname}: ось {slug!r} закрыта для автоматической записи — {reason}"
+            )
+    for source, fname, entry in _numeric_map_entries(amap):
+        where = f"{source}/{fname}"
+        slug = entry.get("attribute")
+        rule = entry.get("normalize")
+        unit = entry.get("unit")
+        source_unit = entry.get("source_unit")
+
+        if rule not in PLAIN_NORMALIZERS and rule not in CONVERTERS:
+            problems.append(f"{where}: неизвестный нормализатор {rule!r}")
+            continue
+
+        disabled = DISABLED_CONVERTERS.get(rule)
+        if disabled:
+            problems.append(f"{where}: нормализатор {rule!r} запрещён к подключению — {disabled}")
+            continue
+
+        if source_unit is not None and _canon_unit(source_unit) != _canon_unit(unit):
+            expected = CONVERTER_BY_UNITS.get((_canon_unit(source_unit), _canon_unit(unit)))
+            if expected is None:
+                problems.append(
+                    f"{where}: нет конвертера {source_unit!r} -> {unit!r}; "
+                    f"пересчёт не объявлен — поле нельзя сопоставлять"
+                )
+            elif rule != expected:
+                problems.append(
+                    f"{where}: единица источника {source_unit!r} при оси {unit!r} "
+                    f"требует normalize={expected!r}, в карте {rule!r}"
+                )
+        elif rule in CONVERTERS:
+            src_unit, dst_unit, _ = CONVERTERS[rule]
+            problems.append(
+                f"{where}: normalize={rule!r} пересчитывает {src_unit} -> {dst_unit}, "
+                f"но source_unit не объявлен (или равен unit) — молчаливый пересчёт запрещён"
+            )
+
+        if attr_by_slug is not None:
+            attr = attr_by_slug.get(slug)
+            if attr is None:
+                problems.append(f"{where}: атрибут {slug!r} отсутствует в БД")
+            elif _canon_unit(attr.unit) != _canon_unit(unit):
+                problems.append(
+                    f"{where}: карта объявляет unit={unit!r}, "
+                    f"а ось {slug!r} в БД имеет единицу {attr.unit!r}"
+                )
+    if problems:
+        raise ValueError("единицы карты не сходятся:\n  - " + "\n  - ".join(problems))
 
 
 @dataclass
