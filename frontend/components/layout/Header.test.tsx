@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Header по утверждённому макету: каталог, поиск, корзина и сравнение работают,
@@ -25,10 +26,13 @@ import { SITE } from "@/lib/site";
 
 // Состояние входа приходит из серверного расчёта (app/layout.tsx) — в тестах
 // подставляем его напрямую, как это делает провайдер.
-function renderHeader(state: AuthState = "anonymous") {
+function renderHeader(
+  state: AuthState = "anonymous",
+  props: Partial<ComponentProps<typeof Header>> = {},
+) {
   return render(
     <AuthStateProvider state={state}>
-      <Header />
+      <Header {...props} />
     </AuthStateProvider>,
   );
 }
@@ -216,5 +220,40 @@ describe("Header (#586)", () => {
       "href",
       "/wishlist",
     );
+  });
+});
+
+describe("Инфо-пункты служебной полосы (DRF-1442)", () => {
+  it("ведут на страницу, когда она опубликована", () => {
+    renderHeader("anonymous", { infoPages: [{ slug: "warranty", title: "Гарантийный ремонт" }] });
+
+    expect(screen.getByRole("link", { name: "Гарантии" })).toHaveAttribute(
+      "href",
+      "/info/warranty",
+    );
+  });
+
+  it("остаются подсказкой, пока страница не опубликована", () => {
+    // Страницы ведутся в админке и заводятся черновиками: ссылка на черновик
+    // дала бы 404 из шапки — то есть на каждой странице сайта.
+    renderHeader("anonymous", { infoPages: [] });
+
+    expect(screen.queryByRole("link", { name: "Гарантии" })).toBeNull();
+    expect(screen.getByText("Гарантии")).toBeInTheDocument();
+  });
+
+  it("подсказка показывается в обоих случаях", () => {
+    renderHeader("anonymous", { infoPages: [] });
+
+    expect(screen.getByText("Официальная гарантия")).toBeInTheDocument();
+  });
+
+  it("пункт подменю ведёт на свою страницу отдельно от ярлыка", () => {
+    renderHeader("anonymous", { infoPages: [{ slug: "payment", title: "Оплата" }] });
+
+    // «Доставка и оплата» ведёт на доставку (её страницы нет — значит не ссылка),
+    // а пункт «Оплата» внутри подсказки — на оплату.
+    expect(screen.getByRole("link", { name: "Оплата" })).toHaveAttribute("href", "/info/payment");
+    expect(screen.queryByRole("link", { name: "Доставка и оплата" })).toBeNull();
   });
 });

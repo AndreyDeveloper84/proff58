@@ -26,8 +26,10 @@ import { useAuthState } from "@/components/auth/AuthStateProvider";
 import { useCart } from "@/components/cart/CartProvider";
 import { useWishlist } from "@/components/wishlist/WishlistProvider";
 import { accountLinkHref } from "@/lib/auth-state";
+import type { InfoPageLink } from "@/lib/info-pages";
 import { useCompare } from "@/lib/compare";
-import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
+import { resolveStorefront, SITE, type ResolvedStorefront, type TopLink } from "@/lib/site";
+import { cn } from "@/lib/utils";
 import { SearchBar } from "./SearchBar";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -35,7 +37,11 @@ interface HeaderProps {
   logoUrl?: string;
   siteName?: string;
   storefront?: ResolvedStorefront;
+  /** Опубликованные страницы из админки — тот же список, что у подвала. */
+  infoPages?: InfoPageLink[];
 }
+
+const INFO_PREFIX = "/info/";
 
 const TOP_LINK_ICONS: Record<string, LucideIcon> = {
   "Сервис и ремонт": Wrench,
@@ -51,7 +57,15 @@ export function Header({
   logoUrl,
   siteName = "Профессионал",
   storefront = resolveStorefront(),
+  infoPages = [],
 }: HeaderProps) {
+  // Инфо-страницы ведутся в админке и заводятся черновиками. Пункт шапки
+  // становится ссылкой, только когда его страница опубликована: ссылка на
+  // черновик дала бы 404 из шапки — то есть на каждой странице сайта. Это то же
+  // правило, по которому живёт подвал: отсутствующий раздел не подменяем.
+  const publishedInfo = new Set(infoPages.map((page) => page.slug));
+  const linkable = (href?: string): href is string =>
+    !!href && (!href.startsWith(INFO_PREFIX) || publishedInfo.has(href.slice(INFO_PREFIX.length)));
   const { count } = useCart();
   const { count: compareCount } = useCompare();
   // Сердечко на карточке подтверждает клик только цветом самой карточки. Счётчик
@@ -105,20 +119,37 @@ export function Header({
               <Store className="h-3.5 w-3.5" aria-hidden />
               {storefront.store}
             </span>
-            {/* Инфо-пункты — не ссылки (страниц нет), но каждый раскрывает своё
-                подменю по hover/фокусу: сюда переехала бывшая сервисная полоса
-                главной. «Контакты» рендерятся из storefront (SiteSettings). */}
-            {SITE.header.topLinks.map((l) => {
+            {/* Инфо-пункты: каждый раскрывает подсказку по hover/фокусу — сюда
+                переехала бывшая сервисная полоса главной — и ведёт на свою страницу,
+                если она опубликована. «Контакты» рендерятся из storefront
+                (SiteSettings) и ведут на «О компании», где адрес и карта. */}
+            {(SITE.header.topLinks as readonly TopLink[]).map((l) => {
               const Icon = TOP_LINK_ICONS[l.label] ?? Wrench;
               const isContacts = l.label === "Контакты";
+              const href = linkable(l.href) ? l.href : undefined;
               return (
                 <span
                   key={l.label}
-                  tabIndex={0}
-                  className="group relative flex cursor-default items-center gap-1.5 py-2 outline-none"
+                  // Ссылка сама попадает в таб-порядок и открывает подсказку через
+                  // group-focus-within; лишний tabIndex дал бы вторую остановку на
+                  // одном пункте. Без ссылки он остаётся единственным способом
+                  // добраться до подсказки с клавиатуры.
+                  tabIndex={href ? undefined : 0}
+                  className={cn(
+                    "group relative flex items-center gap-1.5 py-2 outline-none",
+                    !href && "cursor-default",
+                  )}
                 >
                   <Icon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden />
-                  {l.label}
+                  {/* Ссылка — сам ярлык, а не обёртка: внутри подсказки уже есть
+                      ссылки (телефон, почта), и вложенные <a> — невалидная разметка. */}
+                  {href ? (
+                    <Link href={href} className="hover:text-accent">
+                      {l.label}
+                    </Link>
+                  ) : (
+                    l.label
+                  )}
                   <span className="invisible absolute left-1/2 top-full z-50 w-64 -translate-x-1/2 rounded-md border border-header-line bg-header p-3 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
                     {isContacts ? (
                       <span className="block space-y-1.5">
@@ -143,9 +174,18 @@ export function Header({
                       <span className="block space-y-2">
                         {l.menu.map((m) => (
                           <span key={m.title} className="block">
-                            <span className="block text-xs font-semibold text-header-ink">
-                              {m.title}
-                            </span>
+                            {linkable(m.href) ? (
+                              <Link
+                                href={m.href}
+                                className="block text-xs font-semibold text-header-ink hover:text-accent"
+                              >
+                                {m.title}
+                              </Link>
+                            ) : (
+                              <span className="block text-xs font-semibold text-header-ink">
+                                {m.title}
+                              </span>
+                            )}
                             <span className="block text-[11px] leading-snug text-topbar-ink">
                               {m.text}
                             </span>

@@ -14,7 +14,8 @@ NOT_WIRED_TEMPLATE = "admin/content/not_wired_change_list.html"
 
 @admin.register(SEOPage)
 class SEOPageAdmin(admin.ModelAdmin):
-    change_list_template = NOT_WIRED_TEMPLATE
+    # Предупреждения «витрина это не читает» здесь больше нет: инфо-страницы
+    # доходят до сайта (/info/<slug>), и правка в этой форме меняет страницу.
     list_display = ["slug", "title", "status", "updated_at"]
     list_filter = ["status"]
     search_fields = ["slug", "title"]
