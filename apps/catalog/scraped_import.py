@@ -15,7 +15,11 @@
 - единицы измерения сверяются fail-closed (ДРФ-1440): подпись с чужой единицей
   («Мощность, кВт» в ось «Вт», «Вес, кг» в ось «г») обязана нести ``source_unit``
   и нормализатор-конвертер, иначе карта не проходит ``validate_attr_map_units``
-  и импорт не стартует — молчаливая ошибка в тысячу раз в фасете невозможна.
+  и импорт не стартует — молчаливая ошибка в тысячу раз в фасете невозможна;
+- лошадиные силы в ватты НЕ пересчитываются: у них своя ось ``power_hp``
+  (решение владельца, см. комментарий к ``CONVERTERS``);
+- оси из ``RESTRICTED_ATTRIBUTES`` (сейчас — ``weight``, «г», область молотков)
+  закрыты для автоматической записи: карта, нацеленная в такую ось, не проходит.
 """
 
 from __future__ import annotations
@@ -253,9 +257,19 @@ BATTERY_VOLTAGE_CEILING = 60  # напряжение ниже — признак
 # оператора: подпись «Мощность, кВт» обязана нести normalize=decimal_kw_to_w,
 # иначе карта не пройдёт validate_attr_map_units и импорт не стартует.
 #
-# Множитель для л.с. — метрическая лошадиная сила (735,5 Вт), её используют
-# российские производители бензоинструмента. Механическая (745,7 Вт) НЕ
-# поддерживается сознательно: смешивать две шкалы в одной оси нельзя.
+# ``decimal_hp_to_w`` — НАМЕРЕННО НЕ ИСПОЛЬЗУЕТСЯ НИ В ОДНОЙ КАРТЕ.
+# Решение владельца от 2026-09-02: лошадиные силы живут отдельной осью
+# ``power_hp`` (единица «л.с.»), в ватты не пересчитываются. Причины:
+#   1. это разные величины — у сетевого инструмента паспортные ватты это
+#      ПОТРЕБЛЯЕМАЯ мощность, у бензинового л.с. — мощность НА ВАЛУ; между ними
+#      КПД, а не константа, поэтому в одном фильтре они несравнимы;
+#   2. ось ``power`` фильтруемая и населена сетевыми значениями 90…2850 Вт;
+#      4,5 л.с. -> 3310 Вт переопределили бы верх шкалы фильтра;
+#   3. множитель неоднозначен: метрическая л.с. 735,5 Вт против механической
+#      745,7 Вт — здесь взята метрическая, её используют российские
+#      производители бензоинструмента.
+# Правило оставлено рабочим и покрыто тестами на случай пересмотра решения;
+# подключать его в карту без нового решения владельца нельзя.
 CONVERTERS: dict[str, tuple[str, str, Decimal]] = {
     "decimal_kw_to_w": ("кВт", "Вт", Decimal("1000")),
     "decimal_hp_to_w": ("л.с.", "Вт", Decimal("735.5")),
@@ -263,6 +277,18 @@ CONVERTERS: dict[str, tuple[str, str, Decimal]] = {
     "decimal_g_to_kg": ("г", "кг", Decimal("0.001")),
 }
 CONVERTER_BY_UNITS: dict[tuple[str, str], str] = {}
+
+# Оси, закрытые для автоматической записи (ДРФ-1440, решение владельца, вариант A).
+# slug -> причина. Карта парсера, нацеленная на такую ось, не проходит гейт:
+# сузить область оси и при этом оставить её открытой для автоматов — значит
+# не сузить ничего.
+RESTRICTED_ATTRIBUTES: dict[str, str] = {
+    "weight": (
+        "ось «Вес» (единица «г») сужена до молотков (правило объявлено только в "
+        "блоке tool_type=molotki) и закрыта для автоматической записи; "
+        "каноническая ось веса каталога — weight_kg (кг)"
+    ),
+}
 
 # Нормализаторы без пересчёта единиц (значение остаётся в единице источника).
 PLAIN_NORMALIZERS = frozenset(
@@ -326,17 +352,27 @@ def normalize_scalar(raw: str, rule: str):
     raise ValueError(f"неизвестный нормализатор: {rule}")
 
 
-def _numeric_map_entries(amap: dict):
-    """(источник, подпись поля, запись) по всем числовым полям карты с action=map."""
+def _all_map_entries(amap: dict):
+    """(источник, подпись поля, запись) по всем записям карты, пишущим значение."""
     for source, sdata in amap.get("sources", {}).items():
         for fname, entry in sdata.get("fields", {}).items():
-            if entry.get("action") != "map" or entry.get("attribute_type") == "select":
+            if entry.get("action") != "map":
                 continue
             yield source, fname, entry
         for entry in sdata.get("fallbacks", []):
-            if entry.get("attribute_type") == "select":
-                continue
             yield source, f"fallback:{entry.get('source_field')}", entry
+        for entry in sdata.get("derived", []):
+            yield source, f"derived:{entry.get('rule')}", entry
+
+
+def _numeric_map_entries(amap: dict):
+    """(источник, подпись поля, запись) по всем числовым полям карты с action=map."""
+    for source, fname, entry in _all_map_entries(amap):
+        if entry.get("attribute_type") == "select":
+            continue
+        if fname.startswith("derived:"):
+            continue
+        yield source, fname, entry
 
 
 def validate_attr_map_units(amap: dict, attr_by_slug: dict | None = None) -> None:
@@ -354,8 +390,18 @@ def validate_attr_map_units(amap: dict, attr_by_slug: dict | None = None) -> Non
 
     Именно пункт 4 ловит подпись «Вес, кг» -> ось ``weight`` с единицей «г»:
     без ``source_unit``/конвертера 0.07 кг легло бы в фасет как 0.07 г.
+
+    Отдельно (и раньше всех единиц) проверяется, что карта не целится в ось из
+    :data:`RESTRICTED_ATTRIBUTES` — оси, закрытые для автоматической записи.
     """
     problems: list[str] = []
+    for source, fname, entry in _all_map_entries(amap):
+        slug = entry.get("attribute")
+        reason = RESTRICTED_ATTRIBUTES.get(slug)
+        if reason:
+            problems.append(
+                f"{source}/{fname}: ось {slug!r} закрыта для автоматической записи — {reason}"
+            )
     for source, fname, entry in _numeric_map_entries(amap):
         where = f"{source}/{fname}"
         slug = entry.get("attribute")
