@@ -16,8 +16,41 @@ const SSR_TIMEOUT_MS = 4000;
 
 export type InfoPageLink = { slug: string; title: string };
 
+/** Блоки внутри секции — те же четыре, что и в статьях (разбор общий, на сервере). */
+export type InfoBlock =
+  | { kind: "text"; text: string }
+  | { kind: "list"; items: string[] }
+  | { kind: "table"; head: string[]; rows: string[][] }
+  | { kind: "note"; text: string };
+
+export type InfoItem = { title: string; text: string };
+
+/**
+ * Секция страницы. `layout` задаёт вёрстку (шапка, карточки, шаги, вопросы,
+ * контакты, карта), содержимое приходит из админки. Пустой layout — обычный
+ * текст: так показываются страницы, написанные до появления разметки.
+ */
+export type InfoSection = {
+  layout: "" | "hero" | "cards" | "steps" | "checklist" | "faq" | "contacts" | "map" | "chips";
+  heading: string;
+  meta: {
+    badge?: string;
+    image?: string;
+    images?: string[];
+    address?: string;
+    phone?: string;
+    email?: string;
+    hours?: string;
+    tone?: string;
+  };
+  buttons: { label: string; href: string; style: "solid" | "outline" }[];
+  items: InfoItem[];
+  blocks: InfoBlock[];
+};
+
 export type InfoPage = InfoPageLink & {
   body: string;
+  sections: InfoSection[];
   meta_title: string;
   meta_description: string;
   updated_at: string;
