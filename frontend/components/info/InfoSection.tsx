@@ -50,7 +50,9 @@ function Heading({ children }: { children: React.ReactNode }) {
 function Hero({ section }: { section: Section }) {
   const images = section.meta.images ?? (section.meta.image ? [section.meta.image] : []);
   return (
-    <section className="grid items-center gap-8 lg:grid-cols-2">
+    // Без картинки колонка не нужна: пустая половина экрана рядом с заголовком
+    // читается как незагрузившийся блок, а не как воздух.
+    <section className={cn("grid items-center gap-8", images.length > 0 && "lg:grid-cols-2")}>
       <div className="space-y-5">
         {section.meta.badge ? (
           <p className="text-xs font-semibold uppercase tracking-widest text-accent">
@@ -102,7 +104,14 @@ function Cards({ section }: { section: Section }) {
     <section className="space-y-6">
       {section.heading ? <Heading>{section.heading}</Heading> : null}
       <InfoBlocks blocks={section.blocks} />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Колонок ровно столько, сколько карточек, пока их не больше четырёх:
+          иначе последняя висит одна в ряду и выглядит потерянной. */}
+      <div
+        className={cn(
+          "grid gap-4 sm:grid-cols-2",
+          section.items.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3",
+        )}
+      >
         {section.items.map((item) => (
           <article
             key={item.title}
