@@ -504,7 +504,7 @@ def extract(rules: AttributeRules, tool_type: str, name: str) -> dict[str, Decim
     ],
 )
 def test_axis_is_chosen_per_tool_type(rules, tool_type, name, expected):
-    assert extract(rules, tool_type, name) == {AXIS[tool_type]: expected}
+    assert extract(rules, tool_type, name).get(AXIS[tool_type]) == expected
 
 
 def test_millimeters_never_land_in_a_foreign_axis(rules):
@@ -531,11 +531,23 @@ def test_every_type_writes_only_its_own_axis(rules):
             assert not (got & foreign), (tool_type, name, got)
 
 
-def test_only_the_declared_axis_is_written(rules):
-    """Блок пишет ровно одну ось — свою; чужих осей блок не трогает."""
+# Оси, объявленные блоком помимо размерной (см. AXIS). Список закрытый:
+# любая новая ось обязана быть внесена сюда осознанно, иначе тест упадёт —
+# именно так и должно быть, потому что появление оси в типе меняет витрину.
+EXTRA_AXES: dict[str, set[str]] = {"napilniki": {"file_shape", "file_cut"}}
+
+
+def test_block_writes_only_the_axes_it_declares(rules):
+    """Размерная ось у блока строго одна, остальные — только объявленные.
+
+    Две размерных оси в одном названии неминуемо начали бы делить между собой
+    одни и те же миллиметры. Форма и насечка напильников этому не мешают: они
+    select и берутся из слов, а не из чисел.
+    """
     for tool_type, names in NAMES.items():
+        allowed = {AXIS[tool_type]} | EXTRA_AXES.get(tool_type, set())
         for name in names:
-            assert set(extract(rules, tool_type, name)) <= {AXIS[tool_type]}, name
+            assert set(extract(rules, tool_type, name)) <= allowed, name
 
 
 # --------------------------------------------------------------------------- #
@@ -728,7 +740,7 @@ def test_chain_file_diameter_is_blocked_by_meaning_not_by_decimals(rules):
 
 def test_single_needle_file_keeps_its_length(rules):
     """Одиночный надфиль — это инструмент, а не набор: 160 мм остаётся."""
-    assert extract(rules, "napilniki", "Надфиль полукруглый 160мм") == {"length": Decimal("160")}
+    assert extract(rules, "napilniki", "Надфиль полукруглый 160мм")["length"] == Decimal("160")
 
 
 # --------------------------------------------------------------------------- #
@@ -766,3 +778,84 @@ def test_leska_model_code_is_not_a_size(rules):
     assert extract(rules, "bp-leska", "Леска TS24100 (витой квадрат) ф2,4мм 100м") == {
         "diameter": Decimal("2.4")
     }
+
+
+# --------------------------------------------------------------------------- #
+# 8. Напильники: новые оси «форма» и «насечка» (решение владельца 2026-09-03)
+# --------------------------------------------------------------------------- #
+
+
+def shape(rules, name):
+    return {v.slug: v.option_value for v in rules.extract("napilniki", name)}.get("file_shape")
+
+
+def cut(rules, name):
+    return {v.slug: v.option_value for v in rules.extract("napilniki", name)}.get("file_cut")
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("Напильник полукруглый 250мм №1 ЗУБР ЭКСПЕРТ", "Полукруглый"),
+        ("Напильник круглый 200 мм, №2 ЗУБР ПРОФЕССИОНАЛ", "Круглый"),
+        ("Надфиль полукруглый алмазный 160мм", "Полукруглый"),
+        ("Напильник плоский 300мм №3 ЗУБР ЭКСПЕРТ", "Плоский"),
+        ("Напильник трехгранный 250мм,№2", "Трёхгранный"),
+        ("Напильник квадратный 400 мм №2", "Квадратный"),
+        ("Напильник ромбический 150мм,№3", "Ромбический"),
+        ("Надфиль овальный 160 мм", "Овальный"),
+    ],
+)
+def test_file_shape_is_read_from_the_name(rules, name, expected):
+    assert shape(rules, name) == expected
+
+
+def test_semicircular_is_never_swallowed_by_circular(rules):
+    """Матчер берёт ПЕРВОЕ совпадение подстроки, а «полукруглый» содержит «круглый».
+
+    Порядок вариантов — часть правила: поставь «кругл» выше «полукругл», и все
+    16 полукруглых напильников стенда молча уедут в круглые.
+    """
+    for name in NAMES["napilniki"]:
+        low = name.lower()
+        if "полукругл" in low and not any(w in low for w in ("набор", "комплект", "к-т")):
+            assert shape(rules, name) == "Полукруглый", name
+
+
+def test_a_set_carries_no_single_shape(rules):
+    """«Набор напильников 200мм, №2 (плоский, полукруглый, круглый)» — три формы сразу."""
+    for name in NAMES["napilniki"]:
+        low = name.lower()
+        if "набор" in low or "комплект" in low or "к-т" in low:
+            assert shape(rules, name) is None, name
+            assert cut(rules, name) is None, name
+
+
+def test_handles_have_no_shape(rules):
+    """Ручка для напильника формы не имеет — пустое значение здесь правильное."""
+    assert shape(rules, "Ручка для напильника деревянная 150 мм") is None
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("Напильник плоский 150мм №1", "№1"),
+        ("Напильник круглый 250 мм, №2", "№2"),
+        ("Напильник трехгранный 300мм,№3 СТАЛЬ У12, ГОСТ 146", "№3"),
+        ("Напильник круглый 200 мм, пласт ручка", None),
+    ],
+)
+def test_file_cut_number_is_read_verbatim(rules, name, expected):
+    """Номер насечки берётся как есть.
+
+    Смысловые имена («драчевая», «личная», «бархатная») намеренно не
+    подставляются: ГОСТ 1465-80 задаёт одну шкалу, а надфили ЗУБР в своих
+    названиях пишут «насечка 2=бархатная», что ей противоречит. Подстановка
+    выдала бы спорную трактовку за данные 1С.
+    """
+    assert cut(rules, name) == expected
+
+
+def test_gost_number_in_the_name_is_not_a_cut_number(rules):
+    """«ГОСТ 1465-80» — цифры рядом, но насечка помечена только знаком «№»."""
+    assert cut(rules, "Напильник плоский 300 мм СТАЛЬ У12, ГОСТ 1465-80") is None
