@@ -1484,7 +1484,7 @@ EXTRA_AXES: dict[str, set[str]] = {
     "napilniki": {"file_shape", "file_cut"},
     "str-markery": {"tip_width_to"},
     "strubtsiny": {"clamp_to"},
-    "krep-styazhki": {"hose_diameter_to"},
+    "krep-styazhki": {"hose_diameter_to", "length", "width"},
     "krep-shurupy": {"length"},
     "zubila": {"width", "diameter"},
     "nozhi": {"length"},
@@ -2581,3 +2581,76 @@ def test_article_and_model_are_not_grit(rules):
     """«Makita P-36011» и «FERM для FPS-180» выглядят как маркер с числом."""
     assert nzh(rules, "Бумага шлифовальная 93х228 К180 Makita P-36033")[2] == Decimal("180")
     assert nzh(rules, "Бумага наждачная 110х100 Р120 FERM для FOS-180 5шт")[2] == Decimal("120")
+
+
+# --------------------------------------------------------------------------- #
+# 18. Кабельные стяжки: пара «длина х ширина» — порядок обратный шурупному
+# --------------------------------------------------------------------------- #
+
+
+def sty(rules, name):
+    got = extract(rules, "krep-styazhki", name)
+    return got.get("length"), got.get("width")
+
+
+@pytest.mark.parametrize(
+    ("name", "ln", "w"),
+    [
+        ("Хомут-стяжка 250х4,5, белые, 100 шт", "250", "4.5"),
+        ("Хомут-стяжка 120х2.5, черные, 100шт", "120", "2.5"),
+        ("Хомут-стяжка 600х9,0, тип 7, белые, 10 шт", "600", "9"),
+        ("Хомут-стяжка  80х2,5 белые 100 шт, ЗУБР", "80", "2.5"),
+    ],
+)
+def test_cable_tie_pair_is_length_by_width(rules, name, ln, w):
+    """У стяжки пара читается «длина х ширина» — ОБРАТНО шурупному «диаметр х длина».
+
+    Стяжка всегда длиннее, чем шире: «250х4,5» это 250 мм длины на 4,5 мм
+    ширины, и перепутать порядок значит выдать ленту шириной в четверть метра.
+    """
+    assert sty(rules, name) == (Decimal(ln), Decimal(w))
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Хомут Липучка Hanskonner 15х200мм 15шт",
+        "Хомут пласт. 3,5х300 мм набор (50 шт)",
+    ],
+)
+def test_reversed_pair_of_neighbours_is_not_read_positionally(rules, name):
+    """В том же листе пара записана НАОБОРОТ — ширина на длину.
+
+    Позиционное правило поставило бы липучке длину 15 мм, а пластиковому
+    хомуту 3,5 мм. Поэтому шаблоны привязаны к слову «стяжка», а не к месту
+    числа в строке.
+    """
+    assert sty(rules, name) == (None, None)
+
+
+def test_length_without_width(rules):
+    """«Хомут-стяжка 200, белые, 100шт» несёт только длину — ширины в имени нет."""
+    assert sty(rules, "Хомут-стяжка 200, белые, 100шт") == (Decimal("200"), None)
+
+
+def test_pack_count_is_not_a_tie_length(rules):
+    """«100 шт» стоит в каждом названии и в длину попасть не должно."""
+    for name in NAMES["krep-styazhki"]:
+        ln, _ = sty(rules, name)
+        assert ln != Decimal("100") or "100х" in name or "100 х" in name, name
+
+
+def test_length_is_always_greater_than_width(rules):
+    """Инвариант формы: стяжки уже, чем длиннее. Нарушение — признак перепутанной пары."""
+    for name in NAMES["krep-styazhki"]:
+        ln, w = sty(rules, name)
+        if ln is not None and w is not None:
+            assert ln > w, (name, ln, w)
+
+
+def test_clamp_diameter_axes_are_untouched(rules):
+    """Обжимные хомуты живут в том же типе и своих осей не теряют."""
+    got = extract(rules, "krep-styazhki", "Хомут обжимной  40-62 мм, лента 9 мм, нерж.сталь,")
+    assert got.get("hose_diameter_from") == Decimal("40")
+    assert got.get("hose_diameter_to") == Decimal("62")
+    assert "length" not in got and "width" not in got
