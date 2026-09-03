@@ -30,19 +30,38 @@
             {
               "value": "Аккумулятор",
               "slug": "battery",
-              "keywords": ["аккумулятор", "аккум", "акб", "li-ion", "li-on", "cordless", "бесшнуров"]
+              "keywords": [
+                "аккумулятор",
+                "аккум",
+                "акб",
+                "li-ion",
+                "li-on",
+                "cordless",
+                "бесшнуров"
+              ]
             },
             {
               "value": "Сеть",
               "slug": "mains",
-              "keywords": ["сетев", "от сети", "220 в", "220в"]
+              "keywords": [
+                "сетев",
+                "от сети",
+                "220 в",
+                "220в"
+              ]
             }
           ],
           "derive": {
             "source": "inferred",
             "set_option": "mains",
-            "requires_present": ["power"],
-            "requires_absent": ["voltage", "battery_capacity", "battery_included"]
+            "requires_present": [
+              "power"
+            ],
+            "requires_absent": [
+              "voltage",
+              "battery_capacity",
+              "battery_included"
+            ]
           }
         },
         {
@@ -93,12 +112,23 @@
             {
               "value": "Бесщёточный",
               "slug": "brushless",
-              "keywords": ["бесщеточн", "бесщетк", "безщеточн", "б/щ", "brushless", "bl-"]
+              "keywords": [
+                "бесщеточн",
+                "бесщетк",
+                "безщеточн",
+                "б/щ",
+                "brushless",
+                "bl-"
+              ]
             },
             {
               "value": "Щёточный",
               "slug": "brushed",
-              "keywords": ["щеточн", "коллекторн", "brushed"]
+              "keywords": [
+                "щеточн",
+                "коллекторн",
+                "brushed"
+              ]
             }
           ]
         },
@@ -150,19 +180,38 @@
             {
               "value": "Аккумулятор",
               "slug": "battery",
-              "keywords": ["аккумулятор", "аккум", "акб", "li-ion", "li-on", "cordless", "бесшнуров"]
+              "keywords": [
+                "аккумулятор",
+                "аккум",
+                "акб",
+                "li-ion",
+                "li-on",
+                "cordless",
+                "бесшнуров"
+              ]
             },
             {
               "value": "Сеть",
               "slug": "mains",
-              "keywords": ["сетев", "от сети", "220 в", "220в"]
+              "keywords": [
+                "сетев",
+                "от сети",
+                "220 в",
+                "220в"
+              ]
             }
           ],
           "derive": {
             "source": "inferred",
             "set_option": "mains",
-            "requires_present": ["power"],
-            "requires_absent": ["voltage", "battery_capacity", "battery_included"]
+            "requires_present": [
+              "power"
+            ],
+            "requires_absent": [
+              "voltage",
+              "battery_capacity",
+              "battery_included"
+            ]
           }
         },
         {
@@ -211,7 +260,9 @@
           "priority": 40,
           "is_filter": false,
           "is_ai_feature": true,
-          "regex": ["(\\d{3,5})\\s*об[/.\\s]?мин"]
+          "regex": [
+            "(\\d{3,5})\\s*об[/.\\s]?мин"
+          ]
         },
         {
           "slug": "chuck",
@@ -225,12 +276,22 @@
             {
               "value": "SDS-max",
               "slug": "sds-max",
-              "keywords": ["sds-max", "sds max", "sdsmax"]
+              "keywords": [
+                "sds-max",
+                "sds max",
+                "sdsmax"
+              ]
             },
             {
               "value": "SDS-plus",
               "slug": "sds-plus",
-              "keywords": ["sds-plus", "sds plus", "sds+", "sdsplus", "sds"]
+              "keywords": [
+                "sds-plus",
+                "sds plus",
+                "sds+",
+                "sdsplus",
+                "sds"
+              ]
             }
           ]
         },
@@ -245,12 +306,24 @@
             {
               "value": "Бесщёточный",
               "slug": "brushless",
-              "keywords": ["бесщеточн", "бесщетк", "безщеточн", "бесщ", "б/щ", "brushless", "bl-"]
+              "keywords": [
+                "бесщеточн",
+                "бесщетк",
+                "безщеточн",
+                "бесщ",
+                "б/щ",
+                "brushless",
+                "bl-"
+              ]
             },
             {
               "value": "Щёточный",
               "slug": "brushed",
-              "keywords": ["щеточн", "коллекторн", "brushed"]
+              "keywords": [
+                "щеточн",
+                "коллекторн",
+                "brushed"
+              ]
             }
           ]
         },
@@ -315,19 +388,38 @@
             {
               "value": "Аккумулятор",
               "slug": "battery",
-              "keywords": ["аккумулятор", "аккум", "акб", "li-ion", "li-on", "cordless", "бесшнуров"]
+              "keywords": [
+                "аккумулятор",
+                "аккум",
+                "акб",
+                "li-ion",
+                "li-on",
+                "cordless",
+                "бесшнуров"
+              ]
             },
             {
               "value": "Сеть",
               "slug": "mains",
-              "keywords": ["сетев", "от сети", "220 в", "220в"]
+              "keywords": [
+                "сетев",
+                "от сети",
+                "220 в",
+                "220в"
+              ]
             }
           ],
           "derive": {
             "source": "inferred",
             "set_option": "mains",
-            "requires_present": ["power"],
-            "requires_absent": ["voltage", "battery_capacity", "battery_included"]
+            "requires_present": [
+              "power"
+            ],
+            "requires_absent": [
+              "voltage",
+              "battery_capacity",
+              "battery_included"
+            ]
           }
         },
         {
@@ -396,12 +488,18 @@
             {
               "value": "M14",
               "slug": "m14",
-              "keywords": ["m14", "м14"]
+              "keywords": [
+                "m14",
+                "м14"
+              ]
             },
             {
               "value": "M10",
               "slug": "m10",
-              "keywords": ["m10", "м10"]
+              "keywords": [
+                "m10",
+                "м10"
+              ]
             }
           ]
         },
@@ -416,12 +514,23 @@
             {
               "value": "Бесщёточный",
               "slug": "brushless",
-              "keywords": ["бесщеточн", "бесщетк", "безщеточн", "б/щ", "brushless", "bl-"]
+              "keywords": [
+                "бесщеточн",
+                "бесщетк",
+                "безщеточн",
+                "б/щ",
+                "brushless",
+                "bl-"
+              ]
             },
             {
               "value": "Щёточный",
               "slug": "brushed",
-              "keywords": ["щеточн", "коллекторн", "brushed"]
+              "keywords": [
+                "щеточн",
+                "коллекторн",
+                "brushed"
+              ]
             }
           ]
         },
@@ -486,19 +595,38 @@
             {
               "value": "Аккумулятор",
               "slug": "battery",
-              "keywords": ["аккумулятор", "аккум", "акб", "li-ion", "li-on", "cordless", "бесшнуров"]
+              "keywords": [
+                "аккумулятор",
+                "аккум",
+                "акб",
+                "li-ion",
+                "li-on",
+                "cordless",
+                "бесшнуров"
+              ]
             },
             {
               "value": "Сеть",
               "slug": "mains",
-              "keywords": ["сетев", "от сети", "220 в", "220в"]
+              "keywords": [
+                "сетев",
+                "от сети",
+                "220 в",
+                "220в"
+              ]
             }
           ],
           "derive": {
             "source": "inferred",
             "set_option": "mains",
-            "requires_present": ["power"],
-            "requires_absent": ["voltage", "battery_capacity", "battery_included"]
+            "requires_present": [
+              "power"
+            ],
+            "requires_absent": [
+              "voltage",
+              "battery_capacity",
+              "battery_included"
+            ]
           }
         },
         {
@@ -623,17 +751,27 @@
             {
               "value": "Турбо",
               "slug": "turbo",
-              "keywords": ["турбо", "turbo"]
+              "keywords": [
+                "турбо",
+                "turbo"
+              ]
             },
             {
               "value": "Сегментный",
               "slug": "segment",
-              "keywords": ["сегмент", "segment"]
+              "keywords": [
+                "сегмент",
+                "segment"
+              ]
             },
             {
               "value": "Сплошной",
               "slug": "solid",
-              "keywords": ["сплош", "1a1r", "1а1р"]
+              "keywords": [
+                "сплош",
+                "1a1r",
+                "1а1р"
+              ]
             }
           ]
         }
@@ -1375,7 +1513,12 @@
         {
           "slug": "diameter",
           "_note": "Диапазон/перечисление не даёт одного диаметра: «Коронка карбид. 33-53-67-73-83 мм» — набор, «Сверло ступен. 4-12мм» — ступенчатое. Пара «42х10» НЕ блокируется: там первое число и есть диаметр, «х» здесь конструктивный.",
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "name": "Диаметр",
           "kind": "number",
           "unit": "мм",
@@ -1514,7 +1657,12 @@
         {
           "slug": "diameter",
           "_note": "Диапазон/перечисление не даёт одного диаметра: «Коронка карбид. 33-53-67-73-83 мм» — набор, «Сверло ступен. 4-12мм» — ступенчатое. Пара «42х10» НЕ блокируется: там первое число и есть диаметр, «х» здесь конструктивный.",
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "name": "Диаметр",
           "kind": "number",
           "unit": "мм",
@@ -1918,7 +2066,11 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "skip_if": ["набор", "держател", "ворот"],
+          "skip_if": [
+            "набор",
+            "держател",
+            "ворот"
+          ],
           "regex": [
             "(?:^|\\s)м\\s*(\\d{1,2})\\s*[хx]\\s*\\d",
             "м[/.]р\\.?\\s*(\\d{1,2})\\s*[хx]\\s*\\d"
@@ -1932,7 +2084,11 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "skip_if": ["набор", "держател", "ворот"],
+          "skip_if": [
+            "набор",
+            "держател",
+            "ворот"
+          ],
           "regex": [
             "(?:^|\\s)м\\s*\\d{1,2}\\s*[хx]\\s*(\\d(?:[.,]\\d+)?)",
             "м[/.]р\\.?\\s*\\d{1,2}\\s*[хx]\\s*(\\d(?:[.,]\\d+)?)"
@@ -1942,20 +2098,65 @@
           "slug": "thread_type",
           "name": "Тип резьбы",
           "kind": "select",
-          "skip_if": ["набор", "держател", "ворот"],
+          "skip_if": [
+            "набор",
+            "держател",
+            "ворот"
+          ],
           "source": "keyword",
           "priority": 30,
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Дюймовая", "slug": "inch", "keywords": ["bsw", "bsf", "unf", "unc", "unef", "uns", "дюймов", "ниток", "уитворт"]},
-            {"value": "Трубная", "slug": "pipe", "keywords": ["g 1/", "g 3/", "g 1 ", "g1/", "g3/", "трубн", "bspt", "bspp"]},
-            {"value": "Метрическая", "slug": "metric", "keywords": ["din 352", "din352", "din 371", "din371", "din 376", "din376", "метрическ"]}
+            {
+              "value": "Дюймовая",
+              "slug": "inch",
+              "keywords": [
+                "bsw",
+                "bsf",
+                "unf",
+                "unc",
+                "unef",
+                "uns",
+                "дюймов",
+                "ниток",
+                "уитворт"
+              ]
+            },
+            {
+              "value": "Трубная",
+              "slug": "pipe",
+              "keywords": [
+                "g 1/",
+                "g 3/",
+                "g 1 ",
+                "g1/",
+                "g3/",
+                "трубн",
+                "bspt",
+                "bspp"
+              ]
+            },
+            {
+              "value": "Метрическая",
+              "slug": "metric",
+              "keywords": [
+                "din 352",
+                "din352",
+                "din 371",
+                "din371",
+                "din 376",
+                "din376",
+                "метрическ"
+              ]
+            }
           ],
           "derive": {
             "source": "inferred",
             "set_option": "metric",
-            "requires_present": ["diameter"],
+            "requires_present": [
+              "diameter"
+            ],
             "requires_absent": []
           }
         },
@@ -1963,15 +2164,46 @@
           "slug": "material",
           "name": "Материал",
           "kind": "select",
-          "skip_if": ["набор", "держател", "ворот"],
+          "skip_if": [
+            "набор",
+            "держател",
+            "ворот"
+          ],
           "source": "keyword",
           "priority": 30,
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Быстрорез (HSS)", "slug": "hss", "keywords": ["hss", "р6м5", "р18", "быстрорез"]},
-            {"value": "Легированная сталь", "slug": "alloy", "keywords": ["9хс", "9хc", "хвг", "легированн"]},
-            {"value": "Твердосплав", "slug": "carbide", "keywords": ["твердоспл", "тв.спл", "карбид", "вк8"]}
+            {
+              "value": "Быстрорез (HSS)",
+              "slug": "hss",
+              "keywords": [
+                "hss",
+                "р6м5",
+                "р18",
+                "быстрорез"
+              ]
+            },
+            {
+              "value": "Легированная сталь",
+              "slug": "alloy",
+              "keywords": [
+                "9хс",
+                "9хc",
+                "хвг",
+                "легированн"
+              ]
+            },
+            {
+              "value": "Твердосплав",
+              "slug": "carbide",
+              "keywords": [
+                "твердоспл",
+                "тв.спл",
+                "карбид",
+                "вк8"
+              ]
+            }
           ]
         },
         {
@@ -1984,12 +2216,46 @@
           "is_seo_facet": true,
           "_note": "Порядок важен: «плашкодержатель»/«метчикодержатель» содержат «плашк»/«метчик» — держатель/вороток/набор проверяются раньше. unknown не матчится ключевыми словами, выставляется derive-фолбэком.",
           "options": [
-            {"value": "Держатель", "slug": "derzhatel", "keywords": ["держател"]},
-            {"value": "Вороток", "slug": "vorotok", "keywords": ["ворот"]},
-            {"value": "Набор", "slug": "nabor", "keywords": ["набор"]},
-            {"value": "Плашка", "slug": "plashka", "keywords": ["плашк"]},
-            {"value": "Метчик", "slug": "metchik", "keywords": ["метчик"]},
-            {"value": "Не определён", "slug": "unknown", "keywords": []}
+            {
+              "value": "Держатель",
+              "slug": "derzhatel",
+              "keywords": [
+                "держател"
+              ]
+            },
+            {
+              "value": "Вороток",
+              "slug": "vorotok",
+              "keywords": [
+                "ворот"
+              ]
+            },
+            {
+              "value": "Набор",
+              "slug": "nabor",
+              "keywords": [
+                "набор"
+              ]
+            },
+            {
+              "value": "Плашка",
+              "slug": "plashka",
+              "keywords": [
+                "плашк"
+              ]
+            },
+            {
+              "value": "Метчик",
+              "slug": "metchik",
+              "keywords": [
+                "метчик"
+              ]
+            },
+            {
+              "value": "Не определён",
+              "slug": "unknown",
+              "keywords": []
+            }
           ],
           "derive": {
             "source": "inferred",
@@ -2013,7 +2279,9 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "regex": ["(?:^|\\s)(\\d{1,2}(?:[.,]\\d)?)\\s*м(?![а-яёa-z])"]
+          "regex": [
+            "(?:^|\\s)(\\d{1,2}(?:[.,]\\d)?)\\s*м(?![а-яёa-z])"
+          ]
         },
         {
           "slug": "tape_width",
@@ -2023,7 +2291,9 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "regex": ["\\((\\d{1,2})\\s*мм\\)"]
+          "regex": [
+            "\\((\\d{1,2})\\s*мм\\)"
+          ]
         }
       ]
     },
@@ -2040,7 +2310,9 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "regex": ["(?:^|\\s)(\\d{2,4})\\s*мм(?![а-яёa-z])"]
+          "regex": [
+            "(?:^|\\s)(\\d{2,4})\\s*мм(?![а-яёa-z])"
+          ]
         }
       ]
     },
@@ -2057,7 +2329,9 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "regex": ["(?:^|\\s)(\\d{2,4})\\s*мм(?![а-яёa-z])"]
+          "regex": [
+            "(?:^|\\s)(\\d{2,4})\\s*мм(?![а-яёa-z])"
+          ]
         },
         {
           "slug": "readout_type",
@@ -2068,9 +2342,32 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Электронный", "slug": "digital", "keywords": ["электронн", "цифров", "digital"]},
-            {"value": "Циферблатный", "slug": "dial", "keywords": ["циферблат", "стрелочн", "часов"]},
-            {"value": "Нониусный", "slug": "vernier", "keywords": ["нониус", "штангенциркуль"]}
+            {
+              "value": "Электронный",
+              "slug": "digital",
+              "keywords": [
+                "электронн",
+                "цифров",
+                "digital"
+              ]
+            },
+            {
+              "value": "Циферблатный",
+              "slug": "dial",
+              "keywords": [
+                "циферблат",
+                "стрелочн",
+                "часов"
+              ]
+            },
+            {
+              "value": "Нониусный",
+              "slug": "vernier",
+              "keywords": [
+                "нониус",
+                "штангенциркуль"
+              ]
+            }
           ]
         }
       ]
@@ -2108,7 +2405,9 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "regex": ["\\d{1,3}\\s*-\\s*(\\d{1,3})(?:\\s*[/мм]|\\s|$)"]
+          "regex": [
+            "\\d{1,3}\\s*-\\s*(\\d{1,3})(?:\\s*[/мм]|\\s|$)"
+          ]
         }
       ]
     },
@@ -2125,9 +2424,29 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Лазерный", "slug": "laser", "keywords": ["лазерн", "лазер"]},
-            {"value": "Ротационный", "slug": "rotary", "keywords": ["ротацион"]},
-            {"value": "Оптический", "slug": "optical", "keywords": ["оптическ", "оптич"]}
+            {
+              "value": "Лазерный",
+              "slug": "laser",
+              "keywords": [
+                "лазерн",
+                "лазер"
+              ]
+            },
+            {
+              "value": "Ротационный",
+              "slug": "rotary",
+              "keywords": [
+                "ротацион"
+              ]
+            },
+            {
+              "value": "Оптический",
+              "slug": "optical",
+              "keywords": [
+                "оптическ",
+                "оптич"
+              ]
+            }
           ]
         }
       ]
@@ -2308,7 +2627,12 @@
         {
           "slug": "size",
           "_note": "У набора одного «размера под ключ» не существует: «Набор ключей 6 - 19 мм, 8 шт.» — диапазон, «НКК-4 Арсенал 4 ключа 24; 27; 30; 32мм» — перечисление. Правило не применяется целиком.",
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "name": "Размер «под ключ»",
           "kind": "number",
           "unit": "мм",
@@ -2336,7 +2660,9 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "skip_if": ["набор"],
+          "skip_if": [
+            "набор"
+          ],
           "regex": [
             "(?:^|\\s)[мm]\\s*(\\d{1,2})\\s*[хx]\\s*\\d{1,3}",
             "(?:^|\\s)(3|4|5|6|8|10|12|14|16|18|20|22|24)\\s*[хx]\\s*(?:[12]\\d{2}|300|[1-9]\\d|[6-9])(?!\\d)(?!\\s*[хx])"
@@ -2351,7 +2677,9 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": false,
-          "skip_if": ["набор"],
+          "skip_if": [
+            "набор"
+          ],
           "regex": [
             "(?:^|\\s)[мm]\\s*\\d{1,2}\\s*[хx]\\s*(\\d{1,3})",
             "(?:^|\\s)(?:3|4|5|6|8|10|12|14|16|18|20|22|24)\\s*[хx]\\s*([12]\\d{2}|300|[1-9]\\d|[6-9])(?!\\d)(?!\\s*[хx])"
@@ -2366,10 +2694,34 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Шестигранная", "slug": "hex", "keywords": ["шестигр"]},
-            {"value": "Потай", "slug": "countersunk", "keywords": ["потай"]},
-            {"value": "Полукруглая", "slug": "round", "keywords": ["полукруг"]},
-            {"value": "С фланцем", "slug": "flange", "keywords": ["фланц"]}
+            {
+              "value": "Шестигранная",
+              "slug": "hex",
+              "keywords": [
+                "шестигр"
+              ]
+            },
+            {
+              "value": "Потай",
+              "slug": "countersunk",
+              "keywords": [
+                "потай"
+              ]
+            },
+            {
+              "value": "Полукруглая",
+              "slug": "round",
+              "keywords": [
+                "полукруг"
+              ]
+            },
+            {
+              "value": "С фланцем",
+              "slug": "flange",
+              "keywords": [
+                "фланц"
+              ]
+            }
           ]
         },
         {
@@ -2381,8 +2733,21 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Цинк", "slug": "zinc", "keywords": ["цинк"]},
-            {"value": "Чёрное", "slug": "black", "keywords": ["черн", "оксидирован"]}
+            {
+              "value": "Цинк",
+              "slug": "zinc",
+              "keywords": [
+                "цинк"
+              ]
+            },
+            {
+              "value": "Чёрное",
+              "slug": "black",
+              "keywords": [
+                "черн",
+                "оксидирован"
+              ]
+            }
           ]
         }
       ]
@@ -2586,11 +2951,45 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "1/4\" + 3/8\" + 1/2\"", "slug": "d-1-4-3-8-1-2", "keywords": ["1/4, 3/8, 1/2", "1/4\", 3/8\", 1/2"]},
-            {"value": "1/4\" + 1/2\"", "slug": "d-1-4-1-2", "keywords": ["1/4, 1/2", "1/4\", 1/2", "1/2, 1/4", "1/2\", 1/4"]},
-            {"value": "1/4\"", "slug": "d-1-4", "keywords": ["1/4"]},
-            {"value": "3/8\"", "slug": "d-3-8", "keywords": ["3/8"]},
-            {"value": "1/2\"", "slug": "d-1-2", "keywords": ["1/2"]}
+            {
+              "value": "1/4\" + 3/8\" + 1/2\"",
+              "slug": "d-1-4-3-8-1-2",
+              "keywords": [
+                "1/4, 3/8, 1/2",
+                "1/4\", 3/8\", 1/2"
+              ]
+            },
+            {
+              "value": "1/4\" + 1/2\"",
+              "slug": "d-1-4-1-2",
+              "keywords": [
+                "1/4, 1/2",
+                "1/4\", 1/2",
+                "1/2, 1/4",
+                "1/2\", 1/4"
+              ]
+            },
+            {
+              "value": "1/4\"",
+              "slug": "d-1-4",
+              "keywords": [
+                "1/4"
+              ]
+            },
+            {
+              "value": "3/8\"",
+              "slug": "d-3-8",
+              "keywords": [
+                "3/8"
+              ]
+            },
+            {
+              "value": "1/2\"",
+              "slug": "d-1-2",
+              "keywords": [
+                "1/2"
+              ]
+            }
           ]
         },
         {
@@ -2602,11 +3001,43 @@
           "is_filter": true,
           "is_seo_facet": false,
           "options": [
-            {"value": "Экстракторы", "slug": "extractors", "keywords": ["экстрактор", "шпильковерт"]},
-            {"value": "Выколотки", "slug": "punches", "keywords": ["выколоток"]},
-            {"value": "Торцевые головки и ключи", "slug": "sockets", "keywords": ["торцевых", "головок"]},
-            {"value": "Биты", "slug": "bits", "keywords": ["набор бит"]},
-            {"value": "Универсальный", "slug": "universal", "keywords": ["набор инструмент"]}
+            {
+              "value": "Экстракторы",
+              "slug": "extractors",
+              "keywords": [
+                "экстрактор",
+                "шпильковерт"
+              ]
+            },
+            {
+              "value": "Выколотки",
+              "slug": "punches",
+              "keywords": [
+                "выколоток"
+              ]
+            },
+            {
+              "value": "Торцевые головки и ключи",
+              "slug": "sockets",
+              "keywords": [
+                "торцевых",
+                "головок"
+              ]
+            },
+            {
+              "value": "Биты",
+              "slug": "bits",
+              "keywords": [
+                "набор бит"
+              ]
+            },
+            {
+              "value": "Универсальный",
+              "slug": "universal",
+              "keywords": [
+                "набор инструмент"
+              ]
+            }
           ]
         }
       ]
@@ -2664,7 +3095,12 @@
         {
           "slug": "size",
           "_note": "У набора одного «размера под ключ» не существует: «Набор ключей 6 - 19 мм, 8 шт.» — диапазон, «НКК-4 Арсенал 4 ключа 24; 27; 30; 32мм» — перечисление. Правило не применяется целиком.",
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "name": "Размер «под ключ»",
           "kind": "number",
           "unit": "мм",
@@ -3119,7 +3555,12 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "regex": [
             "ф\\.?\\s*(\\d(?:[.,]\\d{1,2})?)(?![\\d.,])",
             "(?<![\\d.,/x*х-])(\\d(?:[.,]\\d{1,2})?)\\s*[xх*]\\s*\\d{3}\\s*мм",
@@ -3141,7 +3582,12 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "regex": [
             "(?<![\\d.,/x*х-])(\\d{3})\\s*[xх*]\\s*\\d{1,2}\\s*мм",
             "(?<![\\d.,/x*х-])(?:1\\d|20)\\s*[xх*]\\s*(\\d{2})\\s*мм",
@@ -3163,7 +3609,12 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "regex": [
             "ф\\.?\\s*(\\d{2,3})\\s*мм",
             "кисть\\s+круглая\\s+(?:№\\s*\\d+\\s+)?(\\d{2,3})\\s*мм"
@@ -3187,15 +3638,70 @@
           "word_boundary": true,
           "_note": "ХАР-SIZE (решение владельца «size — отдельный slug»): буквенный размер перчаток живёт под своим slug glove_size, а не под общим size. Общий size — числовой «размер под ключ» (мм) у ключей/головок; один Attribute на slug не может быть одновременно decimal и select, и раньше объявление перчаток молча проигрывало (attribute_type kept=decimal declared=select), давая на витрине фильтр-призрак: range_filter_attributes объявлял ползунок, а _cast_facet_value выбрасывал «XL» и фасет оставался пустым. CAT-14C B1 (решение 2): word_boundary — opt-in CODE-02, без него «s»/«l» ловили бы бренды (STELS, ANSELL). Диапазоны обязаны стоять раньше одиночных букв: «s-m» раньше «s», «l-xl» раньше «l»/«xl».",
           "options": [
-            {"value": "S–M", "slug": "s-m", "keywords": ["s-m"]},
-            {"value": "L–XL", "slug": "l-xl", "keywords": ["l-xl"]},
-            {"value": "XXXL", "slug": "xxxl", "keywords": ["xxxl", "3xl"]},
-            {"value": "XXL", "slug": "xxl", "keywords": ["xxl"]},
-            {"value": "XL", "slug": "xl", "keywords": ["xl"]},
-            {"value": "XS", "slug": "xs", "keywords": ["xs"]},
-            {"value": "S", "slug": "s", "keywords": ["s"]},
-            {"value": "M", "slug": "m", "keywords": ["m"]},
-            {"value": "L", "slug": "l", "keywords": ["l"]}
+            {
+              "value": "S–M",
+              "slug": "s-m",
+              "keywords": [
+                "s-m"
+              ]
+            },
+            {
+              "value": "L–XL",
+              "slug": "l-xl",
+              "keywords": [
+                "l-xl"
+              ]
+            },
+            {
+              "value": "XXXL",
+              "slug": "xxxl",
+              "keywords": [
+                "xxxl",
+                "3xl"
+              ]
+            },
+            {
+              "value": "XXL",
+              "slug": "xxl",
+              "keywords": [
+                "xxl"
+              ]
+            },
+            {
+              "value": "XL",
+              "slug": "xl",
+              "keywords": [
+                "xl"
+              ]
+            },
+            {
+              "value": "XS",
+              "slug": "xs",
+              "keywords": [
+                "xs"
+              ]
+            },
+            {
+              "value": "S",
+              "slug": "s",
+              "keywords": [
+                "s"
+              ]
+            },
+            {
+              "value": "M",
+              "slug": "m",
+              "keywords": [
+                "m"
+              ]
+            },
+            {
+              "value": "L",
+              "slug": "l",
+              "keywords": [
+                "l"
+              ]
+            }
           ]
         },
         {
@@ -3220,15 +3726,72 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Х/б", "slug": "hb", "keywords": ["х/б", "хлопк"]},
-            {"value": "Полиэстер", "slug": "poliester", "keywords": ["полиэстер"]},
-            {"value": "Брезент", "slug": "brezent", "keywords": ["брезент"]},
-            {"value": "Кожа", "slug": "kozha", "keywords": ["кожа", "спилок"]},
-            {"value": "Неопрен", "slug": "neopren", "keywords": ["неопрен"]},
-            {"value": "П/ш", "slug": "psh", "keywords": ["п/ш", "полушерст"]},
-            {"value": "Латекс", "slug": "lateks", "keywords": ["латекс"]},
-            {"value": "Нитрил", "slug": "nitril", "keywords": ["нитрил"]},
-            {"value": "ПВХ", "slug": "pvh", "keywords": ["пвх"]}
+            {
+              "value": "Х/б",
+              "slug": "hb",
+              "keywords": [
+                "х/б",
+                "хлопк"
+              ]
+            },
+            {
+              "value": "Полиэстер",
+              "slug": "poliester",
+              "keywords": [
+                "полиэстер"
+              ]
+            },
+            {
+              "value": "Брезент",
+              "slug": "brezent",
+              "keywords": [
+                "брезент"
+              ]
+            },
+            {
+              "value": "Кожа",
+              "slug": "kozha",
+              "keywords": [
+                "кожа",
+                "спилок"
+              ]
+            },
+            {
+              "value": "Неопрен",
+              "slug": "neopren",
+              "keywords": [
+                "неопрен"
+              ]
+            },
+            {
+              "value": "П/ш",
+              "slug": "psh",
+              "keywords": [
+                "п/ш",
+                "полушерст"
+              ]
+            },
+            {
+              "value": "Латекс",
+              "slug": "lateks",
+              "keywords": [
+                "латекс"
+              ]
+            },
+            {
+              "value": "Нитрил",
+              "slug": "nitril",
+              "keywords": [
+                "нитрил"
+              ]
+            },
+            {
+              "value": "ПВХ",
+              "slug": "pvh",
+              "keywords": [
+                "пвх"
+              ]
+            }
           ]
         },
         {
@@ -3240,10 +3803,35 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Полный облив", "slug": "polny-obliv", "keywords": ["полный облив", "полным обливом"]},
-            {"value": "Частичный облив", "slug": "chastichny-obliv", "keywords": ["облив"]},
-            {"value": "Точка", "slug": "tochka", "keywords": ["точка"]},
-            {"value": "Протектор", "slug": "protektor", "keywords": ["протектор"]}
+            {
+              "value": "Полный облив",
+              "slug": "polny-obliv",
+              "keywords": [
+                "полный облив",
+                "полным обливом"
+              ]
+            },
+            {
+              "value": "Частичный облив",
+              "slug": "chastichny-obliv",
+              "keywords": [
+                "облив"
+              ]
+            },
+            {
+              "value": "Точка",
+              "slug": "tochka",
+              "keywords": [
+                "точка"
+              ]
+            },
+            {
+              "value": "Протектор",
+              "slug": "protektor",
+              "keywords": [
+                "протектор"
+              ]
+            }
           ]
         }
       ]
@@ -3262,7 +3850,11 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": false,
-          "skip_if": ["пылесос", "держател", "крышк"],
+          "skip_if": [
+            "пылесос",
+            "держател",
+            "крышк"
+          ],
           "regex": [
             "(\\d+(?:[.,]\\d+)?)\\s*[хx]\\s*\\d+(?:[.,]\\d+)?\\s*[хx]\\s*\\d+(?:[.,]\\d+)?\\s*мм"
           ]
@@ -3276,7 +3868,11 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": false,
-          "skip_if": ["пылесос", "держател", "крышк"],
+          "skip_if": [
+            "пылесос",
+            "держател",
+            "крышк"
+          ],
           "regex": [
             "\\d+(?:[.,]\\d+)?\\s*[хx]\\s*(\\d+(?:[.,]\\d+)?)\\s*[хx]\\s*\\d+(?:[.,]\\d+)?\\s*мм"
           ]
@@ -3290,7 +3886,11 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": false,
-          "skip_if": ["пылесос", "держател", "крышк"],
+          "skip_if": [
+            "пылесос",
+            "держател",
+            "крышк"
+          ],
           "regex": [
             "\\d+(?:[.,]\\d+)?\\s*[хx]\\s*\\d+(?:[.,]\\d+)?\\s*[хx]\\s*(\\d+(?:[.,]\\d+)?)\\s*мм"
           ]
@@ -3303,7 +3903,11 @@
           "priority": 40,
           "is_filter": false,
           "is_seo_facet": false,
-          "skip_if": ["пылесос", "держател", "крышк"],
+          "skip_if": [
+            "пылесос",
+            "держател",
+            "крышк"
+          ],
           "_note": "CAT-14C B2 (решение 3): kind text (CODE-02) — открытое множество кодов, select-options не заводим. Паттерн 1 — линейка «АНАЛОГ» вида 13-102 (lookbehind/lookahead отсекают фрагменты артикулов вида U503-951-038W); паттерн 2 — коды Makita CB-155/CB51. Хранится отдельно от габаритов dim_a/b/c. CAT-14E: lookbehind паттерна 1 расширен буквами (a-zа-я) — отсекает номера моделей, склеенные с брендом (WS13-125, GWS24-230BV), замер cat14e-b31: 3 ложных из 60 (5.0%), после правки 0, 47 верных хитов сохранены.",
           "regex": [
             "(?<![\\da-zа-я-])(\\d{2}-\\d{3})(?![\\d-])",
@@ -3318,11 +3922,36 @@
           "priority": 30,
           "is_filter": true,
           "is_seo_facet": true,
-          "skip_if": ["пылесос", "держател", "крышк"],
+          "skip_if": [
+            "пылесос",
+            "держател",
+            "крышк"
+          ],
           "options": [
-            {"value": "HITACHI", "slug": "hitachi", "keywords": ["hitachi", "хитачи"]},
-            {"value": "MAKITA", "slug": "makita", "keywords": ["makita", "макита"]},
-            {"value": "BOSCH", "slug": "bosch", "keywords": ["bosch", "бош"]}
+            {
+              "value": "HITACHI",
+              "slug": "hitachi",
+              "keywords": [
+                "hitachi",
+                "хитачи"
+              ]
+            },
+            {
+              "value": "MAKITA",
+              "slug": "makita",
+              "keywords": [
+                "makita",
+                "макита"
+              ]
+            },
+            {
+              "value": "BOSCH",
+              "slug": "bosch",
+              "keywords": [
+                "bosch",
+                "бош"
+              ]
+            }
           ]
         }
       ]
@@ -3341,7 +3970,10 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "skip_if": ["набор", "предм"],
+          "skip_if": [
+            "набор",
+            "предм"
+          ],
           "_note": "Первая пара цифр кода = Ø головки: A0804М06 → 8 мм (подтверждено 18545 «ЗУБР 16х14 мм, тип D» = код D1614М06). Второй regex — словесная форма «16х14 мм».",
           "regex": [
             "(?:^|\\s)[a-z]\\s?(\\d{2})\\d{2,3}\\s*[мm]\\s*\\d{2}\\s*$",
@@ -3360,7 +3992,9 @@
             {
               "value": "По металлу",
               "slug": "metall",
-              "keywords": ["по металл"]
+              "keywords": [
+                "по металл"
+              ]
             }
           ]
         },
@@ -3377,7 +4011,10 @@
             {
               "value": "Набор",
               "slug": "nabor",
-              "keywords": ["набор", "предм"]
+              "keywords": [
+                "набор",
+                "предм"
+              ]
             }
           ]
         },
@@ -3390,7 +4027,10 @@
           "priority": 40,
           "is_filter": true,
           "_note": "Характеристика самого набора, а не его элементов — по политике владельца допустима.",
-          "regex": ["(\\d{1,3})\\s*предмет", "(\\d{1,3})\\s*предм"]
+          "regex": [
+            "(\\d{1,3})\\s*предмет",
+            "(\\d{1,3})\\s*предм"
+          ]
         },
         {
           "slug": "material",
@@ -3405,12 +4045,16 @@
             {
               "value": "Алмазный",
               "slug": "almaz",
-              "keywords": ["алмазн"]
+              "keywords": [
+                "алмазн"
+              ]
             },
             {
               "value": "Абразивный",
               "slug": "abraziv",
-              "keywords": ["абразивн"]
+              "keywords": [
+                "абразивн"
+              ]
             }
           ]
         }
@@ -3431,7 +4075,9 @@
           "is_filter": true,
           "is_seo_facet": true,
           "_note": "Ø корпуса щётки — левое вхождение «NN мм». Требование 2–3 цифр отсекает толщину проволоки («0,3мм», «0,5мм»); lookbehind на букву отсекает резьбу («М14 мм»); «,?» перед «мм» покрывает опечатку 1С «63,мм». Посадка «22,2» без «мм» не матчится, а в «150ммх22,2мм» левое вхождение — 150.",
-          "regex": ["(?<![а-яa-z\\d])(\\d{2,3})\\s*,?\\s*мм"]
+          "regex": [
+            "(?<![а-яa-z\\d])(\\d{2,3})\\s*,?\\s*мм"
+          ]
         },
         {
           "slug": "bore",
@@ -3442,7 +4088,9 @@
           "priority": 40,
           "is_filter": true,
           "_note": "Формат из krugi-almaznye: посадка идёт после запятой или «х» — «100 мм, 22,2», «150ммх22,2мм».",
-          "regex": ["[,x*х]\\s*(22(?:[.,]2)?|25[.,]4|32)(?![\\d.,])"]
+          "regex": [
+            "[,x*х]\\s*(22(?:[.,]2)?|25[.,]4|32)(?![\\d.,])"
+          ]
         },
         {
           "slug": "mount",
@@ -3457,17 +4105,25 @@
             {
               "value": "М14",
               "slug": "m14",
-              "keywords": ["м14"]
+              "keywords": [
+                "м14"
+              ]
             },
             {
               "value": "Хвостовик (шпилька)",
               "slug": "shpilka",
-              "keywords": ["шпильк", "для дрели"]
+              "keywords": [
+                "шпильк",
+                "для дрели"
+              ]
             },
             {
               "value": "Ручная",
               "slug": "ruchnaya",
-              "keywords": ["ручкой", "рукоятк"]
+              "keywords": [
+                "ручкой",
+                "рукоятк"
+              ]
             }
           ]
         },
@@ -3484,32 +4140,49 @@
             {
               "value": "Венчик",
               "slug": "venchik",
-              "keywords": ["венчик"]
+              "keywords": [
+                "венчик"
+              ]
             },
             {
               "value": "Кистевая",
               "slug": "kistevaya",
-              "keywords": ["кистев", "крацовк"]
+              "keywords": [
+                "кистев",
+                "крацовк"
+              ]
             },
             {
               "value": "Тарельчатая",
               "slug": "tarelchataya",
-              "keywords": ["тарельчат", "тарелк"]
+              "keywords": [
+                "тарельчат",
+                "тарелк"
+              ]
             },
             {
               "value": "Чашечная",
               "slug": "chashechnaya",
-              "keywords": ["чаш", "чащ"]
+              "keywords": [
+                "чаш",
+                "чащ"
+              ]
             },
             {
               "value": "Дисковая",
               "slug": "diskovaya",
-              "keywords": ["дисков", "радиальн", "круглая"]
+              "keywords": [
+                "дисков",
+                "радиальн",
+                "круглая"
+              ]
             },
             {
               "value": "Рядная",
               "slug": "ryadnaya",
-              "keywords": ["рядная"]
+              "keywords": [
+                "рядная"
+              ]
             }
           ]
         },
@@ -3526,27 +4199,40 @@
             {
               "value": "Латунированная сталь",
               "slug": "brass-plated-steel",
-              "keywords": ["латунированн"]
+              "keywords": [
+                "латунированн"
+              ]
             },
             {
               "value": "Нержавеющая сталь",
               "slug": "inox",
-              "keywords": ["нержавеющ"]
+              "keywords": [
+                "нержавеющ"
+              ]
             },
             {
               "value": "Нейлон",
               "slug": "nylon",
-              "keywords": ["нейлон"]
+              "keywords": [
+                "нейлон"
+              ]
             },
             {
               "value": "Латунь",
               "slug": "brass",
-              "keywords": ["латунная", "латунн", "из латуни"]
+              "keywords": [
+                "латунная",
+                "латунн",
+                "из латуни"
+              ]
             },
             {
               "value": "Сталь",
               "slug": "steel",
-              "keywords": ["сталь", "стал проволка"]
+              "keywords": [
+                "сталь",
+                "стал проволка"
+              ]
             }
           ]
         }
@@ -3567,8 +4253,15 @@
           "is_filter": true,
           "is_seo_facet": true,
           "_note": "Посадочная резьба головки на штангу: «М10х1,25», «10*1,25», «M8X1.25», «10х125». «М8/10/12» (универсальная) не матчится — разделитель «/» вне класса. skip_if «адаптер» снимает правило с №10, где резьб несколько. P1: skip_regex блокирует множественную посадочную резьбу «М8/10/12» / «М6/8/10» — одного значения не существует, писать нельзя ничего. Гейт атрибутный: остальные характеристики товара извлекаются. На thread_pitch НЕ ставится: у «М8/10/12 х1,25» шаг общий и корректен.",
-          "skip_if": ["гайка 8*1,25", "адаптер", "набор", "комплект"],
-          "skip_regex": ["(?<![а-яa-z])[мm]\\s?\\d{1,2}/\\d{1,2}/\\d{1,2}"],
+          "skip_if": [
+            "гайка 8*1,25",
+            "адаптер",
+            "набор",
+            "комплект"
+          ],
+          "skip_regex": [
+            "(?<![а-яa-z])[мm]\\s?\\d{1,2}/\\d{1,2}/\\d{1,2}"
+          ],
           "regex": [
             "(?:^|\\s)[мm]?\\s*(\\d{1,2})\\s*[хx*]\\s*\\d"
           ]
@@ -3582,7 +4275,12 @@
           "priority": 40,
           "is_filter": true,
           "_note": "(?!\\d) обязателен: «10х125» — это шаг 1,25 без запятой, и без хвостового guard'а regex вернул бы 1. Лучше не извлечь, чем извлечь неверно.",
-          "skip_if": ["гайка 8*1,25", "адаптер", "набор", "комплект"],
+          "skip_if": [
+            "гайка 8*1,25",
+            "адаптер",
+            "набор",
+            "комплект"
+          ],
           "regex": [
             "(?:^|\\s)[мm]?\\s*\\d{1,2}\\s*[хx*]\\s*(\\d(?:[.,]\\d+)?)(?!\\d)"
           ]
@@ -3595,18 +4293,25 @@
           "priority": 30,
           "is_filter": true,
           "is_seo_facet": true,
-          "skip_if": ["гайка 8*1,25"],
+          "skip_if": [
+            "гайка 8*1,25"
+          ],
           "_note": "Только явное «аналог <бренд>»: собственный бренд товара (CHAMPION/STURM/PATRIOT) в совместимость не пишем. HUSQVARNA — новый вариант, утверждён владельцем; HITACHI уже в БД.",
           "options": [
             {
               "value": "HUSQVARNA",
               "slug": "husqvarna",
-              "keywords": ["аналог husq", "аналог husk"]
+              "keywords": [
+                "аналог husq",
+                "аналог husk"
+              ]
             },
             {
               "value": "HITACHI",
               "slug": "hitachi",
-              "keywords": ["аналог hitachi"]
+              "keywords": [
+                "аналог hitachi"
+              ]
             }
           ]
         },
@@ -3624,12 +4329,16 @@
             {
               "value": "ПАУК",
               "slug": "pauk",
-              "keywords": ["паук"]
+              "keywords": [
+                "паук"
+              ]
             },
             {
               "value": "Цепная",
               "slug": "tsepnaya",
-              "keywords": ["цепная"]
+              "keywords": [
+                "цепная"
+              ]
             }
           ]
         },
@@ -3647,7 +4356,9 @@
             {
               "value": "Полуавтомат",
               "slug": "poluavtomat",
-              "keywords": ["полуавтомат"]
+              "keywords": [
+                "полуавтомат"
+              ]
             }
           ]
         },
@@ -3659,7 +4370,13 @@
           "priority": 30,
           "is_filter": true,
           "_note": "P1: только прямые маркеры. false_keywords намеренно пуст — false автоматически не проставляется (решение владельца). Характеристику из отсутствия признака не выводим.",
-          "true_keywords": ["быстрая заправка", "быстрая загрузка", "быстрая замена", "быстрая заправк", "easy load"]
+          "true_keywords": [
+            "быстрая заправка",
+            "быстрая загрузка",
+            "быстрая замена",
+            "быстрая заправк",
+            "easy load"
+          ]
         }
       ]
     },
@@ -3715,22 +4432,37 @@
             {
               "value": "SDS-max",
               "slug": "sds-max",
-              "keywords": ["sds-max", "sds max"]
+              "keywords": [
+                "sds-max",
+                "sds max"
+              ]
             },
             {
               "value": "SDS-plus",
               "slug": "sds-plus",
-              "keywords": ["sds-plus", "sds plus", "sds+", "sds-pus", "sds-pus хвостовик"]
+              "keywords": [
+                "sds-plus",
+                "sds plus",
+                "sds+",
+                "sds-pus",
+                "sds-pus хвостовик"
+              ]
             },
             {
               "value": "Шестигранный",
               "slug": "hex",
-              "keywords": ["шестигран"]
+              "keywords": [
+                "шестигран"
+              ]
             },
             {
               "value": "Конический",
               "slug": "konich",
-              "keywords": ["коническ", "конич.", "конический хвост"]
+              "keywords": [
+                "коническ",
+                "конич.",
+                "конический хвост"
+              ]
             }
           ]
         },
@@ -3747,12 +4479,18 @@
             {
               "value": "М16",
               "slug": "m16",
-              "keywords": ["м16"]
+              "keywords": [
+                "м16"
+              ]
             },
             {
               "value": "1¼\"",
               "slug": "thread-1-1-4",
-              "keywords": ["1 1/4", "1-1/4", "1.1/4"]
+              "keywords": [
+                "1 1/4",
+                "1-1/4",
+                "1.1/4"
+              ]
             }
           ]
         },
@@ -3765,7 +4503,11 @@
           "priority": 40,
           "is_filter": true,
           "_note": "Диапазоны («ф14-30мм», «ф32-152мм») и «до 30мм» намеренно не извлекаются — одного диаметра у них нет. skip_if «клин»: у клина 100мм — это длина, а не диаметр.",
-          "skip_if": ["клин", "набор", "комплект"],
+          "skip_if": [
+            "клин",
+            "набор",
+            "комплект"
+          ],
           "regex": [
             "(?<![\\d.,\\-хx])(?<!до )(\\d{1,3}(?:[.,]\\d)?)\\s*мм",
             "(?<![\\d.,\\-])(\\d{1,3}(?:[.,]\\d)?)\\s*[хx]\\s*\\d"
@@ -3784,22 +4526,34 @@
             {
               "value": "Клин-выталкиватель",
               "slug": "klin-vytalkivatel",
-              "keywords": ["клин"]
+              "keywords": [
+                "клин"
+              ]
             },
             {
               "value": "Пылеотвод",
               "slug": "pyleotvod",
-              "keywords": ["пылеотвод"]
+              "keywords": [
+                "пылеотвод"
+              ]
             },
             {
               "value": "Переходник (адаптер)",
               "slug": "adapter",
-              "keywords": ["адаптер", "переходник"]
+              "keywords": [
+                "адаптер",
+                "переходник"
+              ]
             },
             {
               "value": "Центрирующее сверло",
               "slug": "sverlo-tsentr",
-              "keywords": ["сверло центрир", "сверло центров", "центрирующее сверло", "центровочное сверло"]
+              "keywords": [
+                "сверло центрир",
+                "сверло центров",
+                "центрирующее сверло",
+                "центровочное сверло"
+              ]
             }
           ]
         }
@@ -4042,7 +4796,10 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "skip_if": ["набор", "комплект"],
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
           "regex": [
             "(?<![\\dхx,/-])(?<!\\d\\.)(\\d{2,3})\\s*мм(?![а-яa-z])"
           ]
@@ -4062,7 +4819,10 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "skip_if": ["набор", "комплект"],
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
           "regex": [
             "(?<![\\dхx,/-])(?<!\\d\\.)(\\d{2,3})\\s*мм(?![а-яa-z])",
             "(?<![\\dхx,/-])(?<!\\d\\.)(\\d{3})\\s*[хx]\\s*\\d{2}(?![\\d.,])"
@@ -4083,9 +4843,44 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "skip_if": ["набор", "комплект"],
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
           "regex": [
             "(?<![\\dхx,/-])(?<!\\d\\.)(\\d{1,3})\\s*мм(?![а-яa-z])"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "nozhnitsy-ruchnye",
+      "category": "Ножницы",
+      "_note": "DRF-1450. «N мм» у ножниц означает ДВЕ разные величины, и это проверено на всех названиях типа. У ручных ножниц (хозяйственных, по металлу, для травы) это ДЛИНА инструмента. У труборезов, кабелерезов, арматурных и насадок на дрель — размер ОБРАБАТЫВАЕМОГО материала: «для металлопластиковых трубок 42мм», «d=10мм», «ф4-12мм», «лист металла 1,8мм». Диапазоны в этой выборке не пересекаются (длины 115…660, размеры материала 1,8…63), но брать длину по числовому порогу нельзя — это совпадение выборки, а не правило. Поэтому отсекаем по СМЫСЛУ: skip_if по маркерам назначения. Замер на стенде 2026-08-31: в типе 89 товаров (published+active), правило дало 61 значение length в диапазоне 115…660 мм, 22 различных значения; 11 названий с размером материала отсечены skip_if и в план не вошли.",
+      "attributes": [
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "насадка",
+            "для резки",
+            "для металлопласт",
+            "для пластиковых",
+            "для труб",
+            "трубок",
+            "диэлектрическ",
+            "кабеля",
+            "арматуры",
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx,/-])(?<!\\d\\.)(\\d{2,3})\\s*мм(?![а-яa-z])"
           ]
         }
       ]
