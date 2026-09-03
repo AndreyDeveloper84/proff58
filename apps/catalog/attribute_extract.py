@@ -82,6 +82,12 @@ class AttrRule:
     is_ai_feature: bool = False
     options: tuple[Option, ...] = ()  # select
     patterns: tuple[re.Pattern, ...] = ()  # number
+    # number: множитель единицы для КАЖДОГО шаблона, по позиции в patterns.
+    # Нужен там, где один и тот же размер записан в разных единицах: у ящиков
+    # часть названий в миллиметрах, часть в сантиметрах. Шаблон объявляется
+    # как {"pattern": ..., "scale": 10}; голая строка означает scale=1, поэтому
+    # все существующие правила читаются без изменений.
+    pattern_scales: tuple[Decimal, ...] = ()
     true_keywords: tuple[str, ...] = ()  # boolean
     false_keywords: tuple[str, ...] = ()  # boolean
     derive: dict | None = None  # инференс по другим атрибутам (см. _derive_one)
@@ -170,7 +176,13 @@ class AttributeRules:
                 Option(o["value"], o["slug"], tuple(o.get("keywords", [])))
                 for o in a.get("options", [])
             ),
-            patterns=tuple(re.compile(p) for p in a.get("regex", [])),
+            patterns=tuple(
+                re.compile(p if isinstance(p, str) else p["pattern"]) for p in a.get("regex", [])
+            ),
+            pattern_scales=tuple(
+                Decimal(1) if isinstance(p, str) else Decimal(str(p.get("scale", 1)))
+                for p in a.get("regex", [])
+            ),
             true_keywords=tuple(a.get("true_keywords", [])),
             false_keywords=tuple(a.get("false_keywords", [])),
             derive=a.get("derive"),
@@ -300,7 +312,7 @@ class AttributeRules:
             return None
 
         if rule.kind == NUMBER:
-            for pat in rule.patterns:
+            for idx, pat in enumerate(rule.patterns):
                 m = pat.search(norm)
                 if not m:
                     continue
@@ -308,6 +320,11 @@ class AttributeRules:
                     num = Decimal(m.group(1).replace(",", "."))
                 except (InvalidOperation, IndexError):
                     continue
+                scale = rule.pattern_scales[idx] if idx < len(rule.pattern_scales) else Decimal(1)
+                if scale != 1:
+                    # без normalize(): он сворачивает 290 в «2.9E+2», и это уезжает
+                    # в отчёт плана и в matched, хотя число верное.
+                    num = num * scale
                 return AttrValue(
                     slug=rule.slug,
                     kind=NUMBER,
