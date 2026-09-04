@@ -275,6 +275,16 @@ class ImagePipeline:
 
         Одна и та же картинка у РАЗНЫХ товаров — законна: оба ограничения
         частичные и привязаны к товару, глобального уникального checksum нет.
+
+        Инвариант main (VI-INT-02a): у товара не появляется ВТОРОЙ main и
+        существующий не демотируется. Решение принимается в момент СОЗДАНИЯ
+        записи: если main уже есть (в т.ч. legacy-галерея с 2+ main — их не
+        нормализуем), новая запись всегда `is_main=False`; если main нет
+        (пустая галерея или галерея без main), созданная запись становится
+        main. Ветки дедупа возвращают существующую запись как есть, ничего
+        в ней не меняя и на решение о main не влияя. Явный `is_main=True`
+        от вызывающего уважается (ручное действие), но ответственность за
+        демоцию прежнего main при этом на вызывающем.
         """
         if product.content_locked:
             return None
@@ -300,11 +310,14 @@ class ImagePipeline:
         if same_bytes is not None:
             return same_bytes  # та же картинка под другим URL — второй раз не пишем
 
-        first = not product.images.exists()
+        # Решение о main — в момент СОЗДАНИЯ (VI-INT-02a): импорт не создаёт
+        # второй main и не трогает существующий. Legacy-галереи (0 или 2+
+        # main) не нормализуем: при has_main новая запись всегда не-main.
+        has_main = product.images.filter(is_main=True).exists()
         image = ProductImage(
             product=product,
             alt=alt,
-            is_main=is_main or first,
+            is_main=is_main or not has_main,
             source=source,
             source_url=url,
             checksum=checksum,
@@ -331,6 +344,13 @@ class ImagePipeline:
         сетевой запрос выдерживает интервал по хосту, так что N кадров с одной
         площадки займут ~(N-1)*interval секунд. Уже скачанные URL и повторы по
         checksum до сети не доходят и окно темпа не тратят.
+
+        Main (VI-INT-02a): пачка НЕ форсирует main по позиции URL — раньше
+        `is_main=(i == 0)` давал второй main у товара, где он уже был.
+        Теперь main решает `process_url` в момент создания: при отсутствующем
+        main его получает первое РЕАЛЬНО СОЗДАННОЕ изображение пачки (дедуп
+        в счёт не идёт), при существующем — все новые ложатся не-main, а
+        существующая запись не меняется вообще.
         """
         if source not in ImageSource.values:
             raise ValueError(f"неизвестный source={source!r}; допустимы {ImageSource.values}")
@@ -340,8 +360,8 @@ class ImagePipeline:
                 "и неотличимы от загруженных руками"
             )
         out: list[ProductImage] = []
-        for i, url in enumerate(urls):
-            img = self.process_url(product, url, is_main=(i == 0), source=source)
+        for url in urls:
+            img = self.process_url(product, url, source=source)
             if img is not None:
                 out.append(img)
         return out

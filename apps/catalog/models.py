@@ -887,6 +887,7 @@ class ImageSource(models.TextChoices):
     VIHR = "vihr", _("vihr.su")
     INTERSKOL = "interskol", _("interskol.ru")
     ZUBR = "zubr", _("zubr.ru")
+    HUTER = "huter", _("huter.su")
     VSEINSTRUMENTI = "vseinstrumenti", _("vseinstrumenti.ru")
 
 
