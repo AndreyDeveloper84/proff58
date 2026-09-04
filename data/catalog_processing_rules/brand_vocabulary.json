@@ -60,7 +60,7 @@
     {"canonical": "SPARTA", "aliases": ["sparta"], "catalog_hits": 91, "pool_hits": 2},
     {"canonical": "GROZ", "aliases": ["groz"], "catalog_hits": 82, "pool_hits": 23},
     {"canonical": "MD-STARS", "aliases": ["md-stars"], "catalog_hits": 73, "pool_hits": 49},
-    {"canonical": "REMOCOLOR", "aliases": ["remocolor"], "catalog_hits": 65, "pool_hits": 11},
+    {"canonical": "REMOCOLOR", "aliases": ["remocolor", "ремоколор"], "catalog_hits": 65, "pool_hits": 11},
     {"canonical": "КАЛИБР", "aliases": ["калибр"], "catalog_hits": 60, "pool_hits": 1,
      "_note": "Только по границе слова: подстрока ловит «калибровочная» и «Калибратор» (+14 ложных)."},
     {"canonical": "ЭНКОР", "aliases": ["энкор"], "catalog_hits": 58, "pool_hits": 1},
@@ -70,7 +70,7 @@
     {"canonical": "ПРАКТИКА", "aliases": ["практика"], "catalog_hits": 35, "pool_hits": 0},
     {"canonical": "OZONE", "aliases": ["ozone"], "catalog_hits": 33, "pool_hits": 26},
     {"canonical": "ДИОЛД", "aliases": ["диолд"], "catalog_hits": 31, "pool_hits": 0},
-    {"canonical": "REDIUS", "aliases": ["redius"], "catalog_hits": 31, "pool_hits": 16},
+    {"canonical": "REDIUS", "aliases": ["redius", "редиус"], "catalog_hits": 31, "pool_hits": 16},
     {"canonical": "THORVIK", "aliases": ["thorvik"], "catalog_hits": 29, "pool_hits": 5},
     {"canonical": "SUMAKE", "aliases": ["sumake"], "catalog_hits": 28, "pool_hits": 7},
     {"canonical": "СИНТЕКС", "aliases": ["синтекс"], "catalog_hits": 28, "pool_hits": 3},
@@ -83,7 +83,7 @@
     {"canonical": "COFRA", "aliases": ["cofra"], "catalog_hits": 2, "pool_hits": 2},
     {"canonical": "ECHO", "aliases": ["echo", "эхо"], "catalog_hits": 34, "pool_hits": 2,
      "_note": "Добавлен при переводе taxonomy_audit на общий словарь: узел «ЭХО» есть в дереве категорий (43 товара), и без этого бренда находка F4 была бы потеряна."},
-    {"canonical": "PATRIOT", "aliases": ["patriot"], "catalog_hits": 75, "pool_hits": 6},
+    {"canonical": "PATRIOT", "aliases": ["patriot", "патриот"], "catalog_hits": 75, "pool_hits": 6},
     {"canonical": "RYOBI", "aliases": ["ryobi"], "catalog_hits": 30, "pool_hits": 0}
   ]
 }
