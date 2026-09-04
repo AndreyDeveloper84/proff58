@@ -1,0 +1,2445 @@
+[
+  {
+    "product_id": 36918,
+    "input": {
+      "name": "Бинт 12смх30м ЗУБР строительный, повышенной прочно",
+      "brand": "ЗУБР",
+      "article": "1240-12-30",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/stroitelnyj-bint-zubr-povyshennoj-prochnosti-12smh30m-1240-12-30-1263649/",
+      "source_title": "Строительный бинт Зубр повышенной прочности 12смх30м 1240-12-30",
+      "source_brand": "ЗУБР",
+      "source_article_raw": "1240-12-30",
+      "source_article_normalized": "1240-12-30"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/krepezh/montazhnye-lenty/1263649/1000x1000/51070420.jpg",
+        "width": 1000,
+        "height": 1000
+      }
+    ],
+    "queries_tried": [
+      "1240-12-30",
+      "1240-12-30 ЗУБР"
+    ],
+    "characteristics": [
+      {
+        "name": "Тип",
+        "value": "лента",
+        "unit": null
+      },
+      {
+        "name": "Применение",
+        "value": "внутри/снаружи помещения",
+        "unit": null
+      },
+      {
+        "name": "Материал",
+        "value": "полипропилен",
+        "unit": null
+      },
+      {
+        "name": "Длина",
+        "value": "30 м",
+        "unit": null
+      },
+      {
+        "name": "Ширина",
+        "value": "120 мм",
+        "unit": null
+      },
+      {
+        "name": "Цвет",
+        "value": "белый",
+        "unit": null
+      },
+      {
+        "name": "Размер ячейки",
+        "value": "нет ячеек мм",
+        "unit": null
+      },
+      {
+        "name": "Самоклеящиеся",
+        "value": "нет",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Строительный бинт Зубр повышенной прочности 12смх30м 1240-12-30 - выгодная цена, отзывы, характеристики, фото - купить в Москве и РФ",
+      "html": null
+    }
+  },
+  {
+    "product_id": 2092,
+    "input": {
+      "name": "Электрогенератор DY8000L HUTER",
+      "brand": "HUTER",
+      "article": "64/1/33",
+      "model": "DY8000"
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 100,
+      "reason": "article_exact+brand_exact+model_confirmed",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/elektrogenerator-huter-dy8000l-64-1-33-991173/",
+      "source_title": "Бензиновый генератор Huter DY8000L 64/1/33",
+      "source_brand": "Huter",
+      "source_article_raw": "64/1/33",
+      "source_article_normalized": "64/1/33"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/generatory/991173/2400x1600/167707277.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/generatory/991173/2400x1600/228950129.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/generatory/991173/2400x1600/228950135.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "64/1/33"
+    ],
+    "characteristics": [
+      {
+        "name": "Напряжение",
+        "value": "220",
+        "unit": null
+      },
+      {
+        "name": "Стартер",
+        "value": "ручной стартер",
+        "unit": null
+      },
+      {
+        "name": "Max мощность",
+        "value": "6.5",
+        "unit": null
+      },
+      {
+        "name": "Мощность максимальная при 220 В",
+        "value": "7",
+        "unit": null
+      },
+      {
+        "name": "Мощность номинальная при 220 В",
+        "value": "6.5",
+        "unit": null
+      },
+      {
+        "name": "Альтернатор",
+        "value": "асинхронный",
+        "unit": null
+      },
+      {
+        "name": "Емкость топливного бака",
+        "value": "25",
+        "unit": null
+      },
+      {
+        "name": "Тип двигателя",
+        "value": "4-х тактный",
+        "unit": null
+      },
+      {
+        "name": "Производитель двигателя",
+        "value": "Huter",
+        "unit": null
+      },
+      {
+        "name": "Контейнерный",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Автозапуск",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Класс товара",
+        "value": "Бытовой",
+        "unit": null
+      },
+      {
+        "name": "Свеча зажигания",
+        "value": "F7TC",
+        "unit": null
+      },
+      {
+        "name": "Дисплей",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Обмотка альтернатора двигателя",
+        "value": "медь",
+        "unit": null
+      },
+      {
+        "name": "Тип кожуха",
+        "value": "открытый",
+        "unit": null
+      },
+      {
+        "name": "Длина",
+        "value": "705",
+        "unit": null
+      },
+      {
+        "name": "Ширина",
+        "value": "560",
+        "unit": null
+      },
+      {
+        "name": "Высота",
+        "value": "550",
+        "unit": null
+      },
+      {
+        "name": "С колесами",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "С ручками",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "69.8",
+        "unit": null
+      },
+      {
+        "name": "Объем масляного бака",
+        "value": "1.1",
+        "unit": null
+      },
+      {
+        "name": "Тип электростанции",
+        "value": "мобильные",
+        "unit": null
+      },
+      {
+        "name": "Вид топлива",
+        "value": "бензин",
+        "unit": null
+      },
+      {
+        "name": "Эл. выходы 380/220/12",
+        "value": "0/3/0",
+        "unit": null
+      },
+      {
+        "name": "Аккумулятор в комплекте",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Уровень шума",
+        "value": "91",
+        "unit": null
+      },
+      {
+        "name": "Число оборотов",
+        "value": "3600",
+        "unit": null
+      },
+      {
+        "name": "Объем двигателя",
+        "value": "420",
+        "unit": null
+      },
+      {
+        "name": "Сила тока розеток 380/220/12",
+        "value": "0/16-32/0",
+        "unit": null
+      },
+      {
+        "name": "Контроль напряжения",
+        "value": "компаундный (традиционный)",
+        "unit": null
+      },
+      {
+        "name": "Индикатор уровня топлива",
+        "value": "да",
+        "unit": null
+      },
+      {
+        "name": "Счетчик моточасов",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Выход 12V",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Датчик масла",
+        "value": "да",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "HUTER DY8000L — мощный бензиновый генератор для резервного электроснабжения дома, дачи, мастерской, строительного объекта и выездных работ. Номинальная мощность 6,5 кВт, максимальная — 7 кВт, поэтому генератор подходит для одновременного питания нескольких потребителей с учётом их суммарной нагрузки и пусковых токов.Модель оснащена четырёхтактным двигателем мощностью 15 л.с. и объёмом 420 см³. Топливный бак 25 л позволяет дольше работать без частых остановок на дозаправку. Ручной стартер не требует аккумулятора и позволяет подготовить генератор к работе практически в любом месте.Медная обмотка альтернатора рассчитана на стабильную работу под нагрузкой. Встроенный вольтметр помогает контролировать напряжение, а защита от перегрузки, короткого замыкания и низкого уровня масла снижает риск повреждения генератора и подключённого оборудования. Прочная металлическая рама защищает основные узлы, а резиновые опоры помогают уменьшить вибрацию.Когда в загородном доме неожиданно пропадает электричество, DY8000L поможет сохранить освещение и питание необходимых приборов. На стройке генератор позволит запустить инструмент и рабочее освещение ещё до подключения объекта к сети. В мастерской работа не остановится из-за аварии на линии, а выездная бригада сможет получить электроэнергию непосредственно там, где выполняется заказ.",
+      "html": "HUTER DY8000L — мощный бензиновый генератор для резервного электроснабжения дома, дачи, мастерской, строительного объекта и выездных работ. Номинальная мощность 6,5 кВт, максимальная — 7 кВт, поэтому генератор подходит для одновременного питания нескольких потребителей с учётом их суммарной нагрузки и пусковых токов.Модель оснащена четырёхтактным двигателем мощностью 15 л.с. и объёмом 420 см³. Топливный бак 25 л позволяет дольше работать без частых остановок на дозаправку. Ручной стартер не требует аккумулятора и позволяет подготовить генератор к работе практически в любом месте.Медная обмотка альтернатора рассчитана на стабильную работу под нагрузкой. Встроенный вольтметр помогает контролировать напряжение, а защита от перегрузки, короткого замыкания и низкого уровня масла снижает риск повреждения генератора и подключённого оборудования. Прочная металлическая рама защищает основные узлы, а резиновые опоры помогают уменьшить вибрацию.Когда в загородном доме неожиданно пропадает электричество, DY8000L поможет сохранить освещение и питание необходимых приборов. На стройке генератор позволит запустить инструмент и рабочее освещение ещё до подключения объекта к сети. В мастерской работа не остановится из-за аварии на линии, а выездная бригада сможет получить электроэнергию непосредственно там, где выполняется заказ."
+    }
+  },
+  {
+    "product_id": 37265,
+    "input": {
+      "name": "Лен сантехнический №16 ЗУБР 100г",
+      "brand": "ЗУБР",
+      "article": "4-51991-100",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/santehnicheskij-len-zubr-16-100-g-4-51991-100-1254914/",
+      "source_title": "Сантехнический лен Зубр №16 100 г 4-51991-100",
+      "source_brand": "ЗУБР",
+      "source_article_raw": "4-51991-100",
+      "source_article_normalized": "4-51991-100"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/santehnicheskoe-oborudovanie/inzhenernaya-santehnika/1254914/2400x1600/53570362.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/santehnicheskoe-oborudovanie/inzhenernaya-santehnika/1254914/2400x1600/53570363.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "4-51991-100"
+    ],
+    "characteristics": [
+      {
+        "name": "Назначение",
+        "value": "вода",
+        "unit": null
+      },
+      {
+        "name": "Тип",
+        "value": "лен сантехнический",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "100",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": null,
+      "html": null
+    }
+  },
+  {
+    "product_id": 41489,
+    "input": {
+      "name": "Паста  паяльная канифольно-вазелиновая, 20гр ЗУБР",
+      "brand": "ЗУБР",
+      "article": "55475-020",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/pasta-payalnaya-kanifolno-vazelinovaya-20-gr-zubr-55475-020-724386/",
+      "source_title": "Паста паяльная канифольно-вазелиновая (20 гр) Зубр 55475-020",
+      "source_brand": "ЗУБР",
+      "source_article_raw": "55475-020",
+      "source_article_normalized": "55475-020"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-ruchnogo-instrumenta/724386/2400x1600/53770436.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-ruchnogo-instrumenta/724386/2400x1600/53770437.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-ruchnogo-instrumenta/724386/2400x1600/53770438.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "55475-020"
+    ],
+    "characteristics": [
+      {
+        "name": "Тип",
+        "value": "нейтральный",
+        "unit": null
+      },
+      {
+        "name": "Тип товара ",
+        "value": "флюс паяльный",
+        "unit": null
+      },
+      {
+        "name": "Вид вещества",
+        "value": "флюс",
+        "unit": null
+      },
+      {
+        "name": "Объем",
+        "value": "0.02",
+        "unit": null
+      },
+      {
+        "name": "Температура пайки",
+        "value": "200-300",
+        "unit": null
+      },
+      {
+        "name": "Подходит для",
+        "value": "медь",
+        "unit": null
+      },
+      {
+        "name": "Агрегатное состояние",
+        "value": "паста",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "0.02",
+        "unit": null
+      },
+      {
+        "name": "Кисточка",
+        "value": "нет",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Канифольно-вазелиновая паста Зубр 55475-020 применяется для пайки элементов радиомонтажа и печатных плат легкоплавкими припоями. Хорошо держится на металлических контактах, обеспечивая точное дозирование и высокую скорость нанесения на большое количество мест паек.",
+      "html": "Канифольно-вазелиновая паста Зубр 55475-020 применяется для пайки элементов радиомонтажа и печатных плат легкоплавкими припоями. Хорошо держится на металлических контактах, обеспечивая точное дозирование и высокую скорость нанесения на большое количество мест паек.  "
+    }
+  },
+  {
+    "product_id": 42047,
+    "input": {
+      "name": "Секатор 200мм плоскостной с 2-хкомпонентными рукоятками GRINDA G-24",
+      "brand": "GRINDA",
+      "article": "423124",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/kontaktnyj-sekator-grinda-423124-991467/",
+      "source_title": "Контактный секатор Grinda 423124",
+      "source_brand": "Grinda",
+      "source_article_raw": "423124",
+      "source_article_normalized": "423124"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/sadovaya-tehnika-i-instrument/sadovyj-inventar-i-instrument/991467/2400x1600/52089704.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/sadovaya-tehnika-i-instrument/sadovyj-inventar-i-instrument/991467/2400x1600/52089705.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/sadovaya-tehnika-i-instrument/sadovyj-inventar-i-instrument/991467/2400x1600/52089706.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "423124"
+    ],
+    "characteristics": [
+      {
+        "name": "Тип привода",
+        "value": "пружинный",
+        "unit": null
+      },
+      {
+        "name": "Тип лезвий",
+        "value": "контактные",
+        "unit": null
+      },
+      {
+        "name": "Штанговый",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Прививочный",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Поворотная рукоятка",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Максимальный диаметр реза",
+        "value": "20",
+        "unit": null
+      },
+      {
+        "name": "Покрытие рукояток",
+        "value": "двухкомпонентное",
+        "unit": null
+      },
+      {
+        "name": "Эфес",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "С длинными ручками",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Общая длина",
+        "value": "200",
+        "unit": null
+      },
+      {
+        "name": "Фиксатор лезвий",
+        "value": "есть",
+        "unit": null
+      },
+      {
+        "name": "Покрытие лезвий",
+        "value": "тефлоновое",
+        "unit": null
+      },
+      {
+        "name": "Материал лезвия",
+        "value": "углеродистая сталь",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Контактный секатор Grinda 423124 с шестеренной передачей, которая увеличивает силу реза. Лезвия выполнены из закаленной углеродистой стали, поэтому инструмент имеет долгий срок службы. Двухкомпонентная рукоять обеспечивает надежный хват и прибор не выскальзывает.",
+      "html": "Контактный секатор Grinda 423124 с шестеренной передачей, которая увеличивает силу реза.    Лезвия выполнены из закаленной углеродистой стали, поэтому инструмент имеет долгий срок службы.    Двухкомпонентная рукоять обеспечивает надежный хват и прибор не выскальзывает.  "
+    }
+  },
+  {
+    "product_id": 43419,
+    "input": {
+      "name": "Щетка-сметка АВТО 990-1460мм ЗУБР телескопическая, поворотная, со скребком и водосгоном",
+      "brand": "ЗУБР",
+      "article": "61060-150",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/avtomobilnaya-schetka-smetka-dlya-snega-zubr-profi-teleskopicheskaya-so-skrebkom-i-vodosgonom-990-1460-mm-61060-150-713087/",
+      "source_title": "Автомобильная щетка-сметка для снега ЗУБР Профи, телескопическая, со скребком и водосгоном, 990-1460 мм 61060-150",
+      "source_brand": "ЗУБР",
+      "source_article_raw": "61060-150",
+      "source_article_normalized": "61060-150"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/ruchnoj-instrument/instrument-dlya-avtoservisa-i-garazha/713087/2400x1600/51267171.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/ruchnoj-instrument/instrument-dlya-avtoservisa-i-garazha/713087/2400x1600/51267170.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/ruchnoj-instrument/instrument-dlya-avtoservisa-i-garazha/713087/2400x1600/72764102.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "61060-150"
+    ],
+    "characteristics": [
+      {
+        "name": "Вид",
+        "value": "щетка/скребок/водосгон",
+        "unit": null
+      },
+      {
+        "name": "Ширина рабочей части",
+        "value": "250",
+        "unit": null
+      },
+      {
+        "name": "Общая длина",
+        "value": "1460",
+        "unit": null
+      },
+      {
+        "name": "Материал ручки",
+        "value": "пластмасса, металл, поролон",
+        "unit": null
+      },
+      {
+        "name": "Материал скребка",
+        "value": "пластик",
+        "unit": null
+      },
+      {
+        "name": "Материал щетины",
+        "value": "распушенная щетина (ПЭТ)",
+        "unit": null
+      },
+      {
+        "name": "Телескопическая рукоятка",
+        "value": "да",
+        "unit": null
+      },
+      {
+        "name": "Цвет",
+        "value": "черный/синий",
+        "unit": null
+      },
+      {
+        "name": "С поворотной головой",
+        "value": "да",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Автомобильная щетка-сметка для снега ЗУБР Профи, телескопическая, со скребком и водосгоном, 990-1460 мм 61060-150 - многофункциональное приспособление для очистки транспортного средства и сгона воды. Наличие скребка позволит избавиться от наледи. Термозащитная накладка способствует комфортному удержанию инструмента в руке. Телескопическая рукоятка позволяет использовать приспособление для высоких автомобилей.",
+      "html": "Автомобильная щетка-сметка для снега ЗУБР Профи, телескопическая, со скребком и водосгоном, 990-1460 мм 61060-150 - многофункциональное приспособление для очистки транспортного средства и сгона воды. Наличие скребка позволит избавиться от наледи. Термозащитная накладка способствует комфортному удержанию инструмента в руке. Телескопическая рукоятка позволяет использовать приспособление для высоких автомобилей.  "
+    }
+  },
+  {
+    "product_id": 10812,
+    "input": {
+      "name": "Колесо измерительное KRAFTOOL",
+      "brand": "KRAFTOOL",
+      "article": "34756",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/izmeritelnoe-koleso-99999-m-kraftool-34756-7569878/",
+      "source_title": "Измерительное колесо KRAFTOOL 99999 м 34756",
+      "source_brand": "KRAFTOOL",
+      "source_article_raw": "34756",
+      "source_article_normalized": "34756"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/izmeritelnye-pribory-i-instrument/7569878/2400x1600/88317914.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/izmeritelnye-pribory-i-instrument/7569878/2400x1600/124467110.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/izmeritelnye-pribory-i-instrument/7569878/2400x1600/124467116.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "34756"
+    ],
+    "characteristics": [
+      {
+        "name": "Max дальность измерения",
+        "value": "99999.9",
+        "unit": null
+      },
+      {
+        "name": "Шаг измерения",
+        "value": "0.01",
+        "unit": null
+      },
+      {
+        "name": "Длина окружности колеса",
+        "value": "1",
+        "unit": null
+      },
+      {
+        "name": "Диаметр колес",
+        "value": "0.32",
+        "unit": null
+      },
+      {
+        "name": "Тип счетчика",
+        "value": "механический",
+        "unit": null
+      },
+      {
+        "name": "Поверка",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Внесен в госреестр",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "1.2",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Измерительное колесо 99999 м KRAFTOOL 34756 - профессиональный инструмент для измерения больших расстояний при строительных работах, работах по прокладке кабелей, работах по землеустройству и незаменимо при составлении схем ДТП.",
+      "html": "Измерительное колесо 99999 м KRAFTOOL 34756 - профессиональный инструмент для измерения больших расстояний при строительных работах, работах по прокладке кабелей, работах по землеустройству и незаменимо при составлении схем ДТП."
+    }
+  },
+  {
+    "product_id": 41821,
+    "input": {
+      "name": "Проволока вязальная 0,9мм 200м ЗУБР",
+      "brand": "ЗУБР",
+      "article": "305415-09",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/vyazalnaya-termoobrabotannaya-provoloka-zubr-0-9mm-h-200m-305415-09-1547067/",
+      "source_title": "Вязальная термообработанная проволока ЗУБР 0.9мм х 200м 305415-09",
+      "source_brand": "ЗУБР",
+      "source_article_raw": "305415-09",
+      "source_article_normalized": "305415-09"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnye-materialy/prochie-stroitelnye-materialy/1547067/2400x1600/166111177.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnye-materialy/prochie-stroitelnye-materialy/1547067/2400x1600/166111183.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnye-materialy/prochie-stroitelnye-materialy/1547067/2400x1600/166111189.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "305415-09"
+    ],
+    "characteristics": [
+      {
+        "name": "ГОСТ",
+        "value": "3282-74",
+        "unit": null
+      },
+      {
+        "name": "Диаметр",
+        "value": "0.9",
+        "unit": null
+      },
+      {
+        "name": "Длина",
+        "value": "200",
+        "unit": null
+      },
+      {
+        "name": "Материал",
+        "value": "сталь",
+        "unit": null
+      },
+      {
+        "name": "ПВХ изоляция",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Цвет",
+        "value": "черный",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "0.925",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": null,
+      "html": null
+    }
+  },
+  {
+    "product_id": 15728,
+    "input": {
+      "name": "Крестики 3.0 мм    150 шт Remocolor",
+      "brand": "REMOCOLOR",
+      "article": "47-0-030",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/krestiki-150-sht-3-mm-dlya-plitki-remokolor-47-0-030-769405/",
+      "source_title": "Крестики пластиковые для укладки плитки, 3,0мм 150шт, (уп.) РемоКолор 47-0-030",
+      "source_brand": "РемоКолор",
+      "source_article_raw": "47-0-030",
+      "source_article_normalized": "47-0-030"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodniki-dlya-stroitelnogo-oborudovaniya/769405/2400x1600/224762297.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodniki-dlya-stroitelnogo-oborudovaniya/769405/2400x1600/224762315.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodniki-dlya-stroitelnogo-oborudovaniya/769405/2400x1600/224762327.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "47-0-030"
+    ],
+    "characteristics": [
+      {
+        "name": "Тип",
+        "value": "крестики",
+        "unit": null
+      },
+      {
+        "name": "Размер",
+        "value": "3",
+        "unit": null
+      },
+      {
+        "name": "Количество",
+        "value": "150",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Крестики для кафеля РемоКолор 47-0-030 используются при укладке плитки для создания одинакового расстояния между плитками. Изготовлены из пластмассы. В комплекте — 150 штук. Размер — 3 мм.",
+      "html": "Крестики для кафеля РемоКолор 47-0-030 используются при укладке плитки для создания одинакового расстояния между плитками. Изготовлены из пластмассы. В комплекте &mdash; 150 штук. Размер &mdash; 3 мм.  "
+    }
+  },
+  {
+    "product_id": 519,
+    "input": {
+      "name": "Многофункциональный инструмент аккум Einhell PXC VARRITO 18В без АККУМ и ЗУ",
+      "brand": "EINHELL",
+      "article": "4465160",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/mnogofunktsionalnyj-akkumulyatornyj-instrument-einhell-pxc-varrito-4465160-986413/",
+      "source_title": "Многофункциональный аккумуляторный инструмент Einhell PXC VARRITO 4465160",
+      "source_brand": "Einhell",
+      "source_article_raw": "4465160",
+      "source_article_normalized": "4465160"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/renovator-mnogofunktsionalnyj-instrument/986413/2400x1600/53844335.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/renovator-mnogofunktsionalnyj-instrument/986413/2400x1600/53844336.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/renovator-mnogofunktsionalnyj-instrument/986413/2400x1600/53844337.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "4465160"
+    ],
+    "characteristics": [
+      {
+        "name": "Тип двигателя",
+        "value": "щеточный",
+        "unit": null
+      },
+      {
+        "name": "Электр. регулировка оборотов",
+        "value": "есть",
+        "unit": null
+      },
+      {
+        "name": "Угол колебаний",
+        "value": "3.2",
+        "unit": null
+      },
+      {
+        "name": "Тип соединения",
+        "value": "OIS",
+        "unit": null
+      },
+      {
+        "name": "Количество насадок в наборе",
+        "value": "5",
+        "unit": null
+      },
+      {
+        "name": "Тип аккумулятора",
+        "value": "Li-lon",
+        "unit": null
+      },
+      {
+        "name": "Емкость аккумулятора",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Напряжение",
+        "value": "18",
+        "unit": null
+      },
+      {
+        "name": "Быстросъемное крепление",
+        "value": "да",
+        "unit": null
+      },
+      {
+        "name": "Подсветка",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Наличие виброручки",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Упаковка",
+        "value": "коробка",
+        "unit": null
+      },
+      {
+        "name": "Серия аккумулятора",
+        "value": "Einhell Power X-Change",
+        "unit": null
+      },
+      {
+        "name": "Класс товара",
+        "value": "полупрофессиональный",
+        "unit": null
+      },
+      {
+        "name": "Габариты без упаковки",
+        "value": "165х75х255",
+        "unit": null
+      },
+      {
+        "name": "Частота колебаний",
+        "value": "11000-20000",
+        "unit": null
+      },
+      {
+        "name": "Возможность подключения к пылесосу",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Плавный пуск",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Поддержание постоянных оборотов под нагрузкой",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Количество аккумуляторов в комплекте",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Источник питания",
+        "value": "от аккумулятора",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "1",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Многофункциональный аккумуляторный инструмент Einhell PXC VARRITO 4465160 пригодится для шлифования и пиления различных материалов. Благодаря регулируемой частоте колебаний легко подстроится под любую операцию. Замена принадлежностей производится без использования вспомогательных инструментов. 12-пиновый разъем крепления насадки позволяет выбрать оптимальное положение. Для безопасной и комфортной работы предусмотрена рукоять с мягкой нескользящей накладкой. Реноватор является представителем семейства Power X-Change, а значит совместим со всеми аккумуляторами платформы. Согласно Вашим задачам и потребностям аккумуляторы нужной ёмкости серии Power X-Change можно приобрести отдельно. Поставляется без аккумулятора и зарядного устройства.",
+      "html": "Многофункциональный аккумуляторный инструмент Einhell PXC VARRITO 4465160 пригодится для шлифования и пиления различных материалов. Благодаря регулируемой частоте колебаний легко подстроится под любую операцию.    Замена принадлежностей производится без использования вспомогательных инструментов.    12-пиновый разъем крепления насадки позволяет выбрать оптимальное положение.    Для безопасной и комфортной работы предусмотрена рукоять с мягкой нескользящей накладкой.    Реноватор является представителем семейства Power X-Change, а значит совместим со всеми аккумуляторами платформы. Согласно Вашим задачам и потребностям аккумуляторы нужной ёмкости серии Power X-Change можно приобрести отдельно. Поставляется без аккумулятора и зарядного устройства.  "
+    }
+  },
+  {
+    "product_id": 22671,
+    "input": {
+      "name": "Набор звездочек СЕРВИС КЛЮЧ (сплин) М5-М12 5 пр.",
+      "brand": "СЕРВИС КЛЮЧ",
+      "article": "76433",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/nabor-g-obraznyh-zvezdochek-splin-5-predmetov-servis-klyuch-proffi-76433-1185274/",
+      "source_title": "Набор Г-образных звездочек сплин 5 предметов СЕРВИС КЛЮЧ PROFFI 76433",
+      "source_brand": "Сервис Ключ",
+      "source_article_raw": "76433",
+      "source_article_normalized": "76433"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/ruchnoj-instrument/gaechnye-klyuchi/1185274/2400x1600/211986494.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/ruchnoj-instrument/gaechnye-klyuchi/1185274/2400x1600/211986500.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/ruchnoj-instrument/gaechnye-klyuchi/1185274/2400x1600/211986506.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "76433"
+    ],
+    "characteristics": [
+      {
+        "name": "Тип",
+        "value": "SPLINE",
+        "unit": null
+      },
+      {
+        "name": "Размер min (мм)",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Размер max (мм)",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Размер min (дюйм)",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Размер max (дюйм)",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Трещотка",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Покрытие",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Материал",
+        "value": "CrV",
+        "unit": null
+      },
+      {
+        "name": "Количество в наборе",
+        "value": "5",
+        "unit": null
+      },
+      {
+        "name": "Диэлектрическое покрытие",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Вид",
+        "value": "М-профиль",
+        "unit": null
+      },
+      {
+        "name": " Размер min (Т/E)",
+        "value": "М5",
+        "unit": null
+      },
+      {
+        "name": " Размер max (T/E)",
+        "value": "М12",
+        "unit": null
+      },
+      {
+        "name": "Форма",
+        "value": "угловой",
+        "unit": null
+      },
+      {
+        "name": "Вид упаковки",
+        "value": "пластиковый держатель",
+        "unit": null
+      },
+      {
+        "name": "С шаровым окончанием",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Шарнирный механизм",
+        "value": "нет",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Набор г-образных звездочек (SPLINE) СЕРВИС КЛЮЧ PROFFI (5 предметов) – это профессиональный и универсальный набор ключей с внутренним профилем SPLINE (12-лучевая звезда). С помощью ключа «сплин» вы можете откручивать/закручивать крепежные элементы различных изделий, устройств и агрегатов. Например, шкивы генераторов, АКПП и вариаторы разных марок автомобилей. Набор подходит как для профессионального, так и для домашнего использования. Набор состоит из пяти Г-образных звездочек разных размеров: М5, М6, М8, М10, М12. Г-образная форма инструмента позволяет применить разное плечо приложения нагрузки, а также работать с крепежом в труднодоступных местах. Звездочки изготовлены из высококачественной хромованадиевой стали с твердостью 42-45 HRC, что обеспечивает их прочность, износостойкость и долговечность. Звездочки удобно хранить и переносить в специальном пластиковом держателе, на котором указаны их размеры.",
+      "html": "Набор г-образных звездочек (SPLINE) СЕРВИС КЛЮЧ PROFFI (5 предметов) – это профессиональный и универсальный набор ключей с внутренним профилем SPLINE (12-лучевая звезда). С помощью ключа «сплин» вы можете откручивать/закручивать крепежные элементы различных изделий, устройств и агрегатов. Например, шкивы генераторов, АКПП и вариаторы разных марок автомобилей. Набор подходит как для профессионального, так и для домашнего использования. Набор состоит из пяти Г-образных звездочек разных размеров: М5, М6, М8, М10, М12. Г-образная форма инструмента позволяет применить разное плечо приложения нагрузки, а также работать с крепежом в труднодоступных местах. Звездочки изготовлены из высококачественной хромованадиевой стали с твердостью 42-45 HRC, что обеспечивает их прочность, износостойкость и долговечность. Звездочки удобно хранить и переносить в специальном пластиковом держателе, на котором указаны их размеры."
+    }
+  },
+  {
+    "product_id": 26841,
+    "input": {
+      "name": "Набор резиновых уплотнительных прокладок D3-22мм, 279 пр.//СИБРТЕХ",
+      "brand": "СИБРТЕХ",
+      "article": "47598",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/nabor-rezinovyh-uplotnitelnyh-prokladok-sibrteh-d3-23-mm-279-predmetov-47598-787604/",
+      "source_title": "Набор резиновых уплотнительных прокладок СИБРТЕХ D3 - 22 мм 279 предметов 47598",
+      "source_brand": "СИБРТЕХ",
+      "source_article_raw": "47598",
+      "source_article_normalized": "47598"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/krepezh/metizy/787604/2400x1600/171044891.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/krepezh/metizy/787604/2400x1600/171044897.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/krepezh/metizy/787604/2400x1600/171044903.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "47598"
+    ],
+    "characteristics": [
+      {
+        "name": "Фасовка",
+        "value": "279",
+        "unit": null
+      },
+      {
+        "name": "Покрытие",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Назначение",
+        "value": "для уплотнения соединений",
+        "unit": null
+      },
+      {
+        "name": "Шплинты",
+        "value": "нет",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Набор Сибртех 47598 состоит из 279 резиновых уплотнительных прокладок с наружным диаметром от 3 до 22 мм и используется для создания герметичных конструкций. Позволяет решать широкий спектр задач, т. к. включает кольца наиболее часто встречающихся размеров. Прокладки используют для сантехнических и других ремонтных работ, а также в качестве уплотнительных резинок для автомобиля.",
+      "html": "Набор Сибртех 47598 состоит из 279 резиновых уплотнительных прокладок с наружным диаметром от 3 до 22 мм и используется для создания герметичных конструкций. Позволяет решать широкий спектр задач, т. к. включает кольца наиболее часто встречающихся размеров. Прокладки используют для сантехнических и других ремонтных работ, а также в качестве уплотнительных резинок для автомобиля. "
+    }
+  },
+  {
+    "product_id": 6213,
+    "input": {
+      "name": "Шампунь для минимоек HUTER Active Foam 5,8кг",
+      "brand": "HUTER",
+      "article": "71/5/41",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/avtoshampun-dlya-beskontaktnoj-mojki-huter-active-foam-5-8-kg-71-5-41-20842826/",
+      "source_title": "Автошампунь для бесконтактной мойки Huter Active Foam 5,8 кг. 71/5/41",
+      "source_brand": "Huter",
+      "source_article_raw": "71/5/41",
+      "source_article_normalized": "71/5/41"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-sadovoj-tehniki/20842826/2400x1600/217703898.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-sadovoj-tehniki/20842826/2400x1600/217703904.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-sadovoj-tehniki/20842826/2400x1600/217703910.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "71/5/41",
+      "71/5/41 HUTER"
+    ],
+    "characteristics": [
+      {
+        "name": "Тип товара ",
+        "value": "автошампуни для бесконтактной мойки",
+        "unit": null
+      },
+      {
+        "name": "Тип",
+        "value": "автошампунь",
+        "unit": null
+      },
+      {
+        "name": "Водородный показатель (pH)",
+        "value": "щелочной",
+        "unit": null
+      },
+      {
+        "name": "Концентрат",
+        "value": "да",
+        "unit": null
+      },
+      {
+        "name": "Отдушка",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Цвет",
+        "value": "желтый",
+        "unit": null
+      },
+      {
+        "name": "Состав",
+        "value": "анионные поверхностно-активные вещества, неионогенные ПАВ, комплексоны, деионизированная вода, краситель",
+        "unit": null
+      },
+      {
+        "name": "Объем",
+        "value": "5.8 кг",
+        "unit": null
+      },
+      {
+        "name": "Количество компонентов",
+        "value": "однофазный",
+        "unit": null
+      },
+      {
+        "name": "С воском",
+        "value": "нет",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Концентрированное универсальное моющее средство Huter предназначено для очистки кузова автомобиля. Благодаря уникальным современным добавкам SFB средство обладает высокой растворяющей способностью по отношению к сильным загрязнениям, содержащим жиры, масло, сажу и различные твердые отложения. Высокое содержание моющих и эмульгирующих компонентов позволяет быстро и эффективно устранять загрязнения со всех типов красок. Образует мягкую обильную пену, исключающую воздействие абразивных частиц (песка, пыли) на лакокрасочное покрытие автомобиля. Продукт предназначен для использования в современных установках высокого давления, а также в обычных автоматических установках с механическими щетками, где разрешено применение сильно пенящихся препаратов. Наилучшие моющие способности проявляет при температуре от 5 до 25°С. Не содержит канцерогенных аминов, фосфатов, нитритов. Не содержит кислот. Совместим с жесткой водой. Состав: анионные поверхностно-активные вещества, неионогенные ПАВ, комплексоны, деионизированная вода, краситель. Компоненты автошампуня на 90% биологически разлагаемые. Поставляется канистрами ёмкостью 5 литров.",
+      "html": "Концентрированное универсальное моющее средство Huter предназначено для очистки кузова автомобиля. Благодаря уникальным современным добавкам SFB средство обладает высокой растворяющей способностью по отношению к сильным загрязнениям, содержащим жиры, масло, сажу и различные твердые отложения. Высокое содержание моющих и эмульгирующих компонентов позволяет быстро и эффективно устранять загрязнения со всех типов красок. Образует мягкую обильную пену, исключающую воздействие абразивных частиц (песка, пыли) на лакокрасочное покрытие автомобиля.  Продукт предназначен для использования в современных установках высокого давления, а также в обычных автоматических установках с механическими щетками, где разрешено применение сильно пенящихся препаратов. Наилучшие моющие способности проявляет при температуре от 5 до 25°С. Не содержит канцерогенных аминов, фосфатов, нитритов. Не содержит кислот. Совместим с жесткой водой.  Состав: анионные поверхностно-активные вещества, неионогенные ПАВ, комплексоны, деионизированная вода, краситель. Компоненты автошампуня на 90% биологически разлагаемые. Поставляется канистрами ёмкостью 5 литров. "
+    }
+  },
+  {
+    "product_id": 44122,
+    "input": {
+      "name": "Машина отр. по металлу STURM CF7325S 355мм, 2600Вт, 4200об/мин, пл пуск",
+      "brand": "STURM",
+      "article": "CF7325S",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/otreznaya-pila-po-metallu-sturm-cf7325s-1854776/",
+      "source_title": "Отрезная пила по металлу Sturm CF7325S",
+      "source_brand": "Sturm",
+      "source_article_raw": "CF7325S",
+      "source_article_normalized": "cf7325s"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/pily/1854776/2400x1600/169717871.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/pily/1854776/2400x1600/195530271.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/pily/1854776/2400x1600/195530277.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "CF7325S"
+    ],
+    "characteristics": [
+      {
+        "name": "Класс товара",
+        "value": "профессиональный",
+        "unit": null
+      },
+      {
+        "name": "Мощность",
+        "value": "2600",
+        "unit": null
+      },
+      {
+        "name": "Напряжение",
+        "value": "220",
+        "unit": null
+      },
+      {
+        "name": "Диаметр диска",
+        "value": "355",
+        "unit": null
+      },
+      {
+        "name": "Посадочный диаметр диска",
+        "value": "25.4",
+        "unit": null
+      },
+      {
+        "name": "Глубина резания ",
+        "value": "110",
+        "unit": null
+      },
+      {
+        "name": "Число оборотов",
+        "value": "4200",
+        "unit": null
+      },
+      {
+        "name": "Плавный пуск",
+        "value": "да",
+        "unit": null
+      },
+      {
+        "name": "Длина кабеля",
+        "value": "2",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "12",
+        "unit": null
+      },
+      {
+        "name": "Маятниковый механизм",
+        "value": "нет",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Отрезная пила по металлу Sturm CF7325S CF7325S оснащен двигателем с увеличенной мощностью 2600 Вт, что гарантирует высокую производительность и надежность. Функция Soft Start снижает нагрузку на двигатель при включении устройства, предотвращая быстрый износ. Плавный пуск сдерживает инструмент от резкого рывка в момент включения. Быстрозажимной механизм заготовки позволяет оперативно закрепить заготовку и плавно отрегулировать ее угол.",
+      "html": "Отрезная пила по металлу Sturm CF7325S CF7325S оснащен двигателем с увеличенной мощностью 2600 Вт, что гарантирует высокую производительность и надежность.    Функция Soft Start снижает нагрузку на двигатель при включении устройства, предотвращая быстрый износ.    Плавный пуск сдерживает инструмент от резкого рывка в момент включения.    Быстрозажимной механизм заготовки позволяет оперативно закрепить заготовку и плавно отрегулировать ее угол.  "
+    }
+  },
+  {
+    "product_id": 34270,
+    "input": {
+      "name": "Пистолет для монтажной пены ЗУБР МОНТАЖНИК тефлон покрытие сопла",
+      "brand": "ЗУБР",
+      "article": "4-06875",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/pistolet-montazhnik-dlya-montazhnoj-peny-zubr-4-06875-99301/",
+      "source_title": "Пистолет МОНТАЖНИК для монтажной пены ЗУБР 4-06875",
+      "source_brand": "ЗУБР",
+      "source_article_raw": "4-06875",
+      "source_article_normalized": "4-06875"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/pistolety-dlya-remonta/99301/2400x1600/51072961.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/pistolety-dlya-remonta/99301/2400x1600/51072962.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnyj-instrument/pistolety-dlya-remonta/99301/2400x1600/51072963.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "4-06875"
+    ],
+    "characteristics": [
+      {
+        "name": "Тип",
+        "value": "для монтажной пены",
+        "unit": null
+      },
+      {
+        "name": "Питание",
+        "value": "механический",
+        "unit": null
+      },
+      {
+        "name": "Материал рукояти",
+        "value": "пластик",
+        "unit": null
+      },
+      {
+        "name": "Тефлоновое покрытие",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Игольчатый клапан",
+        "value": "да",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Пистолет ЗУБР МОНТАЖНИК 4-06875 - профессиональное устройство для работы с монтажной пеной. Основные рабочие элементы выполнены из прочного металла и имеют противокоррозийное покрытие. Пистолет подходит для всех видов баллонов с монтажной пеной.",
+      "html": "Пистолет ЗУБР МОНТАЖНИК 4-06875 -&nbsp; профессиональное устройство для работы с монтажной пеной. Основные рабочие элементы выполнены из прочного металла и имеют&nbsp; противокоррозийное покрытие. Пистолет подходит для всех видов баллонов с монтажной пеной.  "
+    }
+  },
+  {
+    "product_id": 34538,
+    "input": {
+      "name": "Просекатель для профилей ЗУБР ПРОФИ",
+      "brand": "ЗУБР",
+      "article": "31353",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/prosekatel-dlya-montazha-metallicheskih-profilej-zubr-professional-31353-2794460/",
+      "source_title": "Просекатель для монтажа металлических профилей ЗУБР Профессионал 31353",
+      "source_brand": "ЗУБР",
+      "source_article_raw": "31353",
+      "source_article_normalized": "31353"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/ruchnoj-instrument/spetsializirovannyj-ruchnoj-instrument/2794460/2400x1600/56653568.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/ruchnoj-instrument/spetsializirovannyj-ruchnoj-instrument/2794460/2400x1600/56653574.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/ruchnoj-instrument/spetsializirovannyj-ruchnoj-instrument/2794460/2400x1600/56653580.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "31353"
+    ],
+    "characteristics": [
+      {
+        "name": "Скрепляемый материал",
+        "value": "металл",
+        "unit": null
+      },
+      {
+        "name": "Max скрепляемая толщина",
+        "value": "1.2",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "0.91",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": null,
+      "html": null
+    }
+  },
+  {
+    "product_id": 6616,
+    "input": {
+      "name": "Штифты срезные для снегоуборщика (набор 4шт) ЗУБР 6х41",
+      "brand": "ЗУБР",
+      "article": "N000-039-589",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/sreznye-shtifty-dlya-snegouborschikov-zubr-6h41-mm-4sht-n000-039-589-23315153/",
+      "source_title": "Срезные штифты для снегоуборщиков ЗУБР 6х41 мм, 4шт. N000-039-589",
+      "source_brand": "ЗУБР",
+      "source_article_raw": "N000-039-589",
+      "source_article_normalized": "n000-039-589"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-sadovoj-tehniki/23315153/2400x1600/216606971.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "N000-039-589"
+    ],
+    "characteristics": [
+      {
+        "name": "Длина",
+        "value": "41",
+        "unit": null
+      },
+      {
+        "name": "Диаметр",
+        "value": "6",
+        "unit": null
+      },
+      {
+        "name": "Количество",
+        "value": "4",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": null,
+      "html": null
+    }
+  },
+  {
+    "product_id": 36131,
+    "input": {
+      "name": "Каскетка защитная ЗУБР ударопроч корпус, козырек 55мм, р-р 54-59см",
+      "brand": "ЗУБР",
+      "article": "11095",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/zaschitnaya-kasketka-zubr-binom-razmer-54-59-11095-6500857/",
+      "source_title": "Защитная каскетка ЗУБР Бином размер 54-59 11095",
+      "source_brand": "ЗУБР",
+      "source_article_raw": "11095",
+      "source_article_normalized": "11095"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/spetsodezhda-i-siz/sredstva-individualnoj-zaschity/6500857/2400x1600/70205659.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/spetsodezhda-i-siz/sredstva-individualnoj-zaschity/6500857/2400x1600/70205665.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/spetsodezhda-i-siz/sredstva-individualnoj-zaschity/6500857/2400x1600/70205671.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "11095",
+      "11095 ЗУБР"
+    ],
+    "characteristics": [
+      {
+        "name": "Тип",
+        "value": "каскетка",
+        "unit": null
+      },
+      {
+        "name": "Размер оголовья",
+        "value": "54-59",
+        "unit": null
+      },
+      {
+        "name": "Цвет",
+        "value": "синий",
+        "unit": null
+      },
+      {
+        "name": "Материал",
+        "value": "полипропилен",
+        "unit": null
+      },
+      {
+        "name": "Материал вставки",
+        "value": "пластик",
+        "unit": null
+      },
+      {
+        "name": "Наличие амортизации",
+        "value": "да",
+        "unit": null
+      },
+      {
+        "name": "Тип основной ткани",
+        "value": "синтетическая",
+        "unit": null
+      },
+      {
+        "name": "Подбородочный ремень",
+        "value": "да",
+        "unit": null
+      },
+      {
+        "name": "Светоотражающие элементы",
+        "value": "да",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "0.2",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": null,
+      "html": null
+    }
+  },
+  {
+    "product_id": 36337,
+    "input": {
+      "name": "Наушники защитные KRAFTOOL складные до 109дБ",
+      "brand": "KRAFTOOL",
+      "article": "11362",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/zaschitnye-naushniki-kraftool-expert-11362-734663/",
+      "source_title": "Защитные наушники Kraftool EXPERT Profi-29 складное оголовье 11362",
+      "source_brand": "KRAFTOOL",
+      "source_article_raw": "11362",
+      "source_article_normalized": "11362"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/spetsodezhda-i-siz/sredstva-individualnoj-zaschity/734663/2400x1600/152789234.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/spetsodezhda-i-siz/sredstva-individualnoj-zaschity/734663/2400x1600/152789246.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/spetsodezhda-i-siz/sredstva-individualnoj-zaschity/734663/2400x1600/153746735.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "11362",
+      "11362 KRAFTOOL"
+    ],
+    "characteristics": [
+      {
+        "name": "Регулировка длины",
+        "value": "есть",
+        "unit": null
+      },
+      {
+        "name": "Снижение уровня шума",
+        "value": "29",
+        "unit": null
+      },
+      {
+        "name": "Крепление на каску",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Встроенные динамики и FM-радио",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Bluetooth",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Цвет",
+        "value": "зеленый",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "0.25",
+        "unit": null
+      },
+      {
+        "name": "Материал",
+        "value": "полиацетат, поливинилхлорид, ABS-пластик",
+        "unit": null
+      },
+      {
+        "name": "Тип шумоподавления",
+        "value": "пассивное",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Защитные наушники Kraftool EXPERT Profi-29 складное оголовье 11362, применяются для защиты органов слуха в сочетании с повышенным комфортом. Используются как средство индивидуальной защиты органов слуха от шума с уровнем свыше 85 дБ. Оптимальны при шумах интенсивностью до 109 дБ. Легкая и удобная регулировка по размеру головы. Пластиковое оголовье и чашки выполнены таким образом чтобы равномерно распределять давление и сделать ношение максимально комфортным. Мягкое оголовье и обтюраторы создают дополнительный комфорт.",
+      "html": "Защитные наушники Kraftool EXPERT Profi-29 складное оголовье 11362, применяются для защиты органов слуха в сочетании с повышенным комфортом.  Используются как средство индивидуальной защиты органов слуха от шума с уровнем свыше 85 дБ. Оптимальны при шумах интенсивностью до 109 дБ. Легкая и удобная регулировка по размеру головы. Пластиковое оголовье и чашки выполнены таким образом чтобы равномерно распределять давление и сделать ношение максимально комфортным. Мягкое оголовье и обтюраторы создают дополнительный комфорт. "
+    }
+  },
+  {
+    "product_id": 32407,
+    "input": {
+      "name": "Ключ для сантехнической арматуры №1 для гаек до 40мм 330мм KRAFTOOL PANZER A",
+      "brand": "KRAFTOOL",
+      "article": "27361-10_z01",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/armaturnye-kleschi-kraftool-27361-10-z01-710843/",
+      "source_title": "Арматурные клещи Kraftool 27361-10_z01",
+      "source_brand": "KRAFTOOL",
+      "source_article_raw": "27361-10_z01",
+      "source_article_normalized": "27361-10_z01"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/ruchnoj-instrument/sharnirno-gubtsevyj-instrument/710843/2400x1600/54133159.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/ruchnoj-instrument/sharnirno-gubtsevyj-instrument/710843/2400x1600/53880823.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "27361-10_z01"
+    ],
+    "characteristics": [
+      {
+        "name": "Тип",
+        "value": "Клещи",
+        "unit": null
+      },
+      {
+        "name": "Диаметр прутка",
+        "value": "25",
+        "unit": null
+      },
+      {
+        "name": "Материал губок",
+        "value": "CrV",
+        "unit": null
+      },
+      {
+        "name": "Рукоятки-чехлы",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Общая длина",
+        "value": "330",
+        "unit": null
+      },
+      {
+        "name": "Диэлектрическое покрытие",
+        "value": "нет",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Арматурные клещи Kraftool 27361-10_z01 имеют прочный стальной корпус и легкосменные пластиковые захватные части. Инструмент идеально подходит для работы с деталями, имеющими хромированную и полированную поверхность. Клещи легко регулируются под необходимый диаметр при помощи рифленого кольца.",
+      "html": "Арматурные клещи Kraftool 27361-10_z01 имеют прочный стальной корпус и легкосменные пластиковые захватные части. Инструмент идеально подходит для работы с деталями, имеющими хромированную и полированную поверхность. Клещи легко регулируются под необходимый диаметр при помощи рифленого кольца.  "
+    }
+  },
+  {
+    "product_id": 44891,
+    "input": {
+      "name": "Станок для заточки цепей ЗУБР СЦ-200, ф104мм, 90Вт",
+      "brand": "ЗУБР",
+      "article": "СЦ-200",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/zatochnoj-stanok-dlya-pilnyh-tsepej-zubr-90-vt-sts-200-1484857/",
+      "source_title": "Заточной станок для пильных цепей ЗУБР 90 Вт СЦ-200",
+      "source_brand": "ЗУБР",
+      "source_article_raw": "СЦ-200",
+      "source_article_normalized": "сц-200"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stanki/zatochnye-stanki-tochilo/1484857/2400x1600/51053209.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stanki/zatochnye-stanki-tochilo/1484857/2400x1600/63850056.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stanki/zatochnye-stanki-tochilo/1484857/2400x1600/63850062.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "СЦ-200"
+    ],
+    "characteristics": [
+      {
+        "name": "Напряжение",
+        "value": "220",
+        "unit": null
+      },
+      {
+        "name": "Мощность двигателя",
+        "value": "90",
+        "unit": null
+      },
+      {
+        "name": "Тип",
+        "value": "для цепей",
+        "unit": null
+      },
+      {
+        "name": "Частота вращения шлиф. круга",
+        "value": "5000",
+        "unit": null
+      },
+      {
+        "name": "Толщина круга",
+        "value": "3.2",
+        "unit": null
+      },
+      {
+        "name": "Диаметр диска",
+        "value": "104",
+        "unit": null
+      },
+      {
+        "name": "Посадочный диаметр",
+        "value": "22.2",
+        "unit": null
+      },
+      {
+        "name": "Регулировка оборотов",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Угол поворота стола",
+        "value": "35",
+        "unit": null
+      },
+      {
+        "name": "Размер заточного круга",
+        "value": "104",
+        "unit": null
+      },
+      {
+        "name": "Max толщина ведущего звена",
+        "value": "1.6",
+        "unit": null
+      },
+      {
+        "name": "Min толщина ведущего звена",
+        "value": "1.1",
+        "unit": null
+      },
+      {
+        "name": "Max шаг зубьев цепи",
+        "value": "10.26",
+        "unit": null
+      },
+      {
+        "name": "Min шаг зубьев цепи",
+        "value": "6.35",
+        "unit": null
+      },
+      {
+        "name": "Класс товара",
+        "value": "Полупрофессиональный",
+        "unit": null
+      },
+      {
+        "name": "Габариты без упаковки",
+        "value": "260x185x180",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "2.75",
+        "unit": null
+      },
+      {
+        "name": "Частота вращения второго шлиф. круга",
+        "value": "5000",
+        "unit": null
+      },
+      {
+        "name": "Подсветка",
+        "value": "да",
+        "unit": null
+      },
+      {
+        "name": "Наличие защитного экрана",
+        "value": "да",
+        "unit": null
+      },
+      {
+        "name": "Со стойкой",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "С пылесосом",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "С тихоходным кругом (мокрая заточка/шлифование)",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "С гравером",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Количество дисков в комплекте",
+        "value": "2",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Заточной станок для пильных цепей ЗУБР 90 Вт СЦ-200 отличается компактными габаритами и легким весом. Оборудование укомплектовано двумя заточными дисками разной толщины, благодаря чему можно обрабатывать пильные цепи разных видов. Литое основание имеет специальные отверстия для надежной фиксации аппарата на рабочей поверхности.",
+      "html": "Заточной станок для пильных цепей ЗУБР 90 Вт СЦ-200 отличается компактными габаритами и легким весом.  Оборудование укомплектовано двумя заточными дисками разной толщины, благодаря чему можно обрабатывать пильные цепи разных видов.  Литое основание имеет специальные отверстия для надежной фиксации аппарата на рабочей поверхности. "
+    }
+  },
+  {
+    "product_id": 35079,
+    "input": {
+      "name": "Трубогиб KRAFTOOL EXPERT MINI для точной гибки медных труб, самозахват для гибки на весу 1/8\"-1/2\"",
+      "brand": "KRAFTOOL",
+      "article": "23505-1/2",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/trubogib-kraftool-expert-mini-23505-1-2-731982/",
+      "source_title": "Трубогиб Kraftool EXPERT MINI 23505-1/2",
+      "source_brand": "KRAFTOOL",
+      "source_article_raw": "23505-1/2",
+      "source_article_normalized": "23505-1/2"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stanki/gibochnye-stanki/731982/2400x1600/52091907.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stanki/gibochnye-stanki/731982/2400x1600/102151244.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stanki/gibochnye-stanki/731982/2400x1600/102151262.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "23505-1/2"
+    ],
+    "characteristics": [
+      {
+        "name": "Вес нетто",
+        "value": "0.13",
+        "unit": null
+      },
+      {
+        "name": "Материал обработки",
+        "value": "цветные металлы",
+        "unit": null
+      },
+      {
+        "name": "Тип привода",
+        "value": "ручной (механический)",
+        "unit": null
+      },
+      {
+        "name": "Мах угол гиба",
+        "value": "180",
+        "unit": null
+      },
+      {
+        "name": "Гибка труб диаметром",
+        "value": "1/8 до 1/2 дюйма",
+        "unit": null
+      },
+      {
+        "name": "Тип профиля",
+        "value": "круг",
+        "unit": null
+      },
+      {
+        "name": "Материал обработки",
+        "value": "медь",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Трубогиб Kraftool EXPERT MINI 23505-1/2 служит для точной и аккуратной гибки медных труб диаметром от 1/8 до 1/2 дюйма (от 3 мм до 13 мм). Прочная металлическая конструкция модели отличается стойкостью к ударам и износу. Изделие относится к бытовому классу ручного инструмента и подходит для использования домашними мастерами.",
+      "html": "Трубогиб Kraftool EXPERT MINI 23505-1/2 служит для точной и аккуратной гибки медных труб диаметром от 1/8 до 1/2 дюйма (от 3 мм до 13 мм). Прочная металлическая конструкция модели отличается стойкостью к ударам и износу. Изделие относится к бытовому классу ручного инструмента и подходит для использования домашними мастерами.  "
+    }
+  },
+  {
+    "product_id": 43749,
+    "input": {
+      "name": "Вибратор портативный STURM CV71101 1000Вт, вал 35мм 1м",
+      "brand": "STURM",
+      "article": "CV71101",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/portativnyj-vibrator-dlya-betona-sturm-cv71101-61848/",
+      "source_title": "Портативный вибратор для бетона Sturm 1000 Вт, вал 2 м CV71101",
+      "source_brand": "Sturm",
+      "source_article_raw": "CV71101",
+      "source_article_normalized": "cv71101"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnoe-oborudovanie-i-tehnika/vibrotehnika/61848/2400x1600/160153627.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnoe-oborudovanie-i-tehnika/vibrotehnika/61848/2400x1600/160153633.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/stroitelnoe-oborudovanie-i-tehnika/vibrotehnika/61848/2400x1600/160153639.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "CV71101"
+    ],
+    "characteristics": [
+      {
+        "name": "Диаметр булавы вибратора",
+        "value": "38",
+        "unit": null
+      },
+      {
+        "name": "Длина булавы вибратора",
+        "value": "32",
+        "unit": null
+      },
+      {
+        "name": "Длина вала",
+        "value": "2",
+        "unit": null
+      },
+      {
+        "name": "Гибкий вал в комплекте",
+        "value": "есть (возможна замена)",
+        "unit": null
+      },
+      {
+        "name": "Напряжение",
+        "value": "220",
+        "unit": null
+      },
+      {
+        "name": "Частота вибрации",
+        "value": "4000",
+        "unit": null
+      },
+      {
+        "name": "Потребляемый ток",
+        "value": "2",
+        "unit": null
+      },
+      {
+        "name": "Длина кабеля",
+        "value": "0.5",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "3.86",
+        "unit": null
+      },
+      {
+        "name": "Класс товара",
+        "value": "Бытовой",
+        "unit": null
+      },
+      {
+        "name": "Привод",
+        "value": "электрический",
+        "unit": null
+      },
+      {
+        "name": "Высокочастотный",
+        "value": "нет",
+        "unit": null
+      },
+      {
+        "name": "Частота",
+        "value": "50",
+        "unit": null
+      },
+      {
+        "name": "Мощность (Вт)",
+        "value": "1000",
+        "unit": null
+      },
+      {
+        "name": "Эффективный диаметр уплотнения",
+        "value": "20",
+        "unit": null
+      },
+      {
+        "name": "Вибронаконечник в комплекте",
+        "value": "есть",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Портативный вибратор для бетона Sturm CV71101 - устройство для эффективного уплотнения бетонных смесей при заливке фундаментов, стен, колонн и т.д. Оснащен электродвигателем мощностью 1000 Вт со встроенным преобразователем. Этот профессиональный инструмент широко применяется при проведении строительных работ.",
+      "html": "Портативный вибратор для бетона Sturm CV71101 - устройство для эффективного уплотнения бетонных смесей при заливке фундаментов, стен, колонн и т.д. Оснащен электродвигателем мощностью 1000 Вт со встроенным преобразователем. Этот профессиональный инструмент широко применяется при проведении строительных работ. "
+    }
+  },
+  {
+    "product_id": 6794,
+    "input": {
+      "name": "Карбюратор для бензопил HUTER BS-45-62",
+      "brand": "HUTER",
+      "article": "71/4/35",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/karbyurator-dlya-benzopil-bs-45-62-huter-71-4-35-8554065/",
+      "source_title": "Карбюратор для бензопил BS-45-62 Huter 71/4/35",
+      "source_brand": "Huter",
+      "source_article_raw": "71/4/35",
+      "source_article_normalized": "71/4/35"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-sadovoj-tehniki/8554065/2400x1600/97281651.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-sadovoj-tehniki/8554065/2400x1600/97281657.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-sadovoj-tehniki/8554065/2400x1600/97281663.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "71/4/35"
+    ],
+    "characteristics": [
+      {
+        "name": "Тип",
+        "value": "карбюратор",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "0.3",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Карбюратор для бензопил BS-45-62 Huter 71/4/35 Карбюратор для бензопилы BS-45-62 - надежное и эффективное устройство, специально разработанное для обеспечения оптимальной подачи топлива в двигатель пилы.Имеет компактный размер и простую конструкцию, что облегчает его установку и обслуживание.Карбюратор обеспечивает точную регулировку смеси воздуха и топлива, что позволяет достичь оптимальной производительности и эффективного расхода топлива.",
+      "html": "Карбюратор для бензопил BS-45-62 Huter 71/4/35 Карбюратор для бензопилы BS-45-62 - надежное и эффективное устройство, специально разработанное для обеспечения оптимальной подачи топлива в двигатель пилы.Имеет компактный размер и простую конструкцию, что облегчает его установку и обслуживание.Карбюратор обеспечивает точную регулировку смеси воздуха и топлива, что позволяет достичь оптимальной производительности и эффективного расхода топлива."
+    }
+  },
+  {
+    "product_id": 7057,
+    "input": {
+      "name": "Поршневая группа для бензопил HUTER 45см3",
+      "brand": "HUTER",
+      "article": "71/4/29",
+      "model": null
+    },
+    "match": {
+      "status": "MATCHED",
+      "confidence": 95,
+      "reason": "article_exact+brand_exact",
+      "source_product_url": "https://www.vseinstrumenti.ru/product/porshnevaya-gruppa-dlya-benzopil-45-cm-3-huter-71-4-29-8571747/",
+      "source_title": "Поршневая группа для бензопил 45 см³ Huter 71/4/29",
+      "source_brand": "Huter",
+      "source_article_raw": "71/4/29",
+      "source_article_normalized": "71/4/29"
+    },
+    "images": [],
+    "image_refs": [
+      {
+        "position": 1,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-sadovoj-tehniki/8571747/2400x1600/142833596.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 2,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-sadovoj-tehniki/8571747/2400x1600/142833602.jpg",
+        "width": 2400,
+        "height": 1600
+      },
+      {
+        "position": 3,
+        "source_url": "https://cdn.vseinstrumenti.ru/images/goods/rashodnye-materialy-i-osnastka/rashodnye-materialy-dlya-sadovoj-tehniki/8571747/2400x1600/142833584.jpg",
+        "width": 2400,
+        "height": 1600
+      }
+    ],
+    "queries_tried": [
+      "71/4/29"
+    ],
+    "characteristics": [
+      {
+        "name": "Тип",
+        "value": "поршневая группа",
+        "unit": null
+      },
+      {
+        "name": "Материал",
+        "value": "металл",
+        "unit": null
+      },
+      {
+        "name": "Совместимость с моделями",
+        "value": "Huter",
+        "unit": null
+      },
+      {
+        "name": "Вес нетто",
+        "value": "0.423",
+        "unit": null
+      }
+    ],
+    "description": {
+      "text": "Поршневая группа для бензопил 45 см3 Поршневая группа ЦПГ для бензопилы подходит на такие бензопилы Huter. Группа с хромированным напылением. Оригинальная запчасть",
+      "html": "Поршневая группа для бензопил 45 см3 Поршневая группа ЦПГ для бензопилы подходит на такие бензопилы Huter. Группа с хромированным напылением.  Оригинальная запчасть "
+    }
+  }
+]
