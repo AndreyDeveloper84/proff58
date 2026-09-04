@@ -945,7 +945,10 @@ class ProductImage(models.Model):
     class Meta:
         verbose_name = _("Изображение товара")
         verbose_name_plural = _("Изображения товаров")
-        ordering = ["-is_main", "sort_order"]
+        # pk — детерминированный tie-breaker (VI-INT-03): у secondary-изображений
+        # sort_order одинаковый (0), а Postgres порядок равных ключей не
+        # гарантирует. Существующие sort_order не меняются, UPDATE не требуется.
+        ordering = ["-is_main", "sort_order", "pk"]
         constraints = [
             # Основной ключ идемпотентности: одинаковые байты не ложатся дважды
             # ОДНОМУ товару. Ограничение частичное и привязано к товару —

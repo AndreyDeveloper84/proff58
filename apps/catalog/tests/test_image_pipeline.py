@@ -454,3 +454,17 @@ def test_t7_main_from_other_source_not_demoted(monkeypatch):
     old_main.refresh_from_db()
     assert old_main.is_main is True, "чужой main не демотирован"
     assert p.images.filter(is_main=True).count() == 1
+
+
+@pytest.mark.django_db
+def test_secondary_images_order_stable_by_pk():
+    """VI-INT-03: ordering ["-is_main", "sort_order", "pk"] — main первый,
+    secondary при равном sort_order выстраиваются стабильно по pk."""
+    p = _product()
+    main = _existing_image(p, is_main=True, sort_order=0)
+    sec = [_existing_image(p, is_main=False, sort_order=0) for _ in range(3)]
+
+    expected = [main.pk] + [i.pk for i in sec]
+    for _ in range(3):  # порядок обязан быть одинаковым от запроса к запросу
+        assert [i.pk for i in p.images.all()] == expected
+    assert p.images.first().pk == main.pk, "единственный main — всегда первый"
