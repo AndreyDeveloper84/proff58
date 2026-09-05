@@ -40,19 +40,38 @@
             {
               "value": "Аккумулятор",
               "slug": "battery",
-              "keywords": ["аккумулятор", "аккум", "акб", "li-ion", "li-on", "cordless", "бесшнуров"]
+              "keywords": [
+                "аккумулятор",
+                "аккум",
+                "акб",
+                "li-ion",
+                "li-on",
+                "cordless",
+                "бесшнуров"
+              ]
             },
             {
               "value": "Сеть",
               "slug": "mains",
-              "keywords": ["сетев", "от сети", "220 в", "220в"]
+              "keywords": [
+                "сетев",
+                "от сети",
+                "220 в",
+                "220в"
+              ]
             }
           ],
           "derive": {
             "source": "inferred",
             "set_option": "mains",
-            "requires_present": ["power"],
-            "requires_absent": ["voltage", "battery_capacity", "battery_included"]
+            "requires_present": [
+              "power"
+            ],
+            "requires_absent": [
+              "voltage",
+              "battery_capacity",
+              "battery_included"
+            ]
           }
         },
         {
@@ -103,12 +122,23 @@
             {
               "value": "Бесщёточный",
               "slug": "brushless",
-              "keywords": ["бесщеточн", "бесщетк", "безщеточн", "б/щ", "brushless", "bl-"]
+              "keywords": [
+                "бесщеточн",
+                "бесщетк",
+                "безщеточн",
+                "б/щ",
+                "brushless",
+                "bl-"
+              ]
             },
             {
               "value": "Щёточный",
               "slug": "brushed",
-              "keywords": ["щеточн", "коллекторн", "brushed"]
+              "keywords": [
+                "щеточн",
+                "коллекторн",
+                "brushed"
+              ]
             }
           ]
         },
@@ -170,19 +200,38 @@
             {
               "value": "Аккумулятор",
               "slug": "battery",
-              "keywords": ["аккумулятор", "аккум", "акб", "li-ion", "li-on", "cordless", "бесшнуров"]
+              "keywords": [
+                "аккумулятор",
+                "аккум",
+                "акб",
+                "li-ion",
+                "li-on",
+                "cordless",
+                "бесшнуров"
+              ]
             },
             {
               "value": "Сеть",
               "slug": "mains",
-              "keywords": ["сетев", "от сети", "220 в", "220в"]
+              "keywords": [
+                "сетев",
+                "от сети",
+                "220 в",
+                "220в"
+              ]
             }
           ],
           "derive": {
             "source": "inferred",
             "set_option": "mains",
-            "requires_present": ["power"],
-            "requires_absent": ["voltage", "battery_capacity", "battery_included"]
+            "requires_present": [
+              "power"
+            ],
+            "requires_absent": [
+              "voltage",
+              "battery_capacity",
+              "battery_included"
+            ]
           }
         },
         {
@@ -231,7 +280,9 @@
           "priority": 40,
           "is_filter": false,
           "is_ai_feature": true,
-          "regex": ["(\\d{3,5})\\s*об[/.\\s]?мин"]
+          "regex": [
+            "(\\d{3,5})\\s*об[/.\\s]?мин"
+          ]
         },
         {
           "slug": "chuck",
@@ -245,12 +296,22 @@
             {
               "value": "SDS-max",
               "slug": "sds-max",
-              "keywords": ["sds-max", "sds max", "sdsmax"]
+              "keywords": [
+                "sds-max",
+                "sds max",
+                "sdsmax"
+              ]
             },
             {
               "value": "SDS-plus",
               "slug": "sds-plus",
-              "keywords": ["sds-plus", "sds plus", "sds+", "sdsplus", "sds"]
+              "keywords": [
+                "sds-plus",
+                "sds plus",
+                "sds+",
+                "sdsplus",
+                "sds"
+              ]
             }
           ]
         },
@@ -265,12 +326,24 @@
             {
               "value": "Бесщёточный",
               "slug": "brushless",
-              "keywords": ["бесщеточн", "бесщетк", "безщеточн", "бесщ", "б/щ", "brushless", "bl-"]
+              "keywords": [
+                "бесщеточн",
+                "бесщетк",
+                "безщеточн",
+                "бесщ",
+                "б/щ",
+                "brushless",
+                "bl-"
+              ]
             },
             {
               "value": "Щёточный",
               "slug": "brushed",
-              "keywords": ["щеточн", "коллекторн", "brushed"]
+              "keywords": [
+                "щеточн",
+                "коллекторн",
+                "brushed"
+              ]
             }
           ]
         },
@@ -335,19 +408,38 @@
             {
               "value": "Аккумулятор",
               "slug": "battery",
-              "keywords": ["аккумулятор", "аккум", "акб", "li-ion", "li-on", "cordless", "бесшнуров"]
+              "keywords": [
+                "аккумулятор",
+                "аккум",
+                "акб",
+                "li-ion",
+                "li-on",
+                "cordless",
+                "бесшнуров"
+              ]
             },
             {
               "value": "Сеть",
               "slug": "mains",
-              "keywords": ["сетев", "от сети", "220 в", "220в"]
+              "keywords": [
+                "сетев",
+                "от сети",
+                "220 в",
+                "220в"
+              ]
             }
           ],
           "derive": {
             "source": "inferred",
             "set_option": "mains",
-            "requires_present": ["power"],
-            "requires_absent": ["voltage", "battery_capacity", "battery_included"]
+            "requires_present": [
+              "power"
+            ],
+            "requires_absent": [
+              "voltage",
+              "battery_capacity",
+              "battery_included"
+            ]
           }
         },
         {
@@ -416,12 +508,18 @@
             {
               "value": "M14",
               "slug": "m14",
-              "keywords": ["m14", "м14"]
+              "keywords": [
+                "m14",
+                "м14"
+              ]
             },
             {
               "value": "M10",
               "slug": "m10",
-              "keywords": ["m10", "м10"]
+              "keywords": [
+                "m10",
+                "м10"
+              ]
             }
           ]
         },
@@ -436,12 +534,23 @@
             {
               "value": "Бесщёточный",
               "slug": "brushless",
-              "keywords": ["бесщеточн", "бесщетк", "безщеточн", "б/щ", "brushless", "bl-"]
+              "keywords": [
+                "бесщеточн",
+                "бесщетк",
+                "безщеточн",
+                "б/щ",
+                "brushless",
+                "bl-"
+              ]
             },
             {
               "value": "Щёточный",
               "slug": "brushed",
-              "keywords": ["щеточн", "коллекторн", "brushed"]
+              "keywords": [
+                "щеточн",
+                "коллекторн",
+                "brushed"
+              ]
             }
           ]
         },
@@ -506,19 +615,38 @@
             {
               "value": "Аккумулятор",
               "slug": "battery",
-              "keywords": ["аккумулятор", "аккум", "акб", "li-ion", "li-on", "cordless", "бесшнуров"]
+              "keywords": [
+                "аккумулятор",
+                "аккум",
+                "акб",
+                "li-ion",
+                "li-on",
+                "cordless",
+                "бесшнуров"
+              ]
             },
             {
               "value": "Сеть",
               "slug": "mains",
-              "keywords": ["сетев", "от сети", "220 в", "220в"]
+              "keywords": [
+                "сетев",
+                "от сети",
+                "220 в",
+                "220в"
+              ]
             }
           ],
           "derive": {
             "source": "inferred",
             "set_option": "mains",
-            "requires_present": ["power"],
-            "requires_absent": ["voltage", "battery_capacity", "battery_included"]
+            "requires_present": [
+              "power"
+            ],
+            "requires_absent": [
+              "voltage",
+              "battery_capacity",
+              "battery_included"
+            ]
           }
         },
         {
@@ -643,17 +771,27 @@
             {
               "value": "Турбо",
               "slug": "turbo",
-              "keywords": ["турбо", "turbo"]
+              "keywords": [
+                "турбо",
+                "turbo"
+              ]
             },
             {
               "value": "Сегментный",
               "slug": "segment",
-              "keywords": ["сегмент", "segment"]
+              "keywords": [
+                "сегмент",
+                "segment"
+              ]
             },
             {
               "value": "Сплошной",
               "slug": "solid",
-              "keywords": ["сплош", "1a1r", "1а1р"]
+              "keywords": [
+                "сплош",
+                "1a1r",
+                "1а1р"
+              ]
             }
           ]
         }
@@ -1405,7 +1543,12 @@
         {
           "slug": "diameter",
           "_note": "Диапазон/перечисление не даёт одного диаметра: «Коронка карбид. 33-53-67-73-83 мм» — набор, «Сверло ступен. 4-12мм» — ступенчатое. Пара «42х10» НЕ блокируется: там первое число и есть диаметр, «х» здесь конструктивный.",
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "name": "Диаметр",
           "kind": "number",
           "unit": "мм",
@@ -1544,7 +1687,12 @@
         {
           "slug": "diameter",
           "_note": "Диапазон/перечисление не даёт одного диаметра: «Коронка карбид. 33-53-67-73-83 мм» — набор, «Сверло ступен. 4-12мм» — ступенчатое. Пара «42х10» НЕ блокируется: там первое число и есть диаметр, «х» здесь конструктивный.",
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "name": "Диаметр",
           "kind": "number",
           "unit": "мм",
@@ -1948,7 +2096,11 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "skip_if": ["набор", "держател", "ворот"],
+          "skip_if": [
+            "набор",
+            "держател",
+            "ворот"
+          ],
           "regex": [
             "(?:^|\\s)м\\s*(\\d{1,2})\\s*[хx]\\s*\\d",
             "м[/.]р\\.?\\s*(\\d{1,2})\\s*[хx]\\s*\\d"
@@ -1962,7 +2114,11 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "skip_if": ["набор", "держател", "ворот"],
+          "skip_if": [
+            "набор",
+            "держател",
+            "ворот"
+          ],
           "regex": [
             "(?:^|\\s)м\\s*\\d{1,2}\\s*[хx]\\s*(\\d(?:[.,]\\d+)?)",
             "м[/.]р\\.?\\s*\\d{1,2}\\s*[хx]\\s*(\\d(?:[.,]\\d+)?)"
@@ -1972,20 +2128,65 @@
           "slug": "thread_type",
           "name": "Тип резьбы",
           "kind": "select",
-          "skip_if": ["набор", "держател", "ворот"],
+          "skip_if": [
+            "набор",
+            "держател",
+            "ворот"
+          ],
           "source": "keyword",
           "priority": 30,
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Дюймовая", "slug": "inch", "keywords": ["bsw", "bsf", "unf", "unc", "unef", "uns", "дюймов", "ниток", "уитворт"]},
-            {"value": "Трубная", "slug": "pipe", "keywords": ["g 1/", "g 3/", "g 1 ", "g1/", "g3/", "трубн", "bspt", "bspp"]},
-            {"value": "Метрическая", "slug": "metric", "keywords": ["din 352", "din352", "din 371", "din371", "din 376", "din376", "метрическ"]}
+            {
+              "value": "Дюймовая",
+              "slug": "inch",
+              "keywords": [
+                "bsw",
+                "bsf",
+                "unf",
+                "unc",
+                "unef",
+                "uns",
+                "дюймов",
+                "ниток",
+                "уитворт"
+              ]
+            },
+            {
+              "value": "Трубная",
+              "slug": "pipe",
+              "keywords": [
+                "g 1/",
+                "g 3/",
+                "g 1 ",
+                "g1/",
+                "g3/",
+                "трубн",
+                "bspt",
+                "bspp"
+              ]
+            },
+            {
+              "value": "Метрическая",
+              "slug": "metric",
+              "keywords": [
+                "din 352",
+                "din352",
+                "din 371",
+                "din371",
+                "din 376",
+                "din376",
+                "метрическ"
+              ]
+            }
           ],
           "derive": {
             "source": "inferred",
             "set_option": "metric",
-            "requires_present": ["diameter"],
+            "requires_present": [
+              "diameter"
+            ],
             "requires_absent": []
           }
         },
@@ -1993,15 +2194,46 @@
           "slug": "material",
           "name": "Материал",
           "kind": "select",
-          "skip_if": ["набор", "держател", "ворот"],
+          "skip_if": [
+            "набор",
+            "держател",
+            "ворот"
+          ],
           "source": "keyword",
           "priority": 30,
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Быстрорез (HSS)", "slug": "hss", "keywords": ["hss", "р6м5", "р18", "быстрорез"]},
-            {"value": "Легированная сталь", "slug": "alloy", "keywords": ["9хс", "9хc", "хвг", "легированн"]},
-            {"value": "Твердосплав", "slug": "carbide", "keywords": ["твердоспл", "тв.спл", "карбид", "вк8"]}
+            {
+              "value": "Быстрорез (HSS)",
+              "slug": "hss",
+              "keywords": [
+                "hss",
+                "р6м5",
+                "р18",
+                "быстрорез"
+              ]
+            },
+            {
+              "value": "Легированная сталь",
+              "slug": "alloy",
+              "keywords": [
+                "9хс",
+                "9хc",
+                "хвг",
+                "легированн"
+              ]
+            },
+            {
+              "value": "Твердосплав",
+              "slug": "carbide",
+              "keywords": [
+                "твердоспл",
+                "тв.спл",
+                "карбид",
+                "вк8"
+              ]
+            }
           ]
         },
         {
@@ -2014,12 +2246,46 @@
           "is_seo_facet": true,
           "_note": "Порядок важен: «плашкодержатель»/«метчикодержатель» содержат «плашк»/«метчик» — держатель/вороток/набор проверяются раньше. unknown не матчится ключевыми словами, выставляется derive-фолбэком.",
           "options": [
-            {"value": "Держатель", "slug": "derzhatel", "keywords": ["держател"]},
-            {"value": "Вороток", "slug": "vorotok", "keywords": ["ворот"]},
-            {"value": "Набор", "slug": "nabor", "keywords": ["набор"]},
-            {"value": "Плашка", "slug": "plashka", "keywords": ["плашк"]},
-            {"value": "Метчик", "slug": "metchik", "keywords": ["метчик"]},
-            {"value": "Не определён", "slug": "unknown", "keywords": []}
+            {
+              "value": "Держатель",
+              "slug": "derzhatel",
+              "keywords": [
+                "держател"
+              ]
+            },
+            {
+              "value": "Вороток",
+              "slug": "vorotok",
+              "keywords": [
+                "ворот"
+              ]
+            },
+            {
+              "value": "Набор",
+              "slug": "nabor",
+              "keywords": [
+                "набор"
+              ]
+            },
+            {
+              "value": "Плашка",
+              "slug": "plashka",
+              "keywords": [
+                "плашк"
+              ]
+            },
+            {
+              "value": "Метчик",
+              "slug": "metchik",
+              "keywords": [
+                "метчик"
+              ]
+            },
+            {
+              "value": "Не определён",
+              "slug": "unknown",
+              "keywords": []
+            }
           ],
           "derive": {
             "source": "inferred",
@@ -2043,7 +2309,9 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "regex": ["(?:^|\\s)(\\d{1,2}(?:[.,]\\d)?)\\s*м(?![а-яёa-z])"]
+          "regex": [
+            "(?:^|\\s)(\\d{1,2}(?:[.,]\\d)?)\\s*м(?![а-яёa-z])"
+          ]
         },
         {
           "slug": "tape_width",
@@ -2053,7 +2321,9 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "regex": ["\\((\\d{1,2})\\s*мм\\)"]
+          "regex": [
+            "\\((\\d{1,2})\\s*мм\\)"
+          ]
         }
       ]
     },
@@ -2070,7 +2340,9 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "regex": ["(?:^|\\s)(\\d{2,4})\\s*мм(?![а-яёa-z])"]
+          "regex": [
+            "(?:^|\\s)(\\d{2,4})\\s*мм(?![а-яёa-z])"
+          ]
         }
       ]
     },
@@ -2087,7 +2359,9 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "regex": ["(?:^|\\s)(\\d{2,4})\\s*мм(?![а-яёa-z])"]
+          "regex": [
+            "(?:^|\\s)(\\d{2,4})\\s*мм(?![а-яёa-z])"
+          ]
         },
         {
           "slug": "readout_type",
@@ -2098,9 +2372,32 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Электронный", "slug": "digital", "keywords": ["электронн", "цифров", "digital"]},
-            {"value": "Циферблатный", "slug": "dial", "keywords": ["циферблат", "стрелочн", "часов"]},
-            {"value": "Нониусный", "slug": "vernier", "keywords": ["нониус", "штангенциркуль"]}
+            {
+              "value": "Электронный",
+              "slug": "digital",
+              "keywords": [
+                "электронн",
+                "цифров",
+                "digital"
+              ]
+            },
+            {
+              "value": "Циферблатный",
+              "slug": "dial",
+              "keywords": [
+                "циферблат",
+                "стрелочн",
+                "часов"
+              ]
+            },
+            {
+              "value": "Нониусный",
+              "slug": "vernier",
+              "keywords": [
+                "нониус",
+                "штангенциркуль"
+              ]
+            }
           ]
         }
       ]
@@ -2138,7 +2435,9 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "regex": ["\\d{1,3}\\s*-\\s*(\\d{1,3})(?:\\s*[/мм]|\\s|$)"]
+          "regex": [
+            "\\d{1,3}\\s*-\\s*(\\d{1,3})(?:\\s*[/мм]|\\s|$)"
+          ]
         }
       ]
     },
@@ -2155,9 +2454,29 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Лазерный", "slug": "laser", "keywords": ["лазерн", "лазер"]},
-            {"value": "Ротационный", "slug": "rotary", "keywords": ["ротацион"]},
-            {"value": "Оптический", "slug": "optical", "keywords": ["оптическ", "оптич"]}
+            {
+              "value": "Лазерный",
+              "slug": "laser",
+              "keywords": [
+                "лазерн",
+                "лазер"
+              ]
+            },
+            {
+              "value": "Ротационный",
+              "slug": "rotary",
+              "keywords": [
+                "ротацион"
+              ]
+            },
+            {
+              "value": "Оптический",
+              "slug": "optical",
+              "keywords": [
+                "оптическ",
+                "оптич"
+              ]
+            }
           ]
         }
       ]
@@ -2338,7 +2657,12 @@
         {
           "slug": "size",
           "_note": "У набора одного «размера под ключ» не существует: «Набор ключей 6 - 19 мм, 8 шт.» — диапазон, «НКК-4 Арсенал 4 ключа 24; 27; 30; 32мм» — перечисление. Правило не применяется целиком.",
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "name": "Размер «под ключ»",
           "kind": "number",
           "unit": "мм",
@@ -2366,7 +2690,9 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "skip_if": ["набор"],
+          "skip_if": [
+            "набор"
+          ],
           "regex": [
             "(?:^|\\s)[мm]\\s*(\\d{1,2})\\s*[хx]\\s*\\d{1,3}",
             "(?:^|\\s)(3|4|5|6|8|10|12|14|16|18|20|22|24)\\s*[хx]\\s*(?:[12]\\d{2}|300|[1-9]\\d|[6-9])(?!\\d)(?!\\s*[хx])"
@@ -2381,7 +2707,9 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": false,
-          "skip_if": ["набор"],
+          "skip_if": [
+            "набор"
+          ],
           "regex": [
             "(?:^|\\s)[мm]\\s*\\d{1,2}\\s*[хx]\\s*(\\d{1,3})",
             "(?:^|\\s)(?:3|4|5|6|8|10|12|14|16|18|20|22|24)\\s*[хx]\\s*([12]\\d{2}|300|[1-9]\\d|[6-9])(?!\\d)(?!\\s*[хx])"
@@ -2396,10 +2724,34 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Шестигранная", "slug": "hex", "keywords": ["шестигр"]},
-            {"value": "Потай", "slug": "countersunk", "keywords": ["потай"]},
-            {"value": "Полукруглая", "slug": "round", "keywords": ["полукруг"]},
-            {"value": "С фланцем", "slug": "flange", "keywords": ["фланц"]}
+            {
+              "value": "Шестигранная",
+              "slug": "hex",
+              "keywords": [
+                "шестигр"
+              ]
+            },
+            {
+              "value": "Потай",
+              "slug": "countersunk",
+              "keywords": [
+                "потай"
+              ]
+            },
+            {
+              "value": "Полукруглая",
+              "slug": "round",
+              "keywords": [
+                "полукруг"
+              ]
+            },
+            {
+              "value": "С фланцем",
+              "slug": "flange",
+              "keywords": [
+                "фланц"
+              ]
+            }
           ]
         },
         {
@@ -2411,8 +2763,21 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Цинк", "slug": "zinc", "keywords": ["цинк"]},
-            {"value": "Чёрное", "slug": "black", "keywords": ["черн", "оксидирован"]}
+            {
+              "value": "Цинк",
+              "slug": "zinc",
+              "keywords": [
+                "цинк"
+              ]
+            },
+            {
+              "value": "Чёрное",
+              "slug": "black",
+              "keywords": [
+                "черн",
+                "оксидирован"
+              ]
+            }
           ]
         }
       ]
@@ -2616,11 +2981,45 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "1/4\" + 3/8\" + 1/2\"", "slug": "d-1-4-3-8-1-2", "keywords": ["1/4, 3/8, 1/2", "1/4\", 3/8\", 1/2"]},
-            {"value": "1/4\" + 1/2\"", "slug": "d-1-4-1-2", "keywords": ["1/4, 1/2", "1/4\", 1/2", "1/2, 1/4", "1/2\", 1/4"]},
-            {"value": "1/4\"", "slug": "d-1-4", "keywords": ["1/4"]},
-            {"value": "3/8\"", "slug": "d-3-8", "keywords": ["3/8"]},
-            {"value": "1/2\"", "slug": "d-1-2", "keywords": ["1/2"]}
+            {
+              "value": "1/4\" + 3/8\" + 1/2\"",
+              "slug": "d-1-4-3-8-1-2",
+              "keywords": [
+                "1/4, 3/8, 1/2",
+                "1/4\", 3/8\", 1/2"
+              ]
+            },
+            {
+              "value": "1/4\" + 1/2\"",
+              "slug": "d-1-4-1-2",
+              "keywords": [
+                "1/4, 1/2",
+                "1/4\", 1/2",
+                "1/2, 1/4",
+                "1/2\", 1/4"
+              ]
+            },
+            {
+              "value": "1/4\"",
+              "slug": "d-1-4",
+              "keywords": [
+                "1/4"
+              ]
+            },
+            {
+              "value": "3/8\"",
+              "slug": "d-3-8",
+              "keywords": [
+                "3/8"
+              ]
+            },
+            {
+              "value": "1/2\"",
+              "slug": "d-1-2",
+              "keywords": [
+                "1/2"
+              ]
+            }
           ]
         },
         {
@@ -2632,11 +3031,43 @@
           "is_filter": true,
           "is_seo_facet": false,
           "options": [
-            {"value": "Экстракторы", "slug": "extractors", "keywords": ["экстрактор", "шпильковерт"]},
-            {"value": "Выколотки", "slug": "punches", "keywords": ["выколоток"]},
-            {"value": "Торцевые головки и ключи", "slug": "sockets", "keywords": ["торцевых", "головок"]},
-            {"value": "Биты", "slug": "bits", "keywords": ["набор бит"]},
-            {"value": "Универсальный", "slug": "universal", "keywords": ["набор инструмент"]}
+            {
+              "value": "Экстракторы",
+              "slug": "extractors",
+              "keywords": [
+                "экстрактор",
+                "шпильковерт"
+              ]
+            },
+            {
+              "value": "Выколотки",
+              "slug": "punches",
+              "keywords": [
+                "выколоток"
+              ]
+            },
+            {
+              "value": "Торцевые головки и ключи",
+              "slug": "sockets",
+              "keywords": [
+                "торцевых",
+                "головок"
+              ]
+            },
+            {
+              "value": "Биты",
+              "slug": "bits",
+              "keywords": [
+                "набор бит"
+              ]
+            },
+            {
+              "value": "Универсальный",
+              "slug": "universal",
+              "keywords": [
+                "набор инструмент"
+              ]
+            }
           ]
         }
       ]
@@ -2694,7 +3125,12 @@
         {
           "slug": "size",
           "_note": "У набора одного «размера под ключ» не существует: «Набор ключей 6 - 19 мм, 8 шт.» — диапазон, «НКК-4 Арсенал 4 ключа 24; 27; 30; 32мм» — перечисление. Правило не применяется целиком.",
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "name": "Размер «под ключ»",
           "kind": "number",
           "unit": "мм",
@@ -3160,7 +3596,12 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "regex": [
             "ф\\.?\\s*(\\d(?:[.,]\\d{1,2})?)(?![\\d.,])",
             "(?<![\\d.,/x*х-])(\\d(?:[.,]\\d{1,2})?)\\s*[xх*]\\s*\\d{3}\\s*мм",
@@ -3182,7 +3623,12 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "regex": [
             "(?<![\\d.,/x*х-])(\\d{3})\\s*[xх*]\\s*\\d{1,2}\\s*мм",
             "(?<![\\d.,/x*х-])(?:1\\d|20)\\s*[xх*]\\s*(\\d{2})\\s*мм",
@@ -3204,7 +3650,12 @@
           "source": "regex",
           "priority": 40,
           "is_filter": true,
-          "skip_if": ["набор", "комплект", "предмет", " шт"],
+          "skip_if": [
+            "набор",
+            "комплект",
+            "предмет",
+            " шт"
+          ],
           "regex": [
             "ф\\.?\\s*(\\d{2,3})\\s*мм",
             "кисть\\s+круглая\\s+(?:№\\s*\\d+\\s+)?(\\d{2,3})\\s*мм"
@@ -3228,15 +3679,70 @@
           "word_boundary": true,
           "_note": "ХАР-SIZE (решение владельца «size — отдельный slug»): буквенный размер перчаток живёт под своим slug glove_size, а не под общим size. Общий size — числовой «размер под ключ» (мм) у ключей/головок; один Attribute на slug не может быть одновременно decimal и select, и раньше объявление перчаток молча проигрывало (attribute_type kept=decimal declared=select), давая на витрине фильтр-призрак: range_filter_attributes объявлял ползунок, а _cast_facet_value выбрасывал «XL» и фасет оставался пустым. CAT-14C B1 (решение 2): word_boundary — opt-in CODE-02, без него «s»/«l» ловили бы бренды (STELS, ANSELL). Диапазоны обязаны стоять раньше одиночных букв: «s-m» раньше «s», «l-xl» раньше «l»/«xl».",
           "options": [
-            {"value": "S–M", "slug": "s-m", "keywords": ["s-m"]},
-            {"value": "L–XL", "slug": "l-xl", "keywords": ["l-xl"]},
-            {"value": "XXXL", "slug": "xxxl", "keywords": ["xxxl", "3xl"]},
-            {"value": "XXL", "slug": "xxl", "keywords": ["xxl"]},
-            {"value": "XL", "slug": "xl", "keywords": ["xl"]},
-            {"value": "XS", "slug": "xs", "keywords": ["xs"]},
-            {"value": "S", "slug": "s", "keywords": ["s"]},
-            {"value": "M", "slug": "m", "keywords": ["m"]},
-            {"value": "L", "slug": "l", "keywords": ["l"]}
+            {
+              "value": "S–M",
+              "slug": "s-m",
+              "keywords": [
+                "s-m"
+              ]
+            },
+            {
+              "value": "L–XL",
+              "slug": "l-xl",
+              "keywords": [
+                "l-xl"
+              ]
+            },
+            {
+              "value": "XXXL",
+              "slug": "xxxl",
+              "keywords": [
+                "xxxl",
+                "3xl"
+              ]
+            },
+            {
+              "value": "XXL",
+              "slug": "xxl",
+              "keywords": [
+                "xxl"
+              ]
+            },
+            {
+              "value": "XL",
+              "slug": "xl",
+              "keywords": [
+                "xl"
+              ]
+            },
+            {
+              "value": "XS",
+              "slug": "xs",
+              "keywords": [
+                "xs"
+              ]
+            },
+            {
+              "value": "S",
+              "slug": "s",
+              "keywords": [
+                "s"
+              ]
+            },
+            {
+              "value": "M",
+              "slug": "m",
+              "keywords": [
+                "m"
+              ]
+            },
+            {
+              "value": "L",
+              "slug": "l",
+              "keywords": [
+                "l"
+              ]
+            }
           ]
         },
         {
@@ -3261,15 +3767,72 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Х/б", "slug": "hb", "keywords": ["х/б", "хлопк"]},
-            {"value": "Полиэстер", "slug": "poliester", "keywords": ["полиэстер"]},
-            {"value": "Брезент", "slug": "brezent", "keywords": ["брезент"]},
-            {"value": "Кожа", "slug": "kozha", "keywords": ["кожа", "спилок"]},
-            {"value": "Неопрен", "slug": "neopren", "keywords": ["неопрен"]},
-            {"value": "П/ш", "slug": "psh", "keywords": ["п/ш", "полушерст"]},
-            {"value": "Латекс", "slug": "lateks", "keywords": ["латекс"]},
-            {"value": "Нитрил", "slug": "nitril", "keywords": ["нитрил"]},
-            {"value": "ПВХ", "slug": "pvh", "keywords": ["пвх"]}
+            {
+              "value": "Х/б",
+              "slug": "hb",
+              "keywords": [
+                "х/б",
+                "хлопк"
+              ]
+            },
+            {
+              "value": "Полиэстер",
+              "slug": "poliester",
+              "keywords": [
+                "полиэстер"
+              ]
+            },
+            {
+              "value": "Брезент",
+              "slug": "brezent",
+              "keywords": [
+                "брезент"
+              ]
+            },
+            {
+              "value": "Кожа",
+              "slug": "kozha",
+              "keywords": [
+                "кожа",
+                "спилок"
+              ]
+            },
+            {
+              "value": "Неопрен",
+              "slug": "neopren",
+              "keywords": [
+                "неопрен"
+              ]
+            },
+            {
+              "value": "П/ш",
+              "slug": "psh",
+              "keywords": [
+                "п/ш",
+                "полушерст"
+              ]
+            },
+            {
+              "value": "Латекс",
+              "slug": "lateks",
+              "keywords": [
+                "латекс"
+              ]
+            },
+            {
+              "value": "Нитрил",
+              "slug": "nitril",
+              "keywords": [
+                "нитрил"
+              ]
+            },
+            {
+              "value": "ПВХ",
+              "slug": "pvh",
+              "keywords": [
+                "пвх"
+              ]
+            }
           ]
         },
         {
@@ -3281,10 +3844,35 @@
           "is_filter": true,
           "is_seo_facet": true,
           "options": [
-            {"value": "Полный облив", "slug": "polny-obliv", "keywords": ["полный облив", "полным обливом"]},
-            {"value": "Частичный облив", "slug": "chastichny-obliv", "keywords": ["облив"]},
-            {"value": "Точка", "slug": "tochka", "keywords": ["точка"]},
-            {"value": "Протектор", "slug": "protektor", "keywords": ["протектор"]}
+            {
+              "value": "Полный облив",
+              "slug": "polny-obliv",
+              "keywords": [
+                "полный облив",
+                "полным обливом"
+              ]
+            },
+            {
+              "value": "Частичный облив",
+              "slug": "chastichny-obliv",
+              "keywords": [
+                "облив"
+              ]
+            },
+            {
+              "value": "Точка",
+              "slug": "tochka",
+              "keywords": [
+                "точка"
+              ]
+            },
+            {
+              "value": "Протектор",
+              "slug": "protektor",
+              "keywords": [
+                "протектор"
+              ]
+            }
           ]
         }
       ]
@@ -3303,7 +3891,11 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": false,
-          "skip_if": ["пылесос", "держател", "крышк"],
+          "skip_if": [
+            "пылесос",
+            "держател",
+            "крышк"
+          ],
           "regex": [
             "(\\d+(?:[.,]\\d+)?)\\s*[хx]\\s*\\d+(?:[.,]\\d+)?\\s*[хx]\\s*\\d+(?:[.,]\\d+)?\\s*мм"
           ]
@@ -3317,7 +3909,11 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": false,
-          "skip_if": ["пылесос", "держател", "крышк"],
+          "skip_if": [
+            "пылесос",
+            "держател",
+            "крышк"
+          ],
           "regex": [
             "\\d+(?:[.,]\\d+)?\\s*[хx]\\s*(\\d+(?:[.,]\\d+)?)\\s*[хx]\\s*\\d+(?:[.,]\\d+)?\\s*мм"
           ]
@@ -3331,7 +3927,11 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": false,
-          "skip_if": ["пылесос", "держател", "крышк"],
+          "skip_if": [
+            "пылесос",
+            "держател",
+            "крышк"
+          ],
           "regex": [
             "\\d+(?:[.,]\\d+)?\\s*[хx]\\s*\\d+(?:[.,]\\d+)?\\s*[хx]\\s*(\\d+(?:[.,]\\d+)?)\\s*мм"
           ]
@@ -3344,7 +3944,11 @@
           "priority": 40,
           "is_filter": false,
           "is_seo_facet": false,
-          "skip_if": ["пылесос", "держател", "крышк"],
+          "skip_if": [
+            "пылесос",
+            "держател",
+            "крышк"
+          ],
           "_note": "CAT-14C B2 (решение 3): kind text (CODE-02) — открытое множество кодов, select-options не заводим. Паттерн 1 — линейка «АНАЛОГ» вида 13-102 (lookbehind/lookahead отсекают фрагменты артикулов вида U503-951-038W); паттерн 2 — коды Makita CB-155/CB51. Хранится отдельно от габаритов dim_a/b/c. CAT-14E: lookbehind паттерна 1 расширен буквами (a-zа-я) — отсекает номера моделей, склеенные с брендом (WS13-125, GWS24-230BV), замер cat14e-b31: 3 ложных из 60 (5.0%), после правки 0, 47 верных хитов сохранены.",
           "regex": [
             "(?<![\\da-zа-я-])(\\d{2}-\\d{3})(?![\\d-])",
@@ -3359,11 +3963,36 @@
           "priority": 30,
           "is_filter": true,
           "is_seo_facet": true,
-          "skip_if": ["пылесос", "держател", "крышк"],
+          "skip_if": [
+            "пылесос",
+            "держател",
+            "крышк"
+          ],
           "options": [
-            {"value": "HITACHI", "slug": "hitachi", "keywords": ["hitachi", "хитачи"]},
-            {"value": "MAKITA", "slug": "makita", "keywords": ["makita", "макита"]},
-            {"value": "BOSCH", "slug": "bosch", "keywords": ["bosch", "бош"]}
+            {
+              "value": "HITACHI",
+              "slug": "hitachi",
+              "keywords": [
+                "hitachi",
+                "хитачи"
+              ]
+            },
+            {
+              "value": "MAKITA",
+              "slug": "makita",
+              "keywords": [
+                "makita",
+                "макита"
+              ]
+            },
+            {
+              "value": "BOSCH",
+              "slug": "bosch",
+              "keywords": [
+                "bosch",
+                "бош"
+              ]
+            }
           ]
         }
       ]
@@ -3382,7 +4011,10 @@
           "priority": 40,
           "is_filter": true,
           "is_seo_facet": true,
-          "skip_if": ["набор", "предм"],
+          "skip_if": [
+            "набор",
+            "предм"
+          ],
           "_note": "Первая пара цифр кода = Ø головки: A0804М06 → 8 мм (подтверждено 18545 «ЗУБР 16х14 мм, тип D» = код D1614М06). Второй regex — словесная форма «16х14 мм».",
           "regex": [
             "(?:^|\\s)[a-z]\\s?(\\d{2})\\d{2,3}\\s*[мm]\\s*\\d{2}\\s*$",
@@ -3401,7 +4033,9 @@
             {
               "value": "По металлу",
               "slug": "metall",
-              "keywords": ["по металл"]
+              "keywords": [
+                "по металл"
+              ]
             }
           ]
         },
@@ -3418,7 +4052,10 @@
             {
               "value": "Набор",
               "slug": "nabor",
-              "keywords": ["набор", "предм"]
+              "keywords": [
+                "набор",
+                "предм"
+              ]
             }
           ]
         },
@@ -3431,7 +4068,10 @@
           "priority": 40,
           "is_filter": true,
           "_note": "Характеристика самого набора, а не его элементов — по политике владельца допустима.",
-          "regex": ["(\\d{1,3})\\s*предмет", "(\\d{1,3})\\s*предм"]
+          "regex": [
+            "(\\d{1,3})\\s*предмет",
+            "(\\d{1,3})\\s*предм"
+          ]
         },
         {
           "slug": "material",
@@ -3446,12 +4086,16 @@
             {
               "value": "Алмазный",
               "slug": "almaz",
-              "keywords": ["алмазн"]
+              "keywords": [
+                "алмазн"
+              ]
             },
             {
               "value": "Абразивный",
               "slug": "abraziv",
-              "keywords": ["абразивн"]
+              "keywords": [
+                "абразивн"
+              ]
             }
           ]
         }
@@ -3472,7 +4116,9 @@
           "is_filter": true,
           "is_seo_facet": true,
           "_note": "Ø корпуса щётки — левое вхождение «NN мм». Требование 2–3 цифр отсекает толщину проволоки («0,3мм», «0,5мм»); lookbehind на букву отсекает резьбу («М14 мм»); «,?» перед «мм» покрывает опечатку 1С «63,мм». Посадка «22,2» без «мм» не матчится, а в «150ммх22,2мм» левое вхождение — 150.",
-          "regex": ["(?<![а-яa-z\\d])(\\d{2,3})\\s*,?\\s*мм"]
+          "regex": [
+            "(?<![а-яa-z\\d])(\\d{2,3})\\s*,?\\s*мм"
+          ]
         },
         {
           "slug": "bore",
@@ -3483,7 +4129,9 @@
           "priority": 40,
           "is_filter": true,
           "_note": "Формат из krugi-almaznye: посадка идёт после запятой или «х» — «100 мм, 22,2», «150ммх22,2мм».",
-          "regex": ["[,x*х]\\s*(22(?:[.,]2)?|25[.,]4|32)(?![\\d.,])"]
+          "regex": [
+            "[,x*х]\\s*(22(?:[.,]2)?|25[.,]4|32)(?![\\d.,])"
+          ]
         },
         {
           "slug": "mount",
@@ -3498,17 +4146,25 @@
             {
               "value": "М14",
               "slug": "m14",
-              "keywords": ["м14"]
+              "keywords": [
+                "м14"
+              ]
             },
             {
               "value": "Хвостовик (шпилька)",
               "slug": "shpilka",
-              "keywords": ["шпильк", "для дрели"]
+              "keywords": [
+                "шпильк",
+                "для дрели"
+              ]
             },
             {
               "value": "Ручная",
               "slug": "ruchnaya",
-              "keywords": ["ручкой", "рукоятк"]
+              "keywords": [
+                "ручкой",
+                "рукоятк"
+              ]
             }
           ]
         },
@@ -3525,32 +4181,49 @@
             {
               "value": "Венчик",
               "slug": "venchik",
-              "keywords": ["венчик"]
+              "keywords": [
+                "венчик"
+              ]
             },
             {
               "value": "Кистевая",
               "slug": "kistevaya",
-              "keywords": ["кистев", "крацовк"]
+              "keywords": [
+                "кистев",
+                "крацовк"
+              ]
             },
             {
               "value": "Тарельчатая",
               "slug": "tarelchataya",
-              "keywords": ["тарельчат", "тарелк"]
+              "keywords": [
+                "тарельчат",
+                "тарелк"
+              ]
             },
             {
               "value": "Чашечная",
               "slug": "chashechnaya",
-              "keywords": ["чаш", "чащ"]
+              "keywords": [
+                "чаш",
+                "чащ"
+              ]
             },
             {
               "value": "Дисковая",
               "slug": "diskovaya",
-              "keywords": ["дисков", "радиальн", "круглая"]
+              "keywords": [
+                "дисков",
+                "радиальн",
+                "круглая"
+              ]
             },
             {
               "value": "Рядная",
               "slug": "ryadnaya",
-              "keywords": ["рядная"]
+              "keywords": [
+                "рядная"
+              ]
             }
           ]
         },
@@ -3567,27 +4240,40 @@
             {
               "value": "Латунированная сталь",
               "slug": "brass-plated-steel",
-              "keywords": ["латунированн"]
+              "keywords": [
+                "латунированн"
+              ]
             },
             {
               "value": "Нержавеющая сталь",
               "slug": "inox",
-              "keywords": ["нержавеющ"]
+              "keywords": [
+                "нержавеющ"
+              ]
             },
             {
               "value": "Нейлон",
               "slug": "nylon",
-              "keywords": ["нейлон"]
+              "keywords": [
+                "нейлон"
+              ]
             },
             {
               "value": "Латунь",
               "slug": "brass",
-              "keywords": ["латунная", "латунн", "из латуни"]
+              "keywords": [
+                "латунная",
+                "латунн",
+                "из латуни"
+              ]
             },
             {
               "value": "Сталь",
               "slug": "steel",
-              "keywords": ["сталь", "стал проволка"]
+              "keywords": [
+                "сталь",
+                "стал проволка"
+              ]
             }
           ]
         }
@@ -3688,8 +4374,15 @@
           "is_filter": true,
           "is_seo_facet": true,
           "_note": "Посадочная резьба головки на штангу: «М10х1,25», «10*1,25», «M8X1.25», «10х125». «М8/10/12» (универсальная) не матчится — разделитель «/» вне класса. skip_if «адаптер» снимает правило с №10, где резьб несколько. P1: skip_regex блокирует множественную посадочную резьбу «М8/10/12» / «М6/8/10» — одного значения не существует, писать нельзя ничего. Гейт атрибутный: остальные характеристики товара извлекаются. На thread_pitch НЕ ставится: у «М8/10/12 х1,25» шаг общий и корректен.",
-          "skip_if": ["гайка 8*1,25", "адаптер", "набор", "комплект"],
-          "skip_regex": ["(?<![а-яa-z])[мm]\\s?\\d{1,2}/\\d{1,2}/\\d{1,2}"],
+          "skip_if": [
+            "гайка 8*1,25",
+            "адаптер",
+            "набор",
+            "комплект"
+          ],
+          "skip_regex": [
+            "(?<![а-яa-z])[мm]\\s?\\d{1,2}/\\d{1,2}/\\d{1,2}"
+          ],
           "regex": [
             "(?:^|\\s)[мm]?\\s*(\\d{1,2})\\s*[хx*]\\s*\\d"
           ]
@@ -3703,7 +4396,12 @@
           "priority": 40,
           "is_filter": true,
           "_note": "(?!\\d) обязателен: «10х125» — это шаг 1,25 без запятой, и без хвостового guard'а regex вернул бы 1. Лучше не извлечь, чем извлечь неверно.",
-          "skip_if": ["гайка 8*1,25", "адаптер", "набор", "комплект"],
+          "skip_if": [
+            "гайка 8*1,25",
+            "адаптер",
+            "набор",
+            "комплект"
+          ],
           "regex": [
             "(?:^|\\s)[мm]?\\s*\\d{1,2}\\s*[хx*]\\s*(\\d(?:[.,]\\d+)?)(?!\\d)"
           ]
@@ -3716,18 +4414,25 @@
           "priority": 30,
           "is_filter": true,
           "is_seo_facet": true,
-          "skip_if": ["гайка 8*1,25"],
+          "skip_if": [
+            "гайка 8*1,25"
+          ],
           "_note": "Только явное «аналог <бренд>»: собственный бренд товара (CHAMPION/STURM/PATRIOT) в совместимость не пишем. HUSQVARNA — новый вариант, утверждён владельцем; HITACHI уже в БД.",
           "options": [
             {
               "value": "HUSQVARNA",
               "slug": "husqvarna",
-              "keywords": ["аналог husq", "аналог husk"]
+              "keywords": [
+                "аналог husq",
+                "аналог husk"
+              ]
             },
             {
               "value": "HITACHI",
               "slug": "hitachi",
-              "keywords": ["аналог hitachi"]
+              "keywords": [
+                "аналог hitachi"
+              ]
             }
           ]
         },
@@ -3745,12 +4450,16 @@
             {
               "value": "ПАУК",
               "slug": "pauk",
-              "keywords": ["паук"]
+              "keywords": [
+                "паук"
+              ]
             },
             {
               "value": "Цепная",
               "slug": "tsepnaya",
-              "keywords": ["цепная"]
+              "keywords": [
+                "цепная"
+              ]
             }
           ]
         },
@@ -3768,7 +4477,9 @@
             {
               "value": "Полуавтомат",
               "slug": "poluavtomat",
-              "keywords": ["полуавтомат"]
+              "keywords": [
+                "полуавтомат"
+              ]
             }
           ]
         },
@@ -3780,7 +4491,13 @@
           "priority": 30,
           "is_filter": true,
           "_note": "P1: только прямые маркеры. false_keywords намеренно пуст — false автоматически не проставляется (решение владельца). Характеристику из отсутствия признака не выводим.",
-          "true_keywords": ["быстрая заправка", "быстрая загрузка", "быстрая замена", "быстрая заправк", "easy load"]
+          "true_keywords": [
+            "быстрая заправка",
+            "быстрая загрузка",
+            "быстрая замена",
+            "быстрая заправк",
+            "easy load"
+          ]
         }
       ]
     },
@@ -3836,22 +4553,37 @@
             {
               "value": "SDS-max",
               "slug": "sds-max",
-              "keywords": ["sds-max", "sds max"]
+              "keywords": [
+                "sds-max",
+                "sds max"
+              ]
             },
             {
               "value": "SDS-plus",
               "slug": "sds-plus",
-              "keywords": ["sds-plus", "sds plus", "sds+", "sds-pus", "sds-pus хвостовик"]
+              "keywords": [
+                "sds-plus",
+                "sds plus",
+                "sds+",
+                "sds-pus",
+                "sds-pus хвостовик"
+              ]
             },
             {
               "value": "Шестигранный",
               "slug": "hex",
-              "keywords": ["шестигран"]
+              "keywords": [
+                "шестигран"
+              ]
             },
             {
               "value": "Конический",
               "slug": "konich",
-              "keywords": ["коническ", "конич.", "конический хвост"]
+              "keywords": [
+                "коническ",
+                "конич.",
+                "конический хвост"
+              ]
             }
           ]
         },
@@ -3868,12 +4600,18 @@
             {
               "value": "М16",
               "slug": "m16",
-              "keywords": ["м16"]
+              "keywords": [
+                "м16"
+              ]
             },
             {
               "value": "1¼\"",
               "slug": "thread-1-1-4",
-              "keywords": ["1 1/4", "1-1/4", "1.1/4"]
+              "keywords": [
+                "1 1/4",
+                "1-1/4",
+                "1.1/4"
+              ]
             }
           ]
         },
@@ -3886,7 +4624,11 @@
           "priority": 40,
           "is_filter": true,
           "_note": "Диапазоны («ф14-30мм», «ф32-152мм») и «до 30мм» намеренно не извлекаются — одного диаметра у них нет. skip_if «клин»: у клина 100мм — это длина, а не диаметр.",
-          "skip_if": ["клин", "набор", "комплект"],
+          "skip_if": [
+            "клин",
+            "набор",
+            "комплект"
+          ],
           "regex": [
             "(?<![\\d.,\\-хx])(?<!до )(\\d{1,3}(?:[.,]\\d)?)\\s*мм",
             "(?<![\\d.,\\-])(\\d{1,3}(?:[.,]\\d)?)\\s*[хx]\\s*\\d"
@@ -3905,22 +4647,34 @@
             {
               "value": "Клин-выталкиватель",
               "slug": "klin-vytalkivatel",
-              "keywords": ["клин"]
+              "keywords": [
+                "клин"
+              ]
             },
             {
               "value": "Пылеотвод",
               "slug": "pyleotvod",
-              "keywords": ["пылеотвод"]
+              "keywords": [
+                "пылеотвод"
+              ]
             },
             {
               "value": "Переходник (адаптер)",
               "slug": "adapter",
-              "keywords": ["адаптер", "переходник"]
+              "keywords": [
+                "адаптер",
+                "переходник"
+              ]
             },
             {
               "value": "Центрирующее сверло",
               "slug": "sverlo-tsentr",
-              "keywords": ["сверло центрир", "сверло центров", "центрирующее сверло", "центровочное сверло"]
+              "keywords": [
+                "сверло центрир",
+                "сверло центров",
+                "центрирующее сверло",
+                "центровочное сверло"
+              ]
             }
           ]
         }
@@ -4146,6 +4900,870 @@
           "is_filter": true,
           "regex": [
             "(?<![a-zа-я0-9])м\\s*(\\d{1,2})(?![\\d])(?![.,]\\d)"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "str-shpateli",
+      "category": "Шпатели, кельмы и тёрки",
+      "_note": "DRF-1450 (наполнение из собственных названий 1С). «N мм» у шпателя — ШИРИНА ПОЛОТНА, не диаметр: «Шпатель 150 мм» = полотно 150 мм. Зубчатые несут второй размер («зуб 6х6мм») — это уже существующая ось notch_size, поэтому ширину берём ПЕРВЫМ совпадением и запрещаем число после «х»: пара разбору не подлежит. Наборы («Набор шпателей 3 предмета:40,60,80мм») одной ширины не имеют — skip_if.",
+      "attributes": [
+        {
+          "slug": "width",
+          "name": "Ширина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx,/-])(?<!\\d\\.)(\\d{2,3})\\s*мм(?![а-яa-z])"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "chashki-shlif",
+      "category": "Чашки",
+      "_note": "DRF-1450. У шлифовальной/алмазной чашки «N мм» — ДИАМЕТР, ось та же, что у кругов (disc_diameter), чтобы фасет в «Алмазной оснастке» был один. Часть названий несёт пару «125х32» без «мм» — по решению владельца «х» у диаметров конструктивна и не блокируется: первое число пары = диаметр, второе = посадка (bore ось НЕ заводим — посадка у всей выборки одна, 32, а это < 2 различных значений, правило DRF-1428).",
+      "attributes": [
+        {
+          "slug": "disc_diameter",
+          "name": "Диаметр диска",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx,/-])(?<!\\d\\.)(\\d{2,3})\\s*мм(?![а-яa-z])",
+            "(?<![\\dхx,/-])(?<!\\d\\.)(\\d{3})\\s*[хx]\\s*\\d{2}(?![\\d.,])"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "hoz-izolenta",
+      "category": "Электромонтаж",
+      "_note": "DRF-1450. У изоленты «N мм» — ШИРИНА ЛЕНТЫ (ось tape_width, уже живая), длина рулона всегда в метрах («19мм х 20м»), поэтому за «мм» стоит ровно ширина. Метраж под «мм» не попадает — правило требует единицу «мм», а «х 20м» ей не является.",
+      "attributes": [
+        {
+          "slug": "tape_width",
+          "name": "Ширина ленты",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx,/-])(?<!\\d\\.)(\\d{1,3})\\s*мм(?![а-яa-z])"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "nozhnitsy-ruchnye",
+      "category": "Ножницы",
+      "_note": "DRF-1450. «N мм» у ножниц означает ДВЕ разные величины, и это проверено на всех названиях типа. У ручных ножниц (хозяйственных, по металлу, для травы) это ДЛИНА инструмента. У труборезов, кабелерезов, арматурных и насадок на дрель — размер ОБРАБАТЫВАЕМОГО материала: «для металлопластиковых трубок 42мм», «d=10мм», «ф4-12мм», «лист металла 1,8мм». Диапазоны в этой выборке не пересекаются (длины 115…660, размеры материала 1,8…63), но брать длину по числовому порогу нельзя — это совпадение выборки, а не правило. Поэтому отсекаем по СМЫСЛУ: skip_if по маркерам назначения. Замер на стенде 2026-08-31: в типе 89 товаров (published+active), правило дало 61 значение length в диапазоне 115…660 мм, 22 различных значения; 11 названий с размером материала отсечены skip_if и в план не вошли.",
+      "attributes": [
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "насадка",
+            "для резки",
+            "для металлопласт",
+            "для пластиковых",
+            "для труб",
+            "трубок",
+            "диэлектрическ",
+            "кабеля",
+            "арматуры",
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx,/-])(?<!\\d\\.)(\\d{2,3})\\s*мм(?![а-яa-z])"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "napilniki",
+      "category": "Напильники и рашпили",
+      "_note": "DRF-1450. «N мм» у напильников — длина инструмента, но не во всех названиях типа. У круглых напильников для заточки цепных пил это ДИАМЕТР напильника (4,0…5,5 мм), у «Ручка для напильника 120 мм» — длина аксессуара, а не инструмента, у наборов надфилей — пара «толщина х длина» («3х140 мм», «160х80мм»), у «Рашпиль для чистки пазов к-т 3шт (4, 6,5, 9мм)» — ширина пазов. Десятичные диаметры цепных напильников не прошли бы и через regex (\\d{2,3} требует двух цифр), но отсекаем их skip_if по смыслу, а не полагаемся на эту случайность разрядности: правило должно пережить «для заточки цепей 480 мм». Замер и запись на стенде 2026-09-03: в типе 136 товаров, правило дало 97 значений length 150…400 мм, 8 различных; 39 названий отсечены (наборы, ручки, цепные, пазовый рашпиль). Покрытие листа ruchnoy-napilniki-i-rashpili 97/136 = 71%.",
+      "attributes": [
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "для заточ",
+            "цепн пил",
+            "ручка для",
+            "набор",
+            "комплект",
+            "к-т"
+          ],
+          "regex": [
+            "(?<![\\dхx,/-])(?<!\\d\\.)(\\d{2,3})\\s*мм(?![а-яa-z])"
+          ]
+        },
+        {
+          "slug": "file_shape",
+          "name": "Форма напильника",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": false,
+          "_note": "НОВАЯ ось (решение владельца 2026-09-03). Порядок вариантов — часть правила, а не оформление: матчер берёт ПЕРВОЕ совпадение подстроки, а «полукруглый» содержит «круглый». Поэтому «полукругл» стоит выше «кругл», иначе все 16 полукруглых уехали бы в круглые. Наборы исключены: «Набор напильников 200мм, №2 (плоский, полукруглый, круглый)» несёт три формы сразу. Ручки для напильников формы не имеют и остаются пустыми — это правильно, а не пробел.",
+          "skip_if": [
+            "набор",
+            "комплект",
+            "к-т"
+          ],
+          "options": [
+            {
+              "value": "Полукруглый",
+              "slug": "polukrugly",
+              "keywords": [
+                "полукругл"
+              ]
+            },
+            {
+              "value": "Трёхгранный",
+              "slug": "trehgranny",
+              "keywords": [
+                "трехгранн",
+                "трёхгранн"
+              ]
+            },
+            {
+              "value": "Квадратный",
+              "slug": "kvadratny",
+              "keywords": [
+                "квадратн"
+              ]
+            },
+            {
+              "value": "Ромбический",
+              "slug": "rombichesky",
+              "keywords": [
+                "ромбическ"
+              ]
+            },
+            {
+              "value": "Овальный",
+              "slug": "ovalny",
+              "keywords": [
+                "овальн"
+              ]
+            },
+            {
+              "value": "Плоский",
+              "slug": "ploskiy",
+              "keywords": [
+                "плоск"
+              ]
+            },
+            {
+              "value": "Круглый",
+              "slug": "krugly",
+              "keywords": [
+                "кругл"
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "file_cut",
+          "name": "Насечка",
+          "kind": "select",
+          "source": "keyword",
+          "priority": 30,
+          "is_filter": true,
+          "is_seo_facet": false,
+          "_note": "НОВАЯ ось (решение владельца 2026-09-03). Номер насечки записан в 1С ровно тремя формами — «№1», «№2», «№3», без пробела и без иных вариантов (проверено по всем 136 названиям типа). Смысловые имена («драчевая», «личная», «бархатная») намеренно НЕ подставляются: ГОСТ 1465-80 задаёт одну шкалу для напильников, а надфили ЗУБР в собственных названиях пишут «насечка 2=бархатная», что этой шкале противоречит. Подставить имя значило бы выдать спорную трактовку за данные 1С. «насечка 0/2» встречается только в наборах надфилей, а наборы исключены.",
+          "skip_if": [
+            "набор",
+            "комплект",
+            "к-т"
+          ],
+          "options": [
+            {
+              "value": "№1",
+              "slug": "n1",
+              "keywords": [
+                "№1"
+              ]
+            },
+            {
+              "value": "№2",
+              "slug": "n2",
+              "keywords": [
+                "№2"
+              ]
+            },
+            {
+              "value": "№3",
+              "slug": "n3",
+              "keywords": [
+                "№3"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "bp-leska",
+      "category": "Леска для триммера",
+      "_note": "DRF-1450. У лески «N мм» означает одно и то же во всех 78 названиях типа — ДИАМЕТР лески (1,5…4,0). Ловушки смысла здесь нет, зато есть ловушка единицы: рядом всегда стоит длина мотка в МЕТРАХ («2,4мм, 245 м»), а иногда и вес («44м, 226г»). Отделяет их только литеральное «мм» — поэтому regex требует именно две «м» и запрещает букву следом. Диаметры десятичные и записаны и через запятую, и через точку («4.0 мм»), обе формы обязаны читаться. Модельные коды («R2412», «S24100», «TS3012») цифрами похожи на размер, но «мм» за ними не стоит. Замер и запись на стенде 2026-09-03: 78 значений на 78 товарах, 9 различных (1,5…4,0), повторный dry-run 78 keep. Порог DRF-1428 проходит только лист leska-dlya-trimmera 19/22 = 86%: остальные 59 лесок лежат в чужих листьях (51 в trimmery-i-motokosy, 6 в osnastka-prochaya, 2 в izmeritelnyy-ugolniki-i-lineyki) — это дефект категоризации, значения им записаны, привязка сделана только листу 105.",
+      "attributes": [
+        {
+          "slug": "diameter",
+          "name": "Диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\d.,хx/-])(\\d{1,2}(?:[.,]\\d{1,2})?)\\s*мм(?![а-яa-z])"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "tiski",
+      "category": "Тиски",
+      "_note": "DRF-1450. У тисков «N мм» — ШИРИНА ГУБОК, главный параметр выбора; во всех 28 названиях типа это одна и та же величина. Ось переиспользует живую width (ту же, что ширина полотна у шпателей): смысл «ширина» у неё общий, а смешения не будет — фасеты считаются по листу, а тиски и шпатели лежат в разных. Ловушки: «Верстак-тиски, 640*520*790» — габарит верстака, а не губки (отсекается по слову «верстак»; сейчас это название без «мм» и через regex не прошло бы, но правило обязано пережить «Верстак-тиски 640 мм»); «65/38 мм» и «150мм/16кг» — пара и вес рядом с размером; «SV-100 100 мм» — модельный код перед настоящим размером. Замер и запись на стенде 2026-09-03: 27 значений на 29 товарах (40…250 мм, 13 различных), покрытие листа ruchnoy-tiski 27/28 = 96%, повторный dry-run 27 keep. У «Тиски 40 мм 50мм настольные» два числа подряд; берётся первое — ширина губок, второе описывает раскрытие.",
+      "attributes": [
+        {
+          "slug": "width",
+          "name": "Ширина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "верстак",
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx,/-])(?<!\\d\\.)(\\d{2,3})\\s*мм(?![а-яa-z])"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "str-markery",
+      "category": "Маркеры и разметка",
+      "_note": "DRF-1450, решение владельца 2026-09-03: диапазон разводится на ДВЕ оси «от» и «до». У маркеров толщина наконечника записана в 1С двумя способами: одним числом («2мм», «0,75мм») и диапазоном («2-4 мм», «1,5-3мм», «5-16 мм» — 30 названий из 68 размерных). В одну числовую ось диапазон не ложится, а брать из него одну границу значило бы выдать упрощение за данные 1С. Поэтому осей две; у названия с одним числом обе получают это число — «от 0,5 до 0,5» описывает наконечник верно и делает обе оси сравнимыми между собой. Порядок шаблонов — часть правила: диапазонный обязан стоять первым, иначе «2-4 мм» провалится в одиночный. Ловушки типа: «Карандаш строительный 180 мм» — это ДЛИНА карандаша, а не наконечник, и 180 мм в толщине линии было бы абсурдом (тип смешанный: карандаши лежат вместе с маркерами); «3мм L-45мм» — толщина плюс длина корпуса; «138х11мм» — габарит корпуса парой; «50мкм» — микрометры, не миллиметры. Слаги оканчиваются на _from/_to, а НЕ на _min/_max: суффиксы _min и _max зарезервированы фильтром PLP (parse_attr_params) под границы диапазона по оси — «attr_tip_width_min=0.3» разобралось бы как «ось tip_width от 0.3», такой оси нет, и фильтр молча вернул бы весь лист. Проверено на стенде: с _min круг фасет→фильтр давал 87 вместо 2. С _from/_to обе оси остаются обычными значениями, а диапазонный поиск покупателя выражается через них штатно: attr_tip_width_from_max=3&attr_tip_width_to_min=3 — «наконечник, который умеет 3 мм». Замер и запись на стенде 2026-09-03: 67 товаров из 87 получили ОБЕ оси (ни одного с одной), из них 30 — диапазоном; покрытие листа markery-i-razmetka 67/87 = 77%, повторный dry-run 134 keep. После переименования слагов обязателен rebuild_attrs_cache: фасеты берутся из attrs_cache по слагу, и без пересборки обе оси исчезают с витрины при живых значениях в БД.",
+      "attributes": [
+        {
+          "slug": "tip_width_from",
+          "name": "Толщина наконечника, от",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "карандаш",
+            "набор",
+            "комплект",
+            "мелк",
+            "чернила"
+          ],
+          "regex": [
+            "(\\d{1,2}(?:[.,]\\d{1,2})?)\\s*-\\s*\\d{1,2}(?:[.,]\\d{1,2})?\\s*мм(?![а-яa-z])",
+            "(?<![\\d.,хx/-])(\\d{1,2}(?:[.,]\\d{1,2})?)\\s*мм(?![а-яa-z])"
+          ]
+        },
+        {
+          "slug": "tip_width_to",
+          "name": "Толщина наконечника, до",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "карандаш",
+            "набор",
+            "комплект",
+            "мелк",
+            "чернила"
+          ],
+          "regex": [
+            "\\d{1,2}(?:[.,]\\d{1,2})?\\s*-\\s*(\\d{1,2}(?:[.,]\\d{1,2})?)\\s*мм(?![а-яa-z])",
+            "(?<![\\d.,хx/-])(\\d{1,2}(?:[.,]\\d{1,2})?)\\s*мм(?![а-яa-z])"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "strubtsiny",
+      "category": "Струбцины",
+      "_note": "DRF-1450, решение владельца: диапазон разводится на две оси «от» и «до». У струбцин раскрытие записано одним числом («тип G 100 мм») и диапазоном («0-150мм», «450-650мм»). Пары НЕ берутся, и это главное решение блока: «150/60 мм» и «450/630 мм» — обе через дробь, но в первой первое число больше, во второй меньше, то есть порядок непостоянен и смысл у брендов разный (раскрытие/глубина у HERCULES, длина/ширина у Т-профиля 1650/55мм). Развернуть такую пару в «от/до» значило бы местами получить «от 450 до 630», а местами перевёрнутое «от 150 до 60». Пары через «х»/«*» («50х250мм» у типа F) — вылет × раскрытие, две РАЗНЫЕ величины, а не границы одной. Обе формы отсекаются самим regex: в паре первое число не стоит перед «мм», а второе закрыто lookbehind, поэтому отдельный skip_if не нужен — и это проверено на корпусе, а не предположено. Замер и запись на стенде 2026-09-03: 34 товара из 61 получили ОБЕ оси (ни одного с одной, ни одного перевёрнутого), из них 7 — диапазоном; покрытие листа ruchnoy-strubciny 56%, повторный dry-run 68 keep. Круг фасет→фильтр сходится, диапазонный сценарий attr_clamp_from_max=100&attr_clamp_to_min=100 даёт 8 струбцин.",
+      "attributes": [
+        {
+          "slug": "clamp_from",
+          "name": "Раскрытие, от",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\d.,хx*/-])(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*-\\s*\\d{1,4}(?:[.,]\\d{1,2})?\\s*мм(?![а-яa-z])",
+            "(?<![\\d.,хx*/-])(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*мм(?![а-яa-z])"
+          ]
+        },
+        {
+          "slug": "clamp_to",
+          "name": "Раскрытие, до",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\d.,хx*/-])\\d{1,4}(?:[.,]\\d{1,2})?\\s*-\\s*(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*мм(?![а-яa-z])",
+            "(?<![\\d.,хx*/-])(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*мм(?![а-яa-z])"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "krep-styazhki",
+      "category": "Хомуты и стяжки",
+      "_note": "DRF-1450, решение владельца: диапазон разводится на две оси «от» и «до». У обжимных хомутов рабочий диаметр записан диапазоном («10-16 мм», «105-127 мм») — это и есть главный параметр выбора. Ловушки типа: «Хомут обжимной 10-16 мм, лента 9 мм» несёт ВТОРОЙ размер — ширину ленты, и диапазонный шаблон обязан сработать раньше одиночного, иначе в диаметр уедет 9; артикулы вида «(арт. 37803-10-16-10)» и «3787-10-16» выглядят как диапазон, но «мм» за ними не стоит; «Хомут Липучка 15х200мм» — ширина на длину липучки, две разные величины, а не границы одной; «Хомут NORMA GBS M W2 51-55/20» — настоящий диапазон, но без «мм», и берётся честно ничего. Переходники и штуцеры («ПереходникЗУБР штуцер елочка 10мм- 1/2\\\"F с хомутом») лежат в этом же типе, но 10 мм у них — диаметр ёлочки самого переходника, а не зажим хомута: отсекаются по словам. ДОПОЛНЕНИЕ 2026-09-03, после разделения листа в DRF-1456 (лист 427 krepezh-homuty-styazhki). У кабельной стяжки размер записан парой «ДЛИНАхШИРИНА» — порядок ОБРАТНЫЙ шурупному «диаметр х длина», и это не оговорка: стяжка всегда длиннее, чем шире, «250х4,5» читается как 250 мм длины на 4,5 мм ширины. Оба шаблона привязаны к слову «стяжка», а не к позиции числа, потому что в том же листе лежат «Хомут Липучка Hanskonner 15х200мм» и «Хомут пласт. 3,5х300 мм», где пара записана НАОБОРОТ — ширина на длину. Позиционное правило поставило бы им длину 15 и 3,5 мм. «Хомут-стяжка 200, белые, 100шт» несёт только длину: второй шаблон берёт её до запятой, и «100 шт» фасовкой в длину не попадает. Десятичная точка («120х2.5») равноправна запятой. Замер и запись на стенде 2026-09-03: 116 новых значений (длина 59, ширина 57), повторный dry-run 234 keep. Покрытие листа 427 krepezh-homuty-styazhki: длина 59/61 = 97%, ширина 57/61 = 93% — обе привязки созданы, круг фасет→фильтр сходится, совместный фильтр «200х4,5» даёт 2 товара. Оси обжимных хомутов не затронуты.",
+      "attributes": [
+        {
+          "slug": "hose_diameter_from",
+          "name": "Диаметр зажима, от",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "переходник",
+            "штуцер",
+            "набор",
+            "комплект",
+            "липучка"
+          ],
+          "regex": [
+            "(?<![\\d.,хx*/-])(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*-\\s*\\d{1,4}(?:[.,]\\d{1,2})?\\s*мм(?![а-яa-z])",
+            "(?<![\\d.,хx*/-])(?:ф|d\\s*=)?(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*мм(?![а-яa-z])"
+          ]
+        },
+        {
+          "slug": "hose_diameter_to",
+          "name": "Диаметр зажима, до",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "переходник",
+            "штуцер",
+            "набор",
+            "комплект",
+            "липучка"
+          ],
+          "regex": [
+            "(?<![\\d.,хx*/-])\\d{1,4}(?:[.,]\\d{1,2})?\\s*-\\s*(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*мм(?![а-яa-z])",
+            "(?<![\\d.,хx*/-])(?:ф|d\\s*=)?(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*мм(?![а-яa-z])"
+          ]
+        },
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект",
+            "липучка"
+          ],
+          "regex": [
+            "стяжка\\s+(\\d{2,4})\\s*[хx]\\s*\\d{1,2}(?:[.,]\\d)?",
+            "стяжка\\s+(\\d{2,4})\\s*,"
+          ]
+        },
+        {
+          "slug": "width",
+          "name": "Ширина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект",
+            "липучка"
+          ],
+          "regex": [
+            "стяжка\\s+\\d{2,4}\\s*[хx]\\s*(\\d{1,2}(?:[.,]\\d)?)"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "razvertki-frezy",
+      "category": "Развёртки, зенкеры и фрезы",
+      "_note": "DRF-1450. Тип однороден по СМЫСЛУ — везде диаметр режущего инструмента, — но записан в 1С пятью разными способами, и порядок шаблонов их разводит. (1) «ф14,0», «ф 3,0» — основная форма у фрез, БЕЗ единицы измерения: замер по «мм» этот тип вообще не видел. (2) Бор-фрезы: «Бор-фреза карбидовая 6мм A-16х25/70» — 6 мм здесь ХВОСТОВИК, а не рабочий диаметр, и взять его значило бы поставить всем 121 бор-фрезе одинаковую шестёрку. Рабочий диаметр стоит после буквы формы: A-16 → 16, B12,7 → 12,7, D-6х4.7/50 → 6. Головка всегда первая в связке «диаметр х длина / общая длина», и размеры 9,6 и 12,7 — это 3/8\" и 1/2\", штатный ряд борфрез. Поэтому шаблон бор-фрезы обязан стоять ВЫШЕ шаблона «N мм», иначе хвостовик победит. (3) «Зенкер конический 10,4х50мм» — диаметр на длину. (4) «Развертка 10,0мм», «Зенкер 13мм». (5) «Развертка машинная ц/х 5,0 Н7» — диаметр сразу за типом хвостовика. Отсечены: регулируемые развёртки («32,0-35,0мм») — у них диаметр ДИАПАЗОНОМ, это пара осей, а не одна; наборы и насадки; «Направляющая для фрез 7,98х157мм» — не фреза. Отрезные и пазовые фрезы («100х1,2», «160х32х5») берутся только там, где есть «мм»: пара без единицы дала бы первый член по соглашению ГОСТ, но в выборке есть «Фреза отрезная 2000х4,5» — опечатка 1С вместо 200, и молча записать 2000 мм хуже, чем не записать ничего. Замер и запись на стенде 2026-09-03: 142 значения на 165 товарах, 36 различных (3…160 мм), повторный dry-run 142 keep. Привязка сделана только листу zenkery-i-razvertki 38/52 = 73%. Фрезы (125 штук, внутри них покрытие 83%) лежат ПРЯМО в родителе osnastka-metallorezhuschiy-instrument рядом с четырьмя дочерними разделами, своего листа у них нет; фасет родителя считается по всему поддереву (641 товар) и даёт 34% — ниже порога. Это дефект категоризации, а не характеристик: заведите фрезам лист, и фасет появится сам.",
+      "attributes": [
+        {
+          "slug": "diameter",
+          "name": "Диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект",
+            "насадки",
+            "направляющая",
+            "регулируем"
+          ],
+          "regex": [
+            "ф\\s*(\\d{1,4}(?:[.,]\\d{1,2})?)",
+            "бор-фреза.*?\\s[a-z]-?(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*[хx]",
+            "(?<![\\dхx,./-])(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*[хx]\\s*\\d{1,4}(?:[.,]\\d{1,2})?\\s*мм",
+            "(?<![\\dхx,./-])(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*мм(?![а-яa-z])",
+            "[цк]/х\\s+(\\d{1,4}(?:[.,]\\d{1,2})?)"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "krep-shurupy",
+      "category": "Шурупы и глухари",
+      "_note": "DRF-1450. У крепежа размер записан канонической парой «диаметр х длина», и порядок в ней постоянен у всех производителей — в отличие от пар у струбцин, где он плавал. Поэтому пару здесь брать МОЖНО, и она даёт сразу две живые оси. Формы записи: «М4Х12» (метрическая резьба), «Д4Х16» и «D5X35» (диаметр), «М5*25» через звёздочку, «М 4 Х 50» и «, М4 Х 25» с пробелами, «4X16/PS» и «10х90» вовсе без буквы, «М5»/«Д2,6» — только диаметр без длины. Буквы берутся и кириллицей, и латиницей: в 1С «Х» и «X» перемешаны в одном типе. Ловушки: «Шуруп с шестигранной головкой 10х90, D-14, кр.резь» — D-14 это диаметр ГОЛОВКИ, а не резьбы, поэтому шаблон голой пары обязан стоять выше шаблона «буква+число», иначе в диаметр уедет 14 вместо 10; хвостовые артикулы («949236», «669537», «(OLD 994-15040-162)») цифрами похожи на размер, но за ними нет разделителя пары; «М5Х20, 10 шт.» — «10 шт» это фасовка. Замер и запись на стенде 2026-09-03: 81 товар из 84 получил размер (78 обе оси, 3 только диаметр), повторный dry-run 159 keep. Покрытие листа krepezh-shurupy-i-gluhari: диаметр 89/101 = 88%, длина 86/101 = 85% (разница с 81 — дюбели и анкеры того же листа, у них оси уже были). Оба фасета отдаются, круг сходится, совместный фильтр «М5х16» даёт 5.",
+      "attributes": [
+        {
+          "slug": "diameter",
+          "name": "Диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "[мmдd]\\s*-?\\s*(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*[хx*]\\s*\\d{1,4}(?:[.,]\\d{1,2})?",
+            "(?<![\\dхx*/,.-])(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*[хx*]\\s*\\d{1,4}(?:[.,]\\d{1,2})?",
+            "[мmдd]\\s*-?\\s*(\\d{1,4}(?:[.,]\\d{1,2})?)(?![\\dхx*])"
+          ]
+        },
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "[мmдd]\\s*-?\\s*\\d{1,4}(?:[.,]\\d{1,2})?\\s*[хx*]\\s*(\\d{1,4}(?:[.,]\\d{1,2})?)",
+            "(?<![\\dхx*/,.-])\\d{1,4}(?:[.,]\\d{1,2})?\\s*[хx*]\\s*(\\d{1,4}(?:[.,]\\d{1,2})?)"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "zubila",
+      "category": "Зубила, кернеры и бородки",
+      "_note": "DRF-1450. Тип отложили в волне 2 не зря: лист держит ТРИ семейства, и одна и та же запись значит у них разное. У зубила «16х150мм» — ширина лезвия на длину. У кернера «4х185мм» — диаметр наконечника на длину, то есть первый член пары уходит в ДРУГУЮ ось. Позиция в паре тут не помогает, поэтому шаблоны привязаны к слову товара: «зубило…» пишет в width, «кернер|бородок|добойник…» — в diameter. Порядок шаблонов длины тоже смысловой: «Кернер автоматический 2,0мм, длина 125мм» и «Кернер автоматический 105мм 2,4мм» записаны в ОБРАТНОМ порядке друг к другу, и разводит их только явное слово «длина», которое обязано проверяться раньше позиционного шаблона. Диаметр наконечника без пары берётся только в дробной записи (1,6 / 2,4 / 3,2 / 2,0): это не порог «маленькое значит наконечник», а требование к форме записи — целочисленный «Кернер 4мм» правило пропустит, и это осознанный промах в безопасную сторону, а не ложное значение. Отсечены наборы, дыроколы и пробойники: у них «1-6мм» и «3-13 мм» — диапазон РЯДА насадок, а не размер изделия. В типе уже лежали 24 значения (12 зубил, width+length, source=regex) от снятого блока волны 2 — новый блок их подтверждает, а не переписывает. Замер и запись на стенде 2026-09-03: 36 товаров из 50 получили размер, 58 значений (24 прежних keep + 34 новых), повторный dry-run 58 keep. Покрытие листа: длина 30/50 = 60% (фасет есть, привязка была с волны 2), ширина 17/50 = 34%, диаметр 11/50 = 22% — обе ниже порога, потому что ширина бывает только у зубил, а диаметр только у кернеров с бородками. Раздели лист по семействам — и ширина даёт 17/23 = 74%, диаметр 11/14 = 79%: потолок здесь ставит смешанный лист, а не данные.",
+      "attributes": [
+        {
+          "slug": "width",
+          "name": "Ширина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект",
+            "дырокол",
+            "пробойник",
+            "насадок"
+          ],
+          "regex": [
+            "зубило.*?(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*[хx]\\s*\\d{1,4}(?:[.,]\\d{1,2})?"
+          ]
+        },
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект",
+            "дырокол",
+            "пробойник",
+            "насадок"
+          ],
+          "regex": [
+            "зубило.*?\\d{1,4}(?:[.,]\\d{1,2})?\\s*[хx]\\s*(\\d{1,4}(?:[.,]\\d{1,2})?)",
+            "(?:кернер|бородок|добойник).*?\\d{1,4}(?:[.,]\\d{1,2})?\\s*[хx]\\s*(\\d{1,4}(?:[.,]\\d{1,2})?)",
+            "длина\\s*(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*мм",
+            "(?:зубило|кернер)\\s+(\\d{2,4})\\s*мм",
+            "кернер\\s+автоматический\\s+(\\d{2,4})\\s*мм"
+          ]
+        },
+        {
+          "slug": "diameter",
+          "name": "Диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект",
+            "дырокол",
+            "пробойник",
+            "насадок"
+          ],
+          "regex": [
+            "(?:кернер|бородок|добойник).*?(\\d{1,4}(?:[.,]\\d{1,2})?)\\s*[хx]\\s*\\d{1,4}(?:[.,]\\d{1,2})?",
+            "(?:кернер|бородок|добойник)[^хx]*?(\\d{1,2}[.,]\\d)\\s*мм"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "nozhi",
+      "category": "Ножи и лезвия",
+      "_note": "DRF-1450. У ножей «N мм» значит две разные величины, и разделяет их не порог, а СТАНДАРТ. Ширина сменного лезвия — не произвольное число, а промышленный ряд 9 / 18 / 20 / 25 мм: других сегментных и трапециевидных лезвий не выпускают. Поэтому width берётся закрытым списком этих четырёх значений, а не «двузначным числом»: новая ширина (скажем, 12 мм) правилом не подхватится, и это осознанный промах в безопасную сторону. Всё трёхзначное — длина самого ножа: складные 155…235 мм, сапожные и универсальные 180…185 мм, туристический 110 мм. Ловушки: «Нож ЗУБР СТИЛЕТ 235мм лезвие 105мм складной» несёт ДВА трёхзначных числа — длину ножа и длину лезвия; берётся первое, потому что длина лезвия — отдельная величина, и заводить под неё ось в этот заход не стали. «Нож электрика 1000В, лезвие 50мм» — 50 это длина лезвия, а не ширина, и закрытый список её не пускает; «1000В» — напряжение. «Нож обойный 436х40мм» и «Нож OLFA с сегмент. лезвием, 18х100х0,5мм» — пары и тройки: ни один член не стоит перед «мм» без разделителя, поэтому оба названия дают честный ноль. Позиция числа в названии разделителем быть не может: «Нож 18 мм KRAFTOOL» и «Нож Стандарт автоблок. 18 мм Hobbi» — одна и та же величина в разных местах. Замер и запись на стенде 2026-09-03: 48 значений — ширина у 32 товаров, длина у 16, ни у одного обе сразу; повторный dry-run 48 keep. Покрытие листа ruchnoy-nozhi-i-lezviya: ширина 36%, длина 18% — обе НИЖЕ порога DRF-1428, привязки сознательно не создаются. Разделение листа тут НЕ поможет, в отличие от лески и зубил: даже среди одних ножей ширина даёт 42%, потому что 25 названий из 76 вообще не несут размера («Нож монтажный GROSS», «Нож сапожный», «Нож строительный нержавеющий в чехле»). Это пробел в данных 1С, а не в дереве, и правилом он не закрывается.",
+      "attributes": [
+        {
+          "slug": "width",
+          "name": "Ширина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx*/,.-])(9|18|20|25)\\s*мм(?![а-яa-z])"
+          ]
+        },
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx*/,.-])(\\d{3})\\s*мм(?![а-яa-z])"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "lenty-shlif",
+      "category": "Ленты шлифовальные",
+      "_note": "DRF-1450, случай 5 из DRF-1456. Тип однородный: «ШИРИНАхДЛИНА» плюс зернистость. Прежнее правило брало только одну форму — «75х457 мм, P120» — и покрывало 7 лент из 57; формы «100х610 Р36 ЛУГА» и «100х620 К120 Hitachi» оставались пустыми. Зернистость в 1С помечена ТРЕМЯ разными буквами: кириллическая «Р», латинская «P» и «К» у Hitachi. Все три равноправны, поэтому класс букв, а не одна. Ведущие нули («Р 040») снимаются: 040 и 40 — одна зернистость, и без этого фасет раздвоился бы. Буква обязана не быть хвостом слова (lookbehind на букву), иначе «к» из «посадка» или «р» из любого бренда начнут порождать зернистость. Ловушки: «(5шт)» и «(3шт)» — фасовка; «Лента абразивная ЗУБР Р80, посадка 12,5мм, L 12,7» — пары нет вовсе, 12,5 это посадка, и правило честно даёт только зернистость: оси здесь независимы, частичное заполнение не ошибка. Отдельная грабля в самом правиле: запрет запятой после числа, поставленный против дробей, глушил «ЗУБР Р80, посадка 12,5мм» — там запятая обычная, разделительная. Запрещать надо не запятую, а запятую С ЦИФРОЙ. Замер и запись на стенде 2026-09-03: 169 значений — ширина 56, длина 56, зернистость 57; внутри самих лент 98% / 98% / 100%, повторный dry-run 169 keep. Привязки к листу abrazivy (102) уже существовали: фасеты стали плотнее (96/96/91 значение вместо ~40/40/34), новых заводить не пришлось. Покрытие листа целиком 42/42/40% — его держит внизу наждачка, 152 товара в том же листе против 57 лент.",
+      "attributes": [
+        {
+          "slug": "width",
+          "name": "Ширина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx*/,.-])(\\d{2,3})\\s*[хx]\\s*\\d{2,4}"
+          ]
+        },
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx*/,.-])\\d{2,3}\\s*[хx]\\s*(\\d{2,4})"
+          ]
+        },
+        {
+          "slug": "grit",
+          "name": "Зернистость",
+          "kind": "number",
+          "unit": "",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![а-яa-z])[рpк]\\s*0*(\\d{2,4})(?![\\dхx]|[,.]\\d)"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "nazhdachka",
+      "category": "Наждачная бумага и сетка",
+      "_note": "DRF-1450. Продолжение блока lenty-shlif: та же пара «ШИРИНАхДЛИНА» плюс зернистость, но у наждачки маркеров зернистости ПЯТЬ, а не три — кириллическая «Р» (ЗУБР, ЛУГА), латинская «P», «К» и «K» (Makita, Hitachi) и «№» у шлифовальной сетки. Ловушки, которых не было у лент: (1) «Бумага протирочная 2-х слой 20х25см, 400листов» — это ВООБЩЕ не абразив, а размер в САНТИМЕТРАХ; возьми его — и в ось миллиметров лягут числа, заниженные в десять раз. Отсекается по слову. (2) Многозернистые бруски и наборы: «Р400/1000», «Р325/600», «Р200/300/400/600 на подставке», «К 60, 80, 120 в наборе», «Шлифлист 93 мм K60-240» — у товара НЕТ одной зернистости, и записать первую значило бы соврать. Дробь и дефис после числа закрыты lookahead-ом, наборы — по слову. (3) «Р120, рулон 1000 м» — рулон меряется в МЕТРАХ, пары размеров у него нет; зернистость берётся, размеры остаются пустыми, и это верно. (4) Артикулы «Makita P-36011», «FIT-38157» и модели «FERM для FPS-180» выглядят как маркер с числом; спасает lookbehind на букву — «p» внутри «fps» хвост слова, а после «P-» стоит дефис, а не цифра. Ещё две грабли, найденные ПОСЛЕ первой записи — обе меняли данные на витрине. (5) В одном названии стоят ДВЕ ШКАЛЫ зернистости: «775х30 №10 (Р120)» и «775х20 №63 (Р32)» — «№» здесь старая советская маркировка ГОСТ 3647, «Р» — современная FEPA. Это одна и та же зернистость в разных шкалах, и первое совпадение давало советскую: в фасете 10, 12, 16 встали бы рядом с 40, 80, 120 из другой шкалы. Поэтому шаблоны упорядочены — Р/P выше К/K выше «№», и «№» срабатывает только там, где иной маркировки нет (шлифовальная сетка, где «№» и есть номер FEPA). Дефис в «Р-100» допущен. (6) У рулонов пара смешивает ЕДИНИЦЫ: «775х30» — это 775 миллиметров ширины на 30 МЕТРОВ длины. Ширина верна и остаётся, длина отсекается по «775х» — это стандартная ширина рулона наждачной бумаги, а не произвольное число. skip_if задан по осям раздельно именно ради этого. Замер и запись на стенде 2026-09-03: 385 значений, повторный dry-run 385 keep. Лист abrazivy (102) поднялся с 42/42/40% до 80/77/84% — все три оси перешагнули порог DRF-1428, привязки там уже были. Правило удалило 9 ложных значений прежнего узкого правила (зернистость многозернистых брусков и сантиметры протирочной бумаги) и перевело ещё 9 зернистостей с советской шкалы на FEPA.",
+      "attributes": [
+        {
+          "slug": "width",
+          "name": "Ширина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "протирочн",
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx*/,.-])(\\d{2,3})\\s*[хx]\\s*\\d{2,4}"
+          ]
+        },
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "протирочн",
+            "набор",
+            "комплект",
+            "775х"
+          ],
+          "regex": [
+            "(?<![\\dхx*/,.-])\\d{2,3}\\s*[хx]\\s*(\\d{2,4})"
+          ]
+        },
+        {
+          "slug": "grit",
+          "name": "Зернистость",
+          "kind": "number",
+          "unit": "",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "протирочн",
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![а-яa-z])[рp]\\s*-?\\s*0*(\\d{2,4})(?![\\dхx/-]|[,.]\\d)",
+            "(?<![а-яa-z])[кk]\\s*0*(\\d{2,4})(?![\\dхx/-]|[,.]\\d)",
+            "(?<![а-яa-z])№\\s*0*(\\d{2,4})(?![\\dхx/-]|[,.]\\d)"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "yashchiki-sumki",
+      "category": "Ящики, сумки и органайзеры",
+      "_note": "DRF-1450. У ящиков, сумок и органайзеров размер записан ТРОЙКОЙ «длина х ширина х высота» — порядок постоянен у всех производителей. Ловушки этого типа тяжелее, чем у пар: (1) ЕДИНИЦЫ СМЕШАНЫ. Часть названий в миллиметрах («470х240х215мм»), часть в САНТИМЕТРАХ («22\" (56,5 х 32,5 х 29 см)», «(27,5х18,5х4,2см)», «KWB 340 x 13 x 31 см»). Взять сантиметры как миллиметры — занизить размер в десять раз. Движок единицы не переводит (в AttrRule нет множителя), поэтому сантиметровые названия ОТСЕКАЮТСЯ lookahead-ом «не см» — их около десятка, и они ждут либо поддержки конверсии в движке, либо ручной разметки. Отсекать через skip_if нельзя: «см» как подстрока сидит в «со СМенными лотками» и погасило бы верные тройки. (2) ОБРЫВ НАЗВАНИЯ. 1С режет строку по длине поля, и тройка обрывается посреди третьего числа: «Ящик метал. ... (460х200х22», «315ммх215ммх22», «...415х230х». Записать высоту 22 мм вместо 220 — тихая порча. Поэтому третье число обязано иметь продолжение: единицу, скобку, запятую или пробел со словом. Конец строки сразу после цифр правило отвергает. (3) ДЮЙМОВЫЙ ТИПОРАЗМЕР рядом с миллиметрами: «Ящик лоток пластиковый 22\" 564х320х250мм». 22 — это не размер, а класс ящика; тройка спасает сама, потому что требует три числа через разделитель. (4) Разделителей три — «х», латинская «x» и «*»; в «320мм*215мм*250мм» единица стоит после КАЖДОГО числа, поэтому шаблонов на ось два. ГРАБЛЯ, найденная дры-раном: защиту «не сантиметры» можно обойти ОТКАТОМ. У «29х17х12,7см» движок сначала читал «12,7», упирался в запрет, откатывался к «12» — и тогда за числом стояла запятая, которая проходила как разделитель. Семь сантиметровых товаров получили размер, заниженный в десять раз, и выглядели правдоподобно. Лечится требованием читать число ЦЕЛИКОМ: после него не должно стоять ни цифры, ни разделителя дроби. Без этого любой lookahead-запрет в правиле с числами обходится тихо. РЕШЕНИЕ ПО САНТИМЕТРАМ: вместо того чтобы терять треть листа, в движок добавлен необязательный множитель единицы на ШАБЛОН — {\"pattern\": …, \"scale\": 10}. Голая строка по-прежнему означает scale=1, поэтому все прежние правила читаются без изменений. Сантиметровый шаблон обязан стоять ВЫШЕ миллиметрового: у «29х17х12,7см» миллиметровый вариант не сработает из-за запрета «см», но порядок фиксируем явно, чтобы правило не зависело от этого совпадения. Замер, оправдавший правку: без сантиметров лист yaschiki-dlya-instrumenta даёт 40% и фасета не получает, с ними — 63%. Ещё одна проверка сантиметрового шаблона: он ограничен ДВУМЯ разрядами. «Сумка для инструмента KWB 340 x 13 x 31 см» при трёх разрядах давала длину 3400 мм — сумку в три с половиной метра. Это опечатка 1С, и правило её не лечит, а отказывается читать: ящик или сумку длиннее метра в сантиметрах не записывают, поэтому трёхзначные «сантиметры» — признак ошибки, а не большого товара. И последняя, самая тихая порча: 1С обрезает название вместе с ЕДИНИЦЕЙ. «Ящик для инструмента пластиковый 23\" (59х28х22,5 с» — здесь «см» усечено до «с», запрет искал «см» целиком, не нашёл, и ящик получил 59х28х22,5 МИЛЛИМЕТРА вместо 590х280х225. Значения выглядели правдоподобно и молча стояли бы в фасете. Поэтому миллиметровый шаблон отвергает и одинокую «с» — но только в конце строки: «400х300х230 сплошной цвет» обрывом не является. Замер и запись на стенде 2026-09-03: 315 значений на 105 товарах из 188, повторный dry-run 315 keep. Покрытие листа yaschiki-dlya-instrumenta 82/131 = 63% по всем трём осям, привязки созданы, круг фасет→фильтр сходится. Листья organayzery-i-keysy (11%) и sumki-i-poyasa-montazhnika (12%) порога не берут: там размер в названии просто не пишут.",
+      "attributes": [
+        {
+          "slug": "length",
+          "name": "Длина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx*/,.-])(\\d{2,4}(?:[.,]\\d)?)(?![\\d.,])\\s*мм\\s*[хx*]\\s*\\d{2,4}(?:[.,]\\d)?(?![\\d.,])\\s*мм\\s*[хx*]\\s*\\d{2,4}(?:[.,]\\d)?(?![\\d.,])\\s*мм",
+            {
+              "pattern": "(?<![\\dхx*/,.-])(\\d{1,2}(?:[.,]\\d)?)(?![\\d.,])\\s*[хx*]\\s*\\d{1,2}(?:[.,]\\d)?(?![\\d.,])\\s*[хx*]\\s*\\d{1,2}(?:[.,]\\d)?(?![\\d.,])\\s*см",
+              "scale": 10
+            },
+            "(?<![\\dхx*/,.-])(\\d{2,4}(?:[.,]\\d)?)(?![\\d.,])\\s*[хx*]\\s*\\d{2,4}(?:[.,]\\d)?(?![\\d.,])\\s*[хx*]\\s*\\d{2,4}(?:[.,]\\d)?(?![\\d.,])\\s*(?:мм)?(?!\\s*см)(?!\\s*см?\\s*$)(?=\\s*мм|\\s*[),]|\\s+\\D)"
+          ]
+        },
+        {
+          "slug": "width",
+          "name": "Ширина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx*/,.-])\\d{2,4}(?:[.,]\\d)?(?![\\d.,])\\s*мм\\s*[хx*]\\s*(\\d{2,4}(?:[.,]\\d)?)(?![\\d.,])\\s*мм\\s*[хx*]\\s*\\d{2,4}(?:[.,]\\d)?(?![\\d.,])\\s*мм",
+            {
+              "pattern": "(?<![\\dхx*/,.-])\\d{1,2}(?:[.,]\\d)?(?![\\d.,])\\s*[хx*]\\s*(\\d{1,2}(?:[.,]\\d)?)(?![\\d.,])\\s*[хx*]\\s*\\d{1,2}(?:[.,]\\d)?(?![\\d.,])\\s*см",
+              "scale": 10
+            },
+            "(?<![\\dхx*/,.-])\\d{2,4}(?:[.,]\\d)?(?![\\d.,])\\s*[хx*]\\s*(\\d{2,4}(?:[.,]\\d)?)(?![\\d.,])\\s*[хx*]\\s*\\d{2,4}(?:[.,]\\d)?(?![\\d.,])\\s*(?:мм)?(?!\\s*см)(?!\\s*см?\\s*$)(?=\\s*мм|\\s*[),]|\\s+\\D)"
+          ]
+        },
+        {
+          "slug": "height",
+          "name": "Высота",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx*/,.-])\\d{2,4}(?:[.,]\\d)?(?![\\d.,])\\s*мм\\s*[хx*]\\s*\\d{2,4}(?:[.,]\\d)?(?![\\d.,])\\s*мм\\s*[хx*]\\s*(\\d{2,4}(?:[.,]\\d)?)(?![\\d.,])\\s*мм",
+            {
+              "pattern": "(?<![\\dхx*/,.-])\\d{1,2}(?:[.,]\\d)?(?![\\d.,])\\s*[хx*]\\s*\\d{1,2}(?:[.,]\\d)?(?![\\d.,])\\s*[хx*]\\s*(\\d{1,2}(?:[.,]\\d)?)(?![\\d.,])\\s*см",
+              "scale": 10
+            },
+            "(?<![\\dхx*/,.-])\\d{2,4}(?:[.,]\\d)?(?![\\d.,])\\s*[хx*]\\s*\\d{2,4}(?:[.,]\\d)?(?![\\d.,])\\s*[хx*]\\s*(\\d{2,4}(?:[.,]\\d)?)(?![\\d.,])\\s*(?:мм)?(?!\\s*см)(?!\\s*см?\\s*$)(?=\\s*мм|\\s*[),]|\\s+\\D)"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "stameski",
+      "category": "Стамески и долота",
+      "_note": "DRF-1450. Самый однозначный тип трека: «Стамеска 10мм плоская» — «N мм» везде ширина лезвия, второй величины в названиях нет вовсе. Диапазон 6…32 мм. Отсекаются только наборы («Набор стамесок-долот 5пред», «Набор стамесок-долото ЗУБР ЭКСПЕРТ (арт. 18096-Н4)») — у набора ширина не одна, а артикул «18096-Н4» цифрами похож на размер. Форма лезвия (плоская / полукруглая) в названиях тоже есть и просится в отдельную ось, но это новый Attribute и отдельное решение владельца — здесь не заводится. Замер и запись на стенде 2026-09-04: 31 значение из 35 товаров, ряд 6…32 мм, повторный dry-run 31 keep. Покрытие листа ruchnoy-stameski-dolota-i-rezcy-po-derevu 31/37 = 84%, привязка создана, круг фасет→фильтр сходится.",
+      "attributes": [
+        {
+          "slug": "width",
+          "name": "Ширина",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx*/,.-])(\\d{1,2})(?![\\d.,])\\s*мм(?![а-яa-z])"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_type": "krep-takelazh",
+      "category": "Канаты, тросы и такелаж",
+      "_note": "DRF-1450. Канаты, верёвки и зажимы: «N мм» — диаметр, величина одна на весь тип. Особенность записи: у части названий диаметр приклеен к марке через ДЕФИС — «Веревка плт ПА-6,0мм-16пр», «Веревка СС-динам-10 мм», «СС-статика-11 мм». Обычный для трека запрет «перед числом не дефис» (он защищает от диапазонов вроде «10-16 мм») здесь потерял бы эти названия, а диапазонов в типе нет ни одного — поэтому дефис в lookbehind не входит. Ловушки: «Зажим СВП 1,0мм» и «Кольцо СВП 1,5мм» — это система выравнивания плитки, чужой товар в типе, и 1,5 мм там толщина шва, а не диаметр каната; «Коуш д/стальных канатов 5х6мм» — пара, ни один член не стоит перед «мм» без разделителя, поэтому честный ноль; номера стандартов «DIN 741», «DIN 3055», «ТУ-9616-003-00461221-2001» цифрами похожи на размер, но «мм» за ними нет; «бухта 100м» и «50 м» — метры. Замер и запись на стенде 2026-09-04: 48 значений из 62 товаров, 1,2…20 мм, повторный dry-run 48 keep. Покрытие ПРОШЛО БЫ порог — krepezh-kanat-verevka 37/68 = 54%, metizy 10/16 = 62%, — но оба листа МЁРТВЫЕ (is_active=False), и фасет там невозможен. Значения записаны и ждут оживления разделов; третий лист trosy-styazhki-i-stropy живой, но держит всего 3 товара типа.",
+      "attributes": [
+        {
+          "slug": "diameter",
+          "name": "Диаметр",
+          "kind": "number",
+          "unit": "мм",
+          "source": "regex",
+          "priority": 40,
+          "is_filter": true,
+          "skip_if": [
+            "свп",
+            "набор",
+            "комплект"
+          ],
+          "regex": [
+            "(?<![\\dхx*/,.])(\\d{1,2}(?:[.,]\\d)?)(?![\\d.,])\\s*мм(?![а-яa-z])"
           ]
         }
       ]
