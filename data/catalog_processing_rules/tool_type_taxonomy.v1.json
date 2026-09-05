@@ -2339,6 +2339,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "pilnye-diski",
+      "value": "Пильные диски",
+      "sort_order": 18,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1449 + owner decision 2026-09-05",
+      "review_status": "approved",
+      "review_reason": "Пильный диск и отрезной круг — разные товары с разными осями: у круга диаметр, толщина, посадка и материал обработки, у пильного диска — диаметр, посадка и число зубьев, которого у круга нет. Аудит категории 87 (предусловие ТТ-19) выполнен и чист: в листе ровно 327 товаров, все с типом krugi-shlif, все названы «диск пильный»; пильных дисков вне листа среди прочих 990 krugi-shlif — ноль. sort_order 18 — рядом с krugi-shlif.",
+      "review_ref": "drf-1449",
+      "legacy_aliases": []
+    },
+    {
       "slug": "pily",
       "value": "Пилы",
       "sort_order": 5,
@@ -4002,6 +4013,6 @@
       "legacy_aliases": []
     }
   ],
-  "taxonomy_identity_hash": "ddf4b949b38265b1fde3f7e2caa0cf5bb4fe4e82fd23980676ac93c8bf844874",
-  "manifest_semantic_hash": "afe2b1ab6fda1a30e5bdcbf0a5d3b904ce15ba6217caccd5d5d5b5475e9c48b3"
+  "taxonomy_identity_hash": "9313a95952021d549130dd08d6d2ebd0d9a8f3273bce014b0e00ec0c2fe29ffb",
+  "manifest_semantic_hash": "afd18768ed16947f9458d6e99ed1945fdf5c2748f24e86da23612404a043f838"
 }

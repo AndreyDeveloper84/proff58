@@ -24,11 +24,14 @@ from apps.catalog.taxonomy_manifest import (
 V2_PATH = Path(settings.BASE_DIR) / "data" / "catalog_processing_rules" / "tool_type.v2.json"
 SEED_RULES_PATH = Path(settings.BASE_DIR) / "data" / "tool_type_rules.json"
 
-# ТТ-18A (2026-08-05): новый тип tsangi-i-tsangovye-patrony и переименование
-# svar-cangi (Цанги → Цанги сварочные); 360 options; identity и semantic hash
+# ДРФ-1449 (2026-09-05): новый тип pilnye-diski — пильные диски отделены от
+# отрезных и шлифовальных кругов (разные оси: у диска число зубьев, у круга
+# толщина и материал обработки); 361 option; identity и semantic hash
 # пересчитаны; gate-sample и labels перевыпущены на новый canonical binding.
-PINNED_IDENTITY_HASH = "ddf4b949b38265b1fde3f7e2caa0cf5bb4fe4e82fd23980676ac93c8bf844874"
-PINNED_SEMANTIC_HASH = "afe2b1ab6fda1a30e5bdcbf0a5d3b904ce15ba6217caccd5d5d5b5475e9c48b3"
+# До этого ТТ-18A (2026-08-05): tsangi-i-tsangovye-patrony и переименование
+# svar-cangi (Цанги → Цанги сварочные), 360 options, identity ddf4b949…
+PINNED_IDENTITY_HASH = "9313a95952021d549130dd08d6d2ebd0d9a8f3273bce014b0e00ec0c2fe29ffb"
+PINNED_SEMANTIC_HASH = "afd18768ed16947f9458d6e99ed1945fdf5c2748f24e86da23612404a043f838"
 
 BACKPORTED_SLUGS = {
     "bp-podgotovka-vozduha",
@@ -90,7 +93,7 @@ def _opt(slug, value, **kw):
 
 def test_committed_manifest_loads_and_matches_pins():
     m = load_manifest()
-    assert len(m.options) == 360
+    assert len(m.options) == 361
     assert m.identity_hash == PINNED_IDENTITY_HASH
     assert m.semantic_hash == PINNED_SEMANTIC_HASH
     assert m.schema_version == 1 and m.manifest_version == 1
