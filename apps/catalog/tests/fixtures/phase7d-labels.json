@@ -726,6 +726,6 @@
   "matcher_version": "1.0",
   "phase": "7D",
   "reviewer_id": "andrey",
-  "ruleset_hash": "6231d84309f538b1aa0fa82991bc4e9a0b6c304a714c8bab817f128d944f31cc",
-  "sample_hash": "fff2c9c3a175c5664e0c95c3468e26ffa574a79d626015a291afa8fc0844fa46"
+  "ruleset_hash": "debc741fa778c53ff853f0a1947119b3fc96c31f1fe676893a6eb6da5a9d5c0e",
+  "sample_hash": "cf6ff8921892ec47d03f92acef1d38b38ecafb777a7c45cbfd322c51a0782234"
 }
