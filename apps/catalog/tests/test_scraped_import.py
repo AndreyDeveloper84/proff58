@@ -8,9 +8,11 @@
 
 import json
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 from django.core.management import call_command
+from django.core.management.base import CommandError
 
 from apps.catalog import scraped_import as si
 from apps.catalog.models import (
@@ -587,3 +589,957 @@ def test_validate_model_prefixes_rejects_regex_metacharacters():
     si.validate_model_prefixes(["ЗЛШМ", "ПШМ", "DCG405"])
     # унаследованный generic разрешён
     si.validate_model_prefixes(si.LEGACY_MODEL_PREFIXES)
+
+
+# --- оси бензопил и триммеров: нормализаторы и boolean (DRF-1439) -------------
+
+
+HUTER_MAP_PATH = "data/catalog_processing_rules/scraped_attr_map.benzopily-trimmery.json"
+
+
+def _huter_map():
+    from pathlib import Path
+
+    return si.load_attr_map(Path(HUTER_MAP_PATH))
+
+
+def _huter_extract(attributes):
+    card = {
+        "source_url": "https://huter.su/x/",
+        "name": "Бензопила Huter BS-45",
+        "brand": "Huter",
+        "manufacturer_sku": "70/6/1",
+        "attributes": attributes,
+    }
+    return si.extract_card_values(card, "huter", _huter_map())
+
+
+def test_decimal_normalizer_accepts_comma():
+    """Десятичная запятая источника («25,4») не уезжает в текст."""
+    assert si.normalize_scalar("25,4", "decimal") == 25.4
+    assert si.normalize_scalar("51,7", "decimal") == 51.7
+    assert si.normalize_scalar("1,3", "decimal") == 1.3
+
+
+def test_bar_length_exact_inch_snaps_to_nominal():
+    """152.4 = 6.0 × 25.4 — та же 6-дюймовая шина, что источник зовёт «150/6»."""
+    assert si.normalize_scalar("152.4", "bar_length_mm") == 150
+    assert si.normalize_scalar("254", "bar_length_mm") == 250
+
+
+@pytest.mark.parametrize("raw", ["350", "400", "450", "500", "505"])
+def test_bar_length_nominal_series_untouched(raw):
+    """Номиналы ряда целыми дюймами не делятся и остаются как есть."""
+    assert si.normalize_scalar(raw, "bar_length_mm") == float(raw)
+
+
+def test_bar_length_takes_millimetres_from_pair_field():
+    """«400/16"», «150/6», «250/10”» — берётся первое число (миллиметры)."""
+    assert si.normalize_scalar('400/16"', "bar_length_mm") == 400
+    assert si.normalize_scalar("150/6", "bar_length_mm") == 150
+    assert si.normalize_scalar("250/10”", "bar_length_mm") == 250
+
+
+def test_option_key_strips_quotes_and_spaces():
+    """«Easy Load», « Easy Load » и Easy Load — один ключ, а не три опции."""
+    assert si.option_key("Easy Load") == "easy load"
+    assert si.option_key("«Easy Load»") == "easy load"
+    assert si.option_key("« Easy Load »") == "easy load"
+    assert si.option_key('"Easy Load"') == "easy load"
+
+
+def test_spool_type_maps_to_existing_quick_load():
+    """«Тип катушки» — существующий quick_load, новая ось не заводится."""
+    for raw in ("Easy Load", "«Easy Load»", "« Easy Load »"):
+        values = _huter_extract({"Тип катушки": raw}).values
+        assert [(v.attribute_slug, v.value) for v in values] == [("quick_load", True)]
+    values = _huter_extract({"Тип катушки": "Стандартная"}).values
+    assert [(v.attribute_slug, v.value) for v in values] == [("quick_load", False)]
+
+
+def test_boolean_unknown_value_drops_to_report():
+    res = _huter_extract({"Автоматическая смазка цепи": "Опционально"})
+    assert res.values == []
+    assert res.dropped and "boolean" in res.dropped[0][2]
+
+
+def test_chain_pitch_broken_fraction_is_resolved_not_swallowed():
+    """«1.4» — потерянная косая дроби 1/4, а не шаг 0.404 и не новая опция."""
+    entry = _huter_map()["sources"]["huter"]["fields"]["Шаг цепи, дюйм"]
+    assert entry["values"]["1.4"] == "pitch-1-4"
+    assert entry["values"]["0.25"] == "pitch-1-4"
+    assert entry["values_confidence"]["1.4"] == "low"
+    values = _huter_extract({"Шаг цепи, дюйм": "1.4"}).values
+    assert [(v.attribute_slug, v.value, v.confidence) for v in values] == [
+        ("chain_pitch", "pitch-1-4", si.MAP_CONFIDENCE["low"])
+    ]
+
+
+def test_combined_field_feeds_two_axes():
+    """«Толщина звена и шаг цепи, мм/дюймы» несёт две оси в одном поле."""
+    got = {
+        (v.attribute_slug, v.value)
+        for v in _huter_extract({"Толщина звена и шаг цепи, мм/дюймы": "1,3 / 3/8"}).values
+    }
+    assert got == {("chain_gauge", Decimal("1.3")), ("chain_pitch", "pitch-3-8")}
+    got = {
+        (v.attribute_slug, v.value)
+        for v in _huter_extract({"Толщина звена и шаг цепи, мм/дюймы": "1.5/0.325"}).values
+    }
+    assert got == {("chain_gauge", Decimal("1.5")), ("chain_pitch", "pitch-0-325")}
+
+
+def test_huter_map_declares_family_scope_and_skips_foreign_tracks():
+    """Карта покрывает семейство типов, не трогает tool_type, мощность и вес."""
+    amap = _huter_map()
+    assert amap["scope_tool_types"] == [
+        "bp-benzopily",
+        "bp-cepi",
+        "bp-shiny",
+        "bp-trimmery",
+        "pily",
+    ]
+    managed = {
+        e["attribute"]
+        for _, e in si.iter_field_entries(amap["sources"]["huter"])
+        if "attribute" in e
+    }
+    assert "tool_type" not in managed
+    # мощность и вес — трек DRF-1440, карта их не мапит
+    assert managed.isdisjoint({"power", "weight", "weight_kg"})
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "Антивибрационная система",
+        "Тормоз цепи",
+        "Уровень звукового давления, дБ",
+        "Ширина скоса диском, мм",
+        "Ширина скоса леской, мм",
+    ],
+)
+def test_huter_map_rejects_single_valued_axes(label):
+    """Оси с одним значением в замере отклонены (правило DRF-1428)."""
+    entry = _huter_map()["sources"]["huter"]["fields"][label]
+    assert entry["action"] == "unmapped"
+    assert "DRF-1428" in entry["reason"]
+
+
+# --- сквозной прогон карты benzopily-trimmery (DRF-1439) ----------------------
+
+
+HUTER_ATTRS = {
+    "bar_length": (AttributeType.DECIMAL, "мм"),
+    "chain_pitch": (AttributeType.SELECT, ""),
+    "chain_links": (AttributeType.DECIMAL, "шт."),
+    "chain_gauge": (AttributeType.DECIMAL, "мм"),
+    "engine_displacement": (AttributeType.DECIMAL, "см³"),
+    "chain_auto_oiling": (AttributeType.BOOLEAN, ""),
+    "split_shaft": (AttributeType.BOOLEAN, ""),
+    "quick_load": (AttributeType.BOOLEAN, ""),
+    "battery_capacity": (AttributeType.DECIMAL, "А·ч"),
+    "voltage": (AttributeType.DECIMAL, "В"),
+    "no_load_speed": (AttributeType.DECIMAL, "об/мин"),
+    "motor_type": (AttributeType.SELECT, ""),
+    "tool_type": (AttributeType.SELECT, ""),
+}
+HUTER_TOOL_TYPES = ["bp-benzopily", "bp-cepi", "bp-shiny", "bp-trimmery", "pily"]
+
+
+@pytest.fixture
+def huter_catalog(db):
+    cat = Category.add_root(name="Сад", slug="sad")
+    attrs = {}
+    for slug, (atype, unit) in HUTER_ATTRS.items():
+        attrs[slug] = Attribute.objects.create(
+            slug=slug, name=slug, attribute_type=atype, unit=unit
+        )
+    opts = {}
+    for oslug in HUTER_TOOL_TYPES:
+        opts[("tool_type", oslug)] = AttributeOption.objects.create(
+            attribute=attrs["tool_type"], value=oslug, slug=oslug
+        )
+    for oslug in ("pitch-1-4", "pitch-0-325", "pitch-3-8", "pitch-0-404"):
+        opts[("chain_pitch", oslug)] = AttributeOption.objects.create(
+            attribute=attrs["chain_pitch"], value=oslug, slug=oslug
+        )
+    for oslug in ("brushed", "brushless"):
+        opts[("motor_type", oslug)] = AttributeOption.objects.create(
+            attribute=attrs["motor_type"], value=oslug, slug=oslug
+        )
+    return {"category": cat, "attrs": attrs, "opts": opts}
+
+
+def _huter_product(cat, name, article, tool_type):
+    p = Product.objects.create(
+        category=cat["category"],
+        name=name,
+        slug=f"h{Product.objects.count()}",
+        article=article,
+        status=ProductStatus.IMPORTED,
+        is_active=False,
+        price="1000",
+    )
+    ProductAttributeValue.objects.create(
+        product=p,
+        attribute=cat["attrs"]["tool_type"],
+        value_option=cat["opts"][("tool_type", tool_type)],
+        source=Source.RULES,
+    )
+    return p
+
+
+def _huter_card(name, sku, attributes):
+    return {
+        "source_url": f"https://huter.su/{sku}/",
+        "name": name,
+        "brand": "Huter",
+        "manufacturer_sku": sku,
+        "description": None,
+        "summary_raw": None,
+        "attributes": attributes,
+    }
+
+
+def _run_huter(export_path, tmp_path, *extra):
+    report_path = tmp_path / "huter_report.json"
+    call_command(
+        "catalog_import_scraped",
+        export_path,
+        "--category",
+        "benzopily-trimmery",
+        "--report",
+        str(report_path),
+        *extra,
+        verbosity=0,
+    )
+    return json.loads(report_path.read_text(encoding="utf-8"))
+
+
+@pytest.mark.django_db
+def test_huter_family_scope_covers_five_tool_types(huter_catalog, tmp_path):
+    """Одна карта пишет во все пять типов семейства, а не только в свой slug."""
+    saw = _huter_product(huter_catalog, "Бензопила HUTER BS-45", "70/6/1", "bp-benzopily")
+    chain = _huter_product(
+        huter_catalog, "Цепь 36 звеньев C9 1/4 для ELS-20LI HUTER", "71/4/1", "bp-cepi"
+    )
+    trimmer = _huter_product(
+        huter_catalog, "Триммер бензиновый Huter GGT-2500S", "70/2/13", "bp-trimmery"
+    )
+    export = _export(
+        tmp_path,
+        [
+            _huter_card(
+                "Бензопила Huter BS-45",
+                "70/6/1",
+                {
+                    "Длина шины, мм/дюйм": "450/18",
+                    "Толщина звена и шаг цепи, мм/дюймы": "1.5/0.325",
+                    "Количество звеньев цепи, шт": "72",
+                    "Объём двигателя, см³": "45",
+                    "Автоматическая смазка цепи": "Есть",
+                    "Антивибрационная система": "Есть",
+                    "Вес, кг": "6.3 кг",
+                },
+            ),
+            _huter_card(
+                "Цепь С9 Huter для аккумуляторной пилы ELS-20Li",
+                "71/4/1",
+                {
+                    "Длина шины, мм": "152.4",
+                    "Шаг цепи, дюйм": "0.25",
+                    "Количество звеньев, шт.": "36",
+                },
+            ),
+            _huter_card(
+                "Триммер бензиновый Huter GGT-2500S",
+                "70/2/13",
+                {
+                    "Тип катушки": "«Easy Load»",
+                    "Разъемная штанга": "Есть",
+                    "Объём двигателя, см³": "51,7",
+                    "Напряжение питающей сети, В": "220-230В, ~50 Гц",
+                },
+            ),
+        ],
+        source="huter",
+    )
+    report = _run_huter(export, tmp_path)
+    assert report["scope_tool_types"] == HUTER_TOOL_TYPES
+    assert report["stats"]["matched"] == 3
+
+    def vals(p):
+        return {
+            pav.attribute.slug: (
+                pav.value_option.slug
+                if pav.value_option_id
+                else (pav.value_boolean if pav.value_boolean is not None else pav.value_decimal)
+            )
+            for pav in p.attribute_values.select_related("attribute", "value_option")
+            if pav.attribute.slug != "tool_type"
+        }
+
+    assert vals(saw) == {
+        "bar_length": Decimal("450"),
+        "chain_gauge": Decimal("1.5"),
+        "chain_pitch": "pitch-0-325",
+        "chain_links": Decimal("72"),
+        "engine_displacement": Decimal("45"),
+        "chain_auto_oiling": True,
+    }
+    # 152.4 = 6" ровно -> номинал 150, а не отдельное значение фасета
+    assert vals(chain) == {
+        "bar_length": Decimal("150"),
+        "chain_pitch": "pitch-1-4",
+        "chain_links": Decimal("36"),
+    }
+    # кавычки вокруг «Easy Load» не создали второй опции; сеть 220 В в voltage не ушла
+    assert vals(trimmer) == {
+        "quick_load": True,
+        "split_shaft": True,
+        "engine_displacement": Decimal("51.7"),
+    }
+    assert report["stats"]["skipped_voltage"] == 1
+    # отклонённые оси остались кандидатами, а не значениями
+    assert "Антивибрационная система" in report["unmapped_attributes"]
+    assert "Вес, кг" in report["unmapped_attributes"]
+
+
+@pytest.mark.django_db
+def test_huter_boolean_second_run_is_confirm_not_conflict(huter_catalog, tmp_path):
+    """Boolean-значение сравнивается как boolean: повтор — confirm, не conflict."""
+    _huter_product(huter_catalog, "Бензопила HUTER BS-45", "70/6/1", "bp-benzopily")
+    export = _export(
+        tmp_path,
+        [_huter_card("Бензопила Huter BS-45", "70/6/1", {"Автоматическая смазка цепи": "Нет"})],
+        source="huter",
+    )
+    _run_huter(export, tmp_path)
+    pav = ProductAttributeValue.objects.get(attribute__slug="chain_auto_oiling")
+    assert pav.value_boolean is False
+    report = _run_huter(export, tmp_path)
+    assert report["stats"]["confirm"] == 1
+    assert report["stats"].get("conflict", 0) == 0
+
+
+# --- единицы измерения и нормализаторы-конвертеры (ДРФ-1440) ------------------
+#
+# Три подписи мощности (Вт, кВт, л.с.) ведут в одну ось power с единицей «Вт»,
+# а подпись «Вес, кг» — в ось weight с единицей «г». Без пересчёта значение
+# уходит в ФИЛЬТРУЕМЫЙ фасет с ошибкой в тысячу раз. Ниже — по тесту на каждый
+# нормализатор и на каждый пункт fail-closed контракта карты.
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("2,3", "2300"),  # десятичная запятая
+        ("2,3 кВт", "2300"),  # единица внутри значения
+        ("1,2", "1200"),
+        ("2", "2000"),
+        ("2.8", "2800"),  # точка как разделитель
+        ("0,75 кВт", "750"),
+    ],
+)
+def test_kw_to_w_converts_and_keeps_comma_decimals(raw, expected):
+    """кВт -> Вт: ×1000, запятая как разделитель, единица внутри значения."""
+    assert si.normalize_scalar(raw, "decimal_kw_to_w") == Decimal(expected)
+
+
+def test_kw_to_w_is_exact_decimal_not_float():
+    """Пересчёт идёт в Decimal: 2,3 кВт — ровно 2300, без float-хвоста."""
+    value = si.normalize_scalar("2,3 кВт", "decimal_kw_to_w")
+    assert isinstance(value, Decimal)
+    assert str(value) == "2300"
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("0.07 кг", "70"),  # ключевой случай ДРФ-1440
+        ("0,07 кг", "70"),
+        ("4.926 кг", "4926"),
+        ("2,7", "2700"),
+        ("0.5кг", "500"),  # без пробела перед единицей
+    ],
+)
+def test_kg_to_g_converts_value_with_unit_inside(raw, expected):
+    """«0.07 кг» в ось с единицей «г» — это 70 г, а не 0.07."""
+    assert si.normalize_scalar(raw, "decimal_kg_to_g") == Decimal(expected)
+
+
+def test_kg_to_g_070_is_exactly_70_without_float_tail():
+    """0.07 × 1000 во float даёт 70.00000000000001 — в Decimal ровно 70."""
+    value = si.normalize_scalar("0.07 кг", "decimal_kg_to_g")
+    assert isinstance(value, Decimal)
+    assert str(value) == "70"
+    assert value == Decimal("70")
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("500 г", "0.5"),
+        ("2700", "2.7"),
+        ("100", "0.1"),
+    ],
+)
+def test_g_to_kg_converts(raw, expected):
+    assert si.normalize_scalar(raw, "decimal_g_to_kg") == Decimal(expected)
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("4,5", "3309.75"),  # метрическая л.с. = 735,5 Вт
+        ("1,6", "1176.8"),
+        ("3,1 л.с.", "2280.05"),
+    ],
+)
+def test_hp_to_w_uses_metric_horsepower(raw, expected):
+    """л.с. -> Вт по метрической л.с. (735,5 Вт), не механической (745,7)."""
+    assert si.normalize_scalar(raw, "decimal_hp_to_w") == Decimal(expected)
+
+
+def test_converter_without_number_raises():
+    """Строка без числа — ValueError, значение уйдёт в dropped, а не в базу."""
+    with pytest.raises(ValueError, match="нет числа"):
+        si.normalize_scalar("н/д", "decimal_kw_to_w")
+
+
+def test_unknown_normalizer_still_raises():
+    with pytest.raises(ValueError, match="неизвестный нормализатор"):
+        si.normalize_scalar("2,3", "decimal_kw_to_hp")
+
+
+def test_plain_decimal_keeps_comma_and_ignores_unit():
+    """Базовый decimal не пересчитывает: «0.07 кг» -> 0.07, «2,8» -> 2.8."""
+    assert si.normalize_scalar("0.07 кг", "decimal") == 0.07
+    assert si.normalize_scalar("2,8", "decimal") == 2.8
+
+
+@pytest.mark.parametrize(
+    "left,right,same",
+    [
+        ("Нм", "Н·м", True),
+        ("А*ч", "А·ч", True),
+        ("Вт", "вт", True),
+        ("кВт", "Вт", False),
+        ("кг", "г", False),
+    ],
+)
+def test_canon_unit_collapses_typography_only(left, right, same):
+    """Типографика схлопывается, приставка величины — нет."""
+    assert (si._canon_unit(left) == si._canon_unit(right)) is same
+
+
+# --- fail-closed сверка карты (validate_attr_map_units) ------------------------
+
+
+def _unit_map(**entry_overrides) -> dict:
+    """Минимальная карта из одного числового поля."""
+    entry = {
+        "action": "map",
+        "attribute": "power",
+        "attribute_type": "decimal",
+        "unit": "Вт",
+        "normalize": "int",
+        "confidence": "high",
+    }
+    entry.update(entry_overrides)
+    return {"sources": {"huter": {"fields": {"Мощность": entry}}}}
+
+
+def _attrs(**slug_to_unit):
+    class _A:
+        def __init__(self, unit):
+            self.unit = unit
+
+    return {slug: _A(unit) for slug, unit in slug_to_unit.items()}
+
+
+def test_map_without_source_unit_passes():
+    si.validate_attr_map_units(_unit_map(), _attrs(power="Вт"))
+
+
+def test_kg_signature_into_gram_axis_is_rejected():
+    """«Вес, кг» -> ось weight с единицей «г»: карта не проходит гейт.
+
+    Это ровно тот случай, ради которого заведён ДРФ-1440: без гейта 0.07 кг
+    легло бы в фильтруемый фасет как 0.07 г.
+    """
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {
+                    "Вес, кг": {
+                        "action": "map",
+                        "attribute": "weight",
+                        "attribute_type": "decimal",
+                        "unit": "кг",
+                        "normalize": "decimal",
+                        "confidence": "high",
+                    }
+                }
+            }
+        }
+    }
+    with pytest.raises(ValueError, match="в БД имеет единицу 'г'"):
+        si.validate_attr_map_units(amap, _attrs(weight="г"))
+
+
+def test_kg_signature_with_declared_converter_passes():
+    """Та же подпись с объявленным пересчётом кг -> г проходит.
+
+    Ось взята не ``weight``: после решения владельца (вариант A) она закрыта для
+    автоматической записи целиком — это проверяет
+    ``test_weight_axis_is_closed_for_automatic_writes``. Здесь проверяется сам
+    механизм пересчёта в граммовую ось.
+    """
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {
+                    "Вес, кг": {
+                        "action": "map",
+                        "attribute": "packing_weight",
+                        "attribute_type": "decimal",
+                        "source_unit": "кг",
+                        "unit": "г",
+                        "normalize": "decimal_kg_to_g",
+                        "confidence": "high",
+                    }
+                }
+            }
+        }
+    }
+    si.validate_attr_map_units(amap, _attrs(packing_weight="г"))
+
+
+def test_kw_signature_without_converter_is_rejected():
+    """source_unit=кВт при оси «Вт» обязывает взять decimal_kw_to_w."""
+    amap = _unit_map(source_unit="кВт", normalize="int")
+    with pytest.raises(ValueError, match="требует normalize='decimal_kw_to_w'"):
+        si.validate_attr_map_units(amap, _attrs(power="Вт"))
+
+
+def test_kw_signature_with_converter_passes():
+    si.validate_attr_map_units(
+        _unit_map(source_unit="кВт", normalize="decimal_kw_to_w"), _attrs(power="Вт")
+    )
+
+
+def test_converter_without_source_unit_is_rejected():
+    """Молчаливый пересчёт запрещён: конвертер обязан объявить единицу источника."""
+    amap = _unit_map(normalize="decimal_kw_to_w")
+    with pytest.raises(ValueError, match="молчаливый пересчёт запрещён"):
+        si.validate_attr_map_units(amap, _attrs(power="Вт"))
+
+
+def test_unsupported_unit_pair_is_rejected():
+    """Пары без конвертера («Дж» -> «Вт») сопоставлять нельзя вовсе."""
+    amap = _unit_map(source_unit="Дж", normalize="decimal")
+    with pytest.raises(ValueError, match="нет конвертера"):
+        si.validate_attr_map_units(amap, _attrs(power="Вт"))
+
+
+def test_unknown_normalizer_in_map_is_rejected():
+    amap = _unit_map(normalize="decimal_kw_to_hp")
+    with pytest.raises(ValueError, match="неизвестный нормализатор"):
+        si.validate_attr_map_units(amap, _attrs(power="Вт"))
+
+
+def test_unit_typography_mismatch_is_tolerated():
+    """«Нм» в карте и «Н·м» в БД — одна единица, гейт не срабатывает."""
+    amap = _unit_map(attribute="torque", unit="Нм", normalize="decimal")
+    si.validate_attr_map_units(amap, _attrs(torque="Н·м"))
+
+
+def test_fallback_entries_are_checked_too():
+    """Fallback (power из summary_raw) проходит ту же сверку единиц."""
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {},
+                "fallbacks": [
+                    {
+                        "attribute": "power",
+                        "attribute_type": "decimal",
+                        "unit": "кВт",
+                        "applies_when_missing": ["Мощность"],
+                        "source_field": "summary_raw",
+                        "normalize": "summary_power_w",
+                        "confidence": "medium",
+                    }
+                ],
+            }
+        }
+    }
+    with pytest.raises(ValueError, match="fallback:summary_raw"):
+        si.validate_attr_map_units(amap, _attrs(power="Вт"))
+
+
+def test_select_fields_are_not_unit_checked():
+    """Словарные поля единиц не имеют — гейт их не трогает."""
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {
+                    "Патрон": {
+                        "action": "map",
+                        "attribute": "chuck",
+                        "attribute_type": "select",
+                        "values": {"sds plus": "sds-plus"},
+                        "confidence": "high",
+                    }
+                }
+            }
+        }
+    }
+    si.validate_attr_map_units(amap, _attrs(chuck=""))
+
+
+def test_shipped_maps_pass_the_unit_gate():
+    """Три действующие карты проходят гейт без DB-части (самосогласованность)."""
+    base = Path(si.__file__).resolve().parents[2] / "data" / "catalog_processing_rules"
+    paths = sorted(base.glob("scraped_attr_map.*.json"))
+    assert paths, "карты парсера не найдены"
+    for path in paths:
+        si.validate_attr_map_units(si.load_attr_map(path))
+
+
+# --- извлечение значений с пересчётом (extract_card_values) --------------------
+
+
+def test_extract_converts_kw_signature_to_watts():
+    amap = _unit_map(source_unit="кВт", normalize="decimal_kw_to_w")
+    card = {"attributes": {"Мощность": "2,3"}}
+    res = si.extract_card_values(card, "huter", amap)
+    assert [(v.attribute_slug, v.value) for v in res.values] == [("power", Decimal("2300"))]
+
+
+def test_extract_converts_kg_signature_to_grams():
+    """«0.07 кг» из выгрузки -> 70 в оси с единицей «г»."""
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {
+                    "Вес, кг": {
+                        "action": "map",
+                        "attribute": "packing_weight",
+                        "attribute_type": "decimal",
+                        "source_unit": "кг",
+                        "unit": "г",
+                        "normalize": "decimal_kg_to_g",
+                        "confidence": "high",
+                    }
+                }
+            }
+        }
+    }
+    card = {"attributes": {"Вес, кг": "0.07 кг"}}
+    res = si.extract_card_values(card, "huter", amap)
+    assert [(v.attribute_slug, v.value) for v in res.values] == [("packing_weight", Decimal("70"))]
+    assert res.dropped == []
+
+
+def test_extract_drops_unparsable_value_instead_of_writing():
+    amap = _unit_map(source_unit="кВт", normalize="decimal_kw_to_w")
+    card = {"attributes": {"Мощность": "н/д"}}
+    res = si.extract_card_values(card, "huter", amap)
+    assert res.values == []
+    assert res.dropped and "ошибка нормализации" in res.dropped[0][2]
+
+
+# --- гейт стоит в команде: карта с чужой единицей не пишет ничего --------------
+
+
+def _broken_rules_dir(tmp_path, unit: str, normalize: str = "int", **extra) -> Path:
+    """Копия перфораторной карты, где мощность объявлена с чужой единицей."""
+    base = tmp_path / "rules"
+    (base / "catalog_processing_rules").mkdir(parents=True)
+    (base / "attribute_rules.json").write_text(
+        json.dumps({"source_priority": {"manual": 100, "rules": 90, "scraper": 50, "regex": 40}}),
+        encoding="utf-8",
+    )
+    entry = {
+        "action": "map",
+        "attribute": "power",
+        "attribute_type": "decimal",
+        "unit": unit,
+        "normalize": normalize,
+        "confidence": "high",
+        "on_ambiguous": "drop_to_report",
+        **extra,
+    }
+    amap = {
+        "schema_version": 1,
+        "category": "perforatory",
+        "policy": {},
+        "normalizers": {},
+        "sources": {"zubr": {"fields": {"Мощность, Вт": entry}}},
+    }
+    (base / "catalog_processing_rules" / "scraped_attr_map.perforatory.json").write_text(
+        json.dumps(amap, ensure_ascii=False), encoding="utf-8"
+    )
+    return base
+
+
+def test_command_refuses_map_with_foreign_unit(catalog, tmp_path):
+    """Карта объявляет кВт там, где ось «Вт» — команда падает ДО записи."""
+    product = _product(catalog, "Перф.ЗУБР ЗП-26-800 SDS+", article="ЗП-26-800")
+    export = _export(tmp_path, [_zubr_card("Перфоратор ЗП-26-800", "ЗП-26-800", power="2,3")])
+    rules = _broken_rules_dir(tmp_path, unit="кВт")
+
+    with pytest.raises(CommandError, match="в БД имеет единицу 'Вт'"):
+        _run(export, "--rules-path", str(rules))
+
+    assert not ProductAttributeValue.objects.filter(
+        product=product, attribute__slug="power"
+    ).exists()
+    assert not ImportRun.objects.exists()
+
+
+def test_command_refuses_silent_conversion(catalog, tmp_path):
+    """Конвертер без source_unit — тоже стоп, даже в --dry-run."""
+    rules = _broken_rules_dir(tmp_path, unit="Вт", normalize="decimal_kw_to_w")
+    export = _export(tmp_path, [_zubr_card("Перфоратор ЗП-26-800", "ЗП-26-800")])
+    with pytest.raises(CommandError, match="молчаливый пересчёт запрещён"):
+        _run(export, "--dry-run", "--rules-path", str(rules))
+
+
+def test_command_accepts_declared_conversion_and_writes_watts(catalog, tmp_path):
+    """С объявленным source_unit=кВт мощность 2,3 записывается как 2300 Вт."""
+    product = _product(catalog, "Перф.ЗУБР ЗП-26-800 SDS+", article="ЗП-26-800")
+    export = _export(tmp_path, [_zubr_card("Перфоратор ЗП-26-800", "ЗП-26-800", power="2,3")])
+    rules = _broken_rules_dir(tmp_path, unit="Вт", normalize="decimal_kw_to_w", source_unit="кВт")
+
+    _run(export, "--rules-path", str(rules))
+
+    pav = ProductAttributeValue.objects.get(product=product, attribute__slug="power")
+    assert pav.value_decimal == Decimal("2300")
+    assert pav.source == Source.SCRAPER
+
+
+# --- решения владельца по ДРФ-1440 (2026-09-02) --------------------------------
+#
+# Решение 1: лошадиные силы живут отдельной осью power_hp, в ватты не
+# пересчитываются. Решение 2 (вариант A): weight_kg — каноническая ось веса
+# каталога, weight («г») сужена до молотков и закрыта для автоматов.
+
+
+def _rules() -> dict:
+    path = Path(si.__file__).resolve().parents[2] / "data" / "attribute_rules.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _attr_blocks(rules: dict, slug: str) -> list[tuple[str, dict]]:
+    return [
+        (tt["tool_type"], a)
+        for tt in rules["tool_types"]
+        for a in tt["attributes"]
+        if a["slug"] == slug
+    ]
+
+
+def test_power_hp_and_power_are_separate_axes_in_the_dictionary():
+    """power_hp и power — разные оси с разными единицами и разными областями."""
+    rules = _rules()
+    hp = _attr_blocks(rules, "power_hp")
+    watts = _attr_blocks(rules, "power")
+
+    assert hp, "ось power_hp не объявлена в словаре"
+    assert {unit for _, a in hp for unit in [a["unit"]]} == {"л.с."}
+    assert {unit for _, a in watts for unit in [a["unit"]]} == {"Вт"}
+
+    # Ни один блок не объявляет обе оси сразу: бензиновый инструмент отдельно
+    # от сетевого, иначе значения снова смешаются в одном фильтре.
+    hp_types = {tt for tt, _ in hp}
+    watt_types = {tt for tt, _ in watts}
+    assert hp_types.isdisjoint(watt_types)
+
+
+def test_hp_converter_exists_but_is_not_wired_into_any_map():
+    """decimal_hp_to_w оставлен рабочим, но ни одна карта его не подключает."""
+    assert "decimal_hp_to_w" in si.CONVERTERS
+    base = Path(si.__file__).resolve().parents[2] / "data" / "catalog_processing_rules"
+    for path in sorted(base.glob("scraped_attr_map.*.json")):
+        amap = si.load_attr_map(path)
+        used = {e.get("normalize") for _, _, e in si._numeric_map_entries(amap)}
+        assert "decimal_hp_to_w" not in used, f"{path.name} подключает пересчёт л.с. в ватты"
+
+
+def test_hp_value_cannot_reach_the_power_axis_through_a_map():
+    """Даже безупречно объявленный пересчёт л.с. -> Вт гейт не пропускает.
+
+    Математика конвертера верна и пара единиц известна — отказ идёт именно от
+    решения владельца, а не от ошибки в объявлении.
+    """
+    assert "decimal_hp_to_w" in si.DISABLED_CONVERTERS
+    amap = _unit_map(source_unit="л.с.", normalize="decimal_hp_to_w")
+    with pytest.raises(ValueError, match="запрещён к подключению"):
+        si.validate_attr_map_units(amap, _attrs(power="Вт"))
+
+    # А подпись «Мощность, л.с.», направленная в ватты без пересчёта вовсе,
+    # спотыкается о сверку единиц с БД.
+    bad = _unit_map(attribute="power", unit="л.с.", normalize="decimal")
+    with pytest.raises(ValueError, match="в БД имеет единицу 'Вт'"):
+        si.validate_attr_map_units(bad, _attrs(power="Вт"))
+
+
+def test_power_hp_map_entry_writes_only_into_power_hp():
+    """Значение «4,5 л.с.» уходит в power_hp и не появляется в power."""
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {
+                    "Мощность, л.с.": {
+                        "action": "map",
+                        "attribute": "power_hp",
+                        "attribute_type": "decimal",
+                        "unit": "л.с.",
+                        "normalize": "decimal",
+                        "confidence": "high",
+                    }
+                }
+            }
+        }
+    }
+    si.validate_attr_map_units(amap, _attrs(power_hp="л.с.", power="Вт"))
+    res = si.extract_card_values({"attributes": {"Мощность, л.с.": "4,5"}}, "huter", amap)
+    assert [(v.attribute_slug, v.value) for v in res.values] == [("power_hp", Decimal("4.5"))]
+    assert all(v.attribute_slug != "power" for v in res.values)
+
+
+def test_weight_axis_is_closed_for_automatic_writes():
+    """Карта, нацеленная в ось weight, не проходит гейт (решение владельца, A)."""
+    assert "weight" in si.RESTRICTED_ATTRIBUTES
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {
+                    "Вес, кг": {
+                        "action": "map",
+                        "attribute": "weight",
+                        "attribute_type": "decimal",
+                        "source_unit": "кг",
+                        "unit": "г",
+                        "normalize": "decimal_kg_to_g",
+                        "confidence": "high",
+                    }
+                }
+            }
+        }
+    }
+    # Единицы объявлены безупречно — и всё равно стоп: ось закрыта.
+    with pytest.raises(ValueError, match="закрыта для автоматической записи"):
+        si.validate_attr_map_units(amap, _attrs(weight="г"))
+
+
+def test_weight_kg_axis_stays_open_for_the_parser():
+    """Каноническая ось веса остаётся доступной для заливки."""
+    assert "weight_kg" not in si.RESTRICTED_ATTRIBUTES
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {
+                    "Вес, кг": {
+                        "action": "map",
+                        "attribute": "weight_kg",
+                        "attribute_type": "decimal",
+                        "unit": "кг",
+                        "normalize": "decimal",
+                        "confidence": "high",
+                    }
+                }
+            }
+        }
+    }
+    si.validate_attr_map_units(amap, _attrs(weight_kg="кг"))
+    res = si.extract_card_values({"attributes": {"Вес, кг": "0.07 кг"}}, "huter", amap)
+    assert [(v.attribute_slug, v.value) for v in res.values] == [("weight_kg", Decimal("0.07"))]
+
+
+def test_restricted_axis_is_blocked_in_select_and_derived_entries_too():
+    """Закрытая ось не проходит и через select/fallback/derived, а не только map."""
+    amap = {
+        "sources": {
+            "huter": {
+                "fields": {},
+                "fallbacks": [
+                    {
+                        "attribute": "weight",
+                        "attribute_type": "decimal",
+                        "unit": "г",
+                        "applies_when_missing": ["Вес"],
+                        "source_field": "summary_raw",
+                        "normalize": "decimal",
+                        "confidence": "low",
+                    }
+                ],
+                "derived": [
+                    {
+                        "attribute": "weight",
+                        "attribute_type": "select",
+                        "value": "heavy",
+                        "rule": "heavy_if_missing",
+                        "confidence": "low",
+                    }
+                ],
+            }
+        }
+    }
+    with pytest.raises(ValueError) as exc:
+        si.validate_attr_map_units(amap, _attrs(weight="г"))
+    text = str(exc.value)
+    assert "fallback:summary_raw" in text
+    assert "derived:heavy_if_missing" in text
+
+
+def test_command_refuses_map_targeting_the_closed_weight_axis(catalog, tmp_path):
+    """Сквозной уровень: гейт стоит в команде, записи не будет."""
+    base = tmp_path / "rules-weight"
+    (base / "catalog_processing_rules").mkdir(parents=True)
+    (base / "attribute_rules.json").write_text(
+        json.dumps({"source_priority": {"manual": 100, "scraper": 50, "regex": 40}}),
+        encoding="utf-8",
+    )
+    amap = {
+        "schema_version": 1,
+        "category": "perforatory",
+        "policy": {},
+        "normalizers": {},
+        "sources": {
+            "zubr": {
+                "fields": {
+                    "Вес, кг": {
+                        "action": "map",
+                        "attribute": "weight",
+                        "attribute_type": "decimal",
+                        "source_unit": "кг",
+                        "unit": "г",
+                        "normalize": "decimal_kg_to_g",
+                        "confidence": "high",
+                        "on_ambiguous": "drop_to_report",
+                    }
+                }
+            }
+        },
+    }
+    (base / "catalog_processing_rules" / "scraped_attr_map.perforatory.json").write_text(
+        json.dumps(amap, ensure_ascii=False), encoding="utf-8"
+    )
+    Attribute.objects.create(
+        slug="weight", name="Вес", attribute_type=AttributeType.DECIMAL, unit="г"
+    )
+    product = _product(catalog, "Перф.ЗУБР ЗП-26-800 SDS+", article="ЗП-26-800")
+    export = _export(tmp_path, [_zubr_card("Перфоратор ЗП-26-800", "ЗП-26-800")])
+
+    with pytest.raises(CommandError, match="закрыта для автоматической записи"):
+        _run(export, "--dry-run", "--rules-path", str(base))
+
+    assert not ProductAttributeValue.objects.filter(
+        product=product, attribute__slug="weight"
+    ).exists()
+    assert not ImportRun.objects.exists()

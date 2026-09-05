@@ -11,7 +11,23 @@
   или напряжение < 60 В) — сетевые значения 220/230 не попадают в фасет;
 - перезапись решает ``source_priority`` из ``data/attribute_rules.json``:
   ``scraper=50`` — выше ``regex``(40), ниже ``import_1c``(60);
-- неоднозначные совпадения и «многие к одному» — в отчёт, не в базу.
+- неоднозначные совпадения и «многие к одному» — в отчёт, не в базу;
+- единицы измерения сверяются fail-closed (ДРФ-1440): подпись с чужой единицей
+  («Мощность, кВт» в ось «Вт», «Вес, кг» в ось «г») обязана нести ``source_unit``
+  и нормализатор-конвертер, иначе карта не проходит ``validate_attr_map_units``
+  и импорт не стартует — молчаливая ошибка в тысячу раз в фасете невозможна;
+- лошадиные силы в ватты НЕ пересчитываются: у них своя ось ``power_hp``
+  (решение владельца, см. комментарий к ``CONVERTERS``);
+- оси из ``RESTRICTED_ATTRIBUTES`` (сейчас — ``weight``, «г», область молотков)
+  закрыты для автоматической записи: карта, нацеленная в такую ось, не проходит.
+
+Карта категории (``scraped_attr_map.<slug>.json``) умеет три вещи сверх базовых
+map/ignore/unmapped (DRF-1439):
+
+- ``attribute_type: "boolean"`` со словарём ``values`` («Есть»/«Нет» → True/False);
+- одно поле источника → НЕСКОЛЬКО осей: на месте правила стоит список правил,
+  каждое со своим ``extract`` (regex по сырому значению до нормализации);
+- ``scope_tool_types`` — карта покрывает семейство типов, а не один slug.
 """
 
 from __future__ import annotations
@@ -244,8 +260,107 @@ MAP_CONFIDENCE = {"high": 90, "medium": 70, "low": 40}
 BATTERY_VOLTAGE_CEILING = 60  # напряжение ниже — признак аккумуляторного инструмента
 
 
+# Нормализаторы-конвертеры (ДРФ-1440): имя правила -> (единица источника,
+# единица оси, множитель). Пересчёт живёт в карте атрибутов, а не в голове
+# оператора: подпись «Мощность, кВт» обязана нести normalize=decimal_kw_to_w,
+# иначе карта не пройдёт validate_attr_map_units и импорт не стартует.
+#
+# ``decimal_hp_to_w`` — НАМЕРЕННО НЕ ИСПОЛЬЗУЕТСЯ НИ В ОДНОЙ КАРТЕ.
+# Решение владельца от 2026-09-02: лошадиные силы живут отдельной осью
+# ``power_hp`` (единица «л.с.»), в ватты не пересчитываются. Причины:
+#   1. это разные величины — у сетевого инструмента паспортные ватты это
+#      ПОТРЕБЛЯЕМАЯ мощность, у бензинового л.с. — мощность НА ВАЛУ; между ними
+#      КПД, а не константа, поэтому в одном фильтре они несравнимы;
+#   2. ось ``power`` фильтруемая и населена сетевыми значениями 90…2850 Вт;
+#      4,5 л.с. -> 3310 Вт переопределили бы верх шкалы фильтра;
+#   3. множитель неоднозначен: метрическая л.с. 735,5 Вт против механической
+#      745,7 Вт — здесь взята метрическая, её используют российские
+#      производители бензоинструмента.
+# Правило оставлено рабочим и покрыто тестами на случай пересмотра решения;
+# подключать его в карту без нового решения владельца нельзя.
+CONVERTERS: dict[str, tuple[str, str, Decimal]] = {
+    "decimal_kw_to_w": ("кВт", "Вт", Decimal("1000")),
+    "decimal_hp_to_w": ("л.с.", "Вт", Decimal("735.5")),
+    "decimal_kg_to_g": ("кг", "г", Decimal("1000")),
+    "decimal_g_to_kg": ("г", "кг", Decimal("0.001")),
+}
+CONVERTER_BY_UNITS: dict[tuple[str, str], str] = {}
+
+# Конвертеры, которые считать умеют, но подключать в карту запрещено.
+# Правило остаётся рабочим и покрытым тестами (чтобы решение можно было
+# пересмотреть, не переписывая математику), но гейт не пропустит карту,
+# которая его объявит.
+DISABLED_CONVERTERS: dict[str, str] = {
+    "decimal_hp_to_w": (
+        "решение владельца 2026-09-02: лошадиные силы в ватты не пересчитываются, "
+        "у них своя ось power_hp (единица «л.с.») — потребляемая мощность сетевого "
+        "инструмента и мощность на валу бензинового несравнимы в одном фильтре"
+    ),
+}
+
+# Оси, закрытые для автоматической записи (ДРФ-1440, решение владельца, вариант A).
+# slug -> причина. Карта парсера, нацеленная на такую ось, не проходит гейт:
+# сузить область оси и при этом оставить её открытой для автоматов — значит
+# не сузить ничего.
+RESTRICTED_ATTRIBUTES: dict[str, str] = {
+    "weight": (
+        "ось «Вес» (единица «г») сужена до молотков (правило объявлено только в "
+        "блоке tool_type=molotki) и закрыта для автоматической записи; "
+        "каноническая ось веса каталога — weight_kg (кг)"
+    ),
+}
+
+# Нормализаторы без пересчёта единиц (значение остаётся в единице источника).
+PLAIN_NORMALIZERS = frozenset(
+    {
+        "int",
+        "decimal",
+        "range_upper_decimal",
+        "voltage_first",
+        "summary_power_w",
+        # ДРФ-1439: приводит точный дюймовый перевод к номинальному ряду
+        # источника (152.4 -> 150). Единицу НЕ меняет, поэтому не конвертер.
+        "bar_length_mm",
+    }
+)
+
+_UNIT_NOISE_RE = re.compile(r"[\s.·*×]")
+
+
+def _canon_unit(unit: str | None) -> str:
+    """Каноническая форма единицы для сверки: «А*ч» == «А·ч», «Нм» == «Н·м».
+
+    Схлопывается только типографика (пробелы, точки, знаки умножения) —
+    «кВт» и «Вт», «кг» и «г» остаются разными единицами.
+    """
+    return _UNIT_NOISE_RE.sub("", (unit or "")).lower()
+
+
+for _rule, (_src_unit, _dst_unit, _factor) in CONVERTERS.items():
+    CONVERTER_BY_UNITS[(_canon_unit(_src_unit), _canon_unit(_dst_unit))] = _rule
+
+
 def _to_float(s: str) -> float:
     return float(s.replace(",", "."))
+
+
+def _first_number(raw: str) -> Decimal:
+    """Первое число строки как Decimal; десятичная запятая -> точка.
+
+    Единица внутри значения снимается самим regex: «0.07 кг» -> Decimal("0.07"),
+    «2,3 кВт» -> Decimal("2.3"). Decimal, а не float, — чтобы пересчёт
+    ×1000 не давал 70.00000000000001.
+    """
+    m = _NUM_RE.search(raw)
+    if m is None:
+        raise ValueError(f"нет числа: {raw!r}")
+    return Decimal(m.group(0).replace(",", "."))
+
+
+def _trim(value: Decimal) -> Decimal:
+    """Убрать хвостовые нули без экспоненты: 70.000 -> 70, 3310.750 -> 3310.75."""
+    value = value.normalize()
+    return value.quantize(Decimal(1)) if value == value.to_integral_value() else value
 
 
 def normalize_scalar(raw: str, rule: str):
@@ -260,7 +375,198 @@ def normalize_scalar(raw: str, rule: str):
         return _to_float(nums[-1]) if re.search(r"\d\s*-\s*\d", raw) else _to_float(nums[0])
     if rule == "voltage_first":
         return _to_float(_NUM_RE.search(raw).group(0))
+    if rule == "bar_length_mm":
+        return _bar_length_mm(raw)
+    if rule in CONVERTERS:
+        _, _, factor = CONVERTERS[rule]
+        return _trim(_first_number(raw) * factor)
     raise ValueError(f"неизвестный нормализатор: {rule}")
+
+
+# Номинальный метрический ряд длин шин (дюймы -> мм), которым производители
+# подписывают шины и цепи. Источник может отдать в том же поле ТОЧНЫЙ перевод
+# из дюймов (6" = 152.4 мм) — физически это та же шина, но в фасете она встанет
+# отдельным значением рядом с номинальными 150/350/400. Приводим к номиналу.
+#
+# Ряд взят НЕ из общих соображений, а из самого источника: huter.su в поле
+# «Длина шины, мм/дюйм» пишет обе величины разом — 150/6, 250/10, 300/12,
+# 400/16, 450/18, 505/20. Отсюда и таблица; 8" и 14" добавлены по общему ряду
+# (пар в выгрузке нет). Новую строку добавлять только с такой же парой в данных.
+BAR_LENGTH_NOMINAL_MM = {
+    6: 150,
+    8: 200,
+    10: 250,
+    12: 300,
+    14: 350,
+    16: 400,
+    18: 450,
+    20: 505,
+}
+_INCH_MM = 25.4
+
+
+def _bar_length_mm(raw: str) -> float:
+    """Длина шины в мм: первое число строки, точный перевод из дюймов — к номиналу.
+
+    ``«350»`` → 350, ``«400/16"»`` → 400, ``«150/6»`` → 150 (первое число — мм).
+    ``«152.4»`` → 150: 152.4 = 6.0 × 25.4 ровно, это 6-дюймовая шина, которую тот
+    же источник в соседнем поле подписывает как ``150/6``. Номинальные значения
+    ряда (350, 400, 450, 500, 505) целыми дюймами не делятся и не трогаются.
+    """
+    value = _to_float(_NUM_RE.search(raw).group(0))
+    inches = value / _INCH_MM
+    rounded = round(inches)
+    if abs(inches - rounded) < 0.01 and rounded in BAR_LENGTH_NOMINAL_MM:
+        return float(BAR_LENGTH_NOMINAL_MM[rounded])
+    return value
+
+
+# Кавычки вокруг значения select — оформление источника, а не часть значения:
+# «Easy Load», « Easy Load » и Easy Load — одна опция, не три.
+_QUOTES = "«»“”„‟‘’\"'"
+
+
+def option_key(raw: str) -> str:
+    """Ключ для поиска значения в словаре опций карты.
+
+    Снимает кавычки любого начертания и схлопывает внутренние пробелы. Для карт
+    без кавычек в значениях (perforatory, dreli-shurupoverty, shlifmashiny) —
+    no-op: там ключи и так одно-двухсловные без кавычек.
+    """
+    return re.sub(r"\s+", " ", raw.strip().strip(_QUOTES).strip()).lower()
+
+
+def normalize_boolean(raw: str, values: dict) -> bool:
+    """Boolean-значение по словарю карты: «Есть»/«Нет» → True/False.
+
+    Словарь обязателен и живёт в карте: источники пишут «Есть»/«Нет»,
+    «Да»/«Нет», «есть»/«отсутствует» — молчаливой эвристики здесь нет.
+    """
+    key = option_key(raw)
+    if key not in values:
+        raise ValueError(f"значение не в словаре boolean: {raw!r}")
+    return bool(values[key])
+
+
+def iter_field_entries(sdata: dict):
+    """Все правила полей источника: значение поля — правило ИЛИ список правил.
+
+    Одно поле источника может нести две оси сразу («Толщина звена и шаг цепи,
+    мм/дюймы» = ``1,3 / 3/8``). Тогда в карте на месте правила стоит список, и
+    каждый его элемент — обычное правило с собственным ``extract``.
+    """
+    for fname, entry in sdata["fields"].items():
+        if isinstance(entry, list):
+            for sub in entry:
+                yield fname, sub
+        else:
+            yield fname, entry
+
+
+def _all_map_entries(amap: dict):
+    """(источник, подпись поля, запись) по всем записям карты, пишущим значение."""
+    for source, sdata in amap.get("sources", {}).items():
+        # ДРФ-1439 разрешила одному полю источника быть СПИСКОМ правил (одно
+        # поле → несколько осей), поэтому обходим через iter_field_entries, а не
+        # по .items() напрямую: иначе гейт единиц падает на списке с
+        # AttributeError вместо того, чтобы его проверить.
+        for fname, entry in iter_field_entries(sdata):
+            if entry.get("action") != "map":
+                continue
+            yield source, fname, entry
+        for entry in sdata.get("fallbacks", []):
+            yield source, f"fallback:{entry.get('source_field')}", entry
+        for entry in sdata.get("derived", []):
+            yield source, f"derived:{entry.get('rule')}", entry
+
+
+def _numeric_map_entries(amap: dict):
+    """(источник, подпись поля, запись) по всем числовым полям карты с action=map."""
+    for source, fname, entry in _all_map_entries(amap):
+        # select и boolean — не числовые оси, единиц у них нет. boolean принесла
+        # ДРФ-1439; без этой строки гейт требовал бы конвертер единиц от
+        # «Есть/Нет».
+        if entry.get("attribute_type") in ("select", "boolean"):
+            continue
+        if fname.startswith("derived:"):
+            continue
+        yield source, fname, entry
+
+
+def validate_attr_map_units(amap: dict, attr_by_slug: dict | None = None) -> None:
+    """Fail-closed сверка единиц карты (ДРФ-1440). Ошибки — ValueError списком.
+
+    Для каждого числового поля с ``action=map`` (и для fallback-ов):
+
+    1. ``normalize`` обязан быть известным правилом;
+    2. если задан ``source_unit`` и он отличается от ``unit`` оси — ``normalize``
+       обязан быть конвертером ровно этой пары единиц;
+    3. если ``source_unit`` не задан или совпадает с ``unit`` — ``normalize``
+       конвертером быть НЕ должен (молчаливый пересчёт запрещён);
+    4. при переданном ``attr_by_slug`` — ``unit`` карты обязан совпасть с
+       ``Attribute.unit`` в БД (сверка по канонической форме: «Нм» == «Н·м»).
+
+    Именно пункт 4 ловит подпись «Вес, кг» -> ось ``weight`` с единицей «г»:
+    без ``source_unit``/конвертера 0.07 кг легло бы в фасет как 0.07 г.
+
+    Отдельно (и раньше всех единиц) проверяется, что карта не целится в ось из
+    :data:`RESTRICTED_ATTRIBUTES` — оси, закрытые для автоматической записи, —
+    и не подключает нормализатор из :data:`DISABLED_CONVERTERS`.
+    """
+    problems: list[str] = []
+    for source, fname, entry in _all_map_entries(amap):
+        slug = entry.get("attribute")
+        reason = RESTRICTED_ATTRIBUTES.get(slug)
+        if reason:
+            problems.append(
+                f"{source}/{fname}: ось {slug!r} закрыта для автоматической записи — {reason}"
+            )
+    for source, fname, entry in _numeric_map_entries(amap):
+        where = f"{source}/{fname}"
+        slug = entry.get("attribute")
+        rule = entry.get("normalize")
+        unit = entry.get("unit")
+        source_unit = entry.get("source_unit")
+
+        if rule not in PLAIN_NORMALIZERS and rule not in CONVERTERS:
+            problems.append(f"{where}: неизвестный нормализатор {rule!r}")
+            continue
+
+        disabled = DISABLED_CONVERTERS.get(rule)
+        if disabled:
+            problems.append(f"{where}: нормализатор {rule!r} запрещён к подключению — {disabled}")
+            continue
+
+        if source_unit is not None and _canon_unit(source_unit) != _canon_unit(unit):
+            expected = CONVERTER_BY_UNITS.get((_canon_unit(source_unit), _canon_unit(unit)))
+            if expected is None:
+                problems.append(
+                    f"{where}: нет конвертера {source_unit!r} -> {unit!r}; "
+                    f"пересчёт не объявлен — поле нельзя сопоставлять"
+                )
+            elif rule != expected:
+                problems.append(
+                    f"{where}: единица источника {source_unit!r} при оси {unit!r} "
+                    f"требует normalize={expected!r}, в карте {rule!r}"
+                )
+        elif rule in CONVERTERS:
+            src_unit, dst_unit, _ = CONVERTERS[rule]
+            problems.append(
+                f"{where}: normalize={rule!r} пересчитывает {src_unit} -> {dst_unit}, "
+                f"но source_unit не объявлен (или равен unit) — молчаливый пересчёт запрещён"
+            )
+
+        if attr_by_slug is not None:
+            attr = attr_by_slug.get(slug)
+            if attr is None:
+                problems.append(f"{where}: атрибут {slug!r} отсутствует в БД")
+            elif _canon_unit(attr.unit) != _canon_unit(unit):
+                problems.append(
+                    f"{where}: карта объявляет unit={unit!r}, "
+                    f"а ось {slug!r} в БД имеет единицу {attr.unit!r}"
+                )
+    if problems:
+        raise ValueError("единицы карты не сходятся:\n  - " + "\n  - ".join(problems))
 
 
 @dataclass
@@ -293,35 +599,50 @@ def extract_card_values(card: dict, source: str, amap: dict) -> CardExtraction:
     res = CardExtraction()
     sdata = amap["sources"][source]
     attrs = card.get("attributes") or {}
+    rules: dict[str, list[dict]] = {}
+    for fname, entry in iter_field_entries(sdata):
+        rules.setdefault(fname, []).append(entry)
     for fname, raw in attrs.items():
-        entry = sdata["fields"].get(fname)
-        if entry is None:
+        entries = rules.get(fname)
+        if entries is None:
             res.dropped.append((fname, raw, "поле отсутствует в карте"))
             continue
-        if entry["action"] == "unmapped":
-            res.unmapped.append(fname)
-            continue
-        if entry["action"] != "map":
-            continue  # ignore
-        conf = MAP_CONFIDENCE[entry["confidence"]]
-        try:
-            if entry["attribute_type"] == "select":
-                key = raw.strip().lower()
-                if key not in entry["values"]:
-                    res.dropped.append((fname, raw, "значение не в словаре опций"))
-                    continue
-                val = entry["values"][key]
-                conf = MAP_CONFIDENCE[
-                    entry.get("values_confidence", {}).get(key, entry["confidence"])
-                ]
-                res.values.append(ScrapedValue(entry["attribute"], fname, raw, val, True, conf))
-            else:
-                num = normalize_scalar(raw, entry["normalize"])
-                res.values.append(
-                    ScrapedValue(entry["attribute"], fname, raw, Decimal(str(num)), False, conf)
-                )
-        except (ValueError, AttributeError) as exc:
-            res.dropped.append((fname, raw, f"ошибка нормализации: {exc}"))
+        for entry in entries:
+            if entry["action"] == "unmapped":
+                res.unmapped.append(fname)
+                continue
+            if entry["action"] != "map":
+                continue  # ignore
+            conf = MAP_CONFIDENCE[entry["confidence"]]
+            try:
+                piece = raw
+                if entry.get("extract"):
+                    m = re.search(entry["extract"], raw)
+                    if m is None:
+                        raise ValueError(f"extract не сработал: {entry['extract']}")
+                    piece = m.group(1)
+                if entry["attribute_type"] == "select":
+                    key = option_key(piece)
+                    if key not in entry["values"]:
+                        res.dropped.append((fname, raw, "значение не в словаре опций"))
+                        continue
+                    val = entry["values"][key]
+                    conf = MAP_CONFIDENCE[
+                        entry.get("values_confidence", {}).get(key, entry["confidence"])
+                    ]
+                    res.values.append(ScrapedValue(entry["attribute"], fname, raw, val, True, conf))
+                elif entry["attribute_type"] == "boolean":
+                    flag = normalize_boolean(piece, entry["values"])
+                    res.values.append(
+                        ScrapedValue(entry["attribute"], fname, raw, flag, False, conf)
+                    )
+                else:
+                    num = normalize_scalar(piece, entry["normalize"])
+                    res.values.append(
+                        ScrapedValue(entry["attribute"], fname, raw, Decimal(str(num)), False, conf)
+                    )
+            except (ValueError, AttributeError) as exc:
+                res.dropped.append((fname, raw, f"ошибка нормализации: {exc}"))
     # fallback (например, power Ресанты из summary_raw)
     for fb in sdata.get("fallbacks", []):
         if any(f in attrs for f in fb["applies_when_missing"]):
@@ -592,6 +913,9 @@ def _same_value(pav: ProductAttributeValue, value: object, is_option: bool) -> b
         return False
     if is_option:
         return cur == value
+    if isinstance(value, bool) or isinstance(cur, bool):
+        # bool сравниваем как bool: Decimal(str(True)) падает, а True == 1 врёт.
+        return isinstance(cur, bool) and isinstance(value, bool) and cur is value
     try:
         return Decimal(str(cur)) == Decimal(str(value))
     except Exception:
@@ -606,6 +930,7 @@ def is_battery_values(values: list[ScrapedValue]) -> bool:
         if (
             v.attribute_slug == VOLTAGE_SLUG
             and not v.is_option
+            and not isinstance(v.value, bool)
             and v.value < BATTERY_VOLTAGE_CEILING
         ):
             return True
@@ -730,6 +1055,8 @@ def apply_plan_items(
         pav.value_option = None
         if item.is_option:
             pav.value_option = option
+        elif isinstance(item.new_value, bool):
+            pav.value_boolean = item.new_value
         else:
             pav.value_decimal = item.new_value
         pav.source = Source.SCRAPER

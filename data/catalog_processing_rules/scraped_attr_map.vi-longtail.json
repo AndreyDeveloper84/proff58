@@ -1,0 +1,922 @@
+{
+ "schema_version": 1,
+ "category": "vi-longtail",
+ "created": "2026-09-04",
+ "inputs": {
+  "evidence": "frozen pilot-30, 25 MATCHED, 250 characteristics / 184 distinct names"
+ },
+ "policy": {
+  "principle": "только доказанные DIRECT правила + 1 объявленное; неизвестное — unmapped/moderation; schema не создаётся",
+  "scope_tool_types": [
+   "mfi",
+   "bp-generatory",
+   "osnastka-burov",
+   "str-rastvoriteli",
+   "obor-pena",
+   "shtifty",
+   "zap-karbyuratory",
+   "zap-porshni-tsilindry",
+   "izm-kolesa",
+   "izm-shchupy",
+   "dinamometricheskie-klyuchi",
+   "krep-svp",
+   "nabory-klyuchey-imbusovyh",
+   "nabory-uplotnitelnyh-kolets",
+   "spetsialnye-klyuchi",
+   "pistolety-dlya-peny",
+   "prosekateli-profiley-gkl",
+   "trubogiby",
+   "hoz-voronki",
+   "siz-kaski",
+   "siz-naushniki",
+   "armiruyushchie-lenty-binty",
+   "fiksatory-germetiki-rezby",
+   "hoz-himiya",
+   "krep-provoloka",
+   "hoz-sekatory",
+   "hoz-truby-fitingi",
+   "vibratory-betona",
+   "otreznye-mashiny-metall",
+   "stanki-zatochnye"
+  ]
+ },
+ "scope_tool_types": [
+  "mfi",
+  "bp-generatory",
+  "osnastka-burov",
+  "str-rastvoriteli",
+  "obor-pena",
+  "shtifty",
+  "zap-karbyuratory",
+  "zap-porshni-tsilindry",
+  "izm-kolesa",
+  "izm-shchupy",
+  "dinamometricheskie-klyuchi",
+  "krep-svp",
+  "nabory-klyuchey-imbusovyh",
+  "nabory-uplotnitelnyh-kolets",
+  "spetsialnye-klyuchi",
+  "pistolety-dlya-peny",
+  "prosekateli-profiley-gkl",
+  "trubogiby",
+  "hoz-voronki",
+  "siz-kaski",
+  "siz-naushniki",
+  "armiruyushchie-lenty-binty",
+  "fiksatory-germetiki-rezby",
+  "hoz-himiya",
+  "krep-provoloka",
+  "hoz-sekatory",
+  "hoz-truby-fitingi",
+  "vibratory-betona",
+  "otreznye-mashiny-metall",
+  "stanki-zatochnye"
+ ],
+ "sources": {
+  "vseinstrumenti": {
+   "fields": {
+    "Высота": {
+     "action": "map",
+     "attribute": "height",
+     "attribute_type": "decimal",
+     "unit": "мм",
+     "normalize": "decimal",
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Диаметр": {
+     "action": "map",
+     "attribute": "diameter",
+     "attribute_type": "decimal",
+     "unit": "мм",
+     "normalize": "decimal",
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Диаметр диска": {
+     "action": "map",
+     "attribute": "disc_diameter",
+     "attribute_type": "decimal",
+     "unit": "мм",
+     "normalize": "decimal",
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Мощность": {
+     "action": "map",
+     "attribute": "power",
+     "attribute_type": "decimal",
+     "unit": "Вт",
+     "normalize": "decimal",
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Напряжение": {
+     "action": "map",
+     "attribute": "voltage",
+     "attribute_type": "decimal",
+     "unit": "В",
+     "normalize": "decimal",
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Посадочный диаметр": {
+     "action": "map",
+     "attribute": "bore",
+     "attribute_type": "decimal",
+     "unit": "мм",
+     "normalize": "decimal",
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Ширина": {
+     "action": "map",
+     "attribute": "width",
+     "attribute_type": "decimal",
+     "unit": "мм",
+     "normalize": "decimal",
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Вес нетто": {
+     "action": "map",
+     "attribute": "weight_kg",
+     "attribute_type": "decimal",
+     "unit": "кг",
+     "normalize": "decimal",
+     "confidence": "low",
+     "on_ambiguous": "drop_to_report",
+     "comment": "объявленное правило (имя ≠ «Масса»): 15 значений пилота; семантика — масса нетто в кг"
+    },
+    "Материал": {
+     "action": "map",
+     "attribute": "material",
+     "attribute_type": "select",
+     "values": {
+      "алмазный": "almaz",
+      "быстрорез (hss)": "hss",
+      "кобальт": "cobalt",
+      "латунированная сталь": "brass-plated-steel",
+      "х/б": "hb",
+      "абразивный": "abraziv",
+      "легированная сталь": "alloy",
+      "нержавеющая сталь": "inox",
+      "полиэстер": "poliester",
+      "брезент": "brezent",
+      "нейлон": "nylon",
+      "твердосплав": "carbide",
+      "кожа": "kozha",
+      "латунь": "brass",
+      "неопрен": "neopren",
+      "сталь": "steel",
+      "п/ш": "psh",
+      "латекс": "lateks",
+      "нитрил": "nitril",
+      "пвх": "pvh"
+     },
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Питание": {
+     "action": "map",
+     "attribute": "power_source",
+     "attribute_type": "select",
+     "values": {
+      "аккумулятор": "battery",
+      "сеть": "mains"
+     },
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Покрытие": {
+     "action": "map",
+     "attribute": "coating",
+     "attribute_type": "select",
+     "values": {
+      "полный облив": "polny-obliv",
+      "цинк": "zinc",
+      "частичный облив": "chastichny-obliv",
+      "чёрное": "black",
+      "точка": "tochka",
+      "протектор": "protektor"
+     },
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Привод": {
+     "action": "map",
+     "attribute": "drive",
+     "attribute_type": "select",
+     "values": {
+      "1/4": "d-1-4",
+      "1/4\" + 3/8\" + 1/2": "d-1-4-3-8-1-2",
+      "1/4\" + 1/2": "d-1-4-1-2",
+      "3/8": "d-3-8",
+      "1/2": "d-1-2",
+      "3/4": "d-3-4",
+      "1": "d-1"
+     },
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Тип двигателя": {
+     "action": "map",
+     "attribute": "motor_type",
+     "attribute_type": "select",
+     "values": {
+      "бесщёточный": "brushless",
+      "щёточный": "brushed"
+     },
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Bluetooth": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Max дальность измерения": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Max мощность": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Max скрепляемая толщина": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Max толщина ведущего звена": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Max шаг зубьев цепи": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Min толщина ведущего звена": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Min шаг зубьев цепи": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Автозапуск": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Агрегатное состояние": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Аккумулятор в комплекте": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Альтернатор": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Быстросъемное крепление": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Вибронаконечник в комплекте": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Вид": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Вид вещества": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Вид топлива": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Вид упаковки": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Внесен в госреестр": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Водородный показатель (pH)": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Возможность подключения к пылесосу": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Встроенные динамики и FM-радио": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Высокочастотный": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Выход 12V": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "ГОСТ": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Габариты без упаковки": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Гибка труб диаметром": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Гибкий вал в комплекте": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Глубина резания": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Датчик масла": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Диаметр булавы вибратора": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Диаметр колес": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Диаметр прутка": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Дисплей": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Диэлектрическое покрытие": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Длина": {
+     "action": "unmapped",
+     "reason": "GAP-2 (VI-INT-01a): единицы разнятся по карточкам («30 м», «200» м, «41» мм) — ось мм без unit-aware extraction превращает метры в миллиметры; moderation"
+    },
+    "Длина булавы вибратора": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Длина вала": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Длина кабеля": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Длина окружности колеса": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Емкость аккумулятора": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Емкость топливного бака": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Игольчатый клапан": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Индикатор уровня топлива": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Источник питания": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Кисточка": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Класс товара": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Количество": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Количество аккумуляторов в комплекте": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Количество в наборе": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Количество дисков в комплекте": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Количество компонентов": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Количество насадок в наборе": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Контейнерный": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Контроль напряжения": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Концентрат": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Крепление на каску": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Максимальный диаметр реза": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Материал вставки": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Материал губок": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Материал лезвия": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Материал обработки": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Материал рукояти": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Материал ручки": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Материал скребка": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Материал щетины": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Мах угол гиба": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Маятниковый механизм": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Мощность (Вт)": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Мощность двигателя": {
+     "action": "unmapped",
+     "reason": "GAP-2 (VI-INT-01a): DIRECT-имя ведёт на ось бензоинструмента power_hp (л.с.); у сетевого станка значение в ваттах — «90 Вт» ≠ 90 л.с.; moderation"
+    },
+    "Мощность максимальная при 220 В": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Мощность номинальная при 220 В": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Назначение": {
+     "action": "unmapped",
+     "reason": "DIRECT по имени, но у оси application в БД нет ни одной опции"
+    },
+    "Наличие амортизации": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Наличие виброручки": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Наличие защитного экрана": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Обмотка альтернатора двигателя": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Общая длина": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Объем": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Объем двигателя": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Объем масляного бака": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Отдушка": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "ПВХ изоляция": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Плавный пуск": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Поверка": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Поворотная рукоятка": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Подбородочный ремень": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Поддержание постоянных оборотов под нагрузкой": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Подсветка": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Подходит для": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Покрытие лезвий": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Покрытие рукояток": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Посадочный диаметр диска": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Потребляемый ток": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Прививочный": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Применение": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Производитель двигателя": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Размер": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Размер max (T/E)": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Размер max (дюйм)": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Размер max (мм)": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Размер min (Т/E)": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Размер min (дюйм)": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Размер min (мм)": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Размер заточного круга": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Размер оголовья": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Размер ячейки": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Регулировка длины": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Регулировка оборотов": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Рукоятки-чехлы": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "С воском": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "С гравером": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "С длинными ручками": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "С колесами": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "С поворотной головой": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "С пылесосом": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "С ручками": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "С тихоходным кругом (мокрая заточка/шлифование)": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "С шаровым окончанием": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Самоклеящиеся": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Светоотражающие элементы": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Свеча зажигания": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Серия аккумулятора": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Сила тока розеток 380/220/12": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Скрепляемый материал": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Снижение уровня шума": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Со стойкой": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Совместимость с моделями": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Состав": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Стартер": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Счетчик моточасов": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Телескопическая рукоятка": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Температура пайки": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Тефлоновое покрытие": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Тип": {
+     "action": "unmapped",
+     "reason": "DIRECT по имени, но опции level_type (Лазерный/Ротационный/Оптический) — семантика лазерных уровней; у ВИ «Тип» универсален"
+    },
+    "Тип аккумулятора": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Тип кожуха": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Тип лезвий": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Тип основной ткани": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Тип привода": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Тип профиля": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Тип соединения": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Тип счетчика": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Тип товара": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Тип шумоподавления": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Тип электростанции": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Толщина круга": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Трещотка": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Угол колебаний": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Угол поворота стола": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Упаковка": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Уровень шума": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Фасовка": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Фиксатор лезвий": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Форма": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Цвет": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Частота": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Частота вибрации": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Частота вращения второго шлиф. круга": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Частота вращения шлиф. круга": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Частота колебаний": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Число оборотов": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Шаг измерения": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Шарнирный механизм": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Ширина рабочей части": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Шплинты": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Штанговый": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Эл. выходы 380/220/12": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Электр. регулировка оборотов": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Эфес": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Эффективный диаметр уплотнения": {
+     "action": "unmapped",
+     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    }
+   },
+   "fallbacks": [],
+   "derived": []
+  }
+ }
+}
