@@ -3,6 +3,7 @@
 Fixture — реальный matches.json завершённого pilot-30 (tests/fixtures/
 vi-pilot30-matched-25.json). Прогон без ВИ, без браузера, без БД.
 """
+
 from __future__ import annotations
 
 import json
@@ -17,16 +18,33 @@ from apps.catalog.vi_scraped_adapter import (
     build_export,
 )
 
-FIXTURE = (
-    Path(__file__).parents[3]
-    / "tests"
-    / "fixtures"
-    / "vi-pilot30-matched-25.json"
-)
+FIXTURE = Path(__file__).parents[3] / "tests" / "fixtures" / "vi-pilot30-matched-25.json"
 EXPECTED_PRODUCT_IDS = [
-    36918, 2092, 37265, 41489, 42047, 43419, 10812, 41821, 15728, 519,
-    22671, 26841, 6213, 44122, 34270, 34538, 6616, 36131, 36337, 32407,
-    44891, 35079, 43749, 6794, 7057,
+    36918,
+    2092,
+    37265,
+    41489,
+    42047,
+    43419,
+    10812,
+    41821,
+    15728,
+    519,
+    22671,
+    26841,
+    6213,
+    44122,
+    34270,
+    34538,
+    6616,
+    36131,
+    36337,
+    32407,
+    44891,
+    35079,
+    43749,
+    6794,
+    7057,
 ]
 
 

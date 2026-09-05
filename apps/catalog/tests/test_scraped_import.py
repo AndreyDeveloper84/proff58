@@ -922,6 +922,7 @@ def test_huter_boolean_second_run_is_confirm_not_conflict(huter_catalog, tmp_pat
     assert report["stats"]["confirm"] == 1
     assert report["stats"].get("conflict", 0) == 0
 
+
 # --- единицы измерения и нормализаторы-конвертеры (ДРФ-1440) ------------------
 #
 # Три подписи мощности (Вт, кВт, л.с.) ведут в одну ось power с единицей «Вт»,

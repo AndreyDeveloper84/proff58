@@ -24,9 +24,9 @@ VOCAB = load_brand_vocabulary()
 
 # Подтверждено вхождениями в названиях каталога, каждое проверено вручную.
 CONFIRMED = {
-    "ремоколор": "REMOCOLOR",   # 12 вхождений: «Болторез 900 мм РемоКолор»
-    "редиус": "REDIUS",          # 5: «АППГ-1 Редиус 168», «Клапан (РЕДИУС)»
-    "патриот": "PATRIOT",        # 4: «Мотоблок ПАТРИОТ УРАЛ М»
+    "ремоколор": "REMOCOLOR",  # 12 вхождений: «Болторез 900 мм РемоКолор»
+    "редиус": "REDIUS",  # 5: «АППГ-1 Редиус 168», «Клапан (РЕДИУС)»
+    "патриот": "PATRIOT",  # 4: «Мотоблок ПАТРИОТ УРАЛ М»
 }
 
 # Сгенерированные транслитерации, отвергнутые при проверке данными.
@@ -91,8 +91,11 @@ class TestNoRegressionForOtherConsumers:
         Замер на стенде: узлов-брендов 5 → 5, ни одного добавленного.
         """
         for name in (
-            "Мешки для пылесосов", "Перчатки и рукавицы", "Ручной инструмент",
-            "Ящики для инструмента", "Леска для триммера",
+            "Мешки для пылесосов",
+            "Перчатки и рукавицы",
+            "Ручной инструмент",
+            "Ящики для инструмента",
+            "Леска для триммера",
         ):
             assert not _is_brand_node(name), name
 
@@ -103,8 +106,11 @@ class TestNoRegressionForOtherConsumers:
     def test_change_is_additive_only(self):
         """Ни один прежний алиас не потерян и не переназначен."""
         for alias, canonical in (
-            ("remocolor", "REMOCOLOR"), ("redius", "REDIUS"),
-            ("patriot", "PATRIOT"), ("kraftool", "KRAFTOOL"),
-            ("makita", "MAKITA"), ("зубр", "ЗУБР"),
+            ("remocolor", "REMOCOLOR"),
+            ("redius", "REDIUS"),
+            ("patriot", "PATRIOT"),
+            ("kraftool", "KRAFTOOL"),
+            ("makita", "MAKITA"),
+            ("зубр", "ЗУБР"),
         ):
             assert VOCAB.canonical_by_alias.get(alias) == canonical

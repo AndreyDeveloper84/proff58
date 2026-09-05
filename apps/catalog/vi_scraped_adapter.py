@@ -11,6 +11,7 @@ identity и до importer'а не доходят. ``catalog_product_id`` (док
 collector'ом identity) сохраняется в карточке для последующей сверки с
 результатом матчинга importer'а — сам importer его не читает.
 """
+
 from __future__ import annotations
 
 VI_SOURCE = "vseinstrumenti"
