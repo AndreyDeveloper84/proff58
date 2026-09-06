@@ -24,14 +24,17 @@ from apps.catalog.taxonomy_manifest import (
 V2_PATH = Path(settings.BASE_DIR) / "data" / "catalog_processing_rules" / "tool_type.v2.json"
 SEED_RULES_PATH = Path(settings.BASE_DIR) / "data" / "tool_type_rules.json"
 
-# ДРФ-1449 (2026-09-05): новый тип pilnye-diski — пильные диски отделены от
-# отрезных и шлифовальных кругов (разные оси: у диска число зубьев, у круга
-# толщина и материал обработки); 361 option; identity и semantic hash
-# пересчитаны; gate-sample и labels перевыпущены на новый canonical binding.
+# ДРФ-1459 (2026-09-06): 12 новых типов под разбор узла 35 «Хозтовары, сад,
+# огород» — садовый полив (соединения и насадки), декор и ограждения, ручной
+# садовый инвентарь, носилки, сантехническое оборудование и герметизирующие
+# материалы, серпянка, мангалы, уголь и розжиг, шкафы хранения, расходники
+# для уборки; 373 options; identity и semantic hash пересчитаны; gate-sample
+# и labels перевыпущены на новый canonical binding.
+# До этого ДРФ-1449 (2026-09-05): pilnye-diski, 361 option, identity 9313a959…
 # До этого ТТ-18A (2026-08-05): tsangi-i-tsangovye-patrony и переименование
 # svar-cangi (Цанги → Цанги сварочные), 360 options, identity ddf4b949…
-PINNED_IDENTITY_HASH = "9313a95952021d549130dd08d6d2ebd0d9a8f3273bce014b0e00ec0c2fe29ffb"
-PINNED_SEMANTIC_HASH = "afd18768ed16947f9458d6e99ed1945fdf5c2748f24e86da23612404a043f838"
+PINNED_IDENTITY_HASH = "603f99aff49ecd416cc4f49744f912c500d811602d2bb01036f7839b6088f96f"
+PINNED_SEMANTIC_HASH = "d918468decfa7f29a7411aa9fc9400ae17a56d213599d64372798da1b733c75d"
 
 BACKPORTED_SLUGS = {
     "bp-podgotovka-vozduha",
@@ -93,7 +96,7 @@ def _opt(slug, value, **kw):
 
 def test_committed_manifest_loads_and_matches_pins():
     m = load_manifest()
-    assert len(m.options) == 361
+    assert len(m.options) == 373
     assert m.identity_hash == PINNED_IDENTITY_HASH
     assert m.semantic_hash == PINNED_SEMANTIC_HASH
     assert m.schema_version == 1 and m.manifest_version == 1

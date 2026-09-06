@@ -822,6 +822,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "hoz-mangaly",
+      "value": "Мангалы, грили и плитки",
+      "sort_order": 28,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1459 разбор узла 35 + owner decision 2026-09-06",
+      "review_status": "approved",
+      "review_reason": "Мангалы разборные и стационарные, туристические газовые плитки.",
+      "review_ref": "drf-1459",
+      "legacy_aliases": []
+    },
+    {
       "slug": "hoz-masla",
       "value": "Масла и смазки",
       "sort_order": 23,
@@ -976,6 +987,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "hoz-shkafy",
+      "value": "Шкафы и модульные системы хранения",
+      "sort_order": 30,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1459 разбор узла 35 + owner decision 2026-09-06",
+      "review_status": "approved",
+      "review_reason": "Модульные шкафы DEKO и аналогичные системы хранения для дома. Не путать с siz-shkafy — пожарными шкафами.",
+      "review_ref": "drf-1459",
+      "legacy_aliases": []
+    },
+    {
       "slug": "hoz-shlangi",
       "value": "Шланги",
       "sort_order": 30,
@@ -1041,6 +1063,28 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "hoz-uborka-rashodniki",
+      "value": "Расходники для уборки",
+      "sort_order": 31,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1459 разбор узла 35 + owner decision 2026-09-06",
+      "review_status": "approved",
+      "review_reason": "Губки бытовые, салфетки, окномойки и сменные насадки. Щётки и швабры — тип hoz-shchetki.",
+      "review_ref": "drf-1459",
+      "legacy_aliases": []
+    },
+    {
+      "slug": "hoz-ugol-rozzhig",
+      "value": "Уголь и средства розжига",
+      "sort_order": 29,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1459 разбор узла 35 + owner decision 2026-09-06",
+      "review_status": "approved",
+      "review_reason": "Уголь берёзовый и брикетированный, спички длительного горения и каминные, жидкость для розжига.",
+      "review_ref": "drf-1459",
       "legacy_aliases": []
     },
     {
@@ -1996,6 +2040,17 @@
       "legacy_aliases": []
     },
     {
+      "slug": "nosilki",
+      "value": "Носилки",
+      "sort_order": 24,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1459 разбор узла 35 + owner decision 2026-09-06",
+      "review_status": "approved",
+      "review_reason": "Носилки строительные и хозяйственные.",
+      "review_ref": "drf-1459",
+      "legacy_aliases": []
+    },
+    {
       "slug": "nozhi",
       "value": "Ножи строительные",
       "sort_order": 10,
@@ -2594,6 +2649,50 @@
       "legacy_aliases": []
     },
     {
+      "slug": "sad-dekor-ograzhdeniya",
+      "value": "Садовый декор и ограждения",
+      "sort_order": 22,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1459 разбор узла 35 + owner decision 2026-09-06",
+      "review_status": "approved",
+      "review_reason": "Бордюры и заборы GRINDA, шпалеры, пирамиды для вьющихся, мини-парники, колышки, садовые скамейки и подставки.",
+      "review_ref": "drf-1459",
+      "legacy_aliases": []
+    },
+    {
+      "slug": "sad-inventar-ruchnoy",
+      "value": "Садовый ручной инвентарь",
+      "sort_order": 23,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1459 разбор узла 35 + owner decision 2026-09-06",
+      "review_status": "approved",
+      "review_reason": "Косы, садовые вилки и наборы ручного садового инструмента. Мотыги, лопаты и секачи — свои типы.",
+      "review_ref": "drf-1459",
+      "legacy_aliases": []
+    },
+    {
+      "slug": "sad-poliv-nasadki",
+      "value": "Насадки, пистолеты и разбрызгиватели",
+      "sort_order": 21,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1459 разбор узла 35 + owner decision 2026-09-06",
+      "review_status": "approved",
+      "review_reason": "Поливочные наконечники, пистолеты, импульсные разбрызгиватели, садовый душ.",
+      "review_ref": "drf-1459",
+      "legacy_aliases": []
+    },
+    {
+      "slug": "sad-poliv-soedineniya",
+      "value": "Коннекторы и соединители для полива",
+      "sort_order": 20,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1459 разбор узла 35 + owner decision 2026-09-06",
+      "review_status": "approved",
+      "review_reason": "Коннекторы ЖУК/RACO, адаптеры и распределители поливочных линий. Отделены от насадок: соединение и распыление — разные оси (резьба против режима полива).",
+      "review_ref": "drf-1459",
+      "legacy_aliases": []
+    },
+    {
       "slug": "sadovye-bury",
       "value": "Садовые буры",
       "sort_order": 7,
@@ -2602,6 +2701,28 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "santeh-germetiziruyushchie",
+      "value": "Герметизирующие материалы для резьбы",
+      "sort_order": 26,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1459 разбор узла 35 + owner decision 2026-09-06",
+      "review_status": "approved",
+      "review_reason": "Сантехническая нить, Тангит Уни-Лок и аналоги. Отделены от герметиков и монтажных пен: применяются к резьбовому соединению, а не к шву.",
+      "review_ref": "drf-1459",
+      "legacy_aliases": []
+    },
+    {
+      "slug": "santeh-oborudovanie",
+      "value": "Сантехническое оборудование",
+      "sort_order": 25,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1459 разбор узла 35 + owner decision 2026-09-06",
+      "review_status": "approved",
+      "review_reason": "Ванны, мойки, полотенцесушители, вантузы, крепёж для унитаза.",
+      "review_ref": "drf-1459",
       "legacy_aliases": []
     },
     {
@@ -3130,6 +3251,17 @@
       "review_status": "approved",
       "review_reason": "",
       "review_ref": null,
+      "legacy_aliases": []
+    },
+    {
+      "slug": "str-serpyanka",
+      "value": "Серпянка и армирующие сетки",
+      "sort_order": 27,
+      "origin_kind": "manual_backport",
+      "origin_ref": "DRF-1459 разбор узла 35 + owner decision 2026-09-06",
+      "review_status": "approved",
+      "review_reason": "Серпянка самоклеящаяся и влагостойкая, стеклотканевая малярная сетка.",
+      "review_ref": "drf-1459",
       "legacy_aliases": []
     },
     {
@@ -4013,6 +4145,6 @@
       "legacy_aliases": []
     }
   ],
-  "taxonomy_identity_hash": "9313a95952021d549130dd08d6d2ebd0d9a8f3273bce014b0e00ec0c2fe29ffb",
-  "manifest_semantic_hash": "afd18768ed16947f9458d6e99ed1945fdf5c2748f24e86da23612404a043f838"
+  "taxonomy_identity_hash": "603f99aff49ecd416cc4f49744f912c500d811602d2bb01036f7839b6088f96f",
+  "manifest_semantic_hash": "d918468decfa7f29a7411aa9fc9400ae17a56d213599d64372798da1b733c75d"
 }
