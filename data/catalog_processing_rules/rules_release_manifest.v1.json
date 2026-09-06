@@ -33,12 +33,12 @@
         "path": "data/catalog_processing_rules/applied_corpus_tool_type.v1.json"
       },
       "gate_sample": {
-        "artifact_sha256": "6d3beea03a1174efce1cd3f50402165b5d47ac995be0afbde8559013f374552a",
+        "artifact_sha256": "cd40728fd203a73e420fc94ee81afc5aa7e52ac92838894ffbe84b4b39b3148c",
         "path": "apps/catalog/tests/fixtures/phase7d-gate-sample-official.json",
         "rows": 103
       },
       "labels": {
-        "artifact_sha256": "9da7e3f33045d44e26bfb2c3bc570a225037652ee63265433f7685905216e4b7",
+        "artifact_sha256": "32226d845980f4227b093563be91141672659ff56f466912f4b20989e78953c9",
         "labels": 103,
         "path": "apps/catalog/tests/fixtures/phase7d-labels.json"
       },
@@ -51,16 +51,16 @@
         "version": 1
       },
       "taxonomy_manifest": {
-        "artifact_sha256": "5106be48ba733deeacf6ce3c12e7576d0ee1c87693a5e642c427e36eebf393c1",
-        "manifest_semantic_hash": "afd18768ed16947f9458d6e99ed1945fdf5c2748f24e86da23612404a043f838",
+        "artifact_sha256": "5b3b3f3de4380612429b88ffb50a452af0a600975ad04734f5da4f87a4a6ab8a",
+        "manifest_semantic_hash": "d918468decfa7f29a7411aa9fc9400ae17a56d213599d64372798da1b733c75d",
         "manifest_version": 1,
-        "options": 361,
+        "options": 373,
         "path": "data/catalog_processing_rules/tool_type_taxonomy.v1.json",
-        "taxonomy_identity_hash": "9313a95952021d549130dd08d6d2ebd0d9a8f3273bce014b0e00ec0c2fe29ffb"
+        "taxonomy_identity_hash": "603f99aff49ecd416cc4f49744f912c500d811602d2bb01036f7839b6088f96f"
       }
     },
     "matcher_version": "1.0",
     "schema_version": 1
   },
-  "canonical_hash": "805e61e8e526575c0e4da60080705e94b20014e91a8234705d46c5cbe6ca105b"
+  "canonical_hash": "7d95943e3b4ad03f3990e8f09e806030f81a3de639c0d649ef0f32bd07cd7188"
 }
