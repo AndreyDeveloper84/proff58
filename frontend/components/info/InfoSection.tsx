@@ -65,15 +65,23 @@ function Hero({ section }: { section: Section }) {
         <InfoBlocks blocks={section.blocks} />
         <Buttons buttons={section.buttons} />
       </div>
-      {images.length > 0 ? (
+      {images.length === 1 ? (
+        // Одна картинка показывается целиком, в своих пропорциях. Дизайнер
+        // присылает то широкую полосу, то почти квадрат; фиксированная рамка
+        // обрезала бы половину кадра — и именно ту, ради которой его выбирали.
+        <Image
+          src={images[0]}
+          alt=""
+          width={1600}
+          height={500}
+          sizes="(min-width: 1024px) 45vw, 100vw"
+          className="h-auto w-full rounded-xl border border-line bg-raised"
+          priority
+        />
+      ) : images.length > 1 ? (
         // Коллаж из трёх фото на широком экране и одно ведущее на телефоне:
         // три картинки в колонку — это три экрана прокрутки до первого текста.
-        <div
-          className={cn(
-            "grid gap-3",
-            images.length > 1 ? "grid-cols-2 [&>*:first-child]:col-span-2" : "grid-cols-1",
-          )}
-        >
+        <div className="grid grid-cols-2 gap-3 [&>*:first-child]:col-span-2">
           {images.map((src, index) => (
             <div
               key={src}
