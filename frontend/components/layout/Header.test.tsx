@@ -161,7 +161,9 @@ describe("Header (#586)", () => {
   it("телефон и график из макета отображаются", () => {
     renderHeader();
     expect(screen.getAllByText(SITE.phone.display)[0]).toBeInTheDocument();
-    expect(screen.getByText(SITE.phoneNote)).toBeInTheDocument();
+    // Подписи под телефоном нет: «Бесплатно по России» относилось к номеру 8-800,
+    // а городской номер бесплатным по стране не является. Пустую подпись не рисуем.
+    expect(SITE.phoneNote).toBe("");
     // График встречается дважды: topbar и подменю «Контакты».
     expect(screen.getAllByText(SITE.schedule)[0]).toBeInTheDocument();
   });

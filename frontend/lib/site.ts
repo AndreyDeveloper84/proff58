@@ -12,10 +12,12 @@ export type TopLink = {
 export const SITE = {
   brand: { name: "Профессионал", tagline: "территория инструмента" },
   region: "Пенза",
-  phone: { display: "8 (800) 600-44-99", href: "tel:+78006004499" },
-  phoneNote: "Бесплатно по России", // #586: подпись под телефоном в шапке
-  schedule: "Пн–Вс 09:00–20:00",
-  email: "info@proff58.ru", // TODO: SiteSettings
+  phone: { display: "8 (8412) 20-20-87", href: "tel:+78412202087" },
+  // Подписи под телефоном нет: прежнее «Бесплатно по России» относилось к
+  // номеру 8-800, а городской номер бесплатным по стране не является.
+  phoneNote: "",
+  schedule: "Пн–Сб 09:00–19:00, Вс 09:00–15:00",
+  email: "penzainstrument@yandex.ru", // TODO: SiteSettings
   address: "г. Пенза, 1-й Онежский проезд, 12", // TODO: SiteSettings
 
   // #586: шапка по утверждённому макету главной.

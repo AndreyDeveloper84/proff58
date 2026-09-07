@@ -247,7 +247,9 @@ export function Header({
           className="hidden shrink-0 flex-col text-header-ink transition hover:text-accent xl:flex"
         >
           <span className="text-[15px] font-bold leading-tight">{storefront.phone.display}</span>
-          <span className="text-[11px] font-normal text-topbar-ink">{storefront.phoneNote}</span>
+          {storefront.phoneNote ? (
+            <span className="text-[11px] font-normal text-topbar-ink">{storefront.phoneNote}</span>
+          ) : null}
         </a>
 
         {/* Действия — desktop: избранное · сравнение (future) · корзина · кабинет */}
