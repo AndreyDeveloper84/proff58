@@ -95,7 +95,12 @@ export default async function RootLayout({
           <CartProvider>
             <WishlistProvider>
               <div className="flex min-h-screen flex-col">
-                <Header logoUrl={theme.logo_url} siteName={theme.name} storefront={storefront} />
+                <Header
+                  logoUrl={theme.logo_url}
+                  siteName={theme.name}
+                  storefront={storefront}
+                  infoPages={infoPages}
+                />
                 <div className="flex-1">{children}</div>
                 <Footer
                   logoUrl={theme.logo_url}

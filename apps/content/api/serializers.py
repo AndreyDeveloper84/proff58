@@ -6,6 +6,7 @@ from rest_framework import serializers
 
 from ..article_markup import parse_body, parse_summary, reading_minutes
 from ..models import Article, SEOPage
+from ..page_markup import parse_page_body
 
 
 class InfoPageListSerializer(serializers.ModelSerializer):
@@ -17,18 +18,34 @@ class InfoPageListSerializer(serializers.ModelSerializer):
 
 
 class InfoPageSerializer(serializers.ModelSerializer):
-    """Страница целиком.
+    """Страница целиком: разметка уже разобрана в типизированные секции.
 
-    ``body`` отдаём как есть — обычным текстом. Фронт рендерит его абзацами и
-    НЕ вставляет как HTML: страницу пишет человек в админке, и превращать её
-    текст в разметку значит открыть XSS через контент-редактора.
+    Разбор делает сервер — как у статей: витрина получает готовую структуру и не
+    тащит парсер, поэтому правило разметки одно на всю систему.
+
+    ``body`` при этом остаётся в ответе. Во-первых, старые страницы написаны
+    сплошным текстом и должны показываться абзацами, пока их не переписали. Во
+    вторых, это обычный текст, а не HTML: страницу пишет человек в админке, и
+    вставка её как разметки открыла бы XSS через контент-редактора.
     """
 
     updated_at = serializers.DateTimeField(read_only=True)
+    sections = serializers.SerializerMethodField()
 
     class Meta:
         model = SEOPage
-        fields = ("slug", "title", "body", "meta_title", "meta_description", "updated_at")
+        fields = (
+            "slug",
+            "title",
+            "body",
+            "sections",
+            "meta_title",
+            "meta_description",
+            "updated_at",
+        )
+
+    def get_sections(self, obj) -> list[dict]:
+        return parse_page_body(obj.body)
 
 
 class ArticleListSerializer(serializers.ModelSerializer):
