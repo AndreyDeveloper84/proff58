@@ -1,0 +1,798 @@
+{
+  "category": "vi-longtail",
+  "scope_tool_types": [
+    "mfi",
+    "bp-generatory",
+    "osnastka-burov",
+    "str-rastvoriteli",
+    "obor-pena",
+    "shtifty",
+    "zap-karbyuratory",
+    "zap-porshni-tsilindry",
+    "izm-kolesa",
+    "izm-shchupy",
+    "dinamometricheskie-klyuchi",
+    "krep-svp",
+    "nabory-klyuchey-imbusovyh",
+    "nabory-uplotnitelnyh-kolets",
+    "spetsialnye-klyuchi",
+    "pistolety-dlya-peny",
+    "prosekateli-profiley-gkl",
+    "trubogiby",
+    "hoz-voronki",
+    "siz-kaski",
+    "siz-naushniki",
+    "armiruyushchie-lenty-binty",
+    "fiksatory-germetiki-rezby",
+    "hoz-himiya",
+    "krep-provoloka",
+    "hoz-sekatory",
+    "hoz-truby-fitingi",
+    "vibratory-betona",
+    "otreznye-mashiny-metall",
+    "stanki-zatochnye"
+  ],
+  "scope_products": 1216,
+  "dry_run": true,
+  "cards_total": 20,
+  "matched": [
+    {
+      "source": "vseinstrumenti",
+      "card": "Реноватор ЗУБР 18 В, 1 АКБ (2 Ач), набор насадок, сумка МФИ-18-21",
+      "product_id": 643,
+      "product": "Реноватор ЗУБР 18В, 1АКБ 2Ач, набор насадок, в сумке",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Автошампунь для бесконтактной мойки усиленный концентрат Huter Super Power Foam 5,8 кг. 71/5/42",
+      "product_id": 6215,
+      "product": "Шампунь для минимоек HUTER усиленный концентрат Super Power Foam 5,8кг",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-060, 3/8\"",
+      "product_id": 12957,
+      "product": "Ключ динамометрический  3/8\", 10 - 60 Нм, +/- 4% KRAFTOOL",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Набор Г-образных ключей torx Сервис Ключ 9 предметов 70675",
+      "product_id": 22672,
+      "product": "Набор звездочек СЕРВИС КЛЮЧ (торкс) с отверстием на конце Т10-Т50 9 предметов",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Набор сальников СИБРТЕХ D 6,35 - 25,4 мм 125 предметов 47599",
+      "product_id": 26845,
+      "product": "Набор сальников D6,35-25,4мм, 125 пр.//СИБРТЕХ",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Многофункциональный заточной станок Ресанта СЗМ-10/65 75/10/3",
+      "product_id": 44888,
+      "product": "Станок для заточки многофункциональный СЭМ-10/65 Ресанта",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Строительный бинт Зубр повышенной прочности 12 см х 50 м 1240-12-50",
+      "product_id": 36919,
+      "product": "Бинт 12смх50м ЗУБР строительный, повышенной прочно",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Строительный бинт повышенной прочности Зубр 6см х 50м 1240-06-50",
+      "product_id": 36922,
+      "product": "Бинт 6смх50м ЗУБР строительный, повышенной прочно",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Нить льняная сантехническая (55 м) Зубр 4-51992-055",
+      "product_id": 37267,
+      "product": "Лен сантехнический нить ЗУБР  55м",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Льняная сантехническая нить Зубр 110 м 4-51992-110",
+      "product_id": 37268,
+      "product": "Лен сантехнический нить ЗУБР 110м",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Шлифовальная паста Зубр в пластиковом боксе 21 гр 35938",
+      "product_id": 41525,
+      "product": "Паста шлифовальная ЗУБР 21гр",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Вязальная термообработанная проволока ЗУБР 1.2мм х 100м 305415-12",
+      "product_id": 41826,
+      "product": "Проволока вязальная 1,2мм 100м ЗУБР",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Очиститель монтажной пены ЗУБР ЭКСПЕРТ ПРОФИ 41149",
+      "product_id": 5877,
+      "product": "Очиститель монтажной пены 500мл ЗУБР \"ЭКСПЕРТ\"",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Ручной трубогибочный станок ЗУБР 23510",
+      "product_id": 35081,
+      "product": "Трубогиб ручной СТР1 ЗУБР 3/8-1\"",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-100",
+      "product_id": 12959,
+      "product": "Ключ динамометрический  3/8\", 20 -100 Нм, +/- 4% KRAFTOOL",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Набор Г-образных звездочек торкс 15 предметов СЕРВИС КЛЮЧ PROFFI 76440",
+      "product_id": 22674,
+      "product": "Набор звездочек СЕРВИС КЛЮЧ (торкс) Т6-Т60 15 предметов",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Измерительное колесо STAYER PROFESSIONAL 34191",
+      "product_id": 10813,
+      "product": "Колесо измерительное STAYER ProControl",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Набор штифтов с головкой и отверстием под шплинт СИБРТЕХ 60 предметов 47612",
+      "product_id": 26867,
+      "product": "Набор штифтов с головкой и отверстием под шплинт 60 пр.//СИБРТЕХ",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Патрон-переходник для работы бурами SDS-plus на перфораторах SDS-max Hitachi 751006",
+      "product_id": 2623,
+      "product": "Адаптер с SDS-MAX на SDS+  Hitachi",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Станок для заточки цепей Ресанта Т-100 75/10/1",
+      "product_id": 44892,
+      "product": "Станок для заточки цепей Т-100 Ресанта",
+      "model_key": null,
+      "matched_by": "sku",
+      "article": "confirmed"
+    }
+  ],
+  "ambiguous": [],
+  "not_found": [],
+  "fuzzy_suggestions": [],
+  "unmapped_attributes": {
+    "Тип": 11,
+    "Класс товара": 7,
+    "Длина": 6,
+    "Габариты без упаковки": 4,
+    "Цвет": 4,
+    "Трещотка": 4,
+    "Диэлектрическое покрытие": 4,
+    "Назначение": 4,
+    "Подсветка": 3,
+    "Поверка": 3,
+    "Вид упаковки": 3,
+    "Объем": 2,
+    "Размер min (мм)": 2,
+    "Размер max (мм)": 2,
+    "Размер min (дюйм)": 2,
+    "Размер max (дюйм)": 2,
+    "Количество в наборе": 2,
+    "Вид": 2,
+    "Размер min (Т/E)": 2,
+    "Размер max (T/E)": 2,
+    "Форма": 2,
+    "С шаровым окончанием": 2,
+    "Шарнирный механизм": 2,
+    "Фасовка": 2,
+    "Шплинты": 2,
+    "Мощность двигателя": 2,
+    "Тип привода": 2,
+    "Частота вращения шлиф. круга": 2,
+    "Регулировка оборотов": 2,
+    "Толщина круга": 2,
+    "Размер заточного круга": 2,
+    "Наличие защитного экрана": 2,
+    "Со стойкой": 2,
+    "С пылесосом": 2,
+    "С тихоходным кругом (мокрая заточка/шлифование)": 2,
+    "С гравером": 2,
+    "Электр. регулировка оборотов": 1,
+    "Угол колебаний": 1,
+    "Тип соединения": 1,
+    "Тип аккумулятора": 1,
+    "Емкость аккумулятора": 1,
+    "Быстросъемное крепление": 1,
+    "Наличие виброручки": 1,
+    "Упаковка": 1,
+    "Частота колебаний": 1,
+    "Возможность подключения к пылесосу": 1,
+    "Плавный пуск": 1,
+    "Поддержание постоянных оборотов под нагрузкой": 1,
+    "Количество аккумуляторов в комплекте": 1,
+    "Источник питания": 1,
+    "Тип товара": 1,
+    "Водородный показатель (pH)": 1,
+    "Концентрат": 1,
+    "Отдушка": 1,
+    "Состав": 1,
+    "Количество компонентов": 1,
+    "С воском": 1,
+    "Применение": 1,
+    "Размер ячейки": 1,
+    "Самоклеящиеся": 1,
+    "ГОСТ": 1,
+    "ПВХ изоляция": 1,
+    "Материал обработки": 1,
+    "Мах угол гиба": 1,
+    "Гибка труб диаметром": 1,
+    "Тип профиля": 1,
+    "Max дальность измерения": 1,
+    "Шаг измерения": 1,
+    "Диаметр колес": 1,
+    "Тип счетчика": 1,
+    "Внесен в госреестр": 1,
+    "Угол поворота стола": 1,
+    "Количество дисков в комплекте": 1
+  },
+  "created": [
+    {
+      "product_id": 643,
+      "product": "Реноватор ЗУБР 18В, 1АКБ 2Ач, набор насадок, в сумке",
+      "attribute": "voltage",
+      "field": "Напряжение",
+      "new": "18.0",
+      "raw": "18"
+    },
+    {
+      "product_id": 643,
+      "product": "Реноватор ЗУБР 18В, 1АКБ 2Ач, набор насадок, в сумке",
+      "attribute": "weight_kg",
+      "field": "Вес нетто",
+      "new": "1.8",
+      "raw": "1.8"
+    },
+    {
+      "product_id": 22672,
+      "product": "Набор звездочек СЕРВИС КЛЮЧ (торкс) с отверстием на конце Т10-Т50 9 предметов",
+      "attribute": "weight_kg",
+      "field": "Вес нетто",
+      "new": "0.37",
+      "raw": "0.37"
+    },
+    {
+      "product_id": 44888,
+      "product": "Станок для заточки многофункциональный СЭМ-10/65 Ресанта",
+      "attribute": "disc_diameter",
+      "field": "Диаметр диска",
+      "new": "49.3",
+      "raw": "49.3"
+    },
+    {
+      "product_id": 44888,
+      "product": "Станок для заточки многофункциональный СЭМ-10/65 Ресанта",
+      "attribute": "bore",
+      "field": "Посадочный диаметр",
+      "new": "10.0",
+      "raw": "10"
+    },
+    {
+      "product_id": 44888,
+      "product": "Станок для заточки многофункциональный СЭМ-10/65 Ресанта",
+      "attribute": "weight_kg",
+      "field": "Вес нетто",
+      "new": "1.77",
+      "raw": "1.77"
+    },
+    {
+      "product_id": 36919,
+      "product": "Бинт 12смх50м ЗУБР строительный, повышенной прочно",
+      "attribute": "width",
+      "field": "Ширина",
+      "new": "120.0",
+      "raw": "120 мм"
+    },
+    {
+      "product_id": 36919,
+      "product": "Бинт 12смх50м ЗУБР строительный, повышенной прочно",
+      "attribute": "weight_kg",
+      "field": "Вес нетто",
+      "new": "0.08",
+      "raw": "0.08 кг"
+    },
+    {
+      "product_id": 36922,
+      "product": "Бинт 6смх50м ЗУБР строительный, повышенной прочно",
+      "attribute": "width",
+      "field": "Ширина",
+      "new": "60.0",
+      "raw": "60 мм"
+    },
+    {
+      "product_id": 37267,
+      "product": "Лен сантехнический нить ЗУБР  55м",
+      "attribute": "weight_kg",
+      "field": "Вес нетто",
+      "new": "0.055",
+      "raw": "0.055"
+    },
+    {
+      "product_id": 37268,
+      "product": "Лен сантехнический нить ЗУБР 110м",
+      "attribute": "weight_kg",
+      "field": "Вес нетто",
+      "new": "0.1",
+      "raw": "0.1"
+    },
+    {
+      "product_id": 41525,
+      "product": "Паста шлифовальная ЗУБР 21гр",
+      "attribute": "weight_kg",
+      "field": "Вес нетто",
+      "new": "0.21",
+      "raw": "0.21"
+    },
+    {
+      "product_id": 41826,
+      "product": "Проволока вязальная 1,2мм 100м ЗУБР",
+      "attribute": "diameter",
+      "field": "Диаметр",
+      "new": "1.2",
+      "raw": "1.2"
+    },
+    {
+      "product_id": 41826,
+      "product": "Проволока вязальная 1,2мм 100м ЗУБР",
+      "attribute": "material",
+      "field": "Материал",
+      "new": "steel",
+      "raw": "сталь"
+    },
+    {
+      "product_id": 41826,
+      "product": "Проволока вязальная 1,2мм 100м ЗУБР",
+      "attribute": "weight_kg",
+      "field": "Вес нетто",
+      "new": "0.821",
+      "raw": "0.821"
+    },
+    {
+      "product_id": 5877,
+      "product": "Очиститель монтажной пены 500мл ЗУБР \"ЭКСПЕРТ\"",
+      "attribute": "weight_kg",
+      "field": "Вес нетто",
+      "new": "0.44",
+      "raw": "0.44"
+    },
+    {
+      "product_id": 35081,
+      "product": "Трубогиб ручной СТР1 ЗУБР 3/8-1\"",
+      "attribute": "weight_kg",
+      "field": "Вес нетто",
+      "new": "11.8",
+      "raw": "11.8"
+    },
+    {
+      "product_id": 35081,
+      "product": "Трубогиб ручной СТР1 ЗУБР 3/8-1\"",
+      "attribute": "width",
+      "field": "Ширина",
+      "new": "190.0",
+      "raw": "190"
+    },
+    {
+      "product_id": 35081,
+      "product": "Трубогиб ручной СТР1 ЗУБР 3/8-1\"",
+      "attribute": "height",
+      "field": "Высота",
+      "new": "140.0",
+      "raw": "140"
+    },
+    {
+      "product_id": 10813,
+      "product": "Колесо измерительное STAYER ProControl",
+      "attribute": "weight_kg",
+      "field": "Вес нетто",
+      "new": "1.0",
+      "raw": "1"
+    },
+    {
+      "product_id": 44892,
+      "product": "Станок для заточки цепей Т-100 Ресанта",
+      "attribute": "disc_diameter",
+      "field": "Диаметр диска",
+      "new": "104.0",
+      "raw": "104"
+    },
+    {
+      "product_id": 44892,
+      "product": "Станок для заточки цепей Т-100 Ресанта",
+      "attribute": "bore",
+      "field": "Посадочный диаметр",
+      "new": "22.3",
+      "raw": "22.3"
+    },
+    {
+      "product_id": 44892,
+      "product": "Станок для заточки цепей Т-100 Ресанта",
+      "attribute": "weight_kg",
+      "field": "Вес нетто",
+      "new": "2.0",
+      "raw": "2"
+    }
+  ],
+  "confirmed": [],
+  "conflicts": [],
+  "skipped_voltage": [
+    {
+      "product_id": 44888,
+      "product": "Станок для заточки многофункциональный СЭМ-10/65 Ресанта",
+      "field": "Напряжение",
+      "raw": "220",
+      "value": "220.0"
+    },
+    {
+      "product_id": 44892,
+      "product": "Станок для заточки цепей Т-100 Ресанта",
+      "field": "Напряжение",
+      "raw": "220",
+      "value": "220.0"
+    }
+  ],
+  "dropped": [
+    {
+      "source": "vseinstrumenti",
+      "card": "Реноватор ЗУБР 18 В, 1 АКБ (2 Ач), набор насадок, сумка МФИ-18-21",
+      "field": "Тип двигателя",
+      "raw": "щеточный",
+      "reason": "значение не в словаре опций"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-060, 3/8\"",
+      "field": "Min усилие",
+      "raw": "10",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-060, 3/8\"",
+      "field": "Max усилие",
+      "raw": "60",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-060, 3/8\"",
+      "field": "Квадрат",
+      "raw": "3/8 дюйма",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-060, 3/8\"",
+      "field": "Материал",
+      "raw": "CrV",
+      "reason": "значение не в словаре опций"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-060, 3/8\"",
+      "field": "Батарейки",
+      "raw": "не требуются",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-060, 3/8\"",
+      "field": "Количество ключей",
+      "raw": "1",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-060, 3/8\"",
+      "field": "Насадки в комплекте",
+      "raw": "нет",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Набор Г-образных ключей torx Сервис Ключ 9 предметов 70675",
+      "field": "Покрытие",
+      "raw": "нет",
+      "reason": "значение не в словаре опций"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Набор Г-образных ключей torx Сервис Ключ 9 предметов 70675",
+      "field": "Материал",
+      "raw": "CrV",
+      "reason": "значение не в словаре опций"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Многофункциональный заточной станок Ресанта СЗМ-10/65 75/10/3",
+      "field": "Тип электродвигателя",
+      "raw": "асинхронный",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Многофункциональный заточной станок Ресанта СЗМ-10/65 75/10/3",
+      "field": "Передача",
+      "raw": "прямая",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Многофункциональный заточной станок Ресанта СЗМ-10/65 75/10/3",
+      "field": "Выключатель аварийной остановки",
+      "raw": "есть",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Строительный бинт Зубр повышенной прочности 12 см х 50 м 1240-12-50",
+      "field": "Материал",
+      "raw": "полипропилен",
+      "reason": "значение не в словаре опций"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Строительный бинт повышенной прочности Зубр 6см х 50м 1240-06-50",
+      "field": "Армированный",
+      "raw": "нет",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Шлифовальная паста Зубр в пластиковом боксе 21 гр 35938",
+      "field": "Для цветных металлов",
+      "raw": "нет",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Шлифовальная паста Зубр в пластиковом боксе 21 гр 35938",
+      "field": "Для нержавейки",
+      "raw": "да",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Шлифовальная паста Зубр в пластиковом боксе 21 гр 35938",
+      "field": "Для лакокрасочных покрытий",
+      "raw": "нет",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Шлифовальная паста Зубр в пластиковом боксе 21 гр 35938",
+      "field": "Для стекла",
+      "raw": "нет",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Шлифовальная паста Зубр в пластиковом боксе 21 гр 35938",
+      "field": "Для пластика",
+      "raw": "нет",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Шлифовальная паста Зубр в пластиковом боксе 21 гр 35938",
+      "field": "Незамерзающая",
+      "raw": "нет",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Шлифовальная паста Зубр в пластиковом боксе 21 гр 35938",
+      "field": "Тип полировки",
+      "raw": "машинная",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Шлифовальная паста Зубр в пластиковом боксе 21 гр 35938",
+      "field": "Одношаговая",
+      "raw": "нет",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Очиститель монтажной пены ЗУБР ЭКСПЕРТ ПРОФИ 41149",
+      "field": "Вид тары",
+      "raw": "баллон",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Очиститель монтажной пены ЗУБР ЭКСПЕРТ ПРОФИ 41149",
+      "field": "Количество в упаковке",
+      "raw": "1",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Очиститель монтажной пены ЗУБР ЭКСПЕРТ ПРОФИ 41149",
+      "field": "Под пистолет",
+      "raw": "есть",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Ручной трубогибочный станок ЗУБР 23510",
+      "field": "Max ширина профильной трубы",
+      "raw": "1",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Ручной трубогибочный станок ЗУБР 23510",
+      "field": "Max толщина стенки трубы",
+      "raw": "2.8",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-100",
+      "field": "Min усилие",
+      "raw": "20",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-100",
+      "field": "Max усилие",
+      "raw": "100",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-100",
+      "field": "Квадрат",
+      "raw": "3/8 дюйма",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-100",
+      "field": "Материал",
+      "raw": "CrV",
+      "reason": "значение не в словаре опций"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-100",
+      "field": "Батарейки",
+      "raw": "не требуются",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-100",
+      "field": "Количество ключей",
+      "raw": "1",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Динамометрический ключ KRAFTOOL INDUSTRIE QUALITAT 64053-100",
+      "field": "Насадки в комплекте",
+      "raw": "нет",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Набор Г-образных звездочек торкс 15 предметов СЕРВИС КЛЮЧ PROFFI 76440",
+      "field": "Покрытие",
+      "raw": "нет",
+      "reason": "значение не в словаре опций"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Набор Г-образных звездочек торкс 15 предметов СЕРВИС КЛЮЧ PROFFI 76440",
+      "field": "Материал",
+      "raw": "CrV",
+      "reason": "значение не в словаре опций"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Измерительное колесо STAYER PROFESSIONAL 34191",
+      "field": "Элементы питания",
+      "raw": "нет",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Измерительное колесо STAYER PROFESSIONAL 34191",
+      "field": "Количество и напряжение элементов питания",
+      "raw": "нет",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Патрон-переходник для работы бурами SDS-plus на перфораторах SDS-max Hitachi 751006",
+      "field": "Переход на",
+      "raw": "SDS-plus",
+      "reason": "поле отсутствует в карте"
+    },
+    {
+      "source": "vseinstrumenti",
+      "card": "Патрон-переходник для работы бурами SDS-plus на перфораторах SDS-max Hitachi 751006",
+      "field": "Переход с",
+      "raw": "SDS-max",
+      "reason": "поле отсутствует в карте"
+    }
+  ],
+  "stats": {
+    "cards": 20,
+    "dropped": 41,
+    "matched": 20,
+    "create": 23,
+    "skipped_voltage": 2
+  }
+}

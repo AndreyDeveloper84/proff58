@@ -1,9 +1,9 @@
 {
  "schema_version": 1,
  "category": "vi-longtail",
- "created": "2026-09-04",
+ "created": "2026-09-08",
  "inputs": {
-  "evidence": "frozen pilot-30, 25 MATCHED, 250 characteristics / 184 distinct names"
+  "evidence": "frozen pilot-30, 25 MATCHED, 250 characteristics / 184 distinct names; VI-INT-06 Pack A (VI-INT-05 research): +3 fields, +3 material values, +10 scope"
  },
  "policy": {
   "principle": "только доказанные DIRECT правила + 1 объявленное; неизвестное — unmapped/moderation; schema не создаётся",
@@ -37,7 +37,17 @@
    "hoz-truby-fitingi",
    "vibratory-betona",
    "otreznye-mashiny-metall",
-   "stanki-zatochnye"
+   "stanki-zatochnye",
+   "bp-motopompy",
+   "bp-nabory-pnevmoinstrumenta",
+   "elektronozhnitsy",
+   "machete-i-sekachi",
+   "miksery",
+   "nabory-burov",
+   "nabory-pilok",
+   "obor-shlangi",
+   "otboynye-molotki",
+   "zap-filtry"
   ]
  },
  "scope_tool_types": [
@@ -70,7 +80,17 @@
   "hoz-truby-fitingi",
   "vibratory-betona",
   "otreznye-mashiny-metall",
-  "stanki-zatochnye"
+  "stanki-zatochnye",
+  "bp-motopompy",
+  "bp-nabory-pnevmoinstrumenta",
+  "elektronozhnitsy",
+  "machete-i-sekachi",
+  "miksery",
+  "nabory-burov",
+  "nabory-pilok",
+  "obor-shlangi",
+  "otboynye-molotki",
+  "zap-filtry"
  ],
  "sources": {
   "vseinstrumenti": {
@@ -172,7 +192,10 @@
       "п/ш": "psh",
       "латекс": "lateks",
       "нитрил": "nitril",
-      "пвх": "pvh"
+      "пвх": "pvh",
+      "crv": "crv-steel",
+      "cr-v": "crv-steel",
+      "полипропилен": "polipropilen"
      },
      "confidence": "medium",
      "on_ambiguous": "drop_to_report"
@@ -427,8 +450,13 @@
      "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
     },
     "Количество в наборе": {
-     "action": "unmapped",
-     "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+     "action": "map",
+     "attribute": "piece_count",
+     "attribute_type": "decimal",
+     "unit": "шт",
+     "normalize": "decimal",
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
     },
     "Количество дисков в комплекте": {
      "action": "unmapped",
@@ -913,6 +941,26 @@
     "Эффективный диаметр уплотнения": {
      "action": "unmapped",
      "reason": "не покрыто таксономией каталога (VI long-tail); moderation, schema не создаётся"
+    },
+    "Квадрат": {
+     "action": "map",
+     "attribute": "drive",
+     "attribute_type": "select",
+     "values": {
+      "3/8 дюйма": "d-3-8",
+      "1/2 дюйма": "d-1-2"
+     },
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
+    },
+    "Max усилие": {
+     "action": "map",
+     "attribute": "torque",
+     "attribute_type": "decimal",
+     "unit": "Н·м",
+     "normalize": "decimal",
+     "confidence": "medium",
+     "on_ambiguous": "drop_to_report"
     }
    },
    "fallbacks": [],
