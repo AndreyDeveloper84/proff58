@@ -44,3 +44,12 @@ var
 .vscode
 .idea
 .DS_Store
+
+# Дампы БД и рабочие артефакты окон. На staging в ./backups рядом с кодом лежат
+# ручные дампы (~800 МБ): в build context они попадали целиком и копировались в
+# COPY . . четырёх образов (web, celery, celery-beat, celery-onec). Деплой
+# 33947113373 из-за этого упёрся в command_timeout 30m прямо на COPY.
+# Рантайму не нужны: release.sh пишет в /home/taximeter/backups/proff58 (вне
+# репозитория), а каталоги scratchpad/ парсер создаёт сам (mkdir parents=True).
+backups
+scratchpad
