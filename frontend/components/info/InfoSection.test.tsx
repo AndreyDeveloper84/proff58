@@ -89,6 +89,26 @@ describe("InfoSection", () => {
     expect(screen.getByText("02")).toBeInTheDocument();
   });
 
+  it("иллюстрация карточки рисуется, а карточка без неё не ломается", () => {
+    render(
+      <InfoSection
+        section={section({
+          layout: "cards",
+          heading: "Способы получения",
+          items: [
+            { title: "Самовывоз", text: "На складе", image: "/info/delivery/pickup.webp" },
+            { title: "Курьер", text: "По городу" },
+          ],
+        })}
+      />,
+    );
+
+    const images = screen.getAllByRole("presentation");
+    expect(images).toHaveLength(1);
+    expect(images[0]).toHaveAttribute("src", expect.stringContaining("pickup.webp"));
+    expect(screen.getByText("Курьер")).toBeInTheDocument();
+  });
+
   it("неизвестный тип секции показывается текстом, а не пропадает", () => {
     render(
       <InfoSection

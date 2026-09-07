@@ -11,7 +11,7 @@
 
     ## Способы получения
     :карточки
-    - Самовывоз | Заберите заказ на 1-м Онежском, 12
+    - Самовывоз | Заберите заказ на 1-м Онежском, 12 | /info/delivery/pickup.webp
     - Курьер по Пензе | Привезём в течение дня
 
     ## Что делать
@@ -76,8 +76,15 @@ SEPARATOR = "|"
 
 
 def _split_pair(item: str) -> dict:
-    title, _, text = item.partition(SEPARATOR)
-    return {"title": title.strip(), "text": text.strip()}
+    """«Заголовок | текст | /картинка.webp» — картинка необязательна.
+
+    Третья часть отделена тем же знаком, что и вторая: человеку, который уже
+    научился писать «Самовывоз | Заберите на складе», не нужно осваивать второй
+    синтаксис ради иллюстрации.
+    """
+    title, _, rest = item.partition(SEPARATOR)
+    text, _, image = rest.partition(SEPARATOR)
+    return {"title": title.strip(), "text": text.strip(), "image": image.strip()}
 
 
 def _parse_meta_line(line: str) -> tuple[str, str] | None:
@@ -171,7 +178,9 @@ def parse_page_body(body: str) -> list[dict]:
                 if layout in PAIR_LAYOUTS:
                     items.extend(_split_pair(item) for item in block["items"])
                 else:
-                    items.extend({"title": item, "text": ""} for item in block["items"])
+                    items.extend(
+                        {"title": item, "text": "", "image": ""} for item in block["items"]
+                    )
             blocks = kept
 
         if images:
