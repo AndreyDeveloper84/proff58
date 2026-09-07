@@ -225,6 +225,20 @@ ATTRS = {
     "drive": (AttributeType.SELECT, ""),
     "torque": (AttributeType.DECIMAL, "Н·м"),
     "material": (AttributeType.SELECT, ""),
+    # vi-longtail map управляет всеми этими осями — команда fail-closed требует
+    # их наличия в БД (catalog_import_scraped.py:101)
+    "bore": (AttributeType.DECIMAL, "мм"),
+    "coating": (AttributeType.SELECT, ""),
+    "diameter": (AttributeType.DECIMAL, "мм"),
+    "disc_diameter": (AttributeType.DECIMAL, "мм"),
+    "height": (AttributeType.DECIMAL, "мм"),
+    "motor_type": (AttributeType.SELECT, ""),
+    "piece_count": (AttributeType.DECIMAL, "шт"),
+    "power": (AttributeType.DECIMAL, "Вт"),
+    "power_source": (AttributeType.SELECT, ""),
+    "voltage": (AttributeType.DECIMAL, "В"),
+    "weight_kg": (AttributeType.DECIMAL, "кг"),
+    "width": (AttributeType.DECIMAL, "мм"),
 }
 OPTIONS = {
     "tool_type": [("miksery", "Миксеры"), ("stanki-zatochnye", "Станки заточные")],
