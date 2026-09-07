@@ -95,3 +95,14 @@ def test_axis_yields_at_least_two_values(rules):
 def test_axis_absent_for_unrelated_type(rules):
     """Ось не протекает в чужие типы."""
     assert all(r.slug != AXIS for r in rules.rules_for("nozhi"))
+
+
+def test_adapter_option_reuses_existing_slug(rules):
+    """Слаг «Переходник (адаптер)» — существующий `adapter`.
+
+    В ``tool_kind`` эта опция уже есть с 12 значениями. Новый слаг с тем же
+    ярлыком дал бы в фасете два одинаковых пункта — дефект, видимый покупателю.
+    """
+    rule = next(r for r in rules.rules_for("prochaya-osnastka") if r.slug == AXIS)
+    opt = next(o for o in rule.options if o.value == "Переходник (адаптер)")
+    assert opt.slug == "adapter", f"слаг разошёлся с существующим: {opt.slug}"
