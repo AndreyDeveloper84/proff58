@@ -5,7 +5,7 @@
 
 Почему это живёт в ``payments``, а не в ``orders``: перед отменой надо спросить
 кассу, не прошла ли оплата на самом деле. Вебхук может не дойти — сеть, 5xx,
-ретраи ЮKassa, — и тогда локальный ``payment_status`` врёт. Отменить оплаченный
+ретраи кассы, — и тогда локальный ``payment_status`` врёт. Отменить оплаченный
 заказ хуже, чем подержать резерв лишнюю минуту, поэтому последнее слово всегда
 за провайдером. ``orders`` про кассу знать не должен (CLAUDE.md §4), а
 ``payments`` про заказы уже знает.
@@ -26,7 +26,8 @@ from apps.orders.models import FulfillmentStatus, Order
 from apps.orders.models import PaymentStatus as OrderPaymentStatus
 from apps.orders.reservation import release_reservation
 
-from .models import Payment, PaymentStatus
+from .atolpay import service as atolpay
+from .models import Payment, PaymentProvider, PaymentStatus
 from .services import _yookassa_request
 
 logger = logging.getLogger(__name__)
@@ -49,9 +50,12 @@ def _provider_says_paid(payment: Payment) -> bool:
     отмену откладываем до следующего прогона. Молчание провайдера не повод
     отдавать чужой товар.
     """
-    if not payment.yookassa_id:
+    if payment.provider == PaymentProvider.ATOLPAY:
+        return atolpay.provider_says_paid(payment)
+
+    if not payment.provider_payment_id:
         return False
-    data = _yookassa_request("GET", f"payments/{payment.yookassa_id}")
+    data = _yookassa_request("GET", f"payments/{payment.provider_payment_id}")
     return bool(data.get("paid")) and data.get("status") == "succeeded"
 
 

@@ -43,7 +43,7 @@ config/                 # settings (base/dev/prod, django-environ), celery, urls
 apps/
   core/ accounts/                    # слой 0: события, фичефлаги, health, User/Profile
   catalog/ pricing/ orders/          # слой 1: каталог, цены (ADR-0006), заказы/корзина
-  payments/ delivery/                # ЮKassa/инвойсы; методы, зоны, DeliverySlot
+  payments/ delivery/                # АТОЛ Pay + чеки 54-ФЗ, инвойсы; зоны, DeliverySlot
   notifications/ integration_max/    # каналы уведомлений; MAX webhook и уведомления
   integration_ship/ content/ reviews/
   ai/                                # слой 3: enrichment/sourcing за адаптером

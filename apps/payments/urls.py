@@ -6,5 +6,6 @@ app_name = "payments"
 
 urlpatterns = [
     path("webhook/yookassa/", views.yookassa_webhook, name="yookassa-webhook"),
+    path("webhook/atolpay/", views.atolpay_callback, name="atolpay-callback"),
     path("orders/<str:number>/", api.OrderPaymentView.as_view(), name="order-payment"),
 ]
