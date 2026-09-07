@@ -86,7 +86,9 @@ class Command(BaseCommand):
         if not (create or update):
             return
         if not options["commit"]:
-            self.stdout.write(self.style.WARNING("\nDRY-RUN: ничего не записано. Применить — --commit."))
+            self.stdout.write(
+                self.style.WARNING("\nDRY-RUN: ничего не записано. Применить — --commit.")
+            )
             return
 
         status = PublishStatus.PUBLISHED if options["publish"] else PublishStatus.DRAFT
