@@ -27,7 +27,6 @@ import {
 } from "@/lib/validation";
 import { stashOrder } from "@/lib/order-storage";
 import { SITE } from "@/lib/site";
-import { composeAddress, validateAddress } from "@/lib/delivery-address";
 
 type CustomerType = "b2c" | "b2b";
 type DeliveryMethod = "courier" | "pickup";
@@ -73,21 +72,10 @@ export default function CheckoutPage() {
   const [inn, setInn] = useState("");
   const [kpp, setKpp] = useState("");
   const [legalAddress, setLegalAddress] = useState("");
-  // Адрес — по частям, как на службах доставки. Одно поле «Адрес доставки»
-  // покупатели заполняли обрывками («Пен», «Молокова»), и курьеру ехать было
-  // некуда. Разложенные поля подсказывают, чего не хватает, ещё до отправки.
-  // На сервер уходит по-прежнему одна строка (см. composeAddress).
-  const [city, setCity] = useState<string>(SITE.region);
-  const [street, setStreet] = useState("");
-  const [house, setHouse] = useState("");
-  const [flat, setFlat] = useState("");
-  const [entrance, setEntrance] = useState("");
-  const [floor, setFloor] = useState("");
   const [comment, setComment] = useState("");
   const [delivery, setDelivery] = useState<DeliveryMethod>("courier");
 
   const isB2B = customerType === "b2b";
-  const addressParts = { city, street, house, flat, entrance, floor };
 
   // Способ оплаты выбирает человек, но не из всего подряд: набор зависит от того,
   // кто покупает и как забирает (DRF-948/951). Ту же таблицу авторитетно проверяет
@@ -275,11 +263,6 @@ export default function CheckoutPage() {
       if (!legalAddress.trim()) return setError("Укажите юридический адрес.");
       if (!email.trim()) return setError("Укажите e-mail — на него придёт счёт.");
     }
-    // #558: для юрлиц доставки нет (самовывоз) — адрес и зона не запрашиваются.
-    if (!isB2B && delivery === "courier") {
-      const addressError = validateAddress(addressParts);
-      if (addressError) return setError(addressError);
-    }
     // Зона обязательна, только если список зон вообще доступен: при недоступном
     // справочнике заказ создаётся без зоны (менеджер уточнит) — как раньше.
     if (!isB2B && delivery === "courier" && courierZones.length > 0 && !zoneSlug) {
@@ -306,8 +289,9 @@ export default function CheckoutPage() {
         kpp: isB2B ? kpp.trim() : "",
         legal_address: isB2B ? legalAddress.trim() : "",
         delivery_method: isB2B ? "pickup" : delivery,
-        delivery_address:
-          !isB2B && delivery === "courier" ? composeAddress(addressParts) : "",
+        // Пусто осознанно: адрес выясняет менеджер по телефону. Поле в заказе и в
+        // выгрузке 1С остаётся — туда его и впишут.
+        delivery_address: "",
         delivery_zone: !isB2B && delivery === "courier" ? zoneSlug : "",
         delivery_slot_id: !isB2B && delivery === "courier" ? slotId : null,
         payment_method: payment,
@@ -711,104 +695,12 @@ export default function CheckoutPage() {
                   оформления заказа.
                 </p>
               )}
-              {/* Адрес по частям. Город и улица занимают строку целиком —
-                  названия длинные; дом, квартира, подъезд и этаж короткие и
-                  становятся в один ряд, на телефоне — по два в строке. */}
-              <fieldset className="space-y-3">
-                <legend className="mb-1 text-sm font-medium text-ink">Адрес доставки</legend>
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-                  <div>
-                    <label htmlFor="city" className="mb-1 block text-sm text-ink-2">
-                      Город *
-                    </label>
-                    <input
-                      id="city"
-                      type="text"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      className={inputClass}
-                      placeholder="Пенза"
-                      autoComplete="address-level2"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="street" className="mb-1 block text-sm text-ink-2">
-                      Улица *
-                    </label>
-                    <input
-                      id="street"
-                      type="text"
-                      value={street}
-                      onChange={(e) => setStreet(e.target.value)}
-                      className={inputClass}
-                      placeholder="1-й Онежский проезд"
-                      autoComplete="address-line1"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <div>
-                    <label htmlFor="house" className="mb-1 block text-sm text-ink-2">
-                      Дом *
-                    </label>
-                    <input
-                      id="house"
-                      type="text"
-                      value={house}
-                      onChange={(e) => setHouse(e.target.value)}
-                      className={inputClass}
-                      placeholder="12"
-                      autoComplete="address-line2"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="flat" className="mb-1 block text-sm text-ink-2">
-                      Кв./офис
-                    </label>
-                    <input
-                      id="flat"
-                      type="text"
-                      value={flat}
-                      onChange={(e) => setFlat(e.target.value)}
-                      className={inputClass}
-                      placeholder="45"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="entrance" className="mb-1 block text-sm text-ink-2">
-                      Подъезд
-                    </label>
-                    <input
-                      id="entrance"
-                      type="text"
-                      value={entrance}
-                      onChange={(e) => setEntrance(e.target.value)}
-                      className={inputClass}
-                      placeholder="2"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="floor" className="mb-1 block text-sm text-ink-2">
-                      Этаж
-                    </label>
-                    <input
-                      id="floor"
-                      type="text"
-                      value={floor}
-                      onChange={(e) => setFloor(e.target.value)}
-                      className={inputClass}
-                      placeholder="3"
-                    />
-                  </div>
-                </div>
-                {/* Собранная строка — то, что увидит курьер и что уедет в 1С.
-                    Показываем сразу: так опечатка ловится до оформления. */}
-                {(street.trim() || house.trim()) && (
-                  <p className="rounded-md bg-raised px-3 py-2 text-xs leading-5 text-ink-2">
-                    Курьеру: {composeAddress(addressParts)}
-                  </p>
-                )}
-              </fieldset>
+              {/* Адрес не спрашиваем: его уточняет менеджер по телефону при
+                  подтверждении заказа (решение владельца 02.09.2026). Зона нужна
+                  и без адреса — она задаёт стоимость доставки. */}
+              <p className="rounded-md bg-raised px-3 py-2 text-xs leading-5 text-ink-2">
+                Адрес доставки уточним по телефону, когда будем подтверждать заказ.
+              </p>
             </>
           )}
         </fieldset>

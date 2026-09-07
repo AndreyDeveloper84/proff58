@@ -39,9 +39,6 @@ const mockedPlaceOrder = placeOrder as unknown as ReturnType<typeof vi.fn>;
 function fillBaseFields() {
   fireEvent.change(screen.getByLabelText(/^Имя/), { target: { value: "Иван" } });
   fireEvent.change(screen.getByLabelText(/^Телефон/), { target: { value: "+79001112233" } });
-  // Адрес заполняется по частям — как на службах доставки (см. lib/delivery-address).
-  fireEvent.change(screen.getByLabelText(/^Улица/), { target: { value: "Ленина" } });
-  fireEvent.change(screen.getByLabelText(/^Дом/), { target: { value: "1" } });
 }
 
 function submit() {
@@ -71,21 +68,24 @@ describe("CheckoutPage — B2B-реквизиты и способ оплаты",
       customer_type: "b2c",
       payment_method: "online",
       // Части адреса склеиваются в одну строку — контракт заказа не менялся.
-      delivery_address: "г. Пенза, Ленина, д. 1",
+      // Адрес не спрашиваем — его уточняет менеджер по телефону.
+      delivery_address: "",
     });
   });
 
-  // В базе стенда лежат заказы с адресом «Пен» и «Молокова»: одно поле «Адрес
-  // доставки» принимало что угодно, и курьеру было некуда ехать.
-  it("без номера дома заказ не отправляется", async () => {
+  // Адрес больше не спрашиваем: его уточняет менеджер по телефону (02.09.2026).
+  // Покупателю об этом сказано прямо на форме — иначе выбор курьера выглядел бы
+  // так, будто адрес просто забыли спросить.
+  it("курьерский заказ уходит без адреса, и об этом написано", async () => {
     render(<CheckoutPage />);
     fireEvent.change(screen.getByLabelText(/^Имя/), { target: { value: "Иван" } });
     fireEvent.change(screen.getByLabelText(/^Телефон/), { target: { value: "+79001112233" } });
-    fireEvent.change(screen.getByLabelText(/^Улица/), { target: { value: "Молокова" } });
+
+    expect(screen.getByText(/уточним по телефону/i)).toBeInTheDocument();
     submit();
 
-    expect(await screen.findByText(/номер дома/i)).toBeTruthy();
-    expect(mockedPlaceOrder).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockedPlaceOrder).toHaveBeenCalled());
+    expect(mockedPlaceOrder.mock.calls[0][0].delivery_address).toBe("");
   });
 
   it("B2B без КПП и юр. адреса: заказ не отправляется, показана ошибка", async () => {
@@ -325,7 +325,7 @@ describe("CheckoutPage — самовывоз (DRF-951)", () => {
     expect(screen.getByText("Самовывоз из магазина")).toBeInTheDocument();
     // Адрес встречается дважды: в подписи варианта и в раскрытом блоке.
     expect(screen.getAllByText(/Онежский проезд/).length).toBeGreaterThan(1);
-    expect(screen.getByText(/Пн–Вс/)).toBeInTheDocument();
+    expect(screen.getByText(/Пн–Сб/)).toBeInTheDocument();
   });
 
   it("при самовывозе полей курьерской доставки нет", () => {
@@ -333,6 +333,6 @@ describe("CheckoutPage — самовывоз (DRF-951)", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Самовывоз/ }));
 
     expect(screen.queryByLabelText(/^Куда доставить/)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/^Улица/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/уточним по телефону/i)).not.toBeInTheDocument();
   });
 });
