@@ -3,7 +3,8 @@
 Создаёт схему EAV по канону движка #99 (`data/attribute_rules.json`):
 ``Attribute`` (тип/единица/is_ai_feature), ``AttributeOption`` для select-характеристик
 и привязку ``CategoryAttribute`` (is_filter/is_seo_facet) к категории из поля
-``category`` блока tool_type.
+``category`` блока tool_type — либо из одноимённого поля самой оси, если она его
+задаёт: у оси адрес приоритетнее блочного.
 
 Идемпотентна: существующий ``Attribute`` НЕ пересоздаётся — обновляются только
 безопасные поля (``unit``/``is_filterable``/``is_ai_feature``); ручные правки имени/типа
@@ -293,11 +294,20 @@ class Command(BaseCommand):
                 self._plan_attribute(a, tt_slug, attr_rows, existing_attrs)
                 if a.get("kind") == "select":
                     self._plan_options(a, option_rows, existing_options, allow_option_sort_updates)
-                if category_name:
+                # Адрес привязки берётся у самой оси, если она его называет, и только
+                # иначе — у блока. Один tool_type может нести оси, живущие в РАЗНЫХ
+                # листьях: `prochaya-osnastka` — свалка на 386 позиций, её «вид
+                # оснастки» принадлежит листу 103, а «тип съёмника» — листу 172.
+                # Без этого ось уехала бы в чужой лист и висела бы там пустым
+                # фасетом (ДРФ-1524). Завести второй блок с тем же tool_type нельзя:
+                # `AttributeRules.from_dict` индексирует их в словарь по tool_type и
+                # молча оставил бы только последний.
+                binding_category = a.get("category") or category_name
+                if binding_category:
                     self._plan_binding(
                         a,
                         tt_slug,
-                        category_name,
+                        binding_category,
                         binding_rows,
                         existing_bindings,
                         category_cache,
