@@ -1781,7 +1781,8 @@ EXTRA_AXES: dict[str, set[str]] = {
     "krep-styazhki": {"hose_diameter_to", "length", "width"},
     "krep-shurupy": {"length"},
     "zubila": {"width", "diameter"},
-    "nozhi": {"length"},
+    # knife_type добавлена ДРФ-1459: числовые оси порога не берут, вид ножа берёт
+    "nozhi": {"length", "knife_type"},
     "lenty-shlif": {"length", "grit"},
     "nazhdachka": {"length", "grit"},
     "yashchiki-sumki": {"width", "height"},
