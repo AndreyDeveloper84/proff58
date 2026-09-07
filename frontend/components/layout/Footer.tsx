@@ -8,6 +8,7 @@ import {
   MessageSquareText,
   Phone,
 } from "lucide-react";
+import { INFO_PAGES, INFO_PAGE_SLUGS } from "@/lib/info-content";
 import type { InfoPageLink } from "@/lib/info-pages";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,13 @@ export function Footer({
       правило подвала «не подменять отсутствующие разделы решёткой» сохраняется. */
   infoPages?: InfoPageLink[];
 }) {
+  // Страницы из кода есть на сайте всегда; из админки добавляем только те, чей
+  // slug ещё не занят — одна и та же страница не должна стоять в списке дважды.
+  const allInfoPages = [
+    ...INFO_PAGE_SLUGS.map((slug) => ({ slug, title: INFO_PAGES[slug].title })),
+    ...infoPages.filter((page) => !INFO_PAGES[page.slug]),
+  ];
+
   return (
     <footer className="border-t border-line bg-surface">
       <div
@@ -38,7 +46,7 @@ export function Footer({
           // десктопных ширинах. Поэтому до xl раскладываем по 3 (ровно два
           // ряда), а с xl разворачиваем в одну строку.
           "mx-auto grid w-full max-w-[1680px] grid-cols-1 gap-6 px-4 py-6 sm:grid-cols-2 sm:px-6 lg:grid-cols-3 xl:px-8",
-          infoPages.length > 0
+          allInfoPages.length > 0
             ? "xl:grid-cols-[1.3fr_1fr_.9fr_.85fr_.75fr_1.15fr_1.15fr]"
             : "xl:grid-cols-[1.35fr_1.05fr_.9fr_.85fr_1.05fr_1.15fr]",
         )}
@@ -90,13 +98,14 @@ export function Footer({
           </nav>
         ))}
 
-        {/* Информационные страницы — ведутся в админке, поэтому колонка
-            появляется, только когда там что-то опубликовано. */}
-        {infoPages.length > 0 && (
+        {/* Информационные страницы: четыре из кода — всегда, остальные из
+            админки — по факту публикации. Дубли по slug отбрасываем: одна и та
+            же страница не должна стоять в списке дважды. */}
+        {allInfoPages.length > 0 && (
           <nav aria-label="Информация">
             <h2 className="mb-2 font-sans text-xs font-bold text-ink">Информация</h2>
             <ul className="space-y-1 text-[11px] leading-[1.35]">
-              {infoPages.map((page) => (
+              {allInfoPages.map((page) => (
                 <li key={page.slug} className="leading-[1.35]">
                   <Link href={`/info/${page.slug}`} className="text-ink-2 hover:text-accent">
                     {page.title}

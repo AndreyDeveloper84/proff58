@@ -33,34 +33,34 @@
         "path": "data/catalog_processing_rules/applied_corpus_tool_type.v1.json"
       },
       "gate_sample": {
-        "artifact_sha256": "d5cb15596a6b5ab55cd483d896edf4dcffd5f5f5096800ff995963dac5052232",
+        "artifact_sha256": "cd40728fd203a73e420fc94ee81afc5aa7e52ac92838894ffbe84b4b39b3148c",
         "path": "apps/catalog/tests/fixtures/phase7d-gate-sample-official.json",
         "rows": 103
       },
       "labels": {
-        "artifact_sha256": "dcc36a34b719e8ad322dcb68d0607895262cc0991336f3be33fbba2fd459982c",
+        "artifact_sha256": "32226d845980f4227b093563be91141672659ff56f466912f4b20989e78953c9",
         "labels": 103,
         "path": "apps/catalog/tests/fixtures/phase7d-labels.json"
       },
       "ruleset": {
-        "artifact_sha256": "41fecb39e71f2a545bd473bc0751a609d58784ceac7f540cee669f8d8d97ca6f",
+        "artifact_sha256": "db0beb02aee972e7b76e4bd7be81283b7ec8964e559f90c77d9ed7623aeafdc5",
         "path": "data/catalog_processing_rules/tool_type.v2.json",
-        "rules": 41,
-        "ruleset_hash": "6231d84309f538b1aa0fa82991bc4e9a0b6c304a714c8bab817f128d944f31cc",
+        "rules": 47,
+        "ruleset_hash": "57ee4213c12a603ff962bb03b41ac686582e8560b8705987c415724d0c88d89d",
         "ruleset_id": "tool_type.v2",
         "version": 1
       },
       "taxonomy_manifest": {
-        "artifact_sha256": "879c008ca160f23166faad5c1fed046aeb6d6320feabd7fd4b79c41a827092ea",
-        "manifest_semantic_hash": "afe2b1ab6fda1a30e5bdcbf0a5d3b904ce15ba6217caccd5d5d5b5475e9c48b3",
+        "artifact_sha256": "5b3b3f3de4380612429b88ffb50a452af0a600975ad04734f5da4f87a4a6ab8a",
+        "manifest_semantic_hash": "d918468decfa7f29a7411aa9fc9400ae17a56d213599d64372798da1b733c75d",
         "manifest_version": 1,
-        "options": 360,
+        "options": 373,
         "path": "data/catalog_processing_rules/tool_type_taxonomy.v1.json",
-        "taxonomy_identity_hash": "ddf4b949b38265b1fde3f7e2caa0cf5bb4fe4e82fd23980676ac93c8bf844874"
+        "taxonomy_identity_hash": "603f99aff49ecd416cc4f49744f912c500d811602d2bb01036f7839b6088f96f"
       }
     },
     "matcher_version": "1.0",
     "schema_version": 1
   },
-  "canonical_hash": "cb0f55c0d0540032c097b43427ffe76ddbac0a0012dd2d074f964e01a1098a6e"
+  "canonical_hash": "7d95943e3b4ad03f3990e8f09e806030f81a3de639c0d649ef0f32bd07cd7188"
 }

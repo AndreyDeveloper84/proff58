@@ -1001,3 +1001,73 @@ def test_plan_matches_apply(tmp_path):
     assert replan["summary"]["options"] == {"create": 0, "update": 0, "keep": 1, "sort_diff": 0}
     assert replan["summary"]["bindings"]["create"] == 0
     assert replan["summary"]["bindings"]["keep"] == 2
+
+
+# --------------------------------------------------------------------------- #
+# ДРФ-1459: адрес привязки у самой оси
+# --------------------------------------------------------------------------- #
+
+TWO_ADDRESS_BLOCK = {
+    "tool_type": "prochaya-osnastka",
+    "category": "Держатели",
+    "attributes": [
+        {"slug": "tool_kind", "name": "Вид инструмента", "kind": "number", "unit": "мм"},
+        {
+            "slug": "puller_type",
+            "name": "Тип съёмника",
+            "kind": "number",
+            "unit": "мм",
+            "category": "Съёмники",
+        },
+    ],
+}
+
+
+def _two_leaves() -> tuple[Category, Category]:
+    holders = Category.add_root(
+        name="Держатели", slug="derzhateli", is_active=True, on_site=True, is_site_v2=True
+    )
+    pullers = Category.add_root(
+        name="Съёмники", slug="syomniki", is_active=True, on_site=True, is_site_v2=True
+    )
+    return holders, pullers
+
+
+@pytest.mark.django_db
+def test_axis_category_overrides_the_block_address(tmp_path):
+    """Ось со своим ``category`` привязывается туда, а не в лист блока.
+
+    Один ``tool_type`` может нести оси, принадлежащие разным листьям: свалка
+    ``prochaya-osnastka`` держит и «вид оснастки» (лист держателей), и «тип
+    съёмника» (лист съёмников). Второй блок с тем же ``tool_type`` завести
+    нельзя — ``AttributeRules.from_dict`` индексирует их словарём.
+    """
+    holders, pullers = _two_leaves()
+    path = _write_rules(tmp_path, [TWO_ADDRESS_BLOCK])
+    call_command("load_attributes", "--path", path)
+
+    assert CategoryAttribute.objects.filter(category=holders, attribute__slug="tool_kind").exists()
+    assert CategoryAttribute.objects.filter(
+        category=pullers, attribute__slug="puller_type"
+    ).exists()
+    # Ось не должна оставить пустой фасет в листе блока.
+    assert not CategoryAttribute.objects.filter(
+        category=holders, attribute__slug="puller_type"
+    ).exists()
+    assert not CategoryAttribute.objects.filter(
+        category=pullers, attribute__slug="tool_kind"
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_axis_without_own_category_still_uses_the_block(tmp_path):
+    """Обратная совместимость: ось без адреса берёт адрес блока, как раньше."""
+    holders, pullers = _two_leaves()
+    path = _write_rules(tmp_path, [TWO_ADDRESS_BLOCK])
+    plan = _plan(path)
+
+    rows = {r["attribute"]: r for r in plan["bindings"]}
+    assert rows["tool_kind"]["category"] == "Держатели"
+    assert rows["tool_kind"]["category_id"] == holders.pk
+    assert rows["puller_type"]["category"] == "Съёмники"
+    assert rows["puller_type"]["category_id"] == pullers.pk

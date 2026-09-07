@@ -24,7 +24,19 @@ class SEOPage(TimeStampedModel):
     title = models.CharField(_("Заголовок"), max_length=255)
     meta_title = models.CharField(_("meta title"), max_length=255, blank=True)
     meta_description = models.TextField(_("meta description"), blank=True)
-    body = models.TextField(_("Содержимое"), blank=True)
+    body = models.TextField(
+        _("Содержимое"),
+        blank=True,
+        help_text=_(
+            "Разметка страницы. «## Заголовок» начинает раздел, следующая строка «:тип» "
+            "задаёт его вид: :герой, :карточки, :шаги, :чеклист, :вопросы, :контакты, "
+            ":карта, :теги. В карточках, шагах и вопросах пункт списка делится на две "
+            "части знаком «|»: «- Самовывоз | Заберите заказ на складе». Строки "
+            "«изображение:», «кнопка:», «телефон:», «почта:», «режим:», «адрес:», "
+            "«бейдж:» в начале раздела задают картинку, кнопки и контакты. Остальное — "
+            "обычный текст: абзацы, «- » списки, «> » врезка, «|» таблица."
+        ),
+    )
     status = models.CharField(
         _("Статус"),
         max_length=20,
