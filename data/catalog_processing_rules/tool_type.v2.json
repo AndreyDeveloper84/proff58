@@ -395,9 +395,69 @@
         "tt-izm-niveliry-nivelir"
       ],
       "source_group": "Измерительный инструмент"
+    },
+    {
+      "article": "FIT-81117",
+      "fixture_ref": "fix-bp-pnevmomolotki-otb-28284",
+      "name": "Адаптер удлинитель штуцер елочка 8мм",
+      "note": "product_id=28284; sg=Пневмоинструмент без ключа правила — соседний label той же группы (udliniteli-filtry).",
+      "rule_refs": [
+        "tt-bp-pnevmomolotki-otboyn"
+      ],
+      "source_group": "Пневмоинструмент"
+    },
+    {
+      "article": "MAX PRO 85280",
+      "fixture_ref": "fix-bp-vozduhoduvki-43680",
+      "name": "Аппарат для сварки пласт. труб 800Вт;50-300;Д.т.20/25/32/40/50/63мм 0,9кг; металлический кейс MAX PR",
+      "note": "product_id=43680; sg=Электроинструмент без ключа правила — соседний label той же группы (svar-apparaty).",
+      "rule_refs": [
+        "tt-bp-vozduhoduvki"
+      ],
+      "source_group": "Электроинструмент"
+    },
+    {
+      "article": "790463",
+      "fixture_ref": "fix-kabel-provod-hitachi-7954",
+      "name": "Бак топливный 790463",
+      "note": "product_id=7954; sg=Запасные части Хитачи без ключа правила — соседний label той же группы (zap-baki).",
+      "rule_refs": [
+        "tt-kabel-provod-hitachi"
+      ],
+      "source_group": "Запасные части Хитачи"
+    },
+    {
+      "article": "FIT-81117",
+      "fixture_ref": "fix-obor-smazka-lubrikat-28284",
+      "name": "Адаптер удлинитель штуцер елочка 8мм",
+      "note": "product_id=28284; sg=Пневмоинструмент без ключа правила — соседний label той же группы (udliniteli-filtry).",
+      "rule_refs": [
+        "tt-obor-smazka-lubrikator"
+      ],
+      "source_group": "Пневмоинструмент"
+    },
+    {
+      "article": "ОГН-БАГОР",
+      "fixture_ref": "fix-siz-pozh-inventar-sh-29517",
+      "name": "Багор пожарный",
+      "note": "product_id=29517; sg=Пожарка без ключа правила — соседний label той же группы (siz-pozh-inventar).",
+      "rule_refs": [
+        "tt-siz-pozh-inventar-shchit"
+      ],
+      "source_group": "Пожарка"
+    },
+    {
+      "article": "1240-12-30",
+      "fixture_ref": "fix-str-markery-melok-36918",
+      "name": "Бинт 12смх30м ЗУБР строительный, повышенной прочно",
+      "note": "product_id=36918; sg=Строительно-отделочный инструмент без ключа правила — соседний label той же группы (armiruyushchie-lenty-binty).",
+      "rule_refs": [
+        "tt-str-markery-melok"
+      ],
+      "source_group": "Строительно-отделочный инструмент"
     }
   ],
-  "note": "approved 2026-07-22, Phase 7C Stage 2.7 per-rule review (27/29 rules accepted, incl. 1 modified); base tool_type.v1 + 27 new rules",
+  "note": "approved 2026-07-22, Phase 7C Stage 2.7 per-rule review (27/29 rules accepted, incl. 1 modified); base tool_type.v1 + 27 new rules | Расширение 2026-09-04: +6 правил на существующих опциях манифеста (360 не менялся). Кандидат на насосы отброшен как ДУБЛИКАТ существующего tt-obor-nasosy-nasos — правило уже было, а 12 непокрытых насосов лежат прямо в корне раздела и не попадают в пул контура: это дефект размещения, а не правил. Каждое проверено на УЖЕ типизированных товарах: конфликтов 0. Отклонены кандидаты, где существующие данные противоречили выбранной опции: «аппарат для сварки» (7 товаров уже svar-apparaty), «кронштейн» (делится между krepleniya-ognetushiteley и siz-pozh-inventar), «рубанок» без negative (1 товар str-smesi). Отклонены за отсутствием опции в манифесте: пневмоножницы, измельчители, радиостанции (19 товаров, крупнейший непокрытый кластер).",
   "rules": [
     {
       "derived_from": [
@@ -538,7 +598,9 @@
       "option_slug": "izm-shtativy",
       "rule_ref": "tt-izm-shtativy-derzhatel",
       "tier": "candidate",
-      "negative_keywords": ["нивелир"]
+      "negative_keywords": [
+        "нивелир"
+      ]
     },
     {
       "derived_from": [
@@ -649,7 +711,9 @@
       "option_slug": "lomy-gvozdodery",
       "rule_ref": "tt-lomy-gvozdodery-lom",
       "tier": "candidate",
-      "negative_keywords": ["молоток"]
+      "negative_keywords": [
+        "молоток"
+      ]
     },
     {
       "derived_from": [
@@ -723,7 +787,12 @@
       "option_slug": "fonari",
       "rule_ref": "tt-fonari-akkum",
       "tier": "candidate",
-      "negative_keywords": ["шуруп", "дрель", "винтоверт", "яяшуруп"]
+      "negative_keywords": [
+        "шуруп",
+        "дрель",
+        "винтоверт",
+        "яяшуруп"
+      ]
     },
     {
       "derived_from": [
@@ -1107,10 +1176,20 @@
       "tier": "candidate"
     },
     {
-      "derived_from": [777, 778],
+      "derived_from": [
+        777,
+        778
+      ],
       "match": {
-        "original_name_keywords_any": ["шуруп", "дрель", "винтоверт"],
-        "source_group_any": ["Электроинструмент", "Аккумуляторный инструмент"]
+        "original_name_keywords_any": [
+          "шуруп",
+          "дрель",
+          "винтоверт"
+        ],
+        "source_group_any": [
+          "Электроинструмент",
+          "Аккумуляторный инструмент"
+        ]
       },
       "note": "Дрели, шуруповёрты и винтоверты. 'гайковерт' и 'отвертк' исключены — у них свои типы (TT-08).",
       "option_slug": "dreli-shurupoverty",
@@ -1118,26 +1197,164 @@
       "tier": "candidate"
     },
     {
-      "derived_from": [37445, 37446],
+      "derived_from": [
+        37445,
+        37446
+      ],
       "match": {
-        "original_name_keywords_any": ["молоток"],
-        "source_group_any": ["Слесарно-столярный инструмент", "Строительно-отделочный инструмент"]
+        "original_name_keywords_any": [
+          "молоток"
+        ],
+        "source_group_any": [
+          "Слесарно-столярный инструмент",
+          "Строительно-отделочный инструмент"
+        ]
       },
-      "negative_keywords": ["отб", "пневмо", "отвертк"],
+      "negative_keywords": [
+        "отб",
+        "пневмо",
+        "отвертк"
+      ],
       "note": "Молотки столярные/слесарные. Отбойные и пневмомолотки исключены negative keywords; 'отвертк' отсекает 'отвёртка под молоток'.",
       "option_slug": "molotki",
       "rule_ref": "tt-molotki-molotok",
       "tier": "candidate"
     },
     {
-      "derived_from": [11141, 11156],
+      "derived_from": [
+        11141,
+        11156
+      ],
       "match": {
-        "original_name_keywords_any": ["нивелир"],
-        "source_group_any": ["Измерительный инструмент"]
+        "original_name_keywords_any": [
+          "нивелир"
+        ],
+        "source_group_any": [
+          "Измерительный инструмент"
+        ]
       },
       "note": "Лазерные и оптические нивелиры.",
       "option_slug": "izm-niveliry",
       "rule_ref": "tt-izm-niveliry-nivelir",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        28554,
+        28555,
+        28556
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "молоток отбойный",
+          "отбойный молоток"
+        ],
+        "source_group_any": [
+          "Пневмоинструмент"
+        ]
+      },
+      "note": "Отбойный молоток в sg=Пневмоинструмент — пневматический; option otboynye-molotki здесь неверен, существующие данные дают bp-pnevmomolotki.",
+      "option_slug": "bp-pnevmomolotki",
+      "rule_ref": "tt-bp-pnevmomolotki-otboyn",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        43753,
+        43754,
+        43758
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "воздуходувка"
+        ],
+        "source_group_any": [
+          "Электроинструмент"
+        ]
+      },
+      "note": "Воздуходувки. Negative «пылесос» обязателен: воздуходувки-пылесосы существующими данными отнесены к pylesosy (3 товара).",
+      "option_slug": "bp-vozdukhoduvki",
+      "rule_ref": "tt-bp-vozduhoduvki",
+      "tier": "candidate",
+      "negative_keywords": [
+        "пылесос"
+      ]
+    },
+    {
+      "derived_from": [
+        8483,
+        8484
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "кабель для электроинструмента"
+        ],
+        "source_group_any": [
+          "Запасные части Хитачи"
+        ]
+      },
+      "note": "Сетевой кабель как запчасть. Ключ длинный намеренно: «кабель» в одиночку заденет кабелерезы и клеммы.",
+      "option_slug": "kabel-provod",
+      "rule_ref": "tt-kabel-provod-hitachi",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        28538,
+        28539,
+        28540
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "лубрикатор"
+        ],
+        "source_group_any": [
+          "Пневмоинструмент"
+        ]
+      },
+      "note": "Лубрикатор — смазочное оборудование пневмолинии.",
+      "option_slug": "obor-smazka",
+      "rule_ref": "tt-obor-smazka-lubrikator",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        29958,
+        29959,
+        29963
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "щит пожарный",
+          "щит открытый",
+          "ящик для песка"
+        ],
+        "source_group_any": [
+          "Пожарка"
+        ]
+      },
+      "note": "Пожарный щит и ящик для песка — инвентарь. Слово «кронштейн» намеренно НЕ берём: оно делится между krepleniya-ognetushiteley и siz-pozh-inventar.",
+      "option_slug": "siz-pozh-inventar",
+      "rule_ref": "tt-siz-pozh-inventar-shchit",
+      "tier": "candidate"
+    },
+    {
+      "derived_from": [
+        37389,
+        37390,
+        37391
+      ],
+      "match": {
+        "original_name_keywords_any": [
+          "мелок"
+        ],
+        "source_group_any": [
+          "Строительно-отделочный инструмент"
+        ]
+      },
+      "note": "Разметочные мелки — тот же тип, что маркеры и карандаши.",
+      "option_slug": "str-markery",
+      "rule_ref": "tt-str-markery-melok",
       "tier": "candidate"
     }
   ],

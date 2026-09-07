@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "min_coverage": 0.5,
+  "comment": "Точечные привязки осей к листьям (DRF-1428). Ось привязывается, только если она заполнена хотя бы у min_coverage товаров листа и имеет минимум два значения: фасет поверх редкой оси не сужает выдачу, а прячет её — выбрав значение, покупатель теряет товары, у которых поле просто не заполнено. Обойти порог можно полем force с обязательным reason.",
+  "bindings": [
+    {
+      "category": "silovaya-pnevmoinstrument",
+      "attributes": ["drive", "size"],
+      "source": "DRF-1428, запрос Андрея 01.09.2026"
+    },
+    {
+      "category": "elektrika-udliniteli-i-setevye-filtry",
+      "attributes": ["length"],
+      "source": "DRF-1428, запрос Андрея 01.09.2026"
+    },
+    {
+      "category": "ruchnoy-napilniki-i-rashpili",
+      "attributes": ["disc_diameter"],
+      "source": "DRF-1428, запрос Андрея 01.09.2026"
+    },
+    {
+      "category": "krepezh-shurupy-i-gluhari",
+      "attributes": ["diameter", "length"],
+      "source": "DRF-1428, запрос Андрея 01.09.2026"
+    },
+    {
+      "category": "stroitelnyy-prochiy",
+      "attributes": ["length", "width"],
+      "source": "DRF-1428, запрос Андрея 01.09.2026"
+    }
+  ]
+}

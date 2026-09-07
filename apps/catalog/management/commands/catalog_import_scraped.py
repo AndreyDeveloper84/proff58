@@ -74,10 +74,13 @@ class Command(BaseCommand):
         if options["limit"]:
             cards = cards[: options["limit"]]
 
-        # скоуп товаров: tool_type-опция == slug категории
+        # Скоуп товаров: tool_type-опция == slug категории. Карта может покрывать
+        # семейство типов (бензопилы/цепи/шины/триммеры делят оси шины и цепи) —
+        # тогда список типов объявлен в самой карте, а --category остаётся её именем.
+        scope_tool_types = amap.get("scope_tool_types") or [category]
         product_ids = list(
             ProductAttributeValue.objects.filter(
-                attribute__slug="tool_type", value_option__slug=category
+                attribute__slug="tool_type", value_option__slug__in=scope_tool_types
             ).values_list("product_id", flat=True)
         )
         products = list(Product.objects.filter(id__in=product_ids))
@@ -87,15 +90,21 @@ class Command(BaseCommand):
         managed_slugs = {
             e["attribute"]
             for sdata in amap["sources"].values()
-            for e in list(sdata["fields"].values())
+            for e in [entry for _, entry in si.iter_field_entries(sdata)]
             + sdata.get("fallbacks", [])
             + sdata.get("derived", [])
-            if e.get("action", "map") == "map" or "attribute" in e
+            if (e.get("action", "map") == "map" or "attribute" in e) and "attribute" in e
         }
         attr_by_slug = {a.slug: a for a in Attribute.objects.filter(slug__in=managed_slugs)}
         missing = managed_slugs - set(attr_by_slug)
         if missing:
             raise CommandError(f"Атрибуты карты отсутствуют в БД: {sorted(missing)}")
+        # Fail-closed сверка единиц карты с осями в БД (ДРФ-1440): «Мощность, кВт»
+        # в ось «Вт» или «Вес, кг» в ось «г» без объявленного пересчёта — стоп.
+        try:
+            si.validate_attr_map_units(amap, attr_by_slug)
+        except ValueError as exc:
+            raise CommandError(str(exc)) from exc
         option_index: dict[str, dict[str, AttributeOption]] = {}
         for opt in AttributeOption.objects.filter(attribute__slug__in=managed_slugs).select_related(
             "attribute"
@@ -114,6 +123,8 @@ class Command(BaseCommand):
         stats = Counter()
         report: dict = {
             "category": category,
+            "scope_tool_types": list(scope_tool_types),
+            "scope_products": len(product_ids),
             "dry_run": options["dry_run"],
             "cards_total": len(cards),
             "matched": [],

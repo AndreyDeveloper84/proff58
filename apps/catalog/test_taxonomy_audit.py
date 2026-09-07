@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from apps.catalog.taxonomy_audit import analyze
+from apps.catalog.taxonomy_audit import _is_brand_node, analyze
 
 
 def _product(ext, name, sg=""):
@@ -114,6 +114,26 @@ def test_finding_brand_node_F4():
     f4 = {f.code: f for f in r.findings}.get("F4")
     assert f4 is not None
     assert any("Hitachi" in row[0] for row in f4.rows)
+
+
+def test_brand_node_uses_shared_vocabulary():
+    """Аудит берёт бренды из общего словаря, а не из своей копии списка."""
+    assert _is_brand_node("Запчасти Hitachi")
+    assert _is_brand_node("ЗУБР")
+    # ЭХО есть в дереве категорий; без него в словаре находка F4 была бы потеряна
+    assert _is_brand_node("ЭХО")
+    # алиасы кириллицей и HiKOKI — тот же бренд, что и латинский
+    assert _is_brand_node("Инструмент Макита")
+    assert _is_brand_node("Оснастка HiKOKI")
+
+
+def test_brand_node_matches_whole_word_only():
+    """Подстрока дала бы ложные находки на именах узлов, границы слова — нет."""
+    # «КАЛИБР» — бренд, но «Калибровочные приборы» брендом не является
+    assert not _is_brand_node("Калибровочные приборы")
+    # «ЭРА» — бренд, но «Камеры видеонаблюдения» — нет
+    assert not _is_brand_node("Камеры видеонаблюдения")
+    assert not _is_brand_node("Коронки")
 
 
 def test_finding_dup_axis_F5_exact_only():
