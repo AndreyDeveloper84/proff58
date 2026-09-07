@@ -57,7 +57,11 @@ def convert(
 ) -> tuple[int, int, int]:
     # Телефонные снимки приходят с EXIF-поворотом; без exif_transpose портрет
     # ляжет боком.
-    image = ImageOps.exif_transpose(Image.open(source)).convert("RGB")
+    image = ImageOps.exif_transpose(Image.open(source))
+    # Прозрачность сохраняем: иконки с вырезанным фоном приходят PNG с альфой, и
+    # перевод в RGB заливал бы этот фон чёрным — на светлой странице получался
+    # чёрный квадрат вокруг картинки.
+    image = image.convert("RGBA" if "A" in image.getbands() else "RGB")
     if ratio is not None:
         image = center_crop(image, ratio)
     if width is not None and image.width > width:

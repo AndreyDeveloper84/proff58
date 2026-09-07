@@ -23,7 +23,7 @@ export type InfoBlock =
   | { kind: "table"; head: string[]; rows: string[][] }
   | { kind: "note"; text: string };
 
-export type InfoItem = { title: string; text: string };
+export type InfoItem = { title: string; text: string; image?: string };
 
 /**
  * Секция страницы. `layout` задаёт вёрстку (шапка, карточки, шаги, вопросы,
