@@ -141,6 +141,33 @@ def test_specific_part_wins_over_the_general_one(rules):
     assert _slug(rules, RED, KIND, "Крышка редуктора(OLD 317823) 333839") == "kryshka-reduktora"
 
 
+def test_gearbox_part_is_not_a_gearbox(rules):
+    """Ключ сужен до «редуктор в сборе»: втулка редуктора — не редуктор.
+
+    Широкий ключ «редуктор» внутри листа безупречен, но на полном пуле садился
+    на ДЕТАЛИ редуктора и называл их редуктором — 144 позиции в legacy-узлах,
+    которые по ДРФ-1459 ждут миграции: значения всплыли бы ровно тогда, когда
+    узлы оживят. Лист при сужении не потерял ни одной позиции.
+    """
+    for name in (
+        "Втулка редуктора 324109",
+        "Втулка редуктора металлическая 321299",
+        "Зубчатая пара редуктора 330040",
+        "Задний корпус редуктора 330570",
+        "Вторичный вал редуктора 323180",
+        "Зажим редуктора 333512",
+    ):
+        assert _slug(rules, RED, KIND, name) is None, name
+
+
+def test_assembled_gearbox_still_reads(rules):
+    """Всё, что в листе названо редуктором, названо «в сборе» — сужение цело."""
+    assert _slug(rules, RED, KIND, "Редуктор в сборе 331324") == "reduktor"
+    assert _slug(rules, RED, KIND, "Редуктор в сборе 790221") == "reduktor"
+    assert _slug(rules, SY, KIND, "Шпиндель и редуктор в сборе 322917") == "reduktor"
+    assert _slug(rules, RED, KIND, "Крышка редуктора в сборе 336374") == "kryshka-reduktora"
+
+
 def test_voltage_axis_is_not_declared(rules):
     """``voltage`` отвергнута: 220 против 230 — артефакт записи диапазона в 1С.
 
