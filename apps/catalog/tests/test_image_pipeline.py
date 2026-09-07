@@ -8,12 +8,20 @@ from django.test import override_settings
 from PIL import Image
 
 from apps.catalog.image_pipeline import HostThrottle, ImagePipeline
-from apps.catalog.models import Category, Product, ProductStatus
+from apps.catalog.models import Category, ImageSource, Product, ProductImage, ProductStatus
 
 
-def _png_bytes(w=1500, h=1500):
+@pytest.fixture(autouse=True)
+def _media(tmp_path, settings):
+    """Своё MEDIA_ROOT на тест: pipeline пишет реальные webp, не в общий media/."""
+    settings.MEDIA_ROOT = tmp_path / "media"
+    (tmp_path / "media" / "products").mkdir(parents=True)
+    return settings.MEDIA_ROOT
+
+
+def _png_bytes(w=1500, h=1500, color=(200, 30, 30)):
     buf = io.BytesIO()
-    Image.new("RGB", (w, h), (200, 30, 30)).save(buf, format="PNG")
+    Image.new("RGB", (w, h), color).save(buf, format="PNG")
     return buf.getvalue()
 
 
@@ -269,3 +277,194 @@ def test_download_rejected_url_does_not_burn_throttle_window(monkeypatch):
     assert pipe._download("https://127.0.0.1/x.png") is None
     assert pipe._download("https://8.8.8.8:8080/x.png") is None
     assert clock.slept == []
+
+
+# --- VI-INT-02a: инвариант main-изображения -------------------------------
+#
+# Контракт: импорт не создаёт ВТОРОЙ main и не демотирует существующий;
+# при отсутствующем main его получает первое РЕАЛЬНО СОЗДАННОЕ изображение
+# пачки (дедуп — не создание и в счёт не идёт).
+
+_COLORS = [(200, 30, 30), (30, 200, 30), (30, 30, 200), (200, 200, 30)]
+
+
+def _batch_pipe(monkeypatch, urls):
+    """Pipeline с подменённым скачиванием: каждому URL — свои байты (свой checksum).
+
+    Возвращает (pipe, calls): calls — журнал обращений к _download, чтобы
+    проверять, что дедуп до сети не выполняет скачивание.
+    """
+    pipe = ImagePipeline()
+    mapping = {url: _png_bytes(color=_COLORS[i % len(_COLORS)]) for i, url in enumerate(urls)}
+    calls = []
+
+    def fake_download(url):
+        calls.append(url)
+        return mapping.get(url)
+
+    monkeypatch.setattr(pipe, "_download", fake_download)
+    return pipe, calls
+
+
+def _existing_image(product, *, is_main=False, source=ImageSource.MANUAL, url=None, sort_order=7):
+    """Запись об уже существующем изображении (файл не нужен — его никто не читает)."""
+    return ProductImage.objects.create(
+        product=product,
+        image=f"products/{product.pk}/existing-{sort_order}.webp",
+        alt="старое фото",
+        is_main=is_main,
+        sort_order=sort_order,
+        source=source,
+        source_url=url,
+        checksum=None,
+    )
+
+
+def _fields(image):
+    """Контролируемые поля записи для сравнения «до/после» (T6)."""
+    return {
+        "is_main": image.is_main,
+        "sort_order": image.sort_order,
+        "checksum": image.checksum,
+        "source": image.source,
+        "source_url": image.source_url,
+        "alt": image.alt,
+        "image": image.image.name,
+    }
+
+
+@pytest.mark.django_db
+def test_t1_empty_gallery_first_created_becomes_main(monkeypatch):
+    """T1/сценарий B: пустая галерея — main ровно один, у первого созданного."""
+    p = _product()
+    urls = ["https://r.test/1.png", "https://r.test/2.png", "https://r.test/3.png"]
+    pipe, _ = _batch_pipe(monkeypatch, urls)
+
+    images = pipe.process_batch(p, urls, source=ImageSource.RESANTA)
+
+    assert len(images) == 3
+    mains = [i for i in images if i.is_main]
+    assert len(mains) == 1
+    assert mains[0].source_url == urls[0], "main — первое созданное изображение пачки"
+    assert [i.is_main for i in images] == [True, False, False]
+    assert p.images.filter(is_main=True).count() == 1
+
+
+@pytest.mark.django_db
+def test_t2_existing_main_survives_batch_unchanged(monkeypatch):
+    """T2/сценарий A: main уже есть — второй не создаётся, существующий не меняется."""
+    p = _product()
+    old_main = _existing_image(p, is_main=True)
+    before = _fields(old_main)
+    urls = ["https://r.test/1.png", "https://r.test/2.png", "https://r.test/3.png"]
+    pipe, _ = _batch_pipe(monkeypatch, urls)
+
+    images = pipe.process_batch(p, urls, source=ImageSource.RESANTA)
+
+    assert len(images) == 3
+    assert all(not i.is_main for i in images), "новые изображения — всегда не-main"
+    assert p.images.filter(is_main=True).count() == 1
+    old_main.refresh_from_db()
+    assert _fields(old_main) == before, "существующий main не изменён ни в одном поле"
+    assert old_main.is_main is True
+
+
+@pytest.mark.django_db
+def test_t3_gallery_without_main_first_created_promoted(monkeypatch):
+    """T3/сценарий B: галерея без main — существующие не трогаем, main у первого созданного."""
+    p = _product()
+    old1 = _existing_image(p, is_main=False, sort_order=1)
+    old2 = _existing_image(p, is_main=False, sort_order=2)
+    before = {_fields(old1)["image"]: _fields(old1), _fields(old2)["image"]: _fields(old2)}
+    urls = ["https://r.test/1.png", "https://r.test/2.png"]
+    pipe, _ = _batch_pipe(monkeypatch, urls)
+
+    images = pipe.process_batch(p, urls, source=ImageSource.RESANTA)
+
+    assert [i.is_main for i in images] == [True, False]
+    assert p.images.filter(is_main=True).count() == 1
+    for old in (old1, old2):
+        old.refresh_from_db()
+        assert _fields(old) == before[old.image.name], "существующие записи не изменились"
+
+
+@pytest.mark.django_db
+def test_t4_dedup_first_url_second_created_gets_main(monkeypatch):
+    """T4/сценарий C: первый URL — дедуп, main получает второй (первый созданный)."""
+    p = _product()
+    urls = ["https://r.test/1.png", "https://r.test/2.png"]
+    existing = _existing_image(p, is_main=False, source=ImageSource.RESANTA, url=urls[0])
+    before = _fields(existing)
+    pipe, calls = _batch_pipe(monkeypatch, urls)
+
+    images = pipe.process_batch(p, urls, source=ImageSource.RESANTA)
+
+    assert [i.pk for i in images] == [existing.pk, images[1].pk]
+    assert calls == [urls[1]], "дедуп по source_url до сети — скачивание не выполняется"
+    assert images[0].is_main is False and images[1].is_main is True
+    existing.refresh_from_db()
+    assert _fields(existing) == before, "дедуп-запись не изменилась и не стала main"
+    assert p.images.filter(is_main=True).count() == 1
+
+
+@pytest.mark.django_db
+def test_t5_repeat_batch_creates_nothing_and_skips_network(monkeypatch):
+    """T5: повторный прогон той же пачки — create 0, update 0, сеть не дёргается."""
+    p = _product()
+    urls = ["https://r.test/1.png", "https://r.test/2.png", "https://r.test/3.png"]
+    pipe, calls = _batch_pipe(monkeypatch, urls)
+    first = pipe.process_batch(p, urls, source=ImageSource.RESANTA)
+    mains_before = list(p.images.filter(is_main=True).values_list("pk", flat=True))
+
+    again = pipe.process_batch(p, urls, source=ImageSource.RESANTA)
+
+    assert [i.pk for i in again] == [i.pk for i in first]
+    assert p.images.count() == 3, "новых записей нет"
+    assert len(calls) == 3, "повторный прогон: дедуп по source_url до сети, скачиваний нет"
+    assert list(p.images.filter(is_main=True).values_list("pk", flat=True)) == mains_before
+
+
+@pytest.mark.django_db
+def test_t6_existing_main_immutable_all_fields(monkeypatch):
+    """T6: полное сравнение контролируемых полей существующего main до/после импорта."""
+    p = _product()
+    old_main = _existing_image(p, is_main=True, sort_order=3, url="https://r.test/old.png")
+    before = _fields(old_main)
+    urls = ["https://r.test/1.png", "https://r.test/2.png"]
+    pipe, _ = _batch_pipe(monkeypatch, urls)
+
+    pipe.process_batch(p, urls, source=ImageSource.RESANTA)
+
+    old_main.refresh_from_db()
+    assert _fields(old_main) == before
+    assert p.images.filter(is_main=True).count() == 1
+
+
+@pytest.mark.django_db
+def test_t7_main_from_other_source_not_demoted(monkeypatch):
+    """T7: main другого источника (resanta) переживает импорт vseinstrumenti."""
+    p = _product()
+    old_main = _existing_image(p, is_main=True, source=ImageSource.RESANTA)
+    urls = ["https://v.test/1.png", "https://v.test/2.png"]
+    pipe, _ = _batch_pipe(monkeypatch, urls)
+
+    images = pipe.process_batch(p, urls, source=ImageSource.VSEINSTRUMENTI)
+
+    assert all(not i.is_main for i in images)
+    old_main.refresh_from_db()
+    assert old_main.is_main is True, "чужой main не демотирован"
+    assert p.images.filter(is_main=True).count() == 1
+
+
+@pytest.mark.django_db
+def test_secondary_images_order_stable_by_pk():
+    """VI-INT-03: ordering ["-is_main", "sort_order", "pk"] — main первый,
+    secondary при равном sort_order выстраиваются стабильно по pk."""
+    p = _product()
+    main = _existing_image(p, is_main=True, sort_order=0)
+    sec = [_existing_image(p, is_main=False, sort_order=0) for _ in range(3)]
+
+    expected = [main.pk] + [i.pk for i in sec]
+    for _ in range(3):  # порядок обязан быть одинаковым от запроса к запросу
+        assert [i.pk for i in p.images.all()] == expected
+    assert p.images.first().pk == main.pk, "единственный main — всегда первый"
