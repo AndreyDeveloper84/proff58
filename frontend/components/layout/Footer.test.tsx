@@ -74,3 +74,23 @@ describe("Footer (#591)", () => {
     }
   });
 });
+
+describe("Информационные страницы в подвале", () => {
+  it("страницы из кода показываются, даже когда админка ничего не отдала", () => {
+    render(<Footer infoPages={[]} />);
+
+    // Раньше колонка появлялась только после публикации страницы в админке —
+    // теперь эти четыре есть на сайте всегда.
+    expect(screen.getByRole("link", { name: "Доставка" })).toHaveAttribute(
+      "href",
+      "/info/delivery",
+    );
+    expect(screen.getByRole("link", { name: "Гарантийный ремонт" })).toBeInTheDocument();
+  });
+
+  it("страница из админки с тем же slug не удваивает ссылку", () => {
+    render(<Footer infoPages={[{ slug: "delivery", title: "Доставка" }]} />);
+
+    expect(screen.getAllByRole("link", { name: "Доставка" })).toHaveLength(1);
+  });
+});
