@@ -319,9 +319,12 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
 const humanize = humanizeToken; // алиас: единый источник в lib/format (N4)
 
 // query-параметры products-эндпоинта из нормализованного ListingQuery.
-function buildProductParams(query: ListingQuery): URLSearchParams {
+function buildProductParams(query: ListingQuery, search?: string): URLSearchParams {
   const sp = new URLSearchParams();
-  sp.set("category", query.category);
+  // DRF-1166: у поиска категории нет — выборку задаёт ?search=. Остальные параметры
+  // (фильтры, пагинация, сортировка) те же, поэтому сборка одна на оба маршрута.
+  if (search) sp.set("search", search);
+  else sp.set("category", query.category);
   sp.set("limit", String(query.perPage));
   sp.set("offset", String((query.page - 1) * query.perPage));
 
@@ -508,6 +511,69 @@ export async function fetchSearchFromApi(base: string, q: string): Promise<Produ
   if (!res.ok) return [];
   const json = (await res.json()) as { results?: ApiProduct[] };
   return (json.results ?? []).map(apiProductToProduct);
+}
+
+// Поисковая выдача с фильтрами и пагинацией (DRF-1166). Отличие от каталога — вместо
+// категории ?search=, и фасета всего три: цена, бренд, наличие. Технических
+// характеристик здесь нет и быть не может — по «дрель» приезжают дрели, патроны и
+// перчатки, и «Мощность, Вт» относилась бы к трети выдачи (см. build_search_facets).
+export async function fetchSearchListingFromApi(
+  base: string,
+  q: string,
+  query: ListingQuery,
+): Promise<Listing> {
+  const root = base.replace(/\/$/, "");
+  const search = q.trim();
+
+  const facetParams = buildFacetParams(query);
+  facetParams.set("search", search);
+
+  // Список и фасеты — параллельно: они независимы, а SSR ждёт обоих.
+  const [productsRes, facetsRes] = await Promise.all([
+    fetch(`${root}/api/catalog/products/?${buildProductParams(query, search).toString()}`, {
+      cache: "no-store",
+      headers: SSR_HEADERS,
+    }),
+    // Фасеты — best-effort: упали → страница остаётся рабочим списком без сайдбара.
+    fetch(`${root}/api/catalog/search/facets/?${facetParams.toString()}`, {
+      cache: "no-store",
+      headers: SSR_HEADERS,
+    }).catch(() => null),
+  ]);
+
+  if (!productsRes.ok) throw new CatalogFetchError(`search ${productsRes.status}`);
+  const productsJson = (await productsRes.json()) as { count: number; results: ApiProduct[] };
+
+  let facets: Facet[] = [];
+  if (facetsRes?.ok) {
+    try {
+      const fj = (await facetsRes.json()) as ApiFacetsResponse;
+      // Порядок макета тот же, что в каталоге: Цена → Наличие → Бренд.
+      facets = [priceFacet(fj.price), stockFacet(fj.stock), brandFacet(fj.brands)].filter(
+        (x): x is Facet => x != null,
+      );
+    } catch {
+      facets = [];
+    }
+  }
+
+  return {
+    category: {
+      title: search ? `Результаты поиска: «${search}»` : "Поиск",
+      intro: "",
+      breadcrumb: [
+        { label: "Главная", href: "/" },
+        { label: "Поиск", href: "/search" },
+      ],
+    },
+    subcategories: [],
+    facets,
+    sort: [],
+    total: productsJson.count,
+    page: query.page,
+    perPage: query.perPage,
+    products: productsJson.results.map(apiProductToProduct),
+  };
 }
 
 // Карточка товара (PDP): detail-эндпоинт + best-effort секции совместимости.

@@ -19,6 +19,7 @@ from .facets import (
     apply_product_attr_filters,
     build_facets,
     build_facets_cached,
+    build_search_facets,
     invalidate_facets_cache,
 )
 from .models import CompatibilityKind, ProductCompatibility
@@ -43,6 +44,7 @@ __all__ = [
     "rebuild_attrs_cache",
     "build_facets",
     "build_facets_cached",
+    "build_search_facets",
     "invalidate_facets_cache",
     "apply_product_attr_filters",
     "get_category_tree",
