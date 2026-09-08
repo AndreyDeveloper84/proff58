@@ -10,9 +10,10 @@
 
 Порядок выката (строго):
 
-    normalize_product_names --dry-run --limit 50   # посмотреть, что получится
-    normalize_product_names --dry-run              # сколько всего затронет
-    normalize_product_names                        # записать
+    normalize_product_names --dry-run --in-stock --report /tmp/wave1.csv  # волна 1: глазами
+    normalize_product_names --in-stock                                    # волна 1: записать
+    normalize_product_names --dry-run                                     # волна 2: объём
+    normalize_product_names                                               # волна 2: записать
 
 Идемпотентна: повторный прогон ничего не меняет. Импорт из 1С витринное имя не
 перезаписывает (кладёт исходник в ``original_name``), так что обмен результат не
@@ -20,6 +21,8 @@
 """
 
 from __future__ import annotations
+
+import csv
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -47,6 +50,16 @@ class Command(BaseCommand):
             help="Показать не больше N примеров изменений (0 — только счётчики).",
         )
         parser.add_argument(
+            "--in-stock",
+            action="store_true",
+            help="Только позиции на остатках — первая волна выката (см. DRF-1602).",
+        )
+        parser.add_argument(
+            "--report",
+            metavar="ПУТЬ",
+            help="Выгрузить «было → стало» в CSV для проверки глазами до записи.",
+        )
+        parser.add_argument(
             "--only-changed",
             action="store_true",
             help="В примеры включать лишь те, где раскрылось сокращение (без косметики).",
@@ -56,16 +69,28 @@ class Command(BaseCommand):
         dry_run = options["dry_run"]
         limit = options["limit"]
         only_changed = options["only_changed"]
+        in_stock = options["in_stock"]
+        report_path = options["report"]
 
         changed: list[Product] = []
         shown = 0
         stats = {"total": 0, "name_changed": 0, "card_changed": 0, "expanded": 0}
 
-        queryset = Product.objects.only("id", "name", "card_name").order_by("id")
+        queryset = Product.objects.only("id", "name", "card_name", "article").order_by("id")
+        if in_stock:
+            queryset = queryset.filter(available_quantity__gt=0)
+
+        report = None
+        writer = None
+        if report_path:
+            report = open(report_path, "w", encoding="utf-8", newline="")
+            writer = csv.writer(report)
+            writer.writerow(["id", "было", "стало", "плитка", "раскрыто сокращение"])
+
         for product in queryset.iterator(chunk_size=BATCH):
             stats["total"] += 1
-            full = normalize_name(product.name)
-            short = card_name(product.name)
+            full = normalize_name(product.name, article=product.article)
+            short = card_name(product.name, article=product.article)
             # Раскрытие сокращения, а не просто прибранные пробелы: только такие
             # правки стоит смотреть глазами.
             expanded = full != short
@@ -78,6 +103,9 @@ class Command(BaseCommand):
                 stats["name_changed"] += 1
             if short != product.card_name:
                 stats["card_changed"] += 1
+
+            if writer is not None and (expanded or not only_changed):
+                writer.writerow([product.id, product.name, full, short, "да" if expanded else ""])
 
             if shown < limit and (expanded or not only_changed):
                 shown += 1
@@ -98,11 +126,18 @@ class Command(BaseCommand):
         if not dry_run and changed:
             self._flush(changed)
 
+        if report is not None:
+            report.close()
+
         self.stdout.write("")
+        if in_stock:
+            self.stdout.write(self.style.WARNING("Срез: только позиции на остатках.\n"))
         self.stdout.write(f"Всего товаров:        {stats['total']}")
         self.stdout.write(f"Изменится name:       {stats['name_changed']}")
         self.stdout.write(f"Изменится card_name:  {stats['card_changed']}")
         self.stdout.write(f"Раскрыто сокращений:  {stats['expanded']}")
+        if report_path:
+            self.stdout.write(f"Отчёт:                {report_path}")
         if dry_run:
             self.stdout.write(self.style.WARNING("\n--dry-run: в базу ничего не записано."))
         else:
