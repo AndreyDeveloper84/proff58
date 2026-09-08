@@ -69,6 +69,15 @@ class Command(BaseCommand):
             ),
         )
         parser.add_argument(
+            "--restore-truncated",
+            action="store_true",
+            help=(
+                "Чинить только те имена, которые сами же и укоротили: текущее name — "
+                "начало original_name. Ручные добавки вроде «(арт. 19001)» при этом "
+                "не трогаются, в отличие от --from-original."
+            ),
+        )
+        parser.add_argument(
             "--only-changed",
             action="store_true",
             help="В примеры включать лишь те, где раскрылось сокращение (без косметики).",
@@ -80,6 +89,7 @@ class Command(BaseCommand):
         only_changed = options["only_changed"]
         in_stock = options["in_stock"]
         from_original = options["from_original"]
+        restore_truncated = options["restore_truncated"]
         report_path = options["report"]
 
         changed: list[Product] = []
@@ -101,7 +111,15 @@ class Command(BaseCommand):
 
         for product in queryset.iterator(chunk_size=BATCH):
             stats["total"] += 1
-            source_name = product.original_name if from_original else product.name
+            truncated = (
+                restore_truncated
+                and product.original_name
+                and product.original_name != product.name
+                and product.original_name.startswith(product.name)
+            )
+            if restore_truncated and not truncated:
+                continue
+            source_name = product.original_name if (from_original or truncated) else product.name
             full = normalize_name(source_name or product.name, article=product.article)
             # Короткую форму считаем от строки 1С, а не от витринного имени:
             # иначе повторный прогон возьмёт уже развёрнутое `name` и плитка
@@ -153,6 +171,8 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.WARNING("Имя пересчитано от original_name: ручные правки затёрты.\n")
             )
+        if restore_truncated:
+            self.stdout.write(self.style.WARNING("Срез: только укороченные нами имена.\n"))
         self.stdout.write(f"Всего товаров:        {stats['total']}")
         self.stdout.write(f"Изменится name:       {stats['name_changed']}")
         self.stdout.write(f"Изменится card_name:  {stats['card_changed']}")
