@@ -314,3 +314,35 @@ def test_article_with_space_is_a_size_not_a_code():
     assert normalize_name("Компрессорное масло DICREA 46 (20л)", article="DICREA 46 (20л)") == (
         "Компрессорное масло DICREA 46 (20л)"
     )
+
+
+@pytest.mark.django_db
+def test_restore_truncated_leaves_manual_additions_alone():
+    """`--restore-truncated` чинит своё, но не трогает дописанное руками.
+
+    На стенде у 274 позиций в витринном имени стоит «(арт. 19001)» — им
+    различали одинаковые товары, и в `original_name` этой добавки нет.
+    Пересчёт от исходника стёр бы её вместе с различием.
+    """
+    from django.core.management import call_command
+
+    from apps.catalog.models import Product
+
+    truncated = Product.objects.create(
+        name="Пружина",
+        original_name="Пружина 322890",
+        slug="pruzhina-322890",
+        article="322890",
+    )
+    manual = Product.objects.create(
+        name="Трос ленточный 5т 2крюка (арт. 19001)",
+        original_name="Трос ленточный 5т 2крюка",
+        slug="tros-19001",
+        article="19001",
+    )
+    call_command("normalize_product_names", "--restore-truncated", verbosity=0)
+
+    truncated.refresh_from_db()
+    manual.refresh_from_db()
+    assert truncated.name == "Пружина 322890"
+    assert manual.name == "Трос ленточный 5т 2крюка (арт. 19001)"
