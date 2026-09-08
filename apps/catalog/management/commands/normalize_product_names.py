@@ -60,6 +60,15 @@ class Command(BaseCommand):
             help="Выгрузить «было → стало» в CSV для проверки глазами до записи.",
         )
         parser.add_argument(
+            "--from-original",
+            action="store_true",
+            help=(
+                "Считать витринное имя заново от строки 1С (original_name), а не от "
+                "текущего name. Так откатывают неудачное правило: ручные правки при "
+                "этом теряются, поэтому по умолчанию выключено."
+            ),
+        )
+        parser.add_argument(
             "--only-changed",
             action="store_true",
             help="В примеры включать лишь те, где раскрылось сокращение (без косметики).",
@@ -70,6 +79,7 @@ class Command(BaseCommand):
         limit = options["limit"]
         only_changed = options["only_changed"]
         in_stock = options["in_stock"]
+        from_original = options["from_original"]
         report_path = options["report"]
 
         changed: list[Product] = []
@@ -91,7 +101,8 @@ class Command(BaseCommand):
 
         for product in queryset.iterator(chunk_size=BATCH):
             stats["total"] += 1
-            full = normalize_name(product.name, article=product.article)
+            source_name = product.original_name if from_original else product.name
+            full = normalize_name(source_name or product.name, article=product.article)
             # Короткую форму считаем от строки 1С, а не от витринного имени:
             # иначе повторный прогон возьмёт уже развёрнутое `name` и плитка
             # потеряет телеграфную запись, ради которой card_name и заведён.
@@ -138,6 +149,10 @@ class Command(BaseCommand):
         self.stdout.write("")
         if in_stock:
             self.stdout.write(self.style.WARNING("Срез: только позиции на остатках.\n"))
+        if from_original:
+            self.stdout.write(
+                self.style.WARNING("Имя пересчитано от original_name: ручные правки затёрты.\n")
+            )
         self.stdout.write(f"Всего товаров:        {stats['total']}")
         self.stdout.write(f"Изменится name:       {stats['name_changed']}")
         self.stdout.write(f"Изменится card_name:  {stats['card_changed']}")
