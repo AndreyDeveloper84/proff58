@@ -342,6 +342,14 @@ def test_restore_truncated_leaves_manual_additions_alone():
         slug="kryshka-kyg080001122",
         article="KYG080001122",
     )
+    alphabet = Product.objects.create(
+        # В исходнике размер записан латинской «x», в витринном имени косметика
+        # уже свела его к кириллице — сравнивать с сырым исходником нельзя.
+        name="Болт крепежный M5х45",
+        original_name="Болт крепежный M5x45 323994",
+        slug="bolt-323994",
+        article="323994",
+    )
     manual = Product.objects.create(
         name="Трос ленточный 5т 2крюка (арт. 19001)",
         original_name="Трос ленточный 5т 2крюка",
@@ -352,7 +360,9 @@ def test_restore_truncated_leaves_manual_additions_alone():
 
     truncated.refresh_from_db()
     squeezed.refresh_from_db()
+    alphabet.refresh_from_db()
     manual.refresh_from_db()
     assert truncated.name == "Пружина 322890"
     assert squeezed.name == "Крышка задняя KYG080001122"
+    assert alphabet.name == "Болт крепежный M5х45 323994"
     assert manual.name == "Трос ленточный 5т 2крюка (арт. 19001)"

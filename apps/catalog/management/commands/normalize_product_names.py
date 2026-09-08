@@ -28,7 +28,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from apps.catalog.models import Product
-from apps.catalog.name_normalization import card_name, normalize_name
+from apps.catalog.name_normalization import card_name, normalize_name, tidy
 
 # Размер пачки для bulk_update: 47 тысяч товаров одним запросом класть незачем.
 BATCH = 500
@@ -37,14 +37,16 @@ BATCH = 500
 def _is_truncation_of(name: str, original: str) -> bool:
     """Витринное имя — это обрезанный исходник 1С?
 
-    Сравниваем по схлопнутым пробелам: в строках 1С их часто по два
-    («Крышка  задняя KYG080001122»), а косметика прогона их уже убрала, и
-    прямой `startswith` такую пару не узнаёт.
+    Сравнивать с сырым `original_name` нельзя: витринное имя уже прошло
+    косметику, и от исходника оно отличается не только хвостом. В строках 1С
+    пробелы стоят парами («Крышка  задняя KYG080001122»), а размер записан
+    латинской «x» («Болт крепежный M5x45 323994») — прямой `startswith` такие
+    пары не узнаёт. Поэтому исходник сначала приводим той же косметикой.
     """
     if not original:
         return False
     squeezed_name = " ".join(name.split())
-    squeezed_original = " ".join(original.split())
+    squeezed_original = " ".join(tidy(original).split())
     return squeezed_original != squeezed_name and squeezed_original.startswith(squeezed_name)
 
 
