@@ -34,6 +34,20 @@ from apps.catalog.name_normalization import card_name, normalize_name
 BATCH = 500
 
 
+def _is_truncation_of(name: str, original: str) -> bool:
+    """Витринное имя — это обрезанный исходник 1С?
+
+    Сравниваем по схлопнутым пробелам: в строках 1С их часто по два
+    («Крышка  задняя KYG080001122»), а косметика прогона их уже убрала, и
+    прямой `startswith` такую пару не узнаёт.
+    """
+    if not original:
+        return False
+    squeezed_name = " ".join(name.split())
+    squeezed_original = " ".join(original.split())
+    return squeezed_original != squeezed_name and squeezed_original.startswith(squeezed_name)
+
+
 class Command(BaseCommand):
     help = "Раскрыть сокращения в названиях товаров (name), короткую форму — в card_name."
 
@@ -111,12 +125,7 @@ class Command(BaseCommand):
 
         for product in queryset.iterator(chunk_size=BATCH):
             stats["total"] += 1
-            truncated = (
-                restore_truncated
-                and product.original_name
-                and product.original_name != product.name
-                and product.original_name.startswith(product.name)
-            )
+            truncated = restore_truncated and _is_truncation_of(product.name, product.original_name)
             if restore_truncated and not truncated:
                 continue
             source_name = product.original_name if (from_original or truncated) else product.name

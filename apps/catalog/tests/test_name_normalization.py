@@ -334,6 +334,14 @@ def test_restore_truncated_leaves_manual_additions_alone():
         slug="pruzhina-322890",
         article="322890",
     )
+    squeezed = Product.objects.create(
+        # В строке 1С двойной пробел, в витринном имени косметика его убрала:
+        # прямой startswith такую пару не узнаёт.
+        name="Крышка задняя",
+        original_name="Крышка  задняя KYG080001122",
+        slug="kryshka-kyg080001122",
+        article="KYG080001122",
+    )
     manual = Product.objects.create(
         name="Трос ленточный 5т 2крюка (арт. 19001)",
         original_name="Трос ленточный 5т 2крюка",
@@ -343,6 +351,8 @@ def test_restore_truncated_leaves_manual_additions_alone():
     call_command("normalize_product_names", "--restore-truncated", verbosity=0)
 
     truncated.refresh_from_db()
+    squeezed.refresh_from_db()
     manual.refresh_from_db()
     assert truncated.name == "Пружина 322890"
+    assert squeezed.name == "Крышка задняя KYG080001122"
     assert manual.name == "Трос ленточный 5т 2крюка (арт. 19001)"
