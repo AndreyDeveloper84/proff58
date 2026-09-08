@@ -1071,3 +1071,40 @@ def test_axis_without_own_category_still_uses_the_block(tmp_path):
     assert rows["tool_kind"]["category_id"] == holders.pk
     assert rows["puller_type"]["category"] == "Съёмники"
     assert rows["puller_type"]["category_id"] == pullers.pk
+
+
+@pytest.mark.django_db
+def test_axis_with_bind_false_gets_no_binding(tmp_path):
+    """``bind: false`` — записанное решение «фасета здесь не будет».
+
+    Без флага вариант В из ДРФ-1524 выразить нечем: ось вечно висит в плане как
+    несозданная привязка, и «решили не делать» неотличимо от «забыли». Из-за
+    этого проверку привязок нельзя было сделать фатальной.
+    """
+    holders, _pullers = _two_leaves()
+    block = {
+        "tool_type": "nozhi",
+        "category": "Держатели",
+        "attributes": [
+            {"slug": "tool_kind", "name": "Вид инструмента", "kind": "number", "unit": "мм"},
+            {
+                "slug": "puller_type",
+                "name": "Тип съёмника",
+                "kind": "number",
+                "unit": "мм",
+                "bind": False,
+            },
+        ],
+    }
+    path = _write_rules(tmp_path, [block])
+    plan = _plan(path)
+
+    slugs = {r["attribute"] for r in plan["bindings"]}
+    assert "tool_kind" in slugs
+    assert "puller_type" not in slugs, "ось с bind:false в плане привязок быть не должна"
+
+    call_command("load_attributes", "--path", path)
+    assert CategoryAttribute.objects.filter(category=holders, attribute__slug="tool_kind").exists()
+    assert not CategoryAttribute.objects.filter(attribute__slug="puller_type").exists()
+    # Сам атрибут при этом создаётся: значения пишутся и видны в карточке.
+    assert Attribute.objects.filter(slug="puller_type").exists()
