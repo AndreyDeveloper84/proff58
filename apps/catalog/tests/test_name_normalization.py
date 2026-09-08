@@ -108,3 +108,137 @@ def test_idempotent():
 def test_empty_and_short_names_survive():
     assert normalize_name("") == ""
     assert normalize_name("Ключ") == "Ключ"
+
+
+# --- Правила, добавленные по замеру каталога (DRF-1600 → DRF-1602) ---
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        # Тип во множественном числе: своя форма согласования.
+        ("Клещи обжим. КВТ ПК-16у", "Клещи обжимные КВТ ПК-16у"),
+        ("Ножницы удар. по металлу 250мм", "Ножницы ударные по металлу 250мм"),
+        ("Электроды свар. ОК-46 3мм", "Электроды сварочные ОК-46 3мм"),
+        # Типы, которых не было в GENDER: под ними лежало 13 942 товара.
+        ("Леска д/триммер. 2,4мм, 200м СЕБ", "Леска для триммера 2,4мм, 200м СЕБ"),
+        ("Кисть плоская 50мм нат. щетина", "Кисть плоская 50мм нат. щетина"),
+    ],
+)
+def test_plural_and_new_types(source, expected):
+    assert normalize_name(source) == expected
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        # Слово после «д/» почти всегда уже в родительном падеже.
+        ("Пилки д/лобзика JUW20 (5шт)", "Пилки для лобзика JUW20 (5шт)"),
+        # Предлог раскрывается независимо от того, знаком ли нам тип товара.
+        ("Мешок д/мусора 120л", "Мешок для мусора 120л"),
+        # Обрубленное 1С окончание досклоняем по закрытому списку.
+        ("Пена монтаж. д/пист. ЗУБР 750мл", "Пена монтажная для пистолета ЗУБР 750мл"),
+    ],
+)
+def test_for_slash_expands(source, expected):
+    assert normalize_name(source) == expected
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        # Слэш здесь — маркировка, а не «для». Раскрытие исказило бы смысл.
+        "Сверло ц/х ф18,0х191 Р4М2 ЗУБР МАСТЕР",
+        "Метчик м/р М16х1,5 к-т сталь 9ХC ГОСТ 3266-81",
+        "Строп СТП-4/4 серый г/п4т, длина 4м ЗУБР",
+        "Перчатки х/б с ПВХ покрытием",
+    ],
+)
+def test_marking_slash_is_untouched(source):
+    assert normalize_name(source) == source
+
+
+def test_slash_inside_word_is_not_a_preposition():
+    """«ход/мин» содержит «д/мин»: без границы слова вышло бы «хо для мин»."""
+    source = "Лобзик CJ90VST; 700Вт, 850-3000х/мин, ход 20мм"
+    assert normalize_name(source) == source
+
+
+def test_size_separator_unified():
+    """Латинская «x» между цифрами → кириллическая: иначе поиск не находит.
+
+    В каталоге 9 663 названия с кириллической «х» против 462 с латинской —
+    меньшинство обречено не находиться никогда.
+    """
+    assert normalize_name('Бур 10x210мм "SDS-Plus" ЗУБР') == 'Бур 10х210мм "SDS-Plus" ЗУБР'
+
+
+def test_cyrillic_inside_latin_marking_fixed():
+    """«RВ18DLL», «CrМоV» — буквы-двойники не в том алфавите."""
+    assert normalize_name("Воздуходувка аккум Hitachi RВ18DLL") == (
+        "Воздуходувка аккумуляторная Hitachi RB18DLL"
+    )
+    assert tidy("Отвертка PH 2х100 мм CrМоV 1000В") == "Отвертка PH 2х100 мм CrMoV 1000В"
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        # Кириллица здесь родная — правило одностороннее и такие слова не трогает.
+        "Набор инструмента 141 пр. АвтоDело",
+        "Круг лепестковый ЗУБР МАСТЕР P220",
+    ],
+)
+def test_russian_words_keep_their_alphabet(source):
+    assert normalize_name(source) == source
+
+
+def test_article_tail_dropped_only_on_exact_match():
+    """Хвост снимаем, лишь когда он в точности равен нашему артикулу."""
+    assert normalize_name("Пружина 322890", article="322890") == "Пружина"
+    assert normalize_name("Кожух защитный УШМ 125 338845", article="338845*") == (
+        "Кожух защитный УШМ 125"
+    )
+    # Код производителя нашему артикулу не равен — по нему ищут, оставляем.
+    assert (
+        normalize_name("Щетки угольные АНАЛОГ 13-104 HITACHI 990021", article="T108741")
+        == "Щетки угольные АНАЛОГ 13-104 HITACHI 990021"
+    )
+
+
+def test_article_tail_never_empties_the_name():
+    """Название, целиком равное артикулу, схлопывать нельзя."""
+    assert normalize_name("322890", article="322890") == "322890"
+
+
+def test_truncated_name_is_not_invented():
+    """1С обрезала хвост — додумывать его нормализация не имеет права (DRF-1604)."""
+    source = "Воздуходувка аккум Hitachi RB18DLL; без аккум и за"
+    assert normalize_name(source) == "Воздуходувка аккумуляторная Hitachi RB18DLL; без аккум и за"
+
+
+def test_new_rules_are_idempotent():
+    for source in (
+        "Леска д/триммер. 2,4мм",
+        "Бур 10x210мм SDS",
+        "Воздуходувка аккум Hitachi RВ18DLL",
+        "Клещи обжим. КВТ",
+    ):
+        once = normalize_name(source)
+        assert normalize_name(once) == once
+
+
+def test_size_separator_wins_over_marking():
+    """«PH3х 50 мм» — здесь «х» размер, а не сбитая раскладка в маркировке.
+
+    Слово «PH3х» состоит в основном из латиницы, и общее правило починки
+    алфавита перевело бы «х» в латинскую «x» — ровно против правила выше,
+    которое сводит разделитель размера к кириллице. Поэтому «х» выведена
+    из-под починки маркировки.
+    """
+    assert normalize_name("Биты Kraftool PH3х 50 мм Optimum Line") == (
+        "Биты Kraftool PH3х 50 мм Optimum Line"
+    )
+    assert normalize_name("Фонарь ЭРА PA-601 прожектор АЛЬФА 19хLED+24хLED") == (
+        "Фонарь ЭРА PA-601 прожектор АЛЬФА 19хLED+24хLED"
+    )

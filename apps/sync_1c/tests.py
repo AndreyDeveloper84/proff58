@@ -427,3 +427,84 @@ def test_normalize_item_aliases_and_decimal():
     assert item.article == "a1"
     assert str(item.price) == "1234.50"
     assert item.is_active is True
+
+
+@pytest.mark.django_db
+def test_new_product_arrives_normalized():
+    """Новая позиция из 1С попадает на витрину уже без телеграфных сокращений.
+
+    Иначе каталог набирал бы «Перф.ЗУБР» заново после каждой новой номенклатуры,
+    и разовую чистку названий пришлось бы повторять (DRF-1603).
+    """
+    product, action = _import_item(
+        {
+            "external_id": "1c-norm-1",
+            "sku": "NORM-1",
+            "name": "Круг алмаз. отрез. 115х1,0 Turbo",
+            "price": "1000",
+            "stock": "1",
+        }
+    )
+    assert action == "created"
+    assert product.name == "Круг алмазный отрезной 115х1,0 Turbo"
+    # Исходная строка 1С цела — это точка отката.
+    assert product.original_name == "Круг алмаз. отрез. 115х1,0 Turbo"
+    # Плитке каталога достаётся короткая форма — сокращения в ней сохраняются.
+    assert product.card_name == "Круг алмаз. отрез. 115х1,0 Turbo"
+
+
+@pytest.mark.django_db
+def test_new_product_type_abbreviation_expanded():
+    """Сокращённый тип раскрывается даже без пробела перед брендом.
+
+    Дальше по строке цепочка обрывается на «ЗУБР»: род зависимого слова в этой
+    позиции неизвестен, и «удар.» честнее оставить как есть.
+    """
+    product, _ = _import_item(
+        {
+            "external_id": "1c-norm-1b",
+            "sku": "NORM-1B",
+            "name": "Перф.ЗУБР ЗПМ-50-1700 удар. SDS-Max",
+            "price": "1000",
+        }
+    )
+    assert product.name == "Перфоратор ЗУБР ЗПМ-50-1700 удар. SDS-Max"
+
+
+@pytest.mark.django_db
+def test_repeat_import_keeps_showcase_name():
+    """Повторный импорт витринное имя не переписывает — даже нормализованное."""
+    product, _ = _import_item(
+        {
+            "external_id": "1c-norm-2",
+            "sku": "NORM-2",
+            "name": "Круг алмаз. отрез. 115х1,0",
+            "price": "100",
+            "stock": "5",
+        }
+    )
+    product.name = "Отрезной круг, поправлено вручную"
+    product.save()
+
+    _import_item(
+        {
+            "external_id": "1c-norm-2",
+            "sku": "NORM-2",
+            "name": "Круг алмаз. отрез. 115х1,0 НОВОЕ ИМЯ",
+            "price": "120",
+            "stock": "3",
+        }
+    )
+    product.refresh_from_db()
+    assert product.name == "Отрезной круг, поправлено вручную"
+    assert product.original_name == "Круг алмаз. отрез. 115х1,0 НОВОЕ ИМЯ"
+
+
+@pytest.mark.django_db
+def test_article_duplicated_in_name_is_dropped_on_create():
+    """«Пружина 322890» при артикуле 322890 — дубль, на витрине он не нужен."""
+    product, _ = _import_item(
+        {"external_id": "1c-norm-3", "sku": "322890", "name": "Пружина 322890", "price": "10"}
+    )
+    assert product.name == "Пружина"
+    assert product.original_name == "Пружина 322890"

@@ -6,6 +6,12 @@
 
 Главное правило: повторное обновление НЕ трогает ручной контент сайта
 (категорию, витринное `name`, описание, SEO, фото, slug).
+
+Витринное имя нового товара при этом не копия строки 1С, а её нормализованная
+форма: «Перф.ЗУБР ЗПМ-50» приезжает на витрину как «Перфоратор ЗУБР ЗПМ-50»
+(`apps.catalog.name_normalization`). Без этого каталог набирал бы телеграфные
+названия заново после каждой новой номенклатуры, и разовую чистку пришлось бы
+повторять (DRF-1603). Исходная строка 1С всегда цела в `original_name`.
 """
 
 from __future__ import annotations
@@ -15,6 +21,7 @@ from django.utils.text import slugify
 
 from apps.catalog.categorization import ProductHint, categorize
 from apps.catalog.models import Category, CategoryMappingRule, Product, ProductStatus
+from apps.catalog.name_normalization import card_name, normalize_name
 from apps.core.events import EventSource, product_created, product_updated
 
 from . import pricing, stock
@@ -69,7 +76,10 @@ def create_product(
         article=item.article,
         barcode=item.barcode,
         original_name=item.name,
-        name=item.name,  # витринное имя при создании = имя из 1С; далее правится вручную
+        # Витринное имя при создании — нормализованная строка 1С; далее правится
+        # вручную и обменом уже не перезаписывается.
+        name=normalize_name(item.name, article=item.article),
+        card_name=card_name(item.name, article=item.article),
         brand=item.brand,
         source_group=item.source_group,
         unit=item.unit,
@@ -165,7 +175,8 @@ def build_new_product(
         article=item.article,
         barcode=item.barcode,
         original_name=item.name,
-        name=item.name,
+        name=normalize_name(item.name, article=item.article),
+        card_name=card_name(item.name, article=item.article),
         brand=item.brand,
         source_group=item.source_group,
         unit=item.unit,
