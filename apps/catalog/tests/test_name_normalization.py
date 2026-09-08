@@ -271,3 +271,17 @@ def test_command_is_idempotent_on_card_name():
     after = Product.objects.get(pk=product.pk)
     assert after.name == product.name
     assert after.card_name == product.card_name
+
+
+def test_service_prefix_stripped():
+    """«яя» — служебная метка сортировки 1С, на витрине ей не место.
+
+    В `name` её вычистили раньше руками, но в `original_name` она осталась у
+    4 547 позиций, а плитка считается именно от исходника.
+    """
+    assert tidy("яяДомкрат 12 т гидравлический 230-469 СЕРВИС КЛЮЧ") == (
+        "Домкрат 12 т гидравлический 230-469 СЕРВИС КЛЮЧ"
+    )
+    assert normalize_name("яяЛебедка ручная 0,9т, 10м") == "Лебедка ручная 0,9т, 10м"
+    # Обычное слово, начинающееся на «я», не трогаем.
+    assert normalize_name("Ящик метал. разноуровневый") == "Ящик металлический разноуровневый"
