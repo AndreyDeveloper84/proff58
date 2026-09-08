@@ -373,13 +373,22 @@ def _drop_article_tail(name: str, article: str | None) -> str:
     return head if len(head) >= 3 else name
 
 
+# Служебный префикс «яя» из 1С: им помечали позиции, чтобы те падали в конец
+# сортировки. На витрине он мусор («яяДомкрат 12 т»). В `name` его когда-то
+# вычистили руками, но в `original_name` он остался у 4 547 позиций — а короткая
+# форма считается именно от исходника, и без этого правила префикс вернулся бы
+# на плитку каталога.
+_SERVICE_PREFIX = re.compile(r"^\s*яя+(?=[А-ЯЁA-Za-z0-9])", re.IGNORECASE)
+
+
 def tidy(name: str) -> str:
     """Косметика без смены смысла: пробелы, слипшиеся точки, точки у единиц.
 
     Применяется и к полному названию, и к короткому — карточке нужен тот же
     аккуратный текст, только без раскрытия сокращений.
     """
-    result = _fix_alphabet(name)
+    result = _SERVICE_PREFIX.sub("", name)
+    result = _fix_alphabet(result)
     result = _STUCK_DOT.sub(". ", result)
     result = _UNIT_DOT.sub(r" \1", result)
     result = _SPACE_BEFORE_PUNCT.sub(r"\1", result)
