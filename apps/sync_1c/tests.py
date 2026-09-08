@@ -501,24 +501,10 @@ def test_repeat_import_keeps_showcase_name():
 
 
 @pytest.mark.django_db
-def test_article_duplicated_in_name_is_dropped_on_create():
-    """Артикул в хвосте длинного названия — дубль, на витрине он не нужен.
-
-    У коротких названий («Пружина 322890») хвост остаётся: в каталоге запчастей
-    артикул — единственное, что их различает.
-    """
+def test_article_in_name_survives_import():
+    """Артикул в хвосте остаётся: у запчастей он единственный различитель."""
     product, _ = _import_item(
-        {
-            "external_id": "1c-norm-3",
-            "sku": "338845",
-            "name": "Кожух защитный для диска УШМ 338845",
-            "price": "10",
-        }
+        {"external_id": "1c-norm-3", "sku": "322890", "name": "Пружина 322890", "price": "10"}
     )
-    assert product.name == "Кожух защитный для диска УШМ"
-    assert product.original_name == "Кожух защитный для диска УШМ 338845"
-
-    short, _ = _import_item(
-        {"external_id": "1c-norm-4", "sku": "322890", "name": "Пружина 322890", "price": "10"}
-    )
-    assert short.name == "Пружина 322890"
+    assert product.name == "Пружина 322890"
+    assert product.original_name == "Пружина 322890"

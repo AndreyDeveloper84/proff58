@@ -193,26 +193,6 @@ def test_russian_words_keep_their_alphabet(source):
     assert normalize_name(source) == source
 
 
-def test_article_tail_dropped_only_on_exact_match():
-    """Хвост снимаем, лишь когда он в точности равен нашему артикулу."""
-    assert normalize_name("Кожух защитный для диска УШМ 338845", article="338845") == (
-        "Кожух защитный для диска УШМ"
-    )
-    assert normalize_name("Кожух защитный УШМ 125 338845", article="338845*") == (
-        "Кожух защитный УШМ 125"
-    )
-    # Код производителя нашему артикулу не равен — по нему ищут, оставляем.
-    assert (
-        normalize_name("Щетки угольные АНАЛОГ 13-104 HITACHI 990021", article="T108741")
-        == "Щетки угольные АНАЛОГ 13-104 HITACHI 990021"
-    )
-
-
-def test_article_tail_never_empties_the_name():
-    """Название, целиком равное артикулу, схлопывать нельзя."""
-    assert normalize_name("322890", article="322890") == "322890"
-
-
 def test_truncated_name_is_not_invented():
     """1С обрезала хвост — додумывать его нормализация не имеет права (DRF-1604)."""
     source = "Воздуходувка аккум Hitachi RB18DLL; без аккум и за"
@@ -289,33 +269,6 @@ def test_service_prefix_stripped():
     assert normalize_name("Ящик метал. разноуровневый") == "Ящик металлический разноуровневый"
 
 
-def test_article_tail_kept_for_short_names():
-    """У запчастей артикул — единственное, что их различает.
-
-    Сняв хвост у «Пружина 322890», мы получили на стенде 13 одинаковых
-    «Пружина» и 32 «Зубчатое колесо редуктора». Короткие названия хвост
-    сохраняют.
-    """
-    assert normalize_name("Пружина 322890", article="322890") == "Пружина 322890"
-    assert normalize_name("Зубчатое колесо редуктора 991887", article="991887") == (
-        "Зубчатое колесо редуктора 991887"
-    )
-    # Длинное название артикул в хвосте не различает — там его снимаем.
-    assert normalize_name("Кожух защитный для диска УШМ 125 338845", article="338845*") == (
-        "Кожух защитный для диска УШМ 125"
-    )
-
-
-def test_article_with_space_is_a_size_not_a_code():
-    """«6512 4-1/8» и «DICREA 46 (20л)» — типоразмер, а не код; снимать нельзя."""
-    assert normalize_name("Фитинг цанга прямой 6512 4-1/8", article="6512 4-1/8") == (
-        "Фитинг цанга прямой 6512 4-1/8"
-    )
-    assert normalize_name("Компрессорное масло DICREA 46 (20л)", article="DICREA 46 (20л)") == (
-        "Компрессорное масло DICREA 46 (20л)"
-    )
-
-
 @pytest.mark.django_db
 def test_restore_truncated_leaves_manual_additions_alone():
     """`--restore-truncated` чинит своё, но не трогает дописанное руками.
@@ -366,3 +319,22 @@ def test_restore_truncated_leaves_manual_additions_alone():
     assert squeezed.name == "Крышка задняя KYG080001122"
     assert alphabet.name == "Болт крепежный M5х45 323994"
     assert manual.name == "Трос ленточный 5т 2крюка (арт. 19001)"
+
+
+@pytest.mark.parametrize(
+    ("source", "article"),
+    [
+        # Артикул в хвосте остаётся: у запчастей он единственное, что их различает.
+        ("Пружина 322890", "322890"),
+        ("Держатель щеток эл. двигателя 313777", "313777"),
+        ("Кожух защитный для диска УШМ 125 338845", "338845*"),
+        ("Фитинг цанга прямой 6512 4-1/8", "6512 4-1/8"),
+    ],
+)
+def test_article_tail_is_kept(source, article):
+    """Снятие артикула отключено по итогам прогона (DRF-1602).
+
+    Оно укоротило 2 387 названий и дало на стенде 32 одинаковых «Зубчатое
+    колесо редуктора»: без хвоста запчасти неразличимы.
+    """
+    assert normalize_name(source, article=article) == source
