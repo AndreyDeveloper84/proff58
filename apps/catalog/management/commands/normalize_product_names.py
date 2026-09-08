@@ -76,7 +76,9 @@ class Command(BaseCommand):
         shown = 0
         stats = {"total": 0, "name_changed": 0, "card_changed": 0, "expanded": 0}
 
-        queryset = Product.objects.only("id", "name", "card_name", "article").order_by("id")
+        queryset = Product.objects.only(
+            "id", "name", "original_name", "card_name", "article"
+        ).order_by("id")
         if in_stock:
             queryset = queryset.filter(available_quantity__gt=0)
 
@@ -90,7 +92,11 @@ class Command(BaseCommand):
         for product in queryset.iterator(chunk_size=BATCH):
             stats["total"] += 1
             full = normalize_name(product.name, article=product.article)
-            short = card_name(product.name, article=product.article)
+            # Короткую форму считаем от строки 1С, а не от витринного имени:
+            # иначе повторный прогон возьмёт уже развёрнутое `name` и плитка
+            # потеряет телеграфную запись, ради которой card_name и заведён.
+            source = product.original_name or product.name
+            short = card_name(source, article=product.article)
             # Раскрытие сокращения, а не просто прибранные пробелы: только такие
             # правки стоит смотреть глазами.
             expanded = full != short
