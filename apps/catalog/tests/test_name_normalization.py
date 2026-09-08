@@ -242,3 +242,32 @@ def test_size_separator_wins_over_marking():
     assert normalize_name("Фонарь ЭРА PA-601 прожектор АЛЬФА 19хLED+24хLED") == (
         "Фонарь ЭРА PA-601 прожектор АЛЬФА 19хLED+24хLED"
     )
+
+
+@pytest.mark.django_db
+def test_command_is_idempotent_on_card_name():
+    """Повторный прогон команды не должен разворачивать плитку.
+
+    `card_name` считается от строки 1С (`original_name`), а не от витринного
+    `name`: после первого прогона `name` уже развёрнут, и счёт от него стёр бы
+    телеграфную запись, ради которой поле и заведено.
+    """
+    from django.core.management import call_command
+
+    from apps.catalog.models import Product
+
+    product = Product.objects.create(
+        name="Круг алмаз. отрез. 115х1,0",
+        original_name="Круг алмаз. отрез. 115х1,0",
+        slug="krug-almaz-115",
+        article="KR-115",
+    )
+    call_command("normalize_product_names", verbosity=0)
+    product.refresh_from_db()
+    assert product.name == "Круг алмазный отрезной 115х1,0"
+    assert product.card_name == "Круг алмаз. отрез. 115х1,0"
+
+    call_command("normalize_product_names", verbosity=0)
+    after = Product.objects.get(pk=product.pk)
+    assert after.name == product.name
+    assert after.card_name == product.card_name
