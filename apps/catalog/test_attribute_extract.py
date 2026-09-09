@@ -662,16 +662,22 @@ def _kg(rules: AttributeRules, name: str):
 @pytest.mark.parametrize(
     "name,wrench_type,size",
     [
-        # сокращения 1С: «комб» — 66 товаров пула, «рож» — 13
-        ("Ключ комб 13х17 мм CrV", "kombinir", "17"),
+        # сокращения 1С: «комб» — 66 товаров пула, «рож» — 13.
+        # У двух кейсов с ПАРОЙ размер ушёл в size_pair (решение владельца
+        # 2026-09-09, ДРФ-1524) — здесь проверяется только распознавание
+        # сокращения, поэтому size=None, а сама пара покрыта отдельным тестом.
+        ("Ключ комб 13х17 мм CrV", "kombinir", None),
         ("Ключ комб трещ. 13 мм ЗУБР", "kombinir", "13"),
-        ("Ключ рож 12х13 мм", "rozhkovy", "13"),
+        ("Ключ рож 12х13 мм", "rozhkovy", None),
     ],
 )
 def test_kg_abbreviations_give_type_and_size(rules, name, wrench_type, size):
     f = _kg(rules, name)
     assert f["wrench_type"].option_slug == wrench_type
-    assert f["size"].number == Decimal(size)
+    if size is None:
+        assert "size" not in f, "у пары одиночного размера быть не должно"
+    else:
+        assert f["size"].number == Decimal(size)
 
 
 @pytest.mark.parametrize(
@@ -777,7 +783,9 @@ def test_kg_cyrillic_mm_regex_stays_first(rules):
     [
         # Товары, у которых значения уже записаны: результат после правки тот же.
         ("Ключ комбинированный 17мм CrV ЗУБР", {"wrench_type": "kombinir", "size": "17"}),
-        ("Ключ накидной 10х11 мм  СК", {"wrench_type": "nakidnoy", "size": "11"}),
+        # Пара переехала в size_pair решением владельца 2026-09-09 (ДРФ-1524):
+        # ключ на 10 и на 11 больше не объявляется ключом на 11.
+        ("Ключ накидной 10х11 мм  СК", {"wrench_type": "nakidnoy", "size_pair": "10x11"}),
         ("Ключ разводной 150мм 0-19 мм W27AT6 Jonnesway", {"wrench_type": "razvodnoy"}),
         ("Ключ трубный рычажный №1 10 - 36 мм CrV", {"wrench_type": "trubny"}),
         ("Ключ динамометрический 1/2 28-210 Нм", {"wrench_type": "dinamo"}),
@@ -798,7 +806,8 @@ def test_golovki_drive_and_size(rules):
     assert f["size"].number == Decimal("13")
 
 
-# --- size у ключей/головок: диапазоны отсекаем, пары «10х11» СОХРАНЯЕМ ---------
+# --- size у ключей/головок: диапазоны отсекаем; пара «10х11» у КЛЮЧЕЙ переехала
+# --- в size_pair (решение владельца 2026-09-09), у ГОЛОВОК сохраняется ---------
 #
 # Правило `size` у `golovki` и `klyuchi-gaechnye` использует lookbehind
 # `(?<![\d.,/-])`, который блокирует диапазон («10-32 мм» → набор/разводной ключ, где
@@ -836,14 +845,49 @@ def test_size_range_does_not_yield_single_value(rules, tt, name):
         # ЯКОРЬ осознанного расхождения: «х» НЕ блокируется, пара даёт размер.
         # Если кто-то «выровняет» правило по passatizhi, добавив «х» в lookbehind,
         # эти кейсы упадут — расхождение должно сниматься решением, а не рефакторингом.
-        ("klyuchi-gaechnye", "Ключ накидной 10х11 мм  СК", Decimal("11")),
-        ("klyuchi-gaechnye", "Ключ баллонный 24х27мм торцовый ЗУБР МАСТЕР", Decimal("27")),
+        #
+        # У КЛЮЧЕЙ расхождение СНЯТО решением владельца 2026-09-09 (ДРФ-1524): заведена
+        # ось `size_pair`, и только после неё у `size` появился гейт на пару. Кейсы
+        # ключей переехали в `test_wrench_pair_moved_to_its_own_axis` ниже.
+        #
+        # У ГОЛОВОК якорь остаётся в силе, и это НЕ недоделка: «Головка 13х48 мм»
+        # значит размер 13 при длине 48, а не пару размеров. Общая ось смешала бы две
+        # разные величины, поэтому решение по ключам сюда не распространяется.
         ("golovki", "Ключ торцевой 14х14 мм изогнутый", Decimal("14")),
         ("golovki", "Ключ трубчатый 8х9мм KWB", Decimal("9")),
     ],
 )
 def test_size_pair_is_kept_deliberately(rules, tt, name, expected):
     assert {v.slug: v for v in rules.extract(tt, name)}["size"].number == expected
+
+
+@pytest.mark.parametrize(
+    "name,pair",
+    [
+        ("Ключ накидной 10х11 мм  СК", "10x11"),
+        ("Ключ баллонный 24х27мм торцовый ЗУБР МАСТЕР", "24x27"),
+        ("Ключ комб трубчатый 17х19мм", "17x19"),
+        ("Ключ баллонный 27х30 мм x 360 мм, ДТ", "27x30"),
+    ],
+)
+def test_wrench_pair_moved_to_its_own_axis(rules, name, pair):
+    """Решение владельца 2026-09-09: пара живёт в `size_pair`, а не в `size`.
+
+    Прежде «Ключ накидной 10х11 мм» получал размер 11 — покупатель, ищущий 10,
+    товар не находил, а нашедший по 11 получал двусторонний ключ на 10 и на 11.
+    Гейт у `size` появился ТОЛЬКО вместе с осью, куда пара переехала: снимать
+    значение, не сохранив его, значило бы терять данные.
+    """
+    got = {v.slug: v for v in rules.extract("klyuchi-gaechnye", name)}
+    assert "size" not in got, "одиночного размера у пары быть не должно"
+    assert got["size_pair"].option_slug == pair
+
+
+def test_wrench_single_size_survived_the_pair_gate(rules):
+    """Гейт бьёт только по паре: одиночный размер читается как раньше."""
+    got = {v.slug: v for v in rules.extract("klyuchi-gaechnye", "Ключ рожковый 10 мм ЗУБР")}
+    assert got["size"].number == Decimal("10")
+    assert "size_pair" not in got
 
 
 @pytest.mark.parametrize(
