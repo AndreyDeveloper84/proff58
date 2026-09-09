@@ -93,3 +93,33 @@ def test_already_restored_name_is_skipped(tmp_path, cut_product):
     out = tmp_path / "analogs.csv"
     call_command("catalog_name_analogs", f"--out={out}", verbosity=0)
     assert _rows(out) == []
+
+
+@pytest.mark.django_db
+def test_ambiguous_tail_is_refused(tmp_path):
+    """Если доноры дают разные хвосты — не достраиваем ничего.
+
+    У молотка ЗУБР вес зависит от размера бойка: 35 мм — 450 г, 47 мм — 680 г.
+    Когда обрыв пришёлся ровно перед весом, какой из хвостов наш — по названию
+    не понять. Подставить чужое число в карточку хуже, чем оставить обрыв.
+    """
+    full = "Молоток безынерционный ЗУБР Профессионал 40мм, вес 680г"
+    cut_raw = full[:50]
+    assert cut_raw.split()[-1] == "вес", cut_raw  # обрыв пришёлся перед числом
+    Product.objects.create(
+        name=cut_raw.strip(),
+        original_name=cut_raw,
+        slug="molotok-40",
+        article="M-40",
+    )
+    for size, weight in (("35мм", "450г"), ("47мм", "680г")):
+        Product.objects.create(
+            name=f"Молоток безынерционный ЗУБР Профессионал {size}, вес {weight}",
+            original_name=f"Молоток безынерционный ЗУБР Профессионал {size}, вес {weight}",
+            slug=f"molotok-{size}",
+            article=f"M-{size}",
+        )
+
+    out = tmp_path / "analogs.csv"
+    call_command("catalog_name_analogs", f"--out={out}", verbosity=0)
+    assert _rows(out) == []
