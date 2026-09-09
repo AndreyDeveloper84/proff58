@@ -123,3 +123,43 @@ def test_restore_truncated_does_not_undo_web_name(truncated):
 
     truncated.refresh_from_db()
     assert truncated.name.endswith("для крепления груза")
+
+
+@pytest.mark.django_db
+def test_inferred_source_needs_donor_not_url(tmp_path, truncated):
+    """Достройка по позиции-донору из каталога — источник `inferred`.
+
+    Ссылки у него нет, но донор обязателен: иначе непонятно, откуда взялся
+    хвост. Приоритет у инференса ниже веба, поэтому находка из интернета его
+    потом перекроет.
+    """
+    path = tmp_path / "inferred.csv"
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["product_id", "name", "evidence_url", "confidence", "source"])
+        writer.writerow(
+            [
+                truncated.pk,
+                'Стяжка груза 6м, 2т STAYER "PROFESSIONAL" для крепления груза',
+                "донор: product 12345",
+                0.75,
+                "inferred",
+            ]
+        )
+    call_command("catalog_restore_names", f"--file={path}", "--commit", verbosity=0)
+    truncated.refresh_from_db()
+    assert truncated.name.endswith("для крепления груза")
+    assert truncated.content_field_sources["name"] == "inferred"
+
+
+@pytest.mark.django_db
+def test_web_still_requires_https(tmp_path, truncated):
+    from django.core.management.base import CommandError
+
+    path = tmp_path / "bad.csv"
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["product_id", "name", "evidence_url", "confidence", "source"])
+        writer.writerow([truncated.pk, "Имя", "донор: product 1", 0.9, "web"])
+    with pytest.raises(CommandError):
+        call_command("catalog_restore_names", f"--file={path}", "--commit", verbosity=0)
