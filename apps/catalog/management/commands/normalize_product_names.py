@@ -113,7 +113,7 @@ class Command(BaseCommand):
         stats = {"total": 0, "name_changed": 0, "card_changed": 0, "expanded": 0}
 
         queryset = Product.objects.only(
-            "id", "name", "original_name", "card_name", "article"
+            "id", "name", "original_name", "card_name", "article", "content_field_sources"
         ).order_by("id")
         if in_stock:
             queryset = queryset.filter(available_quantity__gt=0)
@@ -127,7 +127,16 @@ class Command(BaseCommand):
 
         for product in queryset.iterator(chunk_size=BATCH):
             stats["total"] += 1
-            truncated = restore_truncated and _is_truncation_of(product.name, product.original_name)
+            # Имя, восстановленное поиском в интернете (catalog_restore_names),
+            # выглядит для этой проверки как «удлинение» и под неё не подпадает,
+            # но защищаемся явно: возвращать вместо него обрезанную строку 1С
+            # нельзя ни при каких условиях.
+            found_in_web = (product.content_field_sources or {}).get("name") == "web"
+            truncated = (
+                restore_truncated
+                and not found_in_web
+                and _is_truncation_of(product.name, product.original_name)
+            )
             if restore_truncated and not truncated:
                 continue
             source_name = product.original_name if (from_original or truncated) else product.name
