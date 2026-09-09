@@ -471,7 +471,13 @@ def test_production_registry_is_valid():
 
     assert registry.exists
     assert registry.version == quarantine.VERSION
-    assert {e.product_id for e in registry.active} == {18455, 18578}
+    # Состав реестра зафиксирован намеренно: новая запись обязана появиться здесь
+    # осознанно, а не проскочить вместе с чужой правкой.
+    #   18455, 18578 — ХАР-13, исключения владельца вместо классовых гейтов;
+    #   34721 — ДРФ-1524, границы раскрытия перевёрнуты в самом названии 1С
+    #           («900-800мм»), правилами это не чинится: порядок чисел в названии
+    #           определить нечем, а разворот пары исказил бы верные данные.
+    assert {e.product_id for e in registry.active} == {18455, 18578, 34721}
     for entry in registry.entries:
         assert entry.reason in quarantine.REASONS
         assert entry.status in quarantine.STATUSES
