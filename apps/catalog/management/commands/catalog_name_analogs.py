@@ -115,6 +115,7 @@ class Command(BaseCommand):
         head, cut_word = words[:-1], words[-1]
         head_pattern = [_NUMBERS.sub("#", word) for word in head]
 
+        tails: dict[str, str] = {}
         for donor_name in donors.get(" ".join(head_pattern), []):
             donor_words = donor_name.split()
             if len(donor_words) <= len(head):
@@ -127,8 +128,16 @@ class Command(BaseCommand):
             # Иначе это другая серия, просто похожая по скелету.
             if not tail_words[0].lower().startswith(cut_word.lower()):
                 continue
-            restored = " ".join(head + tail_words)
-            if restored == product.name:
-                continue
-            return [product.pk, restored, f"донор: {donor_name}", CONFIDENCE, "inferred"]
-        return None
+            tails[" ".join(tail_words)] = donor_name
+
+        # Ноль хвостов — донора нет. Больше одного — хвост зависит от типоразмера,
+        # и какой из них наш, по названию не понять: у молотка ЗУБР с бойком 35 мм
+        # вес 450 г, у 47 мм — 680 г. Чужое число в карточке хуже, чем обрыв.
+        if len(tails) != 1:
+            return None
+
+        tail, donor_name = next(iter(tails.items()))
+        restored = " ".join(head + [tail])
+        if restored == product.name:
+            return None
+        return [product.pk, restored, f"донор: {donor_name}", CONFIDENCE, "inferred"]
