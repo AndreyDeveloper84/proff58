@@ -123,3 +123,80 @@ def test_ambiguous_tail_is_refused(tmp_path):
     out = tmp_path / "analogs.csv"
     call_command("catalog_name_analogs", f"--out={out}", verbosity=0)
     assert _rows(out) == []
+
+
+@pytest.mark.django_db
+def test_web_restored_name_becomes_donor(tmp_path):
+    """Найденное в интернете имя закрывает остальных членов серии.
+
+    Иначе на каждую позицию пришлось бы искать отдельно: у обрезанных строка 1С
+    так и остаётся обрезанной, и по ней донора не отличить от собрата.
+    """
+    full = "Бур 5х165х100 SDS+ Hitachi 4 кромки цельный твердосплавный"
+    Product.objects.create(  # этот уже восстановлен по карточке производителя
+        name=full,
+        original_name=full[:50],
+        slug="bur-5",
+        article="783202",
+        content_field_sources={"name": "web"},
+    )
+    other = "Бур 6х215х150 SDS+ Hitachi 4 кромки цельный твердосплавный"
+    cut = Product.objects.create(
+        name=other[:50].strip(),
+        original_name=other[:50],
+        slug="bur-6",
+        article="783210",
+    )
+
+    out = tmp_path / "analogs.csv"
+    call_command("catalog_name_analogs", f"--out={out}", verbosity=0)
+    rows = _rows(out)
+    assert [r["product_id"] for r in rows] == [str(cut.pk)]
+    assert rows[0]["name"] == other
+
+
+@pytest.mark.django_db
+def test_inferred_name_does_not_become_donor(tmp_path):
+    """Достройка по аналогу донором не становится — иначе ошибка расползётся."""
+    full = "Бур 5х165х100 SDS+ Hitachi 4 кромки цельный твердосплавный"
+    Product.objects.create(
+        name=full,
+        original_name=full[:50],
+        slug="bur-5",
+        article="783202",
+        content_field_sources={"name": "inferred"},
+    )
+    other = "Бур 6х215х150 SDS+ Hitachi 4 кромки цельный твердосплавный"
+    Product.objects.create(
+        name=other[:50].strip(), original_name=other[:50], slug="bur-6", article="783210"
+    )
+    out = tmp_path / "analogs.csv"
+    call_command("catalog_name_analogs", f"--out={out}", verbosity=0)
+    assert _rows(out) == []
+
+
+@pytest.mark.django_db
+def test_longer_tail_wins_when_variants_agree(tmp_path):
+    """«сталь Р6М5К5» и «сталь Р6М5К5, ГОСТ 10902» — не конфликт, а подробность.
+
+    В каталоге у одной серии свёрл часть позиций названа короче. Берём самый
+    полный вариант, раз остальные — его начало.
+    """
+    full = "Сверло ц/х ф3,8 сред серия класс А,, легир кобальт, сталь Р6М5К5, ГОСТ 10902"
+    cut = Product.objects.create(
+        name=full[:50].strip(), original_name=full[:50], slug="sverlo-38", article="S-38"
+    )
+    for size, tail in (
+        ("ф2,3", "сталь Р6М5К5, ГОСТ 10902"),
+        ("ф15,5", "сталь Р6М5К5"),
+    ):
+        name = f"Сверло ц/х {size} сред серия класс А,, легир кобальт, {tail}"
+        Product.objects.create(
+            name=name, original_name=name, slug=f"sverlo-{size}", article=f"S-{size}"
+        )
+
+    out = tmp_path / "analogs.csv"
+    call_command("catalog_name_analogs", f"--out={out}", verbosity=0)
+    rows = _rows(out)
+    assert [r["product_id"] for r in rows] == [str(cut.pk)]
+    assert rows[0]["name"] == full
