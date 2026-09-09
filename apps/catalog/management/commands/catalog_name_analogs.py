@@ -62,10 +62,17 @@ class Command(BaseCommand):
 
         cut: list[Product] = []
         donors: dict[str, list[str]] = defaultdict(list)
-        for product in Product.objects.only("id", "name", "original_name").iterator(
-            chunk_size=1000
-        ):
-            if len(product.original_name or "") == CUT_LENGTH:
+        for product in Product.objects.only(
+            "id", "name", "original_name", "content_field_sources"
+        ).iterator(chunk_size=1000):
+            name_source = (product.content_field_sources or {}).get("name", "")
+            # Донором может быть и позиция с обрезанной строкой 1С — если её имя
+            # уже восстановлено по карточке производителя. Так один найденный
+            # представитель серии закрывает всех остальных: нашли «Бур … цельный
+            # твердосплавный» — и десяток собратьев достраивается без поиска.
+            # Достройки по аналогу (inferred) донорами не становятся: иначе одна
+            # ошибка расползлась бы по цепочке.
+            if len(product.original_name or "") == CUT_LENGTH and name_source != "web":
                 continue
             # Индексируем по скелету первых слов: обрезанное имя короче донора,
             # и полный скелет у них никогда не совпадёт.
@@ -130,13 +137,20 @@ class Command(BaseCommand):
                 continue
             tails[" ".join(tail_words)] = donor_name
 
-        # Ноль хвостов — донора нет. Больше одного — хвост зависит от типоразмера,
-        # и какой из них наш, по названию не понять: у молотка ЗУБР с бойком 35 мм
-        # вес 450 г, у 47 мм — 680 г. Чужое число в карточке хуже, чем обрыв.
-        if len(tails) != 1:
+        if not tails:
             return None
 
-        tail, donor_name = next(iter(tails.items()))
+        # Несколько вариантов хвоста — ещё не конфликт: «сталь Р6М5К5» и «сталь
+        # Р6М5К5, ГОСТ 10902» описывают одно и то же, второй просто подробнее.
+        # Берём самый полный, если остальные — его начало.
+        longest = max(tails, key=len)
+        if any(not longest.startswith(tail) for tail in tails):
+            # А вот это настоящий конфликт: у молотка ЗУБР с бойком 35 мм вес
+            # 450 г, у 47 мм — 680 г, и какой из них наш, по названию не понять.
+            # Чужое число в карточке хуже, чем обрыв.
+            return None
+
+        tail, donor_name = longest, tails[longest]
         restored = " ".join(head + [tail])
         if restored == product.name:
             return None
