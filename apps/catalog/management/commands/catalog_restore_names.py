@@ -14,8 +14,14 @@
 
 Формат файла — CSV с заголовком:
 
-    product_id,name,evidence_url,confidence
-    633,"Пылесос Hitachi R14DSL 14В аккумуляторный без аккумулятора",https://…,0.9
+    product_id,name,evidence_url,confidence,source
+    633,"Пылесос Hitachi R14DSL 14В аккумуляторный без аккумулятора",https://…,0.9,web
+
+Источников два. ``web`` — карточка производителя или магазина, ссылка обязательна.
+``inferred`` — достройка по позиции-донору из этого же каталога: у шаблонных
+названий («Плашка М 6х0,5 класс точности 6g, сталь 9ХС, ГОСТ 9740-71») часть
+позиций уцелела, и хвост берётся из них, а не из головы. У инференса приоритет
+ниже (10 против 25), поэтому веб-находка его потом перекроет.
 
 ``original_name`` не трогается никогда: там лежит то, что прислала 1С.
 
@@ -90,14 +96,25 @@ class Command(BaseCommand):
             missing = required - set(row)
             if missing:
                 raise CommandError(f"строка {index}: нет колонок {sorted(missing)}")
-            if not (row.get("evidence_url") or "").startswith("https://"):
-                raise CommandError(f"строка {index}: evidence_url обязателен и должен быть https")
+            source = (row.get("source") or "web").strip()
+            if source not in {"web", "inferred"}:
+                raise CommandError(f"строка {index}: source должен быть web или inferred")
+            evidence = (row.get("evidence_url") or "").strip()
+            if source == "web" and not evidence.startswith("https://"):
+                raise CommandError(f"строка {index}: для source=web нужна https-ссылка")
+            # У инференса ссылки нет, но донор обязателен: иначе не проверить,
+            # откуда взялся хвост.
+            if source == "inferred" and not evidence:
+                raise CommandError(
+                    f"строка {index}: для source=inferred укажите донора в evidence_url"
+                )
         return rows
 
     def _apply(self, row: dict, *, commit: bool, allow_equal: bool = False) -> str:
         product_id = int(row["product_id"])
         name = (row["name"] or "").strip()
         confidence = float(row["confidence"] or 0)
+        source = (row.get("source") or "web").strip()
 
         if not name or len(name) > NAME_MAX:
             return "invalid_name"
@@ -125,7 +142,7 @@ class Command(BaseCommand):
             target_kind="name",
             attribute_slug="",
             value={"type": "text", "value": name},
-            source="web",
+            source=source,
             confidence=confidence,
             observed_value_hash=provenance.value_hash(product.name or ""),
             observed_source=(product.content_field_sources or {}).get("name", ""),
