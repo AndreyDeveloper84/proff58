@@ -200,3 +200,37 @@ def test_longer_tail_wins_when_variants_agree(tmp_path):
     rows = _rows(out)
     assert [r["product_id"] for r in rows] == [str(cut.pk)]
     assert rows[0]["name"] == full
+
+
+@pytest.mark.django_db
+def test_article_prefix_picks_the_right_series(tmp_path):
+    """Артикул разводит серии, которые по названию неразличимы.
+
+    У кругов MD-STARS («GR7MD…») и SKYWER хвосты разные, а начало названия
+    совпадает до последнего слова. Без артикула пришлось бы отказаться от обеих.
+    """
+    cut_full = "Круг алмазный отрезной 180х1,4х7х22 1A1R Мокрорез GRANIT ECONOM MD-STARS"
+    cut = Product.objects.create(
+        name=cut_full[:50].strip(),
+        original_name=cut_full[:50],
+        slug="krug-180",
+        article="GR7MD18022",
+    )
+    Product.objects.create(  # та же серия — её хвост и нужен
+        name="Круг алмазный отрезной 200х1,4х7х22,2 1A1R Мокрорез GRANIT ECONOM MD-STARS",
+        original_name="Круг алмазный отрезной 200х1,4х7х22,2 1A1R Мокрорез GRANIT ECONOM MD-STARS",
+        slug="krug-200",
+        article="GR7MD20022",
+    )
+    Product.objects.create(  # чужая серия с другим хвостом
+        name="Круг алмазный отрезной 230х1,6х7х25,4 1A1R Мокрорез GRANITE Гранит, базальт",
+        original_name="Круг алмазный отрезной 230х1,6х7х25,4 1A1R Мокрорез GRANITE Гранит, базальт",
+        slug="krug-230",
+        article="SK-UUS23025",
+    )
+
+    out = tmp_path / "analogs.csv"
+    call_command("catalog_name_analogs", f"--out={out}", verbosity=0)
+    rows = _rows(out)
+    assert [r["product_id"] for r in rows] == [str(cut.pk)]
+    assert rows[0]["name"].endswith("GRANIT ECONOM MD-STARS")
