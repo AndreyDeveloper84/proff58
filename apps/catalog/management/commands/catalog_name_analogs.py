@@ -35,11 +35,20 @@ CONFIDENCE = 0.75
 
 _NUMBERS = re.compile(r"[0-9][0-9.,хx/-]*")
 _SPACES = re.compile(r"\s+")
+# Буквенный префикс артикула: «GR7MD18022» → «GR», «SK-TGP18025» → «SK-TGP».
+# Внутри такого префикса лежит одна серия производителя, и хвосты у неё общие.
+_ARTICLE_PREFIX = re.compile(r"^[A-Za-zА-Яа-я][A-Za-zА-Яа-я-]*")
 
 
 def skeleton(name: str) -> str:
     """Название без чисел и размеров: «Плашка М 6х0,5 класс…» → «Плашка М # класс…»."""
     return _SPACES.sub(" ", _NUMBERS.sub("#", name)).strip()
+
+
+def _article_prefix(article: str) -> str:
+    """Буквенная часть артикула — метка серии производителя."""
+    match = _ARTICLE_PREFIX.match((article or "").strip())
+    return match.group(0).upper() if match else ""
 
 
 class Command(BaseCommand):
@@ -61,9 +70,9 @@ class Command(BaseCommand):
             queryset = queryset.filter(available_quantity__gt=0)
 
         cut: list[Product] = []
-        donors: dict[str, list[str]] = defaultdict(list)
+        donors: dict[str, list[tuple[str, str]]] = defaultdict(list)
         for product in Product.objects.only(
-            "id", "name", "original_name", "content_field_sources"
+            "id", "name", "original_name", "article", "content_field_sources"
         ).iterator(chunk_size=1000):
             name_source = (product.content_field_sources or {}).get("name", "")
             # Донором может быть и позиция с обрезанной строкой 1С — если её имя
@@ -78,7 +87,8 @@ class Command(BaseCommand):
             # и полный скелет у них никогда не совпадёт.
             words = product.name.split()
             for length in range(2, min(len(words), 12)):
-                donors[" ".join(_NUMBERS.sub("#", w) for w in words[:length])].append(product.name)
+                key = " ".join(_NUMBERS.sub("#", w) for w in words[:length])
+                donors[key].append((product.name, _article_prefix(product.article)))
 
         for product in queryset.iterator(chunk_size=1000):
             if len(product.original_name or "") != CUT_LENGTH:
@@ -108,7 +118,7 @@ class Command(BaseCommand):
         self.stdout.write(f"донора нет:    {skipped}  ← остаётся поиск в интернете")
         self.stdout.write(f"файл: {out}")
 
-    def _pick(self, product: Product, donors: dict[str, list[str]]) -> list | None:
+    def _pick(self, product: Product, donors: dict[str, list[tuple[str, str]]]) -> list | None:
         """Донор той же серии; числа берём свои, хвост — от донора.
 
         Сравнивать строки напрямую нельзя: у донора другой типоразмер, и
@@ -122,8 +132,10 @@ class Command(BaseCommand):
         head, cut_word = words[:-1], words[-1]
         head_pattern = [_NUMBERS.sub("#", word) for word in head]
 
+        prefix = _article_prefix(product.article)
         tails: dict[str, str] = {}
-        for donor_name in donors.get(" ".join(head_pattern), []):
+        same_series: dict[str, str] = {}
+        for donor_name, donor_prefix in donors.get(" ".join(head_pattern), []):
             donor_words = donor_name.split()
             if len(donor_words) <= len(head):
                 continue
@@ -135,7 +147,15 @@ class Command(BaseCommand):
             # Иначе это другая серия, просто похожая по скелету.
             if not tail_words[0].lower().startswith(cut_word.lower()):
                 continue
-            tails[" ".join(tail_words)] = donor_name
+            tail = " ".join(tail_words)
+            tails[tail] = donor_name
+            if prefix and donor_prefix == prefix:
+                same_series[tail] = donor_name
+
+        # Артикул точнее скелета: у кругов SKYWER «SK-TGP…» и MD-STARS «GR7MD…»
+        # хвост свой у каждой серии, и по одному лишь названию их не развести.
+        if len(tails) > 1 and len(same_series) == 1:
+            tails = same_series
 
         if not tails:
             return None
