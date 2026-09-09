@@ -37,6 +37,13 @@
 7. **Никаких глобальных write-команд** — всё scoped и идемпотентно проверено
    (repeat-preview = 0 после write).
 8. **Сначала leaf, потом keywords** — v2-лист даёт контекст; широкие подстроки запрещены.
+9. **G-4 — протокол атрибуции для любых staging data writes** (принят в VI-INT-07/09):
+   staging — конкурентная среда, поэтому истина для write-трека — immutable
+   manifest + provenance + per-product diff: baseline непосредственно перед write;
+   immutable product scope; source-атрибуция каждого изменения; per-product
+   before/after; глобальные счётчики — только вспомогательный сигнал; foreign
+   mutations считаются и доказываются отдельно; rollback — только
+   provenance-based (без диапазонов id).
 
 ## Catalog processing foundation (rule/AI/research)
 
