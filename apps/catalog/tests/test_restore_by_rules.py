@@ -119,3 +119,31 @@ def test_gost_year_is_refused_when_editions_differ():
     call_command("catalog_restore_by_rules", "--commit", verbosity=0)
     cut.refresh_from_db()
     assert cut.name == cut_raw.strip()
+
+
+@pytest.mark.django_db
+def test_dangling_paren_is_cut_off():
+    """Оборванная скобка снимается — дописать перечень кодов нечем."""
+    full = "Бензопровод в сборе (OLD 223-0097A-90/6692429/6688603) Hitachi"
+    cut_raw = full[:50]
+    cut = Product.objects.create(
+        name=cut_raw.strip(), original_name=cut_raw, slug="benzoprovod", article="B-1"
+    )
+    call_command("catalog_restore_by_rules", "--commit", verbosity=0)
+    cut.refresh_from_db()
+    assert cut.name == "Бензопровод в сборе"
+    # Исходная строка 1С цела: коды не потеряны совсем.
+    assert cut.original_name == cut_raw
+
+
+@pytest.mark.django_db
+def test_number_at_the_end_is_kept():
+    """Число в конце не срезаем: это может быть значащий размер."""
+    full = "Домкрат 2 т гидравлический подкатной T30, 135-330 мм"
+    cut_raw = full[:50]
+    cut = Product.objects.create(
+        name=cut_raw.strip(), original_name=cut_raw, slug="domkrat", article="D-1"
+    )
+    call_command("catalog_restore_by_rules", "--commit", verbosity=0)
+    cut.refresh_from_db()
+    assert cut.name.endswith("135-330")
