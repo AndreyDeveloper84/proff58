@@ -39,6 +39,15 @@ _SPACES = re.compile(r"\s+")
 # Внутри такого префикса лежит одна серия производителя, и хвосты у неё общие.
 _ARTICLE_PREFIX = re.compile(r"^[A-Za-zА-Яа-я][A-Za-zА-Яа-я-]*")
 
+# Хвост с характеристикой переносить нельзя: у «Трансформатор НТС-1,6У2 … 1,6кВА
+# 320х245х355мм 35кг» мощность, габариты и вес свои у каждой модели, и донор
+# соседней модели подставил бы чужие. Номер стандарта («ГОСТ 9740-71») и марка
+# стали единиц измерения не содержат, поэтому под правило не попадают.
+_MEASURED_TAIL = re.compile(
+    r"\d[\d.,х/xX-]*\s*(кВА|кВт|Вт|кг|гр|мм|см|мл|мАч|Ач|А/ч|В|л|об/мин|Нм|Дж)\b",
+    re.IGNORECASE,
+)
+
 
 def skeleton(name: str) -> str:
     """Название без чисел и размеров: «Плашка М 6х0,5 класс…» → «Плашка М # класс…»."""
@@ -148,6 +157,8 @@ class Command(BaseCommand):
             if not tail_words[0].lower().startswith(cut_word.lower()):
                 continue
             tail = " ".join(tail_words)
+            if _MEASURED_TAIL.search(tail):
+                continue  # хвост описывает саму позицию, а не серию
             tails[tail] = donor_name
             if prefix and donor_prefix == prefix:
                 same_series[tail] = donor_name
