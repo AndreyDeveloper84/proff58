@@ -234,3 +234,25 @@ def test_article_prefix_picks_the_right_series(tmp_path):
     rows = _rows(out)
     assert [r["product_id"] for r in rows] == [str(cut.pk)]
     assert rows[0]["name"].endswith("GRANIT ECONOM MD-STARS")
+
+
+@pytest.mark.django_db
+def test_tail_with_measurements_is_refused(tmp_path):
+    """Хвост с характеристикой принадлежит позиции, а не серии.
+
+    У трансформатора НТС-1,6У2 мощность 1,6 кВА и вес 35 кг — свои, и донор
+    соседней модели подставил бы их модели НТС-2,5У2, у которой они другие.
+    """
+    full = "Трансформатор понижающий НТС-2,5У2 с 380В на 42В 3фазн. 2,5кВА 35кг"
+    Product.objects.create(
+        name=full[:50].strip(), original_name=full[:50], slug="ntc-25", article="NTC-25"
+    )
+    Product.objects.create(
+        name="Трансформатор понижающий НТС-1,6У2 с 380В на 42В 3фазн. 1,6кВА 35кг",
+        original_name="Трансформатор понижающий НТС-1,6У2 с 380В на 42В 3фазн. 1,6кВА 35кг",
+        slug="ntc-16",
+        article="NTC-16",
+    )
+    out = tmp_path / "analogs.csv"
+    call_command("catalog_name_analogs", f"--out={out}", verbosity=0)
+    assert _rows(out) == []
