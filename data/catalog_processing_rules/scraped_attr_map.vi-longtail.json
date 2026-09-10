@@ -47,7 +47,12 @@
    "nabory-pilok",
    "obor-shlangi",
    "otboynye-molotki",
-   "zap-filtry"
+   "zap-filtry",
+   "payalniki",
+   "stameski",
+   "stanki-derevoobrabatyvayushchie",
+   "sverlilnye-stanki",
+   "ustanovki-almaznogo-bureniya"
   ]
  },
  "scope_tool_types": [
@@ -90,7 +95,12 @@
   "nabory-pilok",
   "obor-shlangi",
   "otboynye-molotki",
-  "zap-filtry"
+  "zap-filtry",
+  "payalniki",
+  "stameski",
+  "stanki-derevoobrabatyvayushchie",
+  "sverlilnye-stanki",
+  "ustanovki-almaznogo-bureniya"
  ],
  "sources": {
   "vseinstrumenti": {

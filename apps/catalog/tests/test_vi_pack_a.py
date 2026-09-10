@@ -52,6 +52,13 @@ SCOPE_ADDITIONS = {
     "otboynye-molotki",
     "zap-filtry",
 }
+SCOPE_ADDITIONS_VI16 = {
+    "payalniki",
+    "stameski",
+    "stanki-derevoobrabatyvayushchie",
+    "sverlilnye-stanki",
+    "ustanovki-almaznogo-bureniya",
+}
 
 
 @pytest.fixture(scope="module")
@@ -79,8 +86,11 @@ def _by_attr(res):
 def test_pack_a_scope_additions_present(amap):
     scope = set(amap["scope_tool_types"])
     assert SCOPE_ADDITIONS <= scope
-    assert len(amap["scope_tool_types"]) == 40
+    assert SCOPE_ADDITIONS_VI16 <= scope
+    # точный состав, а не только число: никакого случайного расширения
+    assert len(amap["scope_tool_types"]) == 45
     assert set(amap["policy"]["scope_tool_types"]) == scope
+    assert len(scope) == 45
 
 
 def test_kvadrat_maps_to_drive_exact_inch_dict(amap):
