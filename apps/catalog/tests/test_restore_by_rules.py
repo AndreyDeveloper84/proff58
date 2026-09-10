@@ -80,3 +80,42 @@ def test_every_rule_has_justification():
     for rule in data["rules"]:
         assert rule.get("note"), f"{rule['id']}: нет пояснения, откуда взят хвост"
         assert 0 < float(rule["confidence"]) <= 1
+
+
+@pytest.mark.django_db
+def test_gost_year_is_taken_from_catalog():
+    """«… ГОСТ 3266» → год берётся из целых названий той же номенклатуры."""
+    full = "Метчик м/р М10х1,25 левый сталь Р6М5 ГОСТ 3266-81 длинный"
+    cut_raw = full[:50]
+    cut = Product.objects.create(
+        name=cut_raw.strip(), original_name=cut_raw, slug="metchik-10", article="M-10"
+    )
+    Product.objects.create(  # целое название — источник года
+        name="Метчик м/р М12х1,5 левый сталь Р6М5 ГОСТ 3266-81",
+        original_name="Метчик м/р М12х1,5 левый сталь Р6М5 ГОСТ 3266-81",
+        slug="metchik-12",
+        article="M-12",
+    )
+    call_command("catalog_restore_by_rules", "--commit", verbosity=0)
+    cut.refresh_from_db()
+    assert cut.name.endswith("ГОСТ 3266-81")
+
+
+@pytest.mark.django_db
+def test_gost_year_is_refused_when_editions_differ():
+    """Две редакции стандарта в каталоге — какая наша, по названию не понять."""
+    full = "Сверло ц/х ф8,0 средняя серия сталь Р6М5 по ГОСТ 10902"
+    cut_raw = full[:50]
+    cut = Product.objects.create(
+        name=cut_raw.strip(), original_name=cut_raw, slug="sverlo-gost", article="S-G"
+    )
+    for year, size in (("77", "10"), ("64", "12")):
+        Product.objects.create(
+            name=f"Сверло ц/х ф{size},0 сталь Р6М5 ГОСТ 10902-{year}",
+            original_name=f"Сверло ц/х ф{size},0 сталь Р6М5 ГОСТ 10902-{year}",
+            slug=f"sverlo-{size}",
+            article=f"S-{size}",
+        )
+    call_command("catalog_restore_by_rules", "--commit", verbosity=0)
+    cut.refresh_from_db()
+    assert cut.name == cut_raw.strip()

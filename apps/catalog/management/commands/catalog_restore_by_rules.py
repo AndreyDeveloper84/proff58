@@ -39,6 +39,11 @@ from apps.catalog.models import Product
 CUT_LENGTH = 50
 RULES_PATH = Path(settings.BASE_DIR) / "data" / "name_restore_rules.json"
 
+# «… сталь Р6М5, ГОСТ 3266» — обрыв пришёлся на год стандарта. Сам номер виден,
+# и год берётся из полных названий каталога: там этот же ГОСТ записан целиком.
+_GOST_TAIL = re.compile(r"^(?P<head>.*ГОСТ\s*)(?P<number>\d{3,5})$")
+_GOST_FULL = re.compile(r"ГОСТ\s*(\d{3,5})-(\d{2,4})")
+
 
 class Command(BaseCommand):
     help = "Достроить обрезанные названия по правилам из data/name_restore_rules.json."
@@ -53,6 +58,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         rules = self._load(options.get("rule"))
+        gost_years = self._gost_years() if not options.get("rule") else {}
         queryset = Product.objects.only(
             "id", "name", "original_name", "article", "content_field_sources"
         ).order_by("id")
@@ -69,6 +75,8 @@ class Command(BaseCommand):
                 continue  # имя уже восстановлено — правило поверх не кладём
 
             match = self._first_match(rules, product.name)
+            if match is None:
+                match = self._match_gost(product.name, gost_years)
             if match is None:
                 continue
             rule, restored = match
@@ -94,6 +102,19 @@ class Command(BaseCommand):
         else:
             self.stdout.write(self.style.WARNING("--dry-run: в базу ничего не записано."))
 
+    @staticmethod
+    def _gost_years() -> dict[str, set[str]]:
+        """Справочник «номер ГОСТа → годы», собранный по целым названиям каталога."""
+        years: dict[str, set[str]] = {}
+        for name in (
+            Product.objects.exclude(name="")
+            .values_list("name", flat=True)
+            .iterator(chunk_size=2000)
+        ):
+            for number, year in _GOST_FULL.findall(name):
+                years.setdefault(number, set()).add(year)
+        return years
+
     def _load(self, only: str | None) -> list[dict]:
         if not RULES_PATH.exists():
             raise CommandError(f"нет файла правил: {RULES_PATH}")
@@ -106,6 +127,24 @@ class Command(BaseCommand):
             if not rules:
                 raise CommandError(f"правило не найдено: {only}")
         return rules
+
+    @staticmethod
+    def _match_gost(name: str, years: dict[str, set[str]]) -> tuple[dict, str] | None:
+        """Достроить год стандарта, если в каталоге он записан однозначно."""
+        found = _GOST_TAIL.match(name)
+        if found is None:
+            return None
+        known = years.get(found.group("number")) or set()
+        if len(known) != 1:
+            # Ноль — года нет ни в одном целом названии. Больше одного — редакции
+            # стандарта разошлись, и какая тут наша, по названию не понять.
+            return None
+        rule = {
+            "id": "gost-year",
+            "confidence": 0.8,
+            "note": "год стандарта взят из целых названий каталога",
+        }
+        return rule, f"{name}-{next(iter(known))}"
 
     @staticmethod
     def _first_match(rules: list[dict], name: str) -> tuple[dict, str] | None:
