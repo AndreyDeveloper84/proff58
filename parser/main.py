@@ -42,7 +42,7 @@ from parser.schemas import (
     ProductCard,
 )
 
-SOURCES = ("resanta", "vihr", "interskol", "zubr")
+SOURCES = ("resanta", "vihr", "huter", "interskol", "zubr")
 SOURCE_ALL = "all"
 
 # Дефолтные категории пилота «перфораторы». Семантика — как у
@@ -54,6 +54,10 @@ DEFAULT_CATEGORY_URLS = {
     # «…/perforator-p-…»/«…/perforator-vihr-…» содержат дефис
     "resanta": "perforator-",
     "vihr": "perforator-",
+    # У huter пилотной категории нет: берём весь каталог карточек, а нужные
+    # товары отбираются потом по артикулу (JSON-LD sku = наш article).
+    # Категорийные страницы отсекает collect_product_urls, не маска.
+    "huter": "huter.su/",
     # суженная маска: широкая «perforator» захватывает /news/… и /catalog/…
     "interskol": "product/perforator",
     "zubr": ("https://zubr.ru/mekhanizirovannye-instrumenty/" "elektroinstrumenty/perforatory/"),
