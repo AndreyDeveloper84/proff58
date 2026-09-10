@@ -1366,12 +1366,16 @@ def test_power_hp_and_power_are_separate_axes_in_the_dictionary():
     # Решение ДРФ-1440 при этом в силе: л.с. по-прежнему отдельная ось и в ватты
     # НЕ пересчитываются. Множитель scale=1000 у power переводит приставку кило у
     # величины, уже записанной в киловаттах, — это не конверсия л.с.
-    for tt, axis in hp:
-        if tt in {t for t, _ in watts}:
-            assert axis.get("bind") is False, (
-                f"блок {tt} объявляет и power, и power_hp с фасетом — "
-                "значения смешаются в одном фильтре"
-            )
+    watt_by_tt = {tt: a for tt, a in watts}
+    for tt, hp_axis in hp:
+        pw_axis = watt_by_tt.get(tt)
+        if pw_axis is None:
+            continue
+        claims = [a for a in (hp_axis, pw_axis) if a.get("bind") is not False]
+        assert len(claims) == 1, (
+            f"блок {tt} объявляет обе оси мощности; фасет должна заявлять ровно одна, "
+            f"иначе значения в разных единицах смешаются в одном фильтре (заявляют {len(claims)})"
+        )
 
 
 def test_hp_converter_exists_but_is_not_wired_into_any_map():
