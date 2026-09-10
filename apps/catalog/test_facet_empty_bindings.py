@@ -224,3 +224,41 @@ def test_motoblok_facet_stays_on_horsepower():
     axes = {a["slug"]: a for a in block["attributes"]}
     assert axes["power"].get("bind") is False
     assert axes["power_hp"].get("bind") is not False
+
+
+# --- Снятие пустых фасетов ----------------------------------------------------
+#
+# Замер показал 10 привязок без единого значения в поддереве. Проверка каждой
+# свела «десять пустых фасетов» к куда более скромной картине, и это стоит
+# помнить: пустая ЗАПИСЬ не равна пустой ПАНЕЛИ на витрине.
+#
+#   diameter -> 406   единственная настоящая пустая панель фильтра
+#   spindle_thread -> 3   is_filter=False — панели и так нет
+#   mount, purpose -> 80  дубликаты унаследованных от 79 «Коронки» (176 и 211
+#                         значений); фасеты наследуются вниз, панель осталась бы
+#   saw_for -> 89         дубликат унаследованного от 86 «Пильная оснастка»
+#   tool_type ×5          на мёртвых узлах с нулём товаров — не трогаем
+
+
+@pytest.mark.parametrize(
+    ("tt", "slug"),
+    [("bolgarki-ushm", "spindle_thread"), ("str-kisti", "diameter")],
+)
+def test_axes_whose_value_is_never_written_claim_no_facet(tt, slug):
+    """Две оси не заявляют фасет, потому что величины нет в данных вовсе.
+
+    `spindle_thread`: «М14/М10» встречается 0 раз в названиях 76 болгарок.
+    `diameter` у кистей: «120х12мм» — это ширина и толщина плоской кисти,
+    диаметра у неё нет; движок даёт значение у 0 из 143 товаров, и это верно.
+
+    Обе оси в блоках ОСТАВЛЕНЫ: если 1С начнёт писать величину, значения попадут
+    в карточку, и решение о фасете можно пересмотреть по замеру. Без `bind: false`
+    удаление привязки не пережило бы следующий `load_attributes`.
+    """
+    import json
+
+    data = json.loads((data_dir() / "attribute_rules.json").read_text(encoding="utf-8"))
+    block = next(b for b in data["tool_types"] if b["tool_type"] == tt)
+    axis = next(a for a in block["attributes"] if a["slug"] == slug)
+    assert axis.get("bind") is False
+    assert axis.get("regex") or axis.get("options"), "ось осталась без способа извлечения"
