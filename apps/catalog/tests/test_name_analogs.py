@@ -282,3 +282,26 @@ def test_break_on_word_boundary_is_handled(tmp_path):
     rows = _rows(out)
     assert [r["product_id"] for r in rows] == [str(cut.pk)]
     assert rows[0]["name"].endswith("комплект")
+
+
+@pytest.mark.django_db
+def test_broken_number_is_not_treated_as_whole_word(tmp_path):
+    """Обрубленное число выглядит целым словом — хвост донора клеить нельзя.
+
+    «Паста очищающая … рук 5» — это остаток от «500 мл», и приклеенное «мл»
+    дало бы «5 мл»: правдоподобная ложь в карточке.
+    """
+    full = "Паста очищающая ЭЛЕН для мытья сильно загрязн рук 500 мл"
+    cut_raw = full[:50]
+    Product.objects.create(
+        name=cut_raw.strip(), original_name=cut_raw, slug="pasta-500", article="P-500"
+    )
+    Product.objects.create(
+        name="Паста очищающая ЭЛЕН для мытья сильно загрязн рук 200 мл",
+        original_name="Паста очищающая ЭЛЕН для мытья сильно загрязн рук 200 мл",
+        slug="pasta-200",
+        article="P-200",
+    )
+    out = tmp_path / "analogs.csv"
+    call_command("catalog_name_analogs", f"--out={out}", verbosity=0)
+    assert _rows(out) == []
