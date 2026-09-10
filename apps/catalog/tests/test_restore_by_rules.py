@@ -147,3 +147,29 @@ def test_number_at_the_end_is_kept():
     call_command("catalog_restore_by_rules", "--commit", verbosity=0)
     cut.refresh_from_db()
     assert cut.name.endswith("135-330")
+
+
+@pytest.mark.django_db
+def test_unit_of_measure_is_not_trimmed():
+    """«ход штока 60 м» — «м» здесь единица измерения, а не обрубок слова."""
+    full = "Домкрат 30 т гидравлический низкий, ход штока 60 мм"
+    cut_raw = full[:50]
+    cut = Product.objects.create(
+        name=cut_raw.strip(), original_name=cut_raw, slug="domkrat-30", article="D-30"
+    )
+    call_command("catalog_restore_by_rules", "--commit", verbosity=0)
+    cut.refresh_from_db()
+    assert cut.name.endswith("60 м")
+
+
+@pytest.mark.django_db
+def test_dangling_is_trimmed_until_clean():
+    """Одного прохода мало: «(без полиспаста) с к» оставляло висячее «с»."""
+    full = "Лебедка ручная ЛР-1 г/п 0,5 т (без полиспаста) с крюком"
+    cut_raw = full[:50]
+    cut = Product.objects.create(
+        name=cut_raw.strip(), original_name=cut_raw, slug="lebedka", article="L-1"
+    )
+    call_command("catalog_restore_by_rules", "--commit", verbosity=0)
+    cut.refresh_from_db()
+    assert cut.name == "Лебедка ручная ЛР-1 г/п 0,5 т (без полиспаста)"
