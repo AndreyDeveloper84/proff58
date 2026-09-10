@@ -256,3 +256,29 @@ def test_tail_with_measurements_is_refused(tmp_path):
     out = tmp_path / "analogs.csv"
     call_command("catalog_name_analogs", f"--out={out}", verbosity=0)
     assert _rows(out) == []
+
+
+@pytest.mark.django_db
+def test_break_on_word_boundary_is_handled(tmp_path):
+    """Обрыв может прийтись ровно на пробел — последнее слово тогда целое.
+
+    Прежний подбор всегда отбрасывал последнее слово как обрубок и терял такие
+    позиции: на стенде их оказалось 286.
+    """
+    full = "Метчик м/р М10х1,25 левый сталь Р6М5 ГОСТ 3266-81 комплект"
+    cut_raw = full[:50]
+    assert cut_raw.endswith("81 "), repr(cut_raw)
+    cut = Product.objects.create(
+        name=cut_raw.strip(), original_name=cut_raw, slug="metchik-10", article="M-10"
+    )
+    Product.objects.create(
+        name="Метчик м/р М12х1,5 левый сталь Р6М5 ГОСТ 3266-81 комплект",
+        original_name="Метчик м/р М12х1,5 левый сталь Р6М5 ГОСТ 3266-81 комплект",
+        slug="metchik-12",
+        article="M-12",
+    )
+    out = tmp_path / "analogs.csv"
+    call_command("catalog_name_analogs", f"--out={out}", verbosity=0)
+    rows = _rows(out)
+    assert [r["product_id"] for r in rows] == [str(cut.pk)]
+    assert rows[0]["name"].endswith("комплект")

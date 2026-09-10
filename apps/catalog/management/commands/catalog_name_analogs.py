@@ -138,7 +138,22 @@ class Command(BaseCommand):
         words = product.name.split()
         if len(words) < 3:
             return None
-        head, cut_word = words[:-1], words[-1]
+        # 1С рубит по символам, а не по словам: обрыв приходится либо на середину
+        # слова («… ГОС»), либо ровно на пробел — тогда последнее слово целое, и
+        # отбрасывать его не нужно. Пробуем оба разбиения.
+        for head, cut_word in ((words[:-1], words[-1]), (words, "")):
+            candidate = self._pick_for(product, donors, head, cut_word)
+            if candidate is not None:
+                return candidate
+        return None
+
+    def _pick_for(
+        self,
+        product: Product,
+        donors: dict[str, list[tuple[str, str]]],
+        head: list[str],
+        cut_word: str,
+    ) -> list | None:
         head_pattern = [_NUMBERS.sub("#", word) for word in head]
 
         prefix = _article_prefix(product.article)
@@ -153,8 +168,9 @@ class Command(BaseCommand):
                 continue
             tail_words = donor_words[len(head) :]
             # Обрубок должен быть началом первого слова хвоста: «ГОС» → «ГОСТ».
-            # Иначе это другая серия, просто похожая по скелету.
-            if not tail_words[0].lower().startswith(cut_word.lower()):
+            # Иначе это другая серия, просто похожая по скелету. Пустой обрубок
+            # (обрыв пришёлся на пробел) подходит к любому хвосту.
+            if cut_word and not tail_words[0].lower().startswith(cut_word.lower()):
                 continue
             tail = " ".join(tail_words)
             if _MEASURED_TAIL.search(tail):
