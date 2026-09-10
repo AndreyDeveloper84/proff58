@@ -44,6 +44,11 @@ RULES_PATH = Path(settings.BASE_DIR) / "data" / "name_restore_rules.json"
 _GOST_TAIL = re.compile(r"^(?P<head>.*ГОСТ\s*)(?P<number>\d{3,5})$")
 _GOST_FULL = re.compile(r"ГОСТ\s*(\d{3,5})-(\d{2,4})")
 
+# Висячий обрубок слова в конце: «Адаптер … 38 мм с», «… тормозом E». Срезаем
+# только буквы, оставшиеся от слова, — и только когда перед ними тоже буквы:
+# «ход штока 60 м» трогать нельзя, там «м» это единица измерения.
+_DANGLING = re.compile(r"(?<![0-9])[\s,]+[А-Яа-яЁёA-Za-z]$|[\s,]*[,\-/+]$")
+
 
 class Command(BaseCommand):
     help = "Достроить обрезанные названия по правилам из data/name_restore_rules.json."
@@ -77,6 +82,8 @@ class Command(BaseCommand):
             match = self._first_match(rules, product.name)
             if match is None:
                 match = self._match_gost(product.name, gost_years)
+            if match is None:
+                match = self._trim_dangling(product.name)
             if match is None:
                 continue
             rule, restored = match
@@ -127,6 +134,27 @@ class Command(BaseCommand):
             if not rules:
                 raise CommandError(f"правило не найдено: {only}")
         return rules
+
+    @staticmethod
+    def _trim_dangling(name: str) -> tuple[dict, str] | None:
+        """Снять обрубки слов в конце — по одному, пока они есть.
+
+        Одного прохода мало: «(без полиспаста) с к» оставило бы висячее «с».
+        """
+        trimmed = name
+        for _ in range(4):
+            shorter = _DANGLING.sub("", trimmed).rstrip(" ,-/+")
+            if shorter == trimmed or len(shorter) < 3:
+                break
+            trimmed = shorter
+        if trimmed == name:
+            return None
+        rule = {
+            "id": "trim-dangling",
+            "confidence": 0.7,
+            "note": "УБОРКА: снят обрубок слова в конце (решение владельца 10.09.2026)",
+        }
+        return rule, trimmed
 
     @staticmethod
     def _match_gost(name: str, years: dict[str, set[str]]) -> tuple[dict, str] | None:
