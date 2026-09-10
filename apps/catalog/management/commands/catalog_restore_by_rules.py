@@ -50,6 +50,7 @@ _GOST_FULL = re.compile(r"ГОСТ\s*(\d{3,5})-(\d{2,4})")
 # «(без аккум и зар. ус» — самый частый обрыв у аккумуляторного инструмента.
 # Санитарное правило срезало его вместе со скобкой, а это важное для покупателя
 # уточнение: инструмент продаётся без батареи и зарядного устройства.
+NO_BATTERY_NOTE = "(без аккумулятора и ЗУ)"
 _NO_BATTERY_SRC = re.compile(r"\(\s*без\s+акк", re.IGNORECASE)
 _NO_BATTERY_TAIL = re.compile(r"\s*\(\s*без\s+акк[^)]*$", re.IGNORECASE)
 
@@ -158,8 +159,10 @@ class Command(BaseCommand):
         """
         if not _NO_BATTERY_SRC.search(product.original_name or ""):
             return None
+        if product.name.rstrip().endswith(NO_BATTERY_NOTE):
+            return None  # уточнение уже на месте — второй раз не дописываем
         name = _NO_BATTERY_TAIL.sub("", product.name).rstrip(" ,;-")
-        restored = f"{name} (без аккумулятора и ЗУ)"
+        restored = f"{name} {NO_BATTERY_NOTE}"
         if restored == product.name:
             return None
         rule = {
