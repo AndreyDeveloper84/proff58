@@ -189,16 +189,38 @@ def test_typo_in_the_name_yields_nothing_rather_than_nonsense(rules):
 
 
 @pytest.mark.parametrize("tt", BLOCKS)
-def test_horsepower_axis_no_longer_claims_a_facet(rules, tt):
-    """power_hp помечена bind: false — значения есть, фасета не будет.
-
-    Два фасета мощности в одной категории заставили бы покупателя выбирать между
+def test_exactly_one_power_axis_claims_a_facet(rules, tt):
+    """Фасет мощности заявляет ровно одна ось — иначе покупатель выбирает между
     «Мощность» и «Мощность двигателя», не понимая разницы.
+
+    В четырёх блоках фасет ведёт `power` (киловатты, охват вдвое больше), а у
+    `bp-motobloki` — наоборот `power_hp`: киловатт в названиях культиваторов нет
+    вовсе. Тест не фиксирует, КАКАЯ именно ось ведёт фасет, — только то, что она
+    одна: это и есть инвариант, а распределение выведено из данных.
     """
     import json
 
     data = json.loads((data_dir() / "attribute_rules.json").read_text(encoding="utf-8"))
     block = next(b for b in data["tool_types"] if b["tool_type"] == tt)
-    axis = next(a for a in block["attributes"] if a["slug"] == "power_hp")
-    assert axis.get("bind") is False
+    axes = {a["slug"]: a for a in block["attributes"]}
+    claims = [s for s in ("power", "power_hp") if axes[s].get("bind") is not False]
+    assert claims == [claims[0]] and len(claims) == 1, f"{tt}: фасет заявляют {claims}"
     assert _pw(rules, tt, 'Бензопила CS30EH; 12", 1,32кВт/1,8л.с.') is not None
+
+
+def test_motoblok_facet_stays_on_horsepower():
+    """У культиваторов и мотобуров киловатт в названиях нет вовсе.
+
+    Замер на стенде: 0 значений `power` против 5 в `power_hp`. Если оставить
+    `power` с фасетом, следующий `load_attributes` вернёт привязку и создаст в
+    узле 186 пустой фильтр — ровно тот дефект, ради которого трек затевался.
+    Поэтому здесь фасет ведёт `power_hp`, а `power` объявлена с `bind: false`:
+    ось остаётся на случай, если 1С начнёт писать киловатты.
+    """
+    import json
+
+    data = json.loads((data_dir() / "attribute_rules.json").read_text(encoding="utf-8"))
+    block = next(b for b in data["tool_types"] if b["tool_type"] == "bp-motobloki")
+    axes = {a["slug"]: a for a in block["attributes"]}
+    assert axes["power"].get("bind") is False
+    assert axes["power_hp"].get("bind") is not False
