@@ -221,3 +221,20 @@ def test_no_battery_note_repairs_earlier_trim():
     call_command("catalog_restore_by_rules", "--commit", verbosity=0)
     cut.refresh_from_db()
     assert cut.name.endswith("(без аккумулятора и ЗУ)")
+
+
+@pytest.mark.django_db
+def test_no_battery_note_is_added_once():
+    """Повторный прогон не дописывает уточнение второй раз.
+
+    Регулярка ищет незакрытую скобку, а после первой правки она закрыта —
+    без явной проверки имя удлинялось бы на каждом прогоне.
+    """
+    cut_raw = "Пила сабельная аккум. CR14DSL-T4; 14,4 V, (без акк"
+    cut = Product.objects.create(
+        name=cut_raw.strip(), original_name=cut_raw, slug="pila-once", article="CR-1"
+    )
+    for _ in range(3):
+        call_command("catalog_restore_by_rules", "--commit", verbosity=0)
+    cut.refresh_from_db()
+    assert cut.name.count("(без аккумулятора и ЗУ)") == 1
