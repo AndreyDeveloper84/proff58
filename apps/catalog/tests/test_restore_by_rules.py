@@ -173,3 +173,18 @@ def test_dangling_is_trimmed_until_clean():
     call_command("catalog_restore_by_rules", "--commit", verbosity=0)
     cut.refresh_from_db()
     assert cut.name == "Лебедка ручная ЛР-1 г/п 0,5 т (без полиспаста)"
+
+
+@pytest.mark.django_db
+def test_rpm_tail_is_completed_not_trimmed():
+    """«150об/» достраивается до «об/мин», а не теряет слэш при уборке."""
+    # 1С рубит ровно по 50 символов; подгоняем строку так, чтобы обрыв пришёлся
+    # на единицу скорости.
+    cut_raw = "Отвертка аккумуляторная СПЕЦ БАО-3,6-2 3,6В 150об/"
+    assert len(cut_raw) == 50 and cut_raw.endswith("об/"), len(cut_raw)
+    cut = Product.objects.create(
+        name=cut_raw.strip(), original_name=cut_raw, slug="otvertka-spec", article="O-1"
+    )
+    call_command("catalog_restore_by_rules", "--commit", verbosity=0)
+    cut.refresh_from_db()
+    assert cut.name.endswith("об/мин")
