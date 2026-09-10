@@ -126,3 +126,79 @@ def test_no_new_number_axis_is_left_without_patterns():
         "долг закрыт — уберите оси из KNOWN_AXES_WITHOUT_PATTERNS: "
         f"{sorted(KNOWN_AXES_WITHOUT_PATTERNS - empty)}"
     )
+
+
+# --- Решение владельца 2026-09-10: «кВт, охват важнее» ------------------------
+#
+# Фасет мощности бензоинструмента ведём осью `power`, а не `power_hp`: «л.с.» есть
+# у 65 товаров, «кВт» — у 130. `power_hp` получила bind: false — значения остаются
+# в карточке, но второго фасета мощности на витрине нет.
+#
+# Единица оси `power` — ВАТТЫ, и это не формальность: в ней уже 923 значения,
+# включая лампы на 8–25 Вт. Поэтому киловатты пересчитываются множителем
+# scale=1000, и шкала остаётся единой с электроинструментом вместо двух разных.
+
+
+def _pw(rules: AttributeRules, tt: str, name: str):
+    for v in rules.extract(tt, name):
+        if v.slug == "power":
+            return v.number
+    return None
+
+
+@pytest.mark.parametrize(
+    ("tt", "name", "watts"),
+    [
+        ("bp-benzopily", 'Бензопила CS30EH; 12", 34см3, 1,32кВт/1,8л.с. бак', "1320"),
+        ("bp-benzopily", 'Бензопила CHAMPION 237-16"-3/8-1,3-56 (1,5кВт 37,2см3', "1500"),
+        ("bp-trimmery", "Бензокоса CG27EAS;  двиг 27см3, 0,88кВт, прям. вал", "880"),
+        ("bp-trimmery", "Триммер бензиновый Hanskonner HBT43F 43см3, 1,35кВт/1,8л.с.", "1350"),
+        ("bp-generatory", "Электрогенератор DEZEL PS-25. 2,5кВт, 220В, 15л", "2500"),
+    ],
+)
+def test_kilowatts_are_converted_to_watts(rules, tt, name, watts):
+    """Ось хранит ватты, поэтому «1,32кВт» → 1320, а не 1,32."""
+    assert _pw(rules, tt, name) == Decimal(watts)
+
+
+def test_generator_pair_takes_the_nominal_value(rules):
+    """«5,0/5,5кВт» — номинальная и максимальная; берём НОМИНАЛ.
+
+    Паспортная мощность генератора — номинальная; максимальная кратковременна, и
+    фильтровать по ней значит обещать покупателю больше, чем машина держит.
+    """
+    name = "Электрогенератор CARVER PPG- 6500Е (LT-188F, 5,0/5,5кВт, 220В, бак 25л,"
+    assert _pw(rules, "bp-generatory", name) == Decimal("5000")
+
+
+def test_plain_watts_are_taken_as_is(rules):
+    """Где производитель написал ватты — множитель не применяется."""
+    name = "Триммер бензиновый STURM BT89314 1400Вт/1,9лс, 31см3, 4-х такт"
+    assert _pw(rules, "bp-trimmery", name) == Decimal("1400")
+
+
+def test_typo_in_the_name_yields_nothing_rather_than_nonsense(rules):
+    """«135кВт» у бытового триммера — опечатка (там 1,35 кВт).
+
+    Одного ограничения разрядности не хватило: regex брал последние две цифры и
+    давал 35 000 Вт. Левая граница делает так, что опечатка не даёт значения
+    вовсе — это лучше, чем правдоподобное неверное.
+    """
+    name = "Триммер бензиновый Hanskonner HBT143D 43см3, 135кВт/1,8л.с. нож/"
+    assert _pw(rules, "bp-trimmery", name) is None
+
+
+@pytest.mark.parametrize("tt", BLOCKS)
+def test_horsepower_axis_no_longer_claims_a_facet(rules, tt):
+    """power_hp помечена bind: false — значения есть, фасета не будет.
+
+    Два фасета мощности в одной категории заставили бы покупателя выбирать между
+    «Мощность» и «Мощность двигателя», не понимая разницы.
+    """
+    import json
+
+    data = json.loads((data_dir() / "attribute_rules.json").read_text(encoding="utf-8"))
+    block = next(b for b in data["tool_types"] if b["tool_type"] == tt)
+    axis = next(a for a in block["attributes"] if a["slug"] == "power_hp")
+    assert axis.get("bind") is False
+    assert _pw(rules, tt, 'Бензопила CS30EH; 12", 1,32кВт/1,8л.с.') is not None
