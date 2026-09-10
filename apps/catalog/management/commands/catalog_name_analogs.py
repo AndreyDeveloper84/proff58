@@ -141,7 +141,14 @@ class Command(BaseCommand):
         # 1С рубит по символам, а не по словам: обрыв приходится либо на середину
         # слова («… ГОС»), либо ровно на пробел — тогда последнее слово целое, и
         # отбрасывать его не нужно. Пробуем оба разбиения.
-        for head, cut_word in ((words[:-1], words[-1]), (words, "")):
+        splits = [(words[:-1], words[-1])]
+        # Второе разбиение — когда обрыв пришёлся на пробел и последнее слово
+        # целое. Но только если в нём нет цифр: обрубленное число выглядит как
+        # целое слово, и приклеивание хвоста донора даёт ложь — «Паста … рук 5»
+        # превращалась в «5 мл» вместо «500 мл».
+        if not any(char.isdigit() for char in words[-1]):
+            splits.append((words, ""))
+        for head, cut_word in splits:
             candidate = self._pick_for(product, donors, head, cut_word)
             if candidate is not None:
                 return candidate
