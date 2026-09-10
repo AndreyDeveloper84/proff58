@@ -188,3 +188,36 @@ def test_rpm_tail_is_completed_not_trimmed():
     call_command("catalog_restore_by_rules", "--commit", verbosity=0)
     cut.refresh_from_db()
     assert cut.name.endswith("об/мин")
+
+
+@pytest.mark.django_db
+def test_no_battery_note_is_restored():
+    """«(без аккум и зар. ус» — уточнение возвращается целиком, а не срезается.
+
+    Покупатель обязан увидеть, что инструмент продаётся без батареи и
+    зарядного устройства, до того как положит его в корзину.
+    """
+    cut_raw = "Пила сабельная аккум. CR14DSL-T4; 14,4 V, (без акк"
+    assert len(cut_raw) == 50, len(cut_raw)
+    cut = Product.objects.create(
+        name=cut_raw.strip(), original_name=cut_raw, slug="pila-cr14", article="CR-14"
+    )
+    call_command("catalog_restore_by_rules", "--commit", verbosity=0)
+    cut.refresh_from_db()
+    assert cut.name == "Пила сабельная аккум. CR14DSL-T4; 14,4 V (без аккумулятора и ЗУ)"
+
+
+@pytest.mark.django_db
+def test_no_battery_note_repairs_earlier_trim():
+    """Если уборка уже срезала уточнение, правило возвращает его обратно."""
+    cut_raw = "Пила сабельная аккум. CR18DSL-T4; 18,0 V, (без акк"
+    cut = Product.objects.create(
+        name="Пила сабельная аккум. CR18DSL-T4; 18,0 V",  # уже урезано прежней уборкой
+        original_name=cut_raw,
+        slug="pila-cr18",
+        article="CR-18",
+        content_field_sources={"name": "rules"},
+    )
+    call_command("catalog_restore_by_rules", "--commit", verbosity=0)
+    cut.refresh_from_db()
+    assert cut.name.endswith("(без аккумулятора и ЗУ)")
