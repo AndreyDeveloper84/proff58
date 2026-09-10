@@ -47,6 +47,12 @@ _GOST_FULL = re.compile(r"ГОСТ\s*(\d{3,5})-(\d{2,4})")
 # Висячий обрубок слова в конце: «Адаптер … 38 мм с», «… тормозом E». Срезаем
 # только буквы, оставшиеся от слова, — и только когда перед ними тоже буквы:
 # «ход штока 60 м» трогать нельзя, там «м» это единица измерения.
+# «(без аккум и зар. ус» — самый частый обрыв у аккумуляторного инструмента.
+# Санитарное правило срезало его вместе со скобкой, а это важное для покупателя
+# уточнение: инструмент продаётся без батареи и зарядного устройства.
+_NO_BATTERY_SRC = re.compile(r"\(\s*без\s+акк", re.IGNORECASE)
+_NO_BATTERY_TAIL = re.compile(r"\s*\(\s*без\s+акк[^)]*$", re.IGNORECASE)
+
 _DANGLING = re.compile(r"(?<![0-9])[\s,]+[А-Яа-яЁёA-Za-z]$|[\s,]*[,\-/+]$")
 
 
@@ -76,10 +82,17 @@ class Command(BaseCommand):
         for product in queryset.iterator(chunk_size=1000):
             if len(product.original_name or "") != CUT_LENGTH:
                 continue
-            if (product.content_field_sources or {}).get("name"):
-                continue  # имя уже восстановлено — правило поверх не кладём
+            name_source = (product.content_field_sources or {}).get("name", "")
+            if name_source and name_source != "rules":
+                continue  # найденное в карточке или по донору правило не трогает
 
-            match = self._first_match(rules, product.name)
+            # Это правило чинит и то, что раньше срезала уборка, поэтому идёт
+            # первым и допускает позиции, уже помеченные как обработанные правилом.
+            match = self._no_battery(product)
+            if match is None and name_source:
+                continue
+            if match is None:
+                match = self._first_match(rules, product.name)
             if match is None:
                 match = self._match_gost(product.name, gost_years)
             if match is None:
@@ -136,6 +149,27 @@ class Command(BaseCommand):
         return rules
 
     @staticmethod
+    def _no_battery(product: Product) -> tuple[dict, str] | None:
+        """Вернуть «(без аккумулятора и ЗУ)», если 1С оборвала это уточнение.
+
+        Смотрим на исходную строку: если там была скобка «(без акк…», а в
+        витринном имени её уже нет, дописываем целиком. Инструмент без батареи
+        и зарядного — то, что покупатель обязан увидеть до заказа.
+        """
+        if not _NO_BATTERY_SRC.search(product.original_name or ""):
+            return None
+        name = _NO_BATTERY_TAIL.sub("", product.name).rstrip(" ,;-")
+        restored = f"{name} (без аккумулятора и ЗУ)"
+        if restored == product.name:
+            return None
+        rule = {
+            "id": "no-battery-tail",
+            "confidence": 0.8,
+            "note": "уточнение «без аккумулятора и ЗУ» восстановлено по строке 1С",
+        }
+        return rule, restored
+
+    @staticmethod
     def _trim_dangling(name: str) -> tuple[dict, str] | None:
         """Снять обрубки слов в конце — по одному, пока они есть.
 
@@ -183,7 +217,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def _apply(product: Product, restored: str, rule: dict) -> int:
-        command = provenance.SourcedValueCommand(
+        command = provenance.SourcedValueCommand(  # noqa: E501
             product_id=product.pk,
             target_kind="name",
             attribute_slug="",
@@ -192,6 +226,7 @@ class Command(BaseCommand):
             confidence=float(rule.get("confidence", 0.75)),
             observed_value_hash=provenance.value_hash(product.name or ""),
             observed_source=(product.content_field_sources or {}).get("name", ""),
+            allow_equal_override=True,  # правило вправе поправить свою же прежнюю работу
         )
         with transaction.atomic():
             result = provenance.apply_sourced_value(command)
