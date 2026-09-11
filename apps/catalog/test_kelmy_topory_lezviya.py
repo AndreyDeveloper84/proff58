@@ -130,3 +130,21 @@ def test_blade_pack_quantity_is_not_claimed_without_a_decision(rules):
     name = "Лезвие 18х100х0,5мм, OLFA сегментированное, 10шт"
     assert _v(rules, "hoz-lezviya", "package_quantity", name) is None
     assert _v(rules, "hoz-lezviya", "width", name) == Decimal("18")
+
+
+def test_blade_width_claims_no_facet_while_blades_sit_in_the_root():
+    """Привязка ширины к листу 107 оказалась ПУСТОЙ — найдено post-audit-ом.
+
+    54 из 55 лезвий с шириной лежат в корне 339 «Ручной инструмент», а в самом
+    листе «Лезвия и ножи сменные» — трапециевидные лезвия и ножи для рейсмуса,
+    у которых стандарта 9/18/25 нет. Пустой фасет — ровно тот дефект, который
+    снимался неделей раньше, и `bind: false` не даёт ему вернуться следующим
+    `load_attributes`. Значения живут в карточках; фасет появится, когда товары
+    переедут из корня в лист.
+    """
+    import json
+
+    data = json.loads((data_dir() / "attribute_rules.json").read_text(encoding="utf-8"))
+    block = next(b for b in data["tool_types"] if b["tool_type"] == "hoz-lezviya")
+    axis = next(a for a in block["attributes"] if a["slug"] == "width")
+    assert axis.get("bind") is False
