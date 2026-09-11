@@ -72,7 +72,8 @@ def make_order(product: Product, *, minutes_left: int = -1, **kwargs) -> Order:
 def make_payment(order: Order, status: str = PaymentStatus.PENDING) -> Payment:
     return Payment.objects.create(
         order=order,
-        yookassa_id=f"yoo-{order.order_number}",
+        provider="yookassa",
+        provider_payment_id=f"yoo-{order.order_number}",
         method=PaymentMethod.YOOKASSA,
         status=status,
         amount=order.total,
@@ -224,14 +225,16 @@ class TestПоздняяОплата:
         )
         payment = make_payment(order)
         verify.return_value = {
-            "id": payment.yookassa_id,
+            "id": payment.provider_payment_id,
             "status": "succeeded",
             "paid": True,
             "amount": {"value": "10000.00", "currency": "RUB"},
             "metadata": {"order_id": order.id},
         }
 
-        handle_webhook({"event": "payment.succeeded", "object": {"id": payment.yookassa_id}})
+        handle_webhook(
+            {"event": "payment.succeeded", "object": {"id": payment.provider_payment_id}}
+        )
 
         payment.refresh_from_db()
         order.refresh_from_db()
@@ -250,14 +253,16 @@ class TestПоздняяОплата:
         order = make_order(product, minutes_left=+10)
         payment = make_payment(order)
         verify.return_value = {
-            "id": payment.yookassa_id,
+            "id": payment.provider_payment_id,
             "status": "succeeded",
             "paid": True,
             "amount": {"value": "10000.00", "currency": "RUB"},
             "metadata": {"order_id": order.id},
         }
 
-        handle_webhook({"event": "payment.succeeded", "object": {"id": payment.yookassa_id}})
+        handle_webhook(
+            {"event": "payment.succeeded", "object": {"id": payment.provider_payment_id}}
+        )
 
         order.refresh_from_db()
         assert order.payment_status == OrderPaymentStatus.PAID

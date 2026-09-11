@@ -13,9 +13,10 @@ from django.test import Client
 from django.urls import reverse
 
 from apps.accounts.models import User
-from apps.orders.models import FulfillmentStatus, Order
+from apps.orders.models import FulfillmentStatus, Order, OrderItem
 from apps.orders.models import PaymentStatus as OrderPaymentStatus
 
+from .atolpay.client import AtolPayError
 from .models import Payment, PaymentMethod, PaymentStatus
 
 pytestmark = pytest.mark.django_db
@@ -30,7 +31,18 @@ def make_order(**kwargs) -> Order:
         "payment_method": "online",
         "access_token": "guest-token-123",
     }
-    return Order.objects.create(**{**defaults, **kwargs})
+    order = Order.objects.create(**{**defaults, **kwargs})
+    # Позиция нужна не ручке, а чеку: касса принимает платёж только вместе с
+    # фискальными позициями на ту же сумму (54-ФЗ).
+    OrderItem.objects.create(
+        order=order,
+        name="Перфоратор",
+        unit="шт",
+        price_final=order.total,
+        quantity=1,
+        line_total=order.total,
+    )
+    return order
 
 
 def url(order: Order) -> str:
@@ -53,11 +65,12 @@ def payments_off(settings):
     settings.PAYMENTS_ENABLED = False
 
 
-YOOKASSA_REPLY = {
-    "id": "yoo_new_1",
-    "status": "pending",
-    "confirmation": {"confirmation_url": "https://yoomoney.test/checkout/yoo_new_1"},
+ATOLPAY_REPLY = {
+    "orderId": "P-PAY-001",
+    "amount": 500000,
+    "paymentUrl": "https://pay.atolpay.test/P-PAY-001",
 }
+PAY_URL = ATOLPAY_REPLY["paymentUrl"]
 
 
 class TestДоступКОплате:
@@ -65,16 +78,16 @@ class TestДоступКОплате:
     def _on(self, payments_on):
         pass
 
-    @mock.patch("apps.payments.services._yookassa_request", return_value=YOOKASSA_REPLY)
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
     def test_гость_с_токеном_получает_ссылку(self, _api, client):
         order = make_order()
 
         resp = client.post(f"{url(order)}?t={order.access_token}")
 
         assert resp.status_code == 200
-        assert resp.json()["confirmation_url"] == YOOKASSA_REPLY["confirmation"]["confirmation_url"]
+        assert resp.json()["confirmation_url"] == PAY_URL
 
-    @mock.patch("apps.payments.services._yookassa_request", return_value=YOOKASSA_REPLY)
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
     def test_владелец_получает_ссылку_без_токена(self, _api, client):
         user = User.objects.create_user(phone="+79005553311", password="pass12345")
         order = make_order(user=user, access_token="")
@@ -96,7 +109,7 @@ class TestСостоянияЗаказа:
     def _on(self, payments_on):
         pass
 
-    @mock.patch("apps.payments.services._yookassa_request", return_value=YOOKASSA_REPLY)
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
     def test_повторный_вызов_возвращает_ту_же_ссылку(self, api, client):
         """Двойной клик и «Повторить оплату» не должны плодить платежи."""
         order = make_order()
@@ -145,8 +158,8 @@ class TestКассаНедоступна:
         assert resp.json()["code"] == "payments_disabled"
 
     @mock.patch(
-        "apps.payments.services._yookassa_request",
-        side_effect=RuntimeError("YOOKASSA_SHOP_ID/YOOKASSA_SECRET_KEY не настроены"),
+        "apps.payments.atolpay.service.register_payment",
+        side_effect=AtolPayError(code="NOT_CONFIGURED", message="ATOLPAY_TOKEN не задан"),
     )
     def test_сбой_провайдера_не_теряет_заказ(self, _api, payments_on, client):
         order = make_order()
@@ -160,7 +173,7 @@ class TestКассаНедоступна:
         assert Order.objects.filter(pk=order.pk).exists()
         assert not Payment.objects.filter(order=order).exists()
 
-    @mock.patch("apps.payments.services._yookassa_request", return_value=YOOKASSA_REPLY)
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
     def test_после_сбоя_оплата_повторяется(self, _api, payments_on, client):
         """Касса поднялась — та же кнопка доводит покупателя до оплаты."""
         order = make_order()
@@ -170,4 +183,4 @@ class TestКассаНедоступна:
         assert resp.status_code == 200
         payment = Payment.objects.get(order=order)
         assert payment.status == PaymentStatus.PENDING
-        assert payment.method == PaymentMethod.YOOKASSA
+        assert payment.method == PaymentMethod.ATOLPAY

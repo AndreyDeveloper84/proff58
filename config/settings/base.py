@@ -407,10 +407,47 @@ MAX_AUTH_ATTEMPT_TTL_MINUTES = env.int("MAX_AUTH_ATTEMPT_TTL_MINUTES", default=5
 NOTIFICATION_LOG_RETENTION_DAYS = env.int("NOTIFICATION_LOG_RETENTION_DAYS", default=90)
 NOTIFICATION_RETENTION_DAYS = env.int("NOTIFICATION_RETENTION_DAYS", default=365)
 
-# ЮKassa
-# Kill-switch webhook'а оплаты. По умолчанию включён (локалка/тесты); на стенде
-# выключается в prod.py до закрытия #311 (webhook без аутентификации).
+# Публичный адрес витрины. Нужен кассе: returnUrl (куда вернуть покупателя) и
+# notificationUrl (куда слать callback) должны быть внешними https-адресами.
+# Пусто — берётся первый нелокальный ALLOWED_HOSTS (см. payments.services).
+SITE_URL = env("SITE_URL", default="")
+
+# --- Оплата -----------------------------------------------------------------
+# Kill-switch онлайн-оплаты (и ручки запуска платежа, и webhook'а).
 PAYMENTS_ENABLED = env.bool("PAYMENTS_ENABLED", default=True)
+
+# Действующая касса. ЮKassa-код остаётся рабочим, но по умолчанию не используется.
+PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="atolpay")  # atolpay | yookassa
+
+# АТОЛ Pay Ecom. Песочница: https://croc-sandbox-api-mobile.atolpay.ru/v1/ecom
+ATOLPAY_BASE_URL = env("ATOLPAY_BASE_URL", default="https://new-api-mobile.atolpay.ru/v1/ecom")
+# Токен из ЛК (Настройки → API Токены); уходит как ``Authorization: Bearer <token>``.
+ATOLPAY_TOKEN = env("ATOLPAY_TOKEN", default="")
+# Подписи у callback АТОЛ нет: единственный признак «свой» — секрет в query
+# notificationUrl. Он же обязателен вместе с перезапросом статуса в API.
+ATOLPAY_CALLBACK_TOKEN = env("ATOLPAY_CALLBACK_TOKEN", default="")
+ATOLPAY_TIMEOUT = env.int("ATOLPAY_TIMEOUT", default=15)
+# Одностадийная оплата: деньги списываются сразу. twoStep потребовал бы ручного
+# /deposit в течение 7 суток — отдельная задача.
+ATOLPAY_SESSION_TYPE = env("ATOLPAY_SESSION_TYPE", default="oneStep")
+
+# Фискализация (54-ФЗ). Чек уходит вместе с регистрацией платежа.
+ATOLPAY_RECEIPT_ENABLED = env.bool("ATOLPAY_RECEIPT_ENABLED", default=True)
+ATOLPAY_RECEIPT_PROVIDER_ID = env.int("ATOLPAY_RECEIPT_PROVIDER_ID", default=100)  # АТОЛ Онлайн
+# Система налогообложения (справочник кассы): 0 — общая, 1 — УСН доход,
+# 2 — УСН доход-расход, 4 — ЕСХН, 5 — патент.
+ATOLPAY_SNO = env.int("ATOLPAY_SNO", default=0)
+# Код ставки НДС по справочнику кассы (GET /receipts/dictionaries, снято 11.09.2026):
+# 10 — 22%, 0 — 20%, 1 — 10%, 4 — 0%, 5 — без НДС, 6 — 5%, 7 — 7%,
+# расчётные: 11 — 22/122, 2 — 20/120, 3 — 10/110, 8 — 5/105, 9 — 7/107.
+# Перепроверить: manage.py atolpay_check --dictionaries.
+ATOLPAY_VAT_CODE = env.int("ATOLPAY_VAT_CODE", default=10)
+# Признак способа расчёта: 0 — предоплата 100% (товар отгружается после оплаты).
+ATOLPAY_PAYMENT_METHOD_CODE = env.int("ATOLPAY_PAYMENT_METHOD_CODE", default=0)
+# Признаки предмета расчёта: 0 — товар, 3 — услуга (доставка).
+ATOLPAY_SUBJECT_GOODS = env.int("ATOLPAY_SUBJECT_GOODS", default=0)
+ATOLPAY_SUBJECT_SERVICE = env.int("ATOLPAY_SUBJECT_SERVICE", default=3)
+
 YOOKASSA_SHOP_ID = env("YOOKASSA_SHOP_ID", default="")
 YOOKASSA_SECRET_KEY = env("YOOKASSA_SECRET_KEY", default="")
 YOOKASSA_WEBHOOK_SECRET = env("YOOKASSA_WEBHOOK_SECRET", default="")

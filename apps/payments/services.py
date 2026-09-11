@@ -25,13 +25,21 @@ from urllib.error import HTTPError
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Sum
-from django.utils import timezone
 
 from apps.core import events
-from apps.orders.models import FulfillmentStatus, Order
+from apps.orders.models import Order
 from apps.orders.models import PaymentStatus as OrderPaymentStatus
 
-from .models import Payment, PaymentMethod, PaymentStatus, Refund, RefundStatus
+from . import transitions
+from .atolpay import service as atolpay
+from .models import (
+    Payment,
+    PaymentMethod,
+    PaymentProvider,
+    PaymentStatus,
+    Refund,
+    RefundStatus,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +77,19 @@ def _yookassa_request(
 
 
 def create_payment(order: Order, return_url: str = "") -> Payment:
+    """Создать платёж в действующей кассе (``settings.PAYMENT_PROVIDER``).
+
+    Витрина про кассу не знает: и checkout, и кнопка «Оплатить» зовут эту функцию,
+    а какая касса принимает деньги — вопрос настройки. Идемпотентность на совести
+    провайдерного модуля: повторный вызов возвращает уже начатый платёж, а не
+    заводит второй.
+    """
+    if getattr(settings, "PAYMENT_PROVIDER", "atolpay") == PaymentProvider.YOOKASSA:
+        return create_yookassa_payment(order, return_url)
+    return atolpay.create_payment(order, return_url)
+
+
+def create_yookassa_payment(order: Order, return_url: str = "") -> Payment:
     """Создать платёж в ЮKassa. Idempotence-Key детерминирован по order_number."""
     idempotency_key = f"order-{order.order_number}"
 
@@ -92,7 +113,8 @@ def create_payment(order: Order, return_url: str = "") -> Payment:
 
     payment = Payment.objects.create(
         order=order,
-        yookassa_id=result.get("id"),
+        provider=PaymentProvider.YOOKASSA,
+        provider_payment_id=result.get("id"),
         method=PaymentMethod.YOOKASSA,
         status=PaymentStatus.PENDING,
         amount=order.total,
@@ -101,7 +123,7 @@ def create_payment(order: Order, return_url: str = "") -> Payment:
         idempotency_key=idempotency_key,
     )
 
-    logger.info("Payment created: %s for order %s", payment.yookassa_id, order.order_number)
+    logger.info("Payment created: %s for order %s", payment.provider_payment_id, order.order_number)
     return payment
 
 
@@ -129,23 +151,6 @@ _PROVIDER_STATUS_MAP = {
     "pending": PaymentStatus.PENDING,
 }
 
-# Допустимые переходы статуса по webhook. Терминальные succeeded/canceled/refunded
-# не откатываются (защита от downgrade succeeded->canceled и повторов).
-_WEBHOOK_TRANSITIONS = {
-    PaymentStatus.PENDING: {
-        PaymentStatus.WAITING_CAPTURE,
-        PaymentStatus.SUCCEEDED,
-        PaymentStatus.CANCELED,
-    },
-    PaymentStatus.WAITING_CAPTURE: {
-        PaymentStatus.SUCCEEDED,
-        PaymentStatus.CANCELED,
-    },
-    PaymentStatus.SUCCEEDED: set(),  # терминальный (refund — отдельный путь)
-    PaymentStatus.CANCELED: set(),  # терминальный
-    PaymentStatus.REFUNDED: set(),
-}
-
 
 @transaction.atomic
 def handle_webhook(payload: dict, *, verify: bool = True) -> None:
@@ -168,7 +173,7 @@ def handle_webhook(payload: dict, *, verify: bool = True) -> None:
         return
 
     try:
-        payment = Payment.objects.select_for_update().get(yookassa_id=yookassa_id)
+        payment = Payment.objects.select_for_update().get(provider_payment_id=yookassa_id)
     except Payment.DoesNotExist:
         logger.warning("YooKassa webhook: unknown payment %s", yookassa_id)
         return
@@ -212,7 +217,7 @@ def handle_webhook(payload: dict, *, verify: bool = True) -> None:
         raise ValueError("Payment metadata order mismatch")
 
     # Допустимость перехода (никакого downgrade терминальных статусов).
-    if target not in _WEBHOOK_TRANSITIONS.get(payment.status, set()):
+    if not transitions.is_allowed(payment.status, target):
         logger.warning(
             "YooKassa webhook: forbidden transition %s -> %s for %s (ignored)",
             payment.status,
@@ -243,70 +248,18 @@ def handle_webhook(payload: dict, *, verify: bool = True) -> None:
             )
             raise ValueError("Payment amount/currency mismatch")
 
-        payment.status = PaymentStatus.SUCCEEDED
-        payment.paid_at = timezone.now()
-        payment.save(update_fields=["status", "paid_at", "webhook_payload", "updated_at"])
-
-        # DRF-952: строку заказа берём под блокировку. Раньше здесь был слепой
-        # UPDATE, и janitor истечения мог в тот же момент отменять этот заказ —
-        # получалось «деньги получены, заказ отменён, товар снят с резерва».
-        # Теперь одна из сторон ждёт другую, и решение принимает та, что успела.
-        order = Order.objects.select_for_update().get(pk=payment.order_id)
-
-        if order.fulfillment_status == FulfillmentStatus.CANCELLED:
-            # Поздняя оплата: заказ уже отменён по таймауту, товар мог уйти
-            # другому покупателю. Молча воскрешать нельзя — денег это не вернёт,
-            # а обещание отгрузить создаст. Платёж помечен успешным (деньги
-            # действительно пришли), заказ остаётся отменённым, случай уходит
-            # в лог ошибкой для ручного разбора и возврата.
-            logger.error(
-                "Поздняя оплата: заказ %s уже отменён, платёж %s на %s %s требует "
-                "ручного разбора (возврат или восстановление заказа)",
-                order.order_number,
-                yookassa_id,
-                payment.amount,
-                payment.currency,
-            )
-            return
-
-        order.payment_status = OrderPaymentStatus.PAID
-        order.save(update_fields=["payment_status", "updated_at"])
-
-        order_id = payment.order_id
-        payment_id = payment.id
-        # #431 (M-07): публикуем ОБА события после commit.
-        # payment_succeeded — платёжный слой (orders confirm резерва);
-        # order_paid — доменное событие оплаты заказа, на которое подписаны
-        # MAX/analytics/CRM. Раньше они слушали order_paid без издателя и не
-        # срабатывали. Идемпотентность — гейт перехода: код доходит сюда только
-        # на реальном переходе pending/waiting → succeeded (не на повторах).
-        transaction.on_commit(
-            lambda: events.payment_succeeded.send(
-                sender=Payment, payment_id=payment_id, order_id=order_id
-            )
+        transitions.apply_succeeded(
+            payment, reference=yookassa_id, extra_fields=["webhook_payload"]
         )
-        transaction.on_commit(
-            lambda: events.order_paid.send(sender=Payment, order_id=order_id, payment_id=payment_id)
-        )
-        logger.info("Payment %s succeeded for order #%s", yookassa_id, payment.order.order_number)
 
     elif target == PaymentStatus.CANCELED:
-        payment.status = PaymentStatus.CANCELED
-        payment.save(update_fields=["status", "webhook_payload", "updated_at"])
-
         reason = payment_data.get("cancellation_details", {}).get("reason", "unknown")
-        order_id = payment.order_id
-        payment_id = payment.id
-        transaction.on_commit(
-            lambda: events.payment_failed.send(
-                sender=Payment, payment_id=payment_id, order_id=order_id, reason=reason
-            )
+        transitions.apply_canceled(
+            payment, reason=reason, reference=yookassa_id, extra_fields=["webhook_payload"]
         )
-        logger.info("Payment %s canceled: %s", yookassa_id, reason)
 
     elif target == PaymentStatus.WAITING_CAPTURE:
-        payment.status = PaymentStatus.WAITING_CAPTURE
-        payment.save(update_fields=["status", "webhook_payload", "updated_at"])
+        transitions.apply_waiting_capture(payment, extra_fields=["webhook_payload"])
 
 
 def _refunded_total(payment_id: int) -> Decimal:
@@ -318,7 +271,7 @@ def _refunded_total(payment_id: int) -> Decimal:
 
 
 def refund(payment: Payment, amount: Decimal | None = None) -> Refund:
-    """Создать (частичный) возврат в ЮKassa. Возвращает строку ledger Refund.
+    """Создать (частичный) возврат в кассе платежа. Возвращает строку ledger Refund.
 
     #437 (m-01/m-02):
     - поддержка нескольких частичных возвратов; статус платежа/заказа —
@@ -345,27 +298,38 @@ def refund(payment: Payment, amount: Decimal | None = None) -> Refund:
             amount=refund_amount,
             currency=payment.currency,
             status=RefundStatus.PENDING,
-            idempotency_key=f"refund-{payment.yookassa_id}-{uuid.uuid4().hex[:12]}",
+            idempotency_key=f"refund-{payment.provider_payment_id}-{uuid.uuid4().hex[:12]}",
         )
 
-    body = {
-        "amount": {"value": str(refund_amount), "currency": payment.currency},
-        "payment_id": payment.yookassa_id,
-    }
     # Внешний вызов — ВНЕ транзакции.
     try:
-        result = _yookassa_request("POST", "refunds", body, idempotence_key=rec.idempotency_key)
+        if payment.provider == PaymentProvider.ATOLPAY:
+            # У АТОЛ отмена и возврат — одна ручка: что именно произошло (отмена
+            # без комиссии в день оплаты или возврат позже), решает касса.
+            result = atolpay.cancel_or_refund(payment, refund_amount)
+        else:
+            result = _yookassa_request(
+                "POST",
+                "refunds",
+                {
+                    "amount": {"value": str(refund_amount), "currency": payment.currency},
+                    "payment_id": payment.provider_payment_id,
+                },
+                idempotence_key=rec.idempotency_key,
+            )
     except Exception as exc:
         Refund.objects.filter(pk=rec.pk).update(
             status=RefundStatus.FAILED, error_message=str(exc)[:500]
         )
-        logger.exception("Refund failed for payment %s", payment.yookassa_id)
+        logger.exception("Refund failed for payment %s", payment.provider_payment_id)
         raise
 
     # Финализация: успех возврата + производный статус платежа/заказа.
     with transaction.atomic():
         Refund.objects.filter(pk=rec.pk).update(
-            status=RefundStatus.SUCCEEDED, yookassa_refund_id=result.get("id", "")
+            status=RefundStatus.SUCCEEDED,
+            # У АТОЛ своего id возврата нет — ссылаемся на номер платежа в кассе.
+            provider_refund_id=result.get("id") or payment.provider_order_id or "",
         )
         locked = Payment.objects.select_for_update().get(pk=payment.pk)
         total_refunded = _refunded_total(locked.pk)
@@ -396,7 +360,9 @@ def refund(payment: Payment, amount: Decimal | None = None) -> Refund:
         )
 
     rec.refresh_from_db()
-    logger.info("Refund %s for payment %s, amount %s", rec.pk, payment.yookassa_id, refund_amount)
+    logger.info(
+        "Refund %s for payment %s, amount %s", rec.pk, payment.provider_payment_id, refund_amount
+    )
     return rec
 
 

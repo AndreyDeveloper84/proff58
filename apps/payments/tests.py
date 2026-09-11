@@ -1,4 +1,4 @@
-"""Тесты оплаты ЮKassa (#8, #311)."""
+"""Тесты оплаты ЮKassa (#8, #311). Действующая касса — АТОЛ Pay (test_atolpay)."""
 
 import json
 from decimal import Decimal
@@ -10,7 +10,7 @@ from django.test import Client, override_settings
 from apps.orders.models import Order
 from apps.orders.models import PaymentStatus as OrderPaymentStatus
 
-from .models import Payment, PaymentMethod, PaymentStatus
+from .models import Payment, PaymentMethod, PaymentProvider, PaymentStatus
 from .services import handle_webhook
 
 
@@ -28,7 +28,8 @@ def order(db):
 def payment(order):
     return Payment.objects.create(
         order=order,
-        yookassa_id="yoo_test_123",
+        provider=PaymentProvider.YOOKASSA,
+        provider_payment_id="yoo_test_123",
         method=PaymentMethod.YOOKASSA,
         status=PaymentStatus.PENDING,
         amount=order.total,
@@ -47,7 +48,7 @@ def client():
 
 @pytest.mark.django_db
 def test_payment_creation(payment):
-    assert payment.yookassa_id == "yoo_test_123"
+    assert payment.provider_payment_id == "yoo_test_123"
     assert payment.status == PaymentStatus.PENDING
 
 
@@ -319,7 +320,9 @@ def test_endpoint_error_returns_500(mock_hw, client):
 # ═══════════════ CREATE PAYMENT — идемпотентность ═══════════════
 
 
-@override_settings(YOOKASSA_SHOP_ID="shop", YOOKASSA_SECRET_KEY="secret")
+@override_settings(
+    YOOKASSA_SHOP_ID="shop", YOOKASSA_SECRET_KEY="secret", PAYMENT_PROVIDER="yookassa"
+)
 @pytest.mark.django_db
 @mock.patch("apps.payments.services._yookassa_request")
 def test_create_payment_idempotent(mock_api, order):
@@ -349,7 +352,7 @@ def test_refund_full(mock_api, payment, order):
     rec = refund(payment)  # #437: возвращает строку ledger Refund
     assert rec.status == "succeeded"
     assert rec.amount == payment.amount
-    assert rec.yookassa_refund_id == "refund_1"
+    assert rec.provider_refund_id == "refund_1"
     payment.refresh_from_db()
     assert payment.status == PaymentStatus.REFUNDED
     order.refresh_from_db()
