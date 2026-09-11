@@ -306,3 +306,25 @@ def test_model_number_is_not_a_weight(rules):
         (v.number for v in rules.extract("dreli-shurupoverty", name) if v.slug == "weight_kg"), None
     )
     assert got is None
+
+
+@pytest.mark.parametrize("tt", ["dreli-shurupoverty", "perforatory", "shlifmashiny"])
+def test_weight_extracted_from_name_is_declared_as_regex(tt):
+    """Шаблон из названия 1С обязан писаться источником `regex`, а не `scraper`.
+
+    Ось weight_kg объявлялась с `source: scraper` и `priority: 50` — она задумана
+    как приходящая с внешних карточек. Добавив в неё regex и не поменяв источник,
+    я записал 57 значений, добытых из названий 1С, под чужим провенансом и с
+    приоритетом ВЫШЕ спецификации производителя.
+
+    Иерархия должна оставаться прежней: scraper (50) перезаписывает regex (40),
+    потому что карточка поставщика точнее названия из 1С.
+    """
+    import json
+
+    data = json.loads((data_dir() / "attribute_rules.json").read_text(encoding="utf-8"))
+    block = next(b for b in data["tool_types"] if b["tool_type"] == tt)
+    axis = next(a for a in block["attributes"] if a["slug"] == "weight_kg")
+    assert axis.get("regex"), "шаблон пропал"
+    assert axis.get("source") == "regex", "значение из названия не может быть scraper"
+    assert axis.get("priority") == 40
