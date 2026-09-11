@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // #574: разбивка итога и честный fallback без снимка заказа.
 // Номер в useParams приходит закодированным (Next отдаёт сегмент как в адресе),
@@ -125,5 +125,53 @@ describe("ThanksPage (#574)", () => {
     render(<ThanksPage />);
 
     expect(screen.queryByTestId("max-cta")).toBeNull();
+  });
+});
+
+describe("ThanksPage — опрос статуса после возврата из кассы", () => {
+  beforeEach(() => {
+    mockedRead.mockReset();
+    mockedGuest.mockReset();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("переспрашивает статус, пока онлайн-заказ ждёт оплаты, и останавливается на «оплачен»", async () => {
+    // Регрессия со стенда: покупатель вернулся из кассы раньше callback и видел
+    // «ожидает оплаты» по уже оплаченному заказу — один запрос не успевал.
+    mockedRead.mockReturnValue(order({ access_token: "t" }));
+    mockedGuest
+      .mockResolvedValueOnce(order())
+      .mockResolvedValueOnce(order({ payment_status: "paid" }));
+
+    render(<ThanksPage />);
+    await act(async () => {});
+    expect(mockedGuest).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(mockedGuest).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Заказ оплачен")).toBeTruthy();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10000);
+    });
+    expect(mockedGuest).toHaveBeenCalledTimes(2); // оплачен — больше не спрашиваем
+  });
+
+  it("оплату по счёту не опрашивает", async () => {
+    mockedRead.mockReturnValue(order({ access_token: "t", payment_method: "invoice" }));
+    mockedGuest.mockResolvedValue(order({ payment_method: "invoice" }));
+
+    render(<ThanksPage />);
+    await act(async () => {});
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10000);
+    });
+    expect(mockedGuest).toHaveBeenCalledTimes(1);
   });
 });

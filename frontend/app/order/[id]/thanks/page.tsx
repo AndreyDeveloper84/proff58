@@ -21,6 +21,14 @@ const DELIVERY_LABELS: Record<string, string> = {
   pickup: "Самовывоз",
 };
 
+const POLL_INTERVAL_MS = 3000;
+const POLL_ATTEMPTS = 20; // ≈ минута ожидания callback от кассы
+
+/** Заказ с онлайн-оплатой, который ещё не оплачен, — единственный повод переспрашивать. */
+export function shouldKeepPolling(order: Order): boolean {
+  return order.payment_method === "online" && order.payment_status === "pending";
+}
+
 
 export default function ThanksPage() {
   const params = useParams<{ id: string }>();
@@ -50,16 +58,38 @@ export default function ThanksPage() {
   // кассы важно текущее: оплачен заказ или ещё ждёт подтверждения. Догружаем его
   // с сервера по гостевому токену; сбой запроса не ломает страницу — остаётся
   // снимок, а состояние оплаты человек увидит в кабинете.
+  //
+  // Одного запроса мало: покупатель возвращается из кассы на секунды раньше, чем
+  // касса дошлёт нам callback, и видит «ожидает оплаты» по уже оплаченному заказу
+  // (воспроизведено на стенде: callback обработан через 4 с после возврата).
+  // Поэтому, пока онлайн-заказ ждёт оплаты, статус переспрашивается раз в
+  // POLL_INTERVAL_MS — недолго, POLL_ATTEMPTS раз: этого хватает на задержку
+  // кассы, а бесконечный опрос заказа, который никто не оплатит, не нужен.
   const [fresh, setFresh] = useState<Order | null>(null);
   useEffect(() => {
     const token = stashed?.access_token;
     if (!token || !stashed) return;
     let active = true;
-    getGuestOrder(stashed.order_number, token)
-      .then((data) => active && setFresh(data))
-      .catch(() => {});
+    let attempts = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const load = () => {
+      getGuestOrder(stashed.order_number, token)
+        .then((data) => {
+          if (!active) return;
+          setFresh(data);
+          attempts += 1;
+          if (shouldKeepPolling(data) && attempts < POLL_ATTEMPTS) {
+            timer = setTimeout(load, POLL_INTERVAL_MS);
+          }
+        })
+        .catch(() => {});
+    };
+    load();
+
     return () => {
       active = false;
+      if (timer) clearTimeout(timer);
     };
   }, [stashed]);
 
