@@ -421,8 +421,7 @@ PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="atolpay")  # atolpay | yooka
 
 # АТОЛ Pay Ecom. Песочница: https://croc-sandbox-api-mobile.atolpay.ru/v1/ecom
 ATOLPAY_BASE_URL = env("ATOLPAY_BASE_URL", default="https://new-api-mobile.atolpay.ru/v1/ecom")
-# Токен из ЛК (Настройки → API Токены) уходит в заголовок Authorization как есть,
-# без схемы Bearer — так требует АТОЛ.
+# Токен из ЛК (Настройки → API Токены); уходит как ``Authorization: Bearer <token>``.
 ATOLPAY_TOKEN = env("ATOLPAY_TOKEN", default="")
 # Подписи у callback АТОЛ нет: единственный признак «свой» — секрет в query
 # notificationUrl. Он же обязателен вместе с перезапросом статуса в API.
@@ -435,12 +434,14 @@ ATOLPAY_SESSION_TYPE = env("ATOLPAY_SESSION_TYPE", default="oneStep")
 # Фискализация (54-ФЗ). Чек уходит вместе с регистрацией платежа.
 ATOLPAY_RECEIPT_ENABLED = env.bool("ATOLPAY_RECEIPT_ENABLED", default=True)
 ATOLPAY_RECEIPT_PROVIDER_ID = env.int("ATOLPAY_RECEIPT_PROVIDER_ID", default=100)  # АТОЛ Онлайн
-ATOLPAY_SNO = env.int("ATOLPAY_SNO", default=0)  # 0 — общая СН
-# Код ставки НДС в справочнике АТОЛ. ВНИМАНИЕ: числовые коды в документации не
-# расшифрованы (перечислены только названия) — фактический код ставки 22% берётся
-# из GET /v1/ecom/receipts/dictionaries (manage.py atolpay_dictionaries) и
-# подтверждается у поддержки 1@atol.ru до первого боевого чека.
-ATOLPAY_VAT_CODE = env.int("ATOLPAY_VAT_CODE", default=0)
+# Система налогообложения (справочник кассы): 0 — общая, 1 — УСН доход,
+# 2 — УСН доход-расход, 4 — ЕСХН, 5 — патент.
+ATOLPAY_SNO = env.int("ATOLPAY_SNO", default=0)
+# Код ставки НДС по справочнику кассы (GET /receipts/dictionaries, снято 11.09.2026):
+# 10 — 22%, 0 — 20%, 1 — 10%, 4 — 0%, 5 — без НДС, 6 — 5%, 7 — 7%,
+# расчётные: 11 — 22/122, 2 — 20/120, 3 — 10/110, 8 — 5/105, 9 — 7/107.
+# Перепроверить: manage.py atolpay_check --dictionaries.
+ATOLPAY_VAT_CODE = env.int("ATOLPAY_VAT_CODE", default=10)
 # Признак способа расчёта: 0 — предоплата 100% (товар отгружается после оплаты).
 ATOLPAY_PAYMENT_METHOD_CODE = env.int("ATOLPAY_PAYMENT_METHOD_CODE", default=0)
 # Признаки предмета расчёта: 0 — товар, 3 — услуга (доставка).

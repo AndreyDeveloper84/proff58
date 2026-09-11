@@ -2,7 +2,9 @@
 
 Отличия от ЮKassa, из-за которых нужен отдельный клиент:
 
-- авторизация — голый токен в ``Authorization`` (без ``Bearer``/``Basic``);
+- авторизация — ``Authorization: Bearer <token>``. Документация АТОЛ пишет «голый
+  токен без схемы», но песочница на такой заголовок отвечает 403 AUTH_ERROR, а с
+  ``Bearer`` — 200 (проверено 11.09.2026);
 - все суммы в **копейках** (целые), количество — в тысячных долях;
 - заголовка идемпотентности нет вовсе: повтор гасится уникальностью ``orderId``
   (касса отвечает ``PAYMENT_EXISTS``);
@@ -79,7 +81,7 @@ def request(method: str, path: str, body: dict | None = None) -> dict:
     req = urllib.request.Request(
         f"{_base_url()}/{path.lstrip('/')}",
         data=data,
-        headers={"Authorization": token, "Content-Type": "application/json"},
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         method=method,
     )
 

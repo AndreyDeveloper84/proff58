@@ -509,3 +509,40 @@ class TestПоздняяОплата:
         assert payment.status == PaymentStatus.SUCCEEDED  # деньги действительно пришли
         assert paid_order.payment_status == OrderPaymentStatus.PENDING
         assert paid_order.fulfillment_status == FulfillmentStatus.CANCELLED
+
+
+# ═══════════════ КЛИЕНТ ═══════════════
+
+
+class TestКлиент:
+    @mock.patch("apps.payments.atolpay.client.urllib.request.urlopen")
+    def test_токен_уходит_со_схемой_bearer(self, urlopen):
+        """Документация АТОЛ обещает «голый токен», касса принимает только Bearer."""
+        from .atolpay import client
+
+        resp = mock.MagicMock()
+        resp.read.return_value = b'{"status":"success","data":{"status":1}}'
+        resp.__enter__.return_value = resp
+        urlopen.return_value = resp
+
+        data = client.payment_status("P-1")
+
+        req = urlopen.call_args.args[0]
+        assert req.get_header("Authorization") == "Bearer test-token"
+        assert req.full_url == "https://sandbox.atolpay.test/v1/ecom/payments/P-1/status"
+        assert data == {"status": 1}
+
+    @mock.patch("apps.payments.atolpay.client.urllib.request.urlopen")
+    def test_ошибка_в_теле_с_кодом_200_становится_исключением(self, urlopen):
+        from .atolpay import client
+
+        resp = mock.MagicMock()
+        resp.read.return_value = (
+            b'{"status":"error","errorCode":"PAYMENT_SETTINGS_NOT_FOUND","errorMessage":"x"}'
+        )
+        resp.__enter__.return_value = resp
+        urlopen.return_value = resp
+
+        with pytest.raises(AtolPayError) as exc:
+            client.register_payment({})
+        assert exc.value.code == "PAYMENT_SETTINGS_NOT_FOUND"

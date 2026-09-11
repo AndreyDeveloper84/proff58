@@ -45,10 +45,10 @@ checkout / кнопка «Оплатить»
 | `PAYMENT_PROVIDER` | `atolpay` |
 | `SITE_URL` | публичный https-адрес витрины — из него строятся `returnUrl` и `notificationUrl` |
 | `ATOLPAY_BASE_URL` | прод `https://new-api-mobile.atolpay.ru/v1/ecom`, песочница `https://croc-sandbox-api-mobile.atolpay.ru/v1/ecom` |
-| `ATOLPAY_TOKEN` | токен из ЛК (Настройки → API Токены), уходит в `Authorization` как есть |
+| `ATOLPAY_TOKEN` | токен из ЛК (Настройки → API Токены); уходит как `Authorization: Bearer <token>` — документация АТОЛ пишет «без схемы», но касса на это отвечает 403 |
 | `ATOLPAY_CALLBACK_TOKEN` | наш секрет для callback (любая случайная строка) |
-| `ATOLPAY_SNO` | система налогообложения (`0` — общая) |
-| `ATOLPAY_VAT_CODE` | код ставки НДС 22% — **сверить со справочником кассы, см. §4** |
+| `ATOLPAY_SNO` | система налогообложения: `0` общая, `1` УСН доход, `2` УСН доход-расход, `4` ЕСХН, `5` патент |
+| `ATOLPAY_VAT_CODE` | код ставки НДС по справочнику кассы: `10` — 22% (снято 11.09.2026), `0` — 20%, `5` — без НДС |
 | `ATOLPAY_RECEIPT_ENABLED` | `True`; `False` отключает чек (только для отладки) |
 
 ## 3. Настройка личного кабинета
@@ -79,8 +79,8 @@ https://<домен>/api/payments/webhook/atolpay/?t=<ATOLPAY_CALLBACK_TOKEN>
 
 ```bash
 # Справочники кассы: коды предметов расчёта, ставок НДС, единиц измерения.
-# ОБЯЗАТЕЛЬНО до первого боевого чека: числовых кодов ставки 22% в документации нет,
-# они берутся отсюда и подтверждаются в поддержке 1@atol.ru.
+# Числовых кодов в документации нет — они берутся отсюда. Снимок от 11.09.2026:
+# НДС 22% = 10, 20% = 0, 10% = 1, 0% = 4, без НДС = 5; СНО: 0 общая, 1/2 УСН, 5 патент.
 docker compose exec web python manage.py atolpay_check --dictionaries
 
 # Как выглядит чек конкретного заказа (локально, в кассу ничего не уходит).
@@ -89,6 +89,10 @@ docker compose exec web python manage.py atolpay_check --receipt П-20260907-ABC
 # Что касса думает о платеже.
 docker compose exec web python manage.py atolpay_check --status P-20260907-ABC123
 ```
+
+Регистрация платежа с чеком в песочнице проверена 11.09.2026 (заказ с неделимой
+ценой 333.34×3 + доставка: касса приняла позиции 333.33×2 + 333.35 + 350.00 и
+выдала `paymentUrl`).
 
 Прогон в песочнице: оформить заказ с онлайн-оплатой → оплатить тестовой картой
 (карты Альфы: https://alfabank.ru/sme/payservice/internet-acquiring/docs/connection-options/api/test-cards)
