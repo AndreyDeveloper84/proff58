@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from decimal import Decimal
 
 from django.conf import settings
@@ -54,8 +55,13 @@ PROVIDER_STATUS = {
     12: PaymentStatus.PENDING,  # ошибка, повтор возможен
 }
 
-#: Статусы, при которых деньги уже у нас и «отмена» означает возврат.
-_MONEY_RECEIVED = {PaymentStatus.SUCCEEDED, PaymentStatus.PARTIALLY_REFUNDED}
+#: Статусы, при которых деньги уже были получены и «отмена» означает возврат
+#: (для уже возвращённого — повтор того же уведомления, касса их ретраит).
+_MONEY_RECEIVED = {
+    PaymentStatus.SUCCEEDED,
+    PaymentStatus.PARTIALLY_REFUNDED,
+    PaymentStatus.REFUNDED,
+}
 
 #: Платёж ещё можно оплатить по старой ссылке.
 _LIVE_STATUSES = (PaymentStatus.PENDING, PaymentStatus.WAITING_CAPTURE)
@@ -287,14 +293,26 @@ def handle_callback(payload: dict, *, verify: bool = True) -> None:
     # Состояние строим по проверенному статусу кассы, тело callback — только аудит:
     # подписи у него нет, и поддельный «оплачено» иначе пометил бы заказ оплаченным.
     code = _payload_status(payload)
+    started = time.monotonic()
     if verify:
         try:
             code = _status_code(payment_status(order_id))
         except AtolPayError as exc:
             logger.error("АТОЛ Pay: статус платежа %s не подтверждён (%s)", order_id, exc.code)
             raise
+    verified_at = time.monotonic()
 
     _apply_payment_callback(order_id, payload, code)
+    # Разбивка по фазам — чтобы медленный callback было видно, где именно медленный:
+    # ответ кассы (сеть/банк) или наша транзакция (блокировка, подписчики событий).
+    logger.info(
+        "АТОЛ Pay callback %s type=%s status=%s: проверка %.2fс, переход %.2fс",
+        order_id,
+        payload.get("type"),
+        code,
+        verified_at - started,
+        time.monotonic() - verified_at,
+    )
 
 
 def _locked_payment(order_id: str) -> Payment | None:
