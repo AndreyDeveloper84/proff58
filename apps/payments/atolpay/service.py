@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from decimal import Decimal
 
 from django.conf import settings
@@ -54,8 +55,13 @@ PROVIDER_STATUS = {
     12: PaymentStatus.PENDING,  # ошибка, повтор возможен
 }
 
-#: Статусы, при которых деньги уже у нас и «отмена» означает возврат.
-_MONEY_RECEIVED = {PaymentStatus.SUCCEEDED, PaymentStatus.PARTIALLY_REFUNDED}
+#: Статусы, при которых деньги уже были получены и «отмена» означает возврат
+#: (для уже возвращённого — повтор того же уведомления, касса их ретраит).
+_MONEY_RECEIVED = {
+    PaymentStatus.SUCCEEDED,
+    PaymentStatus.PARTIALLY_REFUNDED,
+    PaymentStatus.REFUNDED,
+}
 
 #: Платёж ещё можно оплатить по старой ссылке.
 _LIVE_STATUSES = (PaymentStatus.PENDING, PaymentStatus.WAITING_CAPTURE)
@@ -258,36 +264,78 @@ def _apply_fiscal(payment: Payment, payload: dict) -> None:
         )
 
 
-@transaction.atomic
 def handle_callback(payload: dict, *, verify: bool = True) -> None:
-    """Обработать уведомление кассы. Идемпотентно; ошибка → 5xx и повтор кассой."""
+    """Обработать уведомление кассы. Идемпотентно; ошибка → 5xx и повтор кассой.
+
+    Проверочный запрос к кассе делается ДО транзакции. Касса шлёт уведомления
+    об оплате и о чеке подряд, с разницей в секунды; если держать строку платежа
+    под блокировкой на время сетевого вызова, второе уведомление стоит в очереди
+    столько, сколько отвечает касса (на стенде — до 16 с при 3–5 без очереди), и
+    при медленной кассе упирается в таймаут воркера. Ответ кассы — факт о
+    платеже, он не зависит от нашей блокировки, поэтому его безопасно получить
+    заранее; состояние перепроверяется уже внутри транзакции.
+    """
     order_id = str(payload.get("orderId", ""))
     if not order_id:
         logger.warning("АТОЛ Pay callback без orderId")
         return
 
-    payment = (
-        Payment.objects.select_for_update()
-        .filter(provider=PaymentProvider.ATOLPAY, provider_order_id=order_id)
-        .first()
-    )
-    if payment is None:
+    if not Payment.objects.filter(
+        provider=PaymentProvider.ATOLPAY, provider_order_id=order_id
+    ).exists():
         logger.warning("АТОЛ Pay callback по неизвестному платежу %s", order_id)
         return
 
     if payload.get("type") == "fiscal":
-        _apply_fiscal(payment, payload)
+        _handle_fiscal_callback(order_id, payload)
         return
 
     # Состояние строим по проверенному статусу кассы, тело callback — только аудит:
     # подписи у него нет, и поддельный «оплачено» иначе пометил бы заказ оплаченным.
     code = _payload_status(payload)
+    started = time.monotonic()
     if verify:
         try:
             code = _status_code(payment_status(order_id))
         except AtolPayError as exc:
             logger.error("АТОЛ Pay: статус платежа %s не подтверждён (%s)", order_id, exc.code)
             raise
+    verified_at = time.monotonic()
+
+    _apply_payment_callback(order_id, payload, code)
+    # Разбивка по фазам — чтобы медленный callback было видно, где именно медленный:
+    # ответ кассы (сеть/банк) или наша транзакция (блокировка, подписчики событий).
+    logger.info(
+        "АТОЛ Pay callback %s type=%s status=%s: проверка %.2fс, переход %.2fс",
+        order_id,
+        payload.get("type"),
+        code,
+        verified_at - started,
+        time.monotonic() - verified_at,
+    )
+
+
+def _locked_payment(order_id: str) -> Payment | None:
+    return (
+        Payment.objects.select_for_update()
+        .filter(provider=PaymentProvider.ATOLPAY, provider_order_id=order_id)
+        .first()
+    )
+
+
+@transaction.atomic
+def _handle_fiscal_callback(order_id: str, payload: dict) -> None:
+    payment = _locked_payment(order_id)
+    if payment is not None:
+        _apply_fiscal(payment, payload)
+
+
+@transaction.atomic
+def _apply_payment_callback(order_id: str, payload: dict, code: int) -> None:
+    """Перевести платёж по уже проверенному статусу кассы. Строка — под блокировкой."""
+    payment = _locked_payment(order_id)
+    if payment is None:
+        return
 
     payment.webhook_payload = payload
     target = _target_status(code, payment.status)
