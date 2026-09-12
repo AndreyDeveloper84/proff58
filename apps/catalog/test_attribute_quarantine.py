@@ -476,8 +476,13 @@ def test_production_registry_is_valid():
     #   18455, 18578 — ХАР-13, исключения владельца вместо классовых гейтов;
     #   34721 — ДРФ-1524, границы раскрытия перевёрнуты в самом названии 1С
     #           («900-800мм»), правилами это не чинится: порядок чисел в названии
-    #           определить нечем, а разворот пары исказил бы верные данные.
-    assert {e.product_id for e in registry.active} == {18455, 18578, 34721}
+    #           определить нечем, а разворот пары исказил бы верные данные;
+    #   15 ЛКМ/спрей — FOUNDATION-AXES-01 (2026-09-12), «0,52 мл»/«0.5 мл» вместо
+    #           литров: опечатка единицы в 1С, ось volume закрыта до правки
+    #           названия (data_defect, решение владельца — не нормализовать).
+    from apps.catalog.test_foundation_axes_01 import DEFECT_052_ML
+
+    assert {e.product_id for e in registry.active} == {18455, 18578, 34721} | DEFECT_052_ML
     for entry in registry.entries:
         assert entry.reason in quarantine.REASONS
         assert entry.status in quarantine.STATUSES

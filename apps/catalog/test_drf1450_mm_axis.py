@@ -1778,14 +1778,18 @@ EXTRA_AXES: dict[str, set[str]] = {
     "napilniki": {"file_shape", "file_cut"},
     "str-markery": {"tip_width_to"},
     "strubtsiny": {"clamp_to"},
-    "krep-styazhki": {"hose_diameter_to", "length", "width"},
+    "krep-styazhki": {"hose_diameter_to", "length", "width", "package_quantity"},
     "krep-shurupy": {"length"},
     "zubila": {"width", "diameter"},
     # knife_type добавлена ДРФ-1459: числовые оси порога не берут, вид ножа берёт
     "nozhi": {"length", "knife_type"},
-    "lenty-shlif": {"length", "grit"},
-    "nazhdachka": {"length", "grit"},
+    # FOUNDATION-AXES-01 (2026-09-12): package_quantity — exact Tier 2 (абразивы,
+    # стяжки); linear_length — длина мотка лески в метрах.
+    "lenty-shlif": {"length", "grit", "package_quantity"},
+    "nazhdachka": {"length", "grit", "package_quantity"},
     "yashchiki-sumki": {"width", "height"},
+    "bp-leska": {"linear_length"},
+    "krep-takelazh": {"linear_length"},
 }
 
 
@@ -2006,34 +2010,39 @@ def test_single_needle_file_keeps_its_length(rules):
 
 # У лески «мм» значит одно и то же везде, но рядом всегда стоят метры мотка,
 # иногда граммы, а модельный код похож на размер цифрами.
+# С FOUNDATION-AXES-01 (2026-09-12) метры мотка — своя ось linear_length (м):
+# тест стал строже — метры не только не попадают в diameter, но и уходят ровно
+# во вторую ось, а граммы по-прежнему никуда.
 LESKA_UNIT_TRAPS = (
-    ("Леска д/триммер. 2,4 мм, 245 м, круглая, CHAMPION", Decimal("2.4")),
-    ("Леска д/триммер. 2,4 мм, 44м, 226г, круглая   Hitachi", Decimal("2.4")),
-    ("Леска д/триммер. 2,0мм, 515 м, пятигранник", Decimal("2")),
-    ("Леска S24100 (звезда) ф2,4мм 100м", Decimal("2.4")),
-    ("Леска TS3012 (витой квадрат) ф3,0мм 12м", Decimal("3")),
-    ("Леска д/триммер. 4.0 мм, 159 м, круглая, CHAMPION", Decimal("4")),
-    ("Леска д/триммер. 2,65мм,  30 м CHAMPION Platin Saw зубчатый", Decimal("2.65")),
+    ("Леска д/триммер. 2,4 мм, 245 м, круглая, CHAMPION", Decimal("2.4"), Decimal(245)),
+    ("Леска д/триммер. 2,4 мм, 44м, 226г, круглая   Hitachi", Decimal("2.4"), Decimal(44)),
+    ("Леска д/триммер. 2,0мм, 515 м, пятигранник", Decimal("2"), Decimal(515)),
+    ("Леска S24100 (звезда) ф2,4мм 100м", Decimal("2.4"), Decimal(100)),
+    ("Леска TS3012 (витой квадрат) ф3,0мм 12м", Decimal("3"), Decimal(12)),
+    ("Леска д/триммер. 4.0 мм, 159 м, круглая, CHAMPION", Decimal("4"), Decimal(159)),
+    ("Леска д/триммер. 2,65мм,  30 м CHAMPION Platin Saw зубчатый", Decimal("2.65"), Decimal(30)),
 )
 
 
-@pytest.mark.parametrize(("name", "expected"), LESKA_UNIT_TRAPS)
-def test_leska_takes_millimetres_not_metres_or_grams(rules, name, expected):
+@pytest.mark.parametrize(("name", "expected", "metres"), LESKA_UNIT_TRAPS)
+def test_leska_takes_millimetres_not_metres_or_grams(rules, name, expected, metres):
     """«245 м» и «226г» рядом с «2,4 мм» — длина мотка и вес, а не диаметр."""
-    assert extract(rules, "bp-leska", name) == {"diameter": expected}
+    assert extract(rules, "bp-leska", name) == {"diameter": expected, "linear_length": metres}
 
 
 def test_leska_accepts_both_decimal_separators(rules):
     """«4.0 мм» с точкой встречается в 1С наравне с «4,0мм» — читаются обе формы."""
     dot = extract(rules, "bp-leska", "Леска д/триммер. 4.0 мм, 159 м, круглая, CHAMPION")
     comma = extract(rules, "bp-leska", "Леска д/триммер. 4,0мм,  95 м CHAMPION ROUND круглая")
-    assert dot == comma == {"diameter": Decimal("4")}
+    assert dot["diameter"] == comma["diameter"] == Decimal("4")
+    assert (dot["linear_length"], comma["linear_length"]) == (Decimal(159), Decimal(95))
 
 
 def test_leska_model_code_is_not_a_size(rules):
     """«S24100» и «TS2412» — артикулы: цифр много, но «мм» за ними не стоит."""
     assert extract(rules, "bp-leska", "Леска TS24100 (витой квадрат) ф2,4мм 100м") == {
-        "diameter": Decimal("2.4")
+        "diameter": Decimal("2.4"),
+        "linear_length": Decimal(100),
     }
 
 

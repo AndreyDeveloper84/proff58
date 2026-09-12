@@ -117,18 +117,17 @@ def test_hook_blade_gets_no_width(rules):
     assert _v(rules, "hoz-lezviya", "width", name) is None
 
 
-def test_blade_pack_quantity_is_not_claimed_without_a_decision(rules):
-    """Фасовка лезвий («10шт») в блок НЕ заведена — и это не забывчивость.
+def test_blade_pack_quantity_is_claimed_by_owner_decision(rules):
+    """Фасовка лезвий («10шт») заведена в блок решением владельца.
 
-    По решению ХАР-20 ось `package_quantity` подключена ровно к одному
-    подтверждённому типу (str-skoby), и `test_har20_package_quantity` держит это
-    инвариантом, чтобы «N шт» не стало глобальной фасовкой. Сменные лезвия
-    продают пачками, ось им подходит по смыслу, замер даёт 55 товаров из 105 —
-    но подключение второго типа это решение владельца, а не побочный эффект
-    нового блока.
+    Раньше тест держал обратное: по ХАР-20 ось `package_quantity` была подключена
+    ровно к одному типу (str-skoby), и подключение второго — решение владельца, а не
+    побочный эффект нового блока. Решение принято 2026-09-12 (FOUNDATION-AXES-01,
+    DECISION 2, Tier 1: лезвия/тросы/СВП): одинаковые лезвия в пачке — фасовка.
+    Реестр владельцев оси — `test_foundation_axes_01.PACKAGE_OWNERS`.
     """
     name = "Лезвие 18х100х0,5мм, OLFA сегментированное, 10шт"
-    assert _v(rules, "hoz-lezviya", "package_quantity", name) is None
+    assert _v(rules, "hoz-lezviya", "package_quantity", name) == Decimal(10)
     assert _v(rules, "hoz-lezviya", "width", name) == Decimal("18")
 
 

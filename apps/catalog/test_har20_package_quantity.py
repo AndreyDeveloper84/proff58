@@ -299,22 +299,28 @@ def test_str_skoby_no_longer_produces_piece_count():
 def test_set_of_114_pieces_is_not_globally_package_quantity():
     """3. «Набор отверток и бит 114 шт» остаётся piece_count, а не фасовкой.
 
-    Ось ``package_quantity`` подключена ровно к одному подтверждённому tool_type;
-    глобальной трактовки «N шт = фасовка» не появляется.
+    Ось ``package_quantity`` подключена только к ЯВНОМУ реестру владельцев: ХАР-20
+    (скобы) + exact список Tier 1/Tier 2 из research FOUNDATION-AXES-01 (решение
+    владельца 2026-09-12; реестр — ``test_foundation_axes_01.PACKAGE_OWNERS``).
+    Глобальной трактовки «N шт = фасовка» не появляется: подключение нового типа —
+    решение владельца, и тест обязан упасть, пока реестр не дополнен осознанно.
     """
+    from apps.catalog.test_foundation_axes_01 import PACKAGE_OWNERS
+
     raw = _ruleset()
     rules = AttributeRules.from_dict(raw)
 
     values = {v.slug: v.number for v in rules.extract(OTVERTKI, "Набор отверток и бит 114 шт")}
-    owners = [
+    owners = {
         t["tool_type"]
         for t in raw["tool_types"]
         if any(a["slug"] == "package_quantity" for a in t["attributes"])
-    ]
+    }
 
     assert values["piece_count"] == Decimal(114)
     assert "package_quantity" not in values
-    assert owners == [SKOBY]
+    assert SKOBY in owners
+    assert owners == PACKAGE_OWNERS
 
 
 # =============================================================================
