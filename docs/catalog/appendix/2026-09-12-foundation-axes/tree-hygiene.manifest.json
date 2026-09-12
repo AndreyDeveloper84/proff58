@@ -1,0 +1,6296 @@
+{
+ "generated": "2026-09-12",
+ "status": "read-only audit, OWNER GO on taxonomy writes required",
+ "format": "current -> proposed -> evidence -> live stock -> confidence",
+ "count": 276,
+ "rows": [
+  {
+   "cluster": "C1-ext",
+   "product_id": 39153,
+   "original_name": "Ведро 12 л круглое с педалью из нержавеющей стали",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-vedra",
+   "expected_category": {
+    "id": 220,
+    "name": "Тара и ёмкости",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-vedra",
+   "evidence": "«Ведро … круглое» — ёмкость общего назначения (правило 216 vs 220)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 39173,
+   "original_name": "Ведро круглое 5л зеркальное",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-vedra",
+   "expected_category": {
+    "id": 220,
+    "name": "Тара и ёмкости",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-vedra",
+   "evidence": "«Ведро … круглое» — ёмкость общего назначения (правило 216 vs 220)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 39257,
+   "original_name": "Вилы кованные 4 круг.зубца 180х300мм  навозные",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-vily",
+   "expected_category": {
+    "id": 188,
+    "name": "Садовый инвентарь",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-vily",
+   "evidence": "«Вилы … круг. зубца» — садовый инвентарь",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 39369,
+   "original_name": "Грабли веерные стальные, 360 мм, 18 круглых зубьев, оцинкованные, без черенка, Россия// Сибртех",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-grabli",
+   "expected_category": {
+    "id": 188,
+    "name": "Садовый инвентарь",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-grabli",
+   "evidence": "«Грабли … круглых зубьев» — садовый инвентарь",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 38115,
+   "original_name": "яяКисть круглая № 22х70мм, натуральная светлая щетина FIT IT",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 37121,
+   "original_name": "Кисть круглая №2 , белка",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 37124,
+   "original_name": "Кисть круглая №4 , пони",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 38118,
+   "original_name": "яяКисть круглая, КМ 65, натур. щетина, пласт. корпус",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 38117,
+   "original_name": "яяКисть круглая пласт. оправка, №18, 60 мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 38163,
+   "original_name": "яяКисть-макловица круглая 105 мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 37221,
+   "original_name": "Кисть филёнчатая круглая КФК-10",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 37222,
+   "original_name": "Кисть филёнчатая круглая КФК-8",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 37223,
+   "original_name": "Кисть художественная круглая №10",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 37224,
+   "original_name": "Кисть художественная круглая КХК-1 белка",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 37225,
+   "original_name": "Кисть художественная круглая КХК-2 белка",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 37226,
+   "original_name": "Кисть художественная круглая КХК-3 белка",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 37227,
+   "original_name": "Кисть художественная круглая КХК-4 белка",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 37228,
+   "original_name": "Кисть художественная круглая КХК-5 белка",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-kisti",
+   "expected_category": {
+    "id": 197,
+    "name": "Малярный инструмент",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kisti",
+   "evidence": "«Кисть круглая» — малярный инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 13005,
+   "original_name": "Ключ для круглых шлицевых гаек 115-220 (шарнирный) КЗСМИ",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "klyuchi-gaechnye",
+   "expected_category": {
+    "id": 346,
+    "name": "Ключи",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "klyuchi-gaechnye",
+   "evidence": "«Ключ для круглых шлицевых гаек» — гаечный ключ",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 13006,
+   "original_name": "Ключ для круглых шлицевых гаек 55х60 КЗСМИ",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "klyuchi-gaechnye",
+   "expected_category": {
+    "id": 346,
+    "name": "Ключи",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "klyuchi-gaechnye",
+   "evidence": "«Ключ для круглых шлицевых гаек» — гаечный ключ",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 13007,
+   "original_name": "Ключ для круглых шлицевых гаек 58-62мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "klyuchi-gaechnye",
+   "expected_category": {
+    "id": 346,
+    "name": "Ключи",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "klyuchi-gaechnye",
+   "evidence": "«Ключ для круглых шлицевых гаек» — гаечный ключ",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 13008,
+   "original_name": "Ключ для круглых шлицевых гаек 65-110 (шарнирный) КЗСМИ",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "klyuchi-gaechnye",
+   "expected_category": {
+    "id": 346,
+    "name": "Ключи",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "klyuchi-gaechnye",
+   "evidence": "«Ключ для круглых шлицевых гаек» — гаечный ключ",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 13009,
+   "original_name": "Ключ для круглых шлицевых гаек КГЖ 100-110",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "klyuchi-gaechnye",
+   "expected_category": {
+    "id": 346,
+    "name": "Ключи",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "klyuchi-gaechnye",
+   "evidence": "«Ключ для круглых шлицевых гаек» — гаечный ключ",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 13010,
+   "original_name": "Ключ для круглых шлицевых гаек КГЖ 115-120",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "klyuchi-gaechnye",
+   "expected_category": {
+    "id": 346,
+    "name": "Ключи",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "klyuchi-gaechnye",
+   "evidence": "«Ключ для круглых шлицевых гаек» — гаечный ключ",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 13011,
+   "original_name": "Ключ для круглых шлицевых гаек КГЖ 125-130",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "klyuchi-gaechnye",
+   "expected_category": {
+    "id": 346,
+    "name": "Ключи",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "klyuchi-gaechnye",
+   "evidence": "«Ключ для круглых шлицевых гаек» — гаечный ключ",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 13014,
+   "original_name": "Ключ для круглых шлицевых гаек КГЖ 55х60",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "klyuchi-gaechnye",
+   "expected_category": {
+    "id": 346,
+    "name": "Ключи",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "klyuchi-gaechnye",
+   "evidence": "«Ключ для круглых шлицевых гаек» — гаечный ключ",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 13016,
+   "original_name": "Ключ для круглых шлицевых гаек КГШ 115-220",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "klyuchi-gaechnye",
+   "expected_category": {
+    "id": 346,
+    "name": "Ключи",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "klyuchi-gaechnye",
+   "evidence": "«Ключ для круглых шлицевых гаек» — гаечный ключ",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 13886,
+   "original_name": "Ключ шарнирный для круглых шлицевых гаек КГШ 22-60",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "klyuchi-gaechnye",
+   "expected_category": {
+    "id": 346,
+    "name": "Ключи",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "klyuchi-gaechnye",
+   "evidence": "«Ключ для круглых шлицевых гаек» — гаечный ключ",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 13887,
+   "original_name": "Ключ шарнирный для круглых шлицевых гаек КГШ 65-11",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "klyuchi-gaechnye",
+   "expected_category": {
+    "id": 346,
+    "name": "Ключи",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "klyuchi-gaechnye",
+   "evidence": "«Ключ для круглых шлицевых гаек» — гаечный ключ",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 40027,
+   "original_name": "Коврик защитный напольный BRABIX, поликарбонат, КРУГ диаметр 100 см, глянец, толщина 1 мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-kovriki",
+   "expected_category": null,
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-kovriki",
+   "evidence": "«Коврик защитный напольный … КРУГ» — офисный товар, живого листа нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 40160,
+   "original_name": "Коробка круглая клапанная Junior",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-truby-fitingi",
+   "expected_category": {
+    "id": 435,
+    "name": "Сантехника",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-truby-fitingi",
+   "evidence": "«Коробка круглая клапанная Junior» — сантехника/канализация",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 32588,
+   "original_name": "Круглогубцы 100мм STURM",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "passatizhi",
+   "expected_category": {
+    "id": 347,
+    "name": "Пассатижи, плоскогубцы и бокорезы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "passatizhi",
+   "evidence": "«Круглогубцы» — шарнирно-губцевый инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 32589,
+   "original_name": "Круглогубцы 120мм Мини",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "passatizhi",
+   "expected_category": {
+    "id": 347,
+    "name": "Пассатижи, плоскогубцы и бокорезы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "passatizhi",
+   "evidence": "«Круглогубцы» — шарнирно-губцевый инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 32590,
+   "original_name": "Круглогубцы 130мм 1PK-29 Proskit",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "passatizhi",
+   "expected_category": {
+    "id": 347,
+    "name": "Пассатижи, плоскогубцы и бокорезы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "passatizhi",
+   "evidence": "«Круглогубцы» — шарнирно-губцевый инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 32591,
+   "original_name": "Круглогубцы 150мм Berger BG",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "passatizhi",
+   "expected_category": {
+    "id": 347,
+    "name": "Пассатижи, плоскогубцы и бокорезы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "passatizhi",
+   "evidence": "«Круглогубцы» — шарнирно-губцевый инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 32594,
+   "original_name": "Круглогубцы 160 мм NEO",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "passatizhi",
+   "expected_category": {
+    "id": 347,
+    "name": "Пассатижи, плоскогубцы и бокорезы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "passatizhi",
+   "evidence": "«Круглогубцы» — шарнирно-губцевый инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 32595,
+   "original_name": "Круглогубцы 160 мм Nickel Matrix",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "passatizhi",
+   "expected_category": {
+    "id": 347,
+    "name": "Пассатижи, плоскогубцы и бокорезы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "passatizhi",
+   "evidence": "«Круглогубцы» — шарнирно-губцевый инструмент",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 40379,
+   "original_name": "Лампа - лупа на струбцине круглая настольная 5Х с подсветкой, белая REXANT",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "izm-lupy",
+   "expected_category": null,
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "izm-lupy",
+   "evidence": "«Лампа-лупа на струбцине круглая» — типу izm-lupy нет листа в живом дереве",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 40380,
+   "original_name": "Лампа - лупа на струбцине круглая настольная 8 дио",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "izm-lupy",
+   "expected_category": null,
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "izm-lupy",
+   "evidence": "«Лампа-лупа на струбцине круглая» — типу izm-lupy нет листа в живом дереве",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 40796,
+   "original_name": "Лупа на струбцине круглая настольная 6Х с подсветк",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "izm-lupy",
+   "expected_category": null,
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "izm-lupy",
+   "evidence": "«Лампа-лупа на струбцине круглая» — типу izm-lupy нет листа в живом дереве",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 40829,
+   "original_name": "Метла круглая высший сорт \"Эверест\" г. Воронеж",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-metly",
+   "expected_category": {
+    "id": 440,
+    "name": "Уборочный инвентарь",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-metly",
+   "evidence": "«Метла круглая» — уборочный инвентарь",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 40830,
+   "original_name": "Метла круглая высший сорт \"Эверест\" г. Воронеж",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-metly",
+   "expected_category": {
+    "id": 440,
+    "name": "Уборочный инвентарь",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-metly",
+   "evidence": "«Метла круглая» — уборочный инвентарь",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 40836,
+   "original_name": "Метла полипропиленовая, 140х310х1585 мм, круглая,",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-metly",
+   "expected_category": {
+    "id": 440,
+    "name": "Уборочный инвентарь",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-metly",
+   "evidence": "«Метла круглая» — уборочный инвентарь",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 40846,
+   "original_name": "Метла синтетическая круглая «ПРИМА», 4 кольца, с черенком, 120 см, пластик, LAIMA EXPERT,",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-metly",
+   "expected_category": {
+    "id": 440,
+    "name": "Уборочный инвентарь",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-metly",
+   "evidence": "«Метла круглая» — уборочный инвентарь",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 35461,
+   "original_name": "яяМолоток  200 г, слесарный, круглый боек",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "molotki",
+   "expected_category": {
+    "id": 343,
+    "name": "Молотки, кувалды и киянки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "molotki",
+   "evidence": "«Молоток … круглый боек»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 32861,
+   "original_name": "Молоток 500 г, круглый боек, деревянная рукоятка /",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "molotki",
+   "expected_category": {
+    "id": 343,
+    "name": "Молотки, кувалды и киянки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "molotki",
+   "evidence": "«Молоток … круглый боек»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 32871,
+   "original_name": "Молоток 800 г, круглый боек, деревянная рукоятка /",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "molotki",
+   "expected_category": {
+    "id": 343,
+    "name": "Молотки, кувалды и киянки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "molotki",
+   "evidence": "«Молоток … круглый боек»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 35475,
+   "original_name": "яяМолоток  800 г, слесарный, круглый боек",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "molotki",
+   "expected_category": {
+    "id": 343,
+    "name": "Молотки, кувалды и киянки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "molotki",
+   "evidence": "«Молоток … круглый боек»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 2617,
+   "original_name": "яяНабор бит PH2 х70, сталь S2, круглый профиль, 10 шт.// Gross",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "bity",
+   "expected_category": {
+    "id": 91,
+    "name": "Биты",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nabory-bit",
+   "evidence": "«Набор бит … круглый профиль, 10 шт.» — набор бит",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 37456,
+   "original_name": "Набор маркеров д/доски 4шт. круглые, 2,5мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "str-markery",
+   "expected_category": {
+    "id": 198,
+    "name": "Маркеры и разметка",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-markery",
+   "evidence": "«Набор маркеров д/доски … круглые» — маркеры",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 18279,
+   "original_name": "Надфиль 120 мм №3 круглый",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "napilniki",
+   "expected_category": {
+    "id": 349,
+    "name": "Напильники и рашпили",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "napilniki",
+   "evidence": "«Надфиль/Напильник/Рашпиль … круглый» — напильник",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 18282,
+   "original_name": "Надфиль 160 мм №0 круглый",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "napilniki",
+   "expected_category": {
+    "id": 349,
+    "name": "Напильники и рашпили",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "napilniki",
+   "evidence": "«Надфиль/Напильник/Рашпиль … круглый» — напильник",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 18291,
+   "original_name": "Надфиль 160 мм №4 круглый",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "napilniki",
+   "expected_category": {
+    "id": 349,
+    "name": "Напильники и рашпили",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "napilniki",
+   "evidence": "«Надфиль/Напильник/Рашпиль … круглый» — напильник",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 33447,
+   "original_name": "Напильник, 250 мм, №2, круглый, сталь У13А// Сибрт",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "napilniki",
+   "expected_category": {
+    "id": 349,
+    "name": "Напильники и рашпили",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "napilniki",
+   "evidence": "«Надфиль/Напильник/Рашпиль … круглый» — напильник",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 41180,
+   "original_name": "Нож 45мм STAYER с круглым лезвием",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Нож 45мм STAYER с круглым лезвием» — дисковый нож, а не лезвие",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 19838,
+   "original_name": "Плашка М 20х2,5 6g HSSE круглая для труднообр. ста",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "metchiki-plashki",
+   "expected_category": {
+    "id": 94,
+    "name": "Плашки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "metchiki-plashki",
+   "evidence": "«Плашка М20х2,5 … круглая» — плашка",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 25081,
+   "original_name": "Разъём РШ-ВШ 32А 380В ЗР+РЕ (кругл.) TDM",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "razemy-soediniteli",
+   "expected_category": {
+    "id": 389,
+    "name": "Электромонтаж",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "razemy-soediniteli",
+   "evidence": "«Разъём РШ-ВШ … (кругл.)» — электромонтаж",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 34541,
+   "original_name": "Рашпиль круглый №2 250 мм ЗУБР",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "napilniki",
+   "expected_category": {
+    "id": 349,
+    "name": "Напильники и рашпили",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "napilniki",
+   "evidence": "«Надфиль/Напильник/Рашпиль … круглый» — напильник",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 7153,
+   "original_name": "Ремень круглый для SM-111",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "zap-remni",
+   "expected_category": {
+    "id": 397,
+    "name": "Ремни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "zap-remni",
+   "evidence": "«Ремень круглый для SM-111» — приводной ремень",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-core",
+   "product_id": 25216,
+   "original_name": "Светильник LED ДПО 4004 18Вт IP54 4000К круг белый",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "svetilniki",
+   "expected_category": {
+    "id": 385,
+    "name": "Светильники и прожекторы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "svetilniki",
+   "evidence": "головное слово «Светильник»; «круг/круглый» — форма плафона",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-core",
+   "product_id": 25233,
+   "original_name": "Светильник ЖКХ светодиод.круглый 12Вт",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "svetilniki",
+   "expected_category": {
+    "id": 385,
+    "name": "Светильники и прожекторы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "svetilniki",
+   "evidence": "головное слово «Светильник»; «круг/круглый» — форма плафона",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-core",
+   "product_id": 25240,
+   "original_name": "Светильник НПБ 1101 белый/круг 100Вт IP54 \"TDM\"",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "svetilniki",
+   "expected_category": {
+    "id": 385,
+    "name": "Светильники и прожекторы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "svetilniki",
+   "evidence": "головное слово «Светильник»; «круг/круглый» — форма плафона",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-core",
+   "product_id": 25241,
+   "original_name": "Светильник НПП-03-100-010 IP65 Банник 1102 Круг большой матовый/корпус с решеткой белый (1005500931)",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "svetilniki",
+   "expected_category": {
+    "id": 385,
+    "name": "Светильники и прожекторы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "svetilniki",
+   "evidence": "головное слово «Светильник»; «круг/круглый» — форма плафона",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-core",
+   "product_id": 38513,
+   "original_name": "Тепловая пушка ЗТП-М1-3000, 3/1,5 кВт, 220 В, круглая, электрическая, гладкий нерж ТЭН, двойные стен",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "obor-pushki",
+   "expected_category": {
+    "id": 160,
+    "name": "Тепловые пушки и обогрев",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "obor-pushki",
+   "evidence": "головное слово «Тепловая пушка»; «круглая» — форма корпуса",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 43187,
+   "original_name": "Швабра деревянная КРУГЛАЯ",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-shchetki",
+   "expected_category": {
+    "id": 440,
+    "name": "Уборочный инвентарь",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-shchetki",
+   "evidence": "«Швабра деревянная КРУГЛАЯ» — уборочный инвентарь",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 18573,
+   "original_name": "Щетка STAYER \"PROFESSIONAL\"  d=115мм коническая с",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "korshchetki",
+   "expected_category": {
+    "id": 101,
+    "name": "Корщётки и щётки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "korshchetki",
+   "evidence": "«Щётка металлическая …» — ручная корщётка; в названии слова «круг» нет, причина попадания в 82 неясна; лист 101 «Корщётки и щётки» (сам смешанный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 18576,
+   "original_name": "Щетка металлическая 240 мм с пластмассовой ручкой",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "korshchetki",
+   "expected_category": {
+    "id": 101,
+    "name": "Корщётки и щётки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "korshchetki",
+   "evidence": "«Щётка металлическая …» — ручная корщётка; в названии слова «круг» нет, причина попадания в 82 неясна; лист 101 «Корщётки и щётки» (сам смешанный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 18575,
+   "original_name": "Щетка метал. 3-х рядная, двухкомпонентная рукоятка",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "korshchetki",
+   "expected_category": {
+    "id": 101,
+    "name": "Корщётки и щётки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "korshchetki",
+   "evidence": "«Щётка металлическая …» — ручная корщётка; в названии слова «круг» нет, причина попадания в 82 неясна; лист 101 «Корщётки и щётки» (сам смешанный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C1-ext",
+   "product_id": 18577,
+   "original_name": "Щетка металлическая с пластмассовой ручкой// Sparta",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "korshchetki",
+   "expected_category": {
+    "id": 101,
+    "name": "Корщётки и щётки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "korshchetki",
+   "evidence": "«Щётка металлическая …» — ручная корщётка; в названии слова «круг» нет, причина попадания в 82 неясна; лист 101 «Корщётки и щётки» (сам смешанный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C2",
+   "product_id": 24736,
+   "original_name": "Паяльник 300Вт, с плоским нагревателем ТОПОР REXANT",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 350,
+    "name": "Топоры и колуны",
+    "is_active": true
+   },
+   "current_tool_type": "payalniki",
+   "expected_category": {
+    "id": 431,
+    "name": "Пайка",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "payalniki",
+   "evidence": "«Паяльник … ТОПОР/(топор)» — форма жала; тип payalniki уже верный; живой лист 431 «Пайка»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C2",
+   "product_id": 24767,
+   "original_name": "Паяльник ЭПСН 500Вт/220В ) дер. ручка (топор)",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 350,
+    "name": "Топоры и колуны",
+    "is_active": true
+   },
+   "current_tool_type": "payalniki",
+   "expected_category": {
+    "id": 431,
+    "name": "Пайка",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "payalniki",
+   "evidence": "«Паяльник … ТОПОР/(топор)» — форма жала; тип payalniki уже верный; живой лист 431 «Пайка»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C3",
+   "product_id": 16598,
+   "original_name": "Брусок абразивный 180х68х28мм,белый корунд, Р1000/Р3000 Sturm",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "bruski-shlif",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "bruski-shlif",
+   "evidence": "«Брусок абразивный/для шлифования/заточной/точильный» — не круг; 3 бруска того же типа уже в 102",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C3",
+   "product_id": 16599,
+   "original_name": "Брусок абразивный 230мм Sturm",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "bruski-shlif",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "bruski-shlif",
+   "evidence": "«Брусок абразивный/для шлифования/заточной/точильный» — не круг; 3 бруска того же типа уже в 102",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C3",
+   "product_id": 16600,
+   "original_name": "Брусок БКа 15х165 25А 10СМ2 6К",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "bruski-shlif",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "bruski-shlif",
+   "evidence": "«Брусок абразивный/для шлифования/заточной/точильный» — не круг; 3 бруска того же типа уже в 102",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C3",
+   "product_id": 16601,
+   "original_name": "Брусок БКв 20х20х200 16СМ 64С",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "bruski-shlif",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "bruski-shlif",
+   "evidence": "«Брусок абразивный/для шлифования/заточной/точильный» — не круг; 3 бруска того же типа уже в 102",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C3",
+   "product_id": 16602,
+   "original_name": "Брусок БП 25х15х165 25А 25СМ1 6К",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "bruski-shlif",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "bruski-shlif",
+   "evidence": "«Брусок абразивный/для шлифования/заточной/точильный» — не круг; 3 бруска того же типа уже в 102",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C3",
+   "product_id": 16604,
+   "original_name": "Брусок для шлифования 165х85мм STAYER",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "bruski-shlif",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "bruski-shlif",
+   "evidence": "«Брусок абразивный/для шлифования/заточной/точильный» — не круг; 3 бруска того же типа уже в 102",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C3",
+   "product_id": 16606,
+   "original_name": "Брусок для шлифования, 210 х 105 мм, пластиковый с зажимами Matrix",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "bruski-shlif",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "bruski-shlif",
+   "evidence": "«Брусок абразивный/для шлифования/заточной/точильный» — не круг; 3 бруска того же типа уже в 102",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C3",
+   "product_id": 16607,
+   "original_name": "Брусок заточной 200х70х20мм 2000грит",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "bruski-shlif",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "bruski-shlif",
+   "evidence": "«Брусок абразивный/для шлифования/заточной/точильный» — не круг; 3 бруска того же типа уже в 102",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C3",
+   "product_id": 16608,
+   "original_name": "Брусок косный \"Лодочка\" в упаковке",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "bruski-shlif",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "bruski-shlif",
+   "evidence": "«Брусок абразивный/для шлифования/заточной/точильный» — не круг; 3 бруска того же типа уже в 102",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C3",
+   "product_id": 16618,
+   "original_name": "Брусок точильный для косы NAREX",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "bruski-shlif",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "bruski-shlif",
+   "evidence": "«Брусок абразивный/для шлифования/заточной/точильный» — не круг; 3 бруска того же типа уже в 102",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 32163,
+   "original_name": "Инструмент для натяжения стальной ленты на опорах ИН-20",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 58,
+    "name": "Слесарно-столярный инструмент",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 389,
+    "name": "Электромонтаж",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": null,
+   "evidence": "«Инструмент для натяжения стальной ленты на опорах ИН-20» — бандажный инструмент (электромонтаж); подходящего типа в манифесте нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 22669,
+   "original_name": "Набор звездочек ALCA 446100 Torx, T10-T50, 9 шт., Cr-V сталь",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 45,
+    "name": "Наборы инструмента",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 340,
+    "name": "Наборы ручного инструмента",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nabory-klyuchey-imbusovyh",
+   "evidence": "«Набор звездочек Torx T10-T50, 9 шт., Cr-V сталь» — набор Г-образных ключей Torx; тип по ‘сталь’ ложный",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 22990,
+   "original_name": "Набор инструментов универсальный №5, 48 позиций, CR-V сталь \"Алмаз\" TDM (SQ1014-0105)",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 340,
+    "name": "Наборы ручного инструмента",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 340,
+    "name": "Наборы ручного инструмента",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nabory-instrumenta",
+   "evidence": "«Набор инструментов универсальный №5, 48 позиций, CR-V сталь» — универсальный набор",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 41302,
+   "original_name": "Нож электрика, нерж.сталь,прорез.ручк, 2-х сторонняя заточка, лезвие 33мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Нож электрика, нерж.сталь» — нож (nozhi vs hoz-nozhi — единый тип не решён)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 41301,
+   "original_name": "Нож электрика складной длина лезвия 9 см нержавеющая сталь, Профи",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Нож электрика складной … нержавеющая сталь» — нож (nozhi vs hoz-nozhi — единый тип не решён)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 34272,
+   "original_name": "Пистолет скобозабивной 4-14мм,Зстальной УБР М-53 тип 53 (A/10/JT21) 23GA",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 352,
+    "name": "Степлеры и заклёпочники",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 352,
+    "name": "Степлеры и заклёпочники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "steplery",
+   "evidence": "«Пистолет скобозабивной … стальной» — степлер (steplery vs steplery-i-zaklepochniki)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 281,
+   "original_name": "Полиспаст 0,2т до 3м STAYER",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 171,
+    "name": "Тросы, стяжки и стропы",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 169,
+    "name": "Лебёдки и тали",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Полиспаст» — тип верный, категория 171 ошибочна",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 9674,
+   "original_name": "Стальная подкладка под ножи (1 пара) 314740",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": null,
+   "evidence": "«Стальная подкладка под ножи (1 пара) 314740» — запчасть рубанка Hitachi; типа нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 10511,
+   "original_name": "яяСтальная подкладка под ножи к P20SA2 314740 V_31",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": null,
+   "evidence": "«яяСтальная подкладка под ножи к P20SA2» — запчасть рубанка Hitachi; типа нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 34611,
+   "original_name": "Степлер мебельный, стальной, быстрая загрузка, тип скобы 53, 4-14 мм, PRO// Matrix",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 352,
+    "name": "Степлеры и заклёпочники",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 352,
+    "name": "Степлеры и заклёпочники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "steplery",
+   "evidence": "«Степлер мебельный, стальной» — степлер",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 34621,
+   "original_name": "Степлер стальной тип 140, 28, 300 MIRAX Х-140",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 352,
+    "name": "Степлеры и заклёпочники",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 352,
+    "name": "Степлеры и заклёпочники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "steplery",
+   "evidence": "«Степлер стальной тип 140» — степлер",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27893,
+   "original_name": "Таль электрическая PA250 12м, 220В",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 166,
+    "name": "На модерацию",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27894,
+   "original_name": "Таль электрическая QUATRO ELEMENTI TL-1000, 1600Вт, 500/1000кг, трос 12м",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 166,
+    "name": "На модерацию",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27895,
+   "original_name": "Таль электрическая TC-EN 1000 EINHELL",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 166,
+    "name": "На модерацию",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27896,
+   "original_name": "Таль электрическая TOR PA-250/500кг, 20/10м",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 166,
+    "name": "На модерацию",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27897,
+   "original_name": "Таль электрическая TOR PA-500/1000",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 166,
+    "name": "На модерацию",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27898,
+   "original_name": "Таль электрическая TOR PA-500/1000 кг 12/6м модель J с тележкой",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 217,
+    "name": "Тележки и тачки",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27901,
+   "original_name": "Таль электрическая TOR ТЭК CD г/п 1т, 30м (модель N), 210кг",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 166,
+    "name": "На модерацию",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27899,
+   "original_name": "Таль электрическая TOR ТЭК (CD) г/п 3,2т 18м",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 166,
+    "name": "На модерацию",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27900,
+   "original_name": "Таль электрическая TOR ТЭК (CD) г/п 3,2т 24м",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 166,
+    "name": "На модерацию",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27902,
+   "original_name": "Таль электрическая г/п 1т,в/п 9м, EURO-LIFT",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 166,
+    "name": "На модерацию",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27903,
+   "original_name": "Таль электрическая РА500/1000 г/п: 500/1000кг, 1,95кВт канат: 12м,220В OCALIFT",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 166,
+    "name": "На модерацию",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27904,
+   "original_name": "Таль электрическая цепная TOR ТЭЦС г/п 2,0т 6,0м 380В (ННBD02-02)",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 166,
+    "name": "На модерацию",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27962,
+   "original_name": "Тельфер ЗУБР ЗЭТ-500, 500/250кг, 900Вт",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 405,
+    "name": "Прочая оснастка",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27963,
+   "original_name": "Тельфер цепной, 2т. MATRIX",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 405,
+    "name": "Прочая оснастка",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27964,
+   "original_name": "Тельфер электрический 0,5т, 900Вт, Denzel",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 405,
+    "name": "Прочая оснастка",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27965,
+   "original_name": "Тельфер электрический 0,8т, 1300Вт высота 12м TF-8",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 405,
+    "name": "Прочая оснастка",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-misplaced",
+   "product_id": 27966,
+   "original_name": "Тельфер электрический 1т, 1600Вт высота 12м TF-100",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 405,
+    "name": "Прочая оснастка",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 164,
+    "name": "Лебёдки и тали электрические",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "lebedki-tali",
+   "evidence": "«Таль электрическая/Тельфер …» — тип верный; лежит в 166/217/405; живой пустой лист 164 «Лебёдки и тали электрические» (без фасетов, альтернатива 169)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 352,
+   "original_name": "Трос буксировочный 24т, 8метров, стальной, петля-петля",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 171,
+    "name": "Тросы, стяжки и стропы",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 171,
+    "name": "Тросы, стяжки и стропы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "krep-takelazh",
+   "evidence": "«Трос буксировочный … стальной» — трос; тип по ‘стальной’ ложный",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 359,
+   "original_name": "Трос буксировочный стальной (петля-петля) д.каната 31мм, 6м.",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 171,
+    "name": "Тросы, стяжки и стропы",
+    "is_active": true
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 171,
+    "name": "Тросы, стяжки и стропы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "krep-takelazh",
+   "evidence": "«Трос буксировочный стальной» — трос",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 35083,
+   "original_name": "Труборез 10 - 52 мм STAYER  для стальных труб",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 58,
+    "name": "Слесарно-столярный инструмент",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 423,
+    "name": "Труборезы и трубогибы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "truborezy",
+   "evidence": "«Труборез … для стальных труб» — труборез",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 35084,
+   "original_name": "Труборез 10 - 60 мм KRAFTOOL для стальных труб, ко",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 58,
+    "name": "Слесарно-столярный инструмент",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 423,
+    "name": "Труборезы и трубогибы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "truborezy",
+   "evidence": "«Труборез … для стальных труб» — труборез",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C4-fossil",
+   "product_id": 35085,
+   "original_name": "Труборез 10 - 60 мм ЗУБР ТС-700 для стальных труб",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 58,
+    "name": "Слесарно-столярный инструмент",
+    "is_active": false
+   },
+   "current_tool_type": "lebedki-tali",
+   "expected_category": {
+    "id": 423,
+    "name": "Труборезы и трубогибы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "truborezy",
+   "evidence": "«Труборез … для стальных труб» — труборез",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37496,
+   "original_name": "Отвес 1000гр RGK",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37497,
+   "original_name": "Отвес 100г малярный , длина 5м//Hobbi",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37495,
+   "original_name": "Отвес 100 г., строительный длина шнура 5м",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37498,
+   "original_name": "Отвес 100г строительный со шнуром STAYER \"MASTER\"",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37500,
+   "original_name": "Отвес 150гр ЗУБР \"ЭКСПЕРТ\" строительный в пластмассовом чехле",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37499,
+   "original_name": "Отвес 150г строительный со шнуром STAYER \"MASTER\"",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37502,
+   "original_name": "Отвес 200гр ЗУБР \"МАСТЕР\" строительный со шнуром, в пластиковом контейнере",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37503,
+   "original_name": "Отвес 200гр ЗУБР \"ЭКСПЕРТ\" строительный в пластмас",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37501,
+   "original_name": "Отвес 200г строительный со шнуром STAYER \"MASTER\"",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 38185,
+   "original_name": "яяОтвес 250гр ЗУБР \"ЭКСПЕРТ\" строительный в пластм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37504,
+   "original_name": "Отвес 250гр ЗУБР \"ЭКСПЕРТ\" строительный в пластмас",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37506,
+   "original_name": "Отвес 300гр FIT",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37507,
+   "original_name": "Отвес 300гр ЗУБР \"МАСТЕР\" строительный со шнуром, в пластиковом контейнере",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37508,
+   "original_name": "Отвес 300гр ЗУБР \"ЭКСПЕРТ\" строительный в пластмас",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37505,
+   "original_name": "Отвес 300г строительный со шнуром STAYER 5м",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37510,
+   "original_name": "Отвес 400гр ЗУБР \"МАСТЕР\" строительный со шнуром, в пластиковом контейнере",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37511,
+   "original_name": "Отвес 400гр ЗУБР \"ЭКСПЕРТ\"  строительный со шнуром и безопасным наконечником",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37509,
+   "original_name": "Отвес 400 г., строительный длина шнура 5м",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37512,
+   "original_name": "Отвес 500гр ЗУБР \"МАСТЕР\" строительный со шнуром, в пластиковом контейнере",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 38186,
+   "original_name": "яяОтвес строительный (0,1кг) (12/120) БИБЕР",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 38187,
+   "original_name": "яяОтвес строительный (0,2кг) (12/120) БИБЕР",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 372,
+    "name": "Уровни",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": "str-pravila",
+   "evidence": "«Отвес …г строительный» — тип str-pravila = «Правила и отвесы» по манифесту, т.е. свой тип ЕСТЬ; листа для правил/отвесов в живом дереве нет — все 60 str-pravila лежат в grab-bag 406; ближайший живой — 372 «Уровни» (измерительный)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 11499,
+   "original_name": "Теодолит электронный RGK T-02 (2\") с лазерным отвесом ПОВЕРЕН",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 27,
+    "name": "Измерительный инструмент",
+    "is_active": false
+   },
+   "current_tool_type": null,
+   "expected_category": {
+    "id": 371,
+    "name": "Лазерные уровни и нивелиры",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "izm-niveliry",
+   "evidence": "«Теодолит электронный … с лазерным отвесом» — не отвес (ложное вхождение подстроки); типа нет вовсе; корень 27 неактивен",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 37898,
+   "original_name": "Шнур-отвес разметочный 30м 110г STAYER",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 406,
+    "name": "Прочий строительный инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "str-pravila",
+   "expected_category": {
+    "id": 198,
+    "name": "Маркеры и разметка",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": null,
+   "evidence": "«Шнур-отвес разметочный» — разметочный шнур (малярный шнур), не отвес; типа для разметочных шнуров в манифесте нет; лист 198 «Маркеры и разметка»",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C5",
+   "product_id": 15923,
+   "original_name": "Шнур-отвес с синей краской в двухкомпонентном корпусе STAYER 30 м, 110 г",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 192,
+    "name": "ЛКМ (краски, лаки, грунты)",
+    "is_active": true
+   },
+   "current_tool_type": "krep-takelazh",
+   "expected_category": {
+    "id": 198,
+    "name": "Маркеры и разметка",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": null,
+   "evidence": "«Шнур-отвес разметочный» — разметочный шнур (малярный шнур), не отвес; типа для разметочных шнуров в манифесте нет; лист 198 «Маркеры и разметка»",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40438,
+   "original_name": "Лезвие 18х100х0,5мм, OLFA BLACK MAX сегментированное, 8 сегментов, 10шт\\Olfa",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40437,
+   "original_name": "Лезвие 18х100х0,5мм, OLFA BLACK MAX сегментированн",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40439,
+   "original_name": "Лезвие 18х100х0,5мм, OLFA сегментированное, 8 сегментов, 10шт\\Olfa",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40440,
+   "original_name": "Лезвие KRAFTOOL \"PRO\" \"SOLINGEN\"сменное,для универ",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40441,
+   "original_name": "Лезвие OLFA EXCEL BLACK 18мм 10шт черные сегментированные",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40442,
+   "original_name": "Лезвие дисковое для ножа ХН-40",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 109,
+    "name": "На модерацию",
+    "is_active": false
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвие дисковое для ножа ХН-40» — сменное лезвие; лежит в неактивной 109 «На модерацию»",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40443,
+   "original_name": "Лезвие для гратоснимателя KRAFTOOL Universal",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвие для гратоснимателя» — сменное лезвие инструмента",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40445,
+   "original_name": "Лезвие-крюк OLFA для ножа OLFA-HOK-1, 90х20х39,5х0,8мм",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40444,
+   "original_name": "Лезвие стер №15",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвие стер №15» — стерильное скальпельное лезвие; сменное лезвие, но профиль товара не для витрины инструмента",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40454,
+   "original_name": "Лезвия 18 мм (10 шт.)",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40475,
+   "original_name": "Лезвия 18мм (10шт) 18CUTBL 30",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40455,
+   "original_name": "Лезвия 18 мм (10 шт.) Matrix",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40456,
+   "original_name": "Лезвия 18 мм (10 шт.) Park",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40476,
+   "original_name": "Лезвия 18мм (10шт) Remocolor",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40477,
+   "original_name": "Лезвия 18мм (10шт) SK-5",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40457,
+   "original_name": "Лезвия 18 мм (10 шт.) WURTH",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40458,
+   "original_name": "Лезвия 18 мм (10 шт.) для ножа Stanley",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40459,
+   "original_name": "Лезвия 18 мм HK1076-S1-18 Hanskonner",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40460,
+   "original_name": "Лезвия 18 мм HK1076-S2-18 Hanskonner",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40461,
+   "original_name": "Лезвия 18 мм KRAFTOOL BLACK MAX 10шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40462,
+   "original_name": "Лезвия 18 мм KRAFTOOL SOLINGEN-18 15сегментов 5шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40463,
+   "original_name": "Лезвия 18 мм KRAFTOOL SOLINGEN-18 8сегментов 5шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40464,
+   "original_name": "Лезвия 18 мм KRAFTOOL SOLINGEN-18 TITANIUM 15сегментов 5шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40465,
+   "original_name": "Лезвия 18 мм KRAFTOOL SOLINGEN-18 TITANIUM 8сегментов 5шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40466,
+   "original_name": "Лезвия 18 мм KRAFTOOL SOLINGEN-25 7сегментов 5шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40467,
+   "original_name": "Лезвия 18 мм MIRAX MX-18",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40468,
+   "original_name": "Лезвия 18 мм STAYER BLACK",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40469,
+   "original_name": "Лезвия 18 мм STAYER сегментированные",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40470,
+   "original_name": "Лезвия 18 мм STAYER сегментированные 10шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40471,
+   "original_name": "Лезвия 18 мм STAYER сегментированные PRO",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40473,
+   "original_name": "Лезвия 18 мм ЗУБР ОСОБООСТРЫЕ сегментированные 10шт",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40474,
+   "original_name": "Лезвия 18 мм ЗУБР сегментированные 10шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40472,
+   "original_name": "Лезвия 18 мм ЗУБР \"ЭКСПЕРТ\" сегментированные",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40478,
+   "original_name": "Лезвия 18х100х0,5мм OLFA сегментированное EXCEL BLACK  10шт",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40484,
+   "original_name": "Лезвия 25мм 10шт",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 43498,
+   "original_name": "яяЛезвия 25мм (10шт) (20/200)  БИБЕР",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40481,
+   "original_name": "Лезвия 25 мм, 10 шт.// Matrix",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40482,
+   "original_name": "Лезвия 25 мм, 10 шт.// Matrix SK5",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40483,
+   "original_name": "Лезвия 25мм (5шт) Remocolor",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40485,
+   "original_name": "Лезвия 25мм KRAFTOOL BLACK MAX 5шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40479,
+   "original_name": "Лезвия 25 мм STAYER",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40480,
+   "original_name": "Лезвия 25 мм STAYER 10шт, сегмент",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40487,
+   "original_name": "Лезвия 25мм ЗУБР ОСОБООСТРЫЕ сегментированные 5шт",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40486,
+   "original_name": "Лезвия 25мм ЗУБР \"ЭКСПЕРТ\" сегментированные, улучш",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40446,
+   "original_name": "Лезвия  9мм 10шт",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40447,
+   "original_name": "Лезвия  9мм 10шт STAYER",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40488,
+   "original_name": "Лезвия 9 мм (10 шт.) WURTH",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40448,
+   "original_name": "Лезвия  9мм KRAFTOOL 10шт нержавеющие",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40449,
+   "original_name": "Лезвия  9мм KRAFTOOL 5шт",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40450,
+   "original_name": "Лезвия  9мм KRAFTOOL 5шт сегментированные",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40451,
+   "original_name": "Лезвия  9мм KRAFTOOL BLACK MAX 10шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40453,
+   "original_name": "Лезвия  9х80х0.38мм OLFA сегментированное 10шт",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40452,
+   "original_name": "Лезвия  9х80х0,38мм OLFA сегментированное EXCEL BLACK 13 сегментов, 10шт",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40489,
+   "original_name": "Лезвия для макетных ножей скальпелей (5 шт; 8 мм)",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40490,
+   "original_name": "Лезвия для рубанка кромочного КВАДРАТ 10шт",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия для рубанка» — сменные ножи инструмента; в 107 уже 20+ ножей для рубанков",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40491,
+   "original_name": "Лезвия для универсальных мощных ножей (5 шт; 18 мм; трапеция) BRAUBERG",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40497,
+   "original_name": "Лезвия-крючки для линолеума (за 10 шт.)",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40492,
+   "original_name": "Лезвия перовое OLFA 5мм для ножа",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40493,
+   "original_name": "Лезвия трапецеевидные HK1076-S1-KE Hanskonner 10шт",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40494,
+   "original_name": "Лезвия трапециевидные SOLINGEN, тип А24, 5 шт, KRAFTOOL",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40495,
+   "original_name": "Лезвия трапециевидные А24 5шт ЗУБР",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40496,
+   "original_name": "Лезвия трапеция (для линолеума) за 10 шт. для ноже",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-lezviya",
+   "evidence": "«Лезвия … мм / сегментированные / трапециевидные / крюк» — сменные лезвия строительного ножа; корень 339 — не лист",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 40892,
+   "original_name": "Микрорезак H&B 300258 лезвие для удаления дефектов на лаке (каттер)",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Микрорезак … (каттер)» — режущий инструмент, не лезвие",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 43590,
+   "original_name": "яяНож 18 мм ,7 запасных лезвий D-65713",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Нож …» — нож с лезвием, не сменное лезвие; тип ложный по слову «лезвие»; товар деактивирован (яя)",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 43595,
+   "original_name": "яяНож 18мм ULTIMA винтовой фиксатор, черное лезвие Sk5",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Нож …» — нож с лезвием, не сменное лезвие; тип ложный по слову «лезвие»; товар деактивирован (яя)",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 43593,
+   "original_name": "яяНож 18 мм с выдвижным лезвием, метал.корпус,автомат.смена лезвий,лезвия из стали SK4, 5 шт TRUPER",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Нож …» — нож с лезвием, не сменное лезвие; тип ложный по слову «лезвие»; товар деактивирован (яя)",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 43600,
+   "original_name": "яяНож 19мм  с лезвиями двух видов Inforce",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Нож …» — нож с лезвием, не сменное лезвие; тип ложный по слову «лезвие»; товар деактивирован (яя)",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 43604,
+   "original_name": "яяНож 25 мм усиленный 5 лезвий в комплекте INFORCE",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Нож …» — нож с лезвием, не сменное лезвие; тип ложный по слову «лезвие»; товар деактивирован (яя)",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 41180,
+   "original_name": "Нож 45мм STAYER с круглым лезвием",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 82,
+    "name": "Круги",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Нож 45мм STAYER с круглым лезвием» — дисковый нож; в 82 по слову «круглым»",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 43607,
+   "original_name": "яяНож 9 мм с отламывающимся лезвием Top Tools",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Нож …» — нож с лезвием, не сменное лезвие; тип ложный по слову «лезвие»; товар деактивирован (яя)",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 41181,
+   "original_name": "Нож CAT складной строительный 16,2см лезвие трапец",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 107,
+    "name": "Лезвия и ножи сменные",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Нож CAT складной строительный» — нож, не сменное лезвие; в 107 по ошибке",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 43616,
+   "original_name": "яяНож FISKARS общего назначения лезвие нержав. 100мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Нож …» — нож с лезвием, не сменное лезвие; тип ложный по слову «лезвие»; товар деактивирован (яя)",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 43625,
+   "original_name": "яяНож для снятия изоляции с частично изолир. лезвием",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 421,
+    "name": "Инструмент для снятия изоляции",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": null,
+   "evidence": "«Нож для снятия изоляции» — не лезвие; лист 421; типа для стрипперов в манифесте не найдено; товар деактивирован (яя)",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 42067,
+   "original_name": "Секатор KS-4Т и запасное лезвие KS-4TSBL с тефлоновым покрытием SAMURAI",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 188,
+    "name": "Садовый инвентарь",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 188,
+    "name": "Садовый инвентарь",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-sekatory",
+   "evidence": "«Секатор …» — секатор; тип hoz-lezviya ложный по слову «лезвие»; категория 188 (там 35 секаторов) верна",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 42070,
+   "original_name": "Секатор цельнокованый, с направленным под углом лезвием, 210мм, рез до 25 мм, GRINDA",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 188,
+    "name": "Садовый инвентарь",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 188,
+    "name": "Садовый инвентарь",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "hoz-sekatory",
+   "evidence": "«Секатор …» — секатор; тип hoz-lezviya ложный по слову «лезвие»; категория 188 (там 35 секаторов) верна",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 42073,
+   "original_name": "Секач 450/605мм ЗУБР с удлиненным лезвием",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 449,
+    "name": "Мачете и секачи",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "machete-i-sekachi",
+   "evidence": "«Секач … с удлиненным лезвием» — секач; живой лист 449 «Мачете и секачи»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C6",
+   "product_id": 42130,
+   "original_name": "Скальпель со сменными лезвиями набор 7 предметов R",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 339,
+    "name": "Ручной инструмент",
+    "is_active": true
+   },
+   "current_tool_type": "hoz-lezviya",
+   "expected_category": {
+    "id": 353,
+    "name": "Ножи и лезвия",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nozhi",
+   "evidence": "«Скальпель со сменными лезвиями набор» — инструмент, не лезвие; ближайший лист 353",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 24854,
+   "original_name": "Припой медно-фосфорный ХАРРИС-0 пруток 1.3х3.2х500мм 20гр",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": {
+    "id": 431,
+    "name": "Пайка",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "raskhodniki-pajki",
+   "evidence": "«Припой ПОС/медно-фосфорный/Пруток 40 FC Harris» — припой для пайки, не сварочный материал; лист 431 «Пайка», тип raskhodniki-pajki есть в манифесте",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 24861,
+   "original_name": "Припой ПОС 40 пруток 8мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": {
+    "id": 431,
+    "name": "Пайка",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "raskhodniki-pajki",
+   "evidence": "«Припой ПОС/медно-фосфорный/Пруток 40 FC Harris» — припой для пайки, не сварочный материал; лист 431 «Пайка», тип raskhodniki-pajki есть в манифесте",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 24863,
+   "original_name": "Припой ПОС 61 проволока ф-3.0 мм (катушка 100 гр)",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": {
+    "id": 431,
+    "name": "Пайка",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "raskhodniki-pajki",
+   "evidence": "«Припой ПОС/медно-фосфорный/Пруток 40 FC Harris» — припой для пайки, не сварочный материал; лист 431 «Пайка», тип raskhodniki-pajki есть в манифесте",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 24864,
+   "original_name": "Припой ПОС 61 пруток ф-8.0 мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": {
+    "id": 431,
+    "name": "Пайка",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "raskhodniki-pajki",
+   "evidence": "«Припой ПОС/медно-фосфорный/Пруток 40 FC Harris» — припой для пайки, не сварочный материал; лист 431 «Пайка», тип raskhodniki-pajki есть в манифесте",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 24865,
+   "original_name": "Припой ПОС 61 пруток ф-8.0 мм L-400 мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": {
+    "id": 431,
+    "name": "Пайка",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "raskhodniki-pajki",
+   "evidence": "«Припой ПОС/медно-фосфорный/Пруток 40 FC Harris» — припой для пайки, не сварочный материал; лист 431 «Пайка», тип raskhodniki-pajki есть в манифесте",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31043,
+   "original_name": "Проволока Е71Т-GS GROVERS d 0.8 мм 1 кг",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": {
+    "id": 335,
+    "name": "Сварочная проволока и прутки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "svar-provoloka",
+   "evidence": "«Проволока Е71Т-GS/Св10Х17Т» — сварочная проволока; в неактивном корне 57",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31046,
+   "original_name": "Проволока Св10Х17Т ф3мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": {
+    "id": 335,
+    "name": "Сварочная проволока и прутки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "svar-provoloka",
+   "evidence": "«Проволока Е71Т-GS/Св10Х17Т» — сварочная проволока; в неактивном корне 57",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31072,
+   "original_name": "Пруток 40 FC Harris",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": {
+    "id": 431,
+    "name": "Пайка",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "raskhodniki-pajki",
+   "evidence": "«Припой ПОС/медно-фосфорный/Пруток 40 FC Harris» — припой для пайки, не сварочный материал; лист 431 «Пайка», тип raskhodniki-pajki есть в манифесте",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31078,
+   "original_name": "Пруток БраЖ 9-4 ф100мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": null,
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": null,
+   "evidence": "«Пруток БрАЖ/БрОЦС/Л63/ЛС59 ф14–200мм» — латунный/бронзовый прокат, не сварочный материал; в живом дереве листа для металлопроката нет; тип svar-provoloka ошибочен, замены в манифесте нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31079,
+   "original_name": "Пруток БраЖ 9-4 ф20мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": null,
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": null,
+   "evidence": "«Пруток БрАЖ/БрОЦС/Л63/ЛС59 ф14–200мм» — латунный/бронзовый прокат, не сварочный материал; в живом дереве листа для металлопроката нет; тип svar-provoloka ошибочен, замены в манифесте нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31080,
+   "original_name": "Пруток БраЖ 9-4 ф50мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": null,
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": null,
+   "evidence": "«Пруток БрАЖ/БрОЦС/Л63/ЛС59 ф14–200мм» — латунный/бронзовый прокат, не сварочный материал; в живом дереве листа для металлопроката нет; тип svar-provoloka ошибочен, замены в манифесте нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31081,
+   "original_name": "Пруток БраЖ 9-4 ф60мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": null,
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": null,
+   "evidence": "«Пруток БрАЖ/БрОЦС/Л63/ЛС59 ф14–200мм» — латунный/бронзовый прокат, не сварочный материал; в живом дереве листа для металлопроката нет; тип svar-provoloka ошибочен, замены в манифесте нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31082,
+   "original_name": "Пруток БраЖ 9-4 ф80мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": null,
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": null,
+   "evidence": "«Пруток БрАЖ/БрОЦС/Л63/ЛС59 ф14–200мм» — латунный/бронзовый прокат, не сварочный материал; в живом дереве листа для металлопроката нет; тип svar-provoloka ошибочен, замены в манифесте нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31083,
+   "original_name": "Пруток БрОЦС555 ф200мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": null,
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": null,
+   "evidence": "«Пруток БрАЖ/БрОЦС/Л63/ЛС59 ф14–200мм» — латунный/бронзовый прокат, не сварочный материал; в живом дереве листа для металлопроката нет; тип svar-provoloka ошибочен, замены в манифесте нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31084,
+   "original_name": "Пруток БрОЦС555 ф50мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": null,
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": null,
+   "evidence": "«Пруток БрАЖ/БрОЦС/Л63/ЛС59 ф14–200мм» — латунный/бронзовый прокат, не сварочный материал; в живом дереве листа для металлопроката нет; тип svar-provoloka ошибочен, замены в манифесте нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31085,
+   "original_name": "Пруток Л63 ф 16",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": null,
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": null,
+   "evidence": "«Пруток БрАЖ/БрОЦС/Л63/ЛС59 ф14–200мм» — латунный/бронзовый прокат, не сварочный материал; в живом дереве листа для металлопроката нет; тип svar-provoloka ошибочен, замены в манифесте нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31088,
+   "original_name": "Пруток ЛС59-1 ф100",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": null,
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": null,
+   "evidence": "«Пруток БрАЖ/БрОЦС/Л63/ЛС59 ф14–200мм» — латунный/бронзовый прокат, не сварочный материал; в живом дереве листа для металлопроката нет; тип svar-provoloka ошибочен, замены в манифесте нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31086,
+   "original_name": "Пруток ЛС59-1 ф 14",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": null,
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": null,
+   "evidence": "«Пруток БрАЖ/БрОЦС/Л63/ЛС59 ф14–200мм» — латунный/бронзовый прокат, не сварочный материал; в живом дереве листа для металлопроката нет; тип svar-provoloka ошибочен, замены в манифесте нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31087,
+   "original_name": "Пруток ЛС59-1 ф 80",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": null,
+   "expected_category_needs_leaf": true,
+   "expected_tool_type": null,
+   "evidence": "«Пруток БрАЖ/БрОЦС/Л63/ЛС59 ф14–200мм» — латунный/бронзовый прокат, не сварочный материал; в живом дереве листа для металлопроката нет; тип svar-provoloka ошибочен, замены в манифесте нет",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7a",
+   "product_id": 31098,
+   "original_name": "Пруток ПЭНД 100 ф 4мм",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 57,
+    "name": "Сварочное оборудование",
+    "is_active": false
+   },
+   "current_tool_type": "svar-provoloka",
+   "expected_category": {
+    "id": 335,
+    "name": "Сварочная проволока и прутки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "svar-provoloka",
+   "evidence": "«Пруток ПЭНД 100 ф4мм» — сварочный пруток для пластика; 335 «Сварочная проволока и прутки» допустимо",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 7847,
+   "original_name": "Мешок для сухой и влажной уборки (8-15L) 337458",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 24,
+    "name": "Оснастка Hitachi",
+    "is_active": false
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "meshki-pylesos",
+   "evidence": "«Мешок для сухой и влажной уборки / нейлоновый для пыли» — мешок пылесоса; лежит в неактивной 24 «Оснастка Hitachi»; товар активен и в наличии",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 7848,
+   "original_name": "Мешок нейлоновый для пыли (OLD 710015) 4 ШТ WDE120",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 24,
+    "name": "Оснастка Hitachi",
+    "is_active": false
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "meshki-pylesos",
+   "evidence": "«Мешок для сухой и влажной уборки / нейлоновый для пыли» — мешок пылесоса; лежит в неактивной 24 «Оснастка Hitachi»; товар активен и в наличии",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4078,
+   "original_name": "Сумка COFRA для бензопилы 810х265х250",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 182,
+    "name": "Бензопилы",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 215,
+    "name": "Сумки и пояса монтажника",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "yashchiki-sumki",
+   "evidence": "«Сумка COFRA для бензопилы/триммера» — сумка-чехол, не мешок пылесоса; тип ложный; лист 215 «Сумки и пояса монтажника» (альтернатива — оставить в 182/181 как аксессуар)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4079,
+   "original_name": "Сумка COFRA для триммера 600х2000",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 181,
+    "name": "Триммеры и мотокосы",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 215,
+    "name": "Сумки и пояса монтажника",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "yashchiki-sumki",
+   "evidence": "«Сумка COFRA для бензопилы/триммера» — сумка-чехол, не мешок пылесоса; тип ложный; лист 215 «Сумки и пояса монтажника» (альтернатива — оставить в 182/181 как аксессуар)",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4080,
+   "original_name": "Фильтр HEPA  Euroclean синтетический для пылесоса NILFISK",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "zap-filtry",
+   "evidence": "«Фильтр HEPA/каркасный/складчатый … для пылесоса» — фильтр, не мешок; тип zap-filtry; листа «фильтры для пылесосов» нет, 106 — ближайший",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4081,
+   "original_name": "Фильтр HEPA  Euroclean целлюлозный для пылесоса WDE3600",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "zap-filtry",
+   "evidence": "«Фильтр HEPA/каркасный/складчатый … для пылесоса» — фильтр, не мешок; тип zap-filtry; листа «фильтры для пылесосов» нет, 106 — ближайший",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4082,
+   "original_name": "Фильтр каркасный для пылесосов ЗУБР модификации М3 и М4",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "zap-filtry",
+   "evidence": "«Фильтр HEPA/каркасный/складчатый … для пылесоса» — фильтр, не мешок; тип zap-filtry; листа «фильтры для пылесосов» нет, 106 — ближайший",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4083,
+   "original_name": "Фильтр мембранный матерчатый Euroclean для пылесоса MAKITA, HITACHI",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "zap-filtry",
+   "evidence": "«Фильтр HEPA/каркасный/складчатый … для пылесоса» — фильтр, не мешок; тип zap-filtry; листа «фильтры для пылесосов» нет, 106 — ближайший",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4084,
+   "original_name": "Фильтр патронный для пылесосов",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "zap-filtry",
+   "evidence": "«Фильтр HEPA/каркасный/складчатый … для пылесоса» — фильтр, не мешок; тип zap-filtry; листа «фильтры для пылесосов» нет, 106 — ближайший",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4085,
+   "original_name": "Фильтр плоский NT 65/2,72/2",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "zap-filtry",
+   "evidence": "«Фильтр HEPA/каркасный/складчатый … для пылесоса» — фильтр, не мешок; тип zap-filtry; листа «фильтры для пылесосов» нет, 106 — ближайший",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4086,
+   "original_name": "Фильтр предварительной очистки для пылесоса HITACHI S 24E, WDE 1200, WDE 3600",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "zap-filtry",
+   "evidence": "«Фильтр HEPA/каркасный/складчатый … для пылесоса» — фильтр, не мешок; тип zap-filtry; листа «фильтры для пылесосов» нет, 106 — ближайший",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4087,
+   "original_name": "Фильтр складчатый для NT 361.561.35/1.45/1",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "zap-filtry",
+   "evidence": "«Фильтр HEPA/каркасный/складчатый … для пылесоса» — фильтр, не мешок; тип zap-filtry; листа «фильтры для пылесосов» нет, 106 — ближайший",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4088,
+   "original_name": "Фильтр складчатый многоразовый моющийся/ полиэстр EVROCLEAN",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "zap-filtry",
+   "evidence": "«Фильтр HEPA/каркасный/складчатый … для пылесоса» — фильтр, не мешок; тип zap-filtry; листа «фильтры для пылесосов» нет, 106 — ближайший",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4089,
+   "original_name": "Фильтр складчатый многоразовый моющийся/ полиэстр для HITACHI  EVROCLEAN",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "zap-filtry",
+   "evidence": "«Фильтр HEPA/каркасный/складчатый … для пылесоса» — фильтр, не мешок; тип zap-filtry; листа «фильтры для пылесосов» нет, 106 — ближайший",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4090,
+   "original_name": "Фильтр складчатый многоразовый моющийся/ полиэстр для MAKITA",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "zap-filtry",
+   "evidence": "«Фильтр HEPA/каркасный/складчатый … для пылесоса» — фильтр, не мешок; тип zap-filtry; листа «фильтры для пылесосов» нет, 106 — ближайший",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4091,
+   "original_name": "Шланг OZONE для пылесоса 2,5м внутр ф38мм, внеш ф44мм",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "obor-shlangi",
+   "evidence": "«Шланг OZONE для пылесоса» — шланг, не мешок; ближайший тип obor-shlangi «Шланги, трубки, насадки»; листа нет, 106 — ближайший",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4092,
+   "original_name": "Шланг OZONE для пылесоса 3м белый",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "obor-shlangi",
+   "evidence": "«Шланг OZONE для пылесоса» — шланг, не мешок; ближайший тип obor-shlangi «Шланги, трубки, насадки»; листа нет, 106 — ближайший",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4093,
+   "original_name": "Шланг OZONE для пылесоса 3м внутр ф32мм, внеш ф38мм",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "obor-shlangi",
+   "evidence": "«Шланг OZONE для пылесоса» — шланг, не мешок; ближайший тип obor-shlangi «Шланги, трубки, насадки»; листа нет, 106 — ближайший",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4094,
+   "original_name": "Шланг OZONE для пылесоса 3м серый с байонетным соединением",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "obor-shlangi",
+   "evidence": "«Шланг OZONE для пылесоса» — шланг, не мешок; ближайший тип obor-shlangi «Шланги, трубки, насадки»; листа нет, 106 — ближайший",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4095,
+   "original_name": "Шланг OZONE для пылесоса 5м серый",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "obor-shlangi",
+   "evidence": "«Шланг OZONE для пылесоса» — шланг, не мешок; ближайший тип obor-shlangi «Шланги, трубки, насадки»; листа нет, 106 — ближайший",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7b",
+   "product_id": 4096,
+   "original_name": "Шланг OZONE для пылесоса 5м серый с байонетным соединением",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "current_tool_type": "meshki-pylesos",
+   "expected_category": {
+    "id": 106,
+    "name": "Мешки-пылесборники",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "obor-shlangi",
+   "evidence": "«Шланг OZONE для пылесоса» — шланг, не мешок; ближайший тип obor-shlangi «Шланги, трубки, насадки»; листа нет, 106 — ближайший",
+   "confidence": "low",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 39097,
+   "original_name": "Бирка Кабельная маркировочная У-136 (треугольник 5",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 389,
+    "name": "Электромонтаж",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": null,
+   "evidence": "«Бирка кабельная маркировочная У-136 … треугольник» — маркировка кабеля (электромонтаж), не угольник; типа для бирок в манифесте нет",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 23676,
+   "original_name": "Бирка кабельная У-136 55х55з55мм треугольник",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 389,
+    "name": "Электромонтаж",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": null,
+   "evidence": "«Бирка кабельная маркировочная У-136 … треугольник» — маркировка кабеля (электромонтаж), не угольник; типа для бирок в манифесте нет",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 36924,
+   "original_name": "Бирка кабельная У-136 55х55х55мм, треугольник",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 389,
+    "name": "Электромонтаж",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": null,
+   "evidence": "«Бирка кабельная маркировочная У-136 … треугольник» — маркировка кабеля (электромонтаж), не угольник; типа для бирок в манифесте нет",
+   "confidence": "medium",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 37057,
+   "original_name": "Кельма бетонщика треугольник дер.рук., Hobbi",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 196,
+    "name": "Шпатели, кельмы и тёрки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kelmy",
+   "evidence": "«Кельма … треугольник» — кельма; тип str-kelmy, лист 196",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 37068,
+   "original_name": "Кельма каменщика треугольник  дер.рук., Hobbi",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 196,
+    "name": "Шпатели, кельмы и тёрки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kelmy",
+   "evidence": "«Кельма … треугольник» — кельма; тип str-kelmy, лист 196",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 37085,
+   "original_name": "Кельма треугольник, 200мм нержавеющее полотно, деревянная рукоятка,  STAYER \"PROFI\"",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 196,
+    "name": "Шпатели, кельмы и тёрки",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "str-kelmy",
+   "evidence": "«Кельма … треугольник» — кельма; тип str-kelmy, лист 196",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18398,
+   "original_name": "Треугольник абразивный на ворс подложке P120 93мм перф под липучку (5шт)",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18399,
+   "original_name": "Треугольник абразивный на ворс подложке P180 93мм перф под липучку (5шт)",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18400,
+   "original_name": "Треугольник абразивный на ворс подложке P240 93мм перф под липучку (5шт)",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18401,
+   "original_name": "Треугольник абразивный на ворс подложке P320 93мм перф под липучку (5шт)",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18402,
+   "original_name": "Треугольник абразивный на ворс подложке P600 93мм перф под липучку (5шт)",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18408,
+   "original_name": "Треугольник шлифовальный Р100 6 отв велюр 93х93х93мм ЗУБР Мастер 5шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18409,
+   "original_name": "Треугольник шлифовальный Р120 6 отв велюр 93х93х93мм ЗУБР Мастер 5шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18410,
+   "original_name": "Треугольник шлифовальный Р180 6 отв велюр 93х93х93мм ЗУБР Мастер 5шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18411,
+   "original_name": "Треугольник шлифовальный Р320 6 отв велюр 93х93х93мм ЗУБР Мастер 5шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18403,
+   "original_name": "Треугольник шлифовальный Р 40 6 отв велюр 93х93х93мм ЗУБР Мастер 5шт",
+   "in_stock": false,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18404,
+   "original_name": "Треугольник шлифовальный Р 40 6 отверстий (5шт) на",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18405,
+   "original_name": "Треугольник шлифовальный Р 60 6 отв велюр 93х93х93мм ЗУБР Мастер 5шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18406,
+   "original_name": "Треугольник шлифовальный Р 60 6 отверстий (5шт) на",
+   "in_stock": false,
+   "is_active": false,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  },
+  {
+   "cluster": "C7e",
+   "product_id": 18407,
+   "original_name": "Треугольник шлифовальный Р 80 6 отв велюр 93х93х93мм ЗУБР Мастер 5шт",
+   "in_stock": true,
+   "is_active": true,
+   "current_category": {
+    "id": 375,
+    "name": "Угольники и линейки",
+    "is_active": true
+   },
+   "current_tool_type": "izm-ugolniki",
+   "expected_category": {
+    "id": 102,
+    "name": "Абразивы",
+    "is_active": true
+   },
+   "expected_category_needs_leaf": false,
+   "expected_tool_type": "nazhdachka",
+   "evidence": "«Треугольник абразивный/шлифовальный … P40–P600 93мм на липучке» — шлифовальный лист (дельта), тип nazhdachka «Наждачная бумага и сетка», лист 102 «Абразивы»",
+   "confidence": "high",
+   "action_class": "move"
+  }
+ ]
+}

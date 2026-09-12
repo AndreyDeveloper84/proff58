@@ -45,6 +45,32 @@
    mutations считаются и доказываются отдельно; rollback — только
    provenance-based (без диапазонов id).
 
+## Порядок apply для блоков правил, добавляющих schema / bindings / options
+
+**Обязателен с 2026-09-12 (решение владельца)** для любого enrichment-захода, где
+блоки `attribute_rules.json` могут создать новый `Attribute`, `AttributeOption` или
+`CategoryAttribute`:
+
+1. `load_attributes` (словарь, опции, привязки);
+2. проверить Attribute / bindings / options по плану (`--dry-run --strict-bindings`
+   должен давать `create 0` после применения);
+3. SELECT preflight: `required options ⊆ DB options` для фактического manifest;
+4. `enrich_attributes --dry-run`, сверка значений против названий;
+5. immutable manifest (product scope + ожидаемые CREATE/CONFIRM/PROTECTED);
+6. backup (pg_dump PAV + CategoryAttribute + AttributeOption);
+7. drift gate (blob правил на стенде = `origin/dev`);
+8. `enrich_attributes`;
+9. post-audit (счётчики, покрытие фасетов, пустые привязки на живых узлах = 0);
+10. rerun no-op (`create 0, update 0, prune 0`).
+
+**Почему:** 2026-09-11 значения были записаны ДО `load_attributes` — 42 SELECT-значения
+с ещё не созданными опциями молча пропали (`enrich_attributes` завершился штатно,
+exit 0). Дефект fail-open разобран в
+[2026-09-12-select-preflight-audit.md](../2026-09-12-select-preflight-audit.md);
+решение владельца — T2 preflight с hard failure (в т.ч. в dry-run) и без bypass-флага,
+плюс runtime abort вместо `continue` на write path. До реализации preflight порядок
+держится дисциплиной оператора — и именно поэтому он здесь.
+
 ## Catalog processing foundation (rule/AI/research)
 
 Для воспроизводимого применения любых массовых решений (rule-based, AI, Codex research)
