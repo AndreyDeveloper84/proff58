@@ -37,6 +37,16 @@ repeatable), ``--include-descendants``, ``--in-stock-only``, ``--active-only``.
 ``attribute_rules.json`` есть блок правил.
 Отбор строится ОДИН раз до расхождения dry-run/apply, поэтому оба режима работают по
 одному и тому же набору ``product_id``.
+
+Preflight схемы (FOUNDATION-AXES-01, часть D; :mod:`apps.catalog.attribute_preflight`):
+до ``ImportRun.create`` и до чтения товаров проверяется, что все SELECT-варианты,
+требуемые блоками текущей выборки, есть в ``AttributeOption``. Нет хотя бы одного —
+отказ с кодом :data:`~apps.catalog.attribute_preflight.EXIT_PREFLIGHT` в **обоих**
+режимах, без обходного флага для записи: раньше такое значение молча пропускалось
+(``skip`` без счётчика, exit 0). Тот же контракт — для отсутствующего ``Attribute``.
+На пути записи стоит runtime-guard: если вариант исчез между preflight и записью,
+прогон падает целиком (транзакция откатывается, ``ImportRun`` → ``failed``), а не
+пропускает значение.
 """
 
 from __future__ import annotations
@@ -48,6 +58,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.catalog import attribute_preflight as preflight
 from apps.catalog import attribute_quarantine as quarantine
 from apps.catalog.attribute_extract import BOOLEAN, NUMBER, SELECT, TEXT, AttributeRules
 from apps.catalog.attrs_cache import flush_attrs_cache_merged
@@ -220,10 +231,12 @@ class Command(BaseCommand):
         attr_by_slug = {a.slug: a for a in Attribute.objects.filter(slug__in=managed_slugs)}
         missing = managed_slugs - set(attr_by_slug)
         if missing:
-            self.stderr.write(
-                f"Не найдены атрибуты {sorted(missing)} — сначала выполните load_attributes."
+            # Тот же класс fail-open, что и у опций: раньше — stderr + exit 0, и
+            # оркестратор не отличал «схема не загружена» от успешного прогона.
+            raise CommandError(
+                f"Не найдены атрибуты {sorted(missing)} — сначала выполните load_attributes.",
+                returncode=preflight.EXIT_PREFLIGHT,
             )
-            return ""
 
         # Опции select-характеристик: {attr_slug: {option_slug: AttributeOption}}.
         option_index: dict[str, dict[str, AttributeOption]] = {}
@@ -254,6 +267,28 @@ class Command(BaseCommand):
                     "товары этих типов в выборку не попадут."
                 )
             selected_tt = [slug for slug in tt_slugs if slug in set(requested_tt)]
+
+        # --- preflight SELECT-опций (FOUNDATION-AXES-01/D): fail-closed ДО ImportRun ---
+        # Только опции блоков текущей выборки: чужой блок без опции прогон не блокирует.
+        # Единый путь для dry-run и write — обходного флага для записи нет.
+        try:
+            required_options = preflight.required_select_options(raw, selected_tt)
+        except preflight.RulesetError as exc:
+            raise CommandError(
+                f"Словарь правил отвергнут: {exc}", returncode=preflight.EXIT_PREFLIGHT
+            ) from exc
+        missing_options = preflight.check_select_options(required_options, option_index)
+        if missing_options:
+            raise CommandError(
+                preflight.format_missing(
+                    missing_options, required=len(required_options), tool_types=len(selected_tt)
+                ),
+                returncode=preflight.EXIT_PREFLIGHT,
+            )
+        self.stderr.write(
+            f"Preflight опций: OK — {len(required_options)} вариантов по "
+            f"{len(selected_tt)} типам найдены в БД."
+        )
 
         resolved_category_ids = (
             resolve_category_ids(category_ids, include_descendants) if category_ids else []
@@ -541,21 +576,21 @@ class Command(BaseCommand):
                         if av.kind == SELECT:
                             option = option_index.get(av.slug, {}).get(av.option_slug)
                             if option is None:
-                                # вариант не загружен — пропускаем
-                                pav0 = existing.get((product.id, av.slug))
-                                add_report_row(
-                                    product,
-                                    tt_slug,
-                                    "skip",
-                                    av.slug,
-                                    attr_value_to_json(pav0) if pav0 is not None else None,
-                                    av.option_value,
-                                    av.matched,
-                                    av.source,
-                                    f"вариант {av.option_slug!r} не загружен — "
-                                    "выполните load_attributes",
+                                # Runtime-guard (light T3): после preflight сюда можно
+                                # попасть только при дрейфе схемы между проверкой и
+                                # записью. Раньше — молчаливый skip без счётчика;
+                                # теперь прогон падает целиком: транзакция
+                                # откатывается, ImportRun → failed. Серверный курсор
+                                # iterator() закрываем ДО отката — после rollback его
+                                # уже нет, и закрытие при выходе роняло бы соединение.
+                                qs.close()
+                                raise CommandError(
+                                    f"Товар {product.id} ({tt_slug}): вариант "
+                                    f"{av.option_slug!r} («{av.option_value}») оси "
+                                    f"{av.slug!r} отсутствует в БД — прогон прерван, "
+                                    "ничего не записано. Выполните load_attributes.",
+                                    returncode=preflight.EXIT_PREFLIGHT,
                                 )
-                                continue
                         new_source = av.source
                         new_conf = SOURCE_CONFIDENCE.get(new_source, 100)
                         key = (product.id, av.slug)

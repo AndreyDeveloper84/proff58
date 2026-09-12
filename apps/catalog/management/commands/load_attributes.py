@@ -520,6 +520,13 @@ class Command(BaseCommand):
             "is_filter": a.get("is_filter", True),
             "is_seo_facet": a.get("is_seo_facet", False),
         }
+        # Подпись фасета в листе (``CategoryAttribute.display_name``, closest-wins в
+        # facets.py) — только при СОЗДАНИИ привязки: у существующей она принадлежит
+        # владельцу каталога, как флаги и sort_order. Нужна, когда одна физическая
+        # ось в разных листах читается по-разному: «Объём» у ЛКМ — «Объём кузова»
+        # у тачек (FOUNDATION-AXES-01), при этом Attribute один.
+        if a.get("display_name"):
+            target["display_name"] = a["display_name"]
         status = _binding_status(reason)
 
         if category is None:
@@ -793,6 +800,8 @@ class Command(BaseCommand):
                     continue
                 defaults = {f: row["target"][f] for f in BINDING_FLAGS}
                 if row["action"] == "create":
+                    if row["target"].get("display_name"):
+                        defaults["display_name"] = row["target"]["display_name"]
                     # get_or_create, а не update_or_create: если привязка появилась
                     # между планом и записью — это уже существующая строка, и её
                     # флаги молча не перезаписываются.

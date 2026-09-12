@@ -54,7 +54,11 @@
 1. `load_attributes` (словарь, опции, привязки);
 2. проверить Attribute / bindings / options по плану (`--dry-run --strict-bindings`
    должен давать `create 0` после применения);
-3. SELECT preflight: `required options ⊆ DB options` для фактического manifest;
+3. SELECT preflight: `required options ⊆ DB options` для фактического manifest —
+   с FOUNDATION-AXES-01 встроен в `enrich_attributes` (`apps/catalog/attribute_preflight.py`):
+   считается только по блокам текущей выборки, стоит до `ImportRun.create`, отказ
+   и в dry-run, и в write, **exit code 2**, обходного флага нет; на write path —
+   runtime-guard (исчезнувшая опция → abort транзакции, `ImportRun` → `failed`);
 4. `enrich_attributes --dry-run`, сверка значений против названий;
 5. immutable manifest (product scope + ожидаемые CREATE/CONFIRM/PROTECTED);
 6. backup (pg_dump PAV + CategoryAttribute + AttributeOption);
@@ -68,8 +72,9 @@
 exit 0). Дефект fail-open разобран в
 [2026-09-12-select-preflight-audit.md](../2026-09-12-select-preflight-audit.md);
 решение владельца — T2 preflight с hard failure (в т.ч. в dry-run) и без bypass-флага,
-плюс runtime abort вместо `continue` на write path. До реализации preflight порядок
-держится дисциплиной оператора — и именно поэтому он здесь.
+плюс runtime abort вместо `continue` на write path — реализовано в FOUNDATION-AXES-01.
+Порядок шагов при этом остаётся обязательным: preflight ловит нарушение, но не
+заменяет `load_attributes`.
 
 ## Catalog processing foundation (rule/AI/research)
 
