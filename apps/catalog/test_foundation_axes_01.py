@@ -238,6 +238,43 @@ def test_volume_stays_silent_for_tank_semantics_and_vacuum_bags(rules, raw, tt, 
 @pytest.mark.parametrize(
     "tt, name",
     [
+        # Стоп-проверка манифеста 2026-09-12: та же семантика ВНУТРИ разрешённых типов.
+        # Пистолет типизирован как герметик: 310 мл — совместимая туба, не пистолет.
+        ("str-germetiki", "Пистолет для герметиков KRAFTOOL 310мл скелетный поворотный"),
+        ("str-germetiki", "Пистолет для герметика для туб 600мл ULTIMA"),
+        # Бак устройства / совместимая тара у смазочного оборудования.
+        ("obor-smazka", "Маслонагнетатель GROZ OLP/16 с баком 16л"),
+        ("obor-smazka", "Нагнетатель С-321М 25л 220В"),
+        ("obor-smazka", "Установка пневматическая GIGANT для раздачи густой смазки с баком 20л"),
+        ("obor-smazka", "Нагнетатель смазки ручной на ведро 20л"),
+        # Бачок пеногенератора — тот же класс, что бачок краскопульта.
+        ("obor-pena", "Пеногенератор CHAMPION для моек 0,75л"),
+        ("obor-pena", "Пеногенератор 50л KRAFTWELL"),
+    ],
+)
+def test_volume_device_tanks_inside_allowed_types_fail_closed(rules, tt, name):
+    assert tt in VOLUME_OWNERS
+    assert _v(rules, tt, "volume", name) is None
+
+
+@pytest.mark.parametrize(
+    "tt, name, litres",
+    [
+        # Сама ёмкость — остаётся: маслёнка, шприц, мерная ёмкость, автошампунь, герметик.
+        ("obor-smazka", "Масленка GROZ рычажная MP22R/F серии РТ 500мл, трубка+шланг", "0.5"),
+        ("obor-smazka", "Шприц GROZ пистолет 500см3, 345 атм, стальн трубка 100мм", "0.5"),
+        ("obor-smazka", "Емкость GROZ мерительная MSR/P/F-5 с разметкой, 2 л.", "2"),
+        ("obor-pena", "Шампунь для минимоек HUTER усиленный 1л", "1"),
+        ("str-germetiki", "Герметик силиконовый универсальный 310мл белый", "0.31"),
+    ],
+)
+def test_volume_containers_next_to_excluded_devices_are_kept(rules, tt, name, litres):
+    assert _v(rules, tt, "volume", name) == Decimal(litres)
+
+
+@pytest.mark.parametrize(
+    "tt, name",
+    [
         ("hoz-masla", "Масло моторное 4-х тактное 5 л.с. HONDA"),  # лошадиные силы
         ("obor-smazka", "Насос пластиковый 5 л/мин для смазки"),  # расход, не ёмкость
         ("str-germetiki", "Герметик 1л с отвердителем 0.25л"),  # два токена — комплект
