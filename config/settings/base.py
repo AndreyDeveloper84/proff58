@@ -435,13 +435,15 @@ ATOLPAY_SESSION_TYPE = env("ATOLPAY_SESSION_TYPE", default="oneStep")
 ATOLPAY_RECEIPT_ENABLED = env.bool("ATOLPAY_RECEIPT_ENABLED", default=True)
 ATOLPAY_RECEIPT_PROVIDER_ID = env.int("ATOLPAY_RECEIPT_PROVIDER_ID", default=100)  # АТОЛ Онлайн
 # Система налогообложения (справочник кассы): 0 — общая, 1 — УСН доход,
-# 2 — УСН доход-расход, 4 — ЕСХН, 5 — патент.
-ATOLPAY_SNO = env.int("ATOLPAY_SNO", default=0)
-# Код ставки НДС по справочнику кассы (GET /receipts/dictionaries, снято 11.09.2026):
-# 10 — 22%, 0 — 20%, 1 — 10%, 4 — 0%, 5 — без НДС, 6 — 5%, 7 — 7%,
-# расчётные: 11 — 22/122, 2 — 20/120, 3 — 10/110, 8 — 5/105, 9 — 7/107.
-# Перепроверить: manage.py atolpay_check --dictionaries.
-ATOLPAY_VAT_CODE = env.int("ATOLPAY_VAT_CODE", default=10)
+# 2 — УСН доход-расход, 4 — ЕСХН, 5 — патент. Дефолт — как у мерчанта
+# (ИП на УСН «доходы минус расходы», настройка бухгалтера в ЛК АТОЛ Pay).
+ATOLPAY_SNO = env.int("ATOLPAY_SNO", default=2)
+# Код ставки НДС по справочнику кассы (GET /receipts/dictionaries, снято 11.09.2026,
+# песочница и бой совпадают): 5 — без НДС, 10 — 22%, 0 — 20%, 1 — 10%, 4 — 0%,
+# 6 — 5%, 7 — 7%; расчётные: 11 — 22/122, 2 — 20/120, 3 — 10/110, 8 — 5/105,
+# 9 — 7/107. Дефолт «без НДС» — по вкладке «Чеки» в ЛК; код передаёт ставку в
+# каждой позиции явно и ПЕРЕКРЫВАЕТ настройку ЛК, поэтому расходиться им нельзя.
+ATOLPAY_VAT_CODE = env.int("ATOLPAY_VAT_CODE", default=5)
 # Признак способа расчёта: 0 — предоплата 100% (товар отгружается после оплаты).
 ATOLPAY_PAYMENT_METHOD_CODE = env.int("ATOLPAY_PAYMENT_METHOD_CODE", default=0)
 # Признаки предмета расчёта: 0 — товар, 3 — услуга (доставка).
