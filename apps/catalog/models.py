@@ -18,12 +18,13 @@
 потомков/предков без рекурсивных JOIN-ов.
 """
 
+import os
 import uuid
 
 from django.contrib.postgres.indexes import GinIndex
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.db.models import (
     CheckConstraint,
     F,
@@ -891,6 +892,42 @@ class ImageSource(models.TextChoices):
     VSEINSTRUMENTI = "vseinstrumenti", _("vseinstrumenti.ru")
 
 
+class ImageProcessingStatus(models.TextChoices):
+    """Где фото на пути автообработки (ADR-0014).
+
+    Витрина показывает обработанную копию ``display`` только в статусе ``DONE``;
+    во всех остальных — исходный файл ``image``.
+    """
+
+    NONE = "none", _("Не обрабатывалось")
+    QUEUED = "queued", _("В очереди")
+    NEEDS_REMBG = "needs_rembg", _("Ждёт удаления фона")
+    NEEDS_REVIEW = "needs_review", _("Ждёт проверки")
+    DONE = "done", _("Обработано")
+    REJECTED = "rejected", _("Оставлен оригинал")
+    FAILED = "failed", _("Ошибка обработки")
+
+
+class ImageProcessingMode(models.TextChoices):
+    """Чем сделана витринная копия: обрезкой полей без нейросети или удалением фона."""
+
+    TRIM = "trim", _("Обрезка полей")
+    REMBG = "rembg", _("Удаление фона")
+
+
+def product_image_display_path(instance, filename: str) -> str:
+    """Путь витринной копии: ``products/display/<товар>/<имя>`` (ADR-0014).
+
+    Отдельное поддерево, а не папка оригинала: копии производные, их проще
+    посчитать и пересоздать целиком. Имя (с версией обработки) задаёт
+    вызывающий — новое имя на каждую версию обходит кэш ``/media/`` в nginx.
+    """
+    if instance.product_id is None:
+        # иначе файл ляжет в products/display/None/ раньше, чем упадёт сохранение записи
+        raise ValueError("витринная копия без товара: сначала сохраните ProductImage с product")
+    return f"products/display/{instance.product_id}/{os.path.basename(filename)}"
+
+
 class ProductImage(models.Model):
     """Изображение товара.
 
@@ -898,6 +935,10 @@ class ProductImage(models.Model):
     треком ИЗО: без него повторный прогон сбора фотографий гарантированно
     плодил дубли, а откат прогона был невозможен — записи нечем было отличить
     от загруженных руками.
+
+    Автообработка (ADR-0014) исходный ``image`` и его ``checksum`` не трогает:
+    на них держатся дедуп сбора и сверка ИЗО-02. Результат обработки — вторым
+    файлом ``display``; витрина берёт его через ``storefront_image``.
     """
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
@@ -932,7 +973,10 @@ class ProductImage(models.Model):
         null=True,
         blank=True,
         db_index=True,
-        help_text=_("sha256 сохранённого файла: одна и та же картинка под разными URL."),
+        help_text=_(
+            "sha256 исходного файла image (не витринной копии): "
+            "одна и та же картинка под разными URL."
+        ),
     )
     fetched_at = models.DateTimeField(
         _("Получено"),
@@ -941,6 +985,36 @@ class ProductImage(models.Model):
         db_index=True,
         help_text=_("Момент скачивания. Вместе с source задаёт границы отката прогона."),
     )
+
+    # --- Автообработка (ADR-0014): витринная копия рядом с неизменным оригиналом ---
+    display = models.ImageField(
+        _("Витринный файл"),
+        upload_to=product_image_display_path,
+        blank=True,
+        help_text=_("Обработанная копия (белый фон, квадрат). Оригинал image не меняется."),
+    )
+    display_checksum = models.CharField(
+        _("Контрольная сумма витринного файла"),
+        max_length=64,
+        blank=True,
+        default="",
+        help_text=_("sha256 файла display; аудит сверяет его отдельно от checksum оригинала."),
+    )
+    processing_status = models.CharField(
+        _("Обработка"),
+        max_length=16,
+        choices=ImageProcessingStatus.choices,
+        default=ImageProcessingStatus.NONE,
+    )
+    processing_mode = models.CharField(
+        _("Способ обработки"), max_length=16, choices=ImageProcessingMode.choices, blank=True
+    )
+    processing_version = models.PositiveSmallIntegerField(
+        _("Версия обработки"),
+        default=0,
+        help_text=_("Версия параметров, с которыми сделан display; 0 — не обрабатывалось."),
+    )
+    processed_at = models.DateTimeField(_("Обработано"), null=True, blank=True)
 
     class Meta:
         verbose_name = _("Изображение товара")
@@ -966,9 +1040,70 @@ class ProductImage(models.Model):
                 name="uniq_product_image_source_url",
             ),
         ]
+        # Индекс через Meta, а не db_index: у CharField db_index создаёт ещё и
+        # бесполезный для статуса `_like`-индекс (varchar_pattern_ops).
+        indexes = [models.Index(fields=["processing_status"], name="productimage_proc_status_idx")]
 
     def __str__(self) -> str:
         return f"Фото {self.product} #{self.pk}"
+
+    def save(self, *args, **kwargs):
+        loaded = getattr(self, "_loaded_image_name", None)
+        if loaded is not None and (self.image.name or "") != loaded:
+            self._drop_processing(kwargs)
+        super().save(*args, **kwargs)
+        self._loaded_image_name = self.image.name or ""
+
+    #: Поля обработки: теряют смысл, как только меняется исходный файл.
+    PROCESSING_FIELDS = (
+        "display",
+        "display_checksum",
+        "processing_status",
+        "processing_mode",
+        "processing_version",
+        "processed_at",
+    )
+
+    @property
+    def storefront_image(self):
+        """Файл для витрины и превью: готовая копия, иначе исходный файл (ADR-0014).
+
+        Проверяется, что копия указана, а не что файл есть на диске: обращение к
+        диску на каждое фото витрины слишком дорого. Пропажу файла ловит аудит.
+        """
+        if self.processing_status == ImageProcessingStatus.DONE and self.display:
+            return self.display
+        return self.image
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        # Имя исходного файла на момент чтения: по нему save() узнаёт замену фото.
+        instance._loaded_image_name = (
+            (instance.image.name or "") if "image" in field_names else None
+        )
+        return instance
+
+    def _drop_processing(self, save_kwargs: dict) -> None:
+        """Исходное фото заменили — копия прежнего фото на витрине недопустима.
+
+        Файл старой копии удаляется после коммита: копия принадлежит только этой
+        записи (ADR-0014), а если транзакция откатится, файл должен остаться.
+        """
+        if self.processing_status == ImageProcessingStatus.NONE and not self.display:
+            return
+        old_display = self.display.name or ""
+        storage = self.display.storage
+        self.display = ""
+        self.display_checksum = ""
+        self.processing_status = ImageProcessingStatus.NONE
+        self.processing_mode = ""
+        self.processing_version = 0
+        self.processed_at = None
+        if save_kwargs.get("update_fields") is not None:
+            save_kwargs["update_fields"] = {*save_kwargs["update_fields"], *self.PROCESSING_FIELDS}
+        if old_display:
+            transaction.on_commit(lambda: storage.delete(old_display))
 
 
 class ProductAttributeValue(models.Model):

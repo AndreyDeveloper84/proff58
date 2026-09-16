@@ -12,6 +12,12 @@
   (`source != manual`); попытка откатить `manual` — отказ, а не «ну ладно».
 - **Осиротевшие файлы не удаляются.** Команда обязана их найти и показать
   (на стенде их уже 37), но чистка media — отдельное решение владельца.
+- **Витринная копия (ADR-0014).** У записи может быть второй файл `display`,
+  производный от `image`. Снимок и аудит считают его «своим» (не сиротой),
+  аудит сверяет его с `display_checksum`, откат удаляет оба файла. Копия
+  принадлежит ровно одной записи — делить файл копии между записями нельзя,
+  иначе откат одной снесёт копию другой. Ключи отчётов для `image` не менялись:
+  старые планы отката применимы, новые ключи только добавлены.
 - Идемпотентность записи держится на БД-ограничениях
   (`uniq_product_image_checksum`, `uniq_product_image_source_url`), а не на
   аккуратности вызывающего кода: план здесь только объясняет, что произойдёт.
@@ -90,6 +96,8 @@ def scan_media_files(
 def _record_row(image: ProductImage, files: dict[str, dict]) -> dict:
     name = image.image.name or ""
     file_meta = files.get(name)
+    display_name = image.display.name or ""
+    display_meta = files.get(display_name) if display_name else None
     return {
         "id": image.pk,
         "product_id": image.product_id,
@@ -103,6 +111,11 @@ def _record_row(image: ProductImage, files: dict[str, dict]) -> dict:
         "is_main": image.is_main,
         "sort_order": image.sort_order,
         "alt": image.alt,
+        "display_file": display_name,
+        "display_file_exists": display_meta is not None,
+        "display_file_checksum": (display_meta or {}).get("checksum"),
+        "display_db_checksum": image.display_checksum or None,
+        "processing_status": image.processing_status,
     }
 
 
@@ -118,6 +131,7 @@ def build_snapshot(subdir: str = DEFAULT_SUBDIR) -> dict:
         for image in ProductImage.objects.order_by("pk").iterator(chunk_size=500)
     ]
     referenced = {r["file"] for r in records if r["file"]}
+    referenced |= {r["display_file"] for r in records if r["display_file"]}
     orphans = sorted(set(files) - referenced)
     by_source: dict[str, int] = {}
     for row in records:
@@ -259,8 +273,15 @@ def build_rollback_plan(
         "since": since.isoformat() if since else None,
         "until": until.isoformat() if until else None,
         "records_to_delete": len(targets),
-        "files_to_delete": sum(1 for t in targets if t["file_exists"]),
+        # оба файла записи: исходный и витринная копия (ADR-0014)
+        "files_to_delete": sum(
+            int(t["file_exists"]) + int(t["display_file_exists"]) for t in targets
+        ),
+        "display_files_to_delete": sum(1 for t in targets if t["display_file_exists"]),
         "files_missing": sum(1 for t in targets if t["file"] and not t["file_exists"]),
+        "display_files_missing": sum(
+            1 for t in targets if t["display_file"] and not t["display_file_exists"]
+        ),
         "manual_untouched": ProductImage.objects.filter(source=ImageSource.MANUAL).count(),
         "targets": targets,
     }
@@ -279,20 +300,25 @@ def apply_rollback(plan: dict) -> dict:
         raise RollbackRefused("на вход подан не план отката изображений")
 
     ids = [t["id"] for t in plan["targets"]]
-    expected = {t["id"]: (t["source"], t["file"]) for t in plan["targets"]}
+    expected = {t["id"]: t for t in plan["targets"]}
     live = {
         image.pk: image for image in ProductImage.objects.select_for_update().filter(pk__in=ids)
     }
 
     conflicts = []
-    for pk, (src, name) in expected.items():
+    for pk, target in expected.items():
         image = live.get(pk)
         if image is None:
             conflicts.append({"id": pk, "reason": "запись исчезла между планом и применением"})
-        elif image.source != src or (image.image.name or "") != name:
+        elif image.source != target["source"] or (image.image.name or "") != target["file"]:
             conflicts.append({"id": pk, "reason": "запись изменилась между планом и применением"})
         elif image.source == ImageSource.MANUAL:
             conflicts.append({"id": pk, "reason": "запись стала manual — трогать нельзя"})
+        elif "display_file" in target and (image.display.name or "") != target["display_file"]:
+            # Планы до ADR-0014 ключа не знают — у них сверяем только оригинал.
+            conflicts.append(
+                {"id": pk, "reason": "витринная копия изменилась между планом и применением"}
+            )
     if conflicts:
         raise RollbackRefused(
             f"откат не применён целиком: конфликтов {len(conflicts)} " f"(первый: {conflicts[0]})"
@@ -301,22 +327,26 @@ def apply_rollback(plan: dict) -> dict:
     root = media_root()
     files_deleted = 0
     files_absent = 0
+    display_files_deleted = 0
     for image in live.values():
-        name = image.image.name or ""
-        if not name:
-            continue
-        path = root / name
-        try:
-            path.unlink()
-            files_deleted += 1
-        except FileNotFoundError:
-            files_absent += 1
+        # Витринная копия производна от оригинала и без него смысла не имеет.
+        for name, is_display in ((image.image.name, False), (image.display.name, True)):
+            if not name:
+                continue
+            try:
+                (root / name).unlink()
+                files_deleted += 1
+                if is_display:
+                    display_files_deleted += 1
+            except FileNotFoundError:
+                files_absent += 1
     deleted, _ = ProductImage.objects.filter(pk__in=list(live)).delete()
     return {
         "records_deleted": len(live),
         "rows_deleted": deleted,
         "files_deleted": files_deleted,
         "files_absent": files_absent,
+        "display_files_deleted": display_files_deleted,
     }
 
 
@@ -333,11 +363,32 @@ def audit(subdir: str = DEFAULT_SUBDIR) -> dict:
     missing_file: list[dict] = []
     checksum_mismatch: list[dict] = []
     no_checksum: list[dict] = []
+    missing_display: list[dict] = []
+    display_mismatch: list[dict] = []
     referenced: set[str] = set()
 
     for image in ProductImage.objects.order_by("pk").iterator(chunk_size=500):
         name = image.image.name or ""
         referenced.add(name)
+        display_name = image.display.name or ""
+        if display_name:
+            referenced.add(display_name)
+            display_meta = files.get(display_name)
+            if display_meta is None:
+                missing_display.append({"id": image.pk, "file": display_name})
+            elif display_meta["checksum"] is None or display_meta["checksum"] != (
+                image.display_checksum or None
+            ):
+                # None у файла — копия нечитаема: при пустом display_checksum это
+                # совпало бы «None == None» и молча прошло бы аудит.
+                display_mismatch.append(
+                    {
+                        "id": image.pk,
+                        "file": display_name,
+                        "db_checksum": image.display_checksum or None,
+                        "file_checksum": display_meta["checksum"],
+                    }
+                )
         meta = files.get(name)
         if meta is None:
             missing_file.append({"id": image.pk, "file": name, "source": image.source})
@@ -363,8 +414,12 @@ def audit(subdir: str = DEFAULT_SUBDIR) -> dict:
         "checksum_mismatch_total": len(checksum_mismatch),
         "without_checksum_total": len(no_checksum),
         "orphan_files_total": len(orphans),
+        "missing_display_file_total": len(missing_display),
+        "display_checksum_mismatch_total": len(display_mismatch),
         "missing_file": missing_file,
         "checksum_mismatch": checksum_mismatch,
         "without_checksum": no_checksum,
+        "missing_display_file": missing_display,
+        "display_checksum_mismatch": display_mismatch,
         "orphan_files": orphans,
     }

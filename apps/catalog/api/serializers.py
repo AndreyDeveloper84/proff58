@@ -38,11 +38,13 @@ def _image_url(image, _context=None) -> str | None:
     media отдаются одним nginx, поэтому относительный путь разрешается верно и
     у браузера, и у SSR. Абсолютный URL нужен только разметке для поисковиков —
     её достраивает фронт (components/product/ProductJsonLd.tsx).
+
+    Отдаётся витринная копия, если обработка готова, иначе оригинал (ADR-0014).
     """
     if not image:
         return None
     try:
-        return image.image.url
+        return image.storefront_image.url
     except ValueError:
         return None
 
