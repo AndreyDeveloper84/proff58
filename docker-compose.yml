@@ -63,6 +63,22 @@ services:
       - redis
       - db
 
+  celery-images:
+    build: .
+    # Автообработка фото (ADR-0014): строго по одному, пишет витринные копии в media.
+    # В dev Celery eager (config/settings/dev.py): задачи выполняются прямо в запросе,
+    # воркер нужен только при запуске с CELERY_TASK_ALWAYS_EAGER=False.
+    command: >-
+      celery -A config worker -Q images -c 1 --prefetch-multiplier 1
+      --max-tasks-per-child 50 -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+
   celery-beat:
     build: .
     command: celery -A config beat -l info

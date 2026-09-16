@@ -1049,7 +1049,9 @@ class ProductImage(models.Model):
 
     def save(self, *args, **kwargs):
         loaded = getattr(self, "_loaded_image_name", None)
-        if loaded is not None and (self.image.name or "") != loaded:
+        # флаг читает сигнал автообработки: замена файла ставит новую обработку
+        self._image_replaced = loaded is not None and (self.image.name or "") != loaded
+        if self._image_replaced:
             self._drop_processing(kwargs)
         super().save(*args, **kwargs)
         self._loaded_image_name = self.image.name or ""

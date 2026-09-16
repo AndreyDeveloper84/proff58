@@ -13,6 +13,9 @@ from django.db import transaction
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
+from apps.core.features import is_enabled
+
+from . import image_autoprocess
 from .models import (
     Attribute,
     AttributeOption,
@@ -20,6 +23,7 @@ from .models import (
     CategoryAttribute,
     Product,
     ProductAttributeValue,
+    ProductImage,
 )
 from .services import (
     invalidate_category_tree_cache,
@@ -70,3 +74,16 @@ def invalidate_catalog_read_caches(sender, **kwargs) -> None:
 @receiver(post_delete, sender=AttributeOption)
 def invalidate_facets_on_attr_meta(sender, **kwargs) -> None:
     invalidate_facets_cache()
+
+
+# Автообработка фото (ADR-0014): только новое фото или замена файла. Правка alt/порядка
+# в админке и запись самой обработки (update_fields) задачу не ставят.
+@receiver(post_save, sender=ProductImage)
+def autoprocess_new_photo(sender, instance: ProductImage, created: bool, **kwargs) -> None:
+    if kwargs.get("raw") or not instance.image:
+        return
+    if not (created or getattr(instance, "_image_replaced", False)):
+        return
+    if not is_enabled(image_autoprocess.FLAG) or instance.product.content_locked:
+        return
+    image_autoprocess.schedule(instance.pk)

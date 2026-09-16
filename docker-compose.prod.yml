@@ -124,6 +124,27 @@ services:
       - db
       - redis
 
+  celery-images:
+    build:
+      context: .
+      args:
+        REQUIREMENTS: prod
+    restart: always
+    # Автообработка фото (ADR-0014): строго по одному, пишет витринные копии в media.
+    # Медиатом на запись нужен только здесь и у web — у celery его нет.
+    # --max-tasks-per-child: процесс prefork не отдаёт память после крупных фото.
+    command: >-
+      celery -A config worker -Q images -c 1 --prefetch-multiplier 1
+      --max-tasks-per-child 50 -l info
+    env_file:
+      - .env
+    volumes:
+      - media_volume:/app/media
+      - ./logs:/app/logs
+    depends_on:
+      - db
+      - redis
+
   celery-beat:
     build:
       context: .
