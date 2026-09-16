@@ -91,6 +91,51 @@ def test_process_bytes_rejects_decompression_bomb():
     assert pipe._process_bytes(_png_bytes(1500, 1500)) is None
 
 
+def _transparent_png(mode):
+    """Непрозрачный квадрат в центре прозрачного холста — как PNG-исходник производителя.
+
+    Под прозрачными пикселями лежит чёрный: именно его `convert("RGB")` и вытаскивал.
+    """
+    if mode == "P":
+        img = Image.new("P", (300, 300), 0)
+        img.putpalette([0, 0, 0, 200, 30, 30])  # индекс 0 — прозрачный чёрный, 1 — красный
+        img.paste(1, (100, 100, 200, 200))
+        extra = {"transparency": 0}
+    elif mode == "LA":
+        img = Image.new("LA", (300, 300), (0, 0))
+        img.paste((128, 255), (100, 100, 200, 200))
+        extra = {}
+    else:
+        img = Image.new("RGBA", (300, 300), (0, 0, 0, 0))
+        img.paste((200, 30, 30, 255), (100, 100, 200, 200))
+        extra = {}
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", **extra)
+    return buf.getvalue()
+
+
+def _pixel(content_file, xy):
+    return Image.open(io.BytesIO(content_file.read())).convert("RGB").getpixel(xy)
+
+
+@pytest.mark.parametrize(
+    ("mode", "center"),
+    [("RGBA", (200, 30, 30)), ("LA", (128, 128, 128)), ("P", (200, 30, 30))],
+)
+def test_process_bytes_flattens_transparency_on_white(mode, center):
+    main, _thumb = ImagePipeline()._process_bytes(_transparent_png(mode))
+    img = Image.open(io.BytesIO(main.read())).convert("RGB")
+    # WebP с потерями: сверяем с допуском, а не побайтно
+    assert all(c >= 245 for c in img.getpixel((5, 5))), "прозрачный фон стал не белым"
+    assert all(abs(a - b) <= 12 for a, b in zip(img.getpixel((150, 150)), center, strict=True))
+
+
+def test_process_bytes_keeps_opaque_black_background():
+    # Настоящий чёрный фон без прозрачности — не наш случай: отбеливать его нельзя.
+    main, _thumb = ImagePipeline()._process_bytes(_png_bytes(300, 300, color=(0, 0, 0)))
+    assert all(c <= 10 for c in _pixel(main, (5, 5)))
+
+
 def test_download_rejects_nonstandard_port():
     # M-13: только стандартный https-порт 443 (публичный IP на 8080 не пробиваем)
     assert ImagePipeline()._download("https://8.8.8.8:8080/x.png") is None

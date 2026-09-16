@@ -229,6 +229,22 @@ class ImagePipeline:
         finally:
             pool.close()
 
+    @staticmethod
+    def _flatten_on_white(img: Image.Image) -> Image.Image:
+        """RGB, в котором прозрачное легло на белый фон, а не на чёрный.
+
+        `convert("RGB")` у RGBA/LA/PA и у P с `transparency` просто отбрасывает
+        альфу: прозрачные пиксели получают цвет, что лежал под ними, — у PNG
+        производителей это обычно чёрный. Вероятно, так на стенде и появились
+        фото Huter на чёрном фоне. Непрозрачные картинки конвертируются как раньше.
+        """
+        if img.mode in ("RGBA", "LA", "PA") or (img.mode == "P" and "transparency" in img.info):
+            rgba = img.convert("RGBA")
+            canvas = Image.new("RGB", rgba.size, (255, 255, 255))
+            canvas.paste(rgba, mask=rgba.getchannel("A"))
+            return canvas
+        return img.convert("RGB")
+
     def _process_bytes(self, raw: bytes):
         # Backstop против decompression bomb: Pillow сам бросит DecompressionBombError
         # при декодировании сверх лимита (не только по заявленному размеру в заголовке).
@@ -242,7 +258,7 @@ class ImagePipeline:
             return None
         if min(img.size) < self.MIN_SIDE:
             return None
-        img = ImageOps.exif_transpose(img).convert("RGB")  # снимаем EXIF
+        img = self._flatten_on_white(ImageOps.exif_transpose(img))  # снимаем EXIF
 
         main_img = img.copy()
         main_img.thumbnail(self.MAX_SIZE)
