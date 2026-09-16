@@ -342,7 +342,11 @@ CELERY_TIMEZONE = TIME_ZONE
 # последовательно, что снимает гонку «одна актуальная цена» (#126). Остальные задачи —
 # в дефолтной очереди `celery` (отдельный worker, параллельно).
 CELERY_TASK_DEFAULT_QUEUE = "celery"
-CELERY_TASK_ROUTES = {"apps.sync_1c.tasks.*": {"queue": "onec"}}
+CELERY_TASK_ROUTES = {
+    "apps.sync_1c.tasks.*": {"queue": "onec"},
+    # Автообработка фото (ADR-0014): отдельный воркер celery-images с media на запись.
+    "apps.catalog.tasks.process_product_image": {"queue": "images"},
+}
 
 # Session/CSRF для SPA (#325): cookie читается JS (HTTPONLY=False), SameSite=Lax
 # позволяет браузеру слать cookies при навигации. CSRF_COOKIE_SECURE и
@@ -496,6 +500,8 @@ FEATURES = {
     "external_integrations": env.bool("FEATURE_EXTERNAL_INTEGRATIONS", default=True),
     "external_ship": env.bool("FEATURE_EXTERNAL_SHIP", default=False),
     "catalog_processing": env.bool("FEATURE_CATALOG_PROCESSING", default=False),
+    # Автообработка фото товаров (ADR-0014): витринные копии на белом фоне.
+    "product_image_autoprocess": env.bool("FEATURE_PRODUCT_IMAGE_AUTOPROCESS", default=False),
 }
 
 
