@@ -496,7 +496,7 @@ class ProductImageInline(admin.TabularInline):
         return format_html(
             '<img src="{}" alt="" style="max-height:70px;max-width:110px;'
             'border-radius:4px;object-fit:contain;background:#f4f4f4;">',
-            obj.image.url,
+            obj.storefront_image.url,
         )
 
 
@@ -1126,7 +1126,7 @@ class ProductAdmin(admin.ModelAdmin):
         return format_html(
             '<img src="{}" alt="" style="height:38px;width:52px;object-fit:contain;'
             'border-radius:3px;background:#f4f4f4;">',
-            image.image.url,
+            image.storefront_image.url,
         )
 
     @admin.display(description=_("Причина в очереди"))

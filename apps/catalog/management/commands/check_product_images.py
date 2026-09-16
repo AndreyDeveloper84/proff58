@@ -16,9 +16,30 @@
 
 from __future__ import annotations
 
+from django.core.exceptions import SuspiciousFileOperation
 from django.core.management.base import BaseCommand
 
 from apps.catalog.models import ProductImage
+
+
+def _local_path(field_file):
+    """Путь файла на диске; None — файла нет или storage не локальный."""
+    try:
+        return field_file.path
+    except (ValueError, NotImplementedError, SuspiciousFileOperation):
+        return None
+
+
+def _probe(image_module, path) -> str:
+    """``ok`` / ``missing`` / ``broken`` — декодером, а не по размеру файла."""
+    try:
+        with image_module.open(path) as img:
+            img.load()  # verify() ловит не всё: обрезку видно только при чтении пикселей
+    except FileNotFoundError:
+        return "missing"
+    except Exception:
+        return "broken"
+    return "ok"
 
 
 class Command(BaseCommand):
@@ -44,26 +65,41 @@ class Command(BaseCommand):
 
         broken: list[ProductImage] = []
         missing: list[ProductImage] = []
+        # Витринные копии (ADR-0014) — отдельно: запись с целым оригиналом не удаляем,
+        # битую копию пересоздаст обработка.
+        display_broken: list[ProductImage] = []
+        display_missing: list[ProductImage] = []
         total = 0
 
         for image in ProductImage.objects.select_related("product").iterator(chunk_size=200):
             total += 1
-            try:
-                path = image.image.path
-            except (ValueError, NotImplementedError):
-                continue
-            try:
-                with Image.open(path) as img:
-                    img.load()  # verify() ловит не всё: обрезку видно только при чтении пикселей
-            except FileNotFoundError:
-                missing.append(image)
-            except Exception:
-                broken.append(image)
+            path = _local_path(image.image)
+            if path is not None:
+                state = _probe(Image, path)
+                if state == "missing":
+                    missing.append(image)
+                elif state == "broken":
+                    broken.append(image)
+            if image.display:
+                display_path = _local_path(image.display)
+                # копия с негодным путём — такая же поломка, как битый файл
+                state = _probe(Image, display_path) if display_path else "broken"
+                if state == "missing":
+                    display_missing.append(image)
+                elif state == "broken":
+                    display_broken.append(image)
 
         if options["list"]:
-            for group, title in ((broken, "ПОВРЕЖДЁН"), (missing, "НЕТ ФАЙЛА")):
+            groups = (
+                (broken, "ПОВРЕЖДЁН", "image"),
+                (missing, "НЕТ ФАЙЛА", "image"),
+                (display_broken, "КОПИЯ ПОВРЕЖДЕНА", "display"),
+                (display_missing, "НЕТ КОПИИ", "display"),
+            )
+            for group, title, field in groups:
                 for image in group:
-                    self.stdout.write(f"  {title}  {image.image.name}  ← {image.product.name[:60]}")
+                    name = getattr(image, field).name
+                    self.stdout.write(f"  {title}  {name}  ← {image.product.name[:60]}")
 
         self.stdout.write("")
         self.stdout.write(f"Всего файлов:   {total}")
@@ -71,6 +107,14 @@ class Command(BaseCommand):
         self.stdout.write(f"Отсутствующих:  {len(missing)}")
         healthy = total - len(broken) - len(missing)
         self.stdout.write(self.style.SUCCESS(f"Целых:          {healthy}"))
+        display_bad = len(display_broken) + len(display_missing)
+        if display_bad:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Витринных копий с проблемами: {display_bad} "
+                    "(записи не удаляются — копию пересоздаст обработка)"
+                )
+            )
 
         if not options["delete_broken"]:
             if broken or missing:

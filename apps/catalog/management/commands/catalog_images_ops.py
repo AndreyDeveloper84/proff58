@@ -146,7 +146,10 @@ class Command(BaseCommand):
         self.stdout.write(f"ОТКАТ ПРОГОНА source={source}")
         self.stdout.write(f"  окно fetched_at:       {plan['since']} … {plan['until']}")
         self.stdout.write(f"  записей под удаление:  {plan['records_to_delete']}")
-        self.stdout.write(f"  файлов под удаление:   {plan['files_to_delete']}")
+        self.stdout.write(
+            f"  файлов под удаление:   {plan['files_to_delete']}"
+            f" (из них витринных копий: {plan['display_files_to_delete']})"
+        )
         self.stdout.write(f"  записей без файла:     {plan['files_missing']}")
         self.stdout.write(f"  manual не тронут:      {plan['manual_untouched']} записей")
 
@@ -163,7 +166,8 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"  ПРИМЕНЕНО: записей {result['records_deleted']}, "
-                f"файлов {result['files_deleted']} (не найдено {result['files_absent']})"
+                f"файлов {result['files_deleted']} (из них копий "
+                f"{result['display_files_deleted']}, не найдено {result['files_absent']})"
             )
         )
         after = audit(subdir)
@@ -186,6 +190,10 @@ class Command(BaseCommand):
         self.stdout.write(f"{indent}запись без файла:      {payload['missing_file_total']}")
         self.stdout.write(f"{indent}checksum разошёлся:    {payload['checksum_mismatch_total']}")
         self.stdout.write(f"{indent}записей без checksum:  {payload['without_checksum_total']}")
+        self.stdout.write(f"{indent}копия без файла:       {payload['missing_display_file_total']}")
+        self.stdout.write(
+            f"{indent}checksum копии разошёлся: {payload['display_checksum_mismatch_total']}"
+        )
         self._report_orphans(payload["orphan_files_total"], indent=indent)
 
     def _report_orphans(self, count: int, indent: str = "  ") -> None:
