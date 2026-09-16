@@ -1,0 +1,6 @@
+# Образ сервиса celery-rembg (ADR-0014): удаление фона нейросетью.
+# Только здесь — rembg тянет onnxruntime, scipy, scikit-image, numba, opencv.
+# Совместимость с Pillow==10.3.0 проверена pip dry-run 15.09.2026.
+-r prod.txt
+
+rembg[cpu]==2.0.67

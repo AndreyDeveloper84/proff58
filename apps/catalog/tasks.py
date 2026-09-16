@@ -44,3 +44,19 @@ def process_product_image(image_id: int) -> str:
     result = process_image(image_id)
     logger.info("process_product_image %s: %s", image_id, result)
     return result
+
+
+# reject_on_worker_lost=False — в отличие от обычной обработки: нейросеть на пике ест
+# ~2 ГБ, и фото, на котором воркер упал по памяти, при возврате в очередь роняло бы его
+# снова и снова. Такое фото остаётся «в очереди»; перепоставить вручную:
+# process_product_images --rembg --status queued.
+@shared_task(
+    name="apps.catalog.tasks.remove_photo_background",
+    acks_late=True,
+    reject_on_worker_lost=False,
+)
+def remove_photo_background(image_id: int) -> str:
+    """Удаление фона нейросетью (ADR-0014). Очередь `rembg`, сервис celery-rembg."""
+    result = process_image(image_id, rembg=True)
+    logger.info("remove_photo_background %s: %s", image_id, result)
+    return result

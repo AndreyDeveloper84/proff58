@@ -80,6 +80,15 @@
 - Новое фото или замена файла → задача после коммита. Белый фон и прозрачность
   обрабатываются сразу (`apps/catalog/image_processing.py`, без нейросети); чёрный и
   прочий фон получают статус `needs_rembg`.
+- Чёрный и прочий фон (`needs_rembg`) обрабатывает нейросеть rembg в сервисе
+  `celery-rembg` (профиль compose `rembg`, образ `requirements/images.txt`). Сервис
+  поднимается только на время обработки: `process_product_images --rembg` ставит задачи,
+  затем `docker compose -f docker-compose.prod.yml --profile rembg up -d celery-rembg`,
+  после — `stop celery-rembg`. Чёрный фон после нейросети идёт сразу на витрину, прочий —
+  в `needs_review` (нейросеть портит текст рекламных карточек), принимает менеджер.
+  Цена: ~13 с на фото, пик памяти ~2,1 ГБ (лимит сервиса 3 ГБ без swap). Фото, на котором
+  воркер упал по памяти, в очередь не возвращается и остаётся `queued` —
+  перепоставить: `process_product_images --rembg --status queued`.
 - Бэкфилл: `process_product_images --dry-run` (только счёт), затем без `--dry-run` —
   ставит задачи. `--status queued` перепоставляет зависшие, `--outdated` пересоздаёт
   копии после смены `PROCESSING_VERSION`.
