@@ -17,11 +17,12 @@ from treebeard.admin import TreeAdmin
 from treebeard.forms import movenodeform_factory
 
 from apps.core.events import EventSource, product_created, product_updated
+from apps.core.features import is_enabled
 from apps.pricing.models import PriceRecord
 from apps.pricing.services import WHOLESALE, price_for
 
+from . import image_autoprocess, moderation, processing, queues
 from . import links as links_service
-from . import moderation, processing, queues
 from .availability_subscriptions import ProductAvailabilitySubscription
 from .models import (
     Attribute,
@@ -481,23 +482,151 @@ class BrandFilter(admin.SimpleListFilter):
         return queryset.filter(brand=self.value()) if self.value() else queryset
 
 
+def _photo_thumb(url: str, *, height: int = 70, width: int = 110):
+    return format_html(
+        '<img src="{}" alt="" style="max-height:{}px;max-width:{}px;'
+        'border-radius:4px;object-fit:contain;background:#f4f4f4;">',
+        url,
+        height,
+        width,
+    )
+
+
+def _processed_cell(obj: ProductImage):
+    """«Стало»: копия после автообработки и её статус (ADR-0014)."""
+    status = obj.get_processing_status_display()
+    if obj.display:
+        return format_html("{}<br><small>{}</small>", _photo_thumb(obj.display.url), status)
+    return format_html("<small>{}</small>", status)
+
+
 class ProductImageInline(admin.TabularInline):
-    """Фото товара с миниатюрой: без превью не видно, какое фото главное и какое битое."""
+    """Фото товара: «было» и «стало» рядом — видно, что сделала автообработка."""
 
     model = ProductImage
     extra = 1
-    fields = ("preview", "image", "alt", "is_main", "sort_order")
-    readonly_fields = ("preview",)
+    fields = ("preview", "processed", "image", "alt", "is_main", "sort_order")
+    readonly_fields = ("preview", "processed")
 
-    @admin.display(description=_("Превью"))
+    @admin.display(description=_("Было"))
     def preview(self, obj):
         if not obj or not obj.image:
             return "—"
-        return format_html(
-            '<img src="{}" alt="" style="max-height:70px;max-width:110px;'
-            'border-radius:4px;object-fit:contain;background:#f4f4f4;">',
-            obj.storefront_image.url,
+        return _photo_thumb(obj.image.url)
+
+    @admin.display(description=_("Стало"))
+    def processed(self, obj):
+        if not obj or not obj.pk:
+            return "—"
+        url = reverse("admin:catalog_productimage_change", args=[obj.pk])
+        return format_html('{}<br><a href="{}">решение по фото</a>', _processed_cell(obj), url)
+
+
+@admin.register(ProductImage)
+class ProductImageAdmin(admin.ModelAdmin):
+    """«Фото товаров»: результат автообработки и решения по нему (ADR-0014).
+
+    Очередь проверки — фильтр «Обработка: Ждёт проверки». Добавлять фото отсюда
+    нельзя: фото добавляется в карточке товара.
+    """
+
+    list_display = (
+        "before",
+        "after",
+        "product_link",
+        "processing_status",
+        "processing_mode",
+        "source",
+        "processed_at",
+    )
+    list_filter = ("processing_status", "processing_mode", "source")
+    search_fields = ("product__name", "product__code_1c", "product__article")
+    list_select_related = ("product",)
+    raw_id_fields = ("product",)  # 47 тысяч товаров в выпадающем списке не открыть
+    list_per_page = 50
+    actions = ["action_reprocess", "action_revert_to_original", "action_accept"]
+    fields = (
+        "product",
+        "before",
+        "after",
+        "image",
+        "alt",
+        "is_main",
+        "sort_order",
+        "source",
+        "source_url",
+        "processing_status",
+        "processing_mode",
+        "processing_version",
+        "processed_at",
+    )
+    readonly_fields = (
+        "before",
+        "after",
+        "source",
+        "source_url",
+        "processing_status",
+        "processing_mode",
+        "processing_version",
+        "processed_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    @admin.display(description=_("Было"))
+    def before(self, obj):
+        return _photo_thumb(obj.image.url, height=90, width=120) if obj.image else "—"
+
+    @admin.display(description=_("Стало"))
+    def after(self, obj):
+        return _processed_cell(obj)
+
+    @admin.display(description=_("Товар"), ordering="product__name")
+    def product_link(self, obj):
+        url = reverse("admin:catalog_product_change", args=[obj.product_id])
+        return format_html('<a href="{}">{}</a>', url, obj.product.name[:80])
+
+    @admin.action(description=_("Обработать заново"))
+    def action_reprocess(self, request, queryset):
+        if not is_enabled(image_autoprocess.FLAG):
+            self.message_user(
+                request,
+                "Автообработка выключена (FEATURE_PRODUCT_IMAGE_AUTOPROCESS) — "
+                "ничего не поставлено.",
+                level=messages.WARNING,
+            )
+            return
+        ids = list(queryset.values_list("pk", flat=True))
+        queued = sum(image_autoprocess.reprocess(pk) for pk in ids)
+        self.message_user(
+            request,
+            f"Поставлено на обработку: {queued} из {len(ids)}",
+            level=messages.SUCCESS if queued == len(ids) else messages.WARNING,
         )
+
+    @admin.action(description=_("Вернуть оригинал"))
+    def action_revert_to_original(self, request, queryset):
+        ids = list(queryset.values_list("pk", flat=True))
+        reverted = sum(image_autoprocess.revert_to_original(pk) for pk in ids)
+        self.message_user(
+            request,
+            f"Оставлен оригинал: {reverted}. Автообработка эти фото больше не трогает.",
+            level=messages.SUCCESS,
+        )
+
+    @admin.action(description=_("Принять копию"))
+    def action_accept(self, request, queryset):
+        ids = list(queryset.values_list("pk", flat=True))
+        accepted = sum(image_autoprocess.accept_review(pk) for pk in ids)
+        self.message_user(request, f"Принято копий: {accepted}", level=messages.SUCCESS)
+        if accepted < len(ids):
+            self.message_user(
+                request,
+                f"Не принято: {len(ids) - accepted} — принять можно только фото "
+                "«Ждёт проверки» с готовой копией.",
+                level=messages.WARNING,
+            )
 
 
 class ProductAttributeValueInline(admin.TabularInline):

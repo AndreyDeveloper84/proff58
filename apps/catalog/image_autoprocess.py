@@ -233,3 +233,62 @@ def _commit(
             storage.delete(new_name)
         return "stale"
     return status
+
+
+# --- действия менеджера (админка) ----------------------------------------------------
+
+
+def reprocess(image_id: int) -> bool:
+    """«Обработать заново»: сбросить итог — в том числе «оставлен оригинал» — и в очередь.
+
+    Пока фото в очереди, витрина показывает оригинал; готовая копия заменит прежнюю.
+    Если задачу поставить не удалось, прежний статус возвращается.
+    """
+    previous = (
+        ProductImage.objects.filter(pk=image_id).values_list("processing_status", flat=True).first()
+    )
+    if previous is None or previous == ImageProcessingStatus.QUEUED:
+        return False
+    ProductImage.objects.filter(pk=image_id, processing_status=previous).update(
+        processing_status=ImageProcessingStatus.NONE
+    )
+    if enqueue(image_id):
+        return True
+    ProductImage.objects.filter(pk=image_id, processing_status=ImageProcessingStatus.NONE).update(
+        processing_status=previous
+    )
+    return False
+
+
+def revert_to_original(image_id: int) -> bool:
+    """«Вернуть оригинал»: убрать копию и запомнить решение — автоматика её не вернёт.
+
+    Под блокировкой записи: идущая в этот момент задача увидит `rejected` в `_commit`
+    и свою копию не запишет. Файл копии удаляется после коммита.
+    """
+    storage = ProductImage._meta.get_field("display").storage
+    with transaction.atomic():
+        live = ProductImage.objects.select_for_update().filter(pk=image_id).first()
+        if live is None:
+            return False
+        old_display = live.display.name or ""
+        live.display = ""
+        live.display_checksum = ""
+        live.processing_status = ImageProcessingStatus.REJECTED
+        live.processing_mode = ""
+        live.processed_at = timezone.now()
+        live.save(update_fields=list(ProductImage.PROCESSING_FIELDS))
+        if old_display:
+            transaction.on_commit(lambda: storage.delete(old_display))
+    return True
+
+
+def accept_review(image_id: int) -> bool:
+    """«Принять копию»: кандидат на проверке уходит на витрину."""
+    return bool(
+        ProductImage.objects.filter(
+            pk=image_id, processing_status=ImageProcessingStatus.NEEDS_REVIEW
+        )
+        .exclude(display="")
+        .update(processing_status=ImageProcessingStatus.DONE)
+    )
