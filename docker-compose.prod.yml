@@ -145,6 +145,36 @@ services:
       - db
       - redis
 
+  celery-rembg:
+    build:
+      context: .
+      args:
+        REQUIREMENTS: images
+    # Удаление фона нейросетью (ADR-0014). Только на время бэкфилла:
+    #   docker compose -f docker-compose.prod.yml --profile rembg up -d celery-rembg
+    # ~13 с на фото, пик памяти ~2,1 ГБ (smoke 16.09.2026). Профиль исключает сервис
+    # из обычного деплоя
+    # (`build` / `up -d` без --profile его не собирают и не поднимают).
+    profiles: ["rembg"]
+    restart: "no"
+    command: >-
+      celery -A config worker -Q rembg -c 1 --prefetch-multiplier 1
+      --max-tasks-per-child 200 -l info
+    env_file:
+      - .env
+    environment:
+      U2NET_HOME: /models
+    volumes:
+      - media_volume:/app/media
+      - rembg_models:/models
+      - ./logs:/app/logs
+    # swap на VPS уже занят: без memswap_limit процесс ушёл бы в swap и затормозил web
+    mem_limit: 3g
+    memswap_limit: 3g
+    depends_on:
+      - db
+      - redis
+
   celery-beat:
     build:
       context: .
@@ -182,3 +212,4 @@ volumes:
   pgdata:
   static_volume:
   media_volume:
+  rembg_models:

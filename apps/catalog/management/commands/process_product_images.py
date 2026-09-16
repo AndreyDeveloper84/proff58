@@ -6,6 +6,7 @@
     process_product_images --status queued      # перепоставить зависшие в очереди
     process_product_images --outdated           # пересоздать копии после смены параметров
     process_product_images --source huter --limit 50
+    process_product_images --rembg              # чёрный и прочий фон — в сервис нейросети
 
 Команда сама фото не обрабатывает — только ставит задачи в очередь `images`
 (воркер `celery-images`, строго по одному). Повторная постановка безопасна: задача
@@ -55,11 +56,17 @@ class Command(BaseCommand):
         )
         parser.add_argument("--source", choices=ImageSource.values)
         parser.add_argument("--limit", type=_positive_int)
+        parser.add_argument(
+            "--rembg",
+            action="store_true",
+            help="Фото «ждёт удаления фона» — в очередь сервиса нейросети celery-rembg.",
+        )
         parser.add_argument("--dry-run", action="store_true", help="Только посчитать классы фона.")
         parser.add_argument("--out", help="--dry-run: записать отчёт JSON в файл.")
 
     def handle(self, *args, **options):
-        statuses = tuple(options["status"] or DEFAULT_STATUSES)
+        default = (ImageProcessingStatus.NEEDS_REMBG,) if options["rembg"] else DEFAULT_STATUSES
+        statuses = tuple(options["status"] or default)
         condition = Q(processing_status__in=statuses)
         if options["outdated"]:
             condition |= Q(
@@ -89,11 +96,19 @@ class Command(BaseCommand):
             )
         queued = skipped = 0
         for image_id in list(qs.values_list("pk", flat=True)):
-            if image_autoprocess.enqueue(image_id, statuses=statuses, outdated=options["outdated"]):
+            if image_autoprocess.enqueue(
+                image_id, statuses=statuses, outdated=options["outdated"], rembg=options["rembg"]
+            ):
                 queued += 1
             else:
                 skipped += 1
         self.stdout.write(self.style.SUCCESS(f"Поставлено в очередь: {queued}"))
+        if options["rembg"] and queued:
+            self.stdout.write(
+                "Задачи ждут сервис нейросети. Поднять на время обработки:\n"
+                "  docker compose -f docker-compose.prod.yml --profile rembg up -d celery-rembg\n"
+                "Погасить после: docker compose -f docker-compose.prod.yml stop celery-rembg"
+            )
         if skipped:
             self.stdout.write(
                 self.style.WARNING(

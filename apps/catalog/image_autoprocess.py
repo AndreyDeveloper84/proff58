@@ -29,7 +29,7 @@ from django.utils import timezone
 
 from apps.core.features import is_enabled
 
-from . import image_processing
+from . import image_processing, image_rembg
 from .models import (
     ImageProcessingMode,
     ImageProcessingStatus,
@@ -70,13 +70,17 @@ def enqueue(
     *,
     statuses: tuple[str, ...] = (ImageProcessingStatus.NONE,),
     outdated: bool = False,
+    rembg: bool = False,
 ) -> bool:
     """Пометить «в очереди» и отправить задачу. False — не подошёл статус или упал брокер.
 
     `outdated` добавляет готовые записи только со старой версией параметров — иначе
     запись, которую воркер успел обработать после выборки, ушла бы в очередь повторно.
+    `rembg` — задача в очередь `rembg` (сервис `celery-rembg`, поднимается на бэкфилл).
     """
-    from .tasks import process_product_image
+    from .tasks import process_product_image, remove_photo_background
+
+    task = remove_photo_background if rembg else process_product_image
 
     match = Q(processing_status__in=statuses)
     if outdated:
@@ -98,7 +102,7 @@ def enqueue(
             processing_status=ImageProcessingStatus.QUEUED
         )
     try:
-        process_product_image.delay(image_id)
+        task.delay(image_id)
     except Exception:
         log.exception("фото %s: задача не поставлена в очередь", image_id)
         ProductImage.objects.filter(
@@ -111,25 +115,31 @@ def enqueue(
 # --- обработка ---------------------------------------------------------------
 
 
-def process_image(image_id: int) -> str:
-    """Сделать витринную копию. Возвращает итог: статус или причину пропуска."""
+def process_image(image_id: int, *, rembg: bool = False) -> str:
+    """Сделать витринную копию. Возвращает итог: статус или причину пропуска.
+
+    `rembg=True` — задача сервиса нейросети: чёрный и прочий фон обрабатываются
+    удалением фона, а не откладываются в `needs_rembg`.
+    """
     try:
-        return _process(image_id)
+        return _process(image_id, rembg=rembg)
     except Exception:
         log.exception("фото %s: обработка упала", image_id)
         _mark_failed(image_id)
         return ImageProcessingStatus.FAILED
 
 
-def _process(image_id: int) -> str:
+def _process(image_id: int, *, rembg: bool = False) -> str:
+    # задача нейросети, вышедшая без работы, возвращает фото в «ждёт нейросеть»
+    release_to = ImageProcessingStatus.NEEDS_REMBG if rembg else ImageProcessingStatus.NONE
     image = ProductImage.objects.select_related("product").filter(pk=image_id).first()
     if image is None:
         return "missing"
     if not is_enabled(FLAG):
-        _release(image_id)
+        _release(image_id, to=release_to)
         return "disabled"
     if image.product.content_locked:
-        _release(image_id)
+        _release(image_id, to=release_to)
         return "content_locked"
     if image.processing_status == ImageProcessingStatus.REJECTED:
         return "rejected"
@@ -139,7 +149,7 @@ def _process(image_id: int) -> str:
     ):
         return "up_to_date"
     if not image.image:
-        _release(image_id)
+        _release(image_id, to=release_to)
         return "no_file"
 
     source_name = image.image.name
@@ -152,13 +162,12 @@ def _process(image_id: int) -> str:
         _mark_failed(image_id)
         return ImageProcessingStatus.FAILED
 
+    if result.content is None and result.kind == image_processing.ImageKind.BLANK:
+        return _commit(image, source_name, status=ImageProcessingStatus.NEEDS_REVIEW)
+    if result.content is None and not rembg:
+        return _commit(image, source_name, status=ImageProcessingStatus.NEEDS_REMBG)
     if result.content is None:
-        status = (
-            ImageProcessingStatus.NEEDS_REVIEW
-            if result.kind == image_processing.ImageKind.BLANK
-            else ImageProcessingStatus.NEEDS_REMBG
-        )
-        return _commit(image, source_name, status=status)
+        return _process_with_rembg(image, source_name, raw, result.kind, release_to)
     return _commit(
         image,
         source_name,
@@ -168,10 +177,30 @@ def _process(image_id: int) -> str:
     )
 
 
-def _release(image_id: int) -> None:
-    """Задача вышла, ничего не сделав: `queued` → `none`, чтобы запись не зависла."""
+def _process_with_rembg(
+    image: ProductImage, source_name: str, raw: bytes, kind: str, release_to: str
+) -> str:
+    """Чёрный фон — сразу на витрину; прочий — на проверку (нейросеть портит текст)."""
+    if not image_rembg.is_available():
+        _release(image.pk, to=release_to)
+        return "rembg_unavailable"
+    content = image_rembg.render(image_processing.open_image(raw))
+    if content is None:  # нейросеть товар не нашла
+        return _commit(image, source_name, status=ImageProcessingStatus.NEEDS_REVIEW)
+    status = (
+        ImageProcessingStatus.DONE
+        if kind == image_processing.ImageKind.BLACK
+        else ImageProcessingStatus.NEEDS_REVIEW
+    )
+    return _commit(
+        image, source_name, status=status, mode=ImageProcessingMode.REMBG, content=content
+    )
+
+
+def _release(image_id: int, *, to: str = ImageProcessingStatus.NONE) -> None:
+    """Задача вышла, ничего не сделав: `queued` возвращается, чтобы запись не зависла."""
     ProductImage.objects.filter(pk=image_id, processing_status=ImageProcessingStatus.QUEUED).update(
-        processing_status=ImageProcessingStatus.NONE
+        processing_status=to
     )
 
 

@@ -346,6 +346,8 @@ CELERY_TASK_ROUTES = {
     "apps.sync_1c.tasks.*": {"queue": "onec"},
     # Автообработка фото (ADR-0014): отдельный воркер celery-images с media на запись.
     "apps.catalog.tasks.process_product_image": {"queue": "images"},
+    # Удаление фона нейросетью: сервис celery-rembg под профилем, только на бэкфилл.
+    "apps.catalog.tasks.remove_photo_background": {"queue": "rembg"},
 }
 
 # Session/CSRF для SPA (#325): cookie читается JS (HTTPONLY=False), SameSite=Lax
