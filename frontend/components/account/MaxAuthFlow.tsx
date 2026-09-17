@@ -22,6 +22,7 @@ import {
 
 type Phase = "idle" | "starting" | "waiting" | "completed" | "error";
 const TERMINAL_FAIL = ["expired", "cancelled", "failed"];
+const POLL_INTERVAL_MS = 2500;
 
 function isMobile(): boolean {
   return typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -46,11 +47,14 @@ export function MaxAuthFlow({
   const [message, setMessage] = useState("");
   // Нейтральная подсказка ожидания (confirmation_required) — не ошибка, другой стиль.
   const [hint, setHint] = useState("");
-  const poll = useRef<ReturnType<typeof setInterval> | null>(null);
+  const poll = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Поколение опроса: ответ, пришедший после stopPoll/нового старта, ничего не планирует.
+  const pollGen = useRef(0);
 
   const stopPoll = useCallback(() => {
+    pollGen.current += 1;
     if (poll.current) {
-      clearInterval(poll.current);
+      clearTimeout(poll.current);
       poll.current = null;
     }
   }, []);
@@ -76,11 +80,20 @@ export function MaxAuthFlow({
         setQr(await QR.toDataURL(a.deeplink, { width: 220, margin: 1 }));
       }
 
+      // Опрос строго последовательный: следующий запрос — только после ответа на
+      // предыдущий. С setInterval на медленном сервере летело несколько опросов
+      // сразу: один завершал вход и получал новую cookie сессии, а отставшие
+      // возвращались со старой — Django отвечал на них удалением cookie, и
+      // человека выкидывало из только что открытого кабинета.
       stopPoll();
-      poll.current = setInterval(async () => {
+      const gen = pollGen.current;
+      const tick = async () => {
+        let done = false;
         try {
           const s = await pollStatus(a.attempt_id);
+          if (gen !== pollGen.current) return;
           if (s.status === "completed") {
+            done = true;
             stopPoll();
             setPhase("completed");
             onCompleted();
@@ -89,6 +102,7 @@ export function MaxAuthFlow({
             // polling крутился бы молча — пользователь не знал бы, что делать.
             setHint("Подтвердите вход в приложении MAX.");
           } else if (TERMINAL_FAIL.includes(s.status)) {
+            done = true;
             stopPoll();
             setPhase("error");
             setMessage(
@@ -100,9 +114,13 @@ export function MaxAuthFlow({
             );
           }
         } catch {
-          // Временная ошибка сети — продолжаем опрос до следующего тика.
+          // Временная ошибка сети — продолжаем опрос со следующего шага.
         }
-      }, 2500);
+        if (!done && gen === pollGen.current) {
+          poll.current = setTimeout(tick, POLL_INTERVAL_MS);
+        }
+      };
+      poll.current = setTimeout(tick, POLL_INTERVAL_MS);
     } catch (e) {
       setPhase("error");
       setMessage(e instanceof Error ? e.message : "Не удалось начать вход через MAX.");
