@@ -21,6 +21,7 @@ import {
 import { AccountShell } from "@/components/account/AccountShell";
 import { AccountDialog } from "@/components/account/AccountDialog";
 import { EmptyState, ErrorState } from "@/components/ui/states";
+import { RefundRequestBlock } from "@/components/order/RefundRequestBlock";
 import { ReservationNotice, reservationState } from "@/components/order/ReservationNotice";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { StarDisplay } from "@/components/reviews/StarRating";
@@ -393,6 +394,19 @@ export default function OrderDetailsPage() {
             </dl>
           </div>
         </section>
+
+        {/* Возврат денег: блок сам спрашивает сервер, можно ли подать заявку, и
+            не рисуется у заказов, которые оплачиваются при получении. После
+            заявки перечитываем заказ — могла измениться его оплата. */}
+        <RefundRequestBlock
+          orderNumber={order.order_number}
+          currency={order.currency}
+          onChanged={() => {
+            getOrder(order.order_number)
+              .then(setOrder)
+              .catch(() => undefined);
+          }}
+        />
 
         {/* #574: id — цель ссылки «Оставить отзыв» из списка заказов.
             #573 B2B: в B2B-flow нет доставки (одна из оценок), поэтому отзывы

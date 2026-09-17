@@ -818,6 +818,9 @@ def _confirm_one(item: dict, error_lines: list[str]) -> dict:
         elif target_fulfillment and target_fulfillment != old_status:
             if can_transition(old_status, target_fulfillment):
                 order.fulfillment_status = target_fulfillment
+                if target_fulfillment == FulfillmentStatus.COMPLETED:
+                    # От этой даты считается срок заявки на возврат денег.
+                    order.completed_at = timezone.now()
                 # #423 (B-03): отмена заказа возвращает резерв в свободный остаток.
                 if target_fulfillment == FulfillmentStatus.CANCELLED:
                     from apps.orders.reservation import release_reservation

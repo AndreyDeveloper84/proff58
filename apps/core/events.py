@@ -84,6 +84,9 @@ product_inquiry_created = Signal()
 payment_succeeded = Signal()
 payment_failed = Signal()
 payment_refunded = Signal()
+# refund_requested — издатель apps.payments.refund_requests.create_request.
+# payload: request_id, order_id
+refund_requested = Signal()
 
 # --- pricing (контракт; издатель появится с #60) ---
 price_changed = Signal()

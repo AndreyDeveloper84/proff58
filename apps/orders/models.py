@@ -273,6 +273,15 @@ class Order(TimeStampedModel):
             "свободный остаток; CONFIRMED — списан (оплата/подтверждение 1С)."
         ),
     )
+    completed_at = models.DateTimeField(
+        _("Выполнен в"),
+        null=True,
+        blank=True,
+        help_text=_(
+            "Когда заказ перешёл в «Выполнен». От этой даты считается 14-дневный срок "
+            "заявки на возврат денег."
+        ),
+    )
     exported_at = models.DateTimeField(
         _("Дата выгрузки в 1С"),
         null=True,

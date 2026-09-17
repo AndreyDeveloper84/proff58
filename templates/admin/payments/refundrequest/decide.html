@@ -1,0 +1,62 @@
+{% extends "admin/base_site.html" %}
+
+{% comment %}
+Решение по заявке на возврат. Деньги двигаются только POST-ом с этой страницы.
+{% endcomment %}
+
+{% block content %}
+<div style="max-width:38rem;">
+  <h2 style="margin-top:0;">
+    {% if is_approve %}Вернуть деньги по заказу{% else %}Отклонить заявку по заказу{% endif %}
+    {{ order.order_number }}?
+  </h2>
+
+  <p style="opacity:.75;">
+    Сейчас: <b>{{ order.display_status }}</b><br>
+    Покупатель: {{ order.customer_name|default:"—" }} · {{ order.customer_phone|default:"—" }}<br>
+    Причина: <b>{{ obj.get_reason_display }}</b>{% if obj.comment %} — «{{ obj.comment }}»{% endif %}
+  </p>
+
+  {% if error %}
+  <div class="callout callout-danger" style="border-left-width:4px;">{{ error }}</div>
+  {% endif %}
+
+  {% if is_approve %}
+    {% if has_payment %}
+    <div class="callout callout-info" style="border-left-width:4px;">
+      <b>Что произойдёт:</b>
+      <ul style="margin:.4rem 0 0 1.1rem;">
+        <li>Касса вернёт деньги на карту покупателя. Отменить возврат нельзя.</li>
+        <li>Можно вернуть до <b>{{ remaining }} {{ currency }}</b>.</li>
+        <li>Товар на склад сайт не возвращает — это делается в 1С.</li>
+      </ul>
+    </div>
+    <form method="post" style="margin-top:1rem;">
+      {% csrf_token %}
+      <label for="amount">Сумма возврата, {{ currency }} (пусто — вся сумма {{ remaining }})</label><br>
+      <input id="amount" name="amount" inputmode="decimal" value="{{ form_amount }}"
+             placeholder="{{ remaining }}" style="margin:.3rem 0 .8rem;">
+      <br>
+      <button type="submit" class="default">Да, вернуть деньги</button>
+      <a href="{{ back_url }}" class="button" style="margin-left:.5rem;">Назад</a>
+    </form>
+    {% else %}
+    <div class="callout callout-danger" style="border-left-width:4px;">
+      У заказа нет платежа, по которому можно вернуть деньги. Проверьте его в кассе.
+    </div>
+    <a href="{{ back_url }}" class="button">Назад</a>
+    {% endif %}
+  {% else %}
+  <form method="post" style="margin-top:1rem;">
+    {% csrf_token %}
+    <label for="comment">Причина отказа — покупатель увидит её в личном кабинете</label><br>
+    <textarea id="comment" name="comment" rows="4" style="width:100%;margin:.3rem 0 .8rem;"
+              required>{{ form_comment }}</textarea>
+    <button type="submit" class="default" style="background:#dc3545;border-color:#dc3545;">
+      Отклонить заявку
+    </button>
+    <a href="{{ back_url }}" class="button" style="margin-left:.5rem;">Назад</a>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

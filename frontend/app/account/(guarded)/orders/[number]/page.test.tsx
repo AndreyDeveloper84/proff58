@@ -27,6 +27,18 @@ vi.mock("@/lib/auth", () => ({
   cancelOrder: vi.fn(),
 }));
 
+// Блок возврата грузит своё состояние сам; здесь он не рисуется (заказ не оплачен).
+vi.mock("@/lib/refunds", () => ({
+  getRefundState: vi.fn().mockResolvedValue({
+    can_request: false,
+    block_reason: null,
+    deadline: null,
+    reasons: [],
+    requests: [],
+  }),
+  requestRefund: vi.fn(),
+}));
+
 import { cancelOrder, checkAuth, getOrder } from "@/lib/auth";
 import OrderDetailsPage from "./page";
 
