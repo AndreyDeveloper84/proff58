@@ -11,20 +11,22 @@
 Команда сама фото не обрабатывает — только ставит задачи в очередь `images`
 (воркер `celery-images`, строго по одному). Повторная постановка безопасна: задача
 идемпотентна. `--dry-run` читает файлы, но ничего не пишет ни в БД, ни в media.
+Кроме классов фона он считает, что уйдёт менеджеру на проверку (мелкие фото,
+повторы кадра среди отобранных фото), и товары, у которых есть фото, но нет главного.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Q
 
 from apps.catalog import image_autoprocess, image_processing
-from apps.catalog.models import ImageProcessingStatus, ImageSource, ProductImage
+from apps.catalog.models import ImageProcessingStatus, ImageSource, Product, ProductImage
 from apps.core.features import is_enabled
 
 DEFAULT_STATUSES = (ImageProcessingStatus.NONE, ImageProcessingStatus.FAILED)
@@ -119,29 +121,75 @@ class Command(BaseCommand):
 
     def _dry_run(self, qs, out: str | None) -> None:
         kinds: Counter[str] = Counter()
+        small = duplicates = 0
         rows = []
+        # кадры каждого товара, уже встреченные в прогоне (сами дубли не в счёт)
+        seen: defaultdict[int, list[tuple[int, str]]] = defaultdict(list)
         for image in qs.iterator(chunk_size=200):
+            row = {"id": image.pk, "product_id": image.product_id}
+            rows.append(row)
             try:
                 with image.image.storage.open(image.image.name, "rb") as fh:
-                    kind = image_processing.classify(image_processing.open_image(fh.read()))
+                    result = image_processing.process(fh.read())
             except (OSError, image_processing.UnreadableImage):
-                kind = "unreadable"
-            kinds[kind] += 1
-            rows.append({"id": image.pk, "product_id": image.product_id, "kind": kind})
+                row["kind"] = "unreadable"
+                kinds["unreadable"] += 1
+                continue
+            row["kind"] = result.kind
+            kinds[result.kind] += 1
+            if result.square is not None and result.square.small:
+                row["small"] = True
+                small += 1
+            frames = seen[image.product_id]
+            first = next(
+                (
+                    pk
+                    for pk, mark in frames
+                    if image_processing.is_duplicate(result.fingerprint, mark)
+                ),
+                None,
+            )
+            if first is None:
+                frames.append((image.pk, result.fingerprint))
+            else:
+                row["duplicate_of"] = first
+                duplicates += 1
+
+        without_main = list(
+            Product.objects.filter(images__isnull=False)
+            .exclude(images__is_main=True)
+            .values_list("pk", flat=True)
+            .distinct()
+            .order_by("pk")
+        )
 
         labels = {
             image_processing.ImageKind.WHITE: "белый фон (обработается сразу)",
             image_processing.ImageKind.ALPHA: "прозрачный фон (обработается сразу)",
             image_processing.ImageKind.BLACK: "чёрный фон (ждёт нейросеть)",
             image_processing.ImageKind.OTHER: "прочий фон (ждёт нейросеть)",
+            image_processing.ImageKind.BLANK: "пустой кадр (на проверку)",
             "unreadable": "не читается",
         }
         self.stdout.write(f"DRY-RUN: фото {sum(kinds.values())}, ничего не записано")
         for kind, label in labels.items():
             self.stdout.write(f"  {label:38} {kinds.get(kind, 0)}")
+        self.stdout.write("Пойдут на проверку менеджеру:")
+        self.stdout.write(f"  {'мелкие (товар меньше половины квадрата)':38} {small}")
+        self.stdout.write(f"  {'повтор кадра того же товара':38} {duplicates}")
+        self.stdout.write(f"Товаров с фото, но без главного фото: {len(without_main)}")
+        if without_main:
+            self.stdout.write(f"  например: {', '.join(map(str, without_main[:10]))}")
         if out:
             path = Path(out)
             path.parent.mkdir(parents=True, exist_ok=True)
-            payload = {"kind": "product_images_autoprocess_dry_run", "counts": kinds, "items": rows}
+            payload = {
+                "kind": "product_images_autoprocess_dry_run",
+                "counts": kinds,
+                "small": small,
+                "duplicates": duplicates,
+                "products_without_main": without_main,
+                "items": rows,
+            }
             path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
             self.stdout.write(f"JSON записан: {path}")

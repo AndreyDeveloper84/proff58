@@ -17,7 +17,6 @@ Python 3.11, 16.09.2026). Модель одна на процесс и груз�
 from __future__ import annotations
 
 import importlib.util
-import io
 
 from PIL import Image
 
@@ -49,15 +48,10 @@ def cut_out(img: Image.Image) -> Image.Image:
     return remove(img, session=_session, post_process_mask=True)
 
 
-def render(img: Image.Image) -> bytes | None:
+def render(img: Image.Image) -> image_processing.Square | None:
     """Вырезать товар, положить на белый квадрат. None — нейросеть товар не нашла."""
     cutout = cut_out(img.convert("RGB")).convert("RGBA")
     bbox = cutout.getchannel("A").point(lambda v: 255 if v > ALPHA_CUT else 0).getbbox()
     if bbox is None:
         return None
-    product = image_processing.flatten_on_white(cutout.crop(bbox))
-    buf = io.BytesIO()
-    image_processing.fit_into_square(product).save(
-        buf, format="WEBP", quality=image_processing.QUALITY
-    )
-    return buf.getvalue()
+    return image_processing.to_square(image_processing.flatten_on_white(cutout.crop(bbox)))

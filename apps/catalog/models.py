@@ -921,6 +921,15 @@ class ImageProcessingMode(models.TextChoices):
     REMBG = "rembg", _("Удаление фона")
 
 
+class ImageReviewReason(models.TextChoices):
+    """Почему автообработка отдала фото менеджеру, а не на витрину."""
+
+    DUPLICATE = "duplicate", _("Такой же кадр у товара уже есть")
+    EMPTY = "empty", _("Товар на фото не найден")
+    SMALL = "small", _("Мелкое фото: товар меньше половины квадрата")
+    NOT_WHITE = "not_white", _("Фон был не белый — копию сделала нейросеть")
+
+
 def product_image_display_path(instance, filename: str) -> str:
     """Путь витринной копии: ``products/display/<товар>/<имя>`` (ADR-0014).
 
@@ -1021,6 +1030,25 @@ class ProductImage(models.Model):
         help_text=_("Версия параметров, с которыми сделан display; 0 — не обрабатывалось."),
     )
     processed_at = models.DateTimeField(_("Обработано"), null=True, blank=True)
+    review_reason = models.CharField(
+        _("Почему на проверке"), max_length=16, choices=ImageReviewReason.choices, blank=True
+    )
+    duplicate_of = models.ForeignKey(
+        "self",
+        verbose_name=_("Дубль кадра"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text=_("Фото этого же товара, повтором которого оказался этот кадр."),
+    )
+    fingerprint = models.CharField(
+        _("Отпечаток кадра"),
+        max_length=64,
+        blank=True,
+        default="",
+        help_text=_("Хэш изображения оригинала: по нему находятся одинаковые кадры товара."),
+    )
 
     class Meta:
         verbose_name = _("Изображение товара")
@@ -1070,6 +1098,9 @@ class ProductImage(models.Model):
         "processing_mode",
         "processing_version",
         "processed_at",
+        "review_reason",
+        "duplicate_of",
+        "fingerprint",
     )
 
     @property
@@ -1108,6 +1139,9 @@ class ProductImage(models.Model):
         self.processing_mode = ""
         self.processing_version = 0
         self.processed_at = None
+        self.review_reason = ""
+        self.duplicate_of = None
+        self.fingerprint = ""
         if save_kwargs.get("update_fields") is not None:
             save_kwargs["update_fields"] = {*save_kwargs["update_fields"], *self.PROCESSING_FIELDS}
         if old_display:

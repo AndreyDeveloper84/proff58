@@ -50,7 +50,7 @@ def _encode(img, fmt="PNG"):
     return buf.getvalue()
 
 
-def _scene(bg=(255, 255, 255), size=(800, 600), box=(100, 150, 300, 250), color=(200, 30, 30)):
+def _scene(bg=(255, 255, 255), size=(800, 600), box=(100, 150, 700, 450), color=(200, 30, 30)):
     """Товар-прямоугольник `box` на однотонном фоне."""
     img = Image.new("RGB", size, bg)
     img.paste(color, box)
@@ -278,11 +278,12 @@ def test_new_parameters_version_replaces_copy(
     image.refresh_from_db()
     old = _media / image.display.name
 
-    monkeypatch.setattr(image_processing, "PROCESSING_VERSION", 2)
+    newer = image_processing.PROCESSING_VERSION + 1
+    monkeypatch.setattr(image_processing, "PROCESSING_VERSION", newer)
     with django_capture_on_commit_callbacks(execute=True):
         assert image_autoprocess.process_image(image.pk) == ImageProcessingStatus.DONE
     image.refresh_from_db()
-    assert image.display.name.endswith("-v2.webp")
+    assert image.display.name.endswith(f"-v{newer}.webp")
     assert not old.exists()
 
 
@@ -377,17 +378,18 @@ def test_command_outdated_rebuilds_old_version(
 ):
     image = _photo(_product())
     image_autoprocess.process_image(image.pk)
-    monkeypatch.setattr(image_processing, "PROCESSING_VERSION", 2)
+    current = image_processing.PROCESSING_VERSION
+    monkeypatch.setattr(image_processing, "PROCESSING_VERSION", current + 1)
 
     with django_capture_on_commit_callbacks(execute=True):
         call_command("process_product_images")  # без --outdated готовые не трогаем
     image.refresh_from_db()
-    assert image.processing_version == 1
+    assert image.processing_version == current
 
     with django_capture_on_commit_callbacks(execute=True):
         call_command("process_product_images", "--outdated")
     image.refresh_from_db()
-    assert image.processing_version == 2
+    assert image.processing_version == current + 1
 
 
 @pytest.mark.django_db
@@ -506,7 +508,9 @@ def test_failure_while_rebuilding_keeps_existing_copy(autoprocess_on, _media, mo
     image.refresh_from_db()
     copy = _media / image.display.name
 
-    monkeypatch.setattr(image_processing, "PROCESSING_VERSION", 2)
+    monkeypatch.setattr(
+        image_processing, "PROCESSING_VERSION", image_processing.PROCESSING_VERSION + 1
+    )
     ProductImage.objects.filter(pk=image.pk).update(processing_status=ImageProcessingStatus.QUEUED)
     (_media / image.image.name).unlink()  # временный сбой чтения исходника
 
