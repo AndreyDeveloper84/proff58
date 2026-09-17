@@ -16,8 +16,9 @@ from __future__ import annotations
 import logging
 
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -25,6 +26,8 @@ from apps.orders import services as order_services
 from apps.orders.models import FulfillmentStatus, Order
 from apps.orders.models import PaymentStatus as OrderPaymentStatus
 
+from . import refund_requests
+from .models import RefundReason, RefundRequest
 from .services import create_payment
 
 logger = logging.getLogger(__name__)
@@ -101,3 +104,78 @@ class OrderPaymentView(APIView):
                 "provider_status": payment.status,
             }
         )
+
+
+def _refund_state(order: Order) -> dict:
+    """Что покупатель видит в блоке «Возврат денег» карточки заказа."""
+    blocked = refund_requests.block_reason(order)
+    deadline = refund_requests.request_deadline(order)
+    history = RefundRequest.objects.filter(order=order).select_related("refund")[:5]
+    return {
+        "can_request": blocked is None,
+        # Причину отказа показываем, только когда есть что объяснить: у заказа
+        # с оплатой при получении блока возврата не должно быть вовсе.
+        "block_reason": (
+            blocked if order.payment_status in refund_requests.REFUNDABLE_ORDER else None
+        ),
+        "deadline": deadline.isoformat() if deadline else None,
+        "reasons": [{"value": value, "label": str(label)} for value, label in RefundReason.choices],
+        "requests": [
+            {
+                "id": r.pk,
+                "status": r.status,
+                "status_label": r.get_status_display(),
+                "reason": r.reason,
+                "reason_label": r.get_reason_display(),
+                "comment": r.comment,
+                "amount": str(r.refund.amount) if r.refund else None,
+                "decision_comment": r.decision_comment,
+                "created_at": r.created_at.isoformat(),
+                "decided_at": r.decided_at.isoformat() if r.decided_at else None,
+            }
+            for r in history
+        ],
+    }
+
+
+class RefundRequestView(APIView):
+    """GET/POST /api/payments/orders/{number}/refund-request/ — заявка на возврат.
+
+    Только владелец заказа (гостю нечем подтвердить, что деньги вернуть надо
+    именно ему). Правила — в ``refund_requests``; «сейчас нельзя» — 409 с текстом.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def _order(self, request, number):
+        return Order.objects.filter(order_number=number, user=request.user).first()
+
+    def get(self, request, number):
+        order = self._order(request, number)
+        if order is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(_refund_state(order))
+
+    def post(self, request, number):
+        order = self._order(request, number)
+        if order is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        reason = str(request.data.get("reason", ""))
+        comment = str(request.data.get("comment", ""))
+        if reason not in RefundReason.values:
+            return Response(
+                {"detail": "Выберите причину возврата."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if reason == RefundReason.OTHER and not comment.strip():
+            return Response(
+                {"detail": "Опишите, пожалуйста, причину возврата."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            refund_requests.create_request(
+                order.pk, user_id=request.user.pk, reason=reason, comment=comment
+            )
+        except DjangoValidationError as exc:
+            return Response({"detail": " ".join(exc.messages)}, status=status.HTTP_409_CONFLICT)
+        order.refresh_from_db()
+        return Response(_refund_state(order), status=status.HTTP_201_CREATED)

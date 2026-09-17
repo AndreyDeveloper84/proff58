@@ -1,5 +1,6 @@
 """Модели оплаты — Payment и связь с заказом (#8)."""
 
+from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -149,3 +150,90 @@ class Refund(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"Возврат {self.amount} по платежу {self.payment_id} [{self.status}]"
+
+
+class RefundRequestStatus(models.TextChoices):
+    PENDING = "pending", _("На рассмотрении")
+    PROCESSING = "processing", _("Оформляется возврат")
+    REFUNDED = "refunded", _("Деньги возвращены")
+    REJECTED = "rejected", _("Отклонена")
+
+
+class RefundReason(models.TextChoices):
+    CHANGED_MIND = "changed_mind", _("Передумал покупать")
+    DEFECT = "defect", _("Брак или неисправность")
+    WRONG_ITEM = "wrong_item", _("Привезли не тот товар")
+    INCOMPLETE = "incomplete", _("Неполная комплектация")
+    DELAY = "delay", _("Задержка доставки")
+    OTHER = "other", _("Другое")
+
+
+class RefundRequest(TimeStampedModel):
+    """Заявка покупателя на возврат денег за оплаченный онлайн заказ.
+
+    Деньги сама заявка не двигает: её рассматривает менеджер и либо оформляет
+    возврат через кассу (строка ``Refund``), либо отклоняет с причиной, которую
+    покупатель видит в личном кабинете. Товар на склад возвращает 1С.
+    """
+
+    order = models.ForeignKey(
+        "orders.Order",
+        on_delete=models.CASCADE,
+        related_name="refund_requests",
+        verbose_name=_("Заказ"),
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="refund_requests",
+        verbose_name=_("Покупатель"),
+    )
+    reason = models.CharField(_("Причина"), max_length=20, choices=RefundReason.choices)
+    comment = models.TextField(_("Комментарий покупателя"), blank=True, max_length=1000)
+    status = models.CharField(
+        _("Статус"),
+        max_length=12,
+        choices=RefundRequestStatus.choices,
+        default=RefundRequestStatus.PENDING,
+        db_index=True,
+    )
+    refund = models.ForeignKey(
+        Refund,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="requests",
+        verbose_name=_("Возврат в кассе"),
+    )
+    decision_comment = models.TextField(
+        _("Ответ покупателю"),
+        blank=True,
+        help_text=_("Покупатель видит этот текст в личном кабинете."),
+    )
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Кто решил"),
+    )
+    decided_at = models.DateTimeField(_("Когда решено"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("Заявка на возврат")
+        verbose_name_plural = _("Заявки на возврат")
+        ordering = ["-created_at"]
+        constraints = [
+            # Одна открытая заявка на заказ: двойное нажатие не плодит дубли.
+            models.UniqueConstraint(
+                fields=["order"],
+                condition=models.Q(status__in=["pending", "processing"]),
+                name="uniq_open_refund_request_per_order",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"Заявка на возврат #{self.pk} [{self.get_status_display()}]"

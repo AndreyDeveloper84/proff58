@@ -20,6 +20,7 @@ import logging
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 
 from apps.core import events
 
@@ -75,7 +76,12 @@ def advance_fulfillment(order_id: int, target: str, *, actor_id: int | None = No
             )
 
         order.fulfillment_status = target
-        order.save(update_fields=["fulfillment_status", "updated_at"])
+        update_fields = ["fulfillment_status", "updated_at"]
+        if target == FulfillmentStatus.COMPLETED:
+            # От этой даты считается срок заявки на возврат денег.
+            order.completed_at = timezone.now()
+            update_fields.append("completed_at")
+        order.save(update_fields=update_fields)
 
         # Возврат резерва В ТОЙ ЖЕ транзакции, как в invoice_lifecycle: иначе
         # между сохранением и коммитом существует отменённый заказ с удержанным
