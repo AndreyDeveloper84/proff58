@@ -17,7 +17,7 @@
     "ranges": "Диапазоны как значения не сопоставляются, кроме no_load_speed: берётся верхняя граница (range_upper_decimal).",
     "voltage": "Источники дают '220-230В ~50Гц', '220±10% /50', '230/50' и просто '20' (аккумулятор). Для сетевых инструментов — первое число; для аккумуляторных — напряжение батареи. Импортёр сам отбрасывает voltage >=60В для не-аккумуляторных товаров.",
     "motor_type": "ЗУБР отдаёт 'BRUSHLESS, бесщеточный' / 'щеточный'; Вихрь/Ресанта — 'Щеточный'/'Бесщеточный'; Интерскол — 'Бесщеточный (вентильный)'. Нормализовать в brushless/brushed.",
-    "chuck": "DRILLS-CHAR-01: ось chuck = ТИП патрона (быстрозажимной / ключевой / SDS-*), не диаметр и не посадка. Источники commercial-выборки различают «быстрозажимной» и «ключевой» (кулачковый отдельно не встречается) → канон bystrozazhimnoy / klyuchevoy; «бесключевой» = keyless = bystrozazhimnoy. «кулачковый» и HEX/шестигранный — в отчёт (drop_to_report) до отдельного решения.",
+    "chuck": "DRILLS-CHAR-01: ось chuck = ТИП патрона (быстрозажимной / ключевой / SDS-*), не диаметр и не посадка. Источники commercial-выборки различают «быстрозажимной» и «ключевой» (кулачковый отдельно не встречается) → канон bystrozazhimnoy / klyuchevoy; «бесключевой» = keyless = bystrozazhimnoy. «кулачковый» и HEX/шестигранный — в отчёт (drop_to_report) до отдельного решения. DRILLS-CHAR-02: добавлена опция hex — HEX 1/4\" бит-держатель винтовертов/отвёрток (ось = тип крепления оснастки, ср. SDS).",
     "torque": "У Ресанты/Вихря крутящий момент может быть записан как '50/25' (жёсткий/мягкий). Берём первое число — максимальный момент.",
     "weight": "DRILLS-CHAR-01: weight_kg = NET масса инструмента. Маппится только явный лейбл «Масса изделия, кг»; «с АКБ», «в упаковке», брутто, комплект — ignore (не вычитаем массу АКБ). Лейблы без указания комплектности (interskol «Масса», VI «Вес нетто») — AMBIGUOUS_WEIGHT, не маппятся.",
     "unmapped": "Поля без подходящего Attribute — в unmapped с кандидатом; новые Attribute не создавать.",
@@ -69,16 +69,33 @@
           "on_ambiguous": "drop_to_report",
           "comment": "только для аккумуляторных моделей"
         },
-        "Напряжение питающей сети, В": {
-          "action": "map",
-          "attribute": "voltage",
-          "attribute_type": "decimal",
-          "unit": "В",
-          "normalize": "voltage_first",
-          "confidence": "high",
-          "on_ambiguous": "drop_to_report",
-          "comment": "сетевые модели: 220-230В -> voltage, но импортёр отбросит как >=60В"
-        },
+        "Напряжение питающей сети, В": [
+          {
+            "action": "map",
+            "attribute": "voltage",
+            "attribute_type": "decimal",
+            "unit": "В",
+            "normalize": "voltage_first",
+            "confidence": "high",
+            "on_ambiguous": "drop_to_report",
+            "comment": "сетевые модели: 220-230В -> voltage, но импортёр отбросит как >=60В"
+          },
+          {
+            "action": "map",
+            "attribute": "power_source",
+            "attribute_type": "select",
+            "normalize": "option_map",
+            "extract": "^\\s*(2[23]0)",
+            "values": {
+              "220": "mains",
+              "230": "mains"
+            },
+            "confidence": "high",
+            "on_unknown_value": "drop_to_report",
+            "on_ambiguous": "drop_to_report",
+            "comment": "DRILLS-CHAR-02: «Напряжение питающей сети» 220/230 В явно описывает сетевое питание"
+          }
+        ],
         "Максимальный крутящий момент, Нм": {
           "action": "map",
           "attribute": "torque",
@@ -140,8 +157,23 @@
           "reason": "нет атрибута"
         },
         "Количество аккумуляторов": {
-          "action": "ignore",
-          "reason": "нет атрибута"
+          "action": "map",
+          "attribute": "battery_included",
+          "attribute_type": "boolean",
+          "normalize": "boolean",
+          "values": {
+            "1": true,
+            "2": true,
+            "3": true,
+            "4": true,
+            "0": false,
+            "-": false,
+            "нет": false
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report",
+          "comment": "DRILLS-CHAR-02: явное число АКБ в комплекте; «-» у голого инструмента = без АКБ"
         },
         "Кейс": {
           "action": "ignore",
@@ -173,14 +205,50 @@
           "reason": "зарядное устройство, не инструмент"
         },
         "Вес, кг": {
-          "action": "unmapped",
-          "candidate_attribute": "weight_kg",
-          "reason": "атрибута веса нет"
+          "action": "ignore",
+          "reason": "AMBIGUOUS_WEIGHT: значения вида 9.5 кг у 850-Вт дрели — не масса изделия (DRILLS-CHAR-02 §11)"
         },
         "Габариты упаковки": {
           "action": "unmapped",
           "candidate_attribute": "dimensions",
           "reason": "атрибута нет"
+        },
+        "Количество аккумуляторов в комплекте": {
+          "action": "map",
+          "attribute": "battery_included",
+          "attribute_type": "boolean",
+          "normalize": "boolean",
+          "values": {
+            "1": true,
+            "2": true,
+            "3": true,
+            "4": true,
+            "0": false,
+            "-": false,
+            "нет": false
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report",
+          "comment": "DRILLS-CHAR-02: явное число АКБ в комплекте; «-» у голого инструмента = без АКБ"
+        },
+        "Емкость аккумулятора, А*ч": {
+          "action": "map",
+          "attribute": "battery_capacity",
+          "attribute_type": "decimal",
+          "unit": "А*ч",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Максимальный крутящий момент, Н*м": {
+          "action": "map",
+          "attribute": "torque",
+          "attribute_type": "decimal",
+          "unit": "Нм",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report"
         }
       },
       "fallbacks": [],
@@ -198,16 +266,33 @@
           "on_ambiguous": "drop_to_report",
           "comment": "только для аккумуляторных моделей"
         },
-        "Напряжение питающей сети, В": {
-          "action": "map",
-          "attribute": "voltage",
-          "attribute_type": "decimal",
-          "unit": "В",
-          "normalize": "voltage_first",
-          "confidence": "high",
-          "on_ambiguous": "drop_to_report",
-          "comment": "сетевые модели: отбрасывается импортёром как >=60В"
-        },
+        "Напряжение питающей сети, В": [
+          {
+            "action": "map",
+            "attribute": "voltage",
+            "attribute_type": "decimal",
+            "unit": "В",
+            "normalize": "voltage_first",
+            "confidence": "high",
+            "on_ambiguous": "drop_to_report",
+            "comment": "сетевые модели: отбрасывается импортёром как >=60В"
+          },
+          {
+            "action": "map",
+            "attribute": "power_source",
+            "attribute_type": "select",
+            "normalize": "option_map",
+            "extract": "^\\s*(2[23]0)",
+            "values": {
+              "220": "mains",
+              "230": "mains"
+            },
+            "confidence": "high",
+            "on_unknown_value": "drop_to_report",
+            "on_ambiguous": "drop_to_report",
+            "comment": "DRILLS-CHAR-02: «Напряжение питающей сети» 220/230 В явно описывает сетевое питание"
+          }
+        ],
         "Емкость аккумулятора, А*ч": {
           "action": "map",
           "attribute": "battery_capacity",
@@ -548,8 +633,17 @@
           "reason": "коммерческая информация"
         },
         "Быстрозажимной патрон": {
-          "action": "ignore",
-          "reason": "значения нечитаемые/нет атрибута"
+          "action": "map",
+          "attribute": "chuck",
+          "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "есть": "bystrozazhimnoy"
+          },
+          "confidence": "medium",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report",
+          "comment": "DRILLS-CHAR-02: булево поле источника ⇒ тип патрона; «нет» не мапится (тип неизвестен)"
         },
         "Смена направления вращения": {
           "action": "ignore",
@@ -619,9 +713,8 @@
           "reason": "нет атрибута"
         },
         "Масса": {
-          "action": "unmapped",
-          "candidate_attribute": "weight_kg",
-          "reason": "атрибута веса нет"
+          "action": "ignore",
+          "reason": "AMBIGUOUS_WEIGHT: не указано, с АКБ или без (DRILLS-CHAR-02 §11)"
         },
         "Масса согласно процедуре ЕРТА, кг": {
           "action": "unmapped",
@@ -735,6 +828,45 @@
         "Тип аккумулятора": {
           "action": "ignore",
           "reason": "Li-Ion у всех"
+        },
+        "Ёмкость аккумулятора, А•час": {
+          "action": "map",
+          "attribute": "battery_capacity",
+          "attribute_type": "decimal",
+          "unit": "А*ч",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "alias «А•час» (931)"
+        },
+        "Максимальный крутящий момент, Нм": {
+          "action": "map",
+          "attribute": "torque",
+          "attribute_type": "decimal",
+          "unit": "Нм",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Номинальное напряжение аккумулятора, В": {
+          "action": "map",
+          "attribute": "voltage",
+          "attribute_type": "decimal",
+          "unit": "В",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Частота вращения на холостом ходу - 1 ступень": {
+          "action": "map",
+          "attribute": "no_load_speed",
+          "attribute_type": "decimal",
+          "unit": "об/мин",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "extract": "(\\d+)\\s*$",
+          "comment": "«0…550» — верхняя граница единственной ступени (1-скоростной редуктор)"
         }
       },
       "fallbacks": [],
@@ -752,26 +884,60 @@
           "confidence": "high",
           "on_ambiguous": "drop_to_report"
         },
-        "Напряжение питания, В/Гц": {
-          "action": "map",
-          "attribute": "voltage",
-          "attribute_type": "decimal",
-          "unit": "В",
-          "normalize": "voltage_first",
-          "confidence": "high",
-          "on_ambiguous": "drop_to_report",
-          "comment": "'220±10% /50' -> 220; сетевые значения отбрасываются импортёром"
-        },
-        "Напряжение, В/Гц": {
-          "action": "map",
-          "attribute": "voltage",
-          "attribute_type": "decimal",
-          "unit": "В",
-          "normalize": "voltage_first",
-          "confidence": "high",
-          "on_ambiguous": "drop_to_report",
-          "comment": "альтернативная подпись у сетевых инструментов"
-        },
+        "Напряжение питания, В/Гц": [
+          {
+            "action": "map",
+            "attribute": "voltage",
+            "attribute_type": "decimal",
+            "unit": "В",
+            "normalize": "voltage_first",
+            "confidence": "high",
+            "on_ambiguous": "drop_to_report",
+            "comment": "'220±10% /50' -> 220; сетевые значения отбрасываются импортёром"
+          },
+          {
+            "action": "map",
+            "attribute": "power_source",
+            "attribute_type": "select",
+            "normalize": "option_map",
+            "extract": "^\\s*(2[23]0)",
+            "values": {
+              "220": "mains",
+              "230": "mains"
+            },
+            "confidence": "high",
+            "on_unknown_value": "drop_to_report",
+            "on_ambiguous": "drop_to_report",
+            "comment": "DRILLS-CHAR-02: поле «Напряжение питания» с 220/230 В явно описывает сетевое питание"
+          }
+        ],
+        "Напряжение, В/Гц": [
+          {
+            "action": "map",
+            "attribute": "voltage",
+            "attribute_type": "decimal",
+            "unit": "В",
+            "normalize": "voltage_first",
+            "confidence": "high",
+            "on_ambiguous": "drop_to_report",
+            "comment": "альтернативная подпись у сетевых инструментов"
+          },
+          {
+            "action": "map",
+            "attribute": "power_source",
+            "attribute_type": "select",
+            "normalize": "option_map",
+            "extract": "^\\s*(2[23]0)",
+            "values": {
+              "220": "mains",
+              "230": "mains"
+            },
+            "confidence": "high",
+            "on_unknown_value": "drop_to_report",
+            "on_ambiguous": "drop_to_report",
+            "comment": "DRILLS-CHAR-02: поле «Напряжение питания» с 220/230 В явно описывает сетевое питание"
+          }
+        ],
         "Напряжение изделия, В": {
           "action": "map",
           "attribute": "voltage",
@@ -848,12 +1014,15 @@
             "бзп": "bystrozazhimnoy",
             "бзп, угловой, эксцентриковый": "bystrozazhimnoy",
             "быстрозажимной": "bystrozazhimnoy",
-            "бесключевой": "bystrozazhimnoy"
+            "бесключевой": "bystrozazhimnoy",
+            "hex": "hex",
+            "нех": "hex",
+            "шестигранный": "hex"
           },
           "confidence": "medium",
           "on_unknown_value": "drop_to_report",
           "on_ambiguous": "drop_to_report",
-          "comment": "DRILLS-CHAR-01: ключевой → klyuchevoy; кулачковый/HEX → drop_to_report"
+          "comment": "DRILLS-CHAR-02: HEX/НЕХ(кириллица)/шестигранный → hex (бит-держатель 1/4\"); ключевой → klyuchevoy; мульти-комбо → report"
         },
         "Размер патрона, мм": {
           "action": "unmapped",
@@ -979,8 +1148,23 @@
           "reason": "нет атрибута"
         },
         "Количество аккумуляторов": {
-          "action": "ignore",
-          "reason": "комплектация"
+          "action": "map",
+          "attribute": "battery_included",
+          "attribute_type": "boolean",
+          "normalize": "boolean",
+          "values": {
+            "1": true,
+            "2": true,
+            "3": true,
+            "4": true,
+            "0": false,
+            "-": false,
+            "нет": false
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report",
+          "comment": "DRILLS-CHAR-02: явное число АКБ в комплекте; «-» у голого инструмента = без АКБ"
         },
         "Зарядное устройство": {
           "action": "ignore",
@@ -1166,6 +1350,16 @@
           "confidence": "high",
           "on_ambiguous": "drop_to_report",
           "comment": "alias: винтоверты/отвёртки ZUBR (GVB/ОТР/PSD)"
+        },
+        "Число оборотов, об/мин": {
+          "action": "map",
+          "attribute": "no_load_speed",
+          "attribute_type": "decimal",
+          "unit": "об/мин",
+          "normalize": "range_upper_decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "DRILLS-CHAR-02: alias для мини-отвёрток (ОТР-4, PSD-4S)"
         }
       },
       "fallbacks": [],
