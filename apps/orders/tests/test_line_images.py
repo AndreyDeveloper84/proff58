@@ -84,7 +84,11 @@ def test_удалённый_товар_не_ломает_заказ(product):
         total=Decimal("1000.00"),
     )
     OrderItem.objects.create(
-        order=order, product=None, name="Снятый товар", price_final=Decimal("1000"), quantity=1,
+        order=order,
+        product=None,
+        name="Снятый товар",
+        price_final=Decimal("1000"),
+        quantity=1,
         line_total=Decimal("1000"),
     )
 
