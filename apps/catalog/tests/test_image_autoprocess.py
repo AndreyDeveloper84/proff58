@@ -406,6 +406,33 @@ def test_command_never_overrides_manager_rejection(autoprocess_on):
 # --- замечания ревью: граничные случаи ---------------------------------------------
 
 
+@pytest.mark.parametrize(
+    ("bg", "kind"), [((255, 255, 255), ImageKind.WHITE), ((0, 0, 0), ImageKind.BLACK)]
+)
+def test_wide_product_crossing_frame_edges_keeps_background_kind(bg, kind):
+    # динамометрический ключ / болторез: товар упирается в левый и правый край кадра
+    img = Image.new("RGB", (1200, 800), bg)
+    img.paste((40, 130, 90), (0, 360, 1200, 440))
+    raw = _encode(img)
+    assert image_processing.classify(image_processing.open_image(raw)) == kind
+
+
+def test_card_touching_top_and_bottom_on_white_is_trimmed_not_sent_to_rembg():
+    # рекламная карточка во всю высоту: нейросеть испортила бы текст, обрезка — нет
+    img = Image.new("RGB", (1200, 800), (255, 255, 255))
+    img.paste((20, 60, 170), (400, 0, 800, 800))
+    img.paste((255, 255, 255), (450, 100, 750, 180))  # «текст» на карточке
+    result = image_processing.process(_encode(img))
+    assert result.kind == ImageKind.WHITE and result.content is not None
+
+
+def test_colored_backdrop_band_keeps_photo_other():
+    img = Image.new("RGB", (800, 600), (255, 255, 255))
+    img.paste((30, 90, 200), (0, 0, 800, 60))  # однотонная синяя подложка сверху
+    img.paste((200, 30, 30), (300, 200, 500, 400))
+    assert image_processing.classify(image_processing.open_image(_encode(img))) == ImageKind.OTHER
+
+
 def test_gray_floor_with_three_white_sides_is_not_white():
     img = Image.new("RGB", (800, 600), (255, 255, 255))
     img.paste((235, 235, 235), (0, 540, 800, 600))  # однотонный серый пол

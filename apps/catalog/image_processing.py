@@ -29,9 +29,12 @@ MAX_UPSCALE = 2.0  # мелкий исходник не раздуваем си�
 QUALITY = 85  # WebP, как у ImagePipeline
 MAX_PIXELS = 40_000_000  # потолок против decompression bomb, как у ImagePipeline
 
+EDGE_BACKGROUND_SHARE = 0.5  # фон — если им занята хотя бы половина рамки кадра
+NEAR_WHITE = 240  # все каналы не темнее — пиксель рамки «белый»
+NEAR_BLACK = 15  # все каналы не светлее — пиксель рамки «чёрный»
 BORDER_UNIFORM_STD = 6.0  # сторона кадра однотонная, если разброс яркости меньше
-WHITE_MIN = 245  # средняя яркость однотонной стороны — «белый фон»
-BLACK_MAX = 8  # — «чёрный фон» (так выглядит потерянная прозрачность)
+WHITE_MIN = 245  # однотонная сторона светлее — белая, иначе это подложка другого цвета
+BLACK_MAX = 8  # однотонная сторона темнее — чёрная (так выглядит потерянная прозрачность)
 TRANSPARENT_EDGE_ALPHA = 128  # средняя альфа края ниже — фон прозрачный
 TRIM_TOLERANCE = 12  # пиксель ближе к белому — фон; запас на шум JPEG
 
@@ -105,21 +108,41 @@ def has_transparent_background(img: Image.Image) -> bool:
     return sum(edge) / len(edge) < TRANSPARENT_EDGE_ALPHA
 
 
-def classify(img: Image.Image) -> str:
-    """Тип фона по краю кадра: каждая сторона проверяется отдельно.
+def _share(masks: list[Image.Image], total: int) -> float:
+    return sum(m.histogram()[255] for m in masks) / total
 
-    Среднее по четырём сторонам обманывается: три белые стороны и однотонный серый
-    пол дали бы «белый фон», и серый пол остался бы в квадрате.
+
+def _solid_side_off(stats: list[ImageStat.Stat], low: float, high: float) -> bool:
+    """Есть ли однотонная сторона не цвета фона — серый пол, цветная подложка."""
+    return any(
+        sum(s.stddev) / 3 < BORDER_UNIFORM_STD and not low <= sum(s.mean) / 3 <= high for s in stats
+    )
+
+
+def classify(img: Image.Image) -> str:
+    """Тип фона по рамке кадра.
+
+    Фон — это большинство пикселей рамки, а не «все четыре стороны однотонные»: у
+    широкого товара (ключ, болторез, карточка во всю высоту) край кадра пересекает сам
+    товар. Строгая проверка сторон отправляла такой белый фон к нейросети — на стенде
+    71 из 100 «прочих» фото были именно такими (16.09.2026), а нейросеть портит текст.
+
+    Однотонная сторона другого цвета — серый пол, цветная подложка — оставляет фото
+    «прочим»: обрезка полей оставила бы её в квадрате.
     """
     if has_transparent_background(img):
         return ImageKind.ALPHA
-    rgb = img.convert("RGB")
-    stats = [ImageStat.Stat(s) for s in _border_strips(rgb)]
-    means = [sum(s.mean) / 3 for s in stats]
-    uniform = max(sum(s.stddev) / 3 for s in stats) < BORDER_UNIFORM_STD
-    if uniform and min(means) >= WHITE_MIN:
+    strips = _border_strips(img.convert("RGB"))
+    total = sum(s.width * s.height for s in strips)
+    channels = [s.split() for s in strips]
+    darkest = [ImageChops.darker(ImageChops.darker(r, g), b) for r, g, b in channels]
+    brightest = [ImageChops.lighter(ImageChops.lighter(r, g), b) for r, g, b in channels]
+    white = _share([m.point(lambda v: 255 if v >= NEAR_WHITE else 0) for m in darkest], total)
+    black = _share([m.point(lambda v: 255 if v <= NEAR_BLACK else 0) for m in brightest], total)
+    stats = [ImageStat.Stat(s) for s in strips]
+    if white >= EDGE_BACKGROUND_SHARE and not _solid_side_off(stats, WHITE_MIN, 255):
         return ImageKind.WHITE
-    if uniform and max(means) <= BLACK_MAX:
+    if black >= EDGE_BACKGROUND_SHARE and not _solid_side_off(stats, 0, BLACK_MAX):
         return ImageKind.BLACK
     return ImageKind.OTHER
 
