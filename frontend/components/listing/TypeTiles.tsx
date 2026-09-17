@@ -50,7 +50,9 @@ function Tile({ item, onSelect }: { item: CategoryNavItem; onSelect: Props["onSe
           alt=""
           width={56}
           height={56}
-          className="h-14 w-14 shrink-0 object-contain dark:invert"
+          // Без dark:invert: на плитке фотография товара, а не контурный чертёж —
+          // инверсия превратила бы её в негатив.
+          className="h-14 w-14 shrink-0 object-contain"
         />
       )}
       <span className="min-w-0 flex-1">
