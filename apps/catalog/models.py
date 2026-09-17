@@ -890,6 +890,12 @@ class ImageSource(models.TextChoices):
     ZUBR = "zubr", _("zubr.ru")
     HUTER = "huter", _("huter.su")
     VSEINSTRUMENTI = "vseinstrumenti", _("vseinstrumenti.ru")
+    # MEDIA-SOURCE-01: manufacturer-сайты для commercial-наполнения (DRILLS-MEDIA-01).
+    # Значение = фактический хост источника, не бренд товара: einhell.ru — мёртвая
+    # заглушка, карточки Einhell живут на einhell.de.
+    HANSKONNER = "hanskonner", _("hanskonner.ru")
+    EINHELL = "einhell", _("einhell.de")
+    THORVIK = "thorvik", _("thorvik.ru")
 
 
 class ImageProcessingStatus(models.TextChoices):
