@@ -22,6 +22,19 @@
 
 Для `production` включить Required reviewers. Для `main` включить branch protection: PR, минимум один approval, обязательный зеленый CI.
 
+### Образ витрины собирается в Actions
+
+`frontend` в `docker-compose.prod.yml` — это `image: proff58-frontend:latest`, без `build:`.
+Workflow собирает образ на машине GitHub, копирует архив в `DEPLOY_PATH` и делает
+`docker load` перед `docker compose build`. На VPS `next build` не выдерживал диск
+(17.09.2026: четыре выкладки подряд упали на старте сборки фронта) и на время сборки
+замедлял живой сайт.
+
+Следствие для ручных действий на сервере: `docker compose up -d --build` **не пересоберёт
+витрину**. Чтобы получить образ без workflow — собрать его руками
+(`docker build -t proff58-frontend:latest ./frontend`, на VPS это долго) или перезапустить
+нужную выкладку в Actions.
+
 ## Сервер
 
 ```bash
@@ -214,6 +227,9 @@ docker compose -f docker-compose.prod.yml ps
 
 `git checkout` откатывает **код**; на старом коде `web` выполнит `migrate --check` и
 упадёт, если новые миграции уже применены к БД. Тогда нужен откат схемы.
+
+Витрину `up -d --build` не пересобирает (образ приходит из Actions, см. выше): для отката
+фронта перезапустить в Actions выкладку нужного коммита или собрать образ руками.
 
 ### Откат схемы БД
 

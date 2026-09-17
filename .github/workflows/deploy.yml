@@ -36,6 +36,52 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Витрина собирается ЗДЕСЬ, на машине GitHub, а не на VPS. На сервере next build
+      # упирался в диск: 17.09 четыре выкладки подряд упали на старте сборки фронта
+      # («frontend grpc server closed unexpectedly» — BuildKit не дождался своего
+      # сборщика на диске с задержкой чтения 50–500 мс), а пока сборка шла, сайт
+      # отвечал по 6–9 с. Готовый образ уезжает на сервер архивом, там — docker load.
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.enabled == 'true'
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.gate.outputs.enabled == 'true'
+
+      - name: Сборка образа витрины
+        if: steps.gate.outputs.enabled == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          # Имя фиксировано и совпадает с image: в docker-compose.prod.yml. Один тег:
+          # после docker load старый образ теряет его и уходит под prune в конце выкладки.
+          tags: proff58-frontend:latest
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+          outputs: type=docker,dest=${{ github.workspace }}/proff58-frontend.tar
+          # Слойный кэш между выкладками (npm ci при неизменном lockfile) — в GitHub.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Сжать образ
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          gzip -1 "${{ github.workspace }}/proff58-frontend.tar"
+          ls -lh "${{ github.workspace }}/proff58-frontend.tar.gz"
+
+      - name: Отправить образ на VPS
+        if: steps.gate.outputs.enabled == 'true'
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: proff58-frontend.tar.gz
+          target: ${{ secrets.DEPLOY_PATH }}
+          # Архив от сорвавшейся выкладки мог остаться в DEPLOY_PATH — перезаписываем.
+          overwrite: true
+          command_timeout: 20m
+
       - name: Деплой на VPS по SSH
         if: steps.gate.outputs.enabled == 'true'
         uses: appleboy/ssh-action@v1.2.0
@@ -44,13 +90,12 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          # Полная пересборка образов (особенно фронт: npm ci + next build) на VPS
-          # дольше дефолтных 10m → SSH-команда падала по таймауту («Run Command Timeout»).
-          # 30m тоже не хватило: 05.09 два деплоя подряд (33947113373, 33950959287)
-          # упёрлись в таймаут на сборке — коробка общая и под нагрузкой, npm-кэш
-          # холодный, next build ~17 мин. Обрыв на сборке безопасен, но release.sh
-          # (pg_dump + migrate) идёт сразу за ней и вынесен из-под retry — сдвиг
-          # на пару минут позже пришёлся бы уже на миграции. ДРФ-1518.
+          # Сборка образа web (pip install) на VPS дольше дефолтных 10m → SSH-команда
+          # падала по таймауту («Run Command Timeout»). 30m тоже не хватало, пока фронт
+          # собирался здесь же (05.09: 33947113373, 33950959287; ДРФ-1518) — теперь
+          # фронт приезжает готовым, но диск коробки медленный, запас оставляем.
+          # Обрыв на сборке безопасен, но release.sh (pg_dump + migrate) идёт сразу
+          # за ней и вынесен из-под retry — сдвиг пришёлся бы уже на миграции.
           command_timeout: 60m
           script: |
             set -euo pipefail
@@ -59,9 +104,14 @@ jobs:
             git checkout ${{ github.ref_name }}
             git reset --hard origin/${{ github.ref_name }}
 
-            # BuildKit: переиспользуем слойный кэш между деплоями (cache-mount'ы npm ci и
-            # next build в Dockerfile фронта) — при неизменном package-lock.json фронт берётся
-            # из кэша, а не пересобирается с нуля по ~17 мин.
+            # Витрина собрана в GitHub Actions и приехала архивом (шаги выше) — здесь
+            # её только загружаем. Проверка тега — чтобы up -d не упал позже с невнятным
+            # «image not found», если архив приехал битым.
+            docker load -i proff58-frontend.tar.gz
+            rm -f proff58-frontend.tar.gz
+            docker image inspect proff58-frontend:latest >/dev/null
+
+            # BuildKit: слойный кэш между деплоями для образа web (pip install).
             export DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1
             compose="docker compose -f docker-compose.prod.yml"
 
@@ -77,8 +127,8 @@ jobs:
               done
             }
 
-            # Сборка образов (с BuildKit-кэшем) + тяга под ретраем — транзиентные сбои
-            # реестра не валят выкат. Повтор идемпотентен: неизменные слои — из кэша.
+            # Сборка образов web/celery (с BuildKit-кэшем) + тяга под ретраем — транзиентные
+            # сбои реестра не валят выкат. Повтор идемпотентен: неизменные слои — из кэша.
             retry $compose build
 
             # Release-шаг (#441/m-07): бэкап БД + миграции ДО подъёма web. web на старте
