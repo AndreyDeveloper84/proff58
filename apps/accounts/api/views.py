@@ -132,12 +132,19 @@ class WishlistView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        items = request.user.wishlist.select_related("product").all()
+        # Импорт внутри метода: избранное и так стоит на товарах каталога, но
+        # модуль аккаунтов — нижний слой и не должен тянуть каталог при загрузке.
+        from apps.catalog.services import main_image_urls
+
+        items = list(request.user.wishlist.select_related("product").all())
+        images = main_image_urls(item.product_id for item in items)
         data = [
             {
                 "product_id": item.product_id,
                 "product_name": item.product.name,
                 "product_slug": item.product.slug,
+                # Главное фото или None — тогда витрина покажет «Фото готовится».
+                "product_image": images.get(item.product_id),
             }
             for item in items
         ]

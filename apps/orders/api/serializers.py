@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from apps.catalog.services import main_image_urls
+
 from ..models import B2BInvoice, Order, OrderItem
 from ..payment_methods import PaymentMethod, available_payment_methods
 
@@ -15,6 +17,27 @@ from ..payment_methods import PaymentMethod, available_payment_methods
 def _money(value):
     """Decimal → строка (как DRF рендерит DecimalField), либо None."""
     return None if value is None else str(value)
+
+
+_IMAGE_URLS = "product_image_urls"
+
+
+def _remember_images(serializer, product_ids) -> None:
+    """Подгрузить фото товаров одним запросом и положить в общий контекст.
+
+    Контекст у вложенных сериализаторов общий, поэтому строки корзины и заказа
+    читают готовую карту, а не делают по запросу на строку. В списке заказов
+    карта копится: уже известные товары повторно не запрашиваются.
+    """
+    known = serializer.context.setdefault(_IMAGE_URLS, {})
+    missing = {pid for pid in product_ids if pid and pid not in known}
+    if missing:
+        found = main_image_urls(missing)
+        known.update({pid: found.get(pid) for pid in missing})
+
+
+def _image_for(serializer, product_id):
+    return serializer.context.get(_IMAGE_URLS, {}).get(product_id)
 
 
 # ---------------------------------------------------------------------------
@@ -27,6 +50,8 @@ class CartLineSerializer(serializers.Serializer):
     product_id = serializers.IntegerField(source="product.id")
     name = serializers.CharField(source="product.name")
     slug = serializers.CharField(source="product.slug")
+    # Главное фото товара; None — фото нет, витрина покажет «Фото готовится».
+    image = serializers.SerializerMethodField()
     quantity = serializers.IntegerField()
     price_final = serializers.SerializerMethodField()
     price_base = serializers.SerializerMethodField()
@@ -35,6 +60,9 @@ class CartLineSerializer(serializers.Serializer):
     currency = serializers.CharField()
     line_total = serializers.SerializerMethodField()
     promo_discount = serializers.SerializerMethodField()
+
+    def get_image(self, obj):
+        return _image_for(self, obj.product.id)
 
     def get_price_final(self, obj):
         return _money(obj.price_final)
@@ -68,6 +96,10 @@ class CartViewSerializer(serializers.Serializer):
     promo_code_error = serializers.DictField(allow_null=True)
     promotions_enabled = serializers.BooleanField()
 
+    def to_representation(self, instance):
+        _remember_images(self, (line.product.id for line in instance.lines))
+        return super().to_representation(instance)
+
     def get_total(self, obj):
         return _money(obj.total)
 
@@ -92,6 +124,10 @@ class UpdateCartItemSerializer(serializers.Serializer):
 # Заказ (read-only снимки)
 # ---------------------------------------------------------------------------
 class OrderItemSerializer(serializers.ModelSerializer):
+    # Фото — текущее фото товара, а не снимок: снимок заказа хранит цену и
+    # название, а картинка нужна только для узнавания в кабинете. Товар удалён
+    # или без фото — None, витрина покажет «Фото готовится».
+    image = serializers.SerializerMethodField()
     price_base = serializers.SerializerMethodField()
     price_final = serializers.SerializerMethodField()
     discount = serializers.SerializerMethodField()
@@ -105,6 +141,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "code_1c",
             "article",
             "name",
+            "image",
             "unit",
             "price_base",
             "price_final",
@@ -116,6 +153,9 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "promo_discount",
         )
         read_only_fields = fields
+
+    def get_image(self, obj):
+        return _image_for(self, obj.product_id)
 
     def get_price_base(self, obj):
         return _money(obj.price_base)
@@ -184,6 +224,10 @@ class OrderSerializer(serializers.ModelSerializer):
             "items",
         )
         read_only_fields = fields
+
+    def to_representation(self, instance):
+        _remember_images(self, (item.product_id for item in instance.items.all()))
+        return super().to_representation(instance)
 
     def get_total(self, obj):
         return _money(obj.total)

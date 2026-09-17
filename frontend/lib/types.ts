@@ -146,6 +146,8 @@ export type CartLine = {
   product_id: number;
   name: string;
   slug: string;
+  /** Главное фото товара; null — фото нет, показываем «Фото готовится». */
+  image?: string | null;
   quantity: number;
   price_final: string | null;
   price_base: string | null;
@@ -195,6 +197,8 @@ export type OrderItem = {
   code_1c: string;
   article: string;
   name: string;
+  /** Текущее главное фото товара (не снимок); null — фото нет или товар снят. */
+  image?: string | null;
   unit: string;
   price_base: string | null;
   price_final: string | null;

@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, X } from "lucide-react";
 import { formatPrice } from "@/lib/format";
 import type { CartLine } from "@/lib/types";
+import { ProductImage } from "@/components/product/ProductImage";
 
 export function CartItemRow({
   line,
@@ -37,17 +37,18 @@ export function CartItemRow({
         className="h-4 w-4 rounded border-line accent-accent"
       />
 
+      {/* Фото товара из каталога. Раньше здесь стояла зашитая картинка из макета —
+          одинаковая для любого товара, даже с тремя настоящими фотографиями. */}
       <Link
         href={`/product/${line.slug}`}
-        className="grid h-[72px] place-items-center rounded-md bg-photo lg:h-24"
+        className="block"
         aria-label={`Открыть товар «${line.name}»`}
       >
-        <Image
-          src="/sample-tool.svg"
+        <ProductImage
+          src={line.image ?? undefined}
           alt=""
-          width={96}
-          height={96}
-          className="h-16 w-16 object-contain lg:h-20 lg:w-20"
+          sizes="96px"
+          className="h-[72px] w-[72px] lg:h-24 lg:w-24"
         />
       </Link>
 
