@@ -17,9 +17,9 @@
     "ranges": "Диапазоны как значения не сопоставляются, кроме no_load_speed: берётся верхняя граница (range_upper_decimal).",
     "voltage": "Источники дают '220-230В ~50Гц', '220±10% /50', '230/50' и просто '20' (аккумулятор). Для сетевых инструментов — первое число; для аккумуляторных — напряжение батареи. Импортёр сам отбрасывает voltage >=60В для не-аккумуляторных товаров.",
     "motor_type": "ЗУБР отдаёт 'BRUSHLESS, бесщеточный' / 'щеточный'; Вихрь/Ресанта — 'Щеточный'/'Бесщеточный'; Интерскол — 'Бесщеточный (вентильный)'. Нормализовать в brushless/brushed.",
-    "chuck": "У дрелей ЗУБР 'ключевой'/'БЗП'; у Вихря 'ключевой'/'быстрозажимной (БЗП)'; у Ресанты 'Ключевой'. Словарь chuck расширен (КАТ-14I): значения мапятся в слаги kulachkovyy/bystrozazhimnoy. SDS-опции — только перфораторы.",
+    "chuck": "DRILLS-CHAR-01: ось chuck = ТИП патрона (быстрозажимной / ключевой / SDS-*), не диаметр и не посадка. Источники commercial-выборки различают «быстрозажимной» и «ключевой» (кулачковый отдельно не встречается) → канон bystrozazhimnoy / klyuchevoy; «бесключевой» = keyless = bystrozazhimnoy. «кулачковый» и HEX/шестигранный — в отчёт (drop_to_report) до отдельного решения.",
     "torque": "У Ресанты/Вихря крутящий момент может быть записан как '50/25' (жёсткий/мягкий). Берём первое число — максимальный момент.",
-    "weight": "Вес не брать: у разных источников брутто/нетто, атрибута веса нет.",
+    "weight": "DRILLS-CHAR-01: weight_kg = NET масса инструмента. Маппится только явный лейбл «Масса изделия, кг»; «с АКБ», «в упаковке», брутто, комплект — ignore (не вычитаем массу АКБ). Лейблы без указания комплектности (interskol «Масса», VI «Вес нетто») — AMBIGUOUS_WEIGHT, не маппятся.",
     "unmapped": "Поля без подходящего Attribute — в unmapped с кандидатом; новые Attribute не создавать.",
     "derived": "Derived-правила power_source в текущей версии парсера работают некорректно (срабатывают безусловно), поэтому удалены из карты. power_source определяется по voltage <60В на этапе планирования."
   },
@@ -161,12 +161,12 @@
           "attribute_type": "select",
           "normalize": "option_map",
           "values": {
-            "ключевой": "kulachkovyy"
+            "ключевой": "klyuchevoy"
           },
           "confidence": "medium",
           "on_unknown_value": "drop_to_report",
           "on_ambiguous": "drop_to_report",
-          "comment": "слаги словаря КАТ-14I; в выборке только 'Ключевой'"
+          "comment": "DRILLS-CHAR-01: ключевой → klyuchevoy; кулачковый/HEX → drop_to_report"
         },
         "Напряжение сети адаптера питания, В, Гц": {
           "action": "ignore",
@@ -264,14 +264,14 @@
           "attribute_type": "select",
           "normalize": "option_map",
           "values": {
-            "ключевой": "kulachkovyy",
+            "ключевой": "klyuchevoy",
             "быстрозажимной (бзп)": "bystrozazhimnoy",
             "бзп": "bystrozazhimnoy"
           },
           "confidence": "medium",
           "on_unknown_value": "drop_to_report",
           "on_ambiguous": "drop_to_report",
-          "comment": "слаги словаря КАТ-14I (kulachkovyy/bystrozazhimnoy)"
+          "comment": "DRILLS-CHAR-01: ключевой → klyuchevoy; кулачковый/HEX → drop_to_report"
         },
         "Диаметр патрона, мм": {
           "action": "unmapped",
@@ -844,8 +844,7 @@
           "attribute_type": "select",
           "normalize": "option_map",
           "values": {
-            "ключевой": "kulachkovyy",
-            "кулачковый": "kulachkovyy",
+            "ключевой": "klyuchevoy",
             "бзп": "bystrozazhimnoy",
             "бзп, угловой, эксцентриковый": "bystrozazhimnoy",
             "быстрозажимной": "bystrozazhimnoy",
@@ -854,7 +853,7 @@
           "confidence": "medium",
           "on_unknown_value": "drop_to_report",
           "on_ambiguous": "drop_to_report",
-          "comment": "слаги словаря КАТ-14I (kulachkovyy/bystrozazhimnoy)"
+          "comment": "DRILLS-CHAR-01: ключевой → klyuchevoy; кулачковый/HEX → drop_to_report"
         },
         "Размер патрона, мм": {
           "action": "unmapped",
@@ -880,19 +879,22 @@
           "reason": "габариты, атрибута нет"
         },
         "Масса изделия, кг": {
-          "action": "unmapped",
-          "candidate_attribute": "weight_kg",
-          "reason": "атрибута веса нет"
+          "action": "map",
+          "attribute": "weight_kg",
+          "attribute_type": "decimal",
+          "unit": "кг",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "net масса инструмента (без АКБ у аккумуляторных — у ZUBR отдельное поле «с АКБ»)"
         },
         "Масса изделия с АКБ, кг": {
-          "action": "unmapped",
-          "candidate_attribute": "weight_kg",
-          "reason": "атрибута веса нет"
+          "action": "ignore",
+          "reason": "масса с аккумулятором ≠ net weight_kg (DRILLS-CHAR-01 §1)"
         },
         "Масса в упаковке, кг": {
-          "action": "unmapped",
-          "candidate_attribute": "weight_gross_kg",
-          "reason": "атрибута нет"
+          "action": "ignore",
+          "reason": "масса упаковки/брутто ≠ net weight_kg"
         },
         "Длина кабеля, м": {
           "action": "unmapped",
@@ -1144,10 +1146,136 @@
         "Макс. диаметр сверления (бетон), мм": {
           "action": "ignore",
           "reason": "нет атрибута"
+        },
+        "Максимальный крутящий момент, Н×м": {
+          "action": "map",
+          "attribute": "torque",
+          "attribute_type": "decimal",
+          "unit": "Нм",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "alias: винтоверты/отвёртки ZUBR (GVB/ОТР/PSD)"
+        },
+        "Максимальный крутящий момент, Н*м": {
+          "action": "map",
+          "attribute": "torque",
+          "attribute_type": "decimal",
+          "unit": "Нм",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "alias: винтоверты/отвёртки ZUBR (GVB/ОТР/PSD)"
         }
       },
       "fallbacks": [],
       "derived": []
+    },
+    "vseinstrumenti": {
+      "_comment": "DRILLS-CHAR-01: frozen VI characteristics (collector shurupoverty20, identity article_exact+brand_exact) для 832/837/842/968. Только детерминированные поля.",
+      "fields": {
+        "Тип двигателя": {
+          "action": "map",
+          "attribute": "motor_type",
+          "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "бесщеточный": "brushless",
+            "бесщёточный": "brushless",
+            "щеточный": "brushed",
+            "щёточный": "brushed"
+          },
+          "confidence": "medium",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Max крутящий момент": {
+          "action": "map",
+          "attribute": "torque",
+          "attribute_type": "decimal",
+          "unit": "Нм",
+          "normalize": "decimal",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Жестк. вращ. момент": {
+          "action": "ignore",
+          "reason": "дубль Max крутящего момента"
+        },
+        "Мягк.вращ. момент": {
+          "action": "ignore",
+          "reason": "мягкий момент — не ось torque (max)"
+        },
+        "Напряжение аккумулятора": {
+          "action": "map",
+          "attribute": "voltage",
+          "attribute_type": "decimal",
+          "unit": "В",
+          "normalize": "decimal",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Емкость аккумулятора": {
+          "action": "ignore",
+          "reason": "значения вида «2.0; 4.0» (два АКБ разной ёмкости) — неоднозначно для оси, не угадываем"
+        },
+        "Max частота вращения шпинделя": {
+          "action": "map",
+          "attribute": "no_load_speed",
+          "attribute_type": "decimal",
+          "unit": "об/мин",
+          "normalize": "decimal",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "контракт оси: максимальные обороты х.х."
+        },
+        "Частота вращения шпинделя": {
+          "action": "ignore",
+          "reason": "диапазон по ступеням; берём поле Max"
+        },
+        "Тип патрона": {
+          "action": "map",
+          "attribute": "chuck",
+          "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "быстрозажимной": "bystrozazhimnoy",
+            "бзп": "bystrozazhimnoy",
+            "ключевой": "klyuchevoy"
+          },
+          "confidence": "medium",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Количество аккумуляторов в комплекте": {
+          "action": "map",
+          "attribute": "battery_included",
+          "attribute_type": "boolean",
+          "normalize": "boolean",
+          "values": {
+            "1": true,
+            "2": true,
+            "3": true,
+            "0": false,
+            "нет": false
+          },
+          "confidence": "medium",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Вес нетто": {
+          "action": "ignore",
+          "reason": "AMBIGUOUS_WEIGHT: не указано, с АКБ или без (DRILLS-CHAR-01 §14)"
+        },
+        "Крепление патрона": {
+          "action": "ignore",
+          "reason": "посадка патрона — не ось chuck (тип)"
+        },
+        "Размер зажимаемой оснастки": {
+          "action": "ignore",
+          "reason": "диапазон зажима — не ось chuck (тип)"
+        }
+      }
     }
   },
   "model_prefixes": [
