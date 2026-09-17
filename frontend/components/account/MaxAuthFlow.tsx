@@ -151,8 +151,14 @@ export function MaxAuthFlow({
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qr} alt="QR-код для входа через MAX" className="mx-auto rounded-md" width={220} height={220} />
+          {/* Сканер в MAX «Устройства» привязывает компьютер к аккаунту MAX и наш код
+              отвергает («не тот QR-код»). Нужна обычная камера телефона. */}
           <p className="mt-3 text-sm text-ink-2">
-            Отсканируйте QR-код телефоном и подтвердите вход в MAX.
+            Наведите на QR-код обычную камеру телефона — откроется чат с ботом в MAX.
+            Нажмите «Начать», и вход подтвердится.
+          </p>
+          <p className="mt-1 text-xs text-ink-3">
+            Сканер в разделе MAX «Устройства» этот код не примет — он для входа в сам MAX.
           </p>
         </>
       ) : (
