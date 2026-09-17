@@ -23,6 +23,7 @@ from .facets import (
     invalidate_facets_cache,
 )
 from .models import CompatibilityKind, ProductCompatibility
+from .product_images import main_image_urls
 from .queries import (
     CompatibilityItem,
     accessories_of,
@@ -39,6 +40,7 @@ from .queries import (
 from .read_models import attr_value_to_json, rebuild_attrs_cache
 
 __all__ = [
+    "main_image_urls",
     "FacetError",
     "attr_value_to_json",
     "rebuild_attrs_cache",

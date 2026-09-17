@@ -61,4 +61,17 @@ describe("CartItemRow", () => {
     expect(onUpdate).toHaveBeenNthCalledWith(2, 5, 1);
     expect(onRemove).toHaveBeenCalledWith(5);
   });
+
+  it("показывает настоящее фото товара, а без фото — «Фото готовится»", () => {
+    const props = { selected: false, onSelect: vi.fn(), onUpdate: vi.fn(), onRemove: vi.fn() };
+    const { container, rerender } = render(
+      <CartItemRow line={{ ...line, image: "/media/products/drel.jpg" }} {...props} />,
+    );
+    const img = container.querySelector("img");
+    expect(img?.getAttribute("src")).toContain(encodeURIComponent("/media/products/drel.jpg"));
+    expect(container.innerHTML).not.toContain("sample-tool");
+
+    rerender(<CartItemRow line={{ ...line, image: null }} {...props} />);
+    expect(screen.getByText("Фото готовится")).toBeInTheDocument();
+  });
 });

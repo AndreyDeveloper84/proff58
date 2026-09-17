@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
@@ -25,6 +24,7 @@ import { EmptyState, ErrorState } from "@/components/ui/states";
 import { ReservationNotice, reservationState } from "@/components/order/ReservationNotice";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { StarDisplay } from "@/components/reviews/StarRating";
+import { ProductImage } from "@/components/product/ProductImage";
 import { cancelOrder, checkAuth, getOrder, loginHref } from "@/lib/auth";
 import {
   formatDateTime,
@@ -546,15 +546,12 @@ function OrderLine({ item, orderCurrency }: { item: OrderItem; orderCurrency: st
   return (
     <div className="grid gap-3 border-b border-line px-4 py-4 last:border-b-0 md:grid-cols-[minmax(0,1fr)_110px_90px_130px] md:items-center md:gap-4 md:px-5">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="grid h-16 w-16 shrink-0 place-items-center rounded-md bg-photo">
-          <Image
-            src="/sample-tool.svg"
-            alt=""
-            width={56}
-            height={56}
-            className="h-12 w-12 object-contain"
-          />
-        </div>
+        <ProductImage
+          src={item.image ?? undefined}
+          alt=""
+          sizes="64px"
+          className="h-16 w-16 shrink-0"
+        />
         <div className="min-w-0">
           <p className="text-sm font-semibold leading-5 text-ink">{item.name}</p>
           <p className="mt-1 text-xs text-ink-3">

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -31,6 +30,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
+import { ProductImage } from "@/components/product/ProductImage";
 import {
   changePhone,
   checkAuth,
@@ -493,15 +493,12 @@ export default function ProfilePage() {
                     className="group min-w-0 flex-1"
                     title={item.product_name}
                   >
-                    <div className="grid h-16 place-items-center rounded-md bg-photo">
-                      <Image
-                        src="/sample-tool.svg"
-                        alt=""
-                        width={56}
-                        height={56}
-                        className="h-12 w-12 object-contain transition group-hover:scale-105"
-                      />
-                    </div>
+                    <ProductImage
+                      src={item.product_image ?? undefined}
+                      alt=""
+                      sizes="96px"
+                      className="h-16 w-full"
+                    />
                     <p className="mt-1 truncate text-[11px] text-ink-2">{item.product_name}</p>
                   </Link>
                 ))}

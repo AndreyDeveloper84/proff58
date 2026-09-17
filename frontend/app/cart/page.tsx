@@ -1,13 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   Heart,
   LockKeyhole,
-  ShieldCheck,
   ShoppingCart,
   Trash2,
 } from "lucide-react";
@@ -20,15 +18,6 @@ import { ApiError } from "@/lib/api";
 import { addWishlistItem } from "@/lib/auth";
 import { formatPrice, pluralize } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-const RECOMMENDATIONS = [
-  { name: "Аккумуляторы для инструмента", query: "аккумулятор" },
-  { name: "Наборы бит и оснастка", query: "набор бит" },
-  { name: "Рабочие перчатки", query: "перчатки" },
-  { name: "Смазка для редуктора", query: "смазка" },
-  { name: "Защитные очки", query: "защитные очки" },
-] as const;
-
 
 export default function CartPage() {
   const { cart, loading, total, update, remove } = useCart();
@@ -313,8 +302,6 @@ export default function CartPage() {
             </aside>
           </div>
 
-          <Recommendations />
-
           <div className="fixed inset-x-0 bottom-[68px] z-40 flex h-[72px] items-center justify-between gap-3 border-t border-line bg-surface px-4 shadow-[0_-8px_24px_rgba(20,24,27,0.08)] lg:hidden">
             <div>
               <p className="text-[11px] text-ink-3">Итого:</p>
@@ -360,38 +347,5 @@ function SummaryRow({
         {value}
       </span>
     </div>
-  );
-}
-
-function Recommendations() {
-  return (
-    <section className="mt-8">
-      <h2 className="text-base font-semibold text-ink">С этим товаром покупают</h2>
-      <div className="mt-4 flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {RECOMMENDATIONS.map((item) => (
-          <Link
-            key={item.query}
-            href={`/search?q=${encodeURIComponent(item.query)}`}
-            className="group w-[180px] shrink-0 snap-start overflow-hidden rounded-lg border border-line bg-surface p-3 transition hover:-translate-y-0.5 hover:shadow-md sm:w-[210px]"
-          >
-            <div className="relative grid h-28 place-items-center rounded-md bg-photo">
-              <Image
-                src="/sample-tool.svg"
-                alt=""
-                width={100}
-                height={100}
-                className="h-24 w-24 object-contain transition group-hover:scale-105"
-              />
-              <ShieldCheck
-                className="absolute right-2 top-2 h-4 w-4 text-ink-3"
-                aria-hidden
-              />
-            </div>
-            <p className="mt-3 line-clamp-2 text-sm font-semibold text-ink">{item.name}</p>
-            <p className="mt-2 text-xs font-medium text-accent">Посмотреть товары</p>
-          </Link>
-        ))}
-      </div>
-    </section>
   );
 }

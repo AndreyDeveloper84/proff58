@@ -213,6 +213,23 @@ def test_wishlist_add_and_list(client, user):
     assert resp.status_code == 200
     assert len(resp.json()) == 1
     assert resp.json()[0]["product_slug"] == "wish-drel"
+    # Фото нет — отдаём null, витрина покажет «Фото готовится», а не чужую картинку.
+    assert resp.json()[0]["product_image"] is None
+
+
+@pytest.mark.django_db
+def test_wishlist_отдаёт_главное_фото(client, user):
+    from apps.catalog.models import Product, ProductImage, ProductStatus
+
+    p = Product.objects.create(
+        name="Пила", slug="wish-pila", price=1000, status=ProductStatus.PUBLISHED, is_active=True
+    )
+    ProductImage.objects.create(product=p, image="products/pila.jpg", is_main=True)
+    client.force_authenticate(user=user)
+    client.post("/api/account/wishlist/", {"product_id": p.id}, format="json")
+
+    row = client.get("/api/account/wishlist/").json()[0]
+    assert row["product_image"] == "/media/products/pila.jpg"
 
 
 # --- Перенос гостевого избранного при входе (списком) ---

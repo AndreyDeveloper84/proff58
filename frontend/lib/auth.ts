@@ -43,6 +43,7 @@ export type WishlistItem = {
   product_id: number;
   product_name: string;
   product_slug: string;
+  product_image?: string | null;
 };
 
 // Вход — по e-mail. Телефон логином не является: он контакт заказа и

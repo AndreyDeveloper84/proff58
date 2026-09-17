@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -9,6 +8,7 @@ import { AccountShell } from "@/components/account/AccountShell";
 import { reservationState } from "@/components/order/ReservationNotice";
 import { checkAuth, getOrders, loginHref } from "@/lib/auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { ProductImage } from "@/components/product/ProductImage";
 import { formatDate, formatDateTime, formatPrice, pluralize } from "@/lib/format";
 import { isCancelled, isDelivered, isInProgress, statusBadgeClass } from "@/lib/order-status";
 import type { Order } from "@/lib/types";
@@ -183,15 +183,12 @@ export default function OrdersPage() {
                       className="w-24 shrink-0"
                       title={`${item.name} — ${item.quantity} шт.`}
                     >
-                      <div className="grid h-20 place-items-center rounded-md border border-line bg-photo">
-                        <Image
-                          src="/sample-tool.svg"
-                          alt=""
-                          width={68}
-                          height={68}
-                          className="h-16 w-16 object-contain"
-                        />
-                      </div>
+                      <ProductImage
+                        src={item.image ?? undefined}
+                        alt=""
+                        sizes="96px"
+                        className="h-20 w-full border border-line"
+                      />
                       <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-ink-2">
                         {item.name}
                       </p>
