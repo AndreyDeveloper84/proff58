@@ -68,8 +68,12 @@ services:
 
   frontend:
     # Headless-витрина Next (SSR). Тянет реальные данные из Django-API внутри сети compose.
-    build:
-      context: ./frontend
+    # Образ НЕ собирается на сервере: его собирает GitHub Actions (deploy.yml) и
+    # загружает сюда через docker load — на VPS next build не выдерживал диск и ронял
+    # выкладку. Вручную: docker build -t proff58-frontend:latest ./frontend
+    image: proff58-frontend:latest
+    # Образа нет локально → внятная ошибка, а не попытка тянуть его из Docker Hub.
+    pull_policy: never
     restart: always
     environment:
       NODE_ENV: production
