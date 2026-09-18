@@ -18,7 +18,7 @@
 | Параметр | Значение |
 |---|---|
 | Базовый URL (прод) | `https://proff58.ru/api/1c/` |
-| Базовый URL (тест) | `https://dev.proff58.ru/api/1c/` |
+| Базовый URL (тест) | `https://proff58.ru/api/1c/` — с 11.09.2026 тестовый стек живёт здесь; старый `https://dev.proff58.ru/api/1c/` пробрасывается на него без редиректа (см. `docs/nginx/dev.proff58.ru.conf`), но в 1С лучше прописать новый адрес |
 | Метод | `POST` (кроме `GET`: `snapshot`, `orders/new`, `sync/<batch_uid>`) |
 | Content-Type | `application/json` |
 | Кодировка | строго **UTF-8** |
