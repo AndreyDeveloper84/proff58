@@ -99,11 +99,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
     """
 
     profile = ProfileSerializer(read_only=True)
+    # Кабинету нужно знать, спрашивать ли пароль перед удалением аккаунта:
+    # у пришедших из MAX пароля нет.
+    has_password = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ("id", "phone", "email", "full_name", "customer_type", "profile")
-        read_only_fields = ("id", "phone")
+        fields = ("id", "phone", "email", "full_name", "customer_type", "profile", "has_password")
+        read_only_fields = ("id", "phone", "has_password")
+
+    def get_has_password(self, obj) -> bool:
+        return obj.has_usable_password()
 
     def validate_customer_type(self, value):
         if value not in {"b2c", "b2b"}:

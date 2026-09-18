@@ -177,3 +177,15 @@ def test_real_client_ip_recovered():
     text = CONF.read_text(encoding="utf-8")
     assert "real_ip_header X-Forwarded-For" in text
     assert re.search(r"set_real_ip_from\s+\S+", text)
+
+
+def test_forwarded_for_overwritten_not_appended():
+    # Дописывание ($proxy_add_x_forwarded_for) оставляло первым адрес, который
+    # придумал клиент, — по нему DRF считал лимит попыток входа.
+    text = CONF.read_text(encoding="utf-8")
+    directives = [line for line in text.splitlines() if not line.strip().startswith("#")]
+    assert any(
+        re.search(r"proxy_set_header\s+X-Forwarded-For\s+\$remote_addr;", line)
+        for line in directives
+    )
+    assert not any("$proxy_add_x_forwarded_for" in line for line in directives)

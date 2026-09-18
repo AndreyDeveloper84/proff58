@@ -27,6 +27,8 @@ export type AccountUser = {
   full_name: string;
   customer_type: "b2c" | "b2b";
   profile: AccountProfile | null;
+  /** false — вход только через MAX, пароля нет (нечего спрашивать при удалении). */
+  has_password?: boolean;
 };
 
 export type AccountUserPatch = {
@@ -129,8 +131,11 @@ export async function changePhone(newPhone: string, password: string): Promise<v
   });
 }
 
-export async function deleteAccount(): Promise<void> {
-  await apiFetch("/api/account/delete", { method: "POST" });
+export async function deleteAccount(password?: string): Promise<void> {
+  await apiFetch("/api/account/delete", {
+    method: "POST",
+    body: JSON.stringify(password ? { password } : {}),
+  });
 }
 
 // --- Авторизация через MAX (deeplink + one-time attempt, #492) ---

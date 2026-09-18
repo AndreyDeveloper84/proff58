@@ -116,6 +116,7 @@ export default function ProfilePage() {
   const [phoneError, setPhoneError] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
   const [deleteSaving, setDeleteSaving] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
@@ -260,11 +261,12 @@ export default function ProfilePage() {
   };
 
   const removeAccount = async () => {
-    if (deleteConfirmation !== "УДАЛИТЬ" || deleteSaving) return;
+    if (!user || deleteConfirmation !== "УДАЛИТЬ" || deleteSaving) return;
+    if (user.has_password && !deletePassword) return;
     setDeleteSaving(true);
     setDeleteError("");
     try {
-      await deleteAccount();
+      await deleteAccount(user.has_password ? deletePassword : undefined);
       router.push("/");
     } catch (caught) {
       setDeleteError(caught instanceof Error ? caught.message : "Не удалось удалить аккаунт.");
@@ -934,6 +936,21 @@ export default function ProfilePage() {
               />
             )}
           </Field>
+          {/* Пароль — как при смене телефона: чужой открытой вкладки не должно
+              хватать, чтобы стереть аккаунт. У вошедших через MAX пароля нет. */}
+          {user.has_password && (
+            <Field label="Пароль" required>
+              {(control) => (
+                <Input
+                  {...control}
+                  type="password"
+                  value={deletePassword}
+                  onChange={(event) => setDeletePassword(event.target.value)}
+                  autoComplete="current-password"
+                />
+              )}
+            </Field>
+          )}
           {deleteError && (
             <p
               role="alert"
@@ -954,7 +971,11 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={() => void removeAccount()}
-              disabled={deleteConfirmation !== "УДАЛИТЬ" || deleteSaving}
+              disabled={
+                deleteConfirmation !== "УДАЛИТЬ" ||
+                (user.has_password && !deletePassword) ||
+                deleteSaving
+              }
               className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-danger px-5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {deleteSaving ? (
