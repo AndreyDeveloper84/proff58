@@ -326,7 +326,8 @@ def test_delete_account_anonymizes_reviews(api, user, product):
     _order(user, product)
     review = _create(user)
     api.force_authenticate(user=user)
-    assert api.post("/api/account/delete/").status_code == 200
+    resp = api.post("/api/account/delete/", {"password": "pass12345"}, format="json")
+    assert resp.status_code == 200
     review.refresh_from_db()
     assert review.author_name == "Покупатель"
     # Аккаунт обезличивается, не удаляется (#344): FK остаётся, но сам user
