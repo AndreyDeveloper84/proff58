@@ -183,6 +183,7 @@ JAZZMIN_SETTINGS = {
     # алфавиту, из-за чего «Заказы» оказывались между «Доставкой» и «Заявками».
     "order_with_respect_to": [
         "orders",
+        "payments",  # возвраты денег — часть работы с заказами, а не служебный журнал
         "catalog",
         "leads",
         "reviews",
@@ -197,7 +198,6 @@ JAZZMIN_SETTINGS = {
         "notifications",
         "ai",
         "analytics",
-        "payments",
         "auth",
     ],
     # Служебные журналы и внутренняя кухня: нужны, но не наравне с «Товарами».
@@ -319,6 +319,11 @@ JAZZMIN_SETTINGS = {
                 "name": "Не ушли в 1С",
                 "url": "/admin/orders/order/?sync_1c_status__exact=pending",
                 "icon": "fas fa-arrows-rotate",
+            },
+            {
+                "name": "Просят вернуть деньги",
+                "url": "/admin/payments/refundrequest/?status__exact=pending",
+                "icon": "fas fa-hand-holding-dollar",
             },
         ],
     },
