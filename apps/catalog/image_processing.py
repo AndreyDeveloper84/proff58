@@ -21,7 +21,7 @@ from PIL import Image, ImageChops, ImageOps, ImageStat
 
 #: Версия параметров ниже. Поднять при любом их изменении — копии со старой версией
 #: пересоздаст `process_product_images --outdated`.
-PROCESSING_VERSION = 1
+PROCESSING_VERSION = 2
 
 CANVAS = 1200  # сторона белого квадрата
 MARGIN = 0.07  # поля — доля стороны холста
@@ -38,6 +38,16 @@ BLACK_MAX = 8  # однотонная сторона темнее — чёрна
 TRANSPARENT_EDGE_ALPHA = 128  # средняя альфа края ниже — фон прозрачный
 TRIM_TOLERANCE = 12  # пиксель ближе к белому — фон; запас на шум JPEG
 
+#: Товар в готовом квадрате меньше этой доли — исходник мелкий, копия на проверку.
+#: На стенде (298 белых фото) порог отсеял 2 фото, товар на которых крошечный.
+MIN_PRODUCT_SHARE = 0.5
+FINGERPRINT_SIZE = 16  # отпечаток кадра — 16×16 = 256 бит
+#: Кадры одного товара, отличающиеся не больше чем на столько бит, — один и тот же
+#: снимок. Замер на 800 фото стенда: тот же снимок, пересжатый в JPEG и уменьшенный
+#: или увеличенный, уходит на 1 бит в среднем и на 6 — в 99 % случаев; ближайшие
+#: разные кадры одного товара (вид спереди и сзади) — 10 бит.
+DUPLICATE_DISTANCE = 6
+
 
 class ImageKind:
     WHITE = "white"
@@ -53,10 +63,25 @@ class UnreadableImage(Exception):
 
 
 @dataclass(frozen=True)
+class Square:
+    """Готовая витринная копия."""
+
+    content: bytes  # WebP
+    #: Товар занял меньше MIN_PRODUCT_SHARE квадрата даже после увеличения.
+    small: bool
+
+
+@dataclass(frozen=True)
 class Result:
     kind: str
-    #: WebP витринной копии; None — автоматически обработать нельзя (black/other/blank).
-    content: bytes | None
+    #: Копия; None — автоматически обработать нельзя (black/other/blank).
+    square: Square | None
+    #: Отпечаток исходного кадра — по нему ищутся одинаковые фото у товара.
+    fingerprint: str = ""
+
+    @property
+    def content(self) -> bytes | None:
+        return self.square.content if self.square else None
 
 
 def open_image(raw: bytes) -> Image.Image:
@@ -165,10 +190,22 @@ def content_bbox(rgb: Image.Image) -> tuple[int, int, int, int] | None:
     return mask.getbbox()
 
 
+def _inner() -> int:
+    return round(CANVAS * (1 - 2 * MARGIN))
+
+
+def _scale(product: Image.Image) -> float:
+    return min(_inner() / product.width, _inner() / product.height, MAX_UPSCALE)
+
+
+def product_share(product: Image.Image) -> float:
+    """Какую долю стороны квадрата (без полей) займёт товар после вписывания."""
+    return max(product.width, product.height) * _scale(product) / _inner()
+
+
 def fit_into_square(product: Image.Image) -> Image.Image:
     """Вписать уже обрезанный товар по центру белого квадрата."""
-    inner = round(CANVAS * (1 - 2 * MARGIN))
-    scale = min(inner / product.width, inner / product.height, MAX_UPSCALE)
+    scale = _scale(product)
     size = (max(1, round(product.width * scale)), max(1, round(product.height * scale)))
     product = product.resize(size, Image.LANCZOS)
     canvas = Image.new("RGB", (CANVAS, CANVAS), (255, 255, 255))
@@ -176,19 +213,43 @@ def fit_into_square(product: Image.Image) -> Image.Image:
     return canvas
 
 
+def to_square(product: Image.Image) -> Square:
+    """Обрезанный товар на белом → WebP витринной копии и признак «мелкое»."""
+    buf = io.BytesIO()
+    fit_into_square(product).save(buf, format="WEBP", quality=QUALITY)
+    return Square(content=buf.getvalue(), small=product_share(product) < MIN_PRODUCT_SHARE)
+
+
+def fingerprint(rgb: Image.Image) -> str:
+    """Разностный хэш кадра (dHash): одинаковые снимки разного размера и сжатия
+    дают отпечатки, отличающиеся на считанные биты."""
+    n = FINGERPRINT_SIZE
+    gray = rgb.convert("L").resize((n + 1, n), Image.LANCZOS)
+    px = gray.load()
+    bits = 0
+    for y in range(n):
+        for x in range(n):
+            bits = bits << 1 | (px[x, y] > px[x + 1, y])
+    return f"{bits:0{n * n // 4}x}"
+
+
+def fingerprint_distance(a: str, b: str) -> int:
+    return (int(a, 16) ^ int(b, 16)).bit_count()
+
+
+def is_duplicate(a: str, b: str) -> bool:
+    return bool(a and b) and fingerprint_distance(a, b) <= DUPLICATE_DISTANCE
+
+
 def process(raw: bytes) -> Result:
     """Байты исходника → витринная копия (или None, если автоматически нельзя)."""
     img = open_image(raw)
     kind = classify(img)
-    if kind == ImageKind.ALPHA:
-        rgb = flatten_on_white(img)
-    elif kind == ImageKind.WHITE:
-        rgb = img.convert("RGB")
-    else:
-        return Result(kind=kind, content=None)
+    rgb = flatten_on_white(img) if kind == ImageKind.ALPHA else img.convert("RGB")
+    mark = fingerprint(rgb)
+    if kind not in (ImageKind.ALPHA, ImageKind.WHITE):
+        return Result(kind=kind, square=None, fingerprint=mark)
     bbox = content_bbox(rgb)
     if bbox is None:
-        return Result(kind=ImageKind.BLANK, content=None)
-    buf = io.BytesIO()
-    fit_into_square(rgb.crop(bbox)).save(buf, format="WEBP", quality=QUALITY)
-    return Result(kind=kind, content=buf.getvalue())
+        return Result(kind=ImageKind.BLANK, square=None, fingerprint=mark)
+    return Result(kind=kind, square=to_square(rgb.crop(bbox)), fingerprint=mark)

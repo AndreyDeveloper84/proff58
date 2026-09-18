@@ -185,6 +185,6 @@ def test_rembg_task_routed_to_its_own_queue(settings):
 
 def test_render_crops_to_mask_and_fits_square(monkeypatch):
     monkeypatch.setattr(image_rembg, "cut_out", _fake_cutout)
-    content = image_rembg.render(Image.new("RGB", (800, 600), (0, 0, 0)))
-    img = Image.open(io.BytesIO(content))
+    square = image_rembg.render(Image.new("RGB", (800, 600), (0, 0, 0)))
+    img = Image.open(io.BytesIO(square.content))
     assert img.size == (image_processing.CANVAS, image_processing.CANVAS)

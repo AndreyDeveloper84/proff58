@@ -33,6 +33,7 @@ from . import image_processing, image_rembg
 from .models import (
     ImageProcessingMode,
     ImageProcessingStatus,
+    ImageReviewReason,
     ProductImage,
     product_image_display_path,
 )
@@ -162,39 +163,111 @@ def _process(image_id: int, *, rembg: bool = False) -> str:
         _mark_failed(image_id)
         return ImageProcessingStatus.FAILED
 
-    if result.content is None and result.kind == image_processing.ImageKind.BLANK:
-        return _commit(image, source_name, status=ImageProcessingStatus.NEEDS_REVIEW)
-    if result.content is None and not rembg:
-        return _commit(image, source_name, status=ImageProcessingStatus.NEEDS_REMBG)
-    if result.content is None:
-        return _process_with_rembg(image, source_name, raw, result.kind, release_to)
-    return _commit(
-        image,
-        source_name,
-        status=ImageProcessingStatus.DONE,
-        mode=ImageProcessingMode.TRIM,
-        content=result.content,
+    mark = result.fingerprint
+    duplicate_of = _find_duplicate(image, mark)
+    if duplicate_of is not None:
+        # повтор кадра не гоняем через нейросеть: решение за менеджером
+        return _commit(
+            image,
+            source_name,
+            status=ImageProcessingStatus.NEEDS_REVIEW,
+            reason=ImageReviewReason.DUPLICATE,
+            duplicate_of=duplicate_of,
+            fingerprint=mark,
+            mode=ImageProcessingMode.TRIM if result.square else "",
+            square=result.square,
+        )
+    if result.kind == image_processing.ImageKind.BLANK:
+        return _commit(
+            image,
+            source_name,
+            status=ImageProcessingStatus.NEEDS_REVIEW,
+            reason=ImageReviewReason.EMPTY,
+            fingerprint=mark,
+        )
+    if result.square is None and not rembg:
+        return _commit(
+            image, source_name, status=ImageProcessingStatus.NEEDS_REMBG, fingerprint=mark
+        )
+    if result.square is None:
+        return _process_with_rembg(image, source_name, raw, result, release_to)
+    return _commit_square(
+        image, source_name, result.square, mode=ImageProcessingMode.TRIM, fingerprint=mark
     )
 
 
 def _process_with_rembg(
-    image: ProductImage, source_name: str, raw: bytes, kind: str, release_to: str
+    image: ProductImage,
+    source_name: str,
+    raw: bytes,
+    result: image_processing.Result,
+    release_to: str,
 ) -> str:
     """Чёрный фон — сразу на витрину; прочий — на проверку (нейросеть портит текст)."""
     if not image_rembg.is_available():
         _release(image.pk, to=release_to)
         return "rembg_unavailable"
-    content = image_rembg.render(image_processing.open_image(raw))
-    if content is None:  # нейросеть товар не нашла
-        return _commit(image, source_name, status=ImageProcessingStatus.NEEDS_REVIEW)
-    status = (
-        ImageProcessingStatus.DONE
-        if kind == image_processing.ImageKind.BLACK
-        else ImageProcessingStatus.NEEDS_REVIEW
+    square = image_rembg.render(image_processing.open_image(raw))
+    if square is None:  # нейросеть товар не нашла
+        return _commit(
+            image,
+            source_name,
+            status=ImageProcessingStatus.NEEDS_REVIEW,
+            reason=ImageReviewReason.EMPTY,
+            fingerprint=result.fingerprint,
+        )
+    return _commit_square(
+        image,
+        source_name,
+        square,
+        mode=ImageProcessingMode.REMBG,
+        fingerprint=result.fingerprint,
+        # прочий фон — сцена, цветная подложка, карточка с текстом: смотрит человек
+        reason=(
+            ImageReviewReason.NOT_WHITE if result.kind != image_processing.ImageKind.BLACK else ""
+        ),
     )
+
+
+def _commit_square(
+    image: ProductImage,
+    source_name: str,
+    square: image_processing.Square,
+    *,
+    mode: str,
+    fingerprint: str,
+    reason: str = "",
+) -> str:
+    """Готовая копия: на витрину, если к ней нет вопросов, иначе на проверку."""
+    if square.small:
+        reason = ImageReviewReason.SMALL
     return _commit(
-        image, source_name, status=status, mode=ImageProcessingMode.REMBG, content=content
+        image,
+        source_name,
+        status=ImageProcessingStatus.NEEDS_REVIEW if reason else ImageProcessingStatus.DONE,
+        reason=reason,
+        fingerprint=fingerprint,
+        mode=mode,
+        square=square,
     )
+
+
+def _find_duplicate(image: ProductImage, mark: str) -> int | None:
+    """Другое фото этого товара с тем же кадром. Сами дубли в поиске не участвуют.
+
+    Поэтому из пары одинаковых кадров помечается ровно один — тот, что
+    обработан вторым (при бэкфилле — позже загруженный).
+    """
+    if not mark:
+        return None
+    others = (
+        ProductImage.objects.filter(product_id=image.product_id, duplicate_of__isnull=True)
+        .exclude(pk=image.pk)
+        .exclude(fingerprint="")
+        .order_by("pk")
+        .values_list("pk", "fingerprint")
+    )
+    return next((pk for pk, other in others if image_processing.is_duplicate(mark, other)), None)
 
 
 def _release(image_id: int, *, to: str = ImageProcessingStatus.NONE) -> None:
@@ -225,16 +298,19 @@ def _commit(
     *,
     status: str,
     mode: str = "",
-    content: bytes | None = None,
+    square: image_processing.Square | None = None,
+    reason: str = "",
+    duplicate_of: int | None = None,
+    fingerprint: str = "",
 ) -> str:
     version = image_processing.PROCESSING_VERSION
     storage = ProductImage._meta.get_field("display").storage
     new_name = ""
     digest = ""
-    if content is not None:
-        digest = hashlib.sha256(content).hexdigest()
+    if square is not None:
+        digest = hashlib.sha256(square.content).hexdigest()
         path = product_image_display_path(image, f"{image.pk}-{digest[:8]}-v{version}.webp")
-        new_name = storage.save(path, ContentFile(content))
+        new_name = storage.save(path, ContentFile(square.content))
 
     try:
         with transaction.atomic():
@@ -254,6 +330,14 @@ def _commit(
             live.processing_mode = mode
             live.processing_version = version
             live.processed_at = timezone.now()
+            live.review_reason = reason
+            if (
+                duplicate_of is not None
+                and not ProductImage.objects.filter(pk=duplicate_of).exists()
+            ):
+                duplicate_of = None  # первый кадр успели удалить
+            live.duplicate_of_id = duplicate_of
+            live.fingerprint = fingerprint
             live.save(update_fields=list(ProductImage.PROCESSING_FIELDS))
             if old_display and old_display != new_name:
                 transaction.on_commit(lambda: storage.delete(old_display))

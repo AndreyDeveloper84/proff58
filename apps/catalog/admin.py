@@ -37,6 +37,7 @@ from .models import (
     CompatibilityKind,
     EnrichmentLog,
     GroupCategoryMapping,
+    ImageProcessingStatus,
     ImportRun,
     OneCGroup,
     Product,
@@ -492,12 +493,27 @@ def _photo_thumb(url: str, *, height: int = 70, width: int = 110):
     )
 
 
+def _review_note(obj: ProductImage):
+    """Почему фото ждёт проверки; у дубля — ссылка на первый такой же кадр."""
+    if obj.processing_status != ImageProcessingStatus.NEEDS_REVIEW or not obj.review_reason:
+        return ""
+    reason = obj.get_review_reason_display()
+    if obj.duplicate_of_id:
+        url = reverse("admin:catalog_productimage_change", args=[obj.duplicate_of_id])
+        return format_html(
+            '<br><small>{}: <a href="{}">фото #{}</a></small>', reason, url, obj.duplicate_of_id
+        )
+    return format_html("<br><small>{}</small>", reason)
+
+
 def _processed_cell(obj: ProductImage):
     """«Стало»: копия после автообработки и её статус (ADR-0014)."""
     status = obj.get_processing_status_display()
     if obj.display:
-        return format_html("{}<br><small>{}</small>", _photo_thumb(obj.display.url), status)
-    return format_html("<small>{}</small>", status)
+        return format_html(
+            "{}<br><small>{}</small>{}", _photo_thumb(obj.display.url), status, _review_note(obj)
+        )
+    return format_html("<small>{}</small>{}", status, _review_note(obj))
 
 
 class ProductImageInline(admin.TabularInline):
@@ -539,7 +555,7 @@ class ProductImageAdmin(admin.ModelAdmin):
         "source",
         "processed_at",
     )
-    list_filter = ("processing_status", "processing_mode", "source")
+    list_filter = ("processing_status", "review_reason", "processing_mode", "source")
     search_fields = ("product__name", "product__code_1c", "product__article")
     list_select_related = ("product",)
     raw_id_fields = ("product",)  # 47 тысяч товаров в выпадающем списке не открыть
@@ -556,6 +572,8 @@ class ProductImageAdmin(admin.ModelAdmin):
         "source",
         "source_url",
         "processing_status",
+        "review_reason",
+        "duplicate_of",
         "processing_mode",
         "processing_version",
         "processed_at",
@@ -566,6 +584,8 @@ class ProductImageAdmin(admin.ModelAdmin):
         "source",
         "source_url",
         "processing_status",
+        "review_reason",
+        "duplicate_of",
         "processing_mode",
         "processing_version",
         "processed_at",
