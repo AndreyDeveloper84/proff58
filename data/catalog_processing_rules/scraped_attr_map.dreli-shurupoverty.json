@@ -1435,11 +1435,16 @@
           "values": {
             "быстрозажимной": "bystrozazhimnoy",
             "бзп": "bystrozazhimnoy",
-            "ключевой": "klyuchevoy"
+            "ключевой": "klyuchevoy",
+            "шестигранный (1/4hex)": "hex",
+            "шестигранный (1/4 hex)": "hex",
+            "шестигранный": "hex",
+            "hex": "hex"
           },
           "confidence": "medium",
           "on_unknown_value": "drop_to_report",
-          "on_ambiguous": "drop_to_report"
+          "on_ambiguous": "drop_to_report",
+          "comment": "DRILLS: alias «шестигранный (1/4HEX)» → hex; мульти-значения через «/» — drop_to_report (MULTI_CHUCK_SCHEMA_GAP)"
         },
         "Количество аккумуляторов в комплекте": {
           "action": "map",
@@ -1468,6 +1473,41 @@
         "Размер зажимаемой оснастки": {
           "action": "ignore",
           "reason": "диапазон зажима — не ось chuck (тип)"
+        },
+        "Мощность": {
+          "action": "map",
+          "attribute": "power",
+          "attribute_type": "decimal",
+          "unit": "Вт",
+          "normalize": "int",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "DRILLS: сетевые дрели/шуруповёрты (HID, ДШ, ЗСШ); ВИ даёт голое число в Вт"
+        },
+        "Мощность (Вт)": {
+          "action": "map",
+          "attribute": "power",
+          "attribute_type": "decimal",
+          "unit": "Вт",
+          "normalize": "int",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "DRILLS: сетевые дрели/шуруповёрты (HID, ДШ, ЗСШ); ВИ даёт голое число в Вт"
+        },
+        "Напряжение": {
+          "action": "map",
+          "attribute": "power_source",
+          "attribute_type": "select",
+          "normalize": "option_map",
+          "extract": "^\\s*(2[23]0)",
+          "values": {
+            "220": "mains",
+            "230": "mains"
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report",
+          "comment": "DRILLS: то же mains-правило, что для zubr/resanta («Напряжение: 220» у сетевых)"
         }
       }
     }
