@@ -151,14 +151,16 @@ describe("auth client (M-11)", () => {
   it("чувствительные действия идут POST-запросами", async () => {
     mockedFetch.mockResolvedValue(undefined);
     await changePhone("+79001112233", "secret");
-    await deleteAccount();
+    await deleteAccount("secret");
 
     expect(mockedFetch).toHaveBeenNthCalledWith(1, "/api/account/change-phone", {
       method: "POST",
       body: JSON.stringify({ new_phone: "+79001112233", password: "secret" }),
     });
+    // Удаление подтверждается паролем — так же, как смена телефона.
     expect(mockedFetch).toHaveBeenNthCalledWith(2, "/api/account/delete", {
       method: "POST",
+      body: JSON.stringify({ password: "secret" }),
     });
   });
 });

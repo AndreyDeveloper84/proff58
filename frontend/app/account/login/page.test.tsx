@@ -51,6 +51,17 @@ describe("Форма входа", () => {
     await waitFor(() => expect(mockedLogin).toHaveBeenCalledWith("buyer@proff58.ru", "StrongPass2026"));
   });
 
+  it("после входа не уводит на чужой сайт через ?next=//…", async () => {
+    window.history.pushState({}, "", "/account/login?next=//evil.example/x");
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText(/E-mail/), { target: { value: "buyer@proff58.ru" } });
+    fireEvent.change(screen.getByLabelText(/Пароль/), { target: { value: "StrongPass2026" } });
+    fireEvent.click(screen.getByRole("button", { name: "Войти" }));
+
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/account/profile"));
+    window.history.pushState({}, "", "/account/login");
+  });
+
   it("частное лицо регистрируется без реквизитов", async () => {
     render(<LoginPage />);
     switchToRegister();

@@ -59,9 +59,9 @@ if not _public_hosts:
         "DJANGO_ALLOWED_HOSTS не содержит публичного домена — задайте его в env "
         "(напр. DJANGO_ALLOWED_HOSTS=proff58.ru)."
     )
-CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in _public_hosts] + [
-    f"http://{h}" for h in _public_hosts
-]
+# Только https: на http сайт не отвечает (SECURE_SSL_REDIRECT + HSTS), лишняя
+# доверенная зона тут ни к чему.
+CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in _public_hosts]
 
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SECURE_REDIRECT_EXEMPT = [r"^healthz/?$"]

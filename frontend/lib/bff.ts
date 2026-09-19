@@ -79,6 +79,12 @@ export async function proxyToDjango(
   const headers: Record<string, string> = { ...SSR_HEADERS };
   let cookie = request.headers.get("cookie") ?? "";
 
+  // Адрес посетителя — иначе Django видит адрес контейнера Next, и лимит попыток
+  // входа (10/мин) оказывается общим на всех: один подбирающий пароль блокирует
+  // вход всем. X-Real-IP ставит наш nginx, снаружи стек недоступен.
+  const clientIp = request.headers.get("x-real-ip");
+  if (clientIp) headers["X-Forwarded-For"] = clientIp;
+
   const isMutation = init.method !== "GET" && init.method !== "HEAD";
   if (init.body != null) headers["content-type"] = "application/json";
 

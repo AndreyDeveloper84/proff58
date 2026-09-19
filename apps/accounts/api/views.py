@@ -219,6 +219,13 @@ class DeleteAccountView(APIView):
         from apps.orders.models import Order
 
         user_obj = request.user
+        # Необратимое действие — подтверждаем паролем, как смену телефона: одной
+        # украденной сессии не должно хватать, чтобы стереть аккаунт. У пришедших
+        # из MAX пароля нет — им подтверждать нечем.
+        if user_obj.has_usable_password():
+            password = request.data.get("password", "")
+            if not password or not user_obj.check_password(password):
+                return Response({"detail": "Неверный пароль."}, status=status.HTTP_400_BAD_REQUEST)
         logout(request)
 
         with transaction.atomic():
