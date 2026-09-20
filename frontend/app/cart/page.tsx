@@ -39,14 +39,18 @@ export default function CartPage() {
     });
   }, [cart]);
 
-  const run = useCallback(async (action: () => Promise<unknown>) => {
+  // Возвращает успех: строке корзины нужно знать, принял ли сервер введённое
+  // количество (UX-06) — при отказе она показывает прежнее число, а не введённое.
+  const run = useCallback(async (action: () => Promise<unknown>): Promise<boolean> => {
     setMutating(true);
     setError(null);
     setNotice(null);
     try {
       await action();
+      return true;
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Не удалось обновить корзину");
+      return false;
     } finally {
       setMutating(false);
     }

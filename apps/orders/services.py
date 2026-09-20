@@ -14,7 +14,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
-from django.db.models.functions import TruncDate
+from django.db.models.functions import Cast, Least, TruncDate
 from django.utils import timezone
 
 from apps.accounts.models import CustomerType
@@ -60,14 +60,21 @@ def _ensure_active_product(product: Product) -> None:
         raise ValidationError("Товар недоступен для заказа.")
 
 
+# Предел PositiveIntegerField в PostgreSQL (integer). Это граница хранения, а не
+# товарный лимит: остаток сверяется при оформлении заказа.
+MAX_CART_QUANTITY = 2_147_483_647
+
+
 def _validate_qty(qty: int) -> int:
-    """Количество — целое ≥ 1."""
+    """Количество — целое от 1 до предела столбца."""
     try:
         qty = int(qty)
     except (TypeError, ValueError):
         raise ValidationError("Некорректное количество.") from None
     if qty < 1:
         raise ValidationError("Количество должно быть не меньше 1.")
+    if qty > MAX_CART_QUANTITY:
+        raise ValidationError("Слишком большое количество.")
     return qty
 
 
@@ -96,8 +103,15 @@ def add_to_cart(cart: Cart, product: Product, qty: int = 1) -> CartItem:
     )
     if not created:
         # F() — атомарный инкремент на стороне БД, защита от lost-update (#282).
+        # Least — сумма не выходит за предел столбца: повторное добавление к уже
+        # огромной строке иначе роняло бы запрос ошибкой БД («integer out of range»).
+        # Cast в bigint обязателен: PostgreSQL переполняется уже на самом сложении,
+        # до того как Least успеет что-либо ограничить.
         CartItem.objects.filter(pk=item.pk).update(
-            quantity=models.F("quantity") + qty,
+            quantity=Least(
+                Cast(models.F("quantity"), models.BigIntegerField()) + qty,
+                models.Value(MAX_CART_QUANTITY, output_field=models.BigIntegerField()),
+            ),
             updated_at=timezone.now(),
         )
         item.refresh_from_db()

@@ -39,6 +39,54 @@ def test_cart_update_and_delete(api, product):
 
 
 # ---------------------------------------------------------------------------
+# Ручной ввод количества (UX-06): границы контракта
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+@pytest.mark.parametrize("bad", [0, -3, "1.5", "abc", "", None, 2_147_483_648, 10**30])
+def test_cart_update_rejects_invalid_quantity(api, product, bad):
+    """Ноль, отрицательное, дробь, текст и число больше предела столбца — 400, не 500.
+
+    Количество в строке при этом не меняется: ноль не удаляет товар, удаление —
+    отдельное действие (DELETE)."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+
+    resp = api.patch(f"/api/cart/items/{item_id}/", {"quantity": bad}, format="json")
+
+    assert resp.status_code == 400
+    assert api.get("/api/cart/").json()["lines"][0]["quantity"] == 2
+
+
+@pytest.mark.django_db
+def test_cart_update_accepts_large_manual_quantity(api, product):
+    """Произвольного лимита (99) нет: 159 и предел столбца принимаются, итог — с сервера."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+
+    resp = api.patch(f"/api/cart/items/{item_id}/", {"quantity": 159}, format="json")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["lines"][0]["quantity"] == 159
+    assert body["total"] == "159000.00"
+
+    resp = api.patch(f"/api/cart/items/{item_id}/", {"quantity": 2_147_483_647}, format="json")
+    assert resp.status_code == 200
+
+
+@pytest.mark.django_db
+def test_cart_add_to_huge_line_does_not_overflow(api, product):
+    """Повторное добавление к строке у предела не роняет запрос переполнением integer."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+    api.patch(f"/api/cart/items/{item_id}/", {"quantity": 2_147_483_647}, format="json")
+
+    resp = api.post("/api/cart/items/", {"product_id": product.id, "quantity": 5}, format="json")
+
+    assert resp.status_code == 200
+    assert resp.json()["lines"][0]["quantity"] == 2_147_483_647
+
+
+# ---------------------------------------------------------------------------
 # Undo-удаление (#380)
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db

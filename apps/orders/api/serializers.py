@@ -12,6 +12,7 @@ from apps.catalog.services import main_image_urls
 
 from ..models import B2BInvoice, Order, OrderItem
 from ..payment_methods import PaymentMethod, available_payment_methods
+from ..services import MAX_CART_QUANTITY
 
 
 def _money(value):
@@ -111,13 +112,17 @@ class CartViewSerializer(serializers.Serializer):
 
 
 # --- Запись в корзину (тело запросов) ---
+# Верхняя граница количества — технический предел столбца (PositiveIntegerField),
+# а НЕ товарный лимит: остаток проверяется при оформлении заказа. Без неё число больше
+# предела долетало до БД и отвечало 500 вместо понятной 400 (UX-06: покупатель теперь
+# вводит количество руками, а не только кнопками ±).
 class AddCartItemSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
-    quantity = serializers.IntegerField(min_value=1, default=1)
+    quantity = serializers.IntegerField(min_value=1, max_value=MAX_CART_QUANTITY, default=1)
 
 
 class UpdateCartItemSerializer(serializers.Serializer):
-    quantity = serializers.IntegerField(min_value=1)
+    quantity = serializers.IntegerField(min_value=1, max_value=MAX_CART_QUANTITY)
 
 
 # ---------------------------------------------------------------------------
