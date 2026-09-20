@@ -6,7 +6,7 @@
     process_product_images --status queued      # перепоставить зависшие в очереди
     process_product_images --outdated           # пересоздать копии после смены параметров
     process_product_images --source huter --limit 50
-    process_product_images --rembg              # чёрный и прочий фон — в сервис нейросети
+    process_product_images --rembg              # чёрный фон — в сервис нейросети
 
 Команда сама фото не обрабатывает — только ставит задачи в очередь `images`
 (воркер `celery-images`, строго по одному). Повторная постановка безопасна: задача
@@ -69,6 +69,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         default = (ImageProcessingStatus.NEEDS_REMBG,) if options["rembg"] else DEFAULT_STATUSES
         statuses = tuple(options["status"] or default)
+        if options["rembg"] and set(statuses) - {ImageProcessingStatus.NEEDS_REMBG}:
+            # Иначе задача, вышедшая без работы, вернула бы фото в «ждёт удаления
+            # фона» — статус, которого для этих записей уже не существует.
+            raise CommandError("--rembg работает только со статусом needs_rembg")
         condition = Q(processing_status__in=statuses)
         if options["outdated"]:
             condition |= Q(
@@ -167,7 +171,7 @@ class Command(BaseCommand):
             image_processing.ImageKind.WHITE: "белый фон (обработается сразу)",
             image_processing.ImageKind.ALPHA: "прозрачный фон (обработается сразу)",
             image_processing.ImageKind.BLACK: "чёрный фон (ждёт нейросеть)",
-            image_processing.ImageKind.OTHER: "прочий фон (ждёт нейросеть)",
+            image_processing.ImageKind.OTHER: "прочий фон (не обрабатывается)",
             image_processing.ImageKind.BLANK: "пустой кадр (на проверку)",
             "unreadable": "не читается",
         }

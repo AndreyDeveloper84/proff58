@@ -3,10 +3,11 @@
 Открыть безопасно → понять фон по краю кадра → для белого фона и прозрачности
 обрезать поля и вписать товар в белый квадрат 1200×1200.
 
-Чёрный и прочий фон (сцена, серый, цветной) здесь не обрабатываются: без удаления
-фона нейросетью обрезка дала бы тот же фон в квадрате, только крупнее. Такие фото
-получают статус «ждёт удаления фона». Проба на 292 фото стенда: белый край — 56 %,
-чёрный — 14 %, прочий — 30 %.
+Чёрный фон здесь не обрабатывается: без удаления фона нейросетью обрезка дала бы
+тот же фон в квадрате, только крупнее. Такие фото получают статус «ждёт удаления
+фона». Прочий фон (сцена, цветная подложка, карточка с характеристиками) не
+обрабатывается вовсе — см. `image_autoprocess`. Проба на 292 фото стенда: белый
+край — 56 %, чёрный — 14 %, прочий — 30 %.
 
 Django здесь нет намеренно: модуль тестируется на синтетических картинках и не
 знает ни про модели, ни про storage (это `image_autoprocess`).
@@ -48,6 +49,17 @@ FINGERPRINT_SIZE = 16  # отпечаток кадра — 16×16 = 256 бит
 #: разные кадры одного товара (вид спереди и сзади) — 10 бит.
 DUPLICATE_DISTANCE = 6
 
+PIECE_GRID = 128  # сетка замера кусков; сторона квадрата ужимается до неё LANCZOS
+#: Насколько пиксель сетки должен отличаться от белого, чтобы считаться содержимым.
+#: Больше TRIM_TOLERANCE (12), которым режут поля по исходнику: после ужатия
+#: до 128×128 края товара замыливаются, и слишком строгий порог рвёт тонкие детали.
+PIECE_INK = 14
+#: Копия, у которой самый большой кусок занимает меньше этой доли содержимого, —
+#: разорванная. Замер на 67 копиях стенда (нейросеть, LANCZOS, 8-связность):
+#: две съеденные карточки с текстом дали 0,30 и 0,58; худший цельный товар — 0,98,
+#: медиана 1,00. 4-связность так не годится: тонкая штанга триммера рвётся (0,59).
+MIN_PIECE_SHARE = 0.8
+
 
 class ImageKind:
     WHITE = "white"
@@ -69,6 +81,9 @@ class Square:
     content: bytes  # WebP
     #: Товар занял меньше MIN_PRODUCT_SHARE квадрата даже после увеличения.
     small: bool
+    #: Копия распалась на куски — так выглядит съеденная нейросетью карточка.
+    #: Считается только там, где фон удаляли (`to_square(measure_pieces=True)`).
+    torn: bool = False
 
 
 @dataclass(frozen=True)
@@ -213,11 +228,53 @@ def fit_into_square(product: Image.Image) -> Image.Image:
     return canvas
 
 
-def to_square(product: Image.Image) -> Square:
-    """Обрезанный товар на белом → WebP витринной копии и признак «мелкое»."""
+def largest_piece_share(square: Image.Image) -> float:
+    """Какую долю содержимого готового квадрата занимает самый большой его кусок.
+
+    Цельный товар — одна фигура (доля около 1). Карточка, из которой нейросеть
+    выела текст, распадается на обрывки букв и иконок, и доля падает.
+
+    Считается на сетке PIECE_GRID (LANCZOS) обходом в ширину — не рекурсией:
+    при 8-связности глубина легко превысила бы лимит интерпретатора.
+    """
+    grid = PIECE_GRID
+    px = square.convert("RGB").resize((grid, grid), Image.LANCZOS).load()
+    ink = {
+        y * grid + x for y in range(grid) for x in range(grid) if 255 - min(px[x, y]) > PIECE_INK
+    }
+    if not ink:
+        return 0.0
+    total, biggest = len(ink), 0
+    while ink:
+        stack, size = [ink.pop()], 0
+        while stack:
+            y, x = divmod(stack.pop(), grid)
+            size += 1
+            for ny in (y - 1, y, y + 1):
+                for nx in (x - 1, x, x + 1):
+                    if 0 <= ny < grid and 0 <= nx < grid:
+                        neighbour = ny * grid + nx
+                        if neighbour in ink:
+                            ink.discard(neighbour)
+                            stack.append(neighbour)
+        biggest = max(biggest, size)
+    return biggest / total
+
+
+def to_square(product: Image.Image, *, measure_pieces: bool = False) -> Square:
+    """Обрезанный товар на белом → WebP витринной копии и признаки «мелкое», «рвань».
+
+    `measure_pieces` включают там, где фон удаляла нейросеть: только она способна
+    разорвать кадр. Обрезка полей куски не создаёт, а замер стоит ~0,1 с на фото.
+    """
+    canvas = fit_into_square(product)
     buf = io.BytesIO()
-    fit_into_square(product).save(buf, format="WEBP", quality=QUALITY)
-    return Square(content=buf.getvalue(), small=product_share(product) < MIN_PRODUCT_SHARE)
+    canvas.save(buf, format="WEBP", quality=QUALITY)
+    return Square(
+        content=buf.getvalue(),
+        small=product_share(product) < MIN_PRODUCT_SHARE,
+        torn=measure_pieces and largest_piece_share(canvas) < MIN_PIECE_SHARE,
+    )
 
 
 def fingerprint(rgb: Image.Image) -> str:

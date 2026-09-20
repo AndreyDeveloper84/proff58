@@ -47,6 +47,7 @@ SETTLED = (
     ImageProcessingStatus.DONE,
     ImageProcessingStatus.NEEDS_REMBG,
     ImageProcessingStatus.NEEDS_REVIEW,
+    ImageProcessingStatus.SKIPPED,
 )
 
 
@@ -119,8 +120,9 @@ def enqueue(
 def process_image(image_id: int, *, rembg: bool = False) -> str:
     """Сделать витринную копию. Возвращает итог: статус или причину пропуска.
 
-    `rembg=True` — задача сервиса нейросети: чёрный и прочий фон обрабатываются
-    удалением фона, а не откладываются в `needs_rembg`.
+    `rembg=True` — задача сервиса нейросети: чёрный фон обрабатывается удалением
+    фона, а не откладывается в `needs_rembg`. Прочий фон не трогается в обоих
+    режимах — он уходит в `skipped`.
     """
     try:
         return _process(image_id, rembg=rembg)
@@ -185,6 +187,13 @@ def _process(image_id: int, *, rembg: bool = False) -> str:
             reason=ImageReviewReason.EMPTY,
             fingerprint=mark,
         )
+    if result.kind == image_processing.ImageKind.OTHER:
+        # Прочий фон — карточка с характеристиками, товар в кейсе, съёмка в работе:
+        # фон там часть кадра. Нейросеть вырезала бы из него один инструмент,
+        # выбросив текст и комплектацию (просмотр 45 копий стенда 20.09.2026).
+        # Проверка стоит выше ветки нейросети намеренно: воркер rembg приходит
+        # сюда же и такие фото тоже не трогает.
+        return _commit(image, source_name, status=ImageProcessingStatus.SKIPPED, fingerprint=mark)
     if result.square is None and not rembg:
         return _commit(
             image, source_name, status=ImageProcessingStatus.NEEDS_REMBG, fingerprint=mark
@@ -203,7 +212,14 @@ def _process_with_rembg(
     result: image_processing.Result,
     release_to: str,
 ) -> str:
-    """Чёрный фон — сразу на витрину; прочий — на проверку (нейросеть портит текст)."""
+    """Чёрный фон — на витрину; разорванная вырезка — на проверку менеджеру."""
+    if result.kind != image_processing.ImageKind.BLACK:
+        # Сюда доходит только чёрный фон. Страховка, а не комментарий: функцию
+        # зовут из двух режимов, и ошибка в порядке проверок выше означала бы
+        # съеденную карточку на витрине.
+        return _commit(
+            image, source_name, status=ImageProcessingStatus.SKIPPED, fingerprint=result.fingerprint
+        )
     if not image_rembg.is_available():
         _release(image.pk, to=release_to)
         return "rembg_unavailable"
@@ -222,10 +238,8 @@ def _process_with_rembg(
         square,
         mode=ImageProcessingMode.REMBG,
         fingerprint=result.fingerprint,
-        # прочий фон — сцена, цветная подложка, карточка с текстом: смотрит человек
-        reason=(
-            ImageReviewReason.NOT_WHITE if result.kind != image_processing.ImageKind.BLACK else ""
-        ),
+        # распалась на куски — нейросеть съела текст карточки: смотрит человек
+        reason=ImageReviewReason.TORN if square.torn else "",
     )
 
 
@@ -238,8 +252,12 @@ def _commit_square(
     fingerprint: str,
     reason: str = "",
 ) -> str:
-    """Готовая копия: на витрину, если к ней нет вопросов, иначе на проверку."""
-    if square.small:
+    """Готовая копия: на витрину, если к ней нет вопросов, иначе на проверку.
+
+    Рвань важнее мелкоты: у разорванной копии «мелким» оказывается уцелевший
+    огрызок, и причина «мелкое фото» увела бы менеджера не туда.
+    """
+    if square.small and not reason:
         reason = ImageReviewReason.SMALL
     return _commit(
         image,
@@ -389,6 +407,12 @@ def revert_to_original(image_id: int) -> bool:
         live.display_checksum = ""
         live.processing_status = ImageProcessingStatus.REJECTED
         live.processing_mode = ""
+        # Вопросы к копии умерли вместе с копией. Повтор кадра — исключение:
+        # он про оригинал, а не про копию, и `duplicate_of` с `fingerprint`
+        # остаются. Сбросить их значило бы вернуть запись в поиск дублей, и
+        # на проверку ушёл бы уже первый кадр пары вместо второго.
+        if live.review_reason != ImageReviewReason.DUPLICATE:
+            live.review_reason = ""
         live.processed_at = timezone.now()
         live.save(update_fields=list(ProductImage.PROCESSING_FIELDS))
         if old_display:

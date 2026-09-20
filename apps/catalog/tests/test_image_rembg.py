@@ -93,20 +93,26 @@ def test_black_background_goes_to_storefront_right_away(autoprocess_on, fake_rem
     assert all(c >= 245 for c in corner)  # чёрный фон стал белым
 
 
-def test_other_background_waits_for_manager(autoprocess_on, fake_rembg):
+def test_other_background_is_left_alone_even_by_rembg_worker(autoprocess_on, monkeypatch):
+    """Прочий фон — часть кадра (карточка с ТТХ, товар в кейсе, съёмка в работе).
+
+    Нейросеть вырезала бы из него один инструмент, выбросив остальное, поэтому
+    к ней такое фото не попадает даже в её собственном режиме.
+    """
+
+    def must_not_run(img):
+        raise AssertionError("прочий фон нейросети не отдаём")
+
+    monkeypatch.setattr(image_rembg, "is_available", lambda: True)
+    monkeypatch.setattr(image_rembg, "cut_out", must_not_run)
     image = _photo(bg=(128, 128, 128))
     _queued(image)
 
-    assert (
-        image_autoprocess.process_image(image.pk, rembg=True) == ImageProcessingStatus.NEEDS_REVIEW
-    )
+    assert image_autoprocess.process_image(image.pk, rembg=True) == ImageProcessingStatus.SKIPPED
     image.refresh_from_db()
-    assert image.display  # кандидат готов
-    assert _image_url(image) == image.image.url  # но на витрине пока оригинал
-
-    assert image_autoprocess.accept_review(image.pk) is True
-    image.refresh_from_db()
-    assert _image_url(image) == image.display.url
+    assert not image.display  # копии нет вовсе
+    assert image.review_reason == ""  # менеджера не зовём
+    assert _image_url(image) == image.image.url
 
 
 def test_empty_mask_goes_to_review_without_copy(autoprocess_on, monkeypatch):

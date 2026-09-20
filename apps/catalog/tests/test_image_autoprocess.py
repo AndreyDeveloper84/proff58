@@ -116,7 +116,12 @@ def test_transparent_background_becomes_white():
 
 
 @pytest.mark.parametrize("bg", [(0, 0, 0), (128, 128, 128)], ids=["black", "gray"])
-def test_black_and_other_backgrounds_wait_for_rembg(bg):
+def test_black_and_other_backgrounds_are_not_trimmed(bg):
+    """Обрезка тут бессильна: она дала бы тот же фон в квадрате, только крупнее.
+
+    Что с ними делать дальше, решает `image_autoprocess`: чёрный отдаёт нейросети,
+    прочий не трогает вовсе.
+    """
     assert image_processing.process(_encode(_scene(bg=bg))).content is None
 
 

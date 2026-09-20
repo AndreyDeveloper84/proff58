@@ -1,17 +1,18 @@
 """Удаление фона нейросетью rembg (ADR-0014, итерация 2).
 
-Для фото на чёрном и прочем фоне, которые без нейросети обработать нельзя.
-Работает только в образе сервиса `celery-rembg` (`requirements/images.txt`): rembg
-тянет onnxruntime, scipy, scikit-image, numba и opencv, поэтому в остальные образы
-не ставится. Без него `is_available()` — False, и фото спокойно ждут сервис.
+Только для фото на чёрном фоне: прочий фон автообработка не трогает вовсе
+(`image_autoprocess`). Работает только в образе сервиса `celery-rembg`
+(`requirements/images.txt`): rembg тянет onnxruntime, scipy, scikit-image, numba
+и opencv, поэтому в остальные образы не ставится. Без него `is_available()` —
+False, и фото спокойно ждут сервис.
 
-Цена на 2 ядрах: ~13 с на фото, пик памяти ~2,1 ГБ (smoke на 12 фото стенда,
-Python 3.11, 16.09.2026). Модель одна на процесс и грузится при первом фото.
-Чёрный фон — 6 из 6 чисто; рекламные карточки теряют часть текста.
+Цена на 2 ядрах стенда: 4–5 с на фото, пик памяти ~2,1 ГБ (прогон 113 фото
+20.09.2026; первое фото дольше — качается модель). Модель одна на процесс.
 
-Проба показала и слабое место: рекламные карточки с текстом нейросеть портит
-(буквы уходят в фон). Поэтому результат для прочего фона идёт на проверку
-менеджеру, а сразу на витрину — только чёрный фон (решение владельца 16.09.2026).
+Чёрный фон нейросеть снимает чисто: 65 копий из 67 на стенде — провода, шнуры
+и текст на корпусе целы. Оставшиеся две — рекламные карточки бренда с текстом
+на чёрном фоне: буквы ушли в фон, остались обрывки. Такую рвань ловит
+`Square.torn` и отдаёт менеджеру вместо витрины.
 """
 
 from __future__ import annotations
@@ -54,4 +55,5 @@ def render(img: Image.Image) -> image_processing.Square | None:
     bbox = cutout.getchannel("A").point(lambda v: 255 if v > ALPHA_CUT else 0).getbbox()
     if bbox is None:
         return None
-    return image_processing.to_square(image_processing.flatten_on_white(cutout.crop(bbox)))
+    product = image_processing.flatten_on_white(cutout.crop(bbox))
+    return image_processing.to_square(product, measure_pieces=True)

@@ -207,7 +207,7 @@ def _cut_center(img):
     ("bg", "status", "reason"),
     [
         ((0, 0, 0), ImageProcessingStatus.DONE, ""),
-        ((128, 128, 128), ImageProcessingStatus.NEEDS_REVIEW, ImageReviewReason.NOT_WHITE),
+        ((128, 128, 128), ImageProcessingStatus.SKIPPED, ""),
     ],
     ids=["black", "other"],
 )
