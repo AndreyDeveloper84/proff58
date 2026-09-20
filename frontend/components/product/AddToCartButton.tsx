@@ -39,7 +39,9 @@ export function AddToCartButton({
   showLabel?: boolean;
 }) {
   const wide = fullWidth ? "w-full" : "";
-  const size = compact ? "h-8 min-h-8 rounded-sm px-2 text-[11px]" : "";
+  // UX-04: компактный CTA остаётся компактным визуально, но не меньше 44 px по
+  // высоте на сенсорных экранах и 36 px на desktop; подпись — 13 px, не 11.
+  const size = compact ? "h-11 min-h-11 rounded-sm px-2.5 text-[13px] sm:h-9 sm:min-h-9" : "";
   const href = `/product/${productSlug}`;
   if (!hasPrice) {
     return (

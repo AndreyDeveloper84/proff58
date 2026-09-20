@@ -46,7 +46,7 @@ export function MobileBottomNav({ active }: { active: MobileNavSection }) {
             }
             aria-current={current ? "page" : undefined}
             className={cn(
-              "flex min-w-0 flex-col items-center justify-center gap-1 text-[10px] font-medium",
+              "flex min-w-0 flex-col items-center justify-center gap-1 text-xs font-medium",
               current ||
                 (active === "account" && item.section === "profile")
                 ? "text-accent"

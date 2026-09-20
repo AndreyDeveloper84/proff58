@@ -131,8 +131,8 @@ describe("Header (#586)", () => {
 
     const nodes = Array.from(row.children);
     expect(nodes.indexOf(schedule.closest("span")!)).toBeLessThan(nodes.indexOf(toggle));
-    // Именно topbar (h-8), а не основная строка шапки (h-14).
-    expect(row.parentElement!.className).toContain("h-8");
+    // Именно topbar (h-9), а не основная строка шапки (h-16) — высоты после UX-04.
+    expect(row.parentElement!.className).toContain("h-9");
   });
 
   // Основная строка шапки видна всегда, бургер-меню — нет. Переключатель, до

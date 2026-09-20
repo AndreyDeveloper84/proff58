@@ -35,7 +35,8 @@ function StatusLabel({ product, compact = false }: { product: Product; compact?:
         // whitespace-nowrap: рядом может стоять бейдж «Хит», и «В наличии»
         // ломалось на две строки, задирая высоту шапки карточки.
         "inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-semibold",
-        compact ? "text-[10px]" : "text-xs",
+        // UX-04: статус — данные о наличии, мельче 12 px не оформляем даже в плитке главной.
+        "text-xs",
         s.cls,
       )}
     >
@@ -89,21 +90,21 @@ export function ProductCard({
       data-product-id={product.id}
       className={cn(
         // #478: touch hit-area ≥44px на мобиле.
-        "grid h-11 w-11 shrink-0 place-items-center rounded-full transition disabled:opacity-60 sm:h-8 sm:w-8",
+        "grid h-11 w-11 shrink-0 place-items-center rounded-full transition disabled:opacity-60 sm:h-9 sm:w-9",
         // Сохранённое состояние отличается не только заливкой иконки: при
         // наведении сердечко и так зеленеет, и клик по нему читался как «ничего
         // не произошло». Подложка делает разницу однозначной.
         fav ? "bg-accent/10 text-accent" : "text-ink-3 hover:bg-accent/5 hover:text-accent",
       )}
     >
-      <Heart className="h-4 w-4" fill={fav ? "currentColor" : "none"} />
+      <Heart className="h-[18px] w-[18px]" fill={fav ? "currentColor" : "none"} />
     </button>
   );
 
   const media = (
     <a href={href} aria-label={title} className="relative block">
       {product.price.discountPct != null && (
-        <span className="absolute left-2 top-2 z-10 rounded-md bg-danger px-1.5 py-0.5 text-[11px] font-bold text-white">
+        <span className="absolute left-2 top-2 z-10 rounded-md bg-danger px-1.5 py-0.5 text-xs font-bold text-white">
           −{product.price.discountPct}%
         </span>
       )}
@@ -143,48 +144,48 @@ export function ProductCard({
           // срезалась ровно посередине букв, а кнопка «Сообщить о поступлении»
           // вылезала за нижнюю границу. Ряд выравнивается растяжением карточек
           // (items-stretch у дорожки карусели), поэтому разной высоты не будет.
-          "relative flex min-h-[192px] flex-col overflow-hidden rounded-sm border border-line bg-surface",
+          "relative flex min-h-[300px] flex-col overflow-hidden rounded-sm border border-line bg-card shadow-card transition hover:border-accent/60 hover:shadow-md focus-within:border-accent/60",
           dimmed && "opacity-70",
           className,
         )}
       >
         <div className="absolute left-2 top-2 z-10 flex gap-1">
           {product.price.discountPct != null && (
-            <span className="rounded-full bg-danger px-2 py-0.5 text-[10px] font-bold text-white">
+            <span className="rounded-full bg-danger px-2 py-0.5 text-xs font-bold text-white">
               −{product.price.discountPct}%
             </span>
           )}
           {product.badges.includes("hit") && (
-            <span className="rounded-full bg-hit px-2 py-0.5 text-[10px] font-bold text-white">
+            <span className="rounded-full bg-hit px-2 py-0.5 text-xs font-bold text-white">
               Хит
             </span>
           )}
         </div>
 
         {showFavorite && (
-          <div className="absolute right-1 top-0.5 z-10 scale-75">{heart}</div>
+          <div className="absolute right-1 top-1 z-10">{heart}</div>
         )}
 
-        <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 pt-1.5">
+        <div className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2">
           <a href={href} aria-label={title} className="block">
             <ProductImage
               src={product.image}
               alt={title}
               sizes="220px"
-              className="h-[88px] w-full aspect-auto rounded-none bg-surface"
+              className="h-[140px] w-full aspect-auto rounded-none bg-card"
             />
           </a>
           <a
             href={href}
-            className="line-clamp-2 min-h-[29px] text-[11px] font-semibold leading-[1.25] text-ink hover:text-accent"
+            className="mt-2 line-clamp-2 min-h-[38px] text-sm font-semibold leading-[1.35] text-ink hover:text-accent"
           >
             {product.brand ? `${product.brand} ` : ""}
             {title}
           </a>
-          <div className="mt-0.5 line-clamp-1 text-[10px] leading-tight text-ink-2">
+          <div className="mt-1 line-clamp-1 text-xs leading-tight text-ink-2">
             {product.specs?.slice(0, 3).map((s) => s.value).join(" · ")}
           </div>
-          <div className="mt-1 flex items-end justify-between gap-2">
+          <div className="mt-auto flex items-end justify-between gap-2 pt-2">
             <div>
               <StatusLabel product={product} compact />
               <ProductPrice price={product.price} micro />
@@ -206,7 +207,7 @@ export function ProductCard({
   // Бейдж «Хит» — из product.badges, куда его кладёт adapters по признаку
   // is_hit backend (рейтинг продаж). Ручных пометок здесь нет и быть не должно.
   const hitBadge = product.badges.includes("hit") ? (
-    <span className="shrink-0 rounded-full bg-hit px-2 py-0.5 text-[10px] font-bold text-white">
+    <span className="shrink-0 rounded-full bg-hit px-2 py-0.5 text-xs font-bold text-white">
       Хит
     </span>
   ) : null;
@@ -217,7 +218,7 @@ export function ProductCard({
         data-event="product_card_click"
         data-product-id={product.id}
         className={cn(
-          "flex gap-4 rounded-lg border border-line bg-surface p-3 transition hover:shadow-sm",
+          "flex gap-4 rounded-lg border border-line bg-card p-3 shadow-card transition hover:border-accent/60 hover:shadow-md focus-within:border-accent/60",
           dimmed && "opacity-70",
         )}
       >
@@ -234,7 +235,7 @@ export function ProductCard({
             </div>
           </div>
           <p className="text-xs text-ink-3">{product.brand}</p>
-          <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
+          <a href={href} className="mt-0.5 line-clamp-2 text-base font-medium text-ink hover:text-accent">
             {title}
           </a>
           <div className="mt-1">
@@ -251,7 +252,7 @@ export function ProductCard({
       data-event="product_card_click"
       data-product-id={product.id}
       className={cn(
-        "group flex flex-col rounded-lg border border-line bg-surface p-3 transition duration-150 hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none motion-reduce:transition-none",
+        "group flex flex-col rounded-lg border border-line bg-card p-3 shadow-card transition duration-150 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md focus-within:border-accent/60 motion-reduce:transform-none motion-reduce:transition-none",
         dimmed && "opacity-70",
       )}
     >
@@ -266,13 +267,13 @@ export function ProductCard({
           есть при любой ширине плитки, а скидочный бейдж живёт в левом. */}
       <div className="relative mb-3">
         {media}
-        <div className="absolute right-0 top-0 z-10 flex flex-col items-center rounded-full bg-surface/85 backdrop-blur-sm">
+        <div className="absolute right-0 top-0 z-10 flex flex-col items-center rounded-full bg-card/85 backdrop-blur-sm">
           {showFavorite ? heart : null}
           <CompareButton slug={product.slug} />
         </div>
       </div>
       <p className="text-xs text-ink-3">{product.brand}</p>
-      <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium text-ink hover:text-accent">
+      <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium leading-snug text-ink hover:text-accent sm:text-[15px]">
         {title}
       </a>
       <div className="mt-1">

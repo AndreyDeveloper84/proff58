@@ -39,10 +39,20 @@
 [data-theme="light"] {
   color-scheme: light;
 
-  --bg: #f7f8f9;
+  /* UX-02: фон страницы чуть серее, чтобы белая карточка товара отделялась от него
+     уже без наведения (раньше главная была залита тем же --surface, что и карточки).
+     --surface-raised сдвинут следом: скелетоны и hover-подложки лежат и на фоне
+     страницы, и при прежнем значении сливались бы с ним. */
+  --bg: #f2f4f6;
   --surface: #ffffff;
-  --surface-raised: #f1f3f5;
+  --surface-raised: #e9ecef;
   --border: #dde1e5;
+  /* Карточка товара/плитка: отдельный токен, а не --surface — тот занят родительскими
+     поверхностями (панели, подвал, корзина), и менять его глобально нельзя. */
+  --card: #ffffff;
+  --card-shadow: 0 1px 2px rgb(20 24 27 / 0.06), 0 1px 1px rgb(20 24 27 / 0.04);
+  /* Поля форм сохраняют прежнюю заливку: смена --bg их задевать не должна. */
+  --field: #f7f8f9;
 
   /* #586: светлый header — белая основная строка, светло-серый topbar. */
   --header-bg: #ffffff;
@@ -103,6 +113,11 @@
   --surface: #16191c;
   --surface-raised: #1e2226;
   --border: #2a2f34;
+  /* UX-02: в тёмной теме карточка СВЕТЛЕЕ страницы и панелей; тень на тёмном не видна,
+     отделение держится на заливке и границе. */
+  --card: #1d2125;
+  --card-shadow: 0 0 0 transparent;
+  --field: #0e1113;
 
   /* #586: тёмный header — прежняя брендовая рамка. */
   --header-bg: #12161a;
@@ -153,6 +168,9 @@
   --color-surface: var(--surface);
   --color-raised: var(--surface-raised);
   --color-line: var(--border);
+  --color-card: var(--card);
+  --color-field: var(--field);
+  --shadow-card: var(--card-shadow);
 
   --color-ink: var(--text);
   --color-ink-2: var(--text-secondary);

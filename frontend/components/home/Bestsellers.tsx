@@ -32,8 +32,8 @@ export function Bestsellers({ products, kind = "bestsellers" }: BestsellersProps
     <section className="mx-auto w-full max-w-[1680px] px-4 pt-3 sm:px-6 xl:px-8">
       <div className="mb-1.5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <h2 className="font-sans text-lg font-bold text-ink">{TITLE[kind]}</h2>
-          <Link href="/catalog" className="hidden items-center gap-1 text-xs font-medium text-accent transition hover:opacity-80 sm:inline-flex">
+          <h2 className="font-sans text-xl font-bold text-ink">{TITLE[kind]}</h2>
+          <Link href="/catalog" className="hidden items-center gap-1 text-sm font-medium text-accent transition hover:opacity-80 sm:inline-flex">
             Смотреть все
             <ArrowRight className="h-3 w-3" aria-hidden />
           </Link>
@@ -42,7 +42,7 @@ export function Bestsellers({ products, kind = "bestsellers" }: BestsellersProps
           <button
             type="button"
             onClick={() => scrollBy(-1)}
-            className="grid h-11 w-11 place-items-center rounded-full border border-line sm:h-7 sm:w-7 text-ink-2 transition hover:border-accent hover:text-accent"
+            className="grid h-11 w-11 place-items-center rounded-full border border-line sm:h-9 sm:w-9 text-ink-2 transition hover:border-accent hover:text-accent"
             aria-label="Прокрутить влево"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -50,7 +50,7 @@ export function Bestsellers({ products, kind = "bestsellers" }: BestsellersProps
           <button
             type="button"
             onClick={() => scrollBy(1)}
-            className="grid h-11 w-11 place-items-center rounded-full border border-line sm:h-7 sm:w-7 text-ink-2 transition hover:border-accent hover:text-accent"
+            className="grid h-11 w-11 place-items-center rounded-full border border-line sm:h-9 sm:w-9 text-ink-2 transition hover:border-accent hover:text-accent"
             aria-label="Прокрутить вправо"
           >
             <ChevronRight className="h-4 w-4" aria-hidden />
@@ -65,7 +65,8 @@ export function Bestsellers({ products, kind = "bestsellers" }: BestsellersProps
         {products.map((p) => (
           <div
             key={p.id}
-            className="flex w-[205px] shrink-0 snap-start lg:w-[calc((100%-30px)/4)] xl:w-[calc((100%-40px)/5)] 2xl:w-[calc((100%-50px)/6)]"
+            // UX-04: карточки крупнее — в ряду на одну меньше на каждой ширине.
+            className="flex w-[240px] shrink-0 snap-start lg:w-[calc((100%-20px)/3)] xl:w-[calc((100%-30px)/4)] 2xl:w-[calc((100%-40px)/5)]"
           >
             <ProductCard product={p} variant="home" className="w-full" />
           </div>
@@ -74,7 +75,7 @@ export function Bestsellers({ products, kind = "bestsellers" }: BestsellersProps
 
       <Link
         href="/catalog"
-        className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent sm:hidden"
+        className="mt-2 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-accent sm:hidden"
       >
         Смотреть все
         <ArrowRight className="h-4 w-4" aria-hidden />

@@ -80,7 +80,7 @@ export function PromoCodeField() {
                 void submit();
               }
             }}
-            className="w-full rounded-md border border-line bg-canvas px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
+            className="w-full rounded-md border border-line bg-field px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
           />
           <button
             type="button"

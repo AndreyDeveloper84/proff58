@@ -96,14 +96,14 @@ export function CartItemRow({
   const hasDiscount = basePrice != null && price != null && basePrice > price;
 
   return (
-    <article className="grid grid-cols-[20px_72px_minmax(0,1fr)_32px] items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-3 py-4 last:border-b-0 sm:px-4 lg:grid-cols-[20px_112px_minmax(0,1fr)_110px_minmax(148px,auto)_120px_32px] lg:gap-x-4">
+    <article className="grid grid-cols-[20px_72px_minmax(0,1fr)_44px] items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-3 py-4 last:border-b-0 sm:px-4 lg:grid-cols-[20px_112px_minmax(0,1fr)_120px_minmax(148px,auto)_130px_44px] lg:gap-x-4">
       <input
         type="checkbox"
         checked={selected}
         disabled={disabled}
         onChange={(event) => onSelect(line.id, event.target.checked)}
         aria-label={`Выбрать ${line.name}`}
-        className="h-4 w-4 rounded border-line accent-accent"
+        className="h-5 w-5 rounded border-line accent-accent"
       />
 
       {/* Фото товара из каталога. Раньше здесь стояла зашитая картинка из макета —
@@ -124,20 +124,20 @@ export function CartItemRow({
       <div className="min-w-0 self-center">
         <Link
           href={`/product/${line.slug}`}
-          className="line-clamp-2 text-sm font-semibold text-ink transition hover:text-accent"
+          className="line-clamp-2 text-sm font-semibold text-ink transition hover:text-accent lg:text-base"
         >
           {line.name}
         </Link>
-        <p className="mt-1 text-[11px] text-ink-3">Код товара: {line.product_id}</p>
-        <p className="mt-1 text-[11px] font-medium text-accent">В корзине</p>
+        <p className="mt-1 text-xs text-ink-3">Код товара: {line.product_id}</p>
+        <p className="mt-1 text-xs font-medium text-accent">В корзине</p>
         <div className="mt-2 flex items-baseline gap-2 lg:hidden">
           {total != null ? (
-            <span className="text-sm font-bold text-ink">{formatPrice(total)}</span>
+            <span className="text-base font-bold text-ink">{formatPrice(total)}</span>
           ) : (
             <span className="text-xs text-ink-3">Цена по запросу</span>
           )}
           {hasDiscount && (
-            <span className="text-[11px] text-ink-3 line-through">
+            <span className="text-xs text-ink-3 line-through">
               {formatPrice(basePrice! * line.quantity)}
             </span>
           )}
@@ -147,9 +147,9 @@ export function CartItemRow({
       <div className="hidden text-right lg:block">
         {price != null ? (
           <>
-            <p className="text-sm font-semibold text-ink">{formatPrice(price)}</p>
+            <p className="text-base font-semibold text-ink">{formatPrice(price)}</p>
             {hasDiscount && (
-              <p className="mt-1 text-[11px] text-ink-3 line-through">
+              <p className="mt-1 text-xs text-ink-3 line-through">
                 {formatPrice(basePrice!)}
               </p>
             )}
@@ -227,7 +227,7 @@ export function CartItemRow({
 
       <div className="hidden text-right lg:block">
         {total != null ? (
-          <span className="text-base font-bold text-ink">{formatPrice(total)}</span>
+          <span className="text-lg font-bold text-ink">{formatPrice(total)}</span>
         ) : (
           <span className="text-sm text-ink-3">&mdash;</span>
         )}
@@ -237,7 +237,7 @@ export function CartItemRow({
         type="button"
         disabled={disabled}
         onClick={() => onRemove(line.id)}
-        className="col-start-4 row-start-1 grid h-8 w-8 shrink-0 place-items-center self-start rounded-md text-ink-3 transition hover:bg-raised hover:text-danger disabled:opacity-40 lg:col-start-auto lg:row-start-auto lg:self-center"
+        className="col-start-4 row-start-1 grid h-11 w-11 shrink-0 place-items-center self-start rounded-md text-ink-3 transition hover:bg-raised hover:text-danger disabled:opacity-40 lg:col-start-auto lg:row-start-auto lg:self-center"
         aria-label={`Удалить ${line.name} из корзины`}
       >
         <X className="h-4 w-4" aria-hidden />

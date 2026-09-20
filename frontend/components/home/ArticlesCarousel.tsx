@@ -58,7 +58,7 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
         <h2 className="font-sans text-sm font-bold text-ink">Полезные статьи и обзоры</h2>
         <Link
           href="/articles"
-          className="ml-auto inline-flex items-center gap-1 text-[11px] font-semibold text-accent transition hover:gap-1.5"
+          className="ml-auto inline-flex items-center gap-1 text-sm font-semibold text-accent transition hover:gap-1.5"
         >
           Все статьи
           <ArrowRight className="h-3 w-3" aria-hidden />
@@ -69,7 +69,7 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
             onClick={() => scrollBy(-1)}
             disabled={atStart}
             aria-label="Предыдущие статьи"
-            className="grid h-11 w-11 place-items-center rounded-sm border border-line bg-surface sm:h-6 sm:w-6 text-ink-2 transition hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink-2"
+            className="grid h-11 w-11 place-items-center rounded-sm border border-line bg-surface sm:h-9 sm:w-9 text-ink-2 transition hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink-2"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
           </button>
@@ -78,7 +78,7 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
             onClick={() => scrollBy(1)}
             disabled={atEnd}
             aria-label="Следующие статьи"
-            className="grid h-11 w-11 place-items-center rounded-sm border border-line bg-surface sm:h-6 sm:w-6 text-ink-2 transition hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink-2"
+            className="grid h-11 w-11 place-items-center rounded-sm border border-line bg-surface sm:h-9 sm:w-9 text-ink-2 transition hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink-2"
           >
             <ChevronRight className="h-4 w-4" aria-hidden />
           </button>
@@ -97,9 +97,9 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
           >
             <Link
               href={`/articles/${article.slug}`}
-              className="group flex h-full min-h-[104px] items-stretch overflow-hidden rounded-sm border border-line bg-surface transition hover:border-accent/60 hover:shadow-sm"
+              className="group flex h-full min-h-[124px] items-stretch overflow-hidden rounded-sm border border-line bg-card shadow-card transition hover:border-accent/60 hover:shadow-md"
             >
-              <span className="relative w-[86px] shrink-0 bg-photo">
+              <span className="relative w-[104px] shrink-0 bg-photo">
                 <Image
                   src={article.image}
                   alt=""
@@ -111,14 +111,14 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
                 />
               </span>
               <span className="flex min-w-0 flex-col p-2">
-                <span className="text-[9px] font-semibold uppercase tracking-wide text-accent">
+                <span className="text-xs font-semibold uppercase tracking-wide text-accent">
                   {article.tag}
                 </span>
-                <span className="mt-0.5 line-clamp-2 block text-[11px] font-semibold leading-[1.3] text-ink transition group-hover:text-accent">
+                <span className="mt-0.5 line-clamp-2 block text-sm font-semibold leading-[1.3] text-ink transition group-hover:text-accent">
                   {article.title}
                 </span>
                 {/* nowrap: в узкой карточке дата иначе ломается на «20 июля» / «2026». */}
-                <span className="mt-auto flex flex-wrap items-center gap-x-2 pt-1 text-[10px] text-ink-3">
+                <span className="mt-auto flex flex-wrap items-center gap-x-2 pt-1 text-xs text-ink-3">
                   <span className="inline-flex items-center gap-1 whitespace-nowrap">
                     <CalendarDays className="h-3 w-3 shrink-0" aria-hidden />
                     {article.dateLabel}

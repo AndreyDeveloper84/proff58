@@ -71,12 +71,12 @@ export function Footer({
               <span className="font-sans text-sm font-extrabold uppercase tracking-wide text-ink">
                 {siteName}
               </span>
-              <span className="mt-0.5 text-[9px] font-medium uppercase text-ink-3">
+              <span className="mt-0.5 text-xs font-medium uppercase text-ink-3">
                 {SITE.header.tagline}
               </span>
             </span>
           </span>
-          <p className="mt-2 max-w-[260px] text-[11px] leading-[1.4] text-ink-2">
+          <p className="mt-2 max-w-[300px] text-sm leading-[1.45] text-ink-2">
             {SITE.footerAbout}
           </p>
           {/* Кнопки соцсетей удалены по решению команды: реальных аккаунтов нет,
@@ -86,8 +86,8 @@ export function Footer({
         {/* Группы ссылок */}
         {SITE.footerColumns.map((col) => (
           <nav key={col.title} aria-label={col.title}>
-            <h2 className="mb-2 font-sans text-xs font-bold text-ink">{col.title}</h2>
-            <ul className="space-y-1 text-[11px] leading-[1.35]">
+            <h2 className="mb-2 font-sans text-sm font-bold text-ink">{col.title}</h2>
+            <ul className="space-y-1.5 text-sm leading-[1.4]">
               {col.links.map((l) => (
                 <li key={l.label} className="leading-[1.35]">
                   <Link href={l.href} className="text-ink-2 hover:text-accent">
@@ -104,8 +104,8 @@ export function Footer({
             же страница не должна стоять в списке дважды. */}
         {allInfoPages.length > 0 && (
           <nav aria-label="Информация">
-            <h2 className="mb-2 font-sans text-xs font-bold text-ink">Информация</h2>
-            <ul className="space-y-1 text-[11px] leading-[1.35]">
+            <h2 className="mb-2 font-sans text-sm font-bold text-ink">Информация</h2>
+            <ul className="space-y-1.5 text-sm leading-[1.4]">
               {allInfoPages.map((page) => (
                 <li key={page.slug} className="leading-[1.35]">
                   <Link href={`/info/${page.slug}`} className="text-ink-2 hover:text-accent">
@@ -119,8 +119,8 @@ export function Footer({
 
         {/* Контакты + «Мы в мессенджерах» */}
         <div>
-          <h2 className="mb-2 font-sans text-xs font-bold text-ink">Контакты</h2>
-          <ul className="space-y-1.5 text-[11px] text-ink-2">
+          <h2 className="mb-2 font-sans text-sm font-bold text-ink">Контакты</h2>
+          <ul className="space-y-2 text-sm text-ink-2">
             {/* UX-03: адрес и номер копируются по нажатию; звонок — отдельной ссылкой. */}
             <li>
               <CopyContact
@@ -183,7 +183,7 @@ export function Footer({
                 <MessageSquareText className="h-3.5 w-3.5 text-max" aria-hidden />
                 {SITE.maxBot.title}
               </span>
-              <span className="mt-0.5 block text-[11px] leading-snug text-ink-2">
+              <span className="mt-0.5 block text-xs leading-snug text-ink-2">
                 {SITE.maxBot.text}
               </span>
             </span>
@@ -195,7 +195,7 @@ export function Footer({
       {/* Нижняя строка. Политика/соглашение появятся вместе с юр. страницами —
           битые ссылки не рисуем (#591). */}
       <div className="border-t border-line">
-        <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-2 px-4 py-3 text-[11px] text-ink-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 xl:px-8">
+        <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-2 px-4 py-3 text-xs text-ink-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 xl:px-8">
           <span>© 2014–2026 {siteName}. Все права защищены.</span>
           <div className="flex flex-wrap gap-3">
             {SITE.payments.map((p) => (

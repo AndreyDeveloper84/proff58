@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const bestsellers = await getBestsellers();
   return (
-    <main className="bg-surface">
+    <main className="bg-canvas">
       <HomeInteractive bestsellers={bestsellers} />
     </main>
   );

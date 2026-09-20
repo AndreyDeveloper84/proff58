@@ -137,7 +137,7 @@ export function SearchShell({
   return (
     <div className="mt-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-ink-3">
+        <p className="text-base text-ink-2">
           {countLabel} {listing.total} {pluralize(listing.total, "товар", "товара", "товаров")}
         </p>
         <div className="flex items-center gap-2">
@@ -156,7 +156,7 @@ export function SearchShell({
               value={query.sort}
               onChange={(e) => setSort(e.target.value as SortOption)}
               aria-label="Сортировка"
-              className="h-9 rounded-md border border-line bg-surface px-2 text-sm text-ink"
+              className="h-11 rounded-md border border-line bg-surface px-2 text-base text-ink sm:h-10"
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -208,7 +208,7 @@ export function SearchShell({
                 type="button"
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
-                className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-2 disabled:opacity-40"
+                className="min-h-11 min-w-11 rounded-md border border-line px-3 py-1.5 text-base text-ink-2 disabled:opacity-40 sm:min-h-10 sm:min-w-10"
               >
                 ‹
               </button>
@@ -224,7 +224,7 @@ export function SearchShell({
                     onClick={() => setPage(it)}
                     aria-current={it === page ? "page" : undefined}
                     className={cn(
-                      "min-w-9 rounded-md border px-3 py-1.5 text-sm",
+                      "min-h-11 min-w-11 rounded-md border px-3 py-1.5 text-base sm:min-h-10 sm:min-w-10",
                       it === page ? "border-accent text-accent" : "border-line text-ink-2",
                     )}
                   >
@@ -236,7 +236,7 @@ export function SearchShell({
                 type="button"
                 disabled={page >= totalPages}
                 onClick={() => setPage(page + 1)}
-                className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-2 disabled:opacity-40"
+                className="min-h-11 min-w-11 rounded-md border border-line px-3 py-1.5 text-base text-ink-2 disabled:opacity-40 sm:min-h-10 sm:min-w-10"
               >
                 ›
               </button>

@@ -32,7 +32,7 @@ export function ProductImage({
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-1.5 text-photo-ink">
           <Wrench className="h-7 w-7" strokeWidth={1.5} aria-hidden />
-          <span className="text-[11px] font-medium">Фото готовится</span>
+          <span className="text-xs font-medium">Фото готовится</span>
         </div>
       )}
     </div>

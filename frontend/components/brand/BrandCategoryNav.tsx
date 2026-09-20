@@ -41,7 +41,7 @@ export function BrandCategoryNav({
   const chip =
     "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition sm:min-h-10";
   const on = "border-accent bg-accent/10 font-semibold text-accent";
-  const off = "border-line bg-surface text-ink-2 hover:border-accent hover:text-accent";
+  const off = "border-line bg-card text-ink-2 hover:border-accent hover:text-accent";
 
   return (
     <nav aria-label="Категории бренда" className="mt-4">

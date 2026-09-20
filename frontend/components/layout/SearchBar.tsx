@@ -120,7 +120,7 @@ export function SearchBar({
             if (suggestions.length > 0) setOpen(true);
           }}
           placeholder={placeholder}
-          className="h-11 w-full rounded-md border border-line bg-surface py-2 pl-9 pr-8 text-sm text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
+          className="h-11 w-full rounded-md border border-line bg-surface py-2 pl-9 pr-8 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
           aria-label="Поиск товаров"
           autoComplete="off"
         />
@@ -149,7 +149,7 @@ export function SearchBar({
               <button
                 type="button"
                 onClick={() => handleSuggestionClick(s)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-ink hover:bg-surface"
+                className="flex min-h-11 w-full items-center gap-2 px-3 py-2.5 text-left text-[15px] text-ink hover:bg-surface"
               >
                 <Search className="h-3.5 w-3.5 shrink-0 text-ink-3" aria-hidden />
                 <span className="truncate">{s.name}</span>
@@ -160,7 +160,7 @@ export function SearchBar({
             <button
               type="button"
               onClick={() => goToSearch(query)}
-              className="w-full px-3 py-2 text-left text-sm text-accent hover:bg-surface"
+              className="min-h-11 w-full px-3 py-2 text-left text-[15px] text-accent hover:bg-surface"
             >
               Показать все результаты
             </button>

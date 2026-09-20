@@ -39,7 +39,7 @@ function FacetBlock({
 }) {
   return (
     <details open={defaultOpen} className="group border-t border-line py-4 first:border-t-0 first:pt-0">
-      <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-ink">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-base font-semibold text-ink md:min-h-9">
         {title}
         <ChevronDown className="h-4 w-4 text-ink-3 transition group-open:rotate-180" aria-hidden />
       </summary>
@@ -131,7 +131,7 @@ function CheckboxFacet({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Поиск бренда"
-            className="h-9 w-full rounded-md border border-line bg-surface pl-9 pr-3 text-sm text-ink placeholder:text-ink-3"
+            className="h-11 w-full rounded-md border border-line bg-surface pl-9 pr-3 text-base text-ink placeholder:text-ink-3"
           />
         </div>
       )}
@@ -140,7 +140,7 @@ function CheckboxFacet({
         {visible.map((o) => (
           <label
             key={o.value}
-            className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm text-ink-2 hover:text-ink md:min-h-9"
+            className="flex min-h-11 cursor-pointer items-center gap-2.5 text-[15px] text-ink-2 hover:text-ink md:min-h-10"
           >
             <input
               type="checkbox"
@@ -254,7 +254,7 @@ function RangeFacet({
   };
   const fieldNum = (s: string, fallback: number) => (s === "" ? fallback : Number(s));
   const fieldCls =
-    "h-9 w-full rounded-md border border-line bg-surface px-2 text-sm text-ink placeholder:text-ink-3";
+    "h-11 w-full rounded-md border border-line bg-surface px-2 text-base text-ink placeholder:text-ink-3";
 
   const span = hi - lo || 1;
   const minPct = ((draft.min - lo) / span) * 100;

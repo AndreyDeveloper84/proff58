@@ -59,7 +59,7 @@ export function ReviewForm({
         aria-label="Текст отзыва"
         rows={4}
         maxLength={4000}
-        className="w-full rounded-md border border-line bg-canvas px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
+        className="w-full rounded-md border border-line bg-field px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
       />
       {error && (
         <p role="alert" className="rounded-md border border-danger/10 bg-danger/10 px-3 py-2 text-sm text-danger">

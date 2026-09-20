@@ -221,7 +221,7 @@ export function CompareTable() {
                       </Link>
                       <div className="mt-3 min-w-0 lg:mt-0">
                         {p.brand && (
-                          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+                          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-3">
                             {p.brand}
                           </p>
                         )}

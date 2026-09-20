@@ -46,11 +46,11 @@ export function PopularBrands() {
   if (!brands.length) return null;
 
   return (
-    <section className="bg-surface" aria-labelledby="popular-brands-title">
+    <section className="bg-canvas" aria-labelledby="popular-brands-title">
       <div className="mx-auto w-full max-w-[1680px] px-4 pt-2 sm:px-6 xl:px-8">
         <h2
           id="popular-brands-title"
-          className="mb-2 font-sans text-lg font-bold text-ink"
+          className="mb-2 font-sans text-xl font-bold text-ink"
         >
           Популярные бренды
         </h2>
@@ -66,12 +66,12 @@ export function PopularBrands() {
                   : `/search?q=${encodeURIComponent(brand)}`
               }
               aria-label={`Товары бренда ${brand}`}
-              className="group relative grid h-10 place-items-center overflow-hidden rounded-sm border border-line bg-surface px-2 transition hover:border-accent"
+              className="group relative grid h-12 place-items-center overflow-hidden rounded-sm border border-line bg-card px-2 shadow-card transition hover:border-accent"
             >
               <PendingBar />
               <span
                 className={cn(
-                  "select-none font-sans text-sm uppercase transition group-hover:brightness-75",
+                  "select-none font-sans text-base uppercase transition group-hover:brightness-75",
                   BRAND_STYLES[brand] ?? "font-bold text-ink",
                 )}
               >
