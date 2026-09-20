@@ -95,11 +95,13 @@ export function Header({
       <span className="grid h-8 w-8 shrink-0 place-items-center text-accent">
         <Cog className="h-8 w-8" strokeWidth={3} aria-hidden />
       </span>
-      <span className="flex flex-col leading-none">
+      {/* min-w-0: на экране 320 px подпись под названием переносится на вторую строку,
+          а не выталкивает иконки поиска и корзины за край (UX-04). */}
+      <span className="flex min-w-0 flex-col leading-none">
         <span className="font-sans text-[15px] font-extrabold uppercase tracking-[0.02em] text-header-ink lg:text-[17px]">
           {siteName}
         </span>
-        <span className="mt-0.5 whitespace-nowrap text-xs font-medium uppercase tracking-normal text-topbar-ink">
+        <span className="mt-0.5 text-xs font-medium uppercase leading-tight tracking-normal text-topbar-ink min-[360px]:whitespace-nowrap">
           {SITE.header.tagline}
         </span>
       </span>
@@ -233,7 +235,7 @@ export function Header({
           <Menu className="h-5 w-5" aria-hidden />
         </button>
 
-        <Link href="/" className="min-w-0 shrink-0 lg:w-[228px]" aria-label="На главную">
+        <Link href="/" className="min-w-0 shrink lg:w-[228px] lg:shrink-0" aria-label="На главную">
           {logo}
         </Link>
 

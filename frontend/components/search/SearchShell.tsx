@@ -140,23 +140,25 @@ export function SearchShell({
         <p className="text-base text-ink-2">
           {countLabel} {listing.total} {pluralize(listing.total, "товар", "товара", "товаров")}
         </p>
-        <div className="flex items-center gap-2">
+        {/* min-w-0 по цепочке: на экране 320 px кнопка фильтров и сортировка 16 px не
+            помещаются в строку целиком — список сужается, а не распирает страницу. */}
+        <div className="flex min-w-0 max-w-full items-center gap-2">
           <button
             ref={filterBtnRef}
             type="button"
             onClick={() => setDrawerOpen(true)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-md border border-line px-3 text-sm text-ink-2 lg:hidden"
+            className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md border border-line px-3 text-sm text-ink-2 lg:hidden"
           >
             <SlidersHorizontal className="h-4 w-4" aria-hidden />
             Фильтры{activeFiltersCount ? ` ${activeFiltersCount}` : ""}
           </button>
-          <label className="flex items-center gap-2 text-sm text-ink-3">
+          <label className="flex min-w-0 items-center gap-2 text-sm text-ink-3">
             <span className="hidden sm:inline">Сортировка</span>
             <select
               value={query.sort}
               onChange={(e) => setSort(e.target.value as SortOption)}
               aria-label="Сортировка"
-              className="h-11 rounded-md border border-line bg-surface px-2 text-base text-ink sm:h-10"
+              className="h-11 min-w-0 max-w-full rounded-md border border-line bg-surface px-2 text-base text-ink sm:h-10"
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
