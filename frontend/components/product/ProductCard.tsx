@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock, Heart } from "lucide-react";
+import { useQuickView } from "@/components/quickview/QuickViewProvider";
 import { useWishlist } from "@/components/wishlist/WishlistProvider";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
@@ -59,6 +60,7 @@ export function ProductCard({
   showFavorite = true,
   variant = "default",
   className,
+  quickView = true,
 }: {
   product: Product;
   view?: "grid" | "list";
@@ -67,6 +69,9 @@ export function ProductCard({
   className?: string;
   showFavorite?: boolean;
   variant?: "default" | "home";
+  // Быстрый просмотр по клику на фото/название (UX-05). Выключается там, где
+  // карточка — уже часть подробного экрана и всплывающее окно лишнее.
+  quickView?: boolean;
 }) {
   // Избранное общее на всю страницу (WishlistProvider): одна и та же позиция
   // встречается в выдаче и в каруселях, и сердечки обязаны показывать одно
@@ -76,6 +81,19 @@ export function ProductCard({
   const href = `/product/${product.slug}`;
   // Короткая форма из 1С; пока товар не прошёл нормализацию — витринное имя.
   const title = product.cardName || product.name;
+  // UX-05: обычный левый клик по фото или названию открывает быстрый просмотр поверх
+  // списка. href остаётся настоящим: Ctrl/Cmd/Shift/Alt-клик, средняя кнопка, «открыть
+  // в новой вкладке» и переход без JS ведут на страницу товара. Вне провайдера (тесты,
+  // демо) preview === null — и клик остаётся обычным переходом.
+  const preview = useQuickView();
+  const openPreview = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!quickView || !preview || event.defaultPrevented) return;
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    preview.open(product, event.currentTarget);
+  };
   const dimmed = product.stock === "out";
   const buyable = product.price.final != null && product.stock !== "out";
 
@@ -102,7 +120,7 @@ export function ProductCard({
   );
 
   const media = (
-    <a href={href} aria-label={title} className="relative block">
+    <a href={href} onClick={openPreview} aria-label={title} className="relative block">
       {product.price.discountPct != null && (
         <span className="absolute left-2 top-2 z-10 rounded-md bg-danger px-1.5 py-0.5 text-xs font-bold text-white">
           −{product.price.discountPct}%
@@ -167,7 +185,7 @@ export function ProductCard({
         )}
 
         <div className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2">
-          <a href={href} aria-label={title} className="block">
+          <a href={href} onClick={openPreview} aria-label={title} className="block">
             <ProductImage
               src={product.image}
               alt={title}
@@ -177,6 +195,7 @@ export function ProductCard({
           </a>
           <a
             href={href}
+            onClick={openPreview}
             className="mt-2 line-clamp-2 min-h-[38px] text-sm font-semibold leading-[1.35] text-ink hover:text-accent"
           >
             {product.brand ? `${product.brand} ` : ""}
@@ -234,7 +253,11 @@ export function ProductCard({
             </div>
           </div>
           <p className="text-xs text-ink-3">{product.brand}</p>
-          <a href={href} className="mt-0.5 line-clamp-2 text-base font-medium text-ink hover:text-accent">
+          <a
+            href={href}
+            onClick={openPreview}
+            className="mt-0.5 line-clamp-2 text-base font-medium text-ink hover:text-accent"
+          >
             {title}
           </a>
           <ProductSpecs specs={product.specs} limit={4} className="mt-1.5" />
@@ -270,7 +293,11 @@ export function ProductCard({
         </div>
       </div>
       <p className="text-xs text-ink-3">{product.brand}</p>
-      <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium leading-snug text-ink hover:text-accent sm:text-[15px]">
+      <a
+        href={href}
+        onClick={openPreview}
+        className="mt-0.5 line-clamp-2 text-sm font-medium leading-snug text-ink hover:text-accent sm:text-[15px]"
+      >
         {title}
       </a>
       <ProductSpecs specs={product.specs} limit={3} className="mt-1.5" />
