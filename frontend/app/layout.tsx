@@ -6,6 +6,7 @@ import { AuthStateProvider } from "@/components/auth/AuthStateProvider";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { WishlistProvider } from "@/components/wishlist/WishlistProvider";
 import { Header } from "@/components/layout/Header";
+import { CopyToastRegion } from "@/components/contacts/CopyToastRegion";
 import { Footer } from "@/components/layout/Footer";
 import { THEME_INIT_SCRIPT } from "@/components/layout/ThemeToggle";
 import { authStateFromCookies } from "@/lib/auth-state";
@@ -109,6 +110,8 @@ export default async function RootLayout({
                   infoPages={infoPages}
                 />
               </div>
+              {/* UX-03: единый регион уведомлений «скопировано» для шапки, подвала и 404. */}
+              <CopyToastRegion />
             </WishlistProvider>
           </CartProvider>
         </AuthStateProvider>

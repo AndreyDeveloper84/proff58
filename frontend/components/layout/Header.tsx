@@ -30,6 +30,7 @@ import type { InfoPageLink } from "@/lib/info-pages";
 import { useCompare } from "@/lib/compare";
 import { resolveStorefront, SITE, type ResolvedStorefront, type TopLink } from "@/lib/site";
 import { cn } from "@/lib/utils";
+import { CallLink, CopyContact } from "@/components/contacts/CopyContact";
 import { SearchBar } from "./SearchBar";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -115,10 +116,15 @@ export function Header({
               <MapPin className="h-3.5 w-3.5 text-accent" aria-hidden />
               {storefront.region}
             </span>
-            <span className="flex items-center gap-1.5 font-medium text-accent">
+            {/* UX-03: подпись короткая, а в буфер уходит полный адрес магазина. */}
+            <CopyContact
+              kind="address"
+              value={storefront.address}
+              className="flex items-center gap-1.5 font-medium text-accent hover:brightness-90"
+            >
               <Store className="h-3.5 w-3.5" aria-hidden />
               {storefront.store}
-            </span>
+            </CopyContact>
             {/* Инфо-пункты: каждый раскрывает подсказку по hover/фокусу — сюда
                 переехала бывшая сервисная полоса главной — и ведёт на свою страницу,
                 если она опубликована. «Контакты» рендерятся из storefront
@@ -153,15 +159,19 @@ export function Header({
                   <span className="invisible absolute left-1/2 top-full z-50 w-64 -translate-x-1/2 rounded-md border border-header-line bg-header p-3 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
                     {isContacts ? (
                       <span className="block space-y-1.5">
-                        <span className="block text-xs font-semibold text-header-ink">
-                          {storefront.address}
+                        <CopyContact
+                          kind="address"
+                          value={storefront.address}
+                          className="block text-xs font-semibold text-header-ink"
+                        />
+                        <span className="flex items-center justify-between gap-3">
+                          <CopyContact
+                            kind="phone"
+                            value={storefront.phone.display}
+                            className="text-xs text-topbar-ink"
+                          />
+                          <CallLink href={storefront.phone.href} className="text-xs" />
                         </span>
-                        <a
-                          href={storefront.phone.href}
-                          className="block text-xs text-topbar-ink hover:text-accent"
-                        >
-                          {storefront.phone.display}
-                        </a>
                         <a
                           href={`mailto:${storefront.email}`}
                           className="block text-xs text-topbar-ink hover:text-accent"
@@ -242,15 +252,20 @@ export function Header({
           />
         </div>
 
-        <a
-          href={storefront.phone.href}
-          className="hidden shrink-0 flex-col text-header-ink transition hover:text-accent xl:flex"
-        >
-          <span className="text-[15px] font-bold leading-tight">{storefront.phone.display}</span>
-          {storefront.phoneNote ? (
-            <span className="text-[11px] font-normal text-topbar-ink">{storefront.phoneNote}</span>
-          ) : null}
-        </a>
+        {/* UX-03: нажатие на номер копирует его; звонок — отдельной ссылкой рядом. */}
+        <div className="hidden shrink-0 flex-col text-header-ink xl:flex">
+          <CopyContact
+            kind="phone"
+            value={storefront.phone.display}
+            className="text-[15px] font-bold leading-tight"
+          />
+          <span className="flex items-center gap-2 text-xs leading-tight">
+            <CallLink href={storefront.phone.href} />
+            {storefront.phoneNote ? (
+              <span className="font-normal text-topbar-ink">{storefront.phoneNote}</span>
+            ) : null}
+          </span>
+        </div>
 
         {/* Действия — desktop: избранное · сравнение (future) · корзина · кабинет */}
         <div className="ml-auto hidden shrink-0 items-center gap-1 lg:flex">
@@ -384,18 +399,24 @@ export function Header({
                 меню бесполезны, битые ссылки запрещены DoD эпика. */}
             {/* Телефон и тема — в одной строке. Переключатель здесь только для
                 самых узких экранов (<640px), где в шапке места под него нет. */}
-            <div className="flex items-center justify-between py-2.5 sm:hidden">
-              <a href={storefront.phone.href} className="text-sm font-semibold text-header-ink">
-                {storefront.phone.display}
-              </a>
-              <ThemeToggle />
+            <div className="flex min-h-11 items-center justify-between gap-3 py-2.5">
+              <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <CopyContact
+                  kind="phone"
+                  value={storefront.phone.display}
+                  className="min-h-11 text-base font-semibold text-header-ink"
+                />
+                <CallLink href={storefront.phone.href} className="inline-flex min-h-11 items-center text-sm" />
+              </span>
+              <span className="sm:hidden">
+                <ThemeToggle />
+              </span>
             </div>
-            <a
-              href={storefront.phone.href}
-              className="hidden min-h-11 items-center py-2.5 text-sm font-semibold text-header-ink sm:flex"
-            >
-              {storefront.phone.display}
-            </a>
+            <CopyContact
+              kind="address"
+              value={storefront.address}
+              className="min-h-11 py-2 text-sm text-topbar-ink"
+            />
           </nav>
         </div>
       )}
