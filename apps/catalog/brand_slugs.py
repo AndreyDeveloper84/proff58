@@ -6,12 +6,25 @@
 множества брендов (при добавлении/удалении suffix-slug может сдвинуться). Полноценные SEO-URL
 требуют Brand-модели / persisted ``brand_slug`` (follow-up).
 
+Две схемы slug — намеренно, и путать их нельзя:
+
+* **фасет PLP** (``build_brand_slug_map``) — slug с суффиксами ``-2/-3`` при коллизии.
+  Нужен, чтобы каждая строка фасета была отдельным токеном; от состава брендов зависит.
+* **страница бренда** (``brand_page``, UX-07) — ТОЛЬКО base-slug, без суффиксов. Все
+  написания с одним base-slug («Bosch»/«BOSCH», «Зубр»/«Zubr») — одна страница
+  ``/brands/<slug>``. Поэтому публичная ссылка стабильна: появление или исчезновение
+  другого бренда её не сдвигает. Это и есть решение по «стабильным ссылкам» до
+  появления модели Brand.
+
 Отдельный модуль (а не в facets/filters) — чтобы и ``facets.py``, и ``filters.py`` могли
 импортировать резолв без циклической зависимости. ``visible_products`` импортируется лениво
 (внутри функции), т.к. ``filters`` импортирует этот модуль.
 """
 
 from __future__ import annotations
+
+from django.core.cache import cache as cache_store
+from django.db.models import Count, Q
 
 from apps.catalog.translit import slugify_value
 
@@ -71,3 +84,68 @@ def resolve_brand_tokens(tokens) -> list[str]:
             seen.add(brand)
             out.append(brand)
     return out
+
+
+# --- Страница бренда (UX-07) -------------------------------------------------------
+
+
+def _build_brand_pages() -> dict[str, dict]:
+    """``{base_slug: {"slug", "name", "spellings", "visible_total"}}`` по ВСЕМ товарам.
+
+    По всем, а не только видимым: странице нужно отличать «такого бренда нет» (404) от
+    «бренд известен, но товаров на витрине сейчас нет» (200 с нулём). ``name`` — самое
+    частое написание среди видимых товаров (при равенстве — среди всех, затем по
+    алфавиту), чтобы заголовок не зависел от порядка строк в БД.
+    """
+    from apps.catalog.models import Product, ProductStatus  # lazy: модуль грузится рано
+
+    rows = (
+        Product.objects.exclude(brand__isnull=True)
+        .exclude(brand__exact="")
+        .order_by()  # сбросить Meta.ordering, иначе name попадёт в GROUP BY
+        .values("brand")
+        .annotate(
+            total=Count("id"),
+            visible=Count("id", filter=Q(is_active=True, status=ProductStatus.PUBLISHED)),
+        )
+    )
+    pages: dict[str, dict] = {}
+    for row in rows:
+        slug = slugify_value(row["brand"])
+        if not slug:
+            continue
+        page = pages.setdefault(slug, {"slug": slug, "_variants": []})
+        page["_variants"].append((row["brand"], row["visible"], row["total"]))
+    for page in pages.values():
+        variants = sorted(
+            page.pop("_variants"), key=lambda v: (-v[1], -v[2], v[0].casefold(), v[0])
+        )
+        page["name"] = variants[0][0]
+        page["spellings"] = sorted(v[0] for v in variants)
+        page["visible_total"] = sum(v[1] for v in variants)
+    return pages
+
+
+def brand_pages() -> dict[str, dict]:
+    """Карта страниц брендов в версионном кэше фасетов.
+
+    Инвалидируется вместе с фасетами (любое сохранение товара поднимает версию), TTL тот
+    же. Кэш выключен (dev/CI) → прямой расчёт: один GROUP BY по индексированному полю.
+    """
+    from apps.catalog.facets import _facets_cache_ttl, _facets_version  # lazy: facets → brand_slugs
+
+    ttl = _facets_cache_ttl()
+    if ttl <= 0:
+        return _build_brand_pages()
+    key = f"catalog:brand-pages:v{_facets_version()}"
+    cached = cache_store.get(key)
+    if cached is not None:
+        return cached
+    pages = _build_brand_pages()
+    cache_store.set(key, pages, ttl)
+    return pages
+
+
+def brand_page(slug: str) -> dict | None:
+    """Страница бренда по base-slug; ``None`` — такого бренда нет ни у одного товара."""
+    return brand_pages().get((slug or "").strip().lower())

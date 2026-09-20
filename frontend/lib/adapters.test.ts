@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  CatalogFetchError,
   fetchBestsellersFromApi,
+  fetchBrandOverviewFromApi,
+  fetchBrandProductsFromApi,
   fetchCategoryTreeFromApi,
   fetchListingFromApi,
 } from "./adapters";
@@ -77,6 +80,98 @@ describe("fetchListingFromApi", () => {
 
     expect(listing).not.toBeNull();
     expect(listing?.facets).toEqual([]);
+  });
+});
+
+// UX-07: страница бренда. Выборку задаёт ?brand_slug= (точное поле бренда), а не
+// ?search= — иначе в выдачу попадали бы чужие товары со словом в названии.
+describe("страница бренда", () => {
+  const originalFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  const calls: string[] = [];
+  function mockFetch(response: () => Response) {
+    calls.length = 0;
+    global.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      calls.push(String(input));
+      return response();
+    }) as unknown as typeof fetch;
+  }
+
+  it("товары запрашиваются фильтром бренда; сортировка, страница и категория его не теряют", async () => {
+    mockFetch(() => jsonResponse({ count: 57, results: [] }));
+    const query = parseQuery(new URLSearchParams("sort=price_asc&page=3&stock=in"), "krugi");
+
+    const { total } = await fetchBrandProductsFromApi(BASE, "metabo", query);
+
+    const url = new URL(calls[0]);
+    expect(url.searchParams.get("brand_slug")).toBe("metabo");
+    expect(url.searchParams.has("search")).toBe(false);
+    expect(url.searchParams.get("category")).toBe("krugi");
+    expect(url.searchParams.get("sort")).toBe("price_asc");
+    expect(url.searchParams.get("offset")).toBe("48");
+    expect(url.searchParams.get("stock_status")).toBe("in_stock");
+    // Количество — из count API, а не длина первой страницы.
+    expect(total).toBe(57);
+  });
+
+  it("без выбранной категории параметр category не уходит пустым", async () => {
+    mockFetch(() => jsonResponse({ count: 0, results: [] }));
+
+    await fetchBrandProductsFromApi(BASE, "metabo", parseQuery(new URLSearchParams(), ""));
+
+    expect(new URL(calls[0]).searchParams.has("category")).toBe(false);
+  });
+
+  it("неизвестный бренд (404) → null, а сбой API → ошибка, не «товаров нет»", async () => {
+    const query = parseQuery(new URLSearchParams(), "");
+
+    mockFetch(() => jsonResponse({ detail: "Бренд не найден." }, 404));
+    expect(await fetchBrandOverviewFromApi(BASE, "nope", query)).toBeNull();
+
+    mockFetch(() => jsonResponse({ detail: "boom" }, 500));
+    await expect(fetchBrandOverviewFromApi(BASE, "metabo", query)).rejects.toBeInstanceOf(
+      CatalogFetchError,
+    );
+  });
+
+  it("известный бренд без товаров отличим от неизвестного", async () => {
+    mockFetch(() =>
+      jsonResponse({
+        brand: { slug: "hilti", name: "Hilti" },
+        total_products: 0,
+        brand_total_products: 0,
+        categories: [],
+      }),
+    );
+
+    const overview = await fetchBrandOverviewFromApi(BASE, "hilti", parseQuery(new URLSearchParams(), ""));
+
+    expect(overview).toMatchObject({ brand: { name: "Hilti" }, brandTotal: 0, total: 0 });
+  });
+
+  it("шапка бренда: категории со счётчиками, фасета «Бренд» нет", async () => {
+    mockFetch(() =>
+      jsonResponse({
+        brand: { slug: "metabo", name: "Metabo" },
+        total_products: 2,
+        brand_total_products: 3,
+        price: { min: 150, max: 9000 },
+        stock: [{ value: "in_stock", label: "В наличии", count: 2, selected: false }],
+        categories: [{ slug: "krugi", name: "Круги", count: 2, selected: true }],
+      }),
+    );
+    const query = parseQuery(new URLSearchParams("brand=bosch"), "krugi");
+
+    const overview = await fetchBrandOverviewFromApi(BASE, "metabo", query);
+
+    expect(new URL(calls[0]).searchParams.has("brand")).toBe(false);
+    expect(new URL(calls[0]).searchParams.get("category")).toBe("krugi");
+    expect(overview?.categories).toEqual([{ slug: "krugi", name: "Круги", count: 2, selected: true }]);
+    expect(overview?.facets.map((f) => f.code)).toEqual(["price", "stock"]);
   });
 });
 

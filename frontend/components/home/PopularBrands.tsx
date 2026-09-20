@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import Link, { useLinkStatus } from "next/link";
 import { HOME_CONTENT } from "@/lib/home-content";
 import { cn } from "@/lib/utils";
 
@@ -18,8 +20,27 @@ const BRAND_STYLES: Record<string, string> = {
   Ресанта: "font-black tracking-[-0.05em] text-[#e12d2d] dark:text-[#f2585a]",
 };
 
-// Отдельного backend-маршрута бренда нет, поэтому рабочий путь остаётся
-// поиском. Визуальный wordmark не выдаётся за официальный растровый логотип.
+// Клик по плитке обязан отозваться сразу (PERF-01). Страница бренда динамическая:
+// пока сервер её рендерит, Next держит старый экран, и до этого индикатора плитка
+// 2–10 секунд выглядела ненажатой — «бренды не нажимаются». Полоса всегда в
+// разметке и меняет только прозрачность: сдвига вёрстки нет.
+function PendingBar() {
+  const { pending } = useLinkStatus();
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "pointer-events-none absolute inset-x-0 bottom-0 h-0.5 origin-left bg-accent transition-opacity",
+        pending ? "animate-pulse opacity-100" : "opacity-0",
+      )}
+    />
+  );
+}
+
+// Плитки ведут на страницу бренда /brands/<slug> с точной выдачей по полю бренда
+// (UX-07), а не в текстовый поиск: по «Metabo» тот находил чужие запчасти «аналог
+// Metabo» и терял товары бренда без его имени в названии. Визуальный wordmark не
+// выдаётся за официальный растровый логотип.
 export function PopularBrands() {
   const brands = HOME_CONTENT.popularBrands;
   if (!brands.length) return null;
@@ -37,10 +58,17 @@ export function PopularBrands() {
           {brands.map((brand) => (
             <Link
               key={brand}
-              href={`/search?q=${encodeURIComponent(brand)}`}
+              // Бренд без замороженного slug (добавили в список и забыли карту) не
+              // должен давать битую ссылку — такой уходит в поиск, как раньше.
+              href={
+                HOME_CONTENT.popularBrandSlugs[brand]
+                  ? `/brands/${HOME_CONTENT.popularBrandSlugs[brand]}`
+                  : `/search?q=${encodeURIComponent(brand)}`
+              }
               aria-label={`Товары бренда ${brand}`}
-              className="group grid h-10 place-items-center rounded-sm border border-line bg-surface px-2 transition hover:border-accent"
+              className="group relative grid h-10 place-items-center overflow-hidden rounded-sm border border-line bg-surface px-2 transition hover:border-accent"
             >
+              <PendingBar />
               <span
                 className={cn(
                   "select-none font-sans text-sm uppercase transition group-hover:brightness-75",

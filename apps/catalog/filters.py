@@ -13,7 +13,7 @@ import django_filters
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Case, FloatField, IntegerField, Prefetch, Q, Value, When
 
-from .brand_slugs import resolve_brand_tokens
+from .brand_slugs import brand_page, resolve_brand_tokens
 from .models import Category, Product, ProductAttributeValue, ProductStatus, StockStatus
 
 
@@ -69,6 +69,9 @@ class ProductFilter(django_filters.FilterSet):
     # Категория + все потомки: зайдя в «Электроинструмент», видим товары из «Дрелей».
     category = django_filters.CharFilter(method="filter_category")
     brand = django_filters.CharFilter(method="filter_brand")
+    # Страница бренда (UX-07): стабильный base-slug → все его написания. Отдельный
+    # параметр, а не ещё один смысл ``brand``: тот принимает суффиксные slug фасета PLP.
+    brand_slug = django_filters.CharFilter(method="filter_brand_slug")
     # tool_type — вторая ось навигации (slug варианта атрибута), in_stock — наличие.
     tool_type = django_filters.CharFilter(method="filter_tool_type")
     in_stock = django_filters.CharFilter(method="filter_in_stock")
@@ -105,6 +108,18 @@ class ProductFilter(django_filters.FilterSet):
         if not brands:
             return queryset
         return queryset.filter(reduce(operator.or_, (Q(brand__iexact=b) for b in brands)))
+
+    def filter_brand_slug(self, queryset, name, value):
+        """Товары страницы бренда ``/brands/<slug>``: точное совпадение поля бренда.
+
+        ``brand__in`` по точным написаниям (а не iexact) — идёт по индексу поля. Совпадение
+        слова в названии или описании чужого товара в выдачу не попадает: это фильтр, а
+        не поиск. Неизвестный slug → пусто.
+        """
+        page = brand_page(value)
+        if page is None:
+            return queryset.none()
+        return queryset.filter(brand__in=page["spellings"])
 
     def filter_tool_type(self, queryset, name, value):
         if not value:

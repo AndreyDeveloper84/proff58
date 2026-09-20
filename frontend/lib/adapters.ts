@@ -38,6 +38,12 @@ const SSR_HEADERS = { "X-Forwarded-Proto": "https" } as const;
 // прерывается, существующий catch → пустой блок (мягкая деградация).
 const SSR_TIMEOUT_MS = 4000;
 
+// Таймаут запросов, от которых зависит целая страница (листинг, поиск, бренд, товар).
+// Длиннее, чем у блоков главной: здесь сбой — это экран ошибки с «Повторить», а не
+// тихо скрытый блок, и обрывать чуть замешкавшийся каталог незачем. Без таймаута
+// зависший апстрим держал переход без единого признака жизни (PERF-01).
+const LISTING_TIMEOUT_MS = 10_000;
+
 // Ошибка обращения к каталог-API (не 404 категории) — должна вести в error.tsx, а не маскироваться.
 export class CatalogFetchError extends Error {}
 
@@ -319,12 +325,21 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
 const humanize = humanizeToken; // алиас: единый источник в lib/format (N4)
 
 // query-параметры products-эндпоинта из нормализованного ListingQuery.
-function buildProductParams(query: ListingQuery, search?: string): URLSearchParams {
+function buildProductParams(
+  query: ListingQuery,
+  search?: string,
+  brandSlug?: string,
+): URLSearchParams {
   const sp = new URLSearchParams();
   // DRF-1166: у поиска категории нет — выборку задаёт ?search=. Остальные параметры
-  // (фильтры, пагинация, сортировка) те же, поэтому сборка одна на оба маршрута.
+  // (фильтры, пагинация, сортировка) те же, поэтому сборка одна на все маршруты.
+  // UX-07: у страницы бренда выборку задаёт ?brand_slug=, а категория необязательна
+  // и лишь сужает её.
   if (search) sp.set("search", search);
-  else sp.set("category", query.category);
+  else if (brandSlug) {
+    sp.set("brand_slug", brandSlug);
+    if (query.category) sp.set("category", query.category);
+  } else sp.set("category", query.category);
   sp.set("limit", String(query.perPage));
   sp.set("offset", String((query.page - 1) * query.perPage));
 
@@ -574,6 +589,95 @@ export async function fetchSearchListingFromApi(
     perPage: query.perPage,
     products: productsJson.results.map(apiProductToProduct),
   };
+}
+
+// --- Страница бренда (UX-07) ---
+
+type ApiBrandResponse = {
+  brand: { slug: string; name: string };
+  total_products: number;
+  brand_total_products: number;
+  price?: { min: number | null; max: number | null };
+  stock?: ApiStock[];
+  categories?: { slug: string; name: string; count: number; selected: boolean }[];
+};
+
+export type BrandCategory = { slug: string; name: string; count: number; selected: boolean };
+
+export type BrandOverview = {
+  brand: { slug: string; name: string };
+  /** Товаров с учётом выбранных фильтров. */
+  total: number;
+  /** Товаров бренда на витрине без фильтров: ноль — «бренд известен, но пусто». */
+  brandTotal: number;
+  categories: BrandCategory[];
+  facets: Facet[];
+};
+
+function brandFilterParams(query: ListingQuery): URLSearchParams {
+  const sp = buildFacetParams(query);
+  sp.delete("brand"); // бренд задан путём; фасет «Бренд» на его странице не нужен
+  if (query.category) sp.set("category", query.category);
+  return sp;
+}
+
+// Шапка страницы бренда: название, счётчики, категории, фасеты цены и наличия.
+// null — бренда нет (404). Иная ошибка → CatalogFetchError (→ error.tsx): пустую
+// страницу за сбой API не выдаём.
+export async function fetchBrandOverviewFromApi(
+  base: string,
+  slug: string,
+  query: ListingQuery,
+): Promise<BrandOverview | null> {
+  const root = base.replace(/\/$/, "");
+  const res = await fetch(
+    `${root}/api/catalog/brands/${encodeURIComponent(slug)}/?${brandFilterParams(query).toString()}`,
+    { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) throw new CatalogFetchError(`brand ${res.status}`);
+  const bj = (await res.json()) as ApiBrandResponse;
+  return {
+    brand: bj.brand,
+    total: bj.total_products,
+    brandTotal: bj.brand_total_products,
+    categories: bj.categories ?? [],
+    // Порядок макета тот же, что в каталоге и поиске: Цена → Наличие.
+    facets: [priceFacet(bj.price), stockFacet(bj.stock)].filter((x): x is Facet => x != null),
+  };
+}
+
+// Товары страницы бренда: тот же products-эндпоинт, выборку задаёт ?brand_slug=.
+export async function fetchBrandProductsFromApi(
+  base: string,
+  slug: string,
+  query: ListingQuery,
+): Promise<{ total: number; products: Product[] }> {
+  const root = base.replace(/\/$/, "");
+  const res = await fetch(
+    `${root}/api/catalog/products/?${buildProductParams(query, undefined, slug).toString()}`,
+    { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
+  );
+  if (!res.ok) throw new CatalogFetchError(`brand products ${res.status}`);
+  const json = (await res.json()) as { count: number; results: ApiProduct[] };
+  return { total: json.count, products: json.results.map(apiProductToProduct) };
+}
+
+// Сколько товаров находит текстовый поиск по названию бренда. Best-effort: поиск —
+// самый медленный запрос каталога, и ради подсказки страница бренда ждать его не обязана.
+export async function fetchSearchCountFromApi(base: string, q: string): Promise<number | null> {
+  const root = base.replace(/\/$/, "");
+  try {
+    const res = await fetch(
+      `${root}/api/catalog/products/?search=${encodeURIComponent(q)}&limit=1`,
+      { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
+    );
+    if (!res.ok) return null;
+    const json = (await res.json()) as { count?: number };
+    return typeof json.count === "number" ? json.count : null;
+  } catch {
+    return null;
+  }
 }
 
 // Карточка товара (PDP): detail-эндпоинт + best-effort секции совместимости.

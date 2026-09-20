@@ -26,6 +26,8 @@ from ..sales import bestsellers_queryset
 from ..services import (
     FacetError,
     apply_product_attr_filters,
+    brand_page,
+    build_brand_facets,
     build_facets_cached,
     build_search_facets,
     compatibility_sections,
@@ -421,6 +423,61 @@ class SearchFacetsView(APIView):
                 price_max=_price("price_max"),
             )
         )
+
+
+class BrandDetailView(APIView):
+    """Страница бренда (UX-07): название, категории бренда, цена, наличие, счётчики.
+
+    ``GET /api/catalog/brands/<slug>/?category=&stock_status=&price_min=&price_max=``.
+    Список товаров берётся обычным ``products/?brand_slug=<slug>`` с теми же параметрами —
+    отбор у них общий, поэтому ``total_products`` равен ``count`` списка.
+
+    Три разных исхода, которые витрина обязана различать:
+    404 — бренда нет ни у одного товара; 200 с ``brand_total_products == 0`` — бренд
+    известен, но на витрине сейчас пусто; 200 с ``total_products == 0`` при ненулевом
+    ``brand_total_products`` — товары есть, их скрыли выбранные фильтры.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug):
+        page = brand_page(slug)
+        if page is None:
+            return Response({"detail": "Бренд не найден."}, status=status.HTTP_404_NOT_FOUND)
+
+        params = request.query_params
+        stock_status = params.get("stock_status")
+        if stock_status and stock_status not in StockStatus.values:
+            return Response({"detail": "Недопустимый stock_status"}, status=400)
+
+        def _price(name):
+            raw = params.get(name)
+            if not raw:
+                return None
+            try:
+                return float(raw)
+            except ValueError:
+                return None  # мусор в цене игнорируем (фасеты не должны падать)
+
+        category = None
+        category_slug = (params.get("category") or "").strip()
+        if category_slug:
+            category = Category.objects.filter(slug=category_slug, is_active=True).first()
+            if category is None:
+                # Список по неизвестной категории пуст (ProductFilter.filter_category) —
+                # фасеты обязаны сказать то же самое, а не показать весь бренд.
+                return Response({"detail": "Категория не найдена."}, status=400)
+
+        data = build_brand_facets(
+            page["spellings"],
+            category=category,
+            stock_status=stock_status or None,
+            price_min=_price("price_min"),
+            price_max=_price("price_max"),
+        )
+        data["brand"] = {"slug": page["slug"], "name": page["name"]}
+        data["brand_total_products"] = page["visible_total"]
+        return Response(data)
 
 
 class ProductAvailabilitySubscriptionView(APIView):

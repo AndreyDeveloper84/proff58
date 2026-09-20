@@ -10,7 +10,11 @@ import {
   fetchProductFromApi,
   fetchSearchFromApi,
   fetchSearchListingFromApi,
+  fetchBrandOverviewFromApi,
+  fetchBrandProductsFromApi,
+  fetchSearchCountFromApi,
   fetchCategoryTreeFromApi,
+  type BrandOverview,
   fetchCategoryProductsFromApi,
   fetchBestsellersFromApi,
   type CategoryNode,
@@ -61,6 +65,31 @@ export async function searchListing(q: string, query: ListingQuery): Promise<Lis
   if (API_BASE && !FORCE_FIXTURES) {
     return await fetchSearchListingFromApi(API_BASE, q, query);
   }
+  return null;
+}
+
+// --- Страница бренда (UX-07). Фикстур бренда нет: без API страница честно «не найдена». ---
+
+export type { BrandOverview };
+
+export async function getBrandOverview(
+  slug: string,
+  query: ListingQuery,
+): Promise<BrandOverview | null> {
+  if (API_BASE && !FORCE_FIXTURES) return await fetchBrandOverviewFromApi(API_BASE, slug, query);
+  return null;
+}
+
+export async function getBrandProducts(
+  slug: string,
+  query: ListingQuery,
+): Promise<{ total: number; products: Product[] }> {
+  if (API_BASE && !FORCE_FIXTURES) return await fetchBrandProductsFromApi(API_BASE, slug, query);
+  return { total: 0, products: [] };
+}
+
+export async function getSearchCount(q: string): Promise<number | null> {
+  if (API_BASE && !FORCE_FIXTURES) return await fetchSearchCountFromApi(API_BASE, q);
   return null;
 }
 
