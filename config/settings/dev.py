@@ -25,6 +25,16 @@ MIDDLEWARE = ["debug_toolbar.middleware.DebugToolbarMiddleware", *MIDDLEWARE]
 
 INTERNAL_IPS = ["127.0.0.1"]
 
+
+def show_toolbar(request):
+    """Показывать ли debug-toolbar. Штатный колбэк на КАЖДОМ запросе резолвит
+    `host.docker.internal`; в контейнере на Linux имя не резолвится, и каждый
+    запрос (даже /healthz/) ждал DNS-таймаут ~8 с. Здесь — только INTERNAL_IPS."""
+    return DEBUG and request.META.get("REMOTE_ADDR") in INTERNAL_IPS
+
+
+DEBUG_TOOLBAR_CONFIG = {"SHOW_TOOLBAR_CALLBACK": "config.settings.dev.show_toolbar"}
+
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Celery: в dev/тестах задачи выполняются inline (без воркера и Redis).
