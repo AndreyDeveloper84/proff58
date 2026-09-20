@@ -20,7 +20,8 @@
     "belt_and_platform": "Размер ленты, размер платформы/основания, скорость ленты, диаметр подошвы, амплитуда — атрибутов в схеме нет, заносятся в unmapped как предложения владельцу.",
     "weight": "Вес/масса не мапится: брутто/нетто различаются по источникам, атрибута веса нет.",
     "unmapped": "Поля без подходящего Attribute — в unmapped с кандидатом; новые Attribute не создавать.",
-    "derived": "Derived-правила power_source не используются: импортёр сам отличает аккумуляторный инструмент по voltage < 60В; сетевые значения уходят в skipped_voltage."
+    "derived": "Derived-правила power_source не используются: импортёр сам отличает аккумуляторный инструмент по voltage < 60В; сетевые значения уходят в skipped_voltage.",
+    "vseinstrumenti": "PF-SH-CHAR-01: блок ВИ покрывает все карточки товаров с tool_type=shlifmashiny в БД (в т.ч. УШМ, типизированные как shlifmashiny — гигиена типа bolgarki-ushm отдельное решение). power_source задаётся ЯВНЫМИ полями («Напряжение» 220/230 → mains; «Напряжение аккумулятора» 12/18/20/36 → battery), derived-правило mains_if_voltage_field не используется — оно ловит «Напряжение аккумулятора». no_load_speed — верхняя граница диапазона (паспортный максимум); многоступенчатые значения «4000/6000/8000/10000» и числа с разделителем тысяч «6 500» отбрасываются в отчёт, не угадываются. SCHEMA_GAP: «Диаметр диска», «Резьба шпинделя», «Посадочный диаметр» — оси disc_diameter/spindle_thread привязаны только к bolgarki-ushm, к shlifmashiny не привязаны; в карту не входят (решение владельца)."
   },
   "normalizers": {
     "int": "первое целое число строки",
@@ -597,6 +598,162 @@
       },
       "fallbacks": [],
       "derived": []
+    },
+    "vseinstrumenti": {
+      "_comment": "PF-SH-CHAR-01: frozen VI characteristics (collector vi-pfsh-pool v1/v2). Только детерминированные поля.",
+      "fields": {
+        "Тип двигателя": {
+          "action": "map",
+          "attribute": "motor_type",
+          "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "бесщеточный": "brushless",
+            "бесщёточный": "brushless",
+            "щеточный": "brushed",
+            "щёточный": "brushed"
+          },
+          "confidence": "medium",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Мощность": {
+          "action": "map",
+          "attribute": "power",
+          "attribute_type": "decimal",
+          "unit": "Вт",
+          "normalize": "int",
+          "extract": "^(\\d+(?:[.,]\\d+)?)$",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "ВИ даёт голое число в Вт; у аккумуляторных поля нет"
+        },
+        "Напряжение": {
+          "action": "map",
+          "attribute": "power_source",
+          "attribute_type": "select",
+          "normalize": "option_map",
+          "extract": "^\\s*(2[23]0)",
+          "values": {
+            "220": "mains",
+            "230": "mains"
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report",
+          "comment": "то же mains-правило, что в карте дрелей; в ось voltage сетевое напряжение НЕ пишется"
+        },
+        "Число оборотов": {
+          "action": "map",
+          "attribute": "no_load_speed",
+          "attribute_type": "decimal",
+          "unit": "об/мин",
+          "normalize": "range_upper_decimal",
+          "extract": "^(\\d+(?:[.,]\\d+)?(?:-\\d+(?:[.,]\\d+)?)?)$",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "контракт оси: верхняя граница диапазона = паспортный максимум х.х.; многоступенчатые «A/B/C» и «6 500» → drop_to_report"
+        },
+        "Частота вращения шпинделя": {
+          "action": "map",
+          "attribute": "no_load_speed",
+          "attribute_type": "decimal",
+          "unit": "об/мин",
+          "normalize": "range_upper_decimal",
+          "extract": "^(\\d+(?:[.,]\\d+)?(?:-\\d+(?:[.,]\\d+)?)?)$",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "контракт оси: верхняя граница диапазона = паспортный максимум х.х.; многоступенчатые «A/B/C» и «6 500» → drop_to_report"
+        },
+        "Max частота вращения диска": {
+          "action": "map",
+          "attribute": "no_load_speed",
+          "attribute_type": "decimal",
+          "unit": "об/мин",
+          "normalize": "range_upper_decimal",
+          "extract": "^(\\d+(?:[.,]\\d+)?(?:-\\d+(?:[.,]\\d+)?)?)$",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "контракт оси: верхняя граница диапазона = паспортный максимум х.х.; многоступенчатые «A/B/C» и «6 500» → drop_to_report"
+        },
+        "Напряжение аккумулятора": [
+          {
+            "action": "map",
+            "attribute": "voltage",
+            "attribute_type": "decimal",
+            "unit": "В",
+            "normalize": "decimal",
+            "extract": "^(\\d+(?:[.,]\\d+)?)$",
+            "confidence": "medium",
+            "on_ambiguous": "drop_to_report",
+            "comment": "напряжение АКБ (12/18/20/36 В)"
+          },
+          {
+            "action": "map",
+            "attribute": "power_source",
+            "attribute_type": "select",
+            "normalize": "option_map",
+            "extract": "^\\s*(\\d+)",
+            "values": {
+              "12": "battery",
+              "18": "battery",
+              "20": "battery",
+              "36": "battery"
+            },
+            "confidence": "high",
+            "on_unknown_value": "drop_to_report",
+            "on_ambiguous": "drop_to_report",
+            "comment": "наличие поля напряжения АКБ = аккумуляторный инструмент; словарь номиналов замкнут по 72 карточкам"
+          }
+        ],
+        "Емкость аккумулятора": {
+          "action": "map",
+          "attribute": "battery_capacity",
+          "attribute_type": "decimal",
+          "unit": "А*ч",
+          "normalize": "decimal",
+          "extract": "^(\\d+(?:[.,]\\d+)?)$",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "«нет»/«без аккумулятора в комплекте» → нет числа → drop_to_report (ёмкость не угадываем)"
+        },
+        "Количество аккумуляторов в комплекте": {
+          "action": "map",
+          "attribute": "battery_included",
+          "attribute_type": "boolean",
+          "normalize": "boolean",
+          "values": {
+            "1": true,
+            "2": true,
+            "3": true,
+            "0": false,
+            "нет": false
+          },
+          "confidence": "medium",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Вес нетто": {
+          "action": "ignore",
+          "reason": "AMBIGUOUS_WEIGHT: не указано, с АКБ или без (DRILLS-CHAR-01 §14)"
+        },
+        "Диаметр диска": {
+          "action": "ignore",
+          "reason": "SCHEMA_GAP: disc_diameter не привязан к shlifmashiny (только bolgarki-ushm)"
+        },
+        "Резьба шпинделя": {
+          "action": "ignore",
+          "reason": "SCHEMA_GAP: spindle_thread не привязан к shlifmashiny (только bolgarki-ushm)"
+        },
+        "Min число оборотов": {
+          "action": "ignore",
+          "reason": "нижняя граница — не ось no_load_speed (max)"
+        },
+        "Частота колебаний": {
+          "action": "ignore",
+          "reason": "SCHEMA_GAP: ось частоты колебаний (ЭШМ/ПШМ) отсутствует"
+        }
+      }
     }
   },
   "model_prefixes": [

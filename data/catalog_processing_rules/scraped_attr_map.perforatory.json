@@ -828,6 +828,150 @@
           "comment": "есть поле «Напряжение питания, В/Гц» -> сетевой инструмент"
         }
       ]
+    },
+    "vseinstrumenti": {
+      "_comment": "PF-SH-CHAR-01: frozen VI characteristics (collector vi-pfsh-pool v1/v2, identity article_exact+brand_exact; ЗУБР base-article + ручная сверка заголовка). Только детерминированные поля.",
+      "fields": {
+        "Тип двигателя": {
+          "action": "map",
+          "attribute": "motor_type",
+          "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "бесщеточный": "brushless",
+            "бесщёточный": "brushless",
+            "щеточный": "brushed",
+            "щёточный": "brushed"
+          },
+          "confidence": "medium",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Тип хвостовика": {
+          "action": "map",
+          "attribute": "chuck",
+          "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "sds-plus": "sds-plus",
+            "sds plus": "sds-plus",
+            "sds-max": "sds-max",
+            "sds max": "sds-max"
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Мощность": {
+          "action": "map",
+          "attribute": "power",
+          "attribute_type": "decimal",
+          "unit": "Вт",
+          "normalize": "int",
+          "extract": "^(\\d+(?:[.,]\\d+)?)$",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "ВИ даёт голое число в Вт; у аккумуляторных поля нет"
+        },
+        "Max сила удара": {
+          "action": "map",
+          "attribute": "energy_impact",
+          "attribute_type": "decimal",
+          "unit": "Дж",
+          "normalize": "decimal",
+          "extract": "^(\\d+(?:[.,]\\d+)?)$",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "ВИ «сила удара» = энергия удара, Дж"
+        },
+        "Сила удара": {
+          "action": "map",
+          "attribute": "energy_impact",
+          "attribute_type": "decimal",
+          "unit": "Дж",
+          "normalize": "decimal",
+          "extract": "^(\\d+(?:[.,]\\d+)?)$",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "alias у аккумуляторных карточек"
+        },
+        "Частота вращения шпинделя": {
+          "action": "map",
+          "attribute": "no_load_speed",
+          "attribute_type": "decimal",
+          "unit": "об/мин",
+          "normalize": "range_upper_decimal",
+          "extract": "^(\\d+(?:[.,]\\d+)?(?:-\\d+(?:[.,]\\d+)?)?)$",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "контракт оси: верхняя граница диапазона = паспортный максимум х.х.; многоступенчатые «A/B/C» и «6 500» → drop_to_report"
+        },
+        "Напряжение аккумулятора": [
+          {
+            "action": "map",
+            "attribute": "voltage",
+            "attribute_type": "decimal",
+            "unit": "В",
+            "normalize": "decimal",
+            "extract": "^(\\d+(?:[.,]\\d+)?)$",
+            "confidence": "medium",
+            "on_ambiguous": "drop_to_report",
+            "comment": "напряжение АКБ (12/18/20/36 В)"
+          },
+          {
+            "action": "map",
+            "attribute": "power_source",
+            "attribute_type": "select",
+            "normalize": "option_map",
+            "extract": "^\\s*(\\d+)",
+            "values": {
+              "12": "battery",
+              "18": "battery",
+              "20": "battery",
+              "36": "battery"
+            },
+            "confidence": "high",
+            "on_unknown_value": "drop_to_report",
+            "on_ambiguous": "drop_to_report",
+            "comment": "наличие поля напряжения АКБ = аккумуляторный инструмент; словарь номиналов замкнут по 72 карточкам"
+          }
+        ],
+        "Емкость аккумулятора": {
+          "action": "map",
+          "attribute": "battery_capacity",
+          "attribute_type": "decimal",
+          "unit": "А*ч",
+          "normalize": "decimal",
+          "extract": "^(\\d+(?:[.,]\\d+)?)$",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "«нет»/«без аккумулятора в комплекте» → нет числа → drop_to_report (ёмкость не угадываем)"
+        },
+        "Количество аккумуляторов в комплекте": {
+          "action": "map",
+          "attribute": "battery_included",
+          "attribute_type": "boolean",
+          "normalize": "boolean",
+          "values": {
+            "1": true,
+            "2": true,
+            "3": true,
+            "0": false,
+            "нет": false
+          },
+          "confidence": "medium",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Вес нетто": {
+          "action": "ignore",
+          "reason": "AMBIGUOUS_WEIGHT: не указано, с АКБ или без (DRILLS-CHAR-01 §14)"
+        },
+        "Частота ударов": {
+          "action": "ignore",
+          "reason": "SCHEMA_GAP: оси «частота ударов» у perforatory нет; кандидат impact_rate (уд/мин) — решение владельца"
+        }
+      }
     }
   },
   "model_prefixes": [
