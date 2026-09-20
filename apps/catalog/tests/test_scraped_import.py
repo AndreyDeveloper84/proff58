@@ -36,6 +36,11 @@ ATTRS = {
     "chuck": (AttributeType.SELECT, ""),
     "motor_type": (AttributeType.SELECT, ""),
     "power_source": (AttributeType.SELECT, ""),
+    # Оси аккумуляторного инструмента: в БД есть (блок perforatory в attribute_rules),
+    # в карте появились с блоком vseinstrumenti (PF-SH-CHAR-01). Импортёр fail-closed
+    # требует ВСЕ managed-оси карты — фикстура обязана повторять схему БД.
+    "battery_capacity": (AttributeType.DECIMAL, "А·ч"),
+    "battery_included": (AttributeType.BOOLEAN, ""),
 }
 OPTIONS = {
     "tool_type": [("perforatory", "Перфораторы")],
