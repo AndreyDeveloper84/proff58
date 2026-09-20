@@ -183,6 +183,7 @@ JAZZMIN_SETTINGS = {
     # алфавиту, из-за чего «Заказы» оказывались между «Доставкой» и «Заявками».
     "order_with_respect_to": [
         "orders",
+        "payments",  # возвраты денег — часть работы с заказами, а не служебный журнал
         "catalog",
         "leads",
         "reviews",
@@ -197,7 +198,6 @@ JAZZMIN_SETTINGS = {
         "notifications",
         "ai",
         "analytics",
-        "payments",
         "auth",
     ],
     # Служебные журналы и внутренняя кухня: нужны, но не наравне с «Товарами».
@@ -230,6 +230,7 @@ JAZZMIN_SETTINGS = {
         "orders.b2binvoice": "fas fa-file-invoice",
         "orders.cart": "fas fa-shopping-basket",
         "catalog.product": "fas fa-box-open",
+        "catalog.productimage": "fas fa-images",
         "catalog.sitecategory": "fas fa-sitemap",
         "catalog.category": "fas fa-folder-tree",
         "catalog.attribute": "fas fa-ruler-combined",
@@ -248,6 +249,7 @@ JAZZMIN_SETTINGS = {
         "core.sitesettings": "fas fa-sliders",
         "payments.payment": "fas fa-credit-card",
         "payments.refund": "fas fa-rotate-left",
+        "payments.refundrequest": "fas fa-hand-holding-dollar",
         "sync_1c.synclog": "fas fa-arrows-rotate",
         "pricing.pricerecord": "fas fa-tags",
         "notifications.usernotificationpreference": "fas fa-bell",
@@ -317,6 +319,11 @@ JAZZMIN_SETTINGS = {
                 "name": "Не ушли в 1С",
                 "url": "/admin/orders/order/?sync_1c_status__exact=pending",
                 "icon": "fas fa-arrows-rotate",
+            },
+            {
+                "name": "Просят вернуть деньги",
+                "url": "/admin/payments/refundrequest/?status__exact=pending",
+                "icon": "fas fa-hand-holding-dollar",
             },
         ],
     },

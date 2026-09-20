@@ -5,12 +5,14 @@ from __future__ import annotations
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.admin import TimestampColumnsMixin
+
 from .models import InquiryStatus, ProductInquiry
 
 
 @admin.register(ProductInquiry)
-class ProductInquiryAdmin(admin.ModelAdmin):
-    list_display = ("created_at", "kind", "phone", "product", "status")
+class ProductInquiryAdmin(TimestampColumnsMixin, admin.ModelAdmin):
+    list_display = ("created", "kind", "phone", "product", "status")
     list_filter = ("status", "kind")
     search_fields = ("phone", "name", "product__name")
     raw_id_fields = ("product",)

@@ -7,13 +7,15 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
 
+from apps.core.admin import TimestampColumnsMixin
+
 from . import refund_requests
 from .models import Payment, Refund, RefundRequest, RefundRequestStatus
 
 
 @admin.register(Refund)
-class RefundAdmin(admin.ModelAdmin):
-    list_display = ("id", "payment", "amount", "currency", "status", "created_at")
+class RefundAdmin(TimestampColumnsMixin, admin.ModelAdmin):
+    list_display = ("id", "payment", "amount", "currency", "status", "created")
     list_filter = ("status", "currency")
     search_fields = ("provider_refund_id", "payment__provider_order_id", "idempotency_key")
     readonly_fields = (
@@ -33,7 +35,7 @@ class RefundAdmin(admin.ModelAdmin):
 
 
 @admin.register(Payment)
-class PaymentAdmin(admin.ModelAdmin):
+class PaymentAdmin(TimestampColumnsMixin, admin.ModelAdmin):
     list_display = (
         "provider_order_id",
         "order",
@@ -41,7 +43,7 @@ class PaymentAdmin(admin.ModelAdmin):
         "status",
         "amount",
         "receipt_status",
-        "created_at",
+        "created",
     )
     list_filter = ("status", "provider", "method", "receipt_status")
     search_fields = (
@@ -74,14 +76,14 @@ class PaymentAdmin(admin.ModelAdmin):
 
 
 @admin.register(RefundRequest)
-class RefundRequestAdmin(admin.ModelAdmin):
+class RefundRequestAdmin(TimestampColumnsMixin, admin.ModelAdmin):
     """Заявки покупателей на возврат денег: менеджер возвращает или отклоняет.
 
     Деньги двигаются только кнопками (через ``refund_requests``), а не правкой
     полей: поэтому все поля — только для чтения.
     """
 
-    list_display = ("id", "created_at", "order_link", "reason", "amount_paid", "status")
+    list_display = ("id", "created", "order_link", "reason", "amount_paid", "status")
     list_filter = ("status", "reason")
     search_fields = ("order__order_number", "order__customer_name", "order__customer_phone")
     date_hierarchy = "created_at"

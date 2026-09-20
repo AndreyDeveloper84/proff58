@@ -9,6 +9,7 @@ from django import forms
 from django.contrib import admin, messages
 from django.utils import timezone
 
+from apps.core.admin import TimestampColumnsMixin
 from apps.orders.reviews_bridge import order_products_summary
 
 from .models import Review, ReviewStatus
@@ -32,7 +33,7 @@ class ReviewAdminForm(forms.ModelForm):
 
 
 @admin.register(Review)
-class ReviewAdmin(admin.ModelAdmin):
+class ReviewAdmin(TimestampColumnsMixin, admin.ModelAdmin):
     form = ReviewAdminForm
     list_display = (
         "order",
@@ -41,7 +42,7 @@ class ReviewAdmin(admin.ModelAdmin):
         "delivery_rating",
         "shop_rating",
         "status",
-        "created_at",
+        "created",
     )
     list_select_related = ("order", "author")
     list_filter = ("status", "product_rating")

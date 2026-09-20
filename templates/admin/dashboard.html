@@ -1,8 +1,16 @@
 {% extends "admin/index.html" %}
+{% load i18n log jazzmin %}
 
 {% comment %}
-Стартовый экран «Сегодня». Список приложений jazzmin остаётся ниже — он никуда
-не девается, просто перестаёт быть первым, что видит человек.
+Стартовый экран «Сегодня». Список разделов остаётся ниже — он никуда не девается,
+просто перестаёт быть первым, что видит человек.
+
+Нижний список — копия разметки jazzmin 3.0.4 (admin/index.html), а не
+block.super: jazzmin подмешивает в него «полки» из custom_links как модели с
+кнопкой «Изменить» («Новые — Изменить»). Состав и порядок по-прежнему даёт
+get_side_menu (hide_models, order_with_respect_to), мы лишь пропускаем полки:
+у настоящей модели есть object_name, у полки — нет. Полки живут в карточках
+сверху и в боковом меню.
 {% endcomment %}
 
 {% block content_title %}Что нужно сделать сегодня{% endblock %}
@@ -72,5 +80,66 @@
   <a href="/admin/orders/order/">Все заказы</a>
 </p>
 
-{{ block.super }}
+{% get_jazzmin_ui_tweaks as jazzmin_ui %}
+{% get_side_menu using="app_list" as dashboard_list %}
+{% widthratio dashboard_list|length 2 1 as middle %}
+<div class="col-lg-9 col-12">
+  <div class="row" id="dashboard-apps">
+    <div class="col-md-6 col-sm-12">
+      {% for app in dashboard_list %}
+      <div class="card mb-3">
+        <div class="card-header"><h5 class="m-0">{{ app.name }}</h5></div>
+        <div class="card-body">
+          <table class="table table-sm">
+            <tbody>
+            {% for model in app.models %}{% if model.object_name %}
+              <tr>
+                <td>{% if model.url %}<a href="{{ model.url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}</td>
+                <td>
+                  <div class="btn-group float-end">
+                    {% if model.add_url %}<a href="{{ model.add_url }}" class="btn btn-sm {{ jazzmin_ui.button_classes.success }} addlink">{% trans 'Add' %}</a>{% endif %}
+                    {% if model.url %}<a href="{{ model.url }}" class="btn btn-sm {{ jazzmin_ui.button_classes.info }} {% if model.view_only %}viewlink{% else %}changelink{% endif %}">{% if model.view_only %}{% trans 'View' %}{% else %}{% trans 'Change' %}{% endif %}</a>{% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endif %}{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% if forloop.counter == middle|add:"0" %}
+    </div>
+    <div class="col-md-6 col-sm-12">
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<div class="col-lg-3 col-12">
+  <div id="content-related">
+    <div class="module" id="recent-actions-module">
+      <h4 class="mb-3">{% trans 'Recent actions' %}</h4>
+      {% get_admin_log 6 as admin_log for_user user %}
+      {% if not admin_log %}
+        <p>Вы пока ничего не меняли.</p>
+      {% else %}
+        <div class="timeline">
+          {% for entry in admin_log %}
+          <div>
+            {% if entry.is_change %}<i class="fas fa-edit bg-gray text-xs"></i>
+            {% elif entry.is_deletion %}<i class="fas fa-trash bg-danger text-xs"></i>
+            {% elif entry.is_addition %}<i class="fas fa-plus-circle bg-success text-xs"></i>{% endif %}
+            <div class="timeline-item">
+              <span class="time"><i class="fas fa-clock"></i> {{ entry.action_time|timesince }} назад</span>
+              <h3 class="timeline-header no-border">
+                {% if entry.is_deletion or not entry.get_admin_url %}{{ entry.object_repr }}{% else %}<a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>{% endif %}
+              </h3>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
 {% endblock %}
