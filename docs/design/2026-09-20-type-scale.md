@@ -94,6 +94,24 @@
 На ширинах 375 и 1440 px в обеих темах у главной, каталога и поиска горизонтальной
 прокрутки страницы нет. Замер — `scrollWidth − clientWidth = 0`.
 
+## Скриншоты
+
+Каталог `docs/design/2026-09-20-type-scale/`. «До» снято с боевого сайта proff58.ru,
+«после» — с локальной production-сборки на тех же боевых данных (только чтение).
+Порядок характеристик на снимках «после» ещё алфавитный: его задаёт backend, а на
+бою он обновится только после выкладки.
+
+| Экран | 1440, светлая | 1440, тёмная | 375, светлая | 375, тёмная |
+|---|---|---|---|---|
+| Главная, до | `before-home-1440-light.jpg` | `before-home-1440-dark.jpg` | `before-home-375-light.jpg` | `before-home-375-dark.jpg` |
+| Главная, после | `after-home-1440-light.jpg` | `after-home-1440-dark.jpg` | `after-home-375-light.jpg` | `after-home-375-dark.jpg` |
+| Каталог, до | `before-catalog-1440-light.jpg` | `before-catalog-1440-dark.jpg` | `before-catalog-375-light.jpg` | `before-catalog-375-dark.jpg` |
+| Каталог, после | `after-catalog-1440-light.jpg` | `after-catalog-1440-dark.jpg` | `after-catalog-375-light.jpg` | `after-catalog-375-dark.jpg` |
+
+Новые экраны, только «после»: быстрый просмотр (`quickview-1440.jpg`, `quickview-375.jpg`),
+страница бренда (`brand-1440.jpg`, `brand-375.jpg`), корзина с полем количества
+(`cart-1440.jpg`, `cart-375.jpg`). Бренд и корзина сняты на локальном демо-каталоге.
+
 ## Вне этой работы
 
 Статьи и личный кабинет в постановку не входили. Там остались подписи 10–11 px:
