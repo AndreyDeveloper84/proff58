@@ -67,7 +67,7 @@ export default async function RootLayout({
   const authState = authStateFromCookies((name) => cookieStore.has(name));
 
   // Тема: светлая по макету (#477) — она же серверный рендер. Реальную тему
-  // посетителя (сохранённый выбор либо системная) ставит THEME_INIT_SCRIPT в
+  // посетителя (сохранённый выбор, иначе светлая — UX-01) ставит THEME_INIT_SCRIPT в
   // <head> до первой отрисовки, поэтому <html> помечен suppressHydrationWarning:
   // атрибут в DOM к моменту гидрации намеренно отличается от серверного.
   return (
