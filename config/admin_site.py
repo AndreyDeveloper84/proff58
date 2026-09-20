@@ -21,11 +21,11 @@ from django.http import HttpResponseRedirect
 
 # Куда ведёт название раздела (хлебная крошка «Заказы», «Каталог»…), если в
 # разделе несколько моделей. Без записи берётся первая видимая в меню модель —
-# для catalog это была бы «Автораскладка», для payments — «Возвраты».
+# для catalog это была бы «Автораскладка». В «Оплате» работа — заявки на возврат.
 APP_HOME = {
     "orders": "order",
     "catalog": "product",
-    "payments": "payment",
+    "payments": "refundrequest",
     "content": "article",
     "delivery": "deliveryzone",
 }
