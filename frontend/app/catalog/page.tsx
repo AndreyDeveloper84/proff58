@@ -73,15 +73,15 @@ function CategoryCard({
       >
         <h2
           className={cn(
-            "line-clamp-3 pr-4 text-[11px] font-semibold leading-[1.25] text-ink transition group-hover:text-accent sm:text-sm lg:line-clamp-2",
-            featured ? "lg:text-[14px]" : "lg:text-[13px]",
+            "line-clamp-3 pr-4 text-[13px] font-semibold leading-[1.25] text-ink transition group-hover:text-accent sm:text-sm lg:line-clamp-2",
+            featured ? "lg:text-base" : "lg:text-sm",
           )}
         >
           {category.name}
         </h2>
 
         {children.length > 0 && (
-          <p className="mt-1 hidden line-clamp-2 text-[10px] leading-[1.35] text-ink-3 lg:block">
+          <p className="mt-1 hidden line-clamp-2 text-xs leading-[1.35] text-ink-3 lg:block">
             {children.map((child) => child.name).join(", ")}
           </p>
         )}

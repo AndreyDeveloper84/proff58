@@ -9,16 +9,20 @@ import { cn } from "@/lib/utils";
 // data-theme (семантические токены globals.css) и класс .dark (@custom-variant
 // dark для утилит `dark:`) — компоненты вправе пользоваться любой.
 //
-// Дефолт — системный (prefers-color-scheme); явный выбор пользователя
-// сохраняется в localStorage и системную настройку перебивает. Чтобы тема не
-// мигала на загрузке, начальное состояние ставит THEME_INIT_SCRIPT в <head> ДО
-// гидрации — приём из next/docs «preventing flash before hydration».
+// Дефолт — светлая (UX-01): сохранённый выбор пользователя → иначе светлая.
+// Тема ОС на сайт не влияет — ни при первом входе, ни при её смене на лету:
+// покупатель с тёмной системой видел тёмный магазин, которого не выбирал.
+// Чтобы тема не мигала на загрузке, начальное состояние ставит
+// THEME_INIT_SCRIPT в <head> ДО гидрации — приём из next/docs «preventing
+// flash before hydration».
 
 export const THEME_STORAGE_KEY = "theme";
 
-// Порядок важен: сохранённый выбор > системная тема. Скрипт исполняется при
-// разборе HTML, поэтому первый кадр рисуется уже в правильной теме.
-export const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('${THEME_STORAGE_KEY}');var t=(s==='dark'||s==='light')?s:(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');var e=document.documentElement;e.setAttribute('data-theme',t);e.classList.toggle('dark',t==='dark');}catch(e){}})();`;
+// Порядок: сохранённый выбор → светлая. Чтение localStorage обёрнуто отдельно:
+// при запрещённом/сломанном хранилище тема всё равно ставится (светлая), а не
+// остаётся «какой получится». Скрипт исполняется при разборе HTML, поэтому
+// первый кадр рисуется уже в правильной теме.
+export const THEME_INIT_SCRIPT = `(function(){var t='light';try{var s=localStorage.getItem('${THEME_STORAGE_KEY}');if(s==='dark'||s==='light')t=s;}catch(e){}var r=document.documentElement;r.setAttribute('data-theme',t);r.classList.toggle('dark',t==='dark');})();`;
 
 // Тема — внешнее состояние (атрибут на <html>), а не React-стейт: её ставит
 // инлайн-скрипт до React. useSyncExternalStore читает факт из DOM, поэтому
@@ -31,20 +35,18 @@ function emit() {
 
 function subscribe(callback: () => void) {
   listeners.add(callback);
-  // storage — смена темы в соседней вкладке; matchMedia — смена темы в ОС
-  // (учитываем, только пока пользователь не выбрал тему руками).
-  window.addEventListener("storage", callback);
-  const media = window.matchMedia?.("(prefers-color-scheme: dark)");
-  const onSystemChange = (event: MediaQueryListEvent) => {
-    if (storedTheme() != null) return;
-    applyTheme(event.matches ? "dark" : "light");
-    emit();
+  // storage — смена темы в соседней вкладке. Снимок читается из DOM, поэтому
+  // сначала переносим выбор на <html> этой вкладки, потом будим подписчика:
+  // без applyTheme событие приходило, а страница оставалась в старой теме.
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== null && event.key !== THEME_STORAGE_KEY) return;
+    applyTheme(storedTheme() ?? "light");
+    callback();
   };
-  media?.addEventListener("change", onSystemChange);
+  window.addEventListener("storage", onStorage);
   return () => {
     listeners.delete(callback);
-    window.removeEventListener("storage", callback);
-    media?.removeEventListener("change", onSystemChange);
+    window.removeEventListener("storage", onStorage);
   };
 }
 

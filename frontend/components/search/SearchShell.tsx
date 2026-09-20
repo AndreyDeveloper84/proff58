@@ -24,15 +24,32 @@ import type { Listing, ListingQuery, RangeFilterValue, SortOption } from "@/lib/
  *
  * Фасета три — цена, бренд, наличие (см. `build_search_facets`): выдача поиска
  * смешанная, технические характеристики в ней описывали бы меньшинство товаров.
+ *
+ * Этой же оболочкой пользуется страница бренда (UX-07): у неё выборку задаёт не
+ * запрос `q`, а slug в пути, и вместо него в URL живёт выбранная категория.
+ * Поэтому «параметры, которые оболочка обязана сохранять» обобщены до
+ * `extraParams`: `q` поиска — частный случай.
  */
 export function SearchShell({
   listing,
   query,
   q,
+  extraParams,
+  resettableParams = [],
+  defaultSortLabel = "Сначала подходящие",
+  countLabel = "Найдено",
 }: {
   listing: Listing;
   query: ListingQuery;
-  q: string;
+  /** Поисковый запрос. У страницы бренда его нет. */
+  q?: string;
+  /** Параметры URL вне состояния листинга, которые сохраняются при любом действии. */
+  extraParams?: Record<string, string | undefined>;
+  /** Какие из extraParams снимает «Сбросить фильтры» (у бренда — категория). */
+  resettableParams?: string[];
+  /** Подпись сортировки по умолчанию: у поиска это релевантность, у бренда — наличие. */
+  defaultSortLabel?: string;
+  countLabel?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -44,13 +61,18 @@ export function SearchShell({
   const totalPages = Math.max(1, Math.ceil(listing.total / query.perPage));
   const page = Math.min(Math.max(1, query.page), totalPages);
 
-  // Запрос живёт в URL отдельно от состояния листинга: serializeQuery про него не знает.
-  const push = (next: ListingQuery) => {
+  // Запрос и прочие внешние параметры живут в URL отдельно от состояния листинга:
+  // serializeQuery про них не знает. drop — какие из них снять (сброс фильтров).
+  const push = (next: ListingQuery, drop: string[] = []) => {
     const qs = serializeQuery(next);
     const params = new URLSearchParams(qs);
-    params.set("q", q);
+    if (q != null) params.set("q", q);
+    for (const [key, value] of Object.entries(extraParams ?? {})) {
+      if (value && !drop.includes(key)) params.set(key, value);
+    }
+    const tail = params.toString();
     startTransition(() => {
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      router.replace(tail ? `${pathname}?${tail}` : pathname, { scroll: false });
     });
   };
 
@@ -73,9 +95,10 @@ export function SearchShell({
     push({ ...query, filters, page: 1 });
   };
 
-  const resetAll = () => push({ ...query, filters: {}, page: 1 });
+  const resetAll = () => push({ ...query, filters: {}, page: 1 }, resettableParams);
 
-  const activeFiltersCount = Object.keys(query.filters).length;
+  const activeExtra = resettableParams.filter((key) => extraParams?.[key]);
+  const activeFiltersCount = Object.keys(query.filters).length + activeExtra.length;
 
   // Оконная пагинация (1 … p-1 p p+1 … N) — как в каталоге.
   const pageItems: (number | "…")[] = [];
@@ -114,31 +137,33 @@ export function SearchShell({
   return (
     <div className="mt-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-ink-3">
-          Найдено {listing.total} {pluralize(listing.total, "товар", "товара", "товаров")}
+        <p className="text-base text-ink-2">
+          {countLabel} {listing.total} {pluralize(listing.total, "товар", "товара", "товаров")}
         </p>
-        <div className="flex items-center gap-2">
+        {/* min-w-0 по цепочке: на экране 320 px кнопка фильтров и сортировка 16 px не
+            помещаются в строку целиком — список сужается, а не распирает страницу. */}
+        <div className="flex min-w-0 max-w-full items-center gap-2">
           <button
             ref={filterBtnRef}
             type="button"
             onClick={() => setDrawerOpen(true)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-md border border-line px-3 text-sm text-ink-2 lg:hidden"
+            className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md border border-line px-3 text-sm text-ink-2 lg:hidden"
           >
             <SlidersHorizontal className="h-4 w-4" aria-hidden />
             Фильтры{activeFiltersCount ? ` ${activeFiltersCount}` : ""}
           </button>
-          <label className="flex items-center gap-2 text-sm text-ink-3">
+          <label className="flex min-w-0 items-center gap-2 text-sm text-ink-3">
             <span className="hidden sm:inline">Сортировка</span>
             <select
               value={query.sort}
               onChange={(e) => setSort(e.target.value as SortOption)}
               aria-label="Сортировка"
-              className="h-9 rounded-md border border-line bg-surface px-2 text-sm text-ink"
+              className="h-11 min-w-0 max-w-full rounded-md border border-line bg-surface px-2 text-base text-ink sm:h-10"
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {/* Без явной сортировки поиск ранжирует по релевантности — так и подписано. */}
-                  {o.value === "popular" ? "Сначала подходящие" : o.label}
+                  {o.value === "popular" ? defaultSortLabel : o.label}
                 </option>
               ))}
             </select>
@@ -152,6 +177,22 @@ export function SearchShell({
         <div id="products" aria-busy={isPending} className="scroll-mt-24">
           {isPending ? (
             <ProductGridSkeleton view="grid" count={Math.min(query.perPage, 12)} />
+          ) : listing.products.length === 0 ? (
+            // Ноль из-за фильтров — не «ничего не найдено»: оболочка остаётся, сброс
+            // под рукой. Раньше страница подменяла всю выдачу тупиком без кнопки.
+            <div className="rounded-lg border border-line bg-surface p-8 text-center">
+              <p className="text-base font-medium text-ink">
+                По выбранным фильтрам товаров нет
+              </p>
+              <p className="mt-1 text-sm text-ink-3">Снимите часть условий или сбросьте все.</p>
+              <button
+                type="button"
+                onClick={resetAll}
+                className="mt-4 inline-flex min-h-11 items-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink transition hover:brightness-95"
+              >
+                Сбросить фильтры
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
               {listing.products.map((p) => (
@@ -169,7 +210,7 @@ export function SearchShell({
                 type="button"
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
-                className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-2 disabled:opacity-40"
+                className="min-h-11 min-w-11 rounded-md border border-line px-3 py-1.5 text-base text-ink-2 disabled:opacity-40 sm:min-h-10 sm:min-w-10"
               >
                 ‹
               </button>
@@ -185,7 +226,7 @@ export function SearchShell({
                     onClick={() => setPage(it)}
                     aria-current={it === page ? "page" : undefined}
                     className={cn(
-                      "min-w-9 rounded-md border px-3 py-1.5 text-sm",
+                      "min-h-11 min-w-11 rounded-md border px-3 py-1.5 text-base sm:min-h-10 sm:min-w-10",
                       it === page ? "border-accent text-accent" : "border-line text-ink-2",
                     )}
                   >
@@ -197,7 +238,7 @@ export function SearchShell({
                 type="button"
                 disabled={page >= totalPages}
                 onClick={() => setPage(page + 1)}
-                className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-2 disabled:opacity-40"
+                className="min-h-11 min-w-11 rounded-md border border-line px-3 py-1.5 text-base text-ink-2 disabled:opacity-40 sm:min-h-10 sm:min-w-10"
               >
                 ›
               </button>

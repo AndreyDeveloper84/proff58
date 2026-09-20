@@ -131,8 +131,8 @@ describe("Header (#586)", () => {
 
     const nodes = Array.from(row.children);
     expect(nodes.indexOf(schedule.closest("span")!)).toBeLessThan(nodes.indexOf(toggle));
-    // Именно topbar (h-8), а не основная строка шапки (h-14).
-    expect(row.parentElement!.className).toContain("h-8");
+    // Именно topbar (h-9), а не основная строка шапки (h-16) — высоты после UX-04.
+    expect(row.parentElement!.className).toContain("h-9");
   });
 
   // Основная строка шапки видна всегда, бургер-меню — нет. Переключатель, до
@@ -257,5 +257,23 @@ describe("Инфо-пункты служебной полосы (DRF-1442)", () 
     // а пункт «Оплата» внутри подсказки — на оплату.
     expect(screen.getByRole("link", { name: "Оплата" })).toHaveAttribute("href", "/info/payment");
     expect(screen.queryByRole("link", { name: "Доставка и оплата" })).toBeNull();
+  });
+
+  // UX-03: номер и адрес копируются по нажатию, звонок — отдельное подписанное действие.
+  it("телефон и адрес — кнопки копирования, «Позвонить» — отдельная tel-ссылка", () => {
+    render(<Header />);
+
+    const phone = screen.getAllByRole("button", { name: /Скопировать номер телефона/ })[0];
+    expect(phone.getAttribute("aria-label")).toContain(SITE.phone.display);
+    // Адрес копируется полный — даже там, где на экране короткая подпись магазина.
+    for (const address of screen.getAllByRole("button", { name: /Скопировать адрес/ })) {
+      expect(address.getAttribute("aria-label")).toContain(SITE.address);
+    }
+    expect(screen.getAllByRole("link", { name: "Позвонить" })[0]).toHaveAttribute(
+      "href",
+      SITE.phone.href,
+    );
+    // Сам номер больше не tel-ссылка: его назначение — копирование.
+    expect(screen.queryByRole("link", { name: SITE.phone.display })).not.toBeInTheDocument();
   });
 });

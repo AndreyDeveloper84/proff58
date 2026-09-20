@@ -19,7 +19,9 @@ export function ProductImage({
   className?: string;
 }) {
   return (
-    <div className={cn("relative aspect-square overflow-hidden rounded-md bg-photo", className)}>
+    <div
+      className={cn("@container relative aspect-square overflow-hidden rounded-md bg-photo", className)}
+    >
       {src ? (
         <Image
           src={src}
@@ -32,7 +34,11 @@ export function ProductImage({
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-1.5 text-photo-ink">
           <Wrench className="h-7 w-7" strokeWidth={1.5} aria-hidden />
-          <span className="text-[11px] font-medium">Фото готовится</span>
+          {/* В миниатюре (корзина, 72 px) подпись 12 px не помещается и ломалась на две
+              строки с обрезкой — там остаётся только значок, текст читает скринридер. */}
+          <span className="sr-only px-1 text-center text-xs font-medium leading-tight @[110px]:not-sr-only">
+            Фото готовится
+          </span>
         </div>
       )}
     </div>

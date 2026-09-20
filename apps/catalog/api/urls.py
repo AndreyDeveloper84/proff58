@@ -28,6 +28,7 @@ urlpatterns = [
         views.SearchFacetsView.as_view(),
         name="search-facets",
     ),
+    re_path(rf"^brands/{_SLUG}/$", views.BrandDetailView.as_view(), name="brand-detail"),
     re_path(
         rf"^products/{_SLUG}/compatible/$",
         views.ProductCompatibleView.as_view(),

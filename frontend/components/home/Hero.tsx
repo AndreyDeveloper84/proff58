@@ -28,7 +28,7 @@ export function Hero() {
   const h = HOME_CONTENT.hero;
   const [imageLoaded, setImageLoaded] = useState(false);
   return (
-    <section className="bg-surface">
+    <section className="bg-canvas">
       <div className="mx-auto w-full max-w-[1680px] px-4 pt-2 sm:px-6 xl:px-8">
         <div className="dark relative min-h-[300px] overflow-hidden rounded-md bg-header xl:min-h-[340px]">
           <Image

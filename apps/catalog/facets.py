@@ -631,6 +631,93 @@ def build_search_facets(
     }
 
 
+MAX_BRAND_CATEGORIES = 60
+
+
+def build_brand_facets(
+    spellings,
+    *,
+    category=None,
+    stock_status=None,
+    price_min=None,
+    price_max=None,
+) -> dict:
+    """Фасеты страницы бренда (UX-07): категории, цена, наличие.
+
+    ``spellings`` — точные написания ``Product.brand`` (см. ``brand_slugs.brand_page``);
+    отбор тот же, что у списка ``products/?brand_slug=`` — счётчики и выдача не расходятся
+    по построению. ``category`` — объект Category или ``None``; сужает по поддереву, как
+    ``ProductFilter.filter_category``.
+
+    Drill-down как у поиска: каждая ось считается со всеми фильтрами, КРОМЕ своей, —
+    иначе выбранная категория схлопнула бы список категорий до одной строки и из неё
+    нельзя было бы перейти в соседнюю. EAV-характеристик нет по той же причине, что и в
+    поиске: у бренда товары разных типов вперемешку.
+    """
+    subtree = _subtree_ids(category) if category is not None else None
+
+    def drilldown(*, subtree=subtree, stock_status=stock_status, price=True):
+        qs = visible_products().filter(brand__in=list(spellings))
+        if subtree is not None:
+            qs = qs.filter(category_id__in=subtree)
+        if stock_status:
+            qs = qs.filter(stock_status=stock_status)
+        if price:
+            qs = _apply_price(qs, price_min, price_max)
+        return qs
+
+    pa = (
+        drilldown(price=False)
+        .filter(price__isnull=False)
+        .aggregate(lo=Min("price"), hi=Max("price"))
+    )
+
+    selected_ids = set(subtree or [])
+    categories_out = [
+        {
+            "slug": r["category__slug"],
+            "name": r["category__name"],
+            "count": r["c"],
+            "selected": r["category_id"] in selected_ids,
+        }
+        for r in drilldown(subtree=None)
+        .exclude(category__isnull=True)
+        .order_by()
+        .values("category_id", "category__slug", "category__name")
+        .annotate(c=Count("id"))
+        .order_by("-c", "category__name")[:MAX_BRAND_CATEGORIES]
+    ]
+
+    stock_labels = dict(StockStatus.choices)
+    stock_out = [
+        {
+            "value": r["stock_status"],
+            "label": str(stock_labels.get(r["stock_status"], r["stock_status"])),
+            "count": r["c"],
+            "selected": r["stock_status"] == stock_status,
+        }
+        for r in drilldown(stock_status=None)
+        .order_by()
+        .values("stock_status")
+        .annotate(c=Count("id"))
+        .order_by("-c")
+    ]
+
+    return {
+        "total_products": drilldown().count(),
+        "price": {
+            "min": float(pa["lo"]) if pa["lo"] is not None else None,
+            "max": float(pa["hi"]) if pa["hi"] is not None else None,
+        },
+        "categories": categories_out,
+        "stock": stock_out,
+        "applied_filters": {
+            "category": category.slug if category is not None else None,
+            "stock_status": stock_status or None,
+        },
+    }
+
+
 def apply_product_attr_filters(
     qs, attr_filters: dict[str, list[str]], attr_ranges: dict[str, tuple] | None = None
 ):

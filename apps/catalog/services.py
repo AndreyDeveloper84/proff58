@@ -13,10 +13,12 @@
 
 from __future__ import annotations
 
+from .brand_slugs import brand_page
 from .category_tree import get_category_tree, invalidate_category_tree_cache
 from .facets import (
     FacetError,
     apply_product_attr_filters,
+    build_brand_facets,
     build_facets,
     build_facets_cached,
     build_search_facets,
@@ -47,6 +49,8 @@ __all__ = [
     "build_facets",
     "build_facets_cached",
     "build_search_facets",
+    "build_brand_facets",
+    "brand_page",
     "invalidate_facets_cache",
     "apply_product_attr_filters",
     "get_category_tree",

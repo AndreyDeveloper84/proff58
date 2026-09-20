@@ -37,7 +37,7 @@ type DeliveryMethod = "courier" | "pickup";
 // мобильном (тач-таргет), компактнее на desktop. Раньше py-2 давал ~36px и все
 // селекты checkout (зона, интервал доставки) были ниже минимума для пальца.
 const inputClass =
-  "h-11 w-full rounded-md border border-line bg-canvas px-3 text-sm text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none sm:h-9";
+  "h-11 w-full rounded-md border border-line bg-field px-3 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -820,7 +820,7 @@ export default function CheckoutPage() {
               оформите их отдельными заказами.
             </p>
           ) : (
-            <p className="mt-1 text-right text-[11px] text-ink-3">
+            <p className="mt-1 text-right text-xs text-ink-3">
               Окончательную сумму, включая доставку, считает сервер при оформлении.
             </p>
           )}
@@ -854,7 +854,7 @@ export default function CheckoutPage() {
 
         <div className="fixed inset-x-0 bottom-0 z-50 flex h-[72px] items-center justify-between gap-3 border-t border-line bg-surface px-4 shadow-[0_-8px_24px_rgba(20,24,27,0.08)] lg:static lg:block lg:h-auto lg:border-0 lg:bg-transparent lg:px-0 lg:shadow-none">
           <div className="lg:hidden">
-            <p className="text-[11px] text-ink-3">Предварительный итог</p>
+            <p className="text-xs text-ink-3">Предварительный итог</p>
             <p className="text-lg font-bold text-ink">
               {mixedCurrencies ? "—" : formatPrice(previewTotal, currency)}
             </p>

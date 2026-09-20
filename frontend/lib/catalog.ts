@@ -8,9 +8,12 @@ import perforatory from "@/fixtures/listing.perforatory.json";
 import {
   fetchListingFromApi,
   fetchProductFromApi,
-  fetchSearchFromApi,
   fetchSearchListingFromApi,
+  fetchBrandOverviewFromApi,
+  fetchBrandProductsFromApi,
+  fetchSearchCountFromApi,
   fetchCategoryTreeFromApi,
+  type BrandOverview,
   fetchCategoryProductsFromApi,
   fetchBestsellersFromApi,
   type CategoryNode,
@@ -47,20 +50,38 @@ export function listingCategories(): string[] {
   return Object.keys(FIXTURES);
 }
 
-// Поиск товаров для SSR-страницы /search. Без API_BASE (фикстур поиска нет) → пустой список.
-export async function searchProducts(q: string): Promise<Product[]> {
-  if (API_BASE && !FORCE_FIXTURES) {
-    return await fetchSearchFromApi(API_BASE, q);
-  }
-  return [];
-}
-
 // Выдача поиска с фильтрами, сортировкой и пагинацией (DRF-1166). Без API (фикстуры)
-// возвращаем null — страница покажет «ничего не найдено», как и searchProducts.
+// возвращаем null — страница покажет «ничего не найдено». Сбой API сюда не
+// попадает: он пробрасывается ошибкой и уходит в app/search/error.tsx (PERF-01).
 export async function searchListing(q: string, query: ListingQuery): Promise<Listing | null> {
   if (API_BASE && !FORCE_FIXTURES) {
     return await fetchSearchListingFromApi(API_BASE, q, query);
   }
+  return null;
+}
+
+// --- Страница бренда (UX-07). Фикстур бренда нет: без API страница честно «не найдена». ---
+
+export type { BrandOverview };
+
+export async function getBrandOverview(
+  slug: string,
+  query: ListingQuery,
+): Promise<BrandOverview | null> {
+  if (API_BASE && !FORCE_FIXTURES) return await fetchBrandOverviewFromApi(API_BASE, slug, query);
+  return null;
+}
+
+export async function getBrandProducts(
+  slug: string,
+  query: ListingQuery,
+): Promise<{ total: number; products: Product[] }> {
+  if (API_BASE && !FORCE_FIXTURES) return await fetchBrandProductsFromApi(API_BASE, slug, query);
+  return { total: 0, products: [] };
+}
+
+export async function getSearchCount(q: string): Promise<number | null> {
+  if (API_BASE && !FORCE_FIXTURES) return await fetchSearchCountFromApi(API_BASE, q);
   return null;
 }
 

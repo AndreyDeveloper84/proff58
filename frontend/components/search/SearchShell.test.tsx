@@ -102,4 +102,44 @@ describe("SearchShell (DRF-1166)", () => {
 
     expect(replace.mock.calls[0][0]).toContain("sort=price_asc");
   });
+
+  // --- UX-07: той же оболочкой пользуется страница бренда ---
+
+  it("страница бренда: сортировка сохраняет выбранную категорию и не добавляет q", () => {
+    render(
+      <SearchShell
+        listing={listing()}
+        query={query({ category: "krugi" })}
+        extraParams={{ category: "krugi" }}
+        resettableParams={["category"]}
+        defaultSortLabel="Сначала в наличии"
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Сортировка"), { target: { value: "price_asc" } });
+
+    const url = replace.mock.calls[0][0] as string;
+    expect(url).toContain("category=krugi");
+    expect(url).toContain("sort=price_asc");
+    expect(url).not.toContain("q=");
+    expect(screen.getByRole("option", { name: "Сначала в наличии" })).toBeTruthy();
+  });
+
+  it("ноль из-за фильтров оставляет оболочку; сброс снимает фильтры и категорию", () => {
+    render(
+      <SearchShell
+        listing={listing({ total: 0, products: [] })}
+        query={query({ category: "krugi", filters: { stock: ["in"] } })}
+        extraParams={{ category: "krugi" }}
+        resettableParams={["category"]}
+      />,
+    );
+
+    expect(screen.getByText("По выбранным фильтрам товаров нет")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Сбросить фильтры" }));
+
+    const url = replace.mock.calls[0][0] as string;
+    expect(url).not.toContain("category=");
+    expect(url).not.toContain("stock=");
+  });
 });

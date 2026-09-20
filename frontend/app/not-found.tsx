@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SearchX } from "lucide-react";
 
+import { CallLink, CopyContact } from "@/components/contacts/CopyContact";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -61,12 +62,11 @@ export default function NotFound() {
           >
             На главную
           </Link>
-          <a
-            href={SITE.phone.href}
-            className="inline-flex h-11 items-center rounded-md border border-line px-4 text-sm font-medium text-ink-2 transition hover:border-accent hover:text-accent"
-          >
-            {SITE.phone.display}
-          </a>
+          {/* UX-03: номер копируется, звонок — отдельным действием. */}
+          <span className="inline-flex h-11 items-center gap-3 rounded-md border border-line px-4 text-sm font-medium text-ink-2">
+            <CopyContact kind="phone" value={SITE.phone.display} />
+            <CallLink href={SITE.phone.href} />
+          </span>
         </div>
       </div>
     </main>

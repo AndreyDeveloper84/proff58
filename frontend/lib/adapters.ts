@@ -38,10 +38,18 @@ const SSR_HEADERS = { "X-Forwarded-Proto": "https" } as const;
 // прерывается, существующий catch → пустой блок (мягкая деградация).
 const SSR_TIMEOUT_MS = 4000;
 
+// Таймаут запросов, от которых зависит целая страница (листинг, поиск, бренд, товар).
+// Длиннее, чем у блоков главной: здесь сбой — это экран ошибки с «Повторить», а не
+// тихо скрытый блок, и обрывать чуть замешкавшийся каталог незачем. Без таймаута
+// зависший апстрим держал переход без единого признака жизни (PERF-01).
+// 8 с, а не ровно 10: бюджет «сообщение об ошибке не позднее 10 секунд» считается от
+// клика, и в него должны уложиться ещё сеть и отрисовка экрана ошибки.
+const LISTING_TIMEOUT_MS = 8_000;
+
 // Ошибка обращения к каталог-API (не 404 категории) — должна вести в error.tsx, а не маскироваться.
 export class CatalogFetchError extends Error {}
 
-type ApiAttr = { name: string; slug: string; unit?: string; value: unknown };
+type ApiAttr = { name: string; slug: string; unit?: string; value: unknown; is_key?: boolean };
 type ApiProduct = {
   id: number;
   name: string;
@@ -147,15 +155,21 @@ const STOCK_API_TO_UI: Record<string, StockState> = {
 
 // Значение характеристики → строка карточки (RU-формат: десятичные через запятую; unit
 // добавляем, только если его ещё нет в значении). «2 Дж», не «2.0 Дж».
-function formatSpecValue(value: unknown, unit?: string): string {
-  if (value == null || value === "") return "";
+export function formatSpecValue(value: unknown, unit?: string): string {
+  if (value == null) return "";
   let s: string;
   if (typeof value === "boolean") s = value ? "Да" : "Нет";
   else if (typeof value === "number") s = formatRu(value);
-  else s = String(value);
+  else s = String(value).trim();
+  // Пустая строка (в т.ч. из одних пробелов) остаётся пустой: иначе к ней приклеилась бы
+  // единица и карточка показала бы «Мощность: Вт».
+  if (s === "") return "";
   const u = (unit ?? "").trim();
-  if (u && !s.includes(u)) s = `${s} ${u}`;
-  return s.trim();
+  // Единицу не повторяем, если значение уже ею заканчивается («220 В» + «В»). Именно
+  // «заканчивается», а не «содержит»: у текста «сталь матовая» есть буква «м», и
+  // единица «м» из-за неё раньше молча терялась бы.
+  if (u && !s.toLowerCase().endsWith(u.toLowerCase())) s = `${s} ${u}`;
+  return s;
 }
 
 export function apiProductToProduct(ap: ApiProduct): Product {
@@ -174,9 +188,21 @@ export function apiProductToProduct(ap: ApiProduct): Product {
     cardName: ap.card_name || ap.name,
     brand: ap.brand ?? "",
     image: ap.main_image ?? undefined,
+    // Порядок характеристик — с backend (по типу товара, DATA-01): не пересортировываем.
+    // Пустые значения отбрасываем, но «0 Дж» и «Нет» — не пустые: formatSpecValue
+    // превращает 0 и false в непустую строку, и фильтр по строке их сохраняет.
     specs: attrs
-      .map((a) => ({ label: a.name, value: formatSpecValue(a.value, a.unit) }))
-      .filter((s) => s.value),
+      .map((a) => ({
+        label: (a.name ?? "").trim(),
+        value: formatSpecValue(a.value, a.unit),
+        slug: a.slug,
+        ...(a.is_key === undefined ? {} : { isKey: a.is_key }),
+      }))
+      .filter((s) => s.value !== "" && s.label !== "")
+      // Дубли «та же подпись + то же значение» (одна ось, заведённая дважды) — одна строка.
+      .filter(
+        (s, i, all) => all.findIndex((x) => x.label === s.label && x.value === s.value) === i,
+      ),
     energy: bySlug("energy_impact"),
     power: bySlug("power"),
     chuck: bySlug("chuck"),
@@ -319,12 +345,21 @@ export function apiFacetToFacet(af: ApiFacet): Facet {
 const humanize = humanizeToken; // алиас: единый источник в lib/format (N4)
 
 // query-параметры products-эндпоинта из нормализованного ListingQuery.
-function buildProductParams(query: ListingQuery, search?: string): URLSearchParams {
+function buildProductParams(
+  query: ListingQuery,
+  search?: string,
+  brandSlug?: string,
+): URLSearchParams {
   const sp = new URLSearchParams();
   // DRF-1166: у поиска категории нет — выборку задаёт ?search=. Остальные параметры
-  // (фильтры, пагинация, сортировка) те же, поэтому сборка одна на оба маршрута.
+  // (фильтры, пагинация, сортировка) те же, поэтому сборка одна на все маршруты.
+  // UX-07: у страницы бренда выборку задаёт ?brand_slug=, а категория необязательна
+  // и лишь сужает её.
   if (search) sp.set("search", search);
-  else sp.set("category", query.category);
+  else if (brandSlug) {
+    sp.set("brand_slug", brandSlug);
+    if (query.category) sp.set("category", query.category);
+  } else sp.set("category", query.category);
   sp.set("limit", String(query.perPage));
   sp.set("offset", String((query.page - 1) * query.perPage));
 
@@ -414,7 +449,7 @@ export async function fetchListingFromApi(
 
   const productsRes = await fetch(
     `${root}/api/catalog/products/?${buildProductParams(query).toString()}`,
-    { cache: "no-store", headers: SSR_HEADERS },
+    { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
   );
   if (productsRes.status === 404) return null;
   if (!productsRes.ok) throw new CatalogFetchError(`products ${productsRes.status}`);
@@ -436,7 +471,7 @@ export async function fetchListingFromApi(
   try {
     const facetsRes = await fetch(
       `${root}/api/catalog/categories/${encodeURIComponent(query.category)}/facets/?${buildFacetParams(query).toString()}`,
-      { cache: "no-store", headers: SSR_HEADERS },
+      { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
     );
     if (facetsRes.status === 404) {
       categoryMissing = true;
@@ -497,22 +532,6 @@ export async function fetchListingFromApi(
   };
 }
 
-// Поиск по каталогу (SSR-страница /search): ProductListView c ?search= ранжирует по
-// релевантности (trigram). Серверный вызов Next→Django (как fetchListingFromApi). Запрос
-// короче 2 символов или сбой API → пустой список (страница покажет «ничего не найдено»).
-export async function fetchSearchFromApi(base: string, q: string): Promise<Product[]> {
-  const query = q.trim();
-  if (query.length < 2) return [];
-  const root = base.replace(/\/$/, "");
-  const res = await fetch(
-    `${root}/api/catalog/products/?search=${encodeURIComponent(query)}`,
-    { cache: "no-store", headers: SSR_HEADERS },
-  );
-  if (!res.ok) return [];
-  const json = (await res.json()) as { results?: ApiProduct[] };
-  return (json.results ?? []).map(apiProductToProduct);
-}
-
 // Поисковая выдача с фильтрами и пагинацией (DRF-1166). Отличие от каталога — вместо
 // категории ?search=, и фасета всего три: цена, бренд, наличие. Технических
 // характеристик здесь нет и быть не может — по «дрель» приезжают дрели, патроны и
@@ -533,11 +552,14 @@ export async function fetchSearchListingFromApi(
     fetch(`${root}/api/catalog/products/?${buildProductParams(query, search).toString()}`, {
       cache: "no-store",
       headers: SSR_HEADERS,
+      signal: AbortSignal.timeout(LISTING_TIMEOUT_MS),
     }),
-    // Фасеты — best-effort: упали → страница остаётся рабочим списком без сайдбара.
+    // Фасеты — best-effort: упали или не успели → страница остаётся рабочим списком
+    // без сайдбара.
     fetch(`${root}/api/catalog/search/facets/?${facetParams.toString()}`, {
       cache: "no-store",
       headers: SSR_HEADERS,
+      signal: AbortSignal.timeout(LISTING_TIMEOUT_MS),
     }).catch(() => null),
   ]);
 
@@ -576,6 +598,95 @@ export async function fetchSearchListingFromApi(
   };
 }
 
+// --- Страница бренда (UX-07) ---
+
+type ApiBrandResponse = {
+  brand: { slug: string; name: string };
+  total_products: number;
+  brand_total_products: number;
+  price?: { min: number | null; max: number | null };
+  stock?: ApiStock[];
+  categories?: { slug: string; name: string; count: number; selected: boolean }[];
+};
+
+export type BrandCategory = { slug: string; name: string; count: number; selected: boolean };
+
+export type BrandOverview = {
+  brand: { slug: string; name: string };
+  /** Товаров с учётом выбранных фильтров. */
+  total: number;
+  /** Товаров бренда на витрине без фильтров: ноль — «бренд известен, но пусто». */
+  brandTotal: number;
+  categories: BrandCategory[];
+  facets: Facet[];
+};
+
+function brandFilterParams(query: ListingQuery): URLSearchParams {
+  const sp = buildFacetParams(query);
+  sp.delete("brand"); // бренд задан путём; фасет «Бренд» на его странице не нужен
+  if (query.category) sp.set("category", query.category);
+  return sp;
+}
+
+// Шапка страницы бренда: название, счётчики, категории, фасеты цены и наличия.
+// null — бренда нет (404). Иная ошибка → CatalogFetchError (→ error.tsx): пустую
+// страницу за сбой API не выдаём.
+export async function fetchBrandOverviewFromApi(
+  base: string,
+  slug: string,
+  query: ListingQuery,
+): Promise<BrandOverview | null> {
+  const root = base.replace(/\/$/, "");
+  const res = await fetch(
+    `${root}/api/catalog/brands/${encodeURIComponent(slug)}/?${brandFilterParams(query).toString()}`,
+    { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) throw new CatalogFetchError(`brand ${res.status}`);
+  const bj = (await res.json()) as ApiBrandResponse;
+  return {
+    brand: bj.brand,
+    total: bj.total_products,
+    brandTotal: bj.brand_total_products,
+    categories: bj.categories ?? [],
+    // Порядок макета тот же, что в каталоге и поиске: Цена → Наличие.
+    facets: [priceFacet(bj.price), stockFacet(bj.stock)].filter((x): x is Facet => x != null),
+  };
+}
+
+// Товары страницы бренда: тот же products-эндпоинт, выборку задаёт ?brand_slug=.
+export async function fetchBrandProductsFromApi(
+  base: string,
+  slug: string,
+  query: ListingQuery,
+): Promise<{ total: number; products: Product[] }> {
+  const root = base.replace(/\/$/, "");
+  const res = await fetch(
+    `${root}/api/catalog/products/?${buildProductParams(query, undefined, slug).toString()}`,
+    { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
+  );
+  if (!res.ok) throw new CatalogFetchError(`brand products ${res.status}`);
+  const json = (await res.json()) as { count: number; results: ApiProduct[] };
+  return { total: json.count, products: json.results.map(apiProductToProduct) };
+}
+
+// Сколько товаров находит текстовый поиск по названию бренда. Best-effort: поиск —
+// самый медленный запрос каталога, и ради подсказки страница бренда ждать его не обязана.
+export async function fetchSearchCountFromApi(base: string, q: string): Promise<number | null> {
+  const root = base.replace(/\/$/, "");
+  try {
+    const res = await fetch(
+      `${root}/api/catalog/products/?search=${encodeURIComponent(q)}&limit=1`,
+      { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
+    );
+    if (!res.ok) return null;
+    const json = (await res.json()) as { count?: number };
+    return typeof json.count === "number" ? json.count : null;
+  } catch {
+    return null;
+  }
+}
+
 // Карточка товара (PDP): detail-эндпоинт + best-effort секции совместимости.
 // 404 → null (→ notFound() в page.tsx); иная ошибка detail → CatalogFetchError (→ error.tsx).
 export async function fetchProductFromApi(
@@ -583,14 +694,19 @@ export async function fetchProductFromApi(
   slug: string,
 ): Promise<ProductDetail | null> {
   const root = base.replace(/\/$/, "");
-  const res = await fetch(`${root}/api/catalog/products/${encodeURIComponent(slug)}/`, {
-    cache: "no-store",
-    headers: SSR_HEADERS,
-  });
+  // Товар и совместимость — параллельно: они независимы, а последовательно худший
+  // случай был бы двумя таймаутами подряд (PERF-01).
+  const [res, compatible] = await Promise.all([
+    fetch(`${root}/api/catalog/products/${encodeURIComponent(slug)}/`, {
+      cache: "no-store",
+      headers: SSR_HEADERS,
+      signal: AbortSignal.timeout(LISTING_TIMEOUT_MS),
+    }),
+    fetchProductCompatible(root, slug),
+  ]);
   if (res.status === 404) return null;
   if (!res.ok) throw new CatalogFetchError(`product ${res.status}`);
-  const detail = await fetchProductCompatible(root, slug);
-  return { ...apiProductToDetail((await res.json()) as ApiProductDetail), compatible: detail };
+  return { ...apiProductToDetail((await res.json()) as ApiProductDetail), compatible };
 }
 
 // Секции совместимости — best-effort: упал эндпоинт → пустые секции, карточка всё равно рендерится.
@@ -608,7 +724,7 @@ async function fetchProductCompatible(
   try {
     const res = await fetch(
       `${root}/api/catalog/products/${encodeURIComponent(slug)}/compatible/`,
-      { cache: "no-store", headers: SSR_HEADERS },
+      { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
     );
     if (!res.ok) return empty;
     const cj = (await res.json()) as ApiCompatibleResponse;

@@ -3,7 +3,14 @@
 
 export type StockState = "in" | "order" | "out";
 export type BadgeKind = "hit" | "new" | "sale";
-export type ProductSpec = { label: string; value: string };
+export type ProductSpec = {
+  label: string;
+  value: string;
+  /** Slug характеристики в каталоге — по нему узнаём служебный tool_type. */
+  slug?: string;
+  /** Ключевая ли (фильтруемая/сравниваемая). Приходит только из detail-эндпоинта. */
+  isKey?: boolean;
+};
 
 export type Product = {
   id: number;

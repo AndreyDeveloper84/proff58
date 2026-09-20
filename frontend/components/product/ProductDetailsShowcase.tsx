@@ -15,6 +15,7 @@ import {
 import { Collapsible } from "./Collapsible";
 import { SITE } from "@/lib/site";
 import { pickUseCases } from "@/lib/pdp-usecases";
+import { hasRealSpecs, keySpecs } from "@/lib/specs";
 import type { ProductDetail, ProductSpec } from "@/lib/types";
 
 type SpecGroup = {
@@ -22,17 +23,6 @@ type SpecGroup = {
   icon: typeof Zap;
   specs: ProductSpec[];
 };
-
-const KEY_SPEC_PATTERNS = [
-  /мощност/i,
-  /энерги.*удар/i,
-  /тип.*патрон|патрон/i,
-  /режим/i,
-  /напряжен|аккумулятор/i,
-  /диаметр/i,
-  /производительност/i,
-  /давлен/i,
-];
 
 const GROUPS = [
   {
@@ -53,23 +43,16 @@ const GROUPS = [
   },
 ] as const;
 
+/**
+ * Ключевые параметры блока «Главное в работе».
+ *
+ * DATA-01: раньше отбор шёл регулярками по ПОДПИСЯМ («мощност», «патрон»…), и у
+ * товара вне этого списка — крепежа, диска, ключа — «главным» оказывалось то, что
+ * первым пришло по алфавиту. Теперь порядок задаёт backend по типу товара, и тот же
+ * отбор использует карточка списка: страница товара и карточка не расходятся.
+ */
 export function selectKeySpecs(specs: ProductSpec[], limit = 4): ProductSpec[] {
-  const selected: ProductSpec[] = [];
-  const used = new Set<number>();
-
-  for (const pattern of KEY_SPEC_PATTERNS) {
-    const index = specs.findIndex((spec, i) => !used.has(i) && pattern.test(spec.label));
-    if (index === -1) continue;
-    selected.push(specs[index]);
-    used.add(index);
-    if (selected.length === limit) return selected;
-  }
-
-  for (let i = 0; i < specs.length && selected.length < limit; i += 1) {
-    if (used.has(i) || /тип инструмента/i.test(specs[i].label)) continue;
-    selected.push(specs[i]);
-  }
-  return selected;
+  return keySpecs(specs, limit);
 }
 
 /**
@@ -81,7 +64,7 @@ export function selectKeySpecs(specs: ProductSpec[], limit = 4): ProductSpec[] {
  * раздела.
  */
 export function hasPassportSpecs(specs: ProductSpec[]): boolean {
-  return specs.some((spec) => !/тип инструмента/i.test(spec.label));
+  return hasRealSpecs(specs);
 }
 
 export function groupProductSpecs(specs: ProductSpec[]): SpecGroup[] {
@@ -149,7 +132,7 @@ function SpecGroups({ specs }: { specs: ProductSpec[] }) {
         const Icon = group.icon;
         return (
           <section key={group.title} className="border-b border-line py-4 last:border-b-0">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <h3 className="flex items-center gap-2 text-base font-semibold text-ink">
               <Icon className="h-4 w-4 text-accent" aria-hidden />
               {group.title}
             </h3>
@@ -157,10 +140,14 @@ function SpecGroups({ specs }: { specs: ProductSpec[] }) {
               {group.specs.map((spec, index) => (
                 <div
                   key={`${spec.label}-${index}`}
-                  className="grid gap-0.5 py-2 text-sm first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_minmax(150px,.75fr)] sm:gap-4"
+                  className="grid gap-0.5 py-2.5 text-[15px] first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_minmax(150px,.75fr)] sm:gap-4"
                 >
-                  <dt className="text-ink-3">{spec.label}</dt>
-                  <dd className="font-medium text-ink-2 sm:text-right">{spec.value}</dd>
+                  {/* break-words: длинное значение («для инструмента с посадкой…»)
+                      переносится, а не распирает таблицу на экране 320–375 px. */}
+                  <dt className="min-w-0 break-words text-ink-3">{spec.label}</dt>
+                  <dd className="min-w-0 break-words font-medium text-ink sm:text-right">
+                    {spec.value}
+                  </dd>
                 </div>
               ))}
             </dl>

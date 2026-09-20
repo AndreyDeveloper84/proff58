@@ -93,4 +93,22 @@ describe("Информационные страницы в подвале", () =
 
     expect(screen.getAllByRole("link", { name: "Доставка" })).toHaveLength(1);
   });
+
+  // UX-03: номер и адрес копируются по нажатию, звонок — отдельное подписанное действие.
+  it("телефон и адрес — кнопки копирования, «Позвонить» — отдельная tel-ссылка", () => {
+    render(<Footer />);
+
+    const phone = screen.getAllByRole("button", { name: /Скопировать номер телефона/ })[0];
+    expect(phone.getAttribute("aria-label")).toContain(SITE.phone.display);
+    // Адрес копируется полный — даже там, где на экране короткая подпись магазина.
+    for (const address of screen.getAllByRole("button", { name: /Скопировать адрес/ })) {
+      expect(address.getAttribute("aria-label")).toContain(SITE.address);
+    }
+    expect(screen.getAllByRole("link", { name: "Позвонить" })[0]).toHaveAttribute(
+      "href",
+      SITE.phone.href,
+    );
+    // Сам номер больше не tel-ссылка: его назначение — копирование.
+    expect(screen.queryByRole("link", { name: SITE.phone.display })).not.toBeInTheDocument();
+  });
 });

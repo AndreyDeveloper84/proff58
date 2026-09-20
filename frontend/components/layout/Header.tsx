@@ -30,6 +30,7 @@ import type { InfoPageLink } from "@/lib/info-pages";
 import { useCompare } from "@/lib/compare";
 import { resolveStorefront, SITE, type ResolvedStorefront, type TopLink } from "@/lib/site";
 import { cn } from "@/lib/utils";
+import { CallLink, CopyContact } from "@/components/contacts/CopyContact";
 import { SearchBar } from "./SearchBar";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -94,11 +95,13 @@ export function Header({
       <span className="grid h-8 w-8 shrink-0 place-items-center text-accent">
         <Cog className="h-8 w-8" strokeWidth={3} aria-hidden />
       </span>
-      <span className="flex flex-col leading-none">
+      {/* min-w-0: на экране 320 px подпись под названием переносится на вторую строку,
+          а не выталкивает иконки поиска и корзины за край (UX-04). */}
+      <span className="flex min-w-0 flex-col leading-none">
         <span className="font-sans text-[15px] font-extrabold uppercase tracking-[0.02em] text-header-ink lg:text-[17px]">
           {siteName}
         </span>
-        <span className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.04em] text-topbar-ink">
+        <span className="mt-0.5 text-xs font-medium uppercase leading-tight tracking-normal text-topbar-ink min-[360px]:whitespace-nowrap">
           {SITE.header.tagline}
         </span>
       </span>
@@ -109,16 +112,21 @@ export function Header({
     <header className="sticky top-0 z-40 border-b border-header-line bg-header text-header-ink">
       {/* Topbar — только desktop */}
       <div className="hidden border-b border-header-line bg-header lg:block">
-        <div className="mx-auto flex h-8 w-full max-w-[1680px] items-center justify-between px-4 text-[11px] text-topbar-ink sm:px-6 xl:px-8">
+        <div className="mx-auto flex h-9 w-full max-w-[1680px] items-center justify-between px-4 text-xs text-topbar-ink sm:px-6 xl:px-8">
           <div className="flex items-center gap-5">
             <span className="flex items-center gap-1.5 font-medium">
               <MapPin className="h-3.5 w-3.5 text-accent" aria-hidden />
               {storefront.region}
             </span>
-            <span className="flex items-center gap-1.5 font-medium text-accent">
+            {/* UX-03: подпись короткая, а в буфер уходит полный адрес магазина. */}
+            <CopyContact
+              kind="address"
+              value={storefront.address}
+              className="flex items-center gap-1.5 font-medium text-accent hover:brightness-90"
+            >
               <Store className="h-3.5 w-3.5" aria-hidden />
               {storefront.store}
-            </span>
+            </CopyContact>
             {/* Инфо-пункты: каждый раскрывает подсказку по hover/фокусу — сюда
                 переехала бывшая сервисная полоса главной — и ведёт на свою страницу,
                 если она опубликована. «Контакты» рендерятся из storefront
@@ -150,25 +158,29 @@ export function Header({
                   ) : (
                     l.label
                   )}
-                  <span className="invisible absolute left-1/2 top-full z-50 w-64 -translate-x-1/2 rounded-md border border-header-line bg-header p-3 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                  <span className="invisible absolute left-1/2 top-full z-50 w-72 -translate-x-1/2 rounded-md border border-header-line bg-header p-4 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
                     {isContacts ? (
                       <span className="block space-y-1.5">
-                        <span className="block text-xs font-semibold text-header-ink">
-                          {storefront.address}
+                        <CopyContact
+                          kind="address"
+                          value={storefront.address}
+                          className="block text-sm font-semibold text-header-ink"
+                        />
+                        <span className="flex items-center justify-between gap-3">
+                          <CopyContact
+                            kind="phone"
+                            value={storefront.phone.display}
+                            className="text-sm text-topbar-ink"
+                          />
+                          <CallLink href={storefront.phone.href} className="text-sm" />
                         </span>
                         <a
-                          href={storefront.phone.href}
-                          className="block text-xs text-topbar-ink hover:text-accent"
-                        >
-                          {storefront.phone.display}
-                        </a>
-                        <a
                           href={`mailto:${storefront.email}`}
-                          className="block text-xs text-topbar-ink hover:text-accent"
+                          className="block text-sm text-topbar-ink hover:text-accent"
                         >
                           {storefront.email}
                         </a>
-                        <span className="block text-xs text-topbar-ink">{storefront.schedule}</span>
+                        <span className="block text-sm text-topbar-ink">{storefront.schedule}</span>
                       </span>
                     ) : (
                       <span className="block space-y-2">
@@ -177,16 +189,16 @@ export function Header({
                             {linkable(m.href) ? (
                               <Link
                                 href={m.href}
-                                className="block text-xs font-semibold text-header-ink hover:text-accent"
+                                className="block text-sm font-semibold text-header-ink hover:text-accent"
                               >
                                 {m.title}
                               </Link>
                             ) : (
-                              <span className="block text-xs font-semibold text-header-ink">
+                              <span className="block text-sm font-semibold text-header-ink">
                                 {m.title}
                               </span>
                             )}
-                            <span className="block text-[11px] leading-snug text-topbar-ink">
+                            <span className="block text-xs leading-snug text-topbar-ink">
                               {m.text}
                             </span>
                           </span>
@@ -212,7 +224,7 @@ export function Header({
       </div>
 
       {/* Основная строка */}
-      <div className="mx-auto flex h-14 w-full max-w-[1680px] items-center gap-2 px-4 sm:px-6 lg:gap-4 xl:px-8">
+      <div className="mx-auto flex h-16 w-full max-w-[1680px] items-center gap-2 px-4 sm:px-6 lg:gap-4 xl:px-8">
         <button
           type="button"
           className="grid h-10 w-10 shrink-0 place-items-center rounded-md text-header-ink hover:bg-header-ink/10 lg:hidden"
@@ -223,13 +235,13 @@ export function Header({
           <Menu className="h-5 w-5" aria-hidden />
         </button>
 
-        <Link href="/" className="min-w-0 shrink-0 lg:w-[208px]" aria-label="На главную">
+        <Link href="/" className="min-w-0 shrink lg:w-[228px] lg:shrink-0" aria-label="На главную">
           {logo}
         </Link>
 
         <Link
           href="/catalog"
-          className="hidden h-10 shrink-0 items-center gap-2 rounded-sm bg-accent px-5 text-[13px] font-semibold text-accent-ink transition hover:brightness-95 lg:inline-flex"
+          className="hidden h-11 shrink-0 items-center gap-2 rounded-sm bg-accent px-5 text-sm font-semibold text-accent-ink transition hover:brightness-95 lg:inline-flex"
         >
           <List className="h-4 w-4" strokeWidth={2} aria-hidden />
           {SITE.header.catalogLabel}
@@ -237,20 +249,25 @@ export function Header({
 
         <div className="hidden min-w-0 flex-1 lg:block">
           <SearchBar
-            className="max-w-none [&_form]:h-10 [&_input]:text-[13px]"
+            className="max-w-none [&_form]:h-11 [&_input]:text-base"
             placeholder={SITE.header.searchPlaceholder}
           />
         </div>
 
-        <a
-          href={storefront.phone.href}
-          className="hidden shrink-0 flex-col text-header-ink transition hover:text-accent xl:flex"
-        >
-          <span className="text-[15px] font-bold leading-tight">{storefront.phone.display}</span>
-          {storefront.phoneNote ? (
-            <span className="text-[11px] font-normal text-topbar-ink">{storefront.phoneNote}</span>
-          ) : null}
-        </a>
+        {/* UX-03: нажатие на номер копирует его; звонок — отдельной ссылкой рядом. */}
+        <div className="hidden shrink-0 flex-col text-header-ink xl:flex">
+          <CopyContact
+            kind="phone"
+            value={storefront.phone.display}
+            className="text-base font-bold leading-tight"
+          />
+          <span className="flex items-center gap-2 text-xs leading-tight">
+            <CallLink href={storefront.phone.href} />
+            {storefront.phoneNote ? (
+              <span className="font-normal text-topbar-ink">{storefront.phoneNote}</span>
+            ) : null}
+          </span>
+        </div>
 
         {/* Действия — desktop: избранное · сравнение (future) · корзина · кабинет */}
         <div className="ml-auto hidden shrink-0 items-center gap-1 lg:flex">
@@ -264,12 +281,12 @@ export function Header({
             <span className="relative">
               <Heart className="h-5 w-5" aria-hidden />
               {wishlistCount > 0 && (
-                <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-ink">
+                <span className="absolute -right-2 -top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
                   {wishlistCount > 99 ? "99+" : wishlistCount}
                 </span>
               )}
             </span>
-            <span className="text-[11px]">Избранное</span>
+            <span className="text-xs">Избранное</span>
           </Link>
           <Link
             href="/compare"
@@ -281,12 +298,12 @@ export function Header({
             <span className="relative">
               <BarChart3 className="h-5 w-5" aria-hidden />
               {compareCount > 0 && (
-                <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-ink">
+                <span className="absolute -right-2 -top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
                   {compareCount}
                 </span>
               )}
             </span>
-            <span className="text-[11px]">Сравнение</span>
+            <span className="text-xs">Сравнение</span>
           </Link>
           <Link
             href="/cart"
@@ -296,12 +313,12 @@ export function Header({
             <span className="relative">
               <ShoppingCart className="h-5 w-5" aria-hidden />
               {count > 0 && (
-                <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-ink">
+                <span className="absolute -right-2 -top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
                   {count > 99 ? "99+" : count}
                 </span>
               )}
             </span>
-            <span className="text-[11px]">Корзина</span>
+            <span className="text-xs">Корзина</span>
           </Link>
           <Link
             href={profileHref}
@@ -309,7 +326,7 @@ export function Header({
             aria-label="Личный кабинет"
           >
             <UserRound className="h-5 w-5" aria-hidden />
-            <span className="text-[11px]">Кабинет</span>
+            <span className="text-xs">Кабинет</span>
           </Link>
         </div>
 
@@ -335,7 +352,7 @@ export function Header({
           >
             <ShoppingCart className="h-5 w-5" aria-hidden />
             {count > 0 && (
-              <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-ink">
+              <span className="absolute right-1 top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
                 {count > 99 ? "99+" : count}
               </span>
             )}
@@ -374,7 +391,7 @@ export function Header({
               <Heart className="h-4 w-4" aria-hidden />
               Избранное
               {wishlistCount > 0 && (
-                <span className="grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-ink">
+                <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
                   {wishlistCount > 99 ? "99+" : wishlistCount}
                 </span>
               )}
@@ -384,18 +401,24 @@ export function Header({
                 меню бесполезны, битые ссылки запрещены DoD эпика. */}
             {/* Телефон и тема — в одной строке. Переключатель здесь только для
                 самых узких экранов (<640px), где в шапке места под него нет. */}
-            <div className="flex items-center justify-between py-2.5 sm:hidden">
-              <a href={storefront.phone.href} className="text-sm font-semibold text-header-ink">
-                {storefront.phone.display}
-              </a>
-              <ThemeToggle />
+            <div className="flex min-h-11 items-center justify-between gap-3 py-2.5">
+              <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <CopyContact
+                  kind="phone"
+                  value={storefront.phone.display}
+                  className="min-h-11 text-base font-semibold text-header-ink"
+                />
+                <CallLink href={storefront.phone.href} className="inline-flex min-h-11 items-center text-sm" />
+              </span>
+              <span className="sm:hidden">
+                <ThemeToggle />
+              </span>
             </div>
-            <a
-              href={storefront.phone.href}
-              className="hidden min-h-11 items-center py-2.5 text-sm font-semibold text-header-ink sm:flex"
-            >
-              {storefront.phone.display}
-            </a>
+            <CopyContact
+              kind="address"
+              value={storefront.address}
+              className="min-h-11 py-2 text-sm text-topbar-ink"
+            />
           </nav>
         </div>
       )}

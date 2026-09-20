@@ -26,8 +26,8 @@ const WHY_ICONS: Record<string, LucideIcon> = {
 
 export function WhyBuyStrip() {
   return (
-    <div className="rounded-sm border border-line bg-surface px-3 py-2.5" aria-label="Почему покупают у нас">
-      <h2 className="mb-2 font-sans text-sm font-bold text-ink">
+    <div className="rounded-sm border border-line bg-card px-3 py-2.5 shadow-card" aria-label="Почему покупают у нас">
+      <h2 className="mb-2 font-sans text-base font-bold text-ink">
         Почему покупают у нас
       </h2>
       <ul className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-2 lg:grid-cols-6">
@@ -39,8 +39,8 @@ export function WhyBuyStrip() {
                 <Icon className="h-5 w-5" strokeWidth={1.7} aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="block text-[11px] font-bold leading-tight text-ink">{item.title}</span>
-                <span className="block text-[10px] leading-[1.3] text-ink-2">{item.text}</span>
+                <span className="block text-sm font-bold leading-tight text-ink">{item.title}</span>
+                <span className="block text-xs leading-[1.35] text-ink-2">{item.text}</span>
               </span>
             </li>
           );
@@ -54,7 +54,7 @@ export function WhyBuyStrip() {
 // начинается сразу под ней («Мы в мессенджерах»).
 export function HomeBottom() {
   return (
-    <section className="bg-surface">
+    <section className="bg-canvas">
       <div className="mx-auto flex w-full max-w-[1680px] min-w-0 flex-col gap-2 px-4 pb-4 pt-2 sm:px-6 xl:px-8">
         <WhyBuyStrip />
         <ArticlesCarousel articles={ARTICLES} />

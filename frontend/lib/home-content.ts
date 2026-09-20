@@ -65,8 +65,8 @@ export const HOME_CONTENT = {
   // подменю инфо-пунктов topbar (SITE.header.topLinks, lib/site.ts).
 
   // #589: популярные бренды (curated). Логотипов-ассетов пока нет — карточки
-  // текстовые (структура позволяет добавить image später). Ссылка — поиск по
-  // бренду: отдельного маршрута «все товары бренда» нет, /search?q= работает.
+  // текстовые (структура позволяет добавить image später). Ссылка — страница
+  // бренда /brands/<slug> (UX-07), slug'и заморожены в popularBrandSlugs ниже.
   popularBrands: [
     "Makita",
     "Bosch",
@@ -78,6 +78,22 @@ export const HOME_CONTENT = {
     "Stanley",
     "Ресанта",
   ] as string[],
+
+  // UX-07: замороженные slug'и страниц брендов. Совпадают с base-slug backend
+  // (apps/catalog/brand_slugs.brand_page: translit + slugify, БЕЗ суффиксов -2/-3),
+  // поэтому ссылка не зависит от того, какие ещё бренды есть в каталоге. Не выводить
+  // из названия через toLowerCase: «Ресанта» так не превратится в «resanta».
+  popularBrandSlugs: {
+    Makita: "makita",
+    Bosch: "bosch",
+    DeWALT: "dewalt",
+    Metabo: "metabo",
+    AEG: "aeg",
+    Milwaukee: "milwaukee",
+    Hilti: "hilti",
+    Stanley: "stanley",
+    Ресанта: "resanta",
+  } as Record<string, string>,
 
   // #590: «Почему покупают у нас» — 6 пунктов по макету.
   whyBuy: [

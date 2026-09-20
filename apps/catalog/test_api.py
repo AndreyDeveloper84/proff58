@@ -99,7 +99,15 @@ def test_product_detail_card(client, tree):
     data = client.get("/api/catalog/products/bosch/").json()
     assert data["brand"] == "Bosch"
     assert data["description"] == "Описание"
-    assert {"name": "Мощность", "slug": "power", "unit": "Вт", "value": 650} in data["attributes"]
+    # is_key (DATA-01): фильтруемая/сравниваемая ли характеристика — по нему витрина
+    # отделяет «основные параметры» от полной таблицы.
+    assert {
+        "name": "Мощность",
+        "slug": "power",
+        "unit": "Вт",
+        "value": 650,
+        "is_key": False,
+    } in data["attributes"]
     assert [c["slug"] for c in data["breadcrumb"]] == ["ei", "dreli-grp", "dreli"]
     assert data["main_image"] is not None
 

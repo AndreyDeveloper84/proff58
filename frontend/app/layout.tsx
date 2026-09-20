@@ -6,6 +6,8 @@ import { AuthStateProvider } from "@/components/auth/AuthStateProvider";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { WishlistProvider } from "@/components/wishlist/WishlistProvider";
 import { Header } from "@/components/layout/Header";
+import { CopyToastRegion } from "@/components/contacts/CopyToastRegion";
+import { QuickViewProvider } from "@/components/quickview/QuickViewProvider";
 import { Footer } from "@/components/layout/Footer";
 import { THEME_INIT_SCRIPT } from "@/components/layout/ThemeToggle";
 import { authStateFromCookies } from "@/lib/auth-state";
@@ -67,7 +69,7 @@ export default async function RootLayout({
   const authState = authStateFromCookies((name) => cookieStore.has(name));
 
   // Тема: светлая по макету (#477) — она же серверный рендер. Реальную тему
-  // посетителя (сохранённый выбор либо системная) ставит THEME_INIT_SCRIPT в
+  // посетителя (сохранённый выбор, иначе светлая — UX-01) ставит THEME_INIT_SCRIPT в
   // <head> до первой отрисовки, поэтому <html> помечен suppressHydrationWarning:
   // атрибут в DOM к моменту гидрации намеренно отличается от серверного.
   return (
@@ -94,21 +96,27 @@ export default async function RootLayout({
         <AuthStateProvider state={authState}>
           <CartProvider>
             <WishlistProvider>
-              <div className="flex min-h-screen flex-col">
-                <Header
-                  logoUrl={theme.logo_url}
-                  siteName={theme.name}
-                  storefront={storefront}
-                  infoPages={infoPages}
-                />
-                <div className="flex-1">{children}</div>
-                <Footer
-                  logoUrl={theme.logo_url}
-                  siteName={theme.name}
-                  storefront={storefront}
-                  infoPages={infoPages}
-                />
-              </div>
+              {/* UX-05: быстрый просмотр товара — внутри корзины и избранного, потому что
+                  окно пользуется обоими. */}
+              <QuickViewProvider>
+                <div className="flex min-h-screen flex-col">
+                  <Header
+                    logoUrl={theme.logo_url}
+                    siteName={theme.name}
+                    storefront={storefront}
+                    infoPages={infoPages}
+                  />
+                  <div className="flex-1">{children}</div>
+                  <Footer
+                    logoUrl={theme.logo_url}
+                    siteName={theme.name}
+                    storefront={storefront}
+                    infoPages={infoPages}
+                  />
+                </div>
+              </QuickViewProvider>
+              {/* UX-03: единый регион уведомлений «скопировано» для шапки, подвала и 404. */}
+              <CopyToastRegion />
             </WishlistProvider>
           </CartProvider>
         </AuthStateProvider>

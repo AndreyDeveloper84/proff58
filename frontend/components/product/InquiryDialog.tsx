@@ -102,13 +102,15 @@ export function InquiryDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="inquiry-dialog-title"
-        className="w-full max-w-sm rounded-lg border border-line bg-surface p-5 shadow-xl"
+        // UX-04: окно крупнее; при длинном содержимом прокручивается внутри и не уходит
+        // за экран (в т.ч. при масштабе 200 %), шапка с крестиком остаётся на месте.
+        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-y-auto rounded-lg border border-line bg-surface p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-center justify-between">
+        <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-3 flex items-center justify-between bg-surface px-6 pb-2 pt-6">
           <h2
             id="inquiry-dialog-title"
-            className="font-display text-lg font-semibold text-ink"
+            className="font-display text-xl font-semibold text-ink"
           >
             {title}
           </h2>
@@ -117,14 +119,14 @@ export function InquiryDialog({
             onClick={() => phase !== "submitting" && onClose()}
             aria-label="Закрыть"
             disabled={phase === "submitting"}
-            className="text-ink-3 hover:text-ink"
+            className="-mr-2 grid h-11 w-11 place-items-center rounded-md text-ink-3 hover:bg-raised hover:text-ink"
           >
             <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
 
         {phase === "success" ? (
-          <p className="text-sm text-ink-2">
+          <p className="text-base text-ink-2">
             Заявка отправлена — мы свяжемся с вами по телефону.
           </p>
         ) : (
@@ -135,21 +137,21 @@ export function InquiryDialog({
               placeholder="Телефон*"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="h-9 rounded-md border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-accent"
+              className="h-11 rounded-md border border-line bg-surface px-3 text-base text-ink outline-none focus:border-accent"
             />
             <input
               type="text"
               placeholder="Имя"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="h-9 rounded-md border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-accent"
+              className="h-11 rounded-md border border-line bg-surface px-3 text-base text-ink outline-none focus:border-accent"
             />
             <textarea
               placeholder="Комментарий"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={3}
-              className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+              className="rounded-md border border-line bg-surface px-3 py-2 text-base text-ink outline-none focus:border-accent"
             />
             {phase === "error" && (
               <p className="text-xs text-danger">

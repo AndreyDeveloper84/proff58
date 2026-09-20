@@ -69,7 +69,7 @@ export default async function SearchPage({
             <Button variant="accent">Открыть каталог</Button>
           </Link>
         </div>
-      ) : !listing || listing.total === 0 ? (
+      ) : !listing || (listing.total === 0 && Object.keys(listingQuery.filters).length === 0) ? (
         <div className="flex flex-col items-center gap-4 rounded-lg border border-line bg-surface p-12 text-center">
           <SearchIcon className="h-16 w-16 text-ink-3" strokeWidth={1} aria-hidden />
           <p className="text-lg text-ink-2">По запросу «{query}» ничего не найдено</p>

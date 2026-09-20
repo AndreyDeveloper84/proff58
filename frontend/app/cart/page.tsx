@@ -39,14 +39,18 @@ export default function CartPage() {
     });
   }, [cart]);
 
-  const run = useCallback(async (action: () => Promise<unknown>) => {
+  // Возвращает успех: строке корзины нужно знать, принял ли сервер введённое
+  // количество (UX-06) — при отказе она показывает прежнее число, а не введённое.
+  const run = useCallback(async (action: () => Promise<unknown>): Promise<boolean> => {
     setMutating(true);
     setError(null);
     setNotice(null);
     try {
       await action();
+      return true;
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Не удалось обновить корзину");
+      return false;
     } finally {
       setMutating(false);
     }
@@ -293,7 +297,7 @@ export default function CartPage() {
                   <LockKeyhole className="h-4 w-4" aria-hidden />
                   <div>
                     <p className="font-semibold">Безопасная оплата</p>
-                    <p className="mt-0.5 text-[10px] font-normal text-ink-3">
+                    <p className="mt-0.5 text-xs font-normal text-ink-3">
                       Ваши данные защищены
                     </p>
                   </div>
@@ -304,7 +308,7 @@ export default function CartPage() {
 
           <div className="fixed inset-x-0 bottom-[68px] z-40 flex h-[72px] items-center justify-between gap-3 border-t border-line bg-surface px-4 shadow-[0_-8px_24px_rgba(20,24,27,0.08)] lg:hidden">
             <div>
-              <p className="text-[11px] text-ink-3">Итого:</p>
+              <p className="text-xs text-ink-3">Итого:</p>
               <p className="text-lg font-bold text-ink">
                 {mixedCurrencies ? "—" : formatPrice(payable, currency)}
               </p>
