@@ -123,15 +123,15 @@ async function NameMatchesHint({ name, brandTotal }: { name: string; brandTotal:
 }
 
 async function BrandProducts({
-  slug,
+  pending,
   query,
   overview,
 }: {
-  slug: string;
+  pending: ReturnType<typeof getBrandProducts>;
   query: ListingQuery;
   overview: BrandOverview;
 }) {
-  const { total, products } = await getBrandProducts(slug, query);
+  const { total, products } = await pending;
   return (
     <SearchShell
       listing={{
@@ -156,6 +156,12 @@ export default async function BrandPage({ params, searchParams }: Props) {
   const [{ slug: rawSlug }, sp] = await Promise.all([params, searchParams]);
   const slug = rawSlug.toLowerCase();
   const query = toQuery(sp);
+
+  // Товары запрашиваем сразу, параллельно с шапкой бренда: последовательно страница
+  // стоила бы двух обращений к каталогу подряд. Пустой catch — на случай, когда
+  // шапка ответит 404 и до ожидания этого промиса дело не дойдёт.
+  const productsPending = getBrandProducts(slug, query);
+  productsPending.catch(() => {});
 
   // Существование бренда выясняем ДО Suspense-границы — по той же причине, что и в
   // каталоге: после первого отданного фоллбэка HTTP-статус уже не изменить, и
@@ -208,7 +214,7 @@ export default async function BrandPage({ params, searchParams }: Props) {
           </div>
         }
       >
-        <BrandProducts slug={slug} query={query} overview={overview} />
+        <BrandProducts pending={productsPending} query={query} overview={overview} />
       </Suspense>
 
       <Suspense fallback={null}>

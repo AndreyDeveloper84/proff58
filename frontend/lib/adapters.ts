@@ -42,7 +42,9 @@ const SSR_TIMEOUT_MS = 4000;
 // Длиннее, чем у блоков главной: здесь сбой — это экран ошибки с «Повторить», а не
 // тихо скрытый блок, и обрывать чуть замешкавшийся каталог незачем. Без таймаута
 // зависший апстрим держал переход без единого признака жизни (PERF-01).
-const LISTING_TIMEOUT_MS = 10_000;
+// 8 с, а не ровно 10: бюджет «сообщение об ошибке не позднее 10 секунд» считается от
+// клика, и в него должны уложиться ещё сеть и отрисовка экрана ошибки.
+const LISTING_TIMEOUT_MS = 8_000;
 
 // Ошибка обращения к каталог-API (не 404 категории) — должна вести в error.tsx, а не маскироваться.
 export class CatalogFetchError extends Error {}
@@ -429,7 +431,7 @@ export async function fetchListingFromApi(
 
   const productsRes = await fetch(
     `${root}/api/catalog/products/?${buildProductParams(query).toString()}`,
-    { cache: "no-store", headers: SSR_HEADERS },
+    { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
   );
   if (productsRes.status === 404) return null;
   if (!productsRes.ok) throw new CatalogFetchError(`products ${productsRes.status}`);
@@ -451,7 +453,7 @@ export async function fetchListingFromApi(
   try {
     const facetsRes = await fetch(
       `${root}/api/catalog/categories/${encodeURIComponent(query.category)}/facets/?${buildFacetParams(query).toString()}`,
-      { cache: "no-store", headers: SSR_HEADERS },
+      { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
     );
     if (facetsRes.status === 404) {
       categoryMissing = true;
@@ -512,22 +514,6 @@ export async function fetchListingFromApi(
   };
 }
 
-// Поиск по каталогу (SSR-страница /search): ProductListView c ?search= ранжирует по
-// релевантности (trigram). Серверный вызов Next→Django (как fetchListingFromApi). Запрос
-// короче 2 символов или сбой API → пустой список (страница покажет «ничего не найдено»).
-export async function fetchSearchFromApi(base: string, q: string): Promise<Product[]> {
-  const query = q.trim();
-  if (query.length < 2) return [];
-  const root = base.replace(/\/$/, "");
-  const res = await fetch(
-    `${root}/api/catalog/products/?search=${encodeURIComponent(query)}`,
-    { cache: "no-store", headers: SSR_HEADERS },
-  );
-  if (!res.ok) return [];
-  const json = (await res.json()) as { results?: ApiProduct[] };
-  return (json.results ?? []).map(apiProductToProduct);
-}
-
 // Поисковая выдача с фильтрами и пагинацией (DRF-1166). Отличие от каталога — вместо
 // категории ?search=, и фасета всего три: цена, бренд, наличие. Технических
 // характеристик здесь нет и быть не может — по «дрель» приезжают дрели, патроны и
@@ -548,11 +534,14 @@ export async function fetchSearchListingFromApi(
     fetch(`${root}/api/catalog/products/?${buildProductParams(query, search).toString()}`, {
       cache: "no-store",
       headers: SSR_HEADERS,
+      signal: AbortSignal.timeout(LISTING_TIMEOUT_MS),
     }),
-    // Фасеты — best-effort: упали → страница остаётся рабочим списком без сайдбара.
+    // Фасеты — best-effort: упали или не успели → страница остаётся рабочим списком
+    // без сайдбара.
     fetch(`${root}/api/catalog/search/facets/?${facetParams.toString()}`, {
       cache: "no-store",
       headers: SSR_HEADERS,
+      signal: AbortSignal.timeout(LISTING_TIMEOUT_MS),
     }).catch(() => null),
   ]);
 
@@ -687,14 +676,19 @@ export async function fetchProductFromApi(
   slug: string,
 ): Promise<ProductDetail | null> {
   const root = base.replace(/\/$/, "");
-  const res = await fetch(`${root}/api/catalog/products/${encodeURIComponent(slug)}/`, {
-    cache: "no-store",
-    headers: SSR_HEADERS,
-  });
+  // Товар и совместимость — параллельно: они независимы, а последовательно худший
+  // случай был бы двумя таймаутами подряд (PERF-01).
+  const [res, compatible] = await Promise.all([
+    fetch(`${root}/api/catalog/products/${encodeURIComponent(slug)}/`, {
+      cache: "no-store",
+      headers: SSR_HEADERS,
+      signal: AbortSignal.timeout(LISTING_TIMEOUT_MS),
+    }),
+    fetchProductCompatible(root, slug),
+  ]);
   if (res.status === 404) return null;
   if (!res.ok) throw new CatalogFetchError(`product ${res.status}`);
-  const detail = await fetchProductCompatible(root, slug);
-  return { ...apiProductToDetail((await res.json()) as ApiProductDetail), compatible: detail };
+  return { ...apiProductToDetail((await res.json()) as ApiProductDetail), compatible };
 }
 
 // Секции совместимости — best-effort: упал эндпоинт → пустые секции, карточка всё равно рендерится.
@@ -712,7 +706,7 @@ async function fetchProductCompatible(
   try {
     const res = await fetch(
       `${root}/api/catalog/products/${encodeURIComponent(slug)}/compatible/`,
-      { cache: "no-store", headers: SSR_HEADERS },
+      { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
     );
     if (!res.ok) return empty;
     const cj = (await res.json()) as ApiCompatibleResponse;

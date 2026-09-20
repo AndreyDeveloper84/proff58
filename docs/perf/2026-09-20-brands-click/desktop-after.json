@@ -1,0 +1,107 @@
+{
+ "base": "http://127.0.0.1:3078",
+ "mobile": false,
+ "expect": "content",
+ "results": [
+  {
+   "run": 0,
+   "cold": true,
+   "brand": "Товары бренда Makita",
+   "href": "/brands/makita",
+   "feedbackMs": 54,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 2255,
+   "jsErrors": 0
+  },
+  {
+   "run": 1,
+   "cold": false,
+   "brand": "Товары бренда Bosch",
+   "href": "/brands/bosch",
+   "feedbackMs": 79,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 2199,
+   "jsErrors": 0
+  },
+  {
+   "run": 2,
+   "cold": true,
+   "brand": "Товары бренда DeWALT",
+   "href": "/brands/dewalt",
+   "feedbackMs": 18,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 2136,
+   "jsErrors": 0
+  },
+  {
+   "run": 3,
+   "cold": false,
+   "brand": "Товары бренда Metabo",
+   "href": "/brands/metabo",
+   "feedbackMs": 20,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 2128,
+   "jsErrors": 0
+  },
+  {
+   "run": 4,
+   "cold": true,
+   "brand": "Товары бренда AEG",
+   "href": "/brands/aeg",
+   "feedbackMs": 25,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 2145,
+   "jsErrors": 0
+  },
+  {
+   "run": 5,
+   "cold": false,
+   "brand": "Товары бренда Milwaukee",
+   "href": "/brands/milwaukee",
+   "feedbackMs": 14,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 2080,
+   "jsErrors": 0
+  },
+  {
+   "run": 6,
+   "cold": true,
+   "brand": "Товары бренда Hilti",
+   "href": "/brands/hilti",
+   "feedbackMs": 34,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 2129,
+   "jsErrors": 0
+  },
+  {
+   "run": 7,
+   "cold": false,
+   "brand": "Товары бренда Stanley",
+   "href": "/brands/stanley",
+   "feedbackMs": 14,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 2075,
+   "jsErrors": 0
+  },
+  {
+   "run": 8,
+   "cold": true,
+   "brand": "Товары бренда Ресанта",
+   "href": "/brands/resanta",
+   "feedbackMs": 13,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 2105,
+   "jsErrors": 0
+  },
+  {
+   "run": 9,
+   "cold": false,
+   "brand": "Товары бренда Makita",
+   "href": "/brands/makita",
+   "feedbackMs": 16,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 2116,
+   "jsErrors": 0
+  }
+ ]
+}

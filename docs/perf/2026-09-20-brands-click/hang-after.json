@@ -1,0 +1,47 @@
+{
+ "base": "http://127.0.0.1:3078",
+ "mobile": false,
+ "expect": "error",
+ "results": [
+  {
+   "run": 0,
+   "cold": true,
+   "brand": "Товары бренда Makita",
+   "href": "/brands/makita",
+   "feedbackMs": 51,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 8353,
+   "jsErrors": 0
+  },
+  {
+   "run": 1,
+   "cold": false,
+   "brand": "Товары бренда Bosch",
+   "href": "/brands/bosch",
+   "feedbackMs": 21,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 8092,
+   "jsErrors": 0
+  },
+  {
+   "run": 2,
+   "cold": true,
+   "brand": "Товары бренда DeWALT",
+   "href": "/brands/dewalt",
+   "feedbackMs": 12,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 8112,
+   "jsErrors": 0
+  },
+  {
+   "run": 3,
+   "cold": false,
+   "brand": "Товары бренда Metabo",
+   "href": "/brands/metabo",
+   "feedbackMs": 18,
+   "feedbackBy": "полоса на плитке",
+   "doneMs": 8135,
+   "jsErrors": 0
+  }
+ ]
+}
