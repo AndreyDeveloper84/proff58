@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "note": "Порядок ПОКАЗА характеристик на витрине (DATA-01): карточка списка, быстрый просмотр и страница товара берут его отсюда, поэтому совпадают. Это не порядок извлечения (attribute_rules.json) и не состав фильтров (CategoryAttribute). default — общий рейтинг важности для покупателя; by_tool_type — переопределение для типа (slug опции tool_type): перечисленные идут первыми, остальные — по default. Характеристики вне списков — в конце, по названию. last — всегда в самом конце.",
+  "default": [
+    "energy_impact",
+    "power",
+    "power_hp",
+    "engine_displacement",
+    "voltage",
+    "torque",
+    "battery_capacity",
+    "battery_included",
+    "power_source",
+    "chuck",
+    "disc_diameter",
+    "bore",
+    "diameter",
+    "thread_diameter",
+    "thread_pitch",
+    "length",
+    "linear_length",
+    "width",
+    "height",
+    "size",
+    "size_pair",
+    "size_num",
+    "glove_size",
+    "volume",
+    "capacity",
+    "lift_height",
+    "measuring_range",
+    "max_distance",
+    "teeth_count",
+    "grit",
+    "bar_length",
+    "chain_pitch",
+    "chain_gauge",
+    "chain_links",
+    "shank_type",
+    "bit_type",
+    "spindle_thread",
+    "mount",
+    "no_load_speed",
+    "stroke_rate",
+    "motor_type",
+    "drive",
+    "tool_kind",
+    "disc_type",
+    "saw_type",
+    "wrench_type",
+    "head_type",
+    "plier_type",
+    "bokorez_type",
+    "molotok_type",
+    "domkrat_type",
+    "puller_type",
+    "torch_type",
+    "level_type",
+    "readout_type",
+    "knife_type",
+    "part_kind",
+    "material",
+    "coating",
+    "purpose",
+    "saw_for",
+    "nozhovka_for",
+    "compat_brand",
+    "set_kind",
+    "piece_count",
+    "package_quantity",
+    "cable_length",
+    "cable_section",
+    "color_temperature",
+    "socket",
+    "socket_count",
+    "bulb_shape",
+    "weight",
+    "weight_kg"
+  ],
+  "by_tool_type": {
+    "perforatory": [
+      "energy_impact",
+      "power",
+      "chuck",
+      "voltage",
+      "battery_capacity",
+      "battery_included"
+    ],
+    "dreli-shurupoverty": [
+      "voltage",
+      "torque",
+      "battery_included",
+      "battery_capacity",
+      "chuck"
+    ],
+    "bolgarki-ushm": [
+      "disc_diameter",
+      "power",
+      "voltage",
+      "no_load_speed",
+      "spindle_thread"
+    ],
+    "lobziki": [
+      "power",
+      "voltage",
+      "stroke_rate"
+    ],
+    "pily": [
+      "power",
+      "saw_type",
+      "voltage",
+      "no_load_speed"
+    ],
+    "akkumulyatory": [
+      "voltage",
+      "battery_capacity"
+    ],
+    "bury": [
+      "diameter",
+      "length",
+      "shank_type"
+    ],
+    "osnastka-burov": [
+      "diameter",
+      "length",
+      "shank_type"
+    ],
+    "sverla": [
+      "diameter",
+      "material",
+      "shank_type",
+      "purpose"
+    ],
+    "krugi-shlif": [
+      "disc_diameter",
+      "bore",
+      "disc_type",
+      "package_quantity"
+    ],
+    "krugi-almaznye": [
+      "disc_diameter",
+      "bore",
+      "disc_type"
+    ],
+    "pilnye-diski": [
+      "disc_diameter",
+      "bore",
+      "teeth_count"
+    ],
+    "krep-bolty": [
+      "thread_diameter",
+      "length",
+      "head_type",
+      "coating"
+    ],
+    "krep-samorezy": [
+      "diameter",
+      "length",
+      "package_quantity"
+    ],
+    "krep-dyubeli": [
+      "diameter",
+      "length",
+      "package_quantity"
+    ],
+    "krep-shurupy": [
+      "diameter",
+      "length"
+    ],
+    "krep-shpilki": [
+      "diameter",
+      "length"
+    ],
+    "klyuchi-gaechnye": [
+      "wrench_type",
+      "size",
+      "size_pair"
+    ],
+    "bp-generatory": [
+      "power",
+      "power_hp"
+    ],
+    "bp-benzopily": [
+      "power",
+      "power_hp",
+      "bar_length"
+    ],
+    "bp-kompressory": [
+      "power",
+      "volume",
+      "voltage"
+    ]
+  },
+  "last": [
+    "tool_type"
+  ]
+}

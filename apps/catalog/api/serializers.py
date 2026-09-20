@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 from apps.pricing.services import RETAIL, price_for
 
+from ..attribute_display import is_key_attribute, ordered_pavs
 from ..models import Product, StockStatus
 from ..services import attr_value_to_json
 
@@ -25,6 +26,17 @@ def _attr_dict(pav):
         "unit": pav.attribute.unit,
         "value": attr_value_to_json(pav),
     }
+
+
+def _is_blank(value) -> bool:
+    """Пустое значение характеристики. ``0`` и ``False`` — НЕ пустые («0 Дж», «Нет»)."""
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    if isinstance(value, list | tuple):
+        return len(value) == 0
+    return False
 
 
 def _image_url(image, _context=None) -> str | None:
@@ -126,18 +138,17 @@ class ProductListSerializer(serializers.ModelSerializer):
         return int(qty) if 0 < qty <= threshold else None
 
     def get_attributes(self, obj):
-        """Ключевые характеристики для строки спеков карточки (ограничено и упорядочено).
+        """Ключевые характеристики карточки: ограничено и упорядочено ПО ТИПУ ТОВАРА.
 
-        Только фильтруемые/сравниваемые, по имени, не более ``CARD_ATTRS_LIMIT``. Полный
-        набор — в ``ProductDetailSerializer``. Источник — prefetched ``attribute_values``.
+        Только фильтруемые/сравниваемые, в порядке показа (``attribute_display``: у
+        перфоратора первой идёт энергия удара, а не то, что раньше по алфавиту), не более
+        ``CARD_ATTRS_LIMIT``. Пустые значения не отдаём: карточка не должна рисовать
+        «Мощность: » — при этом ``0`` и ``False`` пустыми НЕ считаются. Полный набор — в
+        ``ProductDetailSerializer``. Источник — prefetched ``attribute_values``.
         """
-        pavs = [
-            p
-            for p in obj.attribute_values.all()
-            if p.attribute.is_filterable or p.attribute.is_comparable
-        ]
-        pavs.sort(key=lambda p: p.attribute.name)
-        return [_attr_dict(p) for p in pavs[:CARD_ATTRS_LIMIT]]
+        pavs = [p for p in ordered_pavs(obj.attribute_values.all()) if is_key_attribute(p)]
+        attrs = [a for a in map(_attr_dict, pavs) if not _is_blank(a["value"])]
+        return attrs[:CARD_ATTRS_LIMIT]
 
     def get_main_image(self, obj):
         images = list(obj.images.all())  # prefetched — без новых запросов
@@ -191,7 +202,23 @@ class ProductDetailSerializer(ProductListSerializer):
         return ProductImageSerializer(obj.images.all(), many=True, context=self.context).data
 
     def get_attributes(self, obj):
-        return [_attr_dict(pav) for pav in obj.attribute_values.all()]  # все, prefetched
+        """Все характеристики (prefetched) в том же порядке показа, что и у карточки.
+
+        Сначала ключевые (те же, что видит карточка списка, в том же порядке), затем
+        остальные — поэтому «основные параметры» страницы товара = начало этого списка
+        и совпадают с карточкой и быстрым просмотром. ``is_key`` отдаём явно, чтобы
+        витрина не угадывала границу.
+        """
+        ordered = ordered_pavs(obj.attribute_values.all())
+        ordered.sort(key=lambda p: not is_key_attribute(p))  # стабильно: ключевые вперёд
+        out = []
+        for pav in ordered:
+            attr = _attr_dict(pav)
+            if _is_blank(attr["value"]):
+                continue
+            attr["is_key"] = is_key_attribute(pav)
+            out.append(attr)
+        return out
 
     def get_breadcrumb(self, obj):
         if obj.category_id is None:

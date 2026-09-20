@@ -182,9 +182,8 @@ export function ProductCard({
             {product.brand ? `${product.brand} ` : ""}
             {title}
           </a>
-          <div className="mt-1 line-clamp-1 text-xs leading-tight text-ink-2">
-            {product.specs?.slice(0, 3).map((s) => s.value).join(" · ")}
-          </div>
+          {/* DATA-01: две пары «Название: значение» вместо безымянной строки значений. */}
+          <ProductSpecs specs={product.specs} limit={2} className="mt-1" />
           <div className="mt-auto flex items-end justify-between gap-2 pt-2">
             <div>
               <StatusLabel product={product} compact />
@@ -238,9 +237,7 @@ export function ProductCard({
           <a href={href} className="mt-0.5 line-clamp-2 text-base font-medium text-ink hover:text-accent">
             {title}
           </a>
-          <div className="mt-1">
-            <ProductSpecs specs={product.specs} />
-          </div>
+          <ProductSpecs specs={product.specs} limit={4} className="mt-1.5" />
           {priceCta}
         </div>
       </article>
@@ -276,9 +273,7 @@ export function ProductCard({
       <a href={href} className="mt-0.5 line-clamp-2 text-sm font-medium leading-snug text-ink hover:text-accent sm:text-[15px]">
         {title}
       </a>
-      <div className="mt-1">
-        <ProductSpecs specs={product.specs} />
-      </div>
+      <ProductSpecs specs={product.specs} limit={3} className="mt-1.5" />
       {priceCta}
     </article>
   );

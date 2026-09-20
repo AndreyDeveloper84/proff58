@@ -49,7 +49,7 @@ const LISTING_TIMEOUT_MS = 8_000;
 // Ошибка обращения к каталог-API (не 404 категории) — должна вести в error.tsx, а не маскироваться.
 export class CatalogFetchError extends Error {}
 
-type ApiAttr = { name: string; slug: string; unit?: string; value: unknown };
+type ApiAttr = { name: string; slug: string; unit?: string; value: unknown; is_key?: boolean };
 type ApiProduct = {
   id: number;
   name: string;
@@ -155,15 +155,21 @@ const STOCK_API_TO_UI: Record<string, StockState> = {
 
 // Значение характеристики → строка карточки (RU-формат: десятичные через запятую; unit
 // добавляем, только если его ещё нет в значении). «2 Дж», не «2.0 Дж».
-function formatSpecValue(value: unknown, unit?: string): string {
-  if (value == null || value === "") return "";
+export function formatSpecValue(value: unknown, unit?: string): string {
+  if (value == null) return "";
   let s: string;
   if (typeof value === "boolean") s = value ? "Да" : "Нет";
   else if (typeof value === "number") s = formatRu(value);
-  else s = String(value);
+  else s = String(value).trim();
+  // Пустая строка (в т.ч. из одних пробелов) остаётся пустой: иначе к ней приклеилась бы
+  // единица и карточка показала бы «Мощность: Вт».
+  if (s === "") return "";
   const u = (unit ?? "").trim();
-  if (u && !s.includes(u)) s = `${s} ${u}`;
-  return s.trim();
+  // Единицу не повторяем, если значение уже ею заканчивается («220 В» + «В»). Именно
+  // «заканчивается», а не «содержит»: у текста «сталь матовая» есть буква «м», и
+  // единица «м» из-за неё раньше молча терялась бы.
+  if (u && !s.toLowerCase().endsWith(u.toLowerCase())) s = `${s} ${u}`;
+  return s;
 }
 
 export function apiProductToProduct(ap: ApiProduct): Product {
@@ -182,9 +188,21 @@ export function apiProductToProduct(ap: ApiProduct): Product {
     cardName: ap.card_name || ap.name,
     brand: ap.brand ?? "",
     image: ap.main_image ?? undefined,
+    // Порядок характеристик — с backend (по типу товара, DATA-01): не пересортировываем.
+    // Пустые значения отбрасываем, но «0 Дж» и «Нет» — не пустые: formatSpecValue
+    // превращает 0 и false в непустую строку, и фильтр по строке их сохраняет.
     specs: attrs
-      .map((a) => ({ label: a.name, value: formatSpecValue(a.value, a.unit) }))
-      .filter((s) => s.value),
+      .map((a) => ({
+        label: (a.name ?? "").trim(),
+        value: formatSpecValue(a.value, a.unit),
+        slug: a.slug,
+        ...(a.is_key === undefined ? {} : { isKey: a.is_key }),
+      }))
+      .filter((s) => s.value !== "" && s.label !== "")
+      // Дубли «та же подпись + то же значение» (одна ось, заведённая дважды) — одна строка.
+      .filter(
+        (s, i, all) => all.findIndex((x) => x.label === s.label && x.value === s.value) === i,
+      ),
     energy: bySlug("energy_impact"),
     power: bySlug("power"),
     chuck: bySlug("chuck"),

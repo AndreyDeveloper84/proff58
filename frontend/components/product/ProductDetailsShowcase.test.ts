@@ -1,24 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { groupProductSpecs, hasPassportSpecs, selectKeySpecs } from "./ProductDetailsShowcase";
 
+// Порядок — как его отдаёт detail-эндпоинт (DATA-01): ключевые по типу товара, затем
+// остальные, служебный тип инструмента — последним.
 const specs = [
-  { label: "Тип инструмента", value: "Перфораторы" },
-  { label: "Мощность", value: "800 Вт" },
-  { label: "Питание", value: "Сеть" },
-  { label: "Энергия удара", value: "3 Дж" },
-  { label: "Тип патрона", value: "SDS-plus" },
-  { label: "Режимы работы", value: "3" },
-  { label: "Вес", value: "2,7 кг" },
+  { label: "Энергия удара", value: "3 Дж", slug: "energy_impact", isKey: true },
+  { label: "Мощность", value: "800 Вт", slug: "power", isKey: true },
+  { label: "Тип патрона", value: "SDS-plus", slug: "chuck", isKey: true },
+  { label: "Питание", value: "Сеть", slug: "power_source", isKey: true },
+  { label: "Вес", value: "2,7 кг", slug: "weight_kg", isKey: true },
+  { label: "Режимы работы", value: "3", slug: "modes", isKey: false },
+  { label: "Тип инструмента", value: "Перфораторы", slug: "tool_type", isKey: true },
 ];
 
 describe("ProductDetailsShowcase", () => {
-  it("выбирает четыре ключевых параметра в полезном порядке", () => {
-    expect(selectKeySpecs(specs)).toEqual([
-      { label: "Мощность", value: "800 Вт" },
-      { label: "Энергия удара", value: "3 Дж" },
-      { label: "Тип патрона", value: "SDS-plus" },
-      { label: "Режимы работы", value: "3" },
+  it("«Главное в работе» берёт порядок backend, а не угадывает по подписям", () => {
+    expect(selectKeySpecs(specs).map((spec) => spec.label)).toEqual([
+      "Энергия удара",
+      "Мощность",
+      "Тип патрона",
+      "Питание",
     ]);
+  });
+
+  it("неключевые характеристики и тип инструмента в «главное» не попадают", () => {
+    const labels = selectKeySpecs(specs, 10).map((spec) => spec.label);
+    expect(labels).not.toContain("Режимы работы");
+    expect(labels).not.toContain("Тип инструмента");
   });
 
   it("раскладывает характеристики по разделам технического паспорта", () => {
@@ -30,7 +38,7 @@ describe("ProductDetailsShowcase", () => {
       "Питание и корпус",
       "Дополнительно",
     ]);
-    expect(groups[0].specs.map((spec) => spec.label)).toEqual(["Мощность", "Энергия удара"]);
+    expect(groups[0].specs.map((spec) => spec.label)).toEqual(["Энергия удара", "Мощность"]);
     expect(groups[1].specs.map((spec) => spec.label)).toEqual(["Тип патрона", "Режимы работы"]);
     expect(groups[2].specs.map((spec) => spec.label)).toEqual(["Питание", "Вес"]);
     expect(groups[3].specs.map((spec) => spec.label)).toEqual(["Тип инструмента"]);
