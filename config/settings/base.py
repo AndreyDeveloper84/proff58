@@ -368,6 +368,11 @@ REST_FRAMEWORK = {
     # #279: глобальный анонимный лимит — защита каталога/фасетов от DoS.
     # Вьюхи с явным throttle_classes (1С, корзина, заказы) его не наследуют.
     "DEFAULT_THROTTLE_CLASSES": ["apps.core.throttling.AnonRateThrottle"],
+    # Адрес посетителя для лимитов — последний элемент X-Forwarded-For. Его ставит
+    # наш nginx (перезаписывая, не дописывая) или BFF из X-Real-IP того же nginx;
+    # клиентский заголовок до Django не доходит. Без NUM_PROXIES DRF брал ПЕРВЫЙ
+    # адрес из цепочки — его подставлял сам клиент и обходил лимит входа.
+    "NUM_PROXIES": 1,
     "DEFAULT_THROTTLE_RATES": {
         "inquiry": "20/hour",
         # #9: флуд чувствительных эндпоинтов. onec — поток валидным ключом 1С (по IP),

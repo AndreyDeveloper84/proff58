@@ -380,11 +380,32 @@ def test_claim_guest_orders_on_login_with_verified_phone(client):
 def test_delete_account(client):
     u = User.objects.create_user(phone="+79005550002", password="pass", full_name="Удаляемый")
     client.force_authenticate(user=u)
-    resp = client.post("/api/account/delete/")
+    resp = client.post("/api/account/delete/", {"password": "pass"}, format="json")
     assert resp.status_code == 200
     u.refresh_from_db()
     assert u.is_active is False
     assert u.full_name == ""
+
+
+@pytest.mark.django_db
+def test_delete_account_требует_пароль(client):
+    """Необратимое действие — одной сессии мало (как при смене телефона)."""
+    u = User.objects.create_user(phone="+79005550002", password="pass", full_name="Удаляемый")
+    client.force_authenticate(user=u)
+    assert client.post("/api/account/delete/").status_code == 400
+    assert (
+        client.post("/api/account/delete/", {"password": "нет"}, format="json").status_code == 400
+    )
+    u.refresh_from_db()
+    assert u.is_active is True
+
+
+@pytest.mark.django_db
+def test_delete_account_без_пароля_у_пришедших_из_max(client):
+    u = User.objects.create_user(phone="+79005550003", password=None)
+    client.force_authenticate(user=u)
+    assert client.get("/api/account/me/").json()["has_password"] is False
+    assert client.post("/api/account/delete/").status_code == 200
 
 
 @pytest.mark.django_db
@@ -407,7 +428,7 @@ def test_delete_account_anonymizes_profile(client):
         pd_consent_version="v1",
     )
     client.force_authenticate(user=u)
-    resp = client.post("/api/account/delete/")
+    resp = client.post("/api/account/delete/", {"password": "pass"}, format="json")
     assert resp.status_code == 200
 
     profile = Profile.objects.get(user=u)
@@ -437,7 +458,7 @@ def test_delete_account_removes_wishlist(client):
     WishlistItem.objects.create(user=u, product=product)
     client.force_authenticate(user=u)
 
-    resp = client.post("/api/account/delete/")
+    resp = client.post("/api/account/delete/", {"password": "pass"}, format="json")
     assert resp.status_code == 200
     assert WishlistItem.objects.filter(user=u).count() == 0
 

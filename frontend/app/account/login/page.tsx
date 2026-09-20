@@ -12,7 +12,9 @@ import { isValidInn, isValidKpp, isLegalEntityInn } from "@/lib/validation";
 function nextTarget(): string {
   if (typeof window === "undefined") return "/account/profile";
   const n = new URLSearchParams(window.location.search).get("next");
-  return n && n.startsWith("/") ? n : "/account/profile";
+  // Только путь внутри сайта: «//чужой-сайт» и «/\чужой-сайт» браузер трактует
+  // как другой хост — это открытый редирект после входа.
+  return n && /^\/(?![\/\\])/.test(n) ? n : "/account/profile";
 }
 
 type CustomerType = "b2c" | "b2b";

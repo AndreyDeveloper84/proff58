@@ -37,6 +37,20 @@ const mockedGetWishlist = getWishlist as unknown as ReturnType<typeof vi.fn>;
 const mockedUpdateMe = updateMe as unknown as ReturnType<typeof vi.fn>;
 const mockedDeleteAccount = deleteAccount as unknown as ReturnType<typeof vi.fn>;
 
+const baseUser = {
+  id: 1,
+  phone: "+79001112233",
+  email: "ivan@example.com",
+  full_name: "Иван Иванов",
+  customer_type: "b2b" as const,
+  profile: {
+    company_name: "ООО Инструмент",
+    inn: "5800000000",
+    kpp: "580001001",
+    legal_address: "г. Пенза, ул. Ленина, 1",
+  },
+};
+
 describe("ProfilePage dashboard", () => {
   beforeEach(() => {
     pushMock.mockReset();
@@ -46,19 +60,7 @@ describe("ProfilePage dashboard", () => {
     mockedGetWishlist.mockReset();
     mockedUpdateMe.mockReset();
     mockedDeleteAccount.mockReset();
-    mockedGetMe.mockResolvedValue({
-      id: 1,
-      phone: "+79001112233",
-      email: "ivan@example.com",
-      full_name: "Иван Иванов",
-      customer_type: "b2b",
-      profile: {
-        company_name: "ООО Инструмент",
-        inn: "5800000000",
-        kpp: "580001001",
-        legal_address: "г. Пенза, ул. Ленина, 1",
-      },
-    });
+    mockedGetMe.mockResolvedValue(baseUser);
     mockedGetOrders.mockResolvedValue([
       {
         id: 10,
@@ -151,6 +153,26 @@ describe("ProfilePage dashboard", () => {
     fireEvent.click(deleteButton);
 
     await waitFor(() => expect(mockedDeleteAccount).toHaveBeenCalledTimes(1));
+    expect(mockedDeleteAccount).toHaveBeenCalledWith(undefined);
     expect(pushMock).toHaveBeenCalledWith("/");
+  });
+
+  it("у аккаунта с паролем удаление требует пароль", async () => {
+    mockedGetMe.mockResolvedValueOnce({ ...baseUser, has_password: true });
+    mockedDeleteAccount.mockResolvedValueOnce(undefined);
+    render(<ProfilePage />);
+
+    await screen.findByText("Добро пожаловать!");
+    fireEvent.click(screen.getByRole("button", { name: "Удалить аккаунт" }));
+    fireEvent.change(screen.getByLabelText(/Для подтверждения введите УДАЛИТЬ/), {
+      target: { value: "УДАЛИТЬ" },
+    });
+    const deleteButton = screen.getByRole("button", { name: "Удалить навсегда" });
+    expect(deleteButton).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/^Пароль/), { target: { value: "secret" } });
+    fireEvent.click(deleteButton);
+
+    await waitFor(() => expect(mockedDeleteAccount).toHaveBeenCalledWith("secret"));
   });
 });
