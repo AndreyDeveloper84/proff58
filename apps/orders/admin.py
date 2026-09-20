@@ -12,6 +12,8 @@ from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 
+from apps.core.admin import TimestampColumnsMixin
+
 from .fulfillment import advance_fulfillment, next_steps
 from .models import B2BInvoice, Cart, CartItem, FulfillmentStatus, Order, OrderItem
 from .transitions import allowed_transitions, can_transition
@@ -71,12 +73,12 @@ class OrderAdminForm(forms.ModelForm):
 
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(TimestampColumnsMixin, admin.ModelAdmin):
     form = OrderAdminForm
     change_form_template = "admin/orders/order/change_form.html"
     list_display = (
         "order_number",
-        "created_at",
+        "created",
         "customer",
         "total_money",
         "payment_way",

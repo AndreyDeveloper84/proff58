@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 
+from apps.core.admin import TimestampColumnsMixin
+
 from .article_markup import parse_body, parse_summary, reading_minutes
 from .models import Article, Banner, Promotion, SEOPage
 
@@ -13,10 +15,10 @@ NOT_WIRED_TEMPLATE = "admin/content/not_wired_change_list.html"
 
 
 @admin.register(SEOPage)
-class SEOPageAdmin(admin.ModelAdmin):
+class SEOPageAdmin(TimestampColumnsMixin, admin.ModelAdmin):
     # Предупреждения «витрина это не читает» здесь больше нет: инфо-страницы
     # доходят до сайта (/info/<slug>), и правка в этой форме меняет страницу.
-    list_display = ["slug", "title", "status", "updated_at"]
+    list_display = ["slug", "title", "status", "updated"]
     list_filter = ["status"]
     search_fields = ["slug", "title"]
     prepopulated_fields = {"slug": ("title",)}
@@ -27,9 +29,9 @@ class SEOPageAdmin(admin.ModelAdmin):
 
 
 @admin.register(Article)
-class ArticleAdmin(admin.ModelAdmin):
+class ArticleAdmin(TimestampColumnsMixin, admin.ModelAdmin):
     save_on_top = True
-    list_display = ["title", "tag", "status", "published_at", "created_at"]
+    list_display = ["title", "tag", "status", "published_at", "created"]
     list_filter = ["status", "tag"]
     search_fields = ["title", "slug"]
     prepopulated_fields = {"slug": ("title",)}
