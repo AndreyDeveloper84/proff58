@@ -4,6 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // UX-05: быстрый просмотр товара из списка.
 const add = vi.fn().mockResolvedValue({});
 vi.mock("@/components/cart/CartProvider", () => ({ useCart: () => ({ add }) }));
+// Адрес страницы меняем из теста: так проверяется закрытие окна при навигации.
+let pathname = "/catalog/perforatory";
+vi.mock("next/navigation", async (orig) => ({
+  ...(await orig<typeof import("next/navigation")>()),
+  usePathname: () => pathname,
+}));
 vi.mock("@/components/wishlist/WishlistProvider", () => ({
   useWishlist: () => ({ has: () => false, toggle: vi.fn(), isPending: () => false }),
 }));
@@ -70,6 +76,7 @@ describe("быстрый просмотр (UX-05)", () => {
     // переходе по ссылке — в тестах модификаторов это ожидаемое поведение, не ошибка.
     vi.spyOn(console, "error").mockImplementation(() => {});
     add.mockClear();
+    pathname = "/catalog/perforatory";
     global.fetch = vi.fn(async () => okResponse(detail(product()))) as unknown as typeof fetch;
   });
   afterEach(() => {
@@ -270,6 +277,33 @@ describe("быстрый просмотр (UX-05)", () => {
     expect(within(dialog).getByText("Цена по запросу")).toBeInTheDocument();
     expect(within(dialog).getByText("Фото готовится")).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: "Следующее фото" })).toBeNull();
+  });
+
+  // Окно жило в корневом layout и переживало переход: ссылка «Сообщить о поступлении»
+  // и системная «Назад» меняли страницу под ним, а оно оставалось поверх.
+  it("смена страницы закрывает окно, и при возврате на прежний адрес оно не всплывает", () => {
+    const list = [product({ stock: "out" })];
+    const tree = (items: Product[]) => (
+      <QuickViewProvider>
+        {items.map((p) => (
+          <ProductCard key={p.id} product={p} />
+        ))}
+      </QuickViewProvider>
+    );
+    const { rerender } = render(tree(list));
+
+    fireEvent.click(titleLink());
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("hidden");
+
+    pathname = "/product/perforator-dh24";
+    rerender(tree(list));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("");
+
+    pathname = "/catalog/perforatory"; // системная «Назад»
+    rerender(tree(list));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("«Подробнее о товаре» ведёт на страницу этого товара", () => {
