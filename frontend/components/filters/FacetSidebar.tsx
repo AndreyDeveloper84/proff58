@@ -5,7 +5,6 @@ import { ChevronDown, Search } from "lucide-react";
 import type { Facet, ListingQuery, RangeFilterValue } from "@/lib/types";
 import { groupSidebarFacets, pricePresets } from "@/lib/listing";
 import { pluralize } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 // Шаг слайдера диапазона: для цены крупнее, прочее — 1.
 const RANGE_STEP: Record<string, number> = { price: 100 };

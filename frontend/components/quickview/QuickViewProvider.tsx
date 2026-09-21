@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { Product } from "@/lib/types";
 import { QuickViewDialog } from "./QuickViewDialog";
 
@@ -16,16 +17,29 @@ type QuickViewApi = {
 const QuickViewContext = createContext<QuickViewApi | null>(null);
 
 export function QuickViewProvider({ children }: { children: React.ReactNode }) {
-  const [product, setProduct] = useState<Product | null>(null);
+  // Окно привязано к странице, на которой его открыли. Провайдер стоит в корневом
+  // layout и между маршрутами не размонтируется, поэтому без привязки окно переживало
+  // переход: ссылка «Сообщить о поступлении» внутри него и системная «Назад» меняли
+  // страницу под окном, а оно оставалось поверх с заблокированной прокруткой.
+  const pathname = usePathname();
+  const [view, setView] = useState<{ product: Product; pathname: string | null } | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
-  const open = useCallback((next: Product, trigger?: HTMLElement | null) => {
-    triggerRef.current = trigger ?? null;
-    setProduct(next);
-  }, []);
+  // Сброс прямо в рендере, а не в эффекте: иначе запись дожила бы до возврата на тот
+  // же адрес, и окно всплыло бы само. Диалог при этом размонтируется и сам снимает
+  // блокировку прокрутки; фокус не возвращаем — карточки на новой странице уже нет.
+  if (view && view.pathname !== pathname) setView(null);
+
+  const open = useCallback(
+    (next: Product, trigger?: HTMLElement | null) => {
+      triggerRef.current = trigger ?? null;
+      setView({ product: next, pathname });
+    },
+    [pathname],
+  );
 
   const close = useCallback(() => {
-    setProduct(null);
+    setView(null);
     // Фокус — обратно на карточку, с которой открывали: клавиатурный пользователь
     // продолжает список с того же места. preventScroll — не дёргаем прокрутку.
     const trigger = triggerRef.current;
@@ -38,7 +52,9 @@ export function QuickViewProvider({ children }: { children: React.ReactNode }) {
   return (
     <QuickViewContext.Provider value={api}>
       {children}
-      {product && <QuickViewDialog key={product.id} product={product} onClose={close} />}
+      {view && view.pathname === pathname && (
+        <QuickViewDialog key={view.product.id} product={view.product} onClose={close} />
+      )}
     </QuickViewContext.Provider>
   );
 }

@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { productSeoMetadata, robotsPolicy, siteOrigin, sitemapEntries } from "./seo";
+import {
+  productSeoMetadata,
+  robotsPolicy,
+  siteOrigin,
+  sitemapApiBase,
+  sitemapEntries,
+} from "./seo";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -46,6 +52,23 @@ describe("siteOrigin", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
     expect(siteOrigin()).toBe("https://proff58.ru");
   });
+
+  // metadataBase строится из этого значения на каждой странице: опечатка в .env не
+  // должна ронять весь сайт.
+  it("значение без схемы или не-URL игнорируется", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+    for (const broken of ["proff58.ru", "://", "javascript:alert(1)"]) {
+      vi.stubEnv("SITE_URL", broken);
+      expect(siteOrigin()).toBe("https://proff58.ru");
+      expect(() => new URL(siteOrigin())).not.toThrow();
+    }
+  });
+
+  it("битый SITE_URL не мешает взять рабочий NEXT_PUBLIC_SITE_URL", () => {
+    vi.stubEnv("SITE_URL", "proff58.ru");
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://dev.proff58.ru");
+    expect(siteOrigin()).toBe("https://dev.proff58.ru");
+  });
 });
 
 describe("productSeoMetadata", () => {
@@ -73,5 +96,38 @@ describe("sitemapEntries", () => {
     expect(sitemapEntries([{ slug: "a b", updated_at: "2026-09-20T10:00:00Z" }], "https://proff58.ru")[0].url).toBe(
       "https://proff58.ru/product/a%20b",
     );
+  });
+
+  it("битая или пустая дата не роняет sitemap — запись остаётся без lastModified", () => {
+    expect(
+      sitemapEntries(
+        [
+          { slug: "a", updated_at: "не дата" },
+          { slug: "b", updated_at: null },
+          { slug: "c", updated_at: "" },
+        ],
+        "https://proff58.ru",
+      ),
+    ).toEqual([
+      { url: "https://proff58.ru/product/a" },
+      { url: "https://proff58.ru/product/b" },
+      { url: "https://proff58.ru/product/c" },
+    ]);
+  });
+});
+
+describe("sitemapApiBase", () => {
+  it("адрес API без хвостового слэша", () => {
+    expect(sitemapApiBase({ INTERNAL_API_BASE_URL: "http://web:8000/" })).toBe("http://web:8000");
+  });
+
+  it("без адреса вне production — пустой sitemap (сборка, локалка)", () => {
+    expect(sitemapApiBase({})).toBeNull();
+    expect(sitemapApiBase({ SEO_INDEXING: "off" })).toBeNull();
+  });
+
+  // Пустой sitemap с кодом 200 краулер читает как «товаров больше нет».
+  it("без адреса в production — ошибка, а не пустой список", () => {
+    expect(() => sitemapApiBase({ SEO_INDEXING: "production" })).toThrow(/INTERNAL_API_BASE_URL/);
   });
 });

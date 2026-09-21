@@ -136,3 +136,12 @@ def test_явный_sort_уважается_при_поиске(client, catalog)
     prices = [p["slug"] for p in data["results"]]
     # d3 нет в наличии — сортировка идёт внутри доступных (availability_rank первым ключом).
     assert prices[:2] == ["d1", "d2"]
+
+
+@pytest.mark.parametrize("junk", ["nan", "inf", "-inf", "1e999"])
+def test_нечисловая_цена_игнорируется_а_не_роняет_фасеты(client, catalog, junk):
+    clean = client.get(FACETS_URL, {"search": "дрель"}).json()
+    for name in ("price_min", "price_max"):
+        resp = client.get(FACETS_URL, {"search": "дрель", name: junk})
+        assert resp.status_code == 200
+        assert resp.json() == clean

@@ -1,17 +1,18 @@
 import type { MetadataRoute } from "next";
 
-import { siteOrigin, sitemapEntries, type SitemapProductRow } from "@/lib/seo";
+import { siteOrigin, sitemapApiBase, sitemapEntries, type SitemapProductRow } from "@/lib/seo";
 import { ssrHeaders } from "@/lib/ssr";
 
 // PF-SH-RELEASE-01: sitemap.xml — только карточки, открытые для индексации (allowlist
 // release-gate ∩ видимые; backend /api/catalog/seo/sitemap-products/). Остальной каталог
-// noindex и в sitemap не попадает. Без INTERNAL_API_BASE_URL (сборка) — пустой sitemap.
+// noindex и в sitemap не попадает. Без INTERNAL_API_BASE_URL — пустой sitemap, но только
+// вне production (см. sitemapApiBase).
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.INTERNAL_API_BASE_URL;
+  const base = sitemapApiBase(process.env);
   if (!base) return [];
-  const res = await fetch(`${base.replace(/\/$/, "")}/api/catalog/seo/sitemap-products/`, {
+  const res = await fetch(`${base}/api/catalog/seo/sitemap-products/`, {
     cache: "no-store",
     headers: ssrHeaders(),
     signal: AbortSignal.timeout(8000),

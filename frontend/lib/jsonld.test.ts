@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { serializeJsonLd } from "./jsonld";
+import { absoluteUrl, serializeJsonLd } from "./jsonld";
 
 describe("serializeJsonLd", () => {
   it("экранирует </script> — stored XSS (M-01)", () => {
@@ -24,5 +24,19 @@ describe("serializeJsonLd", () => {
   it("не искажает обычные данные", () => {
     const value = { "@type": "Product", name: "Дрель", price: 1000 };
     expect(JSON.parse(serializeJsonLd(value))).toEqual(value);
+  });
+});
+
+describe("absoluteUrl", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  // Тот же источник адреса, что у canonical, robots и sitemap, — рантаймовый SITE_URL.
+  it("достраивает относительный путь адресом сайта из SITE_URL", () => {
+    vi.stubEnv("SITE_URL", "https://dev.proff58.ru");
+    expect(absoluteUrl("/media/a.jpg")).toBe("https://dev.proff58.ru/media/a.jpg");
+  });
+
+  it("абсолютную ссылку не трогает", () => {
+    expect(absoluteUrl("https://cdn.example/a.jpg")).toBe("https://cdn.example/a.jpg");
   });
 });
