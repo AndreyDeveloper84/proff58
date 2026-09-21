@@ -34,7 +34,7 @@
     {"canonical": "BOSCH", "aliases": ["bosch", "бош"], "catalog_hits": 580, "pool_hits": 36},
     {"canonical": "MAKITA", "aliases": ["makita", "макита"], "catalog_hits": 508, "pool_hits": 20},
     {"canonical": "STURM", "aliases": ["sturm"], "catalog_hits": 378, "pool_hits": 48},
-    {"canonical": "СЕБ", "aliases": ["себ"], "catalog_hits": 355, "pool_hits": 256},
+    {"canonical": "СЕБ", "aliases": ["себ", "s.e.b."], "catalog_hits": 355, "pool_hits": 256, "_note": "s.e.b. — написание бренда на vseinstrumenti.ru (карточки «… S.E.B. 403BL-P16800»), BURY-MEDIA-PILOT-01 ADJUST; голое «seb» не добавлено (Groupe SEB)"},
     {"canonical": "MATRIX", "aliases": ["matrix"], "catalog_hits": 360, "pool_hits": 4},
     {"canonical": "HANSKONNER", "aliases": ["hanskonner"], "catalog_hits": 240, "pool_hits": 117},
     {"canonical": "CHAMPION", "aliases": ["champion"], "catalog_hits": 222, "pool_hits": 70},
