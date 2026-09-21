@@ -47,11 +47,33 @@ export function productSeoMetadata(product: { name: string; slug: string; seoInd
   };
 }
 
-export type SitemapProductRow = { slug: string; updated_at: string };
+export type SitemapProductRow = { slug: string; updated_at: string | null };
 
 export function sitemapEntries(rows: SitemapProductRow[], origin: string): MetadataRoute.Sitemap {
-  return rows.map((r) => ({
-    url: `${origin}/product/${encodeURIComponent(r.slug)}`,
-    lastModified: new Date(r.updated_at),
-  }));
+  return rows.map((r) => {
+    const url = `${origin}/product/${encodeURIComponent(r.slug)}`;
+    // Одна битая дата роняла весь sitemap.xml (Invalid Date → toISOString бросает), а
+    // null превращался в 1970 год. Запись без lastModified честнее и краулеру не вредит.
+    const modified = r.updated_at ? new Date(r.updated_at) : null;
+    return modified && !Number.isNaN(modified.getTime()) ? { url, lastModified: modified } : { url };
+  });
+}
+
+/**
+ * Адрес API для sitemap; `null` — API не настроен, и sitemap пустой (сборка, локалка).
+ *
+ * В production пустой sitemap с кодом 200 краулер читает как «товаров больше нет» —
+ * ровно то, от чего app/sitemap.ts защищается при сбое API. Поэтому там потерянная
+ * переменная — ошибка (5xx, краулер повторит), а не тихий пустой список.
+ */
+export function sitemapApiBase(env: {
+  INTERNAL_API_BASE_URL?: string;
+  SEO_INDEXING?: string;
+}): string | null {
+  const base = env.INTERNAL_API_BASE_URL?.replace(/\/$/, "");
+  if (base) return base;
+  if (env.SEO_INDEXING === "production") {
+    throw new Error("sitemap: INTERNAL_API_BASE_URL не задан при SEO_INDEXING=production");
+  }
+  return null;
 }
