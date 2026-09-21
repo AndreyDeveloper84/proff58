@@ -52,6 +52,23 @@ describe("siteOrigin", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
     expect(siteOrigin()).toBe("https://proff58.ru");
   });
+
+  // metadataBase строится из этого значения на каждой странице: опечатка в .env не
+  // должна ронять весь сайт.
+  it("значение без схемы или не-URL игнорируется", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+    for (const broken of ["proff58.ru", "://", "javascript:alert(1)"]) {
+      vi.stubEnv("SITE_URL", broken);
+      expect(siteOrigin()).toBe("https://proff58.ru");
+      expect(() => new URL(siteOrigin())).not.toThrow();
+    }
+  });
+
+  it("битый SITE_URL не мешает взять рабочий NEXT_PUBLIC_SITE_URL", () => {
+    vi.stubEnv("SITE_URL", "proff58.ru");
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://dev.proff58.ru");
+    expect(siteOrigin()).toBe("https://dev.proff58.ru");
+  });
 });
 
 describe("productSeoMetadata", () => {

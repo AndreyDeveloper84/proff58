@@ -13,10 +13,27 @@ import type { MetadataRoute } from "next";
 
 const DEFAULT_ORIGIN = "https://proff58.ru";
 
-/** Канонический origin сайта; читается в рантайме контейнера (SITE_URL), не на build. */
+/**
+ * Канонический origin сайта; читается в рантайме контейнера (SITE_URL), не на build.
+ *
+ * Единственный источник адреса для canonical, og:url, JSON-LD, robots и sitemap: раньше
+ * первые три брали build-time NEXT_PUBLIC_SITE_URL и при смене домена разошлись бы с
+ * robots и sitemap. Значение без схемы («proff58.ru») игнорируем: metadataBase строится
+ * на каждой странице, и опечатка в .env роняла бы весь сайт, а не один robots.txt.
+ *
+ * Только сервер: в браузере SITE_URL нет, там всегда будет домен по умолчанию.
+ */
 export function siteOrigin(): string {
-  const raw = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_ORIGIN;
-  return raw.replace(/\/+$/, "");
+  for (const raw of [process.env.SITE_URL, process.env.NEXT_PUBLIC_SITE_URL]) {
+    if (!raw) continue;
+    try {
+      const url = new URL(raw);
+      if (url.protocol === "https:" || url.protocol === "http:") return raw.replace(/\/+$/, "");
+    } catch {
+      // не URL — пробуем следующий источник
+    }
+  }
+  return DEFAULT_ORIGIN;
 }
 
 const CLOSED: MetadataRoute.Robots = { rules: { userAgent: "*", disallow: "/" } };
@@ -66,10 +83,7 @@ export function sitemapEntries(rows: SitemapProductRow[], origin: string): Metad
  * ровно то, от чего app/sitemap.ts защищается при сбое API. Поэтому там потерянная
  * переменная — ошибка (5xx, краулер повторит), а не тихий пустой список.
  */
-export function sitemapApiBase(env: {
-  INTERNAL_API_BASE_URL?: string;
-  SEO_INDEXING?: string;
-}): string | null {
+export function sitemapApiBase(env: Record<string, string | undefined>): string | null {
   const base = env.INTERNAL_API_BASE_URL?.replace(/\/$/, "");
   if (base) return base;
   if (env.SEO_INDEXING === "production") {

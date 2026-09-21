@@ -13,6 +13,7 @@ import { THEME_INIT_SCRIPT } from "@/components/layout/ThemeToggle";
 import { authStateFromCookies } from "@/lib/auth-state";
 import { getInfoPageLinks } from "@/lib/info-pages";
 import { getSiteTheme } from "@/lib/theme";
+import { siteOrigin } from "@/lib/seo";
 import { resolveStorefront } from "@/lib/site";
 import "./globals.css";
 
@@ -30,33 +31,37 @@ const oswald = Oswald({
   display: "swap",
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://proff58.ru";
 const DESCRIPTION = "Профессиональный инструмент и оборудование: каталог, наличие, цены.";
 
 // metadataBase нужен, чтобы og:image ушёл абсолютным URL — мессенджеры и соцсети
 // относительный путь не разворачивают и превью не покажут. Сама картинка
 // подхватывается по файловому соглашению из app/opengraph-image.png.
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: "Профессионал — территория инструмента",
-    template: "%s — Профессионал",
-  },
-  description: DESCRIPTION,
-  openGraph: {
-    type: "website",
-    locale: "ru_RU",
-    siteName: "Профессионал",
-    title: "Профессионал — территория инструмента",
+// Функция, а не константа: адрес сайта читается в рантайме (SITE_URL), как у robots и
+// sitemap, — иначе canonical и og:url остались бы на домене, вшитом при сборке.
+export function generateMetadata(): Metadata {
+  const origin = siteOrigin();
+  return {
+    metadataBase: new URL(origin),
+    title: {
+      default: "Профессионал — территория инструмента",
+      template: "%s — Профессионал",
+    },
     description: DESCRIPTION,
-    url: SITE_URL,
-  },
-  twitter: { card: "summary_large_image" },
-  // PF-SH-RELEASE-01: по умолчанию страницы НЕ индексируются (каталог в работе), ссылки
-  // обходятся. index открывают только карточки товаров из allowlist (productSeoMetadata в
-  // app/product/[slug]/page.tsx). Переключатель обхода среды — app/robots.ts (lib/seo.ts).
-  robots: { index: false, follow: true },
-};
+    openGraph: {
+      type: "website",
+      locale: "ru_RU",
+      siteName: "Профессионал",
+      title: "Профессионал — территория инструмента",
+      description: DESCRIPTION,
+      url: origin,
+    },
+    twitter: { card: "summary_large_image" },
+    // PF-SH-RELEASE-01: по умолчанию страницы НЕ индексируются (каталог в работе), ссылки
+    // обходятся. index открывают только карточки товаров из allowlist (productSeoMetadata в
+    // app/product/[slug]/page.tsx). Переключатель обхода среды — app/robots.ts (lib/seo.ts).
+    robots: { index: false, follow: true },
+  };
+}
 
 export default async function RootLayout({
   children,
