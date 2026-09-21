@@ -7,6 +7,7 @@ from apps.pricing.services import RETAIL, price_for
 
 from ..attribute_display import is_key_attribute, ordered_pavs
 from ..models import Product, StockStatus
+from ..seo_index import is_indexable
 from ..services import attr_value_to_json
 
 # Сколько характеристик отдаём в листинге (карточке хватает 3-5; не раздуваем PLP).
@@ -188,6 +189,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 class ProductDetailSerializer(ProductListSerializer):
     images = serializers.SerializerMethodField()
     breadcrumb = serializers.SerializerMethodField()
+    seo_indexable = serializers.SerializerMethodField()
 
     class Meta(ProductListSerializer.Meta):
         # attributes уже в базовом списке; detail отдаёт ПОЛНЫЙ набор (override get_attributes ниже).
@@ -196,7 +198,12 @@ class ProductDetailSerializer(ProductListSerializer):
             "video_url",
             "images",
             "breadcrumb",
+            "seo_indexable",
         )
+
+    def get_seo_indexable(self, obj):
+        """Открыт ли товар для индексации (allowlist release-gate, apps/catalog/seo_index.py)."""
+        return is_indexable(obj)
 
     def get_images(self, obj):
         return ProductImageSerializer(obj.images.all(), many=True, context=self.context).data

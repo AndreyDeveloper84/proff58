@@ -78,6 +78,15 @@ services:
     environment:
       NODE_ENV: production
       INTERNAL_API_BASE_URL: http://web:8000
+      # PF-SH-RELEASE-01 (docs/runbooks/seo-indexing-release.md). Значения — из .env
+      # стека (тот же файл читает web через env_file):
+      # - SSR_INTERNAL_TOKEN — секрет SSR, снимает общий анонимный лимит API (429 → 500);
+      # - SEO_INDEXING — переключатель robots.txt: только "production" открывает обход,
+      #   пусто/любое другое значение → Disallow: /;
+      # - SITE_URL — канонический origin (canonical/sitemap/проверка хоста robots).
+      SSR_INTERNAL_TOKEN: ${SSR_INTERNAL_TOKEN:-}
+      SEO_INDEXING: ${SEO_INDEXING:-off}
+      SITE_URL: ${SITE_URL:-https://proff58.ru}
     depends_on:
       web:
         condition: service_healthy

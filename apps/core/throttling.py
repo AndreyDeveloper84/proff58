@@ -12,6 +12,9 @@ DRF проверяет throttle ПОСЛЕ permission, поэтому на /api/
 
 from __future__ import annotations
 
+import hmac
+
+from django.conf import settings
 from rest_framework.settings import api_settings
 from rest_framework.throttling import SimpleRateThrottle
 
@@ -77,4 +80,24 @@ class AnonRateThrottle(_FixedScopeThrottle):
     def get_cache_key(self, request, view):
         if request.user and request.user.is_authenticated:
             return None  # аутентифицированные запросы не ограничиваем
+        if is_trusted_ssr(request):
+            return None  # SSR витрины: общий IP контейнера фронта, см. is_trusted_ssr
         return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
+
+
+def is_trusted_ssr(request) -> bool:
+    """Запрос пришёл от SSR витрины (Next.js), а не от посетителя (PF-SH-RELEASE-01).
+
+    SSR ходит в Django напрямую (``INTERNAL_API_BASE_URL=http://web:8000``) без
+    X-Forwarded-For, поэтому для троттла все посетители сайта — один IP контейнера
+    фронта. Общий анонимный лимит на нём превращался в 429 → SSR 500 на карточках
+    при обходе краулером. SSR подтверждает себя секретом ``SSR_INTERNAL_TOKEN``
+    (общий для web и frontend, из .env) в заголовке ``X-SSR-Token``. Снаружи
+    заголовок до Django не доходит: стек-nginx его вырезает. Пустой секрет (дефолт)
+    обход выключает.
+    """
+    expected = getattr(settings, "SSR_INTERNAL_TOKEN", "")
+    if not expected:
+        return False
+    supplied = request.META.get("HTTP_X_SSR_TOKEN", "")
+    return bool(supplied) and hmac.compare_digest(supplied, expected)

@@ -1,3 +1,4 @@
+import { ssrHeaders } from "./ssr";
 // Информационные страницы («Доставка», «О компании», «Гарантия») — первый
 // контент, который витрина берёт из админки, а не из кода.
 //
@@ -7,10 +8,6 @@
 
 const API_BASE = process.env.INTERNAL_API_BASE_URL;
 
-// Как в lib/adapters.ts: nginx перед Django редиректит http→https
-// (SECURE_SSL_REDIRECT). Заголовок сообщает Django через SECURE_PROXY_SSL_HEADER,
-// что запрос защищён, — иначе серверный fetch ловит редирект. ТОЛЬКО server-side.
-const SSR_HEADERS = { "X-Forwarded-Proto": "https" } as const;
 // Зависший апстрим не должен вешать рендер подвала на каждой странице.
 const SSR_TIMEOUT_MS = 4000;
 
@@ -66,7 +63,7 @@ export async function getInfoPageLinks(): Promise<InfoPageLink[]> {
   try {
     const res = await fetch(url("pages/"), {
       cache: "no-store",
-      headers: SSR_HEADERS,
+      headers: ssrHeaders(),
       signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
     });
     if (!res.ok) return [];
@@ -82,7 +79,7 @@ export async function getInfoPage(slug: string): Promise<InfoPage | null> {
   if (!API_BASE) return null;
   const res = await fetch(url(`pages/${encodeURIComponent(slug)}/`), {
     cache: "no-store",
-    headers: SSR_HEADERS,
+    headers: ssrHeaders(),
   });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Не удалось загрузить страницу «${slug}»: ${res.status}`);

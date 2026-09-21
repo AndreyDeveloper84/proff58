@@ -8,12 +8,10 @@
 // Когда весь контент переедет, останется удалить fallback и сам ARTICLES.
 
 import { ARTICLES, type Article } from "./articles";
+import { ssrHeaders } from "./ssr";
 
 const API_BASE = process.env.INTERNAL_API_BASE_URL;
 
-// Как в lib/adapters.ts: без этого заголовка nginx перед Django редиректит
-// http→https и серверный запрос ломается. ТОЛЬКО server-side.
-const SSR_HEADERS = { "X-Forwarded-Proto": "https" } as const;
 const SSR_TIMEOUT_MS = 4000;
 
 /** Карточка ленты: то, что нужно списку и каруселям на главной. */
@@ -71,7 +69,7 @@ async function fromApi<T>(path: string, soft: boolean): Promise<T | null> {
   try {
     const res = await fetch(url, {
       cache: "no-store",
-      headers: SSR_HEADERS,
+      headers: ssrHeaders(),
       signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
     });
     if (!res.ok) return null;

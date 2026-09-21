@@ -23,6 +23,7 @@ from ..availability_subscriptions import (
 from ..filters import ProductFilter, availability_rank, visible_products
 from ..models import Category, ProductAttributeValue, StockStatus
 from ..sales import bestsellers_queryset
+from ..seo_index import indexable_product_ids
 from ..services import (
     FacetError,
     apply_product_attr_filters,
@@ -272,6 +273,25 @@ class ProductSuggestView(APIView):
             )
             .order_by("_availability", "-_rank", "name")
             .values("id", "name", "slug")[:SUGGEST_LIMIT]
+        )
+        return Response(list(rows))
+
+
+class SitemapProductsView(APIView):
+    """Товары для sitemap.xml витрины (PF-SH-RELEASE-01): только allowlist ∩ видимые.
+
+    ``GET /api/catalog/seo/sitemap-products/`` → ``[{"slug", "updated_at"}]``.
+    Остальной каталог в sitemap не попадает — он закрыт от индексации (noindex).
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        rows = (
+            visible_products()
+            .filter(id__in=indexable_product_ids())
+            .order_by("slug")
+            .values("slug", "updated_at")
         )
         return Response(list(rows))
 

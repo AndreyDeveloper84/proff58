@@ -4,7 +4,7 @@ import Link from "next/link";
 import { CompareTable } from "./CompareTable";
 
 export const metadata: Metadata = {
-  title: "Сравнение товаров — Профессионал",
+  title: "Сравнение товаров",
   // Список выбранного у каждого свой и живёт в браузере — индексировать нечего.
   robots: { index: false, follow: true },
 };

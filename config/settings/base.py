@@ -430,6 +430,17 @@ NOTIFICATION_RETENTION_DAYS = env.int("NOTIFICATION_RETENTION_DAYS", default=365
 # Пусто — берётся первый нелокальный ALLOWED_HOSTS (см. payments.services).
 SITE_URL = env("SITE_URL", default="")
 
+# PF-SH-RELEASE-01. Секрет доверенного SSR витрины: запросы Next.js с заголовком
+# X-SSR-Token не попадают под анонимный лимит (иначе все посетители делят один IP
+# контейнера фронта → 429 → SSR 500). Пустое значение выключает обход.
+SSR_INTERNAL_TOKEN = env("SSR_INTERNAL_TOKEN", default="")
+# Замороженный allowlist товаров, открытых для индексации (release-gate manifest).
+# Товары вне списка отдаются витрине с seo_indexable=false (noindex) и не попадают в sitemap.
+SEO_INDEXABLE_PRODUCTS_PATH = env(
+    "SEO_INDEXABLE_PRODUCTS_PATH",
+    default=str(BASE_DIR / "data" / "seo" / "indexable_products.json"),
+)
+
 # --- Оплата -----------------------------------------------------------------
 # Kill-switch онлайн-оплаты (и ручки запуска платежа, и webhook'а).
 PAYMENTS_ENABLED = env.bool("PAYMENTS_ENABLED", default=True)
