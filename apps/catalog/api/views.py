@@ -1,5 +1,7 @@
 """Публичный read-only API каталога: дерево категорий, список, карточка, фасеты."""
 
+import math
+
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Case, F, FloatField, Prefetch, Q, Value, When
 from django.shortcuts import get_object_or_404
@@ -83,6 +85,23 @@ class CategoryTreeView(APIView):
         return Response(build_category_tree(nodes))
 
 
+def _finite_float(raw) -> float | None:
+    """Число из query-параметра; пустое, мусор, ``nan`` и ``±inf`` → ``None``.
+
+    ``float()`` принимает ``"nan"``, ``"inf"`` и ``"1e999"`` без ошибки, а дальше они
+    роняли ответ в 500: цена — в ``DecimalField`` (``ValidationError``), граница
+    характеристики — в JSON-рендере (эхо в ``applied_filters``, «Out of range float
+    values are not JSON compliant»). Кривой URL фасеты ронять не должен — игнорируем.
+    """
+    if not raw:
+        return None
+    try:
+        val = float(raw)
+    except (TypeError, ValueError):
+        return None
+    return val if math.isfinite(val) else None
+
+
 def parse_attr_params(params) -> tuple[dict[str, list[str]], dict[str, tuple]]:
     """Разобрать EAV-параметры PLP в фильтры и числовые диапазоны (общий разбор для вьюх).
 
@@ -103,9 +122,8 @@ def parse_attr_params(params) -> tuple[dict[str, list[str]], dict[str, tuple]]:
             slug = body[:-4]
             if not slug:
                 continue
-            try:
-                val = float(params.get(key))
-            except (TypeError, ValueError):
+            val = _finite_float(params.get(key))
+            if val is None:
                 continue  # пустое/мусор → диапазон без этой границы
             lo, hi = ranges_acc.get(slug, [None, None])
             if body.endswith("_min"):
@@ -357,15 +375,6 @@ class CategoryFacetsView(APIView):
 
         attr_filters, attr_ranges = parse_attr_params(params)
 
-        def _price(name):
-            raw = params.get(name)
-            if not raw:
-                return None
-            try:
-                return float(raw)
-            except ValueError:
-                return None  # мусор в цене игнорируем (фасеты не должны падать)
-
         try:
             data = build_facets_cached(
                 category,
@@ -374,8 +383,8 @@ class CategoryFacetsView(APIView):
                 stock_status=stock_status or None,
                 attr_filters=attr_filters,
                 attr_ranges=attr_ranges,
-                price_min=_price("price_min"),
-                price_max=_price("price_max"),
+                price_min=_finite_float(params.get("price_min")),
+                price_max=_finite_float(params.get("price_max")),
             )
         except FacetError as exc:
             return Response({"detail": str(exc)}, status=400)
@@ -425,22 +434,13 @@ class SearchFacetsView(APIView):
         if stock_status and stock_status not in StockStatus.values:
             return Response({"detail": "Недопустимый stock_status"}, status=400)
 
-        def _price(name):
-            raw = params.get(name)
-            if not raw:
-                return None
-            try:
-                return float(raw)
-            except ValueError:
-                return None  # мусор в цене игнорируем (фасеты не должны падать)
-
         return Response(
             build_search_facets(
                 q,
                 brands=params.getlist("brand") or None,
                 stock_status=stock_status or None,
-                price_min=_price("price_min"),
-                price_max=_price("price_max"),
+                price_min=_finite_float(params.get("price_min")),
+                price_max=_finite_float(params.get("price_max")),
             )
         )
 
@@ -470,15 +470,6 @@ class BrandDetailView(APIView):
         if stock_status and stock_status not in StockStatus.values:
             return Response({"detail": "Недопустимый stock_status"}, status=400)
 
-        def _price(name):
-            raw = params.get(name)
-            if not raw:
-                return None
-            try:
-                return float(raw)
-            except ValueError:
-                return None  # мусор в цене игнорируем (фасеты не должны падать)
-
         category = None
         category_slug = (params.get("category") or "").strip()
         if category_slug:
@@ -492,8 +483,8 @@ class BrandDetailView(APIView):
             page["spellings"],
             category=category,
             stock_status=stock_status or None,
-            price_min=_price("price_min"),
-            price_max=_price("price_max"),
+            price_min=_finite_float(params.get("price_min")),
+            price_max=_finite_float(params.get("price_max")),
         )
         data["brand"] = {"slug": page["slug"], "name": page["name"]}
         data["brand_total_products"] = page["visible_total"]

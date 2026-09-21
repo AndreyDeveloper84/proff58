@@ -704,3 +704,47 @@ def test_display_name_closest_wins(client, tree):
     assert leaf_facet["name"] == "Размер"
     assert root_facet["name"] == "Размер «под ключ»"
     assert leaf_facet["slug"] == root_facet["slug"] == "size"
+
+
+# nan/inf/1e999 float() принимает без ошибки, а дальше они роняли ответ в 500: цена —
+# в DecimalField, граница характеристики — в JSON-рендере (эхо в applied_filters).
+NON_FINITE = ["nan", "inf", "-inf", "1e999", "NaN", "Infinity"]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("junk", NON_FINITE)
+def test_facets_nonfinite_price_ignored(client, tree, junk):
+    _, leaf = tree
+    make_product(leaf, "d10", {})
+    clean = client.get("/api/catalog/categories/dreli/facets/").json()
+    for name in ("price_min", "price_max"):
+        resp = client.get(f"/api/catalog/categories/dreli/facets/?{name}={junk}")
+        assert resp.status_code == 200
+        assert resp.json() == clean
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("junk", NON_FINITE)
+def test_facets_nonfinite_attr_range_ignored(client, tree, junk):
+    """Граница-мусор отбрасывается, список и фасеты остаются согласованными."""
+    _, leaf = tree
+    # числовой атрибут привязан к категории: иначе диапазон отсеивается раньше и тест пуст
+    link(leaf, make_attr("diameter", "Диаметр", AttributeType.DECIMAL, unit="мм"))
+    make_product(leaf, "d10", {"diameter": 10})
+    make_product(leaf, "d20", {"diameter": 20})
+    clean = client.get("/api/catalog/categories/dreli/facets/").json()
+    for name in ("attr_diameter_min", "attr_diameter_max"):
+        resp = client.get(f"/api/catalog/categories/dreli/facets/?{name}={junk}")
+        assert resp.status_code == 200
+        assert resp.json() == clean
+        listing = client.get(f"/api/catalog/products/?category=dreli&{name}={junk}")
+        assert listing.json()["count"] == 2
+
+
+@pytest.mark.django_db
+def test_facets_huge_finite_price_does_not_crash(client, tree):
+    _, leaf = tree
+    make_product(leaf, "d10", {})
+    resp = client.get("/api/catalog/categories/dreli/facets/?price_min=1e300")
+    assert resp.status_code == 200
+    assert resp.json()["total_products"] == 0

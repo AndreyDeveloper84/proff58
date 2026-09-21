@@ -176,3 +176,12 @@ def test_ссылка_стабильна_при_появлении_коллиз�
     page = brand_page("metabo")
     assert set(before) < set(page["spellings"]) == {"METABO", "MetaBo", "Metabo"}
     assert brand_page("metabo-2") is None
+
+
+@pytest.mark.parametrize("junk", ["nan", "inf", "-inf", "1e999"])
+def test_нечисловая_цена_игнорируется_а_не_роняет_страницу(client, catalog, junk):
+    clean = client.get(brand_url("metabo")).json()
+    for name in ("price_min", "price_max"):
+        resp = client.get(brand_url("metabo"), {name: junk})
+        assert resp.status_code == 200
+        assert resp.json() == clean
