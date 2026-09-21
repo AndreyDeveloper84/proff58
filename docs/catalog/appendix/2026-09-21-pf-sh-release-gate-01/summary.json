@@ -1,0 +1,155 @@
+{
+ "manifest_sha256": "112281b5d5b51e93b0f7ee15dfb9bc404ad9a6963087352811d5d3d74f4c866c",
+ "perforatory": {
+  "commercial": 28,
+  "RELEASE_READY": 0,
+  "RELEASE_WITH_KNOWN_GAPS": 27,
+  "blocked": 1,
+  "INDEXABLE_CANDIDATE": 27,
+  "pct_indexable": 96.4,
+  "strict_ready_excl_weight": 10,
+  "blocked_by": {
+   "BLOCKED_MEDIA": 1
+  }
+ },
+ "shlifmashiny": {
+  "commercial": 57,
+  "RELEASE_READY": 0,
+  "RELEASE_WITH_KNOWN_GAPS": 47,
+  "blocked": 10,
+  "INDEXABLE_CANDIDATE": 47,
+  "pct_indexable": 82.5,
+  "strict_ready_excl_weight": 4,
+  "blocked_by": {
+   "BLOCKED_MEDIA": 5,
+   "BLOCKED_CHARACTERISTICS": 4,
+   "BLOCKED_TAXONOMY": 1
+  }
+ },
+ "shlifmashiny_by_subtype": {
+  "ekscentrikovaya": {
+   "commercial": 8,
+   "RELEASE_READY": 0,
+   "RELEASE_WITH_KNOWN_GAPS": 5,
+   "blocked": 3,
+   "INDEXABLE_CANDIDATE": 5,
+   "pct_indexable": 62.5,
+   "strict_ready_excl_weight": 3,
+   "blocked_by": {
+    "BLOCKED_MEDIA": 1,
+    "BLOCKED_CHARACTERISTICS": 2
+   }
+  },
+  "lentochnaya": {
+   "commercial": 2,
+   "RELEASE_READY": 0,
+   "RELEASE_WITH_KNOWN_GAPS": 0,
+   "blocked": 2,
+   "INDEXABLE_CANDIDATE": 0,
+   "pct_indexable": 0.0,
+   "strict_ready_excl_weight": 0,
+   "blocked_by": {
+    "BLOCKED_MEDIA": 1,
+    "BLOCKED_CHARACTERISTICS": 1
+   }
+  },
+  "polirovalnaya": {
+   "commercial": 5,
+   "RELEASE_READY": 0,
+   "RELEASE_WITH_KNOWN_GAPS": 4,
+   "blocked": 1,
+   "INDEXABLE_CANDIDATE": 4,
+   "pct_indexable": 80.0,
+   "strict_ready_excl_weight": 0,
+   "blocked_by": {
+    "BLOCKED_MEDIA": 1
+   }
+  },
+  "pryamaya": {
+   "commercial": 2,
+   "RELEASE_READY": 0,
+   "RELEASE_WITH_KNOWN_GAPS": 2,
+   "blocked": 0,
+   "INDEXABLE_CANDIDATE": 2,
+   "pct_indexable": 100.0,
+   "strict_ready_excl_weight": 1,
+   "blocked_by": {}
+  },
+  "stanok": {
+   "commercial": 1,
+   "RELEASE_READY": 0,
+   "RELEASE_WITH_KNOWN_GAPS": 0,
+   "blocked": 1,
+   "INDEXABLE_CANDIDATE": 0,
+   "pct_indexable": 0.0,
+   "strict_ready_excl_weight": 0,
+   "blocked_by": {
+    "BLOCKED_TAXONOMY": 1
+   }
+  },
+  "ushm": {
+   "commercial": 35,
+   "RELEASE_READY": 0,
+   "RELEASE_WITH_KNOWN_GAPS": 33,
+   "blocked": 2,
+   "INDEXABLE_CANDIDATE": 33,
+   "pct_indexable": 94.3,
+   "strict_ready_excl_weight": 0,
+   "blocked_by": {
+    "BLOCKED_MEDIA": 2
+   }
+  },
+  "vibracionnaya": {
+   "commercial": 4,
+   "RELEASE_READY": 0,
+   "RELEASE_WITH_KNOWN_GAPS": 3,
+   "blocked": 1,
+   "INDEXABLE_CANDIDATE": 3,
+   "pct_indexable": 75.0,
+   "strict_ready_excl_weight": 0,
+   "blocked_by": {
+    "BLOCKED_CHARACTERISTICS": 1
+   }
+  }
+ },
+ "total": {
+  "commercial": 85,
+  "RELEASE_READY": 0,
+  "RELEASE_WITH_KNOWN_GAPS": 74,
+  "blocked": 11,
+  "INDEXABLE_CANDIDATE": 74,
+  "pct_indexable": 87.1,
+  "strict_ready_excl_weight": 14,
+  "blocked_by": {
+   "BLOCKED_MEDIA": 6,
+   "BLOCKED_CHARACTERISTICS": 4,
+   "BLOCKED_TAXONOMY": 1
+  }
+ },
+ "blocker_queue": {
+  "BLOCKED_MEDIA": 6,
+  "BLOCKED_CHARACTERISTICS": 4,
+  "BLOCKED_TAXONOMY": 1
+ },
+ "gap_classes": {
+  "QUALITY:weight_kg": 80,
+  "TAXONOMY_PARALLEL_TYPE": 40,
+  "QUALITY:no_load_speed": 32,
+  "QUALITY:motor_type": 21,
+  "QUALITY:battery_capacity": 10,
+  "IDENTITY_BY_BASE_ARTICLE_MANUAL_CHECK": 9,
+  "QUALITY:power_source": 5,
+  "ZERO_CHARACTERISTICS": 4,
+  "SOURCE_CODE_NOT_FOUND": 3,
+  "QUALITY:battery_included": 2,
+  "MISSING_ARTICLE (identity по модели в названии)": 2,
+  "PRODUCT_IDENTITY_DATA_FIX": 2,
+  "VARIANT_IDENTITY_MISMATCH": 1,
+  "WRONG_VALUE": 1,
+  "BLOCKED_CHARACTERISTICS": 1,
+  "MISSING_ARTICLE": 1,
+  "TAXONOMY_WRONG_TYPE": 1,
+  "NO_IS_MAIN_FLAG (витрина берёт первое фото)": 1,
+  "CARD_TRANSIENT_500_ON_429 (SSR→API throttle)": 1
+ }
+}
