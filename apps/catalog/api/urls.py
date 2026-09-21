@@ -18,6 +18,7 @@ urlpatterns = [
     ),
     path("products/", views.ProductListView.as_view(), name="product-list"),
     path("bestsellers/", views.BestsellersView.as_view(), name="bestsellers"),
+    path("seo/sitemap-products/", views.SitemapProductsView.as_view(), name="seo-sitemap-products"),
     path(
         "search/suggest/",
         views.ProductSuggestView.as_view(),

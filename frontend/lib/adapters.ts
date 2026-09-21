@@ -24,14 +24,11 @@ import type {
   ProductImageData,
   StockState,
 } from "./types";
+import { ssrHeaders } from "./ssr";
 
 // Код фасета базовый? (§3.3/§6 — видим всегда). Список — в constants (по коду, не по названию).
 const BASE_CODES: ReadonlySet<string> = new Set(BASE_FACET_CODES);
 
-// Внутренние server-side запросы Next→Django идут по http внутри Docker, а Django в prod
-// редиректит http→https (SECURE_SSL_REDIRECT). Этот заголовок (ТОЛЬКО server-side!) сообщает
-// Django через SECURE_PROXY_SSL_HEADER, что запрос защищён → без редиректа. Из браузера НЕ слать.
-const SSR_HEADERS = { "X-Forwarded-Proto": "https" } as const;
 
 // Таймаут внутренних SSR-запросов главной. Без него зависший апстрим вешает
 // рендер `/` навечно (fetch без таймаута) и копит воркеры. С таймаутом запрос
@@ -77,6 +74,7 @@ type ApiProductDetail = ApiProduct & {
   video_url?: string | null;
   images?: ApiImage[];
   breadcrumb?: { name: string; slug: string }[];
+  seo_indexable?: boolean;
 };
 // /products/{slug}/compatible/ — секции связанных товаров (ApiProduct + опц. note).
 type ApiCompatibleResponse = {
@@ -241,6 +239,8 @@ function apiProductToDetail(ap: ApiProductDetail): ProductDetail {
     description: ap.description ?? "",
     videoUrl: ap.video_url ?? undefined,
     breadcrumb: ap.breadcrumb ?? [],
+    // fail-closed: нет поля (старый API) → не индексируем.
+    seoIndexable: ap.seo_indexable === true,
   };
 }
 
@@ -449,7 +449,7 @@ export async function fetchListingFromApi(
 
   const productsRes = await fetch(
     `${root}/api/catalog/products/?${buildProductParams(query).toString()}`,
-    { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
+    { cache: "no-store", headers: ssrHeaders(), signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
   );
   if (productsRes.status === 404) return null;
   if (!productsRes.ok) throw new CatalogFetchError(`products ${productsRes.status}`);
@@ -471,7 +471,7 @@ export async function fetchListingFromApi(
   try {
     const facetsRes = await fetch(
       `${root}/api/catalog/categories/${encodeURIComponent(query.category)}/facets/?${buildFacetParams(query).toString()}`,
-      { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
+      { cache: "no-store", headers: ssrHeaders(), signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
     );
     if (facetsRes.status === 404) {
       categoryMissing = true;
@@ -551,14 +551,14 @@ export async function fetchSearchListingFromApi(
   const [productsRes, facetsRes] = await Promise.all([
     fetch(`${root}/api/catalog/products/?${buildProductParams(query, search).toString()}`, {
       cache: "no-store",
-      headers: SSR_HEADERS,
+      headers: ssrHeaders(),
       signal: AbortSignal.timeout(LISTING_TIMEOUT_MS),
     }),
     // Фасеты — best-effort: упали или не успели → страница остаётся рабочим списком
     // без сайдбара.
     fetch(`${root}/api/catalog/search/facets/?${facetParams.toString()}`, {
       cache: "no-store",
-      headers: SSR_HEADERS,
+      headers: ssrHeaders(),
       signal: AbortSignal.timeout(LISTING_TIMEOUT_MS),
     }).catch(() => null),
   ]);
@@ -639,7 +639,7 @@ export async function fetchBrandOverviewFromApi(
   const root = base.replace(/\/$/, "");
   const res = await fetch(
     `${root}/api/catalog/brands/${encodeURIComponent(slug)}/?${brandFilterParams(query).toString()}`,
-    { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
+    { cache: "no-store", headers: ssrHeaders(), signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
   );
   if (res.status === 404) return null;
   if (!res.ok) throw new CatalogFetchError(`brand ${res.status}`);
@@ -663,7 +663,7 @@ export async function fetchBrandProductsFromApi(
   const root = base.replace(/\/$/, "");
   const res = await fetch(
     `${root}/api/catalog/products/?${buildProductParams(query, undefined, slug).toString()}`,
-    { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
+    { cache: "no-store", headers: ssrHeaders(), signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
   );
   if (!res.ok) throw new CatalogFetchError(`brand products ${res.status}`);
   const json = (await res.json()) as { count: number; results: ApiProduct[] };
@@ -677,7 +677,7 @@ export async function fetchSearchCountFromApi(base: string, q: string): Promise<
   try {
     const res = await fetch(
       `${root}/api/catalog/products/?search=${encodeURIComponent(q)}&limit=1`,
-      { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
+      { cache: "no-store", headers: ssrHeaders(), signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
     );
     if (!res.ok) return null;
     const json = (await res.json()) as { count?: number };
@@ -699,7 +699,7 @@ export async function fetchProductFromApi(
   const [res, compatible] = await Promise.all([
     fetch(`${root}/api/catalog/products/${encodeURIComponent(slug)}/`, {
       cache: "no-store",
-      headers: SSR_HEADERS,
+      headers: ssrHeaders(),
       signal: AbortSignal.timeout(LISTING_TIMEOUT_MS),
     }),
     fetchProductCompatible(root, slug),
@@ -724,7 +724,7 @@ async function fetchProductCompatible(
   try {
     const res = await fetch(
       `${root}/api/catalog/products/${encodeURIComponent(slug)}/compatible/`,
-      { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
+      { cache: "no-store", headers: ssrHeaders(), signal: AbortSignal.timeout(LISTING_TIMEOUT_MS) },
     );
     if (!res.ok) return empty;
     const cj = (await res.json()) as ApiCompatibleResponse;
@@ -758,7 +758,7 @@ export async function fetchCategoryTreeFromApi(base: string): Promise<CategoryNo
   try {
     const res = await fetch(`${root}/api/catalog/categories/`, {
       cache: "no-store",
-      headers: SSR_HEADERS,
+      headers: ssrHeaders(),
       signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
     });
     if (!res.ok) return null;
@@ -784,7 +784,7 @@ export async function fetchProductsByIdsFromApi(base: string, ids: number[]): Pr
   const params = new URLSearchParams({ ids: ids.join(","), limit: String(ids.length) });
   const res = await fetch(`${root}/api/catalog/products/?${params.toString()}`, {
     cache: "no-store",
-    headers: SSR_HEADERS,
+    headers: ssrHeaders(),
     signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
   });
   if (!res.ok) throw new CatalogFetchError(`Каталог ответил ${res.status}`);
@@ -804,7 +804,7 @@ export async function fetchCategoryProductsFromApi(
       // page_size она просто игнорирует. Работало по случайности: ответ приходил
       // страницей по умолчанию (24 позиции), лишнее срезал slice ниже.
       `${root}/api/catalog/products/?category=${encodeURIComponent(category)}&limit=${limit}`,
-      { cache: "no-store", headers: SSR_HEADERS, signal: AbortSignal.timeout(SSR_TIMEOUT_MS) },
+      { cache: "no-store", headers: ssrHeaders(), signal: AbortSignal.timeout(SSR_TIMEOUT_MS) },
     );
     if (!res.ok) return [];
     const json = (await res.json()) as { results?: ApiProduct[] };
@@ -833,7 +833,7 @@ export async function fetchBestsellersFromApi(
     try {
       const res = await fetch(`${root}${path}`, {
         cache: "no-store",
-        headers: SSR_HEADERS,
+        headers: ssrHeaders(),
         signal: AbortSignal.timeout(SSR_TIMEOUT_MS),
       });
       if (!res.ok) return [];
@@ -861,7 +861,7 @@ export async function fetchProductReviewsFromApi(
   try {
     const res = await fetch(
       `${root}/api/reviews/product/${encodeURIComponent(slug)}/?limit=10`,
-      { cache: "no-store", headers: { "X-Forwarded-Proto": "https" } },
+      { cache: "no-store", headers: ssrHeaders() },
     );
     if (!res.ok) return null;
     return (await res.json()) as import("./types").ProductReviewsPayload;

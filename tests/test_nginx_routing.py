@@ -189,3 +189,21 @@ def test_forwarded_for_overwritten_not_appended():
         for line in directives
     )
     assert not any("$proxy_add_x_forwarded_for" in line for line in directives)
+
+
+# --- PF-SH-RELEASE-01: robots/sitemap из Next, секрет SSR не проходит снаружи ---
+
+
+def test_robots_and_sitemap_go_to_next(locations):
+    # Политика robots зависит от среды (app/robots.ts, SEO_INDEXING) — статический
+    # файл nginx её не знал и был одинаков для staging и production.
+    assert _match("/robots.txt", locations) == "frontend"
+    assert _match("/sitemap.xml", locations) == "frontend"
+
+
+def test_external_ssr_token_header_stripped():
+    # X-SSR-Token снимает анонимный лимит API (apps/core/throttling.is_trusted_ssr);
+    # его ставит только SSR на прямом хопе frontend → web:8000. Снаружи — вырезаем.
+    text = CONF.read_text(encoding="utf-8")
+    directives = [line for line in text.splitlines() if not line.strip().startswith("#")]
+    assert any(re.search(r'proxy_set_header\s+X-SSR-Token\s+"";', line) for line in directives)

@@ -52,6 +52,10 @@ export const metadata: Metadata = {
     url: SITE_URL,
   },
   twitter: { card: "summary_large_image" },
+  // PF-SH-RELEASE-01: по умолчанию страницы НЕ индексируются (каталог в работе), ссылки
+  // обходятся. index открывают только карточки товаров из allowlist (productSeoMetadata в
+  // app/product/[slug]/page.tsx). Переключатель обхода среды — app/robots.ts (lib/seo.ts).
+  robots: { index: false, follow: true },
 };
 
 export default async function RootLayout({

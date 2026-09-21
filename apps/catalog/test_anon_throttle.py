@@ -53,3 +53,40 @@ def test_authenticated_user_not_throttled_by_anon_limit(leaf, django_user_model)
         assert client.get(url).status_code != 429
         assert client.get(url).status_code != 429
         assert client.get(url).status_code != 429
+
+
+# PF-SH-RELEASE-01: SSR витрины ходит в Django напрямую (http://web:8000) без
+# X-Forwarded-For, поэтому для DRF все посетители сайта — один IP контейнера фронта.
+# Общий анонимный лимит превращался в 429 → SSR 500 на карточках при обходе краулером.
+# Доверенный SSR подтверждает себя секретом из окружения и под анонимный лимит не попадает;
+# прямые запросы к /api/ снаружи лимитируются как раньше (nginx вырезает заголовок).
+
+
+@pytest.mark.django_db
+def test_ssr_token_bypasses_anon_limit(leaf):
+    cache.clear()
+    with override_settings(REST_FRAMEWORK=_rf_with(anon="1/min"), SSR_INTERNAL_TOKEN="s3cret"):
+        client = APIClient(HTTP_X_SSR_TOKEN="s3cret")
+        url = f"/api/catalog/categories/{leaf.slug}/facets/"
+        assert [client.get(url).status_code != 429 for _ in range(3)] == [True, True, True]
+
+
+@pytest.mark.django_db
+def test_wrong_ssr_token_is_throttled(leaf):
+    cache.clear()
+    with override_settings(REST_FRAMEWORK=_rf_with(anon="1/min"), SSR_INTERNAL_TOKEN="s3cret"):
+        client = APIClient(HTTP_X_SSR_TOKEN="guess")
+        url = f"/api/catalog/categories/{leaf.slug}/facets/"
+        assert client.get(url).status_code != 429
+        assert client.get(url).status_code == 429
+
+
+@pytest.mark.django_db
+def test_ssr_header_ignored_when_token_not_configured(leaf):
+    """Пустой SSR_INTERNAL_TOKEN (дефолт) — обхода нет, даже с пустым заголовком."""
+    cache.clear()
+    with override_settings(REST_FRAMEWORK=_rf_with(anon="1/min"), SSR_INTERNAL_TOKEN=""):
+        client = APIClient(HTTP_X_SSR_TOKEN="")
+        url = f"/api/catalog/categories/{leaf.slug}/facets/"
+        assert client.get(url).status_code != 429
+        assert client.get(url).status_code == 429

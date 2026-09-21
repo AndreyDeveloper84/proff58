@@ -17,14 +17,16 @@ import { ProductVideo } from "@/components/product/ProductVideo";
 import { ProductDetailsShowcase } from "@/components/product/ProductDetailsShowcase";
 import { SpecChips } from "@/components/product/SpecChips";
 import { SITE } from "@/lib/site";
+import { productSeoMetadata } from "@/lib/seo";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const product = await getProduct(slug);
-  if (!product) return { title: "Товар не найден — Профессионал" };
-  return { title: `${product.name} — Профессионал` };
+  // Суффикс «— Профессионал» дописывает шаблон title из app/layout.tsx.
+  if (!product) return { title: "Товар не найден" };
+  return productSeoMetadata({ name: product.name, slug: product.slug, seoIndexable: product.seoIndexable });
 }
 
 export default async function ProductPage({ params }: Props) {

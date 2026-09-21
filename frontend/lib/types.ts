@@ -55,6 +55,8 @@ export type ProductDetail = Product & {
   videoUrl?: string; // ссылка на видео о товаре (YouTube)
   breadcrumb: { name: string; slug: string }[]; // категории от корня (без «Главная/Каталог»)
   compatible?: CompatibilitySections;
+  // Открыт ли товар для индексации (allowlist release-gate, PF-SH-RELEASE-01). false → noindex.
+  seoIndexable: boolean;
 };
 
 export type FacetOption = {

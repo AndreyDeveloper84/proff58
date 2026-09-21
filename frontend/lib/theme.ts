@@ -1,5 +1,5 @@
+import { ssrHeaders } from "./ssr";
 // Тема оформления из SiteSettings (#76). Server-side only — использует INTERNAL_API_BASE_URL.
-const SSR_HEADERS = { "X-Forwarded-Proto": "https" } as const;
 
 export interface SiteTheme {
   name: string;
@@ -27,7 +27,7 @@ export async function getSiteTheme(): Promise<SiteTheme> {
   if (!base) return DEFAULT_THEME;
   try {
     const res = await fetch(`${base.replace(/\/$/, "")}/api/core/theme/`, {
-      headers: SSR_HEADERS,
+      headers: ssrHeaders(),
       next: { revalidate: 60 },
     });
     if (!res.ok) return DEFAULT_THEME;

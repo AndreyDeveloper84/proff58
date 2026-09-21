@@ -6,7 +6,7 @@ import { CallLink, CopyContact } from "@/components/contacts/CopyContact";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Страница не найдена — Профессионал",
+  title: "Страница не найдена",
   robots: { index: false, follow: true },
 };
 
