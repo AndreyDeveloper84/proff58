@@ -96,6 +96,26 @@ def test_orders_confirm_requires_key(client):
 
 @override_settings(ONEC_API_KEY=API_KEY)
 @pytest.mark.django_db
+def test_orders_new_excludes_delivery_from_totals(auth_client):
+    """Доставка хранится на сайте и в 1С не уходит: итог — только товары."""
+    order = make_order()
+    order.delivery_cost = Decimal("500.00")
+    order.delivery_discount = Decimal("100.00")
+    order.total = Decimal("6300.00")  # 5900 товары + 500 доставка − 100 скидка на доставку
+    order.save(update_fields=["delivery_cost", "delivery_discount", "total"])
+
+    data = auth_client.get("/api/1c/orders/new").json()["items"][0]
+    assert data["totals"]["items_total"] == "5900.00"
+    assert data["totals"]["total"] == "5900.00"
+    assert data["totals"]["delivery_total"] == "0.00"
+    assert data["delivery"]["cost"] == "0.00"
+    assert Decimal(data["items"][0]["total"]) - Decimal(
+        data["totals"]["items_discount_total"]
+    ) == Decimal(data["totals"]["total"])
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
 def test_orders_new_returns_pending_snapshot(auth_client):
     """Заказ отдаётся в форме §5.6 со СНИМКОМ цены/товара."""
     make_order()

@@ -655,6 +655,16 @@ def _serialize_order_for_export(order: Order) -> dict:
                 "promo_discount": _decimal_str(item.promo_discount or 0),
             }
         )
+    # Доставка в 1С не уходит — она учитывается на сайте (решение владельца
+    # 22.09.2026). order.total включает доставку за вычетом скидки на неё, поэтому
+    # для 1С считаем товарную часть отдельно, иначе доставка «растворялась» в
+    # items_total и строки не сходились с итогом.
+    goods_total = max(
+        (order.total or Decimal("0"))
+        - (order.delivery_cost or Decimal("0"))
+        + (order.delivery_discount or Decimal("0")),
+        Decimal("0"),
+    )
     return {
         "site_order_id": order.id,
         "order_number": order.order_number,
@@ -677,13 +687,13 @@ def _serialize_order_for_export(order: Order) -> dict:
             "cost": "0.00",
         },
         "totals": {
-            "items_total": _decimal_str(order.total),
+            "items_total": _decimal_str(goods_total),
             "delivery_total": "0.00",
-            "total": _decimal_str(order.total),
+            "total": _decimal_str(goods_total),
             "currency": order.currency,
             # #571 (ДОП-поля, конверт расширяемый): сумма скидок по акциям/промокоду.
-            # Инвариант для 1С: Σ items.total − items_discount_total == totals.total
-            # (доставка в totals у Wave-#50 нулевая). promo_code — справочно.
+            # Инвариант для 1С: Σ items.total − items_discount_total == totals.total.
+            # promo_code — справочно.
             "items_discount_total": _decimal_str(order.items_discount_total or 0),
             "promo_code": order.promo_code or "",
         },
