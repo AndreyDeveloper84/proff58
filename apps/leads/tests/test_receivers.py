@@ -70,6 +70,7 @@ def test_сбой_постановки_не_ломает_заявку(product, d
                 kind=InquiryKind.PRICE_REQUEST, product=product, phone="+79001112233"
             )
     assert inquiry.pk is not None
-    assert NotificationLog.objects.get(idempotency_key=f"staff-inquiry-{inquiry.pk}").status == (
-        NotificationStatus.QUEUED
-    )
+    log = NotificationLog.objects.get(idempotency_key=f"staff-inquiry-{inquiry.pk}")
+    assert (
+        log.status == NotificationStatus.FAILED
+    )  # DRF-2293: очередь недоступна → повтор из админки
