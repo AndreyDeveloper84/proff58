@@ -12,3 +12,5 @@ requests==2.34.2
 jsonschema==4.23.0
 gunicorn==22.0.0
 prometheus-client==0.20.0
+# PDF-счёт B2B (apps/orders/invoice_pdf.py); системные пакеты pango/fonts — в Dockerfile
+weasyprint==68.1

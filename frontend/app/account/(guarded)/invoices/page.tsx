@@ -80,12 +80,11 @@ function InvoiceCard({ invoice }: { invoice: B2BInvoice }) {
         <div className="mt-4">
           <a
             href={invoice.invoice_url}
-            target="_blank"
-            rel="noopener noreferrer"
+            download
             className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
           >
             <Download className="h-4 w-4" aria-hidden />
-            Открыть счёт
+            Скачать счёт (PDF)
           </a>
         </div>
       )}

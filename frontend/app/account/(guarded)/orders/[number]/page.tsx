@@ -7,7 +7,7 @@ import {
   Building2,
   ChevronLeft,
   CreditCard,
-  ExternalLink,
+  Download,
   FileText,
   MapPin,
   Package,
@@ -284,18 +284,17 @@ export default function OrderDetailsPage() {
                 <div>
                   <p className="text-sm font-semibold text-ink">Счёт на оплату</p>
                   <p className="mt-0.5 text-xs text-ink-3">
-                    Откроется в новой вкладке — документ можно сохранить или распечатать.
+                    Скачается PDF-файлом — его можно отправить в бухгалтерию или распечатать.
                   </p>
                 </div>
               </div>
               <a
                 href={`/api/orders/${encodeURIComponent(order.order_number)}/invoice`}
-                target="_blank"
-                rel="noopener noreferrer"
+                download
                 className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink transition hover:brightness-110"
               >
-                Открыть счёт
-                <ExternalLink className="h-4 w-4" aria-hidden />
+                Скачать счёт (PDF)
+                <Download className="h-4 w-4" aria-hidden />
               </a>
             </div>
           )}

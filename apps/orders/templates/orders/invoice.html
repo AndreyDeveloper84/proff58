@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <title>Счёт {{ invoice.order_number }}</title>
 <style>
-  body { font-family: Arial, sans-serif; font-size: 14px; margin: 40px; }
+  @page { size: A4; margin: 15mm; }
+  /* DejaVu Sans есть в образе (fonts-dejavu-core) — кириллица в PDF гарантирована. */
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 12px; margin: 0; }
   h1 { font-size: 20px; }
   table { width: 100%; border-collapse: collapse; margin-top: 20px; }
   th, td { border: 1px solid #333; padding: 6px 10px; text-align: left; }
@@ -18,14 +20,14 @@
   table.sign { margin-top: 30px; border: none; }
   table.sign td { border: none; padding: 10px 8px 0; }
   table.sign td.line { border-bottom: 1px solid #333; width: 200px; }
-  @media print { body { margin: 20px; } }
 </style>
 </head>
 <body>
 <h1>Счёт № {{ invoice.order_number }} от {{ invoice.date|date:"d.m.Y" }}</h1>
 
-{# Банковская часть — обязательная: без неё платёжное поручение не заполнить,
-   и счёт остаётся справкой, а не документом на оплату. #}
+{% comment %}Банковская часть — обязательная: без неё платёжное поручение не заполнить,
+   и счёт остаётся справкой, а не документом на оплату. Многострочные заметки — только
+   блочным comment: короткий синтаксис в Django однострочный, текст печатался в счёте.{% endcomment %}
 {% if invoice.seller.bank_account %}
 <table class="bank">
   <tr>
@@ -90,8 +92,8 @@
 
 {% if invoice.items_discount_total %}<div>Скидка{% if invoice.promo_code %} (промокод {{ invoice.promo_code }}){% endif %}: −{{ invoice.items_discount_total }} {{ invoice.currency }}</div>{% endif %}
 <div class="total">Итого: {{ invoice.total }} {{ invoice.currency }}</div>
-{# Ставка НДС — обязательный реквизит счёта. vat_rate=0 у неплательщика (УСН):
-   пишем «Без НДС», а не молчим, иначе бухгалтерия покупателя не примет документ. #}
+{% comment %}Ставка НДС — обязательный реквизит счёта. vat_rate=0 у неплательщика (УСН):
+   пишем «Без НДС», а не молчим, иначе бухгалтерия покупателя не примет документ.{% endcomment %}
 <div>
   {% if invoice.vat_rate %}
     В том числе НДС {{ invoice.vat_rate }}%: {{ invoice.vat_amount }} {{ invoice.currency }}
