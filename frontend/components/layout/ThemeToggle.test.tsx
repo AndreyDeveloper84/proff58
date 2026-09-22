@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 describe("ThemeToggle", () => {
-  it("в светлой теме предлагает тёмную (луна), в тёмной — светлую (солнце)", () => {
+  it("в светлой теме предлагает тёмную, в тёмной — светлую", () => {
     render(<ThemeToggle />);
     expect(screen.getByRole("button", { name: "Включить тёмную тему" })).toHaveAttribute(
       "aria-pressed",
@@ -23,6 +23,32 @@ describe("ThemeToggle", () => {
       "aria-pressed",
       "true",
     );
+  });
+
+  // Значок показывает текущую тему: солнце — светлая, луна — тёмная. Обе иконки
+  // всегда в DOM, видимость и поворот задаёт CSS от html[data-theme] — так при
+  // сохранённой тёмной теме гидрация не проигрывает переход. В jsdom стилей нет,
+  // здесь проверяем только структуру, на которую опирается globals.css.
+  it("солнце и луна всегда в кнопке, декоративные, друг над другом", () => {
+    render(<ThemeToggle />);
+    const button = screen.getByRole("button");
+    const stack = button.querySelector(".theme-icon")!;
+    expect(stack).toHaveAttribute("aria-hidden");
+    const sun = stack.querySelector("svg.theme-icon-sun")!;
+    const moon = stack.querySelector("svg.theme-icon-moon")!;
+    expect(sun).toHaveAttribute("aria-hidden", "true");
+    expect(moon).toHaveAttribute("aria-hidden", "true");
+    // Размер иконки прежний; заливка солнца идёт на центральный круг.
+    expect(sun).toHaveClass("h-[18px]", "w-[18px]");
+    expect(moon).toHaveClass("h-[18px]", "w-[18px]");
+    expect(sun.querySelector("circle")).not.toBeNull();
+    expect(moon.querySelectorAll("path")).toHaveLength(1);
+
+    // После клика набор узлов тот же — смену показывает CSS, а не перерисовка.
+    fireEvent.click(button);
+    expect(button.querySelector("svg.theme-icon-sun")).toBe(sun);
+    expect(button.querySelector("svg.theme-icon-moon")).toBe(moon);
+    expect(button).toHaveAccessibleName("Включить светлую тему");
   });
 
   it("переключение ставит тему на <html> и запоминает выбор", () => {

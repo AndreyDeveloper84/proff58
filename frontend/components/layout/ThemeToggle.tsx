@@ -98,11 +98,17 @@ export function ThemeToggle({ className }: { className?: string }) {
         className,
       )}
     >
-      {dark ? (
-        <Sun className="h-[18px] w-[18px]" aria-hidden />
-      ) : (
-        <Moon className="h-[18px] w-[18px]" aria-hidden />
-      )}
+      {/* Значок показывает ТЕКУЩУЮ тему: солнце — светлая, луна — тёмная.
+          Обе иконки всегда в DOM, одна над другой в одной grid-ячейке; какая
+          видна и как она повёрнута — решает CSS от html[data-theme]
+          (globals.css, «Переключатель темы»), а не React. Так при сохранённой
+          тёмной теме гидрация (серверный снимок — светлая) не даёт перехода:
+          data-theme стоит с первого кадра, computed-значения не меняются.
+          Клик меняет data-theme — и CSS-transition проигрывает смену. */}
+      <span className="theme-icon" aria-hidden>
+        <Sun className="theme-icon-sun h-[18px] w-[18px]" aria-hidden />
+        <Moon className="theme-icon-moon h-[18px] w-[18px]" aria-hidden />
+      </span>
     </button>
   );
 }

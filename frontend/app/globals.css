@@ -79,6 +79,13 @@
   --accent-ink: #ffffff;
   --primary: #0a8043;
 
+  /* Переключатель темы: солнце и луна одного цвета в обеих темах — значок
+     показывает текущую тему, а не подстраивается под неё. */
+  --theme-toggle-sun-stroke: #cf8500;
+  --theme-toggle-sun-fill: #ffc83d;
+  --theme-toggle-moon-stroke: #a99cff;
+  --theme-toggle-moon-fill: #8575dc;
+
   --danger: #cf2e2e;
   --rating: #b7791f;
   /* Оранжевый «Хита» и лиловый MAX — фирменные, не выводятся из зелёного. */
@@ -544,5 +551,64 @@
   }
   .hdr-badge[data-pop="delayed"] {
     animation-delay: 480ms;
+  }
+}
+
+/*
+  Переключатель темы (components/layout/ThemeToggle.tsx).
+
+  Обе иконки лежат в одной grid-ячейке обёртки .theme-icon, размер обёртки —
+  размер svg, поэтому кнопка и соседи не двигаются. Какая иконка видна, задаёт
+  html[data-theme]: его ставит THEME_INIT_SCRIPT до первого кадра, и на загрузке /
+  восстановлении сохранённой темы computed-значения не меняются — перехода нет.
+  Клик меняет data-theme, и transition проигрывает смену: уходящая иконка
+  сжимается до 0.35 с поворотом и гаснет, входящая растёт из 0.35 в исходное
+  положение. К тёмной: солнце 0→90°, луна −80°→0; обратно — те же дороги назад
+  (transition перенацеливается с текущего значения, очереди при быстрых кликах нет).
+*/
+@layer components {
+  .theme-icon {
+    display: grid;
+    place-items: center;
+  }
+  .theme-icon > svg {
+    grid-area: 1 / 1;
+    transform-origin: 50% 50%;
+    transition:
+      transform 550ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 350ms ease;
+  }
+  .theme-icon-sun {
+    color: var(--theme-toggle-sun-stroke);
+  }
+  /* Заливка только у центрального круга: лучи — отрезки, между ними прозрачно. */
+  .theme-icon-sun circle {
+    fill: var(--theme-toggle-sun-fill);
+  }
+  .theme-icon-moon {
+    color: var(--theme-toggle-moon-stroke);
+    fill: var(--theme-toggle-moon-fill);
+    opacity: 0;
+    transform: rotate(-80deg) scale(0.35);
+  }
+  :root[data-theme="dark"] .theme-icon-sun {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.35);
+  }
+  :root[data-theme="dark"] .theme-icon-moon {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Без движения: иконка просто сменяется, без вращения, масштаба и плавности.
+     Селекторы повторяют полные, чтобы перебить состояние тёмной темы. */
+  @media (prefers-reduced-motion: reduce) {
+    .theme-icon > svg {
+      transition: none;
+    }
+    .theme-icon-moon,
+    :root[data-theme="dark"] .theme-icon-sun {
+      transform: none;
+    }
   }
 }
