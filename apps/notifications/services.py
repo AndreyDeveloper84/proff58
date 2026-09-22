@@ -18,6 +18,7 @@ from .models import (
     Notification,
     NotificationCategory,
     NotificationChannel,
+    NotificationErrorKind,
     NotificationLog,
     NotificationStatus,
     UserNotificationPreference,
@@ -174,10 +175,43 @@ def send(
     )
     if not created:
         return log
+    return enqueue(log)
+
+
+# Ошибки транспорта очереди (брокер недоступен, обрыв соединения). Только они:
+# в eager-режиме (dev/тесты) .delay() выполняет задачу синхронно, и её собственные
+# исключения (Retry, ошибка провайдера) сюда попадать не должны — задача уже
+# записала честный FAILED сама.
+def _queue_transport_errors() -> tuple[type[BaseException], ...]:
+    from kombu.exceptions import OperationalError
+
+    return (OperationalError, ConnectionError, OSError)
+
+
+def enqueue(log: NotificationLog) -> NotificationLog:
+    """Поставить строку outbox в очередь. Недоступная очередь — не сбой заказа.
+
+    Вызов идёт из on_commit-колбэков оформления заказа: исключение отсюда дало бы
+    покупателю 500 при уже созданном заказе (DRF-2293). Поэтому сбой брокера
+    превращается в строку `failed/retryable`, видимую в админке и метриках,
+    с ручным повтором после восстановления.
+    """
+    from celery.exceptions import Retry
 
     from .tasks import send_notification_task
 
-    send_notification_task.delay(log.id)
+    try:
+        send_notification_task.delay(log.id)
+    except Retry:
+        raise
+    except _queue_transport_errors() as exc:
+        NotificationLog.objects.filter(pk=log.pk).update(
+            status=NotificationStatus.FAILED,
+            error_kind=NotificationErrorKind.RETRYABLE,
+            error_message=f"Очередь недоступна: {type(exc).__name__}"[:500],
+        )
+        log.refresh_from_db()
+        logger.error("Notification %s not enqueued: event=%s, queue unavailable", log.pk, log.event)
     return log
 
 
@@ -355,11 +389,7 @@ def notify_staff(*, event: str, payload: dict, idempotency_key: str) -> Notifica
     )
     if not created:
         return log
-
-    from .tasks import send_notification_task
-
-    send_notification_task.delay(log.id)
-    return log
+    return enqueue(log)
 
 
 # ═══════════════════════════════════════════════════════════════════════

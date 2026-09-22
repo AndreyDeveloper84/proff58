@@ -49,12 +49,17 @@ def staff_notify_snapshot(order_id: int) -> dict | None:
     delivery = order.delivery_method or "—"
     if order.delivery_address:
         delivery = f"{delivery}, {order.delivery_address}"
+    total = f"{order.total:.2f}"
+    if order.delivery_calc_status == "manual_required":
+        # DRF-2299: менеджер — первый, кто должен увидеть, что доставку надо посчитать.
+        delivery = f"{delivery} — СТОИМОСТЬ ТРЕБУЕТ РАСЧЁТА"
+        total = f"{total} (предварительно, без доставки)"
     return {
         "order_number": order.order_number,
         "created_at": timezone.localtime(order.created_at).strftime("%d.%m.%Y %H:%M"),
         "customer": customer,
         "customer_phone": order.customer_phone or "—",
-        "total": f"{order.total:.2f}",
+        "total": total,
         "currency": order.currency,
         "items_count": order.items.count(),
         "delivery": delivery,
