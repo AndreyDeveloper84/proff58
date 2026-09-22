@@ -33,6 +33,7 @@ import {
   ACTION_DURATION_MS,
   CartActionIcon,
   CompareActionIcon,
+  HeaderBadge,
   usePulse,
   WishlistActionIcon,
 } from "./HeaderActionIcons";
@@ -48,6 +49,10 @@ interface HeaderProps {
 }
 
 const INFO_PREFIX = "/info/";
+
+// Кружок-счётчик у правого верхнего угла иконки 20 px: перекрывает только
+// 4–5 px уголка, столбики/корзина/сердце с их анимациями остаются открытыми.
+const DESKTOP_BADGE = "left-[calc(100%-5px)] -top-2";
 
 const TOP_LINK_ICONS: Record<string, LucideIcon> = {
   "Сервис и ремонт": Wrench,
@@ -288,11 +293,7 @@ export function Header({
           >
             <span className="relative">
               <WishlistActionIcon className="h-5 w-5" />
-              {wishlistCount > 0 && (
-                <span className="absolute -right-2 -top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
-                  {wishlistCount > 99 ? "99+" : wishlistCount}
-                </span>
-              )}
+              <HeaderBadge count={wishlistCount} kind="wishlist" className={DESKTOP_BADGE} />
             </span>
             <span className="text-xs">Избранное</span>
           </Link>
@@ -305,11 +306,7 @@ export function Header({
           >
             <span className="relative">
               <CompareActionIcon className="h-5 w-5" />
-              {compareCount > 0 && (
-                <span className="absolute -right-2 -top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
-                  {compareCount}
-                </span>
-              )}
+              <HeaderBadge count={compareCount} kind="compare" className={DESKTOP_BADGE} />
             </span>
             <span className="text-xs">Сравнение</span>
           </Link>
@@ -320,11 +317,7 @@ export function Header({
           >
             <span className="relative">
               <CartActionIcon className="h-5 w-5" />
-              {count > 0 && (
-                <span className="absolute -right-2 -top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
-                  {count > 99 ? "99+" : count}
-                </span>
-              )}
+              <HeaderBadge count={count} kind="cart" className={DESKTOP_BADGE} />
             </span>
             <span className="text-xs">Корзина</span>
           </Link>
@@ -360,11 +353,9 @@ export function Header({
             aria-label={count > 0 ? `Корзина, товаров: ${count}` : "Корзина"}
           >
             <CartActionIcon className="h-5 w-5" />
-            {count > 0 && (
-              <span className="absolute right-1 top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
-                {count > 99 ? "99+" : count}
-              </span>
-            )}
+            {/* Кнопка 40×40, иконка 20 px в центре: кружок выступает на 4 px за угол,
+                чтобы верхняя кромка корзины (куда падает квадратик) осталась открытой. */}
+            <HeaderBadge count={count} kind="cart" className="-right-1 -top-1" />
           </Link>
         </div>
       </div>

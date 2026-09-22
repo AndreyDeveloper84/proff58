@@ -466,6 +466,17 @@
     opacity: 0;
   }
 }
+@keyframes hdr-badge-pop {
+  0% {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 @keyframes hdr-wave {
   0% {
     transform: rotate(0deg);
@@ -523,5 +534,15 @@
   .hdr-icon--account[data-acting] .hdr-wave {
     transform-origin: 50% 85%;
     animation: hdr-wave 500ms ease-in-out;
+  }
+
+  /* Счётчик после успешного добавления: pop; впервые появившийся — с задержкой,
+     пока идёт анимация иконки (backwards-заполнение держит его в scale(0)). */
+  .hdr-badge[data-pop] {
+    transform-origin: 50% 50%;
+    animation: hdr-badge-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .hdr-badge[data-pop="delayed"] {
+    animation-delay: 480ms;
   }
 }

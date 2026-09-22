@@ -174,3 +174,70 @@ export function AccountActionIcon({ className, pulse }: IconProps & { pulse: Pul
     </Shell>
   );
 }
+
+/**
+ * Счётчик у иконки шапки.
+ *
+ * Стоит снаружи анимируемой обёртки, у правого верхнего угла иконки, а не
+ * поверх неё: на прежнем месте (-right-2 -top-1.5) кружок накрывал высокий
+ * столбик сравнения, верх корзины и правую долю сердца — ровно то, что
+ * двигается. Появление и смена числа после успешного добавления — «pop»
+ * (scale 0 → 1.15 → 1), причём если кружка ещё не было, он выходит с задержкой,
+ * когда квадратик уже упал в корзину, а столбики выросли: цифра читается как
+ * итог действия, а не заслонка. Загрузка, восстановление, удаление и смена
+ * количества со страницы корзины кружок не дёргают. Всё движение — CSS,
+ * под prefers-reduced-motion его нет и цифра меняется сразу.
+ */
+export function HeaderBadge({
+  count,
+  kind,
+  className,
+}: {
+  count: number;
+  kind: ActionKind;
+  className?: string;
+}) {
+  // null — ещё ни одного действия; иначе номер запуска (key для перезапуска)
+  // и нужна ли задержка (кружка до этого действия не было).
+  const [pop, setPop] = useState<{ seq: number; delayed: boolean } | null>(null);
+  // Был ли кружок на экране по последнему зафиксированному рендеру.
+  const visible = useRef(count > 0);
+  useEffect(() => {
+    visible.current = count > 0;
+  }, [count]);
+
+  // Кружок исчез (список опустел) — следующий его выход по сторонним причинам
+  // (storage-событие соседней вкладки, загрузка) не должен вспоминать старый
+  // pop. Сброс — по образцу «состояние из прошлого рендера», без эффекта.
+  const [prevCount, setPrevCount] = useState(count);
+  if (prevCount !== count) {
+    setPrevCount(count);
+    if (count === 0) setPop(null);
+  }
+
+  useEffect(
+    () =>
+      subscribeActionSuccess((event) => {
+        if (event !== kind) return;
+        // Ref отражает последний рендер, то есть состояние ДО этого добавления:
+        // издатели зовут emit до того, как обновлённый счётчик дойдёт до React.
+        const delayed = !visible.current;
+        setPop((current) => ({ seq: (current?.seq ?? 0) + 1, delayed }));
+      }),
+    [kind],
+  );
+
+  if (count <= 0) return null;
+  return (
+    <span
+      key={pop?.seq ?? 0}
+      className={cn(
+        "hdr-badge absolute grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink",
+        className,
+      )}
+      data-pop={pop ? (pop.delayed ? "delayed" : "true") : undefined}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
