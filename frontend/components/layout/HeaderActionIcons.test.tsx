@@ -7,6 +7,7 @@ import {
   CartActionIcon,
   COMPARE_BARS,
   CompareActionIcon,
+  HeaderBadge,
   WishlistActionIcon,
 } from "./HeaderActionIcons";
 
@@ -88,5 +89,65 @@ describe("иконки действий шапки", () => {
     expect(paths).toEqual(["M3 3v16a2 2 0 0 0 2 2h16", ...COMPARE_BARS]);
     expect(svg.querySelectorAll("path.hdr-bar")).toHaveLength(3);
     expect(svg.querySelector("path:first-child")).not.toHaveClass("hdr-bar");
+  });
+});
+
+describe("счётчик у иконки (HeaderBadge)", () => {
+  const badge = (root: HTMLElement) => root.querySelector(".hdr-badge");
+
+  it("на загрузке и при восстановлении списка не «прыгает»", () => {
+    const { container, rerender } = render(<HeaderBadge count={0} kind="cart" />);
+    expect(badge(container)).toBeNull();
+    rerender(<HeaderBadge count={2} kind="cart" />);
+    expect(badge(container)).toHaveTextContent("2");
+    expect(badge(container)).not.toHaveAttribute("data-pop");
+  });
+
+  it("первое появление после добавления — с задержкой, смена числа — сразу", () => {
+    const { container, rerender } = render(<HeaderBadge count={0} kind="cart" />);
+    act(() => emitActionSuccess("cart"));
+    rerender(<HeaderBadge count={1} kind="cart" />);
+    expect(badge(container)).toHaveAttribute("data-pop", "delayed");
+
+    act(() => emitActionSuccess("cart"));
+    rerender(<HeaderBadge count={2} kind="cart" />);
+    expect(badge(container)).toHaveAttribute("data-pop", "true");
+    expect(badge(container)).toHaveTextContent("2");
+  });
+
+  it("быстрые повторы перезапускают pop новым узлом", () => {
+    const { container, rerender } = render(<HeaderBadge count={1} kind="wishlist" />);
+    act(() => emitActionSuccess("wishlist"));
+    rerender(<HeaderBadge count={2} kind="wishlist" />);
+    const first = badge(container);
+    act(() => emitActionSuccess("wishlist"));
+    rerender(<HeaderBadge count={3} kind="wishlist" />);
+    expect(badge(container)).not.toBe(first);
+  });
+
+  it("чужое событие, удаление и смена количества без добавления pop не дают", () => {
+    const { container, rerender } = render(<HeaderBadge count={1} kind="compare" />);
+    act(() => emitActionSuccess("cart"));
+    rerender(<HeaderBadge count={1} kind="compare" />);
+    expect(badge(container)).not.toHaveAttribute("data-pop");
+
+    rerender(<HeaderBadge count={3} kind="compare" />);
+    expect(badge(container)).not.toHaveAttribute("data-pop");
+    rerender(<HeaderBadge count={0} kind="compare" />);
+    expect(badge(container)).toBeNull();
+  });
+
+  it("после опустошения списка старый pop забывается", () => {
+    const { container, rerender } = render(<HeaderBadge count={0} kind="cart" />);
+    act(() => emitActionSuccess("cart"));
+    rerender(<HeaderBadge count={1} kind="cart" />);
+    rerender(<HeaderBadge count={0} kind="cart" />);
+    rerender(<HeaderBadge count={1} kind="cart" />); // соседняя вкладка / загрузка
+    expect(badge(container)).not.toHaveAttribute("data-pop");
+  });
+
+  it("больше 99 показывает 99+", () => {
+    const { container } = render(<HeaderBadge count={120} kind="cart" />);
+    expect(badge(container)).toHaveTextContent("99+");
   });
 });
