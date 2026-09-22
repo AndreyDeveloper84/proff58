@@ -95,7 +95,7 @@ def test_guest_happy_path(guest_client, product):
 
 
 # ═══════════ #323 — B2B без реквизитов ═══════════
-# Гость не может быть B2B (#282): customer_type из тела игнорируется.
+# Тип покупателя — выбор на форме (customer_type из тела), и для гостя, и для вошедшего.
 
 
 @pytest.mark.django_db

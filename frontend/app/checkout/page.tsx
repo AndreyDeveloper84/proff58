@@ -8,6 +8,7 @@ import { LoadingState } from "@/components/ui/states";
 import { useCart } from "@/components/cart/CartProvider";
 import { PromoCodeField } from "@/components/cart/PromoCodeField";
 import { ApiError } from "@/lib/api";
+import { getMe } from "@/lib/auth";
 import {
   getDeliverySlots,
   getDeliveryZones,
@@ -65,6 +66,18 @@ export default function CheckoutPage() {
   }, [error]);
 
   const [customerType, setCustomerType] = useState<CustomerType>("b2c");
+  // Умолчание переключателя — тип учётной записи: организация не должна
+  // случайно оформить розницу. Ручной выбор ответ сервера не перетирает.
+  const typeTouched = useRef(false);
+  useEffect(() => {
+    let active = true;
+    getMe().then((me) => {
+      if (active && me?.customer_type === "b2b" && !typeTouched.current) setCustomerType("b2b");
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -421,6 +434,7 @@ export default function CheckoutPage() {
                   value={value}
                   checked={customerType === value}
                   onChange={() => {
+                    typeTouched.current = true;
                     setCustomerType(value);
                     // #569: у B2B слотов нет — выбранный слот неактуален.
                     setSlotId(null);

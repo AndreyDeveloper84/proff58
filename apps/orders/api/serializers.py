@@ -318,14 +318,21 @@ class CreateOrderSerializer(serializers.Serializer):
                     {"customer_phone": "Телефон обязателен для гостевого заказа."}
                 )
 
-        # Тип покупателя. Аутентифицированный — из учётной записи. #430 (M-06,
-        # ADR #444): гость может запросить B2B invoice-заказ (запрос счёта без
-        # регистрации) через тело — единого ценника это не ломает (опта нет),
-        # реквизиты валидируются ниже.
-        if is_authenticated:
+        # Тип покупателя — выбор на форме («Физическое лицо» / «Организация»); без
+        # него — тип учётной записи, гость — розница. ADR-0013 §A.4: ценник единый,
+        # «объявить себя юрлицом» преимущества не даёт, реквизиты валидируются ниже.
+        # Раньше у вошедшего выбор на форме игнорировался: аккаунт-физлицо не мог
+        # запросить счёт на организацию и получал «оплата по счёту только для B2B».
+        chosen = (attrs.get("customer_type") or "").lower()
+        if chosen and chosen not in ("b2b", "b2c"):
+            raise serializers.ValidationError({"customer_type": "Неизвестный тип покупателя."})
+        if chosen:
+            customer_type = chosen
+        elif is_authenticated:
             customer_type = getattr(user, "customer_type", "b2c")
         else:
-            customer_type = (attrs.get("customer_type") or "b2c").lower()
+            customer_type = "b2c"
+        attrs["customer_type"] = customer_type
 
         if customer_type == "b2b":
             from apps.orders.invoice import validate_b2b_requisites
