@@ -184,3 +184,45 @@ class TestКассаНедоступна:
         payment = Payment.objects.get(order=order)
         assert payment.status == PaymentStatus.PENDING
         assert payment.method == PaymentMethod.ATOLPAY
+
+
+class TestРучнойРасчётДоставки:
+    """DRF-2299: пока стоимость доставки не рассчитана, итог предварительный —
+    платёж на него в кассу не уходит."""
+
+    @pytest.fixture(autouse=True)
+    def _on(self, payments_on):
+        pass
+
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
+    def test_при_ручном_расчёте_оплата_недоступна_и_платёж_не_создан(self, api, client):
+        order = make_order(delivery_calc_status="manual_required", delivery_cost=None)
+
+        resp = client.post(f"{url(order)}?t={order.access_token}")
+
+        assert resp.status_code == 409
+        assert resp.json()["code"] == "delivery_pending"
+        api.assert_not_called()
+        assert not Payment.objects.filter(order=order).exists()
+
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
+    def test_после_расчёта_менеджером_оплата_открывается(self, _api, client):
+        order = make_order(delivery_calc_status="manual_required", delivery_cost=None)
+        assert client.post(f"{url(order)}?t={order.access_token}").status_code == 409
+
+        # Менеджер ввёл стоимость и поправил итог (как в памятке админки).
+        Order.objects.filter(pk=order.pk).update(
+            delivery_calc_status="calculated",
+            delivery_cost=Decimal("700.00"),
+            total=Decimal("5700.00"),
+        )
+        resp = client.post(f"{url(order)}?t={order.access_token}")
+        assert resp.status_code == 200
+        assert resp.json()["confirmation_url"] == PAY_URL
+
+    def test_сервис_создания_платежа_тоже_отказывает(self):
+        from .services import create_payment
+
+        order = make_order(delivery_calc_status="manual_required", delivery_cost=None)
+        with pytest.raises(ValueError, match="не рассчитана"):
+            create_payment(order)

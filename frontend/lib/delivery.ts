@@ -7,7 +7,9 @@ export type DeliveryZoneOption = {
   zone: string; // slug — уходит в PlaceOrderData.delivery_zone
   name: string;
   type: "courier" | "pickup";
-  cost: string; // Decimal → строка (для показа; сервер пересчитает сам)
+  // Decimal → строка (для показа; сервер пересчитает сам). null — внешний
+  // перевозчик (СДЭК): стоимость станет известна после оформления (DRF-2299).
+  cost: string | null;
   free_delivery: boolean;
 };
 
