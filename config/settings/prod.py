@@ -72,6 +72,37 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# Почта сотрудникам (DRF-2296): если получатели заданы, транспорт обязан быть
+# рабочим уже на старте, а не выясняться по журналу FAILED после первого заказа.
+from .base import (  # noqa: E402
+    DEFAULT_FROM_EMAIL,
+    EMAIL_BACKEND,
+    EMAIL_HOST,
+    EMAIL_USE_SSL,
+    EMAIL_USE_TLS,
+    SITE_URL,
+    STAFF_NOTIFICATION_EMAILS,
+)
+
+if STAFF_NOTIFICATION_EMAILS:
+    if EMAIL_BACKEND.endswith("smtp.EmailBackend") and not EMAIL_HOST:
+        raise ImproperlyConfigured(
+            "STAFF_NOTIFICATION_EMAILS заданы, а EMAIL_HOST пуст — письма сотрудникам "
+            "не уйдут. Задайте SMTP-транспорт или очистите список получателей."
+        )
+    if DEFAULT_FROM_EMAIL in ("", "webmaster@localhost"):
+        raise ImproperlyConfigured(
+            "STAFF_NOTIFICATION_EMAILS заданы, а DEFAULT_FROM_EMAIL не настроен — "
+            "SMTP-провайдер отвергнет отправителя."
+        )
+    if not SITE_URL:
+        raise ImproperlyConfigured(
+            "STAFF_NOTIFICATION_EMAILS заданы, а SITE_URL пуст — ссылка в админку в письме "
+            "будет неполной."
+        )
+if EMAIL_USE_TLS and EMAIL_USE_SSL:
+    raise ImproperlyConfigured("EMAIL_USE_TLS и EMAIL_USE_SSL взаимоисключающие — оставьте один.")
+
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
     # Импортируем лениво: sentry-sdk нужен только в проде с заданным DSN, без него

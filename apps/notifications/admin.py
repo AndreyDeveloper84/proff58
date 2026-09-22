@@ -11,9 +11,9 @@ from .models import (
 
 @admin.register(NotificationLog)
 class NotificationLogAdmin(admin.ModelAdmin):
-    list_display = ("event", "channel", "status", "error_kind", "user", "created_at")
+    list_display = ("event", "channel", "status", "error_kind", "user", "subject", "created_at")
     list_filter = ("channel", "status", "error_kind", "event")
-    search_fields = ("event", "idempotency_key")
+    search_fields = ("event", "idempotency_key", "subject", "recipients")
     readonly_fields = (
         "user",
         "channel",
@@ -22,6 +22,8 @@ class NotificationLogAdmin(admin.ModelAdmin):
         "error_message",
         "error_kind",
         "idempotency_key",
+        "subject",
+        "recipients",
         "created_at",
         "updated_at",
     )

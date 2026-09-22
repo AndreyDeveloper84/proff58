@@ -149,3 +149,59 @@ python manage.py demo_1c_orders --scenario shipped
 - Удаление `NotificationLog` не рвёт `Notification.delivery` (`on_delete=SET_NULL`)
   — история в ЛК не пропадает раньше своего retention, даже если outbox-лог уже
   вычищен.
+
+
+## 11. E-mail сотрудникам о заказах и заявках (DRF-2296)
+
+Второй канал того же outbox. Схема:
+
+```
+order_created → apps.orders.receivers → notifications.notify_staff()
+product_inquiry_created → apps.leads.receivers → notifications.notify_staff()
+  → NotificationLog (channel=email, subject, recipients-снимок)
+  → Celery send_notification_task → channels/email.send_email → SMTP
+```
+
+**Настройка (env, см. `.env.example`):** `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`,
+`EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`/`EMAIL_USE_SSL` (один из двух), `DEFAULT_FROM_EMAIL`,
+`SITE_URL` (ссылка в админку в письме), `STAFF_NOTIFICATION_EMAILS` — ящики сотрудников
+через запятую. DNS отправителя (SPF/DKIM/DMARC) настраивает владелец домена у почтового
+провайдера; без них письма уходят в спам.
+
+**Prod fail-fast (`config/settings/prod.py`):** если получатели заданы, а SMTP-хост,
+отправитель или `SITE_URL` пусты — процесс не стартует. Так ошибка конфигурации видна на
+деплое, а не по журналу FAILED после первого заказа.
+
+**Staging:** `STAFF_NOTIFICATION_EMAILS` оставить пустым. Тогда каждый заказ и заявка дают
+строку `channel=email, status=skipped, error="Получатели не настроены"` — факт в журнале
+есть, письма реальным людям не уходят.
+
+**Проверка транспорта:** `manage.py notifications_email_check --to адрес` — одно письмо на
+явный адрес через тот же канал, без записи в outbox. Успех — «Письмо отправлено», иначе
+класс SMTP-ошибки.
+
+**Разбор недоставленных:** админка → Лог уведомлений → фильтр `channel=email`,
+`status=failed`. `error_kind=retryable` (разрыв соединения, таймаут, 4xx-ответ
+SMTP) — Celery уже сделал 3 попытки с backoff; после исправления причины — действие
+«Повторить отправку». `error_kind=permanent` (неверные учётные данные, отвергнутый
+получатель/отправитель) — сначала чинить конфигурацию, потом повтор. Исчерпание
+повторов видно только в этом журнале и в `logger.error` задачи: внешнего алерта нет,
+метрики §2 считают `failed` по всем каналам вместе.
+
+**Повтор идёт по снимку получателей** в строке (`recipients`), а не по текущему
+`STAFF_NOTIFICATION_EMAILS`: повтор = та же отправка. Дослать новым людям — это новая
+постановка, не retry.
+
+**ПДн в outbox:** `text` письма содержит имя, телефон и организацию покупателя или текст
+заявки — то же, что видно в админке заказа. Строки живут `NOTIFICATION_LOG_RETENTION_DAYS`
+(90) и удаляются ночной задачей; e-mail покупателя в письмо сотрудникам не кладём.
+
+**Идемпотентность:** ключи `staff-order-created-<id>` и `staff-inquiry-<id>`; повтор
+события (переподключённый приёмник, ручной `send`) второй строки не создаёт.
+
+**Что не ломает checkout:** постановка идёт после коммита; сбой брокера или SMTP
+только логируется (`apps.orders.receivers`, `apps.leads.receivers`), заказ и заявка
+уже сохранены.
+
+Письма покупателям о статусах, SMS и MAX сотрудникам в этот канал не входят. Сброс
+пароля (DRF-2298) использует `channels/email.send_email` с адресом покупателя.

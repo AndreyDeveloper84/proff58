@@ -181,18 +181,30 @@ def send(
     return log
 
 
-def _claim_outbox(*, user_id, chat_id, event, text, idempotency_key):
+def _claim_outbox(
+    *,
+    user_id,
+    chat_id,
+    event,
+    text,
+    idempotency_key,
+    channel=NotificationChannel.MAX,
+    subject="",
+    recipients="",
+):
     """Создать строку outbox в статусе QUEUED. Дедуп по непустому ключу.
 
     Возвращает (log, created). created=False → такой ключ уже поставлен/отправлен.
     """
     defaults = {
-        "channel": NotificationChannel.MAX,
+        "channel": channel,
         "event": event,
         "status": NotificationStatus.QUEUED,
         "chat_id": chat_id,
         "text": text,
         "user_id": user_id,
+        "subject": subject,
+        "recipients": recipients,
     }
     if idempotency_key:
         return NotificationLog.objects.get_or_create(
@@ -243,6 +255,111 @@ def _log(
     except Exception:
         logger.exception("Failed to write NotificationLog")
         return None
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# DRF-2296 — письма сотрудникам о новых заказах и заявках
+# ═══════════════════════════════════════════════════════════════════════
+
+# Служебные события: тема + текст письма. Получатели — settings.STAFF_NOTIFICATION_EMAILS,
+# снимок адресов пишется в строку outbox. Никаких токенов и секретов в payload:
+# только то, что сотрудник и так видит в админке; ссылка ведёт на страницу,
+# требующую входа.
+STAFF_EVENTS: dict[str, dict] = {
+    "staff_order_created": {
+        "subject": "Новый заказ №{order_number} — {total} {currency}",
+        "template": (
+            "Новый заказ №{order_number}\n"
+            "Оформлен: {created_at}\n"
+            "Покупатель: {customer}\n"
+            "Телефон: {customer_phone}\n"
+            "Сумма: {total} {currency}, позиций: {items_count}\n"
+            "Получение: {delivery}\n"
+            "Оплата: {payment}\n"
+            "\n"
+            "Открыть в админке (нужен вход сотрудника):\n"
+            "{admin_url}\n"
+        ),
+        "version": 1,
+    },
+    "staff_inquiry_created": {
+        "subject": "Новая заявка: {kind} — {product}",
+        "template": (
+            "Новая заявка #{inquiry_id}: {kind}\n"
+            "Оставлена: {created_at}\n"
+            "Товар: {product}\n"
+            "Имя: {name}\n"
+            "Телефон: {phone}\n"
+            "Сообщение: {message}\n"
+            "\n"
+            "Открыть в админке (нужен вход сотрудника):\n"
+            "{admin_url}\n"
+        ),
+        "version": 1,
+    },
+}
+
+
+def staff_recipients() -> list[str]:
+    from django.conf import settings
+
+    return list(getattr(settings, "STAFF_NOTIFICATION_EMAILS", []) or [])
+
+
+def admin_url(path: str) -> str:
+    """Абсолютная ссылка в админку по SITE_URL; без SITE_URL — относительный путь
+    (в проде SITE_URL обязателен при заданных получателях, см. prod.py)."""
+    from django.conf import settings
+
+    base = (getattr(settings, "SITE_URL", "") or "").rstrip("/")
+    if not base:
+        logger.warning("SITE_URL пуст — ссылка в письме сотрудникам будет относительной")
+    return f"{base}{path}"
+
+
+def notify_staff(*, event: str, payload: dict, idempotency_key: str) -> NotificationLog | None:
+    """Поставить письмо сотрудникам в outbox. Не бросает исключений наружу.
+
+    Получатели не настроены → строка SKIPPED с причиной (так на staging: письма
+    реальным людям не уходят, но факт в журнале есть). Повтор того же
+    idempotency_key не создаёт второй строки и второго письма. Доставка — та же
+    Celery-задача, ретраи и ручной повтор из админки, что у MAX.
+    """
+    meta = STAFF_EVENTS[event]
+    recipients = staff_recipients()
+    if not recipients:
+        return _log(
+            user=None,
+            channel=NotificationChannel.EMAIL,
+            event=event,
+            status=NotificationStatus.SKIPPED,
+            error="Получатели не настроены (STAFF_NOTIFICATION_EMAILS)",
+            idempotency_key=idempotency_key,
+        )
+    try:
+        subject = meta["subject"].format(**payload)
+        text = meta["template"].format(**payload)
+    except KeyError:
+        logger.exception("Неполный payload для %s", event)
+        subject, text = f"[{event}]", _render_text(event, payload)
+
+    log, created = _claim_outbox(
+        user_id=None,
+        chat_id=None,
+        event=event,
+        text=text,
+        idempotency_key=idempotency_key,
+        channel=NotificationChannel.EMAIL,
+        subject=subject[:255],
+        recipients=", ".join(recipients),
+    )
+    if not created:
+        return log
+
+    from .tasks import send_notification_task
+
+    send_notification_task.delay(log.id)
+    return log
 
 
 # ═══════════════════════════════════════════════════════════════════════

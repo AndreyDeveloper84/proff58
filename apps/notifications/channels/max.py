@@ -15,23 +15,21 @@ import urllib.request
 
 from django.conf import settings
 
+from . import ChannelError, PermanentChannelError, RetryableChannelError
+
 logger = logging.getLogger(__name__)
 
 
-class MaxProviderError(Exception):
+class MaxProviderError(ChannelError):
     """Базовая ошибка отправки в MAX. `retry_after` — секунды из заголовка
     провайдера (429), если он его прислал."""
 
-    def __init__(self, message: str, *, retry_after: int | None = None):
-        super().__init__(message)
-        self.retry_after = retry_after
 
-
-class MaxRetryableError(MaxProviderError):
+class MaxRetryableError(MaxProviderError, RetryableChannelError):
     """429/5xx/сеть/таймаут — временная проблема, повтор осмыслен."""
 
 
-class MaxPermanentError(MaxProviderError):
+class MaxPermanentError(MaxProviderError, PermanentChannelError):
     """4xx (кроме 429) — запрос сам по себе некорректен, повтор бессмыслен
     (напр. чат заблокировал бота, невалидный chat_id)."""
 
