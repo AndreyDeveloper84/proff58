@@ -1,11 +1,11 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // #574: разбивка итога и честный fallback без снимка заказа.
 // Номер в useParams приходит закодированным (Next отдаёт сегмент как в адресе),
 // а checkout кладёт снимок под обычным номером — на этой паре и ломался поиск.
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "%D0%9F-1" }) }));
-vi.mock("@/lib/order-storage", () => ({ readStashedOrder: vi.fn() }));
+vi.mock("@/lib/order-storage", () => ({ readStashedOrder: vi.fn(), stashOrder: vi.fn() }));
 vi.mock("@/components/order/TrackOrderInMaxCta", () => ({
   TrackOrderInMaxCta: () => <div data-testid="max-cta" />,
 }));
@@ -88,6 +88,23 @@ describe("ThanksPage (#574)", () => {
   });
 
   // Раньше без снимка страница показывала только номер заказа и ничего не объясняла.
+  // DRF-2299: ссылка из письма «доставка рассчитана» открывается в любом браузере —
+  // заказ грузится по токену из адреса, сам токен из адреса убирается.
+  it("по ссылке с токеном грузит заказ и предлагает оплатить", async () => {
+    mockedRead.mockReturnValue(null);
+    mockedGuest.mockImplementation(() =>
+      Promise.resolve(order({ delivery_calc_status: "calculated" })),
+    );
+    window.history.pushState({}, "", "/order/%D0%9F-1/thanks?t=guest-tok-123");
+
+    render(<ThanksPage />);
+
+    await waitFor(() => expect(mockedGuest).toHaveBeenCalledWith("П-1", "guest-tok-123"));
+    expect(await screen.findByRole("button", { name: "Оплатить заказ" })).toBeInTheDocument();
+    expect(window.location.search).not.toContain("t=");
+    window.history.pushState({}, "", "/order/%D0%9F-1/thanks");
+  });
+
   it("без снимка объясняет ситуацию и ведёт в кабинет", () => {
     mockedRead.mockReturnValue(null);
     render(<ThanksPage />);

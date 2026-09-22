@@ -22,9 +22,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.throttling import OrdersRateThrottle
 from apps.orders import services as order_services
-from apps.orders.models import FulfillmentStatus, Order
+from apps.orders.models import DeliveryCalcStatus, FulfillmentStatus, Order, ReservationStatus
 from apps.orders.models import PaymentStatus as OrderPaymentStatus
+from apps.orders.reservation import rehold_reservation
+from apps.orders.services import _reservation_ttl
 
 from . import refund_requests
 from .models import RefundReason, RefundRequest
@@ -55,6 +58,9 @@ class OrderPaymentView(APIView):
     """POST /api/payments/orders/{number}/ — получить ссылку на оплату заказа."""
 
     permission_classes = [AllowAny]
+    # Гость с токеном мог бы дёргать эндпоинт и бесконечно продлевать резерв
+    # (rehold ниже) — лимит по IP тот же, что у оформления.
+    throttle_classes = [OrdersRateThrottle]
 
     def post(self, request, number):
         if not getattr(settings, "PAYMENTS_ENABLED", False):
@@ -82,7 +88,32 @@ class OrderPaymentView(APIView):
                 {"detail": "Заказ отменён, оплатить его нельзя.", "code": "canceled"},
                 status=status.HTTP_409_CONFLICT,
             )
+        if order.delivery_calc_status == DeliveryCalcStatus.MANUAL_REQUIRED:
+            # DRF-2299: итог без доставки — предварительный. Платёж на него ушёл бы
+            # в кассу с чеком без доставки, а доплату потом взять нечем.
+            return Response(
+                {
+                    "detail": "Стоимость доставки уточняется менеджером. "
+                    "Оплата станет доступна после расчёта.",
+                    "code": "delivery_pending",
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
 
+        if order.reservation_status == ReservationStatus.RELEASED:
+            # Оплата позже 30-минутного окна (ручной расчёт доставки, вернулся к
+            # заказу через час): janitor уже вернул товар в остаток. Удерживаем
+            # заново под замком; товара нет — честный отказ, а не оплата воздуха.
+            ok, reason = rehold_reservation(order.pk, ttl=_reservation_ttl(order.customer_type))
+            if not ok:
+                return Response(
+                    {
+                        "detail": f"Пока заказ ждал оплаты, товар закончился ({reason}). "
+                        "Свяжитесь с нами — подберём замену или вернём заказ в работу.",
+                        "code": "reservation_expired",
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
         try:
             payment = create_payment(order)
         except Exception:

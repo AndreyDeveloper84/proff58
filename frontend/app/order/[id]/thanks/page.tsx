@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/ui/states";
 import { OrderOutcome } from "@/components/order/OrderOutcome";
 import { ReservationNotice } from "@/components/order/ReservationNotice";
 import { TrackOrderInMaxCta } from "@/components/order/TrackOrderInMaxCta";
@@ -12,7 +13,7 @@ import { accountLinkHref } from "@/lib/auth-state";
 import { formatDeliverySlot, formatPrice } from "@/lib/format";
 import { getGuestOrder } from "@/lib/orders";
 import { paymentMethodLabel } from "@/lib/payment-methods";
-import { readStashedOrder } from "@/lib/order-storage";
+import { readStashedOrder, stashOrder } from "@/lib/order-storage";
 import { decodeRouteParam } from "@/lib/route-params";
 import type { Order } from "@/lib/types";
 
@@ -66,17 +67,45 @@ export default function ThanksPage() {
   // POLL_INTERVAL_MS — недолго, POLL_ATTEMPTS раз: этого хватает на задержку
   // кассы, а бесконечный опрос заказа, который никто не оплатит, не нужен.
   const [fresh, setFresh] = useState<Order | null>(null);
+  // Токен гостя из ссылки в письме «доставка рассчитана — можно оплатить»
+  // (DRF-2299): в другом браузере снимка нет, заказ грузим по `?t=`. Читаем в
+  // эффекте, не в рендере (гидратация), и сразу убираем из адреса: в истории и на
+  // скриншотах ему делать нечего.
+  // Тот же приём, что для снимка: внешнее хранилище (адресная строка) читается через
+  // useSyncExternalStore с кешем на инстанс — сервер отдаёт null, клиент — токен, и
+  // после очистки адреса значение не «пропадает» на следующем рендере.
+  const tokenRef = useRef<{ key: string; value: string | null } | null>(null);
+  const getTokenSnapshot = useCallback(() => {
+    if (!tokenRef.current || tokenRef.current.key !== orderNumber) {
+      tokenRef.current = {
+        key: orderNumber,
+        value: new URLSearchParams(window.location.search).get("t"),
+      };
+    }
+    return tokenRef.current.value;
+  }, [orderNumber]);
+  const queryToken = useSyncExternalStore(subscribe, getTokenSnapshot, () => null);
   useEffect(() => {
-    const token = stashed?.access_token;
-    if (!token || !stashed) return;
+    if (!queryToken) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("t")) return;
+    url.searchParams.delete("t");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search);
+  }, [queryToken]);
+  const linkLoading = Boolean(queryToken) && !stashed && !fresh;
+
+  useEffect(() => {
+    const token = stashed?.access_token || queryToken;
+    if (!token) return;
     let active = true;
     let attempts = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const load = () => {
-      getGuestOrder(stashed.order_number, token)
+      getGuestOrder(orderNumber, token)
         .then((data) => {
           if (!active) return;
+          if (!stashed) stashOrder({ ...data, access_token: token });
           setFresh(data);
           attempts += 1;
           if (shouldKeepPolling(data) && attempts < POLL_ATTEMPTS) {
@@ -91,14 +120,17 @@ export default function ThanksPage() {
       active = false;
       if (timer) clearTimeout(timer);
     };
-  }, [stashed]);
+  }, [stashed, queryToken, orderNumber]);
 
   // Свежие данные накладываем НА снимок, а не заменяем им: гостевой ответ не
   // содержит access_token (и не должен — незачем светить его в каждом ответе),
   // а без токена со страницы исчезала уже показанная кнопка «Отслеживать заказ
   // в MAX» — через секунду после загрузки, когда приходил ответ сервера.
   const order = fresh
-    ? { ...fresh, access_token: fresh.access_token || stashed?.access_token || "" }
+    ? {
+        ...fresh,
+        access_token: fresh.access_token || stashed?.access_token || queryToken || "",
+      }
     : stashed;
   // Заказ часто оформляют без входа, поэтому «в личном кабинете» для гостя ведёт
   // на форму входа — оттуда его вернут в заказы.
@@ -125,7 +157,11 @@ export default function ThanksPage() {
         ))}
       </ol>
 
-      <OrderOutcome order={order} orderNumber={orderNumber} invoiceHref={ordersHref} />
+      {linkLoading ? (
+        <LoadingState label="Загружаем заказ…" />
+      ) : (
+        <OrderOutcome order={order} orderNumber={orderNumber} invoiceHref={ordersHref} />
+      )}
 
       {order && <div className="mt-5"><ReservationNotice order={order} /></div>}
       {!order && (

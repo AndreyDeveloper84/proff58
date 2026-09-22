@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight, ClipboardList, Clock3, RotateCcw, Star } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
+import { canPayOnline } from "@/components/order/PayOrderButton";
 import { reservationState } from "@/components/order/ReservationNotice";
 import { checkAuth, getOrders, loginHref } from "@/lib/auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
@@ -160,6 +161,15 @@ export default function OrdersPage() {
                   </p>
                 )}
               </div>
+
+              {canPayOnline(order) && (
+                <Link
+                  href={`/account/orders/${encodeURIComponent(order.order_number)}`}
+                  className="mt-3 inline-flex min-h-10 items-center rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink hover:brightness-95"
+                >
+                  Оплатить заказ
+                </Link>
+              )}
 
               {/* #574: резерв виден и в списке. Раньше «ждём оплату» показывалось,
                   а то, что резерв тикает или уже истёк, — только внутри заказа. */}
