@@ -249,8 +249,12 @@ export default function LoginPage() {
                 Нет аккаунта? Зарегистрироваться
               </button>
             )}
-            {/* Сброса пароля по письму пока нет — честно указываем рабочий путь. */}
-            <p className="text-xs text-ink-3">Забыли пароль? Войдите через MAX — он не требует пароля.</p>
+            {mode === "login" && (
+              <Link href="/account/forgot-password" className="block font-medium text-accent hover:underline">
+                Забыли пароль?
+              </Link>
+            )}
+            <p className="text-xs text-ink-3">Без пароля можно войти через MAX.</p>
           </div>
         </section>
 

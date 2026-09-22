@@ -54,6 +54,26 @@ class AuthRateThrottle(_FixedScopeThrottle):
     scope = "auth"
 
 
+class PasswordResetEmailThrottle(_FixedScopeThrottle):
+    """Лимит запросов сброса пароля ПО АДРЕСУ (scope `password_reset_email`, DRF-2298).
+
+    Дополняет IP-лимит `auth`: иначе один запрос в минуту с разных адресов
+    превращает форму в бомбардировку чужого ящика и расход SMTP-квоты. Ключ —
+    хеш нормализованного e-mail, сам адрес в кэш не пишем.
+    """
+
+    scope = "password_reset_email"
+
+    def get_cache_key(self, request, view):
+        import hashlib
+
+        email = str(request.data.get("email", "") or "").strip().lower()
+        if not email:
+            return None  # пустой адрес отобьёт сериализатор
+        ident = hashlib.sha256(email.encode()).hexdigest()
+        return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
 class SubscriptionRateThrottle(_FixedScopeThrottle):
     """Лимит подписки «Сообщить о поступлении» по IP (scope `subscription`, #517)."""
 

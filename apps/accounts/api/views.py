@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import logging
+
+from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
@@ -12,10 +15,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import Profile
-from apps.core.throttling import AuthRateThrottle
+from apps.core.throttling import AuthRateThrottle, PasswordResetEmailThrottle
 
 from .serializers import (
     LoginSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     ProfileSerializer,
     RegisterSerializer,
     UserProfileSerializer,
@@ -23,6 +28,7 @@ from .serializers import (
 )
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class LoginView(APIView):
@@ -318,3 +324,146 @@ class CSRFView(APIView):
 
     def get(self, request):
         return Response({"csrfToken": get_token(request)})
+
+
+# ═══════════ DRF-2298: восстановление пароля покупателя по e-mail ═══════════
+
+_RESET_SENT = {"detail": "Если адрес зарегистрирован, мы отправили письмо со ссылкой."}
+_RESET_UNAVAILABLE = {
+    "detail": "Не удалось отправить письмо. Попробуйте позже.",
+    "code": "email_unavailable",
+}
+_RESET_INVALID = {"detail": "Ссылка недействительна или устарела.", "code": "invalid_token"}
+
+
+def _reset_eligible(user) -> bool:
+    """Кому сброс доступен: активный покупатель с паролем.
+
+    Аккаунт из MAX (`has_usable_password()` False) пароля через сброс не получает —
+    e-mail у него не подтверждён, а вход через MAX и так без пароля. Сотрудники
+    админки (`is_staff`) восстанавливают доступ административным порядком, а не
+    через публичную форму витрины.
+    """
+    return user.is_active and not user.is_staff and user.has_usable_password()
+
+
+def _find_reset_user(email: str):
+    users = list(User.objects.filter(email__iexact=email)[:2])
+    if len(users) != 1:  # нет или дубль из прежней схемы — как в EmailBackend
+        return None
+    return users[0] if _reset_eligible(users[0]) else None
+
+
+def _reset_link(user) -> str:
+    """Ссылка только из SITE_URL — не из Host-заголовка запроса."""
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
+
+    base = (getattr(settings, "SITE_URL", "") or "").rstrip("/")
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    return f"{base}/account/reset-password?uid={uid}&token={token}"
+
+
+class PasswordResetRequestView(APIView):
+    """POST /api/account/password-reset/ — письмо со ссылкой на смену пароля.
+
+    Ответ 200 одинаков для известного и неизвестного адреса. Соединение с почтой
+    открывается ДО поиска пользователя: сбой транспорта даёт 503 всем одинаково и
+    не выдаёт, есть ли аккаунт. Ссылка отправляется синхронно, минуя outbox —
+    токен не должен лежать в журнале уведомлений.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle, PasswordResetEmailThrottle]
+
+    def post(self, request):
+        from apps.notifications.channels import ChannelError
+        from apps.notifications.channels import email as email_channel
+
+        ser = PasswordResetRequestSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        if not (getattr(settings, "SITE_URL", "") or ""):
+            logger.error("Сброс пароля: SITE_URL не задан — ссылку собрать не из чего")
+            return Response(_RESET_UNAVAILABLE, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        try:
+            connection = email_channel.open_connection()
+        except ChannelError as exc:
+            logger.error("Сброс пароля: транспорт недоступен (%s)", exc)
+            return Response(_RESET_UNAVAILABLE, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        try:
+            user = _find_reset_user(ser.validated_data["email"])
+            if user is None:
+                return Response(_RESET_SENT)
+            hours = max(1, int(getattr(settings, "PASSWORD_RESET_TIMEOUT", 3600) // 3600))
+            body = (
+                "Вы запросили восстановление пароля на сайте «Профессионал».\n\n"
+                "Чтобы задать новый пароль, перейдите по ссылке:\n"
+                f"{_reset_link(user)}\n\n"
+                f"Ссылка действует {hours} ч и подходит только один раз.\n"
+                "Если вы не запрашивали восстановление, просто не открывайте ссылку — "
+                "пароль останется прежним.\n"
+            )
+            try:
+                email_channel.send_email(
+                    "Восстановление пароля — «Профессионал»",
+                    body,
+                    [user.email],
+                    connection=connection,
+                )
+            except ChannelError as exc:
+                logger.error("Сброс пароля: письмо не отправлено (%s)", exc)
+                return Response(_RESET_UNAVAILABLE, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        finally:
+            try:
+                connection.close()
+            except Exception:  # noqa: BLE001 — закрытие не важнее ответа
+                pass
+        logger.info("Сброс пароля: письмо отправлено")
+        return Response(_RESET_SENT)
+
+
+class PasswordResetConfirmView(APIView):
+    """POST /api/account/password-reset/confirm/ — новый пароль по uid+token.
+
+    Токен Django одноразовый по построению: в его хеше старый хеш пароля,
+    после смены он не проходит. Старые сессии инвалидирует сам Django —
+    session auth hash перестаёт совпадать. Автологина нет: человек входит новым
+    паролем.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
+
+    def post(self, request):
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.http import urlsafe_base64_decode
+
+        raw = {k: request.data.get(k) for k in ("uid", "token")}
+        user = None
+        try:
+            user = User.objects.filter(
+                pk=int(urlsafe_base64_decode(str(raw["uid"])).decode())
+            ).first()
+        except (TypeError, ValueError, OverflowError):
+            user = None
+        if (
+            user is None
+            or not _reset_eligible(user)
+            or not default_token_generator.check_token(user, str(raw["token"] or ""))
+        ):
+            return Response(_RESET_INVALID, status=status.HTTP_400_BAD_REQUEST)
+
+        ser = PasswordResetConfirmSerializer(data=request.data, context={"user": user})
+        if not ser.is_valid():
+            errors = dict(ser.errors)
+            if "new_password" in errors:
+                errors["password"] = errors.pop("new_password")
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(ser.validated_data["new_password"])
+        user.save(update_fields=["password"])
+        logger.info("Сброс пароля: пароль изменён")
+        return Response({"detail": "Пароль изменён. Войдите с новым паролем."})
