@@ -24,9 +24,20 @@ class NotificationLogAdmin(admin.ModelAdmin):
         "idempotency_key",
         "subject",
         "recipients",
+        "text_masked",
         "created_at",
         "updated_at",
     )
+    exclude = ("text", "chat_id")
+
+    @admin.display(description="Текст")
+    def text_masked(self, obj):
+        """Текст письма без гостевого токена в ссылке: `?t=…` — доступ к заказу,
+        сотрудникам с правом на журнал он не нужен (DRF-2299)."""
+        import re
+
+        return re.sub(r"([?&]t=)[\w-]+", r"\1…", obj.text or "")
+
     date_hierarchy = "created_at"
     actions = ["retry_failed"]
 

@@ -50,6 +50,20 @@ describe("OrdersPage (#574)", () => {
     mockedGetMe.mockResolvedValue({ id: 1, customer_type: "b2c" });
   });
 
+  it("неоплаченный онлайн-заказ в списке ведёт к оплате", async () => {
+    mockedGetOrders.mockResolvedValue([
+      order({
+        payment_method: "online",
+        payment_status: "pending",
+        fulfillment_status: "new",
+        delivery_calc_status: "calculated",
+      }),
+    ]);
+    render(<OrdersPage />);
+    const link = await screen.findByRole("link", { name: "Оплатить заказ" });
+    expect(link.getAttribute("href")).toContain("/account/orders/");
+  });
+
   it("активный резерв виден прямо в списке", async () => {
     mockedGetOrders.mockResolvedValue([
       order({ reservation_status: "held", reserved_until: HOUR_AHEAD }),

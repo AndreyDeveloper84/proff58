@@ -382,3 +382,150 @@ def test_delete_product_then_order_does_not_break():
     order.delete()  # не падает: строки без товара пропускаются
 
     assert not Order.objects.filter(pk=order.pk).exists()
+
+
+# ── повторное удержание после снятия резерва (DRF-2299, оплата позже) ──────
+
+
+@pytest.mark.django_db
+def test_rehold_after_release_holds_stock_again():
+    from apps.orders.reservation import rehold_reservation
+
+    p = _product(qty="10", reserved="0")
+    order = _order_with_item(p, qty=3, reservation_status=ReservationStatus.RELEASED)
+
+    ok, reason = rehold_reservation(order.pk, ttl=timedelta(hours=24))
+
+    assert ok and reason == ""
+    p.refresh_from_db()
+    order.refresh_from_db()
+    assert p.available_quantity == Decimal("7") and p.reserved_quantity == Decimal("3")
+    assert order.reservation_status == ReservationStatus.HELD
+    assert order.reserved_until > timezone.now() + timedelta(hours=23)
+
+
+@pytest.mark.django_db
+def test_rehold_refuses_when_stock_is_short_and_changes_nothing():
+    from apps.orders.reservation import rehold_reservation
+
+    p = _product(qty="2", reserved="0")
+    order = _order_with_item(p, qty=3, reservation_status=ReservationStatus.RELEASED)
+
+    ok, reason = rehold_reservation(order.pk, ttl=timedelta(hours=1))
+
+    assert not ok and "нет в наличии" in reason
+    p.refresh_from_db()
+    order.refresh_from_db()
+    assert p.available_quantity == Decimal("2") and p.reserved_quantity == Decimal("0")
+    assert order.reservation_status == ReservationStatus.RELEASED
+
+
+@pytest.mark.django_db
+def test_rehold_all_or_nothing_across_lines():
+    from apps.orders.reservation import rehold_reservation
+
+    p1 = _product(qty="10", reserved="0")
+    p2 = Product.objects.create(
+        name="Второй",
+        code_1c="res-2",
+        slug="res-2",
+        unit="шт",
+        price=Decimal("50.00"),
+        currency="RUB",
+        status=ProductStatus.PUBLISHED,
+        is_active=True,
+        available_quantity=Decimal("0"),
+    )
+    order = _order_with_item(p1, qty=1, reservation_status=ReservationStatus.RELEASED)
+    OrderItem.objects.create(
+        order=order,
+        product=p2,
+        quantity=1,
+        price_final=Decimal("50.00"),
+        line_total=Decimal("50.00"),
+    )
+
+    ok, _ = rehold_reservation(order.pk, ttl=timedelta(hours=1))
+
+    assert not ok
+    p1.refresh_from_db()
+    assert p1.available_quantity == Decimal("10")  # первую строку не списали
+
+
+@pytest.mark.django_db
+def test_rehold_when_held_only_extends_deadline():
+    from apps.orders.reservation import rehold_reservation
+
+    p = _product(qty="7", reserved="3")
+    order = _order_with_item(p, qty=3)  # HELD
+    order.reserved_until = timezone.now() + timedelta(minutes=5)
+    order.save(update_fields=["reserved_until"])
+
+    ok, _ = rehold_reservation(order.pk, ttl=timedelta(hours=24))
+
+    assert ok
+    p.refresh_from_db()
+    order.refresh_from_db()
+    assert p.available_quantity == Decimal("7") and p.reserved_quantity == Decimal("3")
+    assert order.reserved_until > timezone.now() + timedelta(hours=23)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "kw,reason",
+    [
+        ({"reservation_status": ReservationStatus.CONFIRMED}, "уже списан"),
+        ({"reservation_status": ReservationStatus.RELEASED, "payment_status": "paid"}, "оплачен"),
+        (
+            {"reservation_status": ReservationStatus.RELEASED, "fulfillment_status": "cancelled"},
+            "отменён",
+        ),
+    ],
+)
+def test_rehold_refuses_terminal_orders(kw, reason):
+    from apps.orders.reservation import rehold_reservation
+
+    p = _product(qty="10", reserved="0")
+    order = _order_with_item(p, qty=1, **kw)
+    ok, why = rehold_reservation(order.pk, ttl=timedelta(hours=1))
+    assert not ok and reason in why
+    p.refresh_from_db()
+    assert p.available_quantity == Decimal("10")
+
+
+@pytest.mark.django_db
+def test_janitor_does_not_release_reservation_extended_after_selection():
+    """Гонка с janitor: срок продлили (rehold) между выборкой и обработкой — резерв остаётся."""
+    p = _product(qty="7", reserved="3")
+    order = _order_with_item(p, qty=3)
+    order.reserved_until = timezone.now() + timedelta(hours=1)  # уже продлён
+    order.save(update_fields=["reserved_until"])
+
+    assert release_reservation(order.pk, only_if_expired=True) is False
+    p.refresh_from_db()
+    order.refresh_from_db()
+    assert order.reservation_status == ReservationStatus.HELD
+    assert p.available_quantity == Decimal("7")
+
+    order.reserved_until = timezone.now() - timedelta(minutes=1)
+    order.save(update_fields=["reserved_until"])
+    assert release_reservation(order.pk, only_if_expired=True) is True
+
+
+@pytest.mark.django_db
+def test_rehold_sums_same_product_across_lines():
+    from apps.orders.reservation import rehold_reservation
+
+    p = _product(qty="5", reserved="0")
+    order = _order_with_item(p, qty=3, reservation_status=ReservationStatus.RELEASED)
+    OrderItem.objects.create(
+        order=order,
+        product=p,
+        quantity=3,
+        price_final=Decimal("100.00"),
+        line_total=Decimal("300.00"),
+    )
+    ok, reason = rehold_reservation(order.pk, ttl=timedelta(hours=1))
+    assert not ok and "нет в наличии" in reason  # нужно 6, есть 5
+    p.refresh_from_db()
+    assert p.available_quantity == Decimal("5")

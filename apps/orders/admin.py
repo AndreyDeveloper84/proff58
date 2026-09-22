@@ -486,13 +486,50 @@ class OrderAdmin(TimestampColumnsMixin, admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        if getattr(form, "delivery_auto_calculated", False):
+        if change and self._delivery_priced_now(form, obj):
+            self._after_delivery_priced(request, obj)
+
+    @staticmethod
+    def _delivery_priced_now(form, obj) -> bool:
+        """Менеджер только что назначил стоимость доставки: переход «ручной расчёт →
+        рассчитано» либо правка стоимости у уже рассчитанного неоплаченного заказа.
+        `form.initial` — значения из БД до правки (включая автоперевод статуса в clean)."""
+        calculated = DeliveryCalcStatus.CALCULATED
+        if obj.delivery_calc_status != calculated or obj.payment_status != "pending":
+            return False
+        was_manual = form.initial.get("delivery_calc_status") == DeliveryCalcStatus.MANUAL_REQUIRED
+        cost_changed = "delivery_cost" in form.changed_data and obj.delivery_cost is not None
+        return was_manual or cost_changed
+
+    def _after_delivery_priced(self, request, obj):
+        """Резерв удерживается заново (ручной расчёт занимает часы, 30-минутный резерв
+        давно снят), письмо покупателю ставится после коммита (DRF-2299)."""
+        from datetime import timedelta
+
+        from django.db import transaction
+
+        from .reservation import rehold_reservation
+        from .services import notify_delivery_calculated
+
+        ok, reason = rehold_reservation(obj.pk, ttl=timedelta(hours=24))
+        if not ok:
             self.message_user(
                 request,
-                "Стоимость доставки введена — статус расчёта переведён в «Рассчитано», "
-                "покупателю доступна оплата. Сообщите ему о сумме.",
-                level=messages.INFO,
+                f"Стоимость доставки сохранена, но {reason}. Свяжитесь с покупателем — "
+                "письмо со ссылкой на оплату не отправлено.",
+                level=messages.WARNING,
             )
+            return
+        obj.refresh_from_db(fields=["reserved_until", "reservation_status"])
+        result = notify_delivery_calculated(obj, send=False)
+        # Постановка в очередь — после коммита: иначе воркер может взять задачу
+        # раньше, чем увидит строку. robust: ошибка логируется, сохранение не откатится.
+        transaction.on_commit(lambda: notify_delivery_calculated(obj), robust=True)
+        self.message_user(
+            request,
+            f"Резерв товара удержан до {timezone.localtime(obj.reserved_until):%d.%m %H:%M}; {result}.",
+            level=messages.INFO,
+        )
 
     @admin.display(description="Статус для клиента")
     def display_status(self, obj):
