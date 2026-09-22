@@ -403,10 +403,14 @@ def place_order(
     # регистрации). Прежний запрет (#282) снят: единого ценника больше нет опта,
     # поэтому «объявить себя B2B» не даёт ценового преимущества; B2B-реквизиты
     # валидируются ниже, цена та же розничная.
-    if user is not None and getattr(user, "is_authenticated", False):
+    # Выбор на форме важнее типа учётной записи: аккаунт-физлицо может запросить
+    # счёт на организацию, а юрлицо — оформить розничный заказ (ценник единый,
+    # ADR-0013 §A.4). Без явного выбора — тип аккаунта, гость — розница.
+    chosen = (customer_data.get("customer_type") or "").lower()
+    if chosen in (CustomerType.B2B, CustomerType.B2C):
+        customer_type = chosen
+    elif user is not None and getattr(user, "is_authenticated", False):
         customer_type = getattr(user, "customer_type", CustomerType.B2C)
-    elif (customer_data.get("customer_type") or "").lower() == CustomerType.B2B:
-        customer_type = CustomerType.B2B
     else:
         customer_type = CustomerType.B2C
 
