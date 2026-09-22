@@ -1,5 +1,7 @@
 """Админка заказов и корзины (минимальная для #26)."""
 
+from decimal import Decimal
+
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
@@ -15,7 +17,15 @@ from django.utils.safestring import mark_safe
 from apps.core.admin import TimestampColumnsMixin
 
 from .fulfillment import advance_fulfillment, next_steps
-from .models import B2BInvoice, Cart, CartItem, FulfillmentStatus, Order, OrderItem
+from .models import (
+    B2BInvoice,
+    Cart,
+    CartItem,
+    DeliveryCalcStatus,
+    FulfillmentStatus,
+    Order,
+    OrderItem,
+)
 from .transitions import allowed_transitions, can_transition
 
 
@@ -70,6 +80,55 @@ class OrderAdminForm(forms.ModelForm):
         message = f"Из статуса «{labels[old]}» нельзя перевести в «{labels[new]}»."
         message += f" Допустимо: {allowed}." if allowed else " Это конечный статус."
         raise forms.ValidationError(message)
+
+    def clean(self):
+        """Ручной расчёт доставки (DRF-2299): ввод стоимости закрывает «предварительность».
+
+        Пока статус `manual_required`, итог заказа без доставки и оплата закрыта.
+        Менеджер вписывает стоимость — статус сам становится «Рассчитано», но только
+        если итог сошёлся: иначе оплата открылась бы на неверную сумму, а чек кассы
+        не свёлся бы с заказом. Перевести в «Рассчитано» без стоимости нельзя.
+        """
+        cleaned = super().clean()
+        self.delivery_auto_calculated = False
+        if not self.instance.pk or "delivery_calc_status" not in cleaned:
+            return cleaned
+        old_status = self.instance.delivery_calc_status
+        new_status = cleaned.get("delivery_calc_status")
+        cost = cleaned.get("delivery_cost")
+        manual, calculated = DeliveryCalcStatus.MANUAL_REQUIRED, DeliveryCalcStatus.CALCULATED
+
+        if old_status == manual and new_status == calculated and cost is None:
+            raise forms.ValidationError(
+                {
+                    "delivery_cost": "Укажите стоимость доставки — без неё статус «Рассчитано» "
+                    "открыл бы оплату предварительного итога."
+                }
+            )
+        if old_status == manual and cost is not None and new_status == manual:
+            cleaned["delivery_calc_status"] = calculated
+            self.delivery_auto_calculated = True
+        if old_status == manual and cost is not None:
+            goods = sum((i.line_total or 0 for i in self.instance.items.all()), Decimal("0"))
+            expected = (
+                goods
+                - (self.instance.items_discount_total or 0)
+                + cost
+                - (self.instance.delivery_discount or 0)
+            )
+            if cleaned.get("total") != expected:
+                raise forms.ValidationError(
+                    {
+                        "total": (
+                            f"Сумма заказа должна быть {expected:.2f} {self.instance.currency}: "
+                            f"товары {goods:.2f} − скидка "
+                            f"{(self.instance.items_discount_total or 0):.2f} + доставка "
+                            f"{cost:.2f} − скидка на доставку "
+                            f"{(self.instance.delivery_discount or 0):.2f}."
+                        )
+                    }
+                )
+        return cleaned
 
 
 @admin.register(Order)
@@ -424,6 +483,16 @@ class OrderAdmin(TimestampColumnsMixin, admin.ModelAdmin):
                 level=messages.SUCCESS,
             )
         return redirect("admin:orders_order_change", order_id)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if getattr(form, "delivery_auto_calculated", False):
+            self.message_user(
+                request,
+                "Стоимость доставки введена — статус расчёта переведён в «Рассчитано», "
+                "покупателю доступна оплата. Сообщите ему о сумме.",
+                level=messages.INFO,
+            )
 
     @admin.display(description="Статус для клиента")
     def display_status(self, obj):

@@ -22,14 +22,18 @@ import type { Order } from "@/lib/types";
  * статусу платежа. Ничего не додумываем — если сервер говорит «ожидает», так и
  * пишем.
  */
-type Outcome = "paid" | "awaiting-payment" | "invoice" | "on-delivery";
+type Outcome = "paid" | "awaiting-payment" | "delivery-pending" | "invoice" | "on-delivery";
 
 function outcomeOf(order: Order): Outcome {
   if (order.payment_method === "invoice") return "invoice";
   // Наличные и карта на выдаче — оба про оплату в магазине. Проверять их по
   // одному коду значило бы звать в кассу того, кто собрался платить картой на месте.
   if (isPaidOnPickup(order.payment_method)) return "on-delivery";
-  return order.payment_status === "paid" ? "paid" : "awaiting-payment";
+  if (order.payment_status === "paid") return "paid";
+  // DRF-2299: стоимость доставки ещё не рассчитана — итог предварительный,
+  // сервер оплату не откроет; звать «Оплатить» было бы обманом.
+  if (order.delivery_calc_status === "manual_required") return "delivery-pending";
+  return "awaiting-payment";
 }
 
 const VIEWS: Record<
@@ -47,6 +51,12 @@ const VIEWS: Record<
     tone: "text-hit",
     title: "Заказ оформлен, ожидает оплаты",
     text: "Заказ сохранён и никуда не денется. Оплатите его, чтобы мы начали сборку.",
+  },
+  "delivery-pending": {
+    icon: Clock,
+    tone: "text-hit",
+    title: "Заказ принят, стоимость доставки уточняется",
+    text: "Сумма пока без доставки. Менеджер рассчитает её и свяжется с вами — после этого станет доступна оплата.",
   },
   invoice: {
     icon: FileText,
@@ -108,7 +118,13 @@ export function OrderOutcome({
           <h1 className="font-display text-3xl font-semibold text-ink">{view.title}</h1>
           <p className="mt-1 text-ink-2">
             Заказ <span className="font-semibold text-accent">№ {order?.order_number ?? orderNumber}</span>
-            {order && <> на сумму {formatPrice(Number(order.total), order.currency)}</>}
+            {order && (
+              <>
+                {" "}
+                на сумму {formatPrice(Number(order.total), order.currency)}
+                {outcome === "delivery-pending" && " (без доставки)"}
+              </>
+            )}
           </p>
           <p className="mt-1 text-sm text-ink-3">{view.text}</p>
 

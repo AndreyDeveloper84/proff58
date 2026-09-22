@@ -62,6 +62,21 @@ describe("OrderOutcome", () => {
     expect(screen.getByRole("button", { name: "Оплатить заказ" })).toBeInTheDocument();
   });
 
+  // DRF-2299: пока доставка не рассчитана, итог предварительный — кнопки нет,
+  // а причина названа прямо.
+  it("онлайн-заказ с нерассчитанной доставкой не зовёт оплатить", () => {
+    render(
+      <OrderOutcome
+        order={order({ delivery_calc_status: "manual_required", delivery_cost: null })}
+        orderNumber="О-100"
+      />,
+    );
+
+    expect(screen.getByText("Заказ принят, стоимость доставки уточняется")).toBeInTheDocument();
+    expect(screen.getByText(/на сумму/)).toHaveTextContent(/\(без доставки\)/);
+    expect(screen.queryByRole("button", { name: "Оплатить заказ" })).not.toBeInTheDocument();
+  });
+
   it("оплаченный заказ подтверждает оплату и кнопку не показывает", () => {
     render(<OrderOutcome order={order({ payment_status: "paid" })} orderNumber="О-100" />);
 
