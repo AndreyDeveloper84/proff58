@@ -704,7 +704,10 @@ def place_order(
 
     # Публикуем событие после коммита (подписчик увидит закоммиченные данные).
     order_id = order.id
-    transaction.on_commit(lambda: order_created.send(sender=Order, order_id=order_id))
+    # robust=True (DRF-2293): подписчики события (уведомления в MAX, письмо
+    # сотрудникам, CRM) исполняются после коммита; их ошибка логируется и не
+    # превращается в 500 покупателю при уже созданном заказе.
+    transaction.on_commit(lambda: order_created.send(sender=Order, order_id=order_id), robust=True)
 
     return order
 

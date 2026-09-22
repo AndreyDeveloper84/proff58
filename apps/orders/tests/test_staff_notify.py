@@ -86,7 +86,9 @@ def test_недоступный_брокер_не_ломает_оформлен�
             order = place_order(cart, customer_data=ГОСТЬ)
     assert order.pk is not None
     log = NotificationLog.objects.get(idempotency_key=f"staff-order-created-{order.pk}")
-    assert log.status == NotificationStatus.QUEUED  # строка есть, доставку можно повторить
+    # DRF-2293: недоступная очередь → failed/retryable, виден в админке, повтор доступен.
+    assert log.status == NotificationStatus.FAILED
+    assert "Очередь недоступна" in log.error_message
 
 
 @pytest.mark.django_db
@@ -136,3 +138,18 @@ def test_без_получателей_заказ_оформляется_а_ст
     assert mail.outbox == []
     log = NotificationLog.objects.get(idempotency_key=f"staff-order-created-{order.pk}")
     assert log.status == NotificationStatus.SKIPPED
+
+
+@pytest.mark.django_db
+def test_письмо_о_заказе_с_нерассчитанной_доставкой_помечено(
+    cart, product, django_capture_on_commit_callbacks
+):
+    from apps.delivery.models import DeliveryZone
+
+    DeliveryZone.objects.create(slug="cdek", name="Область (СДЭК)", price=0, is_external=True)
+    add_to_cart(cart, product, 1)
+    with django_capture_on_commit_callbacks(execute=True):
+        place_order(cart, customer_data=ГОСТЬ, delivery={"delivery_zone": "cdek"})
+    письмо = mail.outbox[0]
+    assert "СТОИМОСТЬ ТРЕБУЕТ РАСЧЁТА" in письмо.body
+    assert "предварительно, без доставки" in письмо.body

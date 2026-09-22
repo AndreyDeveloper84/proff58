@@ -168,13 +168,16 @@ def _on_product_stock_became_available(
     нельзя итерировать подписчиков (AC: "не внутри HTTP request/sync transaction")."""
     from .tasks import notify_product_available
 
-    notify_product_available.delay(
-        product_id=product_id,
-        transition_id=transition_id,
-        old_available=old_available,
-        new_available=new_available,
-        source=source,
-    )
+    try:
+        notify_product_available.delay(
+            product_id=product_id,
+            transition_id=transition_id,
+            old_available=old_available,
+            new_available=new_available,
+            source=source,
+        )
+    except Exception:  # noqa: BLE001 — путь stocks/update от 1С не должен падать 500
+        logger.exception("Fan-out product_available не поставлен: очередь недоступна")
 
 
 events.order_created.connect(_on_order_created, dispatch_uid="integration_max_order_created")
