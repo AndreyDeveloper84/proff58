@@ -1,9 +1,16 @@
 /** Цена в рублях без копеек, ru-локаль. */
+/**
+ * Цена по-русски: «1 500 ₽», а с копейками — «0,75 ₽». Раньше копейки
+ * отбрасывались всегда, и саморез за 0,75 ₽ показывался как «1 ₽» — на витрине,
+ * в корзине и в заказе (одна функция на всё). Целые суммы остаются без «,00».
+ */
 export function formatPrice(value: number, currency: string = "RUB"): string {
+  const whole = Number.isInteger(Math.round(value * 100) / 100);
   return new Intl.NumberFormat("ru-RU", {
     style: "currency",
     currency,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: whole ? 0 : 2,
   }).format(value);
 }
 

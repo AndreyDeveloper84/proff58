@@ -75,3 +75,15 @@ describe("pluralize", () => {
     expect(форма(100)).toBe("товаров");
   });
 });
+
+describe("formatPrice — копейки", () => {
+  // NBSP/узкие пробелы у Intl зависят от ICU — сверяем без пробелов.
+  const bare = (v: number) => formatPrice(v).replace(/\s/g, "");
+
+  it("целые суммы без копеек, дробные — с двумя знаками", () => {
+    expect(bare(1500)).toBe("1500₽");
+    expect(bare(0.75)).toBe("0,75₽"); // саморез за 75 копеек показывался как «1 ₽»
+    expect(bare(1499.5)).toBe("1499,50₽");
+    expect(bare(12.34)).toBe("12,34₽");
+  });
+});
