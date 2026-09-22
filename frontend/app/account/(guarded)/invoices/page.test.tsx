@@ -69,7 +69,7 @@ describe("InvoicesPage (#560)", () => {
     expect(screen.getByText("Выставлен")).toBeTruthy();
     expect(screen.getByText(/в т.ч. НДС 22%/i)).toBeTruthy();
     expect(screen.getByText(/Счёт действителен до/)).toBeTruthy();
-    const link = screen.getByRole("link", { name: /открыть счёт/i });
+    const link = screen.getByRole("link", { name: /скачать счёт/i });
     expect(link.getAttribute("href")).toBe("/api/orders/П-20260720-AB12/invoice/");
   });
 

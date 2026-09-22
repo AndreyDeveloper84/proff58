@@ -45,7 +45,7 @@ def test_b2b_invoice_html():
     assert create.status_code == 201
     number = create.json()["order_number"]
 
-    resp = client.get(f"/api/orders/{number}/invoice/")
+    resp = client.get(f"/api/orders/{number}/invoice/?as=html")
     assert resp.status_code == 200
     assert "text/html" in resp["Content-Type"]
     content = resp.content.decode()
@@ -72,7 +72,7 @@ def test_b2c_invoice_rejected():
     create = client.post("/api/orders/", {}, format="json")
     number = create.json()["order_number"]
 
-    resp = client.get(f"/api/orders/{number}/invoice/")
+    resp = client.get(f"/api/orders/{number}/invoice/?as=html")
     assert resp.status_code == 400
 
 
@@ -119,7 +119,7 @@ def _b2b_invoice_html(phone: str, slug: str) -> str:
     client.force_authenticate(user=user)
     client.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
     number = client.post("/api/orders/", {}, format="json").json()["order_number"]
-    return client.get(f"/api/orders/{number}/invoice/").content.decode()
+    return client.get(f"/api/orders/{number}/invoice/?as=html").content.decode()
 
 
 @pytest.mark.django_db
@@ -169,3 +169,49 @@ def test_без_заполненных_реквизитов_счёт_не_пад
 
     assert "Покупатель" in html
     assert "Банк получателя" not in html
+
+
+@pytest.mark.django_db
+def test_служебные_комментарии_шаблона_не_печатаются():
+    """Многострочные {# #} Django не понимает — их текст попадал в счёт (стенд 22.09)."""
+    html = _b2b_invoice_html("+79001110123", "inv-comment")
+    assert "{#" not in html and "#}" not in html
+    assert "обязательная" not in html  # текст заметки про банковскую часть
+    assert "неплательщика" not in html  # текст заметки про НДС
+
+
+@pytest.mark.django_db
+def test_счёт_по_умолчанию_скачивается_pdf():
+    """Стенд 22.09: владелец ждал загрузку PDF, а открывалась HTML-страница."""
+    user = User.objects.create_user(
+        phone="+79001110124", password="pass", customer_type=CustomerType.B2B, email="b@t.ru"
+    )
+    Profile.objects.create(
+        user=user,
+        company_name="ООО ПДФ",
+        inn="7701234567",
+        kpp="770101001",
+        legal_address="г. Пенза, ул. Мира, 1",
+    )
+    product = Product.objects.create(
+        name="Дрель",
+        slug="inv-pdf",
+        price=Decimal("5000.00"),
+        status=ProductStatus.PUBLISHED,
+        is_active=True,
+        stock_quantity=10,
+        available_quantity=10,
+    )
+    client = APIClient()
+    client.force_authenticate(user=user)
+    client.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    number = client.post("/api/orders/", {}, format="json").json()["order_number"]
+
+    resp = client.get(f"/api/orders/{number}/invoice/")
+
+    assert resp.status_code == 200
+    assert resp["Content-Type"] == "application/pdf"
+    assert resp.content[:5] == b"%PDF-"
+    assert resp["Content-Disposition"].startswith("attachment;")
+    assert "filename*=UTF-8''" in resp["Content-Disposition"]
+    assert "no-store" in resp["Cache-Control"]

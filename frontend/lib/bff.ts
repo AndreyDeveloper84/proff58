@@ -123,6 +123,10 @@ export async function proxyToDjango(
   const responseHeaders = new Headers();
   const contentType = upstream.headers.get("content-type");
   if (contentType) responseHeaders.set("content-type", contentType);
+  // Файлы на скачивание (PDF-счёт): без этого заголовка браузер откроет документ
+  // во вкладке, а не сохранит его.
+  const disposition = upstream.headers.get("content-disposition");
+  if (disposition) responseHeaders.set("content-disposition", disposition);
   for (const setCookie of upstream.headers.getSetCookie()) {
     responseHeaders.append("set-cookie", setCookie);
   }

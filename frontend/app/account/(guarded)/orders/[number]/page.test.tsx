@@ -153,7 +153,7 @@ describe("OrderDetailsPage", () => {
     expect(screen.getByText("ООО Инструмент")).toBeInTheDocument();
     expect(screen.getByText("В т.ч. НДС 20%")).toBeInTheDocument();
     expect(screen.getByText("Позвонить перед доставкой")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Открыть счёт" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Скачать счёт (PDF)" })).toHaveAttribute(
       "href",
       `/api/orders/${encodeURIComponent(ORDER_NUMBER)}/invoice`,
     );

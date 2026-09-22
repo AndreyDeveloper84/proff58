@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import re
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -382,7 +383,8 @@ class GuestOrderView(APIView):
 
 
 class InvoiceView(APIView):
-    """HTML-счёт для B2B-заказа. Для гостя — по токену."""
+    """Счёт для B2B-заказа: PDF-файлом на скачивание; `?as=html` — та же вёрстка
+    страницей (отладка, тесты). Для гостя — по токену."""
 
     permission_classes = [AllowAny]
 
@@ -414,7 +416,34 @@ class InvoiceView(APIView):
         invoice = prepare_invoice(order)
         html = render_to_string("orders/invoice.html", {"invoice": invoice})
         # Счёт содержит ПДн; при гостевом токене в URL — запрещаем кеш/referrer.
-        return _no_store(HttpResponse(html, content_type="text/html"))
+        if request.query_params.get("as") == "html":
+            return _no_store(HttpResponse(html, content_type="text/html"))
+
+        from urllib.parse import quote
+
+        from apps.orders.invoice_pdf import InvoicePdfError, render_invoice_pdf
+
+        try:
+            pdf = render_invoice_pdf(html)
+        except InvoicePdfError:
+            return _no_store(
+                Response(
+                    {"detail": "Не удалось сформировать счёт. Попробуйте позже."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+            )
+        response = HttpResponse(pdf, content_type="application/pdf")
+        # Номера вида «П-2026…» — кириллица: ASCII-запасной вариант + RFC 5987.
+        ascii_name = (
+            "invoice-"
+            + re.sub(r"[^A-Za-z0-9._-]+", "", order.order_number.replace("П-", ""))
+            + ".pdf"
+        )
+        utf8_name = quote(f"Счёт {order.order_number}.pdf")
+        response["Content-Disposition"] = (
+            f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{utf8_name}"
+        )
+        return _no_store(response)
 
 
 class AccountInvoicesView(APIView):
