@@ -36,13 +36,14 @@ def send_notification_task(self, log_id, **kwargs):
     не переотправляем — защита от конкуренции и повторной отправки после падения
     воркера между отправкой и записью результата.
 
-    #521: провайдерская ошибка классифицирована (channels/max.py) — permanent
+    #521: провайдерская ошибка классифицирована (channels/*) — permanent
     (4xx, кроме 429) не ретраится вообще (записывается FAILED сразу, retry
     осмыслен только вручную из админки после исправления причины); retryable
     (429/5xx/сеть) ретраится с Retry-After провайдера либо bounded backoff+jitter.
     """
+    from .channels import ChannelError, PermanentChannelError
+    from .channels import email as email_channel
     from .channels import max as max_channel
-    from .channels.max import MaxPermanentError, MaxProviderError
     from .models import (
         NotificationChannel,
         NotificationErrorKind,
@@ -63,8 +64,11 @@ def send_notification_task(self, log_id, **kwargs):
     try:
         if log.channel == NotificationChannel.MAX:
             max_channel.send_message(log.chat_id, log.text)
-    except MaxProviderError as exc:
-        is_permanent = isinstance(exc, MaxPermanentError)
+        elif log.channel == NotificationChannel.EMAIL:
+            recipients = [r.strip() for r in log.recipients.split(",") if r.strip()]
+            email_channel.send_email(log.subject, log.text, recipients)
+    except ChannelError as exc:
+        is_permanent = isinstance(exc, PermanentChannelError)
         NotificationLog.objects.filter(pk=log_id).update(
             status=NotificationStatus.FAILED,
             error_message=str(exc)[:500],

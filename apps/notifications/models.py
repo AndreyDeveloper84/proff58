@@ -80,6 +80,13 @@ class NotificationLog(TimeStampedModel):
         blank=True,
         help_text=_("Заполняется только при status=failed — retryable/permanent (#521)."),
     )
+    # DRF-2296: e-mail-канал. Снимок получателей на момент постановки — аудит
+    # «кому ушло» не должен зависеть от текущих настроек; повтор из админки идёт
+    # по этому же снимку.
+    subject = models.CharField(_("Тема письма"), max_length=255, blank=True)
+    recipients = models.TextField(
+        _("Получатели"), blank=True, help_text=_("Адреса через запятую (e-mail-канал).")
+    )
 
     class Meta:
         verbose_name = _("Лог уведомления")

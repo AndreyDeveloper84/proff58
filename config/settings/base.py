@@ -430,6 +430,25 @@ NOTIFICATION_RETENTION_DAYS = env.int("NOTIFICATION_RETENTION_DAYS", default=365
 # Пусто — берётся первый нелокальный ALLOWED_HOSTS (см. payments.services).
 SITE_URL = env("SITE_URL", default="")
 
+# --- Исходящая почта (DRF-2296) -------------------------------------------
+# Штатный SMTP Django; провайдер любой. В dev — console (см. dev.py), в тестах
+# pytest-django подставляет locmem. prod.py проверяет согласованность на старте.
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost")
+SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+# Ящики сотрудников для писем о новых заказах и заявках. Пусто — уведомления
+# сотрудникам пишутся в журнал как «пропущено» и никуда не уходят (так на staging).
+STAFF_NOTIFICATION_EMAILS = [
+    e.strip() for e in env.list("STAFF_NOTIFICATION_EMAILS", default=[]) if e.strip()
+]
+
 # PF-SH-RELEASE-01. Секрет доверенного SSR витрины: запросы Next.js с заголовком
 # X-SSR-Token не попадают под анонимный лимит (иначе все посетители делят один IP
 # контейнера фронта → 429 → SSR 500). Пустое значение выключает обход.

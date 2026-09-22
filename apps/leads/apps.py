@@ -8,11 +8,12 @@ class LeadsConfig(AppConfig):
 
     def ready(self):
         from apps.core.events import product_inquiry_created
-        from apps.core.features import is_enabled
 
         from . import receivers
 
-        if is_enabled("eventbus"):
-            product_inquiry_created.connect(
-                receivers.notify_new_inquiry, dispatch_uid="leads.notify_new_inquiry"
-            )
+        # DRF-2296: подписка без гейта FEATURE_EVENTBUS — как у orders и
+        # integration_max; иначе при выключенном флаге заказы уведомляли бы
+        # сотрудников, а заявки молча нет.
+        product_inquiry_created.connect(
+            receivers.notify_new_inquiry, dispatch_uid="leads.notify_new_inquiry"
+        )

@@ -58,3 +58,56 @@ def test_prod_fails_with_wildcard_hosts(monkeypatch):
     monkeypatch.setenv("DJANGO_ALLOWED_HOSTS", "*")
     with pytest.raises(ImproperlyConfigured, match="запрещено"):
         _load_prod()
+
+
+# ═══════════ почта сотрудникам (DRF-2296) ═══════════
+
+
+@pytest.fixture
+def _prod_ok(monkeypatch):
+    monkeypatch.setenv("DJANGO_SECRET_KEY", "x7-real-strong-secret-please-rotate")
+    monkeypatch.setenv("DJANGO_ALLOWED_HOSTS", "proff58.ru")
+    monkeypatch.setenv("SITE_URL", "https://proff58.ru")
+    monkeypatch.setenv("DEFAULT_FROM_EMAIL", "site@proff58.ru")
+    for var in ("STAFF_NOTIFICATION_EMAILS", "EMAIL_HOST", "EMAIL_BACKEND", "EMAIL_USE_SSL"):
+        monkeypatch.delenv(var, raising=False)
+
+
+def test_prod_without_recipients_does_not_require_smtp(_prod_ok):
+    assert _load_prod().STAFF_NOTIFICATION_EMAILS == []
+
+
+def test_prod_fails_with_recipients_but_no_smtp_host(_prod_ok, monkeypatch):
+    monkeypatch.setenv("STAFF_NOTIFICATION_EMAILS", "m@proff58.ru")
+    with pytest.raises(ImproperlyConfigured, match="EMAIL_HOST"):
+        _load_prod()
+
+
+def test_prod_fails_with_recipients_but_default_sender(_prod_ok, monkeypatch):
+    monkeypatch.setenv("STAFF_NOTIFICATION_EMAILS", "m@proff58.ru")
+    monkeypatch.setenv("EMAIL_HOST", "smtp.example.com")
+    monkeypatch.setenv("DEFAULT_FROM_EMAIL", "webmaster@localhost")
+    with pytest.raises(ImproperlyConfigured, match="DEFAULT_FROM_EMAIL"):
+        _load_prod()
+
+
+def test_prod_fails_with_recipients_but_no_site_url(_prod_ok, monkeypatch):
+    monkeypatch.setenv("STAFF_NOTIFICATION_EMAILS", "m@proff58.ru")
+    monkeypatch.setenv("EMAIL_HOST", "smtp.example.com")
+    monkeypatch.setenv("SITE_URL", "")
+    with pytest.raises(ImproperlyConfigured, match="SITE_URL"):
+        _load_prod()
+
+
+def test_prod_accepts_console_backend_with_recipients(_prod_ok, monkeypatch):
+    """Отладочный backend без SMTP-хоста допустим — падать должен только smtp без хоста."""
+    monkeypatch.setenv("STAFF_NOTIFICATION_EMAILS", "m@proff58.ru")
+    monkeypatch.setenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+    prod = _load_prod()
+    assert prod.STAFF_NOTIFICATION_EMAILS == ["m@proff58.ru"]
+
+
+def test_prod_rejects_tls_and_ssl_together(_prod_ok, monkeypatch):
+    monkeypatch.setenv("EMAIL_USE_SSL", "True")
+    with pytest.raises(ImproperlyConfigured, match="взаимоисключающие"):
+        _load_prod()
