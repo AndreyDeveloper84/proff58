@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { subscribeActionSuccess } from "./action-feedback";
 
 import {
   COMPARE_LIMIT,
@@ -76,5 +78,35 @@ describe("список сравнения", () => {
     localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(["ok", 42, null]));
     toggleCompare("b");
     expect(stored()).toEqual(["ok", "b"]);
+  });
+});
+
+// Столбики в шапке отыгрывают только реальное добавление: удаление, отказ по
+// лимиту и очистка списка счётчик меняют, но «успешным добавлением» не являются.
+describe("список сравнения → шина действий", () => {
+  it("издаёт событие при добавлении и молчит при удалении, лимите и очистке", () => {
+    localStorage.clear();
+    clearCompare();
+    const listener = vi.fn();
+    const unsubscribe = subscribeActionSuccess(listener);
+    try {
+      toggleCompare("a");
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener).toHaveBeenLastCalledWith("compare");
+
+      toggleCompare("a"); // удаление
+      expect(listener).toHaveBeenCalledTimes(1);
+
+      for (let i = 0; i < COMPARE_LIMIT; i++) toggleCompare(`p${i}`);
+      expect(listener).toHaveBeenCalledTimes(1 + COMPARE_LIMIT);
+      expect(toggleCompare("лишний")).toBe(false); // лимит
+      expect(listener).toHaveBeenCalledTimes(1 + COMPARE_LIMIT);
+
+      removeFromCompare("p0");
+      clearCompare();
+      expect(listener).toHaveBeenCalledTimes(1 + COMPARE_LIMIT);
+    } finally {
+      unsubscribe();
+    }
   });
 });

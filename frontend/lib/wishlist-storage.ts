@@ -13,6 +13,8 @@
 //
 // Храним id: сервер работает по ним же, и при переносе ничего резолвить не надо.
 
+import { emitActionSuccess } from "@/lib/action-feedback";
+
 export const WISHLIST_STORAGE_KEY = "wishlist";
 
 //: Потолок гостевого списка. Совпадает с MAX_WISHLIST_BULK на бэкенде — что
@@ -83,6 +85,9 @@ export function toggleGuestWishlist(productId: number): boolean {
   }
   if (current.length >= WISHLIST_GUEST_LIMIT) return false;
   write([...current, productId]);
+  // Успешное добавление — сердечко в шапке пульсирует. Удаление и отказ по
+  // лимиту выше сюда не доходят.
+  emitActionSuccess("wishlist");
   return true;
 }
 

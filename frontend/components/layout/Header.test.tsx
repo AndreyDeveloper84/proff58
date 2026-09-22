@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -21,6 +21,7 @@ vi.mock("./SearchBar", () => ({
 import { AuthStateProvider } from "@/components/auth/AuthStateProvider";
 import type { AuthState } from "@/lib/auth-state";
 import { Header } from "./Header";
+import { emitActionSuccess } from "@/lib/action-feedback";
 import { COMPARE_STORAGE_KEY } from "@/lib/compare";
 import { SITE } from "@/lib/site";
 
@@ -96,6 +97,57 @@ describe("Header (#586)", () => {
 
     const link = screen.getByRole("link", { name: "Избранное" });
     expect(within(link).queryByText("0")).toBeNull();
+  });
+
+  // Микроанимации: подъём при наведении/фокусе висит на ссылке (hdr-action), а
+  // действие — на внутренней обёртке. Открытие шапки ничего не проигрывает.
+  it("иконки действий: анимируемые обёртки на месте, при загрузке ничего не играет", () => {
+    wishlist.ids = new Set([11]);
+    localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(["bosch"]));
+    renderHeader("authenticated");
+
+    for (const name of [/Избранное, товаров: 1/, /Сравнение, товаров: 1/, /Корзина, товаров: 3/]) {
+      const link = screen.getAllByRole("link", { name })[0];
+      expect(link).toHaveClass("hdr-action");
+      expect(link.querySelector(".hdr-icon")).not.toBeNull();
+      expect(link.querySelector("[data-acting]")).toBeNull();
+    }
+    // Счётчик стоит снаружи анимируемой обёртки и при подъёме иконки не уезжает.
+    const cart = screen.getAllByRole("link", { name: /Корзина, товаров: 3/ })[0];
+    expect(cart.querySelector(".hdr-icon")!.contains(within(cart).getByText("3"))).toBe(false);
+  });
+
+  it("успешное добавление в корзину оживляет иконку корзины, остальные — нет", () => {
+    renderHeader("authenticated");
+    act(() => emitActionSuccess("cart"));
+
+    const cart = screen.getAllByRole("link", { name: /Корзина, товаров: 3/ })[0];
+    expect(cart.querySelector(".hdr-icon--cart[data-acting]")).not.toBeNull();
+    expect(screen.getByRole("link", { name: "Избранное" }).querySelector("[data-acting]")).toBeNull();
+    expect(screen.getByRole("link", { name: "Сравнение" }).querySelector("[data-acting]")).toBeNull();
+  });
+
+  // Кивок кабинета — от нажатия на саму ссылку; переход не перехватываем.
+  it("нажатие на «Кабинет» запускает кивок и не мешает переходу", () => {
+    renderHeader("authenticated");
+    const link = screen.getByRole("link", { name: "Личный кабинет" });
+    expect(link).toHaveAttribute("href", "/account/profile");
+
+    // Слушатель на document срабатывает после обработчиков React: видим, не
+    // отменила ли шапка переход, и сами гасим его — jsdom навигацию не умеет.
+    let preventedByHeader: boolean | null = null;
+    document.addEventListener(
+      "click",
+      (event) => {
+        preventedByHeader = event.defaultPrevented;
+        event.preventDefault();
+      },
+      { once: true },
+    );
+    fireEvent.click(link);
+    expect(preventedByHeader).toBe(false);
+    expect(link.querySelector(".hdr-icon--account[data-acting]")).not.toBeNull();
+    expect(link).toHaveAttribute("href", "/account/profile");
   });
 
   // На телефоне ряда иконок нет вовсе — там избранное живёт в бургер-меню, и
