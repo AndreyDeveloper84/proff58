@@ -184,10 +184,14 @@ export default function CheckoutPage() {
 
   // Предпросмотр итога: товары после скидок + доставка выбранной зоны.
   // Авторитетную сумму считает сервер при оформлении (см. подпись под итогом).
+  // Зона без стоимости (cost === null, внешний перевозчик): доставку посчитает
+  // менеджер после оформления, итог предварительный (DRF-2299).
+  const deliveryPending = !isB2B && delivery === "courier" && selectedZone?.cost === null;
   const previewDeliveryCost =
     !isB2B &&
     delivery === "courier" &&
     selectedZone &&
+    selectedZone.cost !== null &&
     !selectedZone.free_delivery &&
     !hasFreeDeliveryCode
       ? Number(selectedZone.cost) || 0
@@ -324,7 +328,9 @@ export default function CheckoutPage() {
       // здесь — не потеря заказа: страница «Спасибо» покажет его в статусе
       // «ожидает оплаты» с кнопкой повтора, поэтому переход туда выполняется
       // в обоих случаях.
-      if (payment === "online") {
+      // Доставка ещё не рассчитана — итог предварительный, оплату сервер не
+      // откроет (409 delivery_pending); ведём на страницу заказа без попытки.
+      if (payment === "online" && order.delivery_calc_status !== "manual_required") {
         setPhase("paying");
         try {
           const started = await startOrderPayment(order.order_number, order.access_token);
@@ -658,11 +664,13 @@ export default function CheckoutPage() {
                     {courierZones.map((z) => (
                       <option key={z.zone} value={z.zone}>
                         {z.name}
-                        {z.free_delivery
-                          ? " — бесплатно"
-                          : Number(z.cost) > 0
-                            ? ` — ${formatPrice(Number(z.cost))}`
-                            : ""}
+                        {z.cost === null
+                          ? " — стоимость рассчитает менеджер"
+                          : z.free_delivery
+                            ? " — бесплатно"
+                            : Number(z.cost) > 0
+                              ? ` — ${formatPrice(Number(z.cost))}`
+                              : ""}
                       </option>
                     ))}
                   </select>
@@ -814,11 +822,13 @@ export default function CheckoutPage() {
                   ? "бесплатно"
                   : !selectedZone
                     ? "рассчитается после выбора зоны"
-                    : selectedZone.free_delivery
-                      ? "бесплатно"
-                      : hasFreeDeliveryCode
-                        ? "бесплатно (промокод)"
-                        : formatPrice(Number(selectedZone.cost), currency)}
+                    : selectedZone.cost === null
+                      ? "уточнит менеджер после оформления"
+                      : selectedZone.free_delivery
+                        ? "бесплатно"
+                        : hasFreeDeliveryCode
+                          ? "бесплатно (промокод)"
+                          : formatPrice(Number(selectedZone.cost), currency)}
               </span>
             </div>
           )}
@@ -831,6 +841,12 @@ export default function CheckoutPage() {
               {mixedCurrencies ? "—" : formatPrice(previewTotal, currency)}
             </span>
           </div>
+          {deliveryPending && !mixedCurrencies && (
+            <p className="mt-2 text-xs text-ink-3">
+              Без доставки: её стоимость рассчитает менеджер после оформления, оплата станет
+              доступна после расчёта.
+            </p>
+          )}
           {mixedCurrencies ? (
             <p className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
               В корзине товары в разных валютах — итог не считается. Вернитесь в корзину и

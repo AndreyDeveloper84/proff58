@@ -84,6 +84,13 @@ def create_payment(order: Order, return_url: str = "") -> Payment:
     провайдерного модуля: повторный вызов возвращает уже начатый платёж, а не
     заводит второй.
     """
+    if order.delivery_calc_status == "manual_required":
+        # Дублирует проверку в API: любой другой вызывающий тоже не должен
+        # регистрировать платёж на предварительный итог (DRF-2299).
+        raise ValueError(
+            f"Заказ {order.order_number}: стоимость доставки не рассчитана, платёж на "
+            "предварительный итог не регистрируем"
+        )
     if getattr(settings, "PAYMENT_PROVIDER", "atolpay") == PaymentProvider.YOOKASSA:
         return create_yookassa_payment(order, return_url)
     return atolpay.create_payment(order, return_url)

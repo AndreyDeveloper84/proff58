@@ -15,22 +15,24 @@ vi.mock("@/components/cart/CartProvider", () => ({
   }),
 }));
 
-vi.mock("@/lib/orders", () => ({ placeOrder: vi.fn() }));
+vi.mock("@/lib/orders", () => ({ placeOrder: vi.fn(), startOrderPayment: vi.fn() }));
 vi.mock("@/lib/order-storage", () => ({ stashOrder: vi.fn() }));
 // #569: страница импортирует и getDeliverySlots — без него мок роняет рендер.
 vi.mock("@/lib/delivery", () => ({ getDeliveryZones: vi.fn(), getDeliverySlots: vi.fn() }));
 
 import { getDeliverySlots, getDeliveryZones } from "@/lib/delivery";
-import { placeOrder } from "@/lib/orders";
+import { placeOrder, startOrderPayment } from "@/lib/orders";
 import CheckoutPage from "./page";
 
 const mockedPlaceOrder = placeOrder as unknown as ReturnType<typeof vi.fn>;
+const mockedStartPayment = startOrderPayment as unknown as ReturnType<typeof vi.fn>;
 const mockedGetZones = getDeliveryZones as unknown as ReturnType<typeof vi.fn>;
 const mockedGetSlots = getDeliverySlots as unknown as ReturnType<typeof vi.fn>;
 
 const ZONES = [
   { zone: "penza", name: "Пенза (город)", type: "courier", cost: "500.00", free_delivery: false },
-  { zone: "oblast-cdek", name: "Область (СДЭК)", type: "courier", cost: "0.00", free_delivery: false },
+  // Внешний перевозчик: стоимость на витрине неизвестна (cost === null), не «0».
+  { zone: "oblast-cdek", name: "Область (СДЭК)", type: "courier", cost: null, free_delivery: false },
   { zone: "pickup-main", name: "Самовывоз со склада", type: "pickup", cost: "0.00", free_delivery: true },
 ];
 
@@ -79,6 +81,34 @@ describe("CheckoutPage — зона доставки (аудит №5)", () => {
     });
     // pickup-зона не предлагается в селекте курьерки.
     expect(screen.queryByRole("option", { name: /Самовывоз со склада/ })).toBeNull();
+  });
+
+  // DRF-2299: зона внешнего перевозчика не выглядит бесплатной, итог помечен
+  // как предварительный, а оплата после оформления не стартует — сервер её не откроет.
+  it("зона без стоимости: «рассчитает менеджер», без старта оплаты", async () => {
+    // Спай оплаты общий на файл и в beforeEach не сбрасывается — чистим здесь,
+    // иначе вызов из соседнего теста засчитается этому.
+    mockedStartPayment.mockReset();
+    mockedPlaceOrder.mockResolvedValueOnce({
+      order_number: "О-7",
+      access_token: "t",
+      delivery_calc_status: "manual_required",
+      items: [],
+    });
+    render(<CheckoutPage />);
+    const select = await screen.findByLabelText(/^Куда доставить/);
+    fillBaseFields();
+    fireEvent.change(select, { target: { value: "oblast-cdek" } });
+
+    expect(screen.getByRole("option", { name: /рассчитает менеджер/ })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /Область \(СДЭК\).*бесплатно/ })).toBeNull();
+    expect(screen.getByText(/уточнит менеджер после оформления/)).toBeInTheDocument();
+    expect(screen.getByText(/оплата станет доступна после расчёта/)).toBeInTheDocument();
+
+    submit();
+    await waitFor(() => expect(mockedPlaceOrder).toHaveBeenCalled());
+    expect(mockedStartPayment).not.toHaveBeenCalled();
+    expect(pushMock).toHaveBeenCalledWith("/order/О-7/thanks");
   });
 
   it("самовывоз: зона не требуется и уходит пустой", async () => {

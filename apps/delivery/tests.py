@@ -71,6 +71,17 @@ def test_all_active_zones(zones):
 
 
 @pytest.mark.django_db
+def test_external_zone_is_manual_not_free(zones):
+    """СДЭК на витрине: стоимость неизвестна, а не «бесплатно» (DRF-2299)."""
+    DeliveryZone.objects.create(
+        name="Область (СДЭК)", slug="test-cdek", price=Decimal("0"), is_external=True
+    )
+    cdek = next(o for o in calculate(cart_total=Decimal("100000")) if o["zone"] == "test-cdek")
+    assert cdek["cost"] is None
+    assert cdek["free_delivery"] is False
+
+
+@pytest.mark.django_db
 def test_city_cost(zones):
     opts = calculate(cart_total=Decimal("1000"))
     city = next(o for o in opts if o["zone"] == "test-city")
@@ -126,7 +137,14 @@ def test_nonexistent_slug():
 @pytest.mark.django_db
 def test_result_keys(zones):
     city = next(o for o in calculate(cart_total=Decimal("0")) if o["zone"] == "test-city")
-    assert set(city.keys()) == {"zone", "name", "type", "cost", "free_delivery", "pickup_points"}
+    assert set(city.keys()) == {
+        "zone",
+        "name",
+        "type",
+        "cost",
+        "free_delivery",
+        "pickup_points",
+    }
 
 
 @pytest.mark.django_db

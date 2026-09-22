@@ -171,7 +171,7 @@ def calculate(
                 "zone": str,          # slug зоны
                 "name": str,          # название зоны
                 "type": str,          # "courier" | "pickup"
-                "cost": Decimal,      # итоговая стоимость
+                "cost": Decimal|None, # итоговая стоимость; None — уточняется после оформления
                 "free_delivery": bool # бесплатна ли доставка
             }
     """
@@ -182,12 +182,16 @@ def calculate(
 
     result: list[dict] = []
     for zone in zones:
-        cost = _calculate_zone_cost(zone, cart_total)
+        # Внешний перевозчик (СДЭК): на витрине стоимость неизвестна — её даёт API
+        # перевозчика по весогабаритам при оформлении либо менеджер вручную.
+        # Раньше сюда попадала price зоны (0) и чекаут показывал «бесплатно»
+        # (DRF-2299): нулевая цена вместо «неизвестно» — ложное обещание.
+        cost = None if zone.is_external else _calculate_zone_cost(zone, cart_total)
         entry = {
             "zone": zone.slug,
             "name": zone.name,
             "type": zone.delivery_type,
-            "cost": cost,
+            "cost": cost,  # None ⇔ стоимость уточняется (как DeliveryQuote.cost)
             "free_delivery": cost == Decimal("0"),
             "pickup_points": [],
         }

@@ -23,7 +23,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.orders import services as order_services
-from apps.orders.models import FulfillmentStatus, Order
+from apps.orders.models import DeliveryCalcStatus, FulfillmentStatus, Order
 from apps.orders.models import PaymentStatus as OrderPaymentStatus
 
 from . import refund_requests
@@ -80,6 +80,17 @@ class OrderPaymentView(APIView):
         if order.fulfillment_status in _UNPAYABLE_FULFILLMENT:
             return Response(
                 {"detail": "Заказ отменён, оплатить его нельзя.", "code": "canceled"},
+                status=status.HTTP_409_CONFLICT,
+            )
+        if order.delivery_calc_status == DeliveryCalcStatus.MANUAL_REQUIRED:
+            # DRF-2299: итог без доставки — предварительный. Платёж на него ушёл бы
+            # в кассу с чеком без доставки, а доплату потом взять нечем.
+            return Response(
+                {
+                    "detail": "Стоимость доставки уточняется менеджером. "
+                    "Оплата станет доступна после расчёта.",
+                    "code": "delivery_pending",
+                },
                 status=status.HTTP_409_CONFLICT,
             )
 
