@@ -71,9 +71,12 @@ export default function CheckoutPage() {
   const typeTouched = useRef(false);
   useEffect(() => {
     let active = true;
-    getMe().then((me) => {
-      if (active && me?.customer_type === "b2b" && !typeTouched.current) setCustomerType("b2b");
-    });
+    getMe()
+      .then((me) => {
+        if (active && me?.customer_type === "b2b" && !typeTouched.current) setCustomerType("b2b");
+      })
+      // Сбой связи — не повод ломать чекаут: остаётся умолчание «Физическое лицо».
+      .catch(() => {});
     return () => {
       active = false;
     };
