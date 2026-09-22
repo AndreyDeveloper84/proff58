@@ -334,6 +334,58 @@ STAFF_EVENTS: dict[str, dict] = {
 }
 
 
+# Письма покупателю (DRF-2299): пока одно событие. Отдельный реестр от служебных:
+# получатель — конкретный адрес из заказа, а не список сотрудников.
+CUSTOMER_EVENTS: dict[str, dict] = {
+    "customer_delivery_calculated": {
+        "subject": "Заказ №{order_number}: стоимость доставки рассчитана — можно оплатить",
+        "template": (
+            "Здравствуйте!\n\n"
+            "Менеджер рассчитал доставку по вашему заказу №{order_number}.\n"
+            "Доставка: {delivery_cost} {currency}\n"
+            "Итого к оплате: {total} {currency}\n\n"
+            "Оплатить заказ:\n{pay_url}\n\n"
+            "{note}"
+            "Если возникли вопросы — ответьте на это письмо или позвоните нам.\n"
+        ),
+        "version": 1,
+    },
+}
+
+
+def notify_customer(
+    *, email: str, event: str, payload: dict, idempotency_key: str
+) -> NotificationLog | None:
+    """Письмо покупателю через тот же outbox, что и письма сотрудникам.
+
+    Получатель — адрес из заказа. Дедуп по ключу, ретраи и повтор из админки —
+    как у остальных строк канала EMAIL.
+    """
+    meta = CUSTOMER_EVENTS[event]
+    email = (email or "").strip()
+    if not email:
+        return None
+    try:
+        subject = meta["subject"].format(**payload)
+        text = meta["template"].format(**payload)
+    except KeyError:
+        logger.exception("Неполный payload для %s", event)
+        return None
+    log, created = _claim_outbox(
+        user_id=None,
+        chat_id=None,
+        event=event,
+        text=text,
+        idempotency_key=idempotency_key,
+        channel=NotificationChannel.EMAIL,
+        subject=subject[:255],
+        recipients=email,
+    )
+    if not created:
+        return log
+    return enqueue(log)
+
+
 def staff_recipients() -> list[str]:
     from django.conf import settings
 

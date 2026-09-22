@@ -28,6 +28,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 // Блок возврата грузит своё состояние сам; здесь он не рисуется (заказ не оплачен).
+vi.mock("@/lib/orders", () => ({ startOrderPayment: vi.fn() }));
 vi.mock("@/lib/refunds", () => ({
   getRefundState: vi.fn().mockResolvedValue({
     can_request: false,
@@ -102,6 +103,47 @@ describe("OrderDetailsPage", () => {
         },
       ],
     });
+  });
+
+  // Оплата из кабинета: раньше кнопка была только на странице «Спасибо».
+  it("неоплаченный онлайн-заказ предлагает оплатить из кабинета", async () => {
+    const order = await mockedGetOrder();
+    mockedGetOrder.mockResolvedValueOnce({
+      ...order,
+      payment_method: "online",
+      payment_status: "pending",
+      fulfillment_status: "new",
+      delivery_calc_status: "calculated",
+    });
+    render(<OrderDetailsPage />);
+    expect(await screen.findByRole("button", { name: "Оплатить заказ" })).toBeInTheDocument();
+  });
+
+  it("при ручном расчёте доставки вместо кнопки — объяснение", async () => {
+    const order = await mockedGetOrder();
+    mockedGetOrder.mockResolvedValueOnce({
+      ...order,
+      payment_method: "online",
+      payment_status: "pending",
+      fulfillment_status: "new",
+      delivery_calc_status: "manual_required",
+      delivery_cost: null,
+    });
+    render(<OrderDetailsPage />);
+    expect(await screen.findByText(/Стоимость доставки уточняется менеджером/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Оплатить заказ" })).toBeNull();
+  });
+
+  it("у оплаченного заказа кнопки оплаты нет", async () => {
+    const order = await mockedGetOrder();
+    mockedGetOrder.mockResolvedValueOnce({
+      ...order,
+      payment_method: "online",
+      payment_status: "paid",
+    });
+    render(<OrderDetailsPage />);
+    expect(await screen.findByText("Дрель аккумуляторная")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Оплатить заказ" })).toBeNull();
   });
 
   it("показывает полный состав B2B-заказа и ссылку на счёт", async () => {
