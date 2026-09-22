@@ -148,3 +148,27 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if errors:
             raise serializers.ValidationError({"detail": errors})
         return attrs
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Запрос письма для сброса пароля (DRF-2298). Ответ не зависит от адреса."""
+
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        return value.strip()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Новый пароль по ссылке из письма. Пользователь для валидаторов приходит из view."""
+
+    uid = serializers.CharField(max_length=64)
+    token = serializers.CharField(max_length=128)
+    new_password = serializers.CharField()
+
+    def validate_new_password(self, value):
+        try:
+            validate_password(value, user=self.context.get("user"))
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages)) from exc
+        return value

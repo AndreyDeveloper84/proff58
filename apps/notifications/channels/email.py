@@ -16,7 +16,7 @@ import logging
 import smtplib
 
 from django.conf import settings
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, get_connection
 
 from . import PermanentChannelError, RetryableChannelError
 
@@ -41,11 +41,28 @@ def is_configured() -> bool:
     return bool(getattr(settings, "EMAIL_HOST", ""))
 
 
-def send_email(subject: str, body: str, recipients: list[str]) -> None:
+def open_connection():
+    """Открыть соединение с транспортом ДО того, как известно, кому писать.
+
+    Нужно там, где ответ не должен зависеть от адреса (сброс пароля, DRF-2298):
+    сбой хоста/учётных данных/таймаут проявляется здесь одинаково для всех,
+    а не только для существующего ящика. Поднимает Retryable/PermanentChannelError.
+    """
+    if not is_configured():
+        raise PermanentChannelError("EMAIL_HOST не задан — транспорт не настроен")
+    connection = get_connection(fail_silently=False)
+    try:
+        connection.open()
+    except Exception as exc:  # noqa: BLE001 — классифицируем ниже
+        raise _classify(exc) from exc
+    return connection
+
+
+def send_email(subject: str, body: str, recipients: list[str], *, connection=None) -> None:
     """Отправить одно письмо. Поднимает Retryable/PermanentChannelError."""
     if not recipients:
         raise PermanentChannelError("Нет получателей")
-    if not is_configured():
+    if connection is None and not is_configured():
         raise PermanentChannelError("EMAIL_HOST не задан — транспорт не настроен")
 
     message = EmailMessage(
@@ -53,6 +70,7 @@ def send_email(subject: str, body: str, recipients: list[str]) -> None:
         body=body,
         from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
         to=list(recipients),
+        connection=connection,
     )
     try:
         message.send(fail_silently=False)
@@ -68,6 +86,16 @@ def send_email(subject: str, body: str, recipients: list[str]) -> None:
         # Разрыв соединения, отказ подключения, таймаут (TimeoutError ⊂ OSError), DNS — временно.
         logger.error("E-mail send failed transiently: %s", type(exc).__name__)
         raise RetryableChannelError(_describe(exc)) from exc
+
+
+def _classify(exc: Exception):
+    """Та же классификация, что в send_email, для ошибок открытия соединения."""
+    if isinstance(exc, _PERMANENT):
+        return PermanentChannelError(_describe(exc))
+    if isinstance(exc, smtplib.SMTPResponseException):
+        kind = RetryableChannelError if 400 <= exc.smtp_code < 500 else PermanentChannelError
+        return kind(_describe(exc))
+    return RetryableChannelError(_describe(exc))  # SMTPException/OSError и прочее — временно
 
 
 def _describe(exc: Exception) -> str:

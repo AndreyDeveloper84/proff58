@@ -36,6 +36,15 @@ describe("Форма входа", () => {
     expect(screen.queryByLabelText(/Телефон/)).toBeNull();
   });
 
+  it("на входе есть ссылка «Забыли пароль?» на страницу восстановления", () => {
+    render(<LoginPage />);
+
+    expect(screen.getByRole("link", { name: "Забыли пароль?" })).toHaveAttribute(
+      "href",
+      "/account/forgot-password",
+    );
+  });
+
   it("вход через MAX остаётся — это путь без пароля", () => {
     render(<LoginPage />);
 
