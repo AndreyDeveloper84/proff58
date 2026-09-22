@@ -393,8 +393,11 @@ def place_order(
     if not product_ids:
         raise ValidationError("Корзина пуста.")
 
+    # order_by("pk"): замки товаров в одном порядке с rehold_reservation и _adjust_stock,
+    # иначе два параллельных оформления с общими товарами могут взаимно заблокироваться.
     locked_products = {
-        p.pk: p for p in Product.objects.select_for_update().filter(pk__in=product_ids)
+        p.pk: p
+        for p in Product.objects.select_for_update().filter(pk__in=product_ids).order_by("pk")
     }
     items = list(cart.items.filter(is_deleted=False))
 
@@ -708,7 +711,10 @@ def place_order(
 
     # Публикуем событие после коммита (подписчик увидит закоммиченные данные).
     order_id = order.id
-    transaction.on_commit(lambda: order_created.send(sender=Order, order_id=order_id))
+    # robust=True (DRF-2293): подписчики события (уведомления в MAX, письмо
+    # сотрудникам, CRM) исполняются после коммита; их ошибка логируется и не
+    # превращается в 500 покупателю при уже созданном заказе.
+    transaction.on_commit(lambda: order_created.send(sender=Order, order_id=order_id), robust=True)
 
     return order
 
@@ -807,3 +813,54 @@ def sold_quantities(since: date, until: date) -> list[tuple[int, date, Decimal]]
         .order_by()
     )
     return [(r["product_id"], r["day"], Decimal(r["quantity"])) for r in rows]
+
+
+def notify_delivery_calculated(order: Order, *, send: bool = True) -> str:
+    """Письмо покупателю «доставка рассчитана — можно оплатить» (DRF-2299).
+
+    Возвращает человекочитаемый результат для сообщения менеджеру. ``send=False``
+    только считает результат (для сообщения до коммита); саму постановку в outbox
+    делать после коммита транзакции админки — `transaction.on_commit`.
+    """
+    from apps.notifications.services import notify_customer
+
+    if (
+        order.payment_method != "online"
+        or order.payment_status != PaymentStatus.PENDING
+        or order.fulfillment_status == FulfillmentStatus.CANCELLED
+    ):
+        return "письмо не требуется: заказ не ждёт онлайн-оплаты"
+    email = (order.customer_email or "").strip()
+    if not email and order.user_id:
+        email = (order.user.email or "").strip()
+    if not email:
+        return "у покупателя нет e-mail — сообщите ему сумму по телефону"
+
+    base = (getattr(settings, "SITE_URL", "") or "").rstrip("/")
+    note = ""
+    if order.user_id:
+        pay_url = f"{base}/account/orders/{order.order_number}"
+    elif order.access_token and not is_guest_token_expired(order):
+        pay_url = f"{base}/order/{order.order_number}/thanks?t={order.access_token}"
+    else:
+        pay_url = f"{base}/order/{order.order_number}/thanks"
+        note = (
+            "Ссылка доступа к заказу устарела — откройте страницу заказа из истории браузера.\n\n"
+        )
+
+    if send:
+        notify_customer(
+            email=email,
+            event="customer_delivery_calculated",
+            payload={
+                "order_number": order.order_number,
+                "delivery_cost": f"{(order.delivery_cost or _ZERO):.2f}",
+                "total": f"{order.total:.2f}",
+                "currency": order.currency,
+                "pay_url": pay_url,
+                "note": note,
+            },
+            idempotency_key=f"customer-delivery-calculated-{order.pk}-{order.delivery_cost}",
+        )
+    masked = email[0] + "…@" + email.split("@")[-1] if "@" in email else "…"
+    return f"письмо со ссылкой на оплату поставлено в очередь на {masked}"

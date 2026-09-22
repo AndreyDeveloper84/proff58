@@ -38,7 +38,7 @@ def release_expired_reservations(limit: int = 500) -> int:
     )
     released = 0
     for order_id in ids:
-        if release_reservation(order_id):
+        if release_reservation(order_id, only_if_expired=True):
             released += 1
     if released:
         logger.info("release_expired_reservations: released %s reservation(s)", released)

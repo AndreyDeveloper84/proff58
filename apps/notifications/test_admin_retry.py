@@ -77,3 +77,19 @@ def test_retry_action_noop_when_nothing_retryable(mock_delay, admin_instance, rf
     mock_delay.assert_not_called()
     permanent.refresh_from_db()
     assert permanent.status == NotificationStatus.FAILED
+
+
+@pytest.mark.django_db
+@mock.patch("apps.notifications.tasks.send_notification_task.delay")
+def test_retry_action_ignores_skipped(mock_delay, admin_instance, rf):
+    """DRF-2293: «пропущено» (канал был выключен) — не сбой, и при включении флага
+    такие строки массово не переотправляются даже через ручной повтор."""
+    skipped = _log(status=NotificationStatus.SKIPPED, error_message="MAX канал недоступен")
+
+    request = rf.post("/admin/notifications/notificationlog/")
+    request._messages = mock.MagicMock()
+    admin_instance.retry_failed(request, NotificationLog.objects.filter(pk=skipped.pk))
+
+    skipped.refresh_from_db()
+    assert skipped.status == NotificationStatus.SKIPPED
+    mock_delay.assert_not_called()

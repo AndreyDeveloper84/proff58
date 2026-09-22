@@ -22,6 +22,7 @@ import { AccountShell } from "@/components/account/AccountShell";
 import { AccountDialog } from "@/components/account/AccountDialog";
 import { EmptyState, ErrorState } from "@/components/ui/states";
 import { RefundRequestBlock } from "@/components/order/RefundRequestBlock";
+import { PayOrderButton, canPayOnline } from "@/components/order/PayOrderButton";
 import { ReservationNotice, reservationState } from "@/components/order/ReservationNotice";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { StarDisplay } from "@/components/reviews/StarRating";
@@ -229,6 +230,20 @@ export default function OrderDetailsPage() {
                 {order.items.length}{" "}
                 {pluralize(order.items.length, "товар", "товара", "товаров")}
               </p>
+              {/* Оплата из кабинета: покупатель, закрывший страницу «Спасибо» до
+                  кассы, раньше не мог вернуться к оплате. При ручном расчёте
+                  доставки сервер оплату не откроет — говорим об этом прямо. */}
+              {canPayOnline(order) && (
+                <PayOrderButton orderNumber={order.order_number} className="mt-4" />
+              )}
+              {order.payment_method === "online" &&
+                order.payment_status === "pending" &&
+                order.delivery_calc_status === "manual_required" && (
+                  <p className="mt-4 rounded-md border border-info-line bg-info-bg px-3 py-2 text-sm text-info">
+                    Стоимость доставки уточняется менеджером. Когда он её рассчитает,
+                    здесь появится кнопка оплаты, а на e-mail придёт ссылка.
+                  </p>
+                )}
             </div>
             <div className="sm:text-right">
               <p className="text-xs font-medium uppercase tracking-wide text-ink-3">

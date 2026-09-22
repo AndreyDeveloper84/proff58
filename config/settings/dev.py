@@ -14,6 +14,7 @@ REST_FRAMEWORK = {
         "anon": None,  # #279: отключено в dev/тестах
         "auth": None,
         "reviews": None,  # #427/M-03: отключено в dev/тестах (кумулятивный кэш ломал бы прогон)
+        "password_reset_email": None,  # DRF-2298: то же — кэш по адресу переживал бы тесты
     },
 }
 

@@ -24,9 +24,20 @@ class NotificationLogAdmin(admin.ModelAdmin):
         "idempotency_key",
         "subject",
         "recipients",
+        "text_masked",
         "created_at",
         "updated_at",
     )
+    exclude = ("text", "chat_id")
+
+    @admin.display(description="Текст")
+    def text_masked(self, obj):
+        """Текст письма без гостевого токена в ссылке: `?t=…` — доступ к заказу,
+        сотрудникам с правом на журнал он не нужен (DRF-2299)."""
+        import re
+
+        return re.sub(r"([?&]t=)[\w-]+", r"\1…", obj.text or "")
+
     date_hierarchy = "created_at"
     actions = ["retry_failed"]
 
@@ -48,7 +59,7 @@ class NotificationLogAdmin(admin.ModelAdmin):
         админке, тем более принял осознанное решение — не должно быть тупика,
         когда Celery исчерпал попытки, а админка такую строку не видит вообще.
         """
-        from .tasks import send_notification_task
+        from .services import enqueue
 
         retryable = queryset.filter(status=NotificationStatus.FAILED).exclude(
             error_kind=NotificationErrorKind.PERMANENT
@@ -56,14 +67,20 @@ class NotificationLogAdmin(admin.ModelAdmin):
         ignored = queryset.exclude(pk__in=retryable.values_list("pk", flat=True)).count()
         requeued_ids = list(retryable.values_list("pk", flat=True))
         retryable.update(status=NotificationStatus.QUEUED, error_message="", error_kind="")
-        for log_id in requeued_ids:
-            send_notification_task.delay(log_id)
+        # DRF-2293: через enqueue — при недоступной очереди строка вернётся в
+        # failed/retryable, а не зависнет в QUEUED, и действие не упадёт 500.
+        not_enqueued = 0
+        for log in NotificationLog.objects.filter(pk__in=requeued_ids):
+            if enqueue(log).status != NotificationStatus.QUEUED:
+                not_enqueued += 1
 
-        self.message_user(
-            request,
-            f"Поставлено на повтор: {len(requeued_ids)}. "
-            f"Пропущено (permanent/не failed): {ignored}.",
+        message = (
+            f"Поставлено на повтор: {len(requeued_ids) - not_enqueued}. "
+            f"Пропущено (permanent/не failed): {ignored}."
         )
+        if not_enqueued:
+            message += f" Очередь недоступна для {not_enqueued} — повторите позже."
+        self.message_user(request, message)
 
 
 @admin.register(UserNotificationPreference)

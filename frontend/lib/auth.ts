@@ -74,6 +74,26 @@ export async function register(data: {
   });
 }
 
+// Восстановление пароля по e-mail (DRF-2298). Ответ запроса одинаков для любого
+// адреса; 503 — транспорт недоступен, 429 — слишком часто.
+export async function requestPasswordReset(email: string): Promise<void> {
+  await apiFetch<{ detail: string }>("/api/account/password-reset", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function confirmPasswordReset(
+  uid: string,
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  await apiFetch<{ detail: string }>("/api/account/password-reset/confirm", {
+    method: "POST",
+    body: JSON.stringify({ uid, token, new_password: newPassword }),
+  });
+}
+
 export async function logout() {
   // Ждём ответ (CSRF-защищённый POST) ДО редиректа — иначе 403 маскируется и
   // сессия остаётся активной.

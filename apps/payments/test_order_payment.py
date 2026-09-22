@@ -226,3 +226,72 @@ class TestРучнойРасчётДоставки:
         order = make_order(delivery_calc_status="manual_required", delivery_cost=None)
         with pytest.raises(ValueError, match="не рассчитана"):
             create_payment(order)
+
+
+class TestИстёкшийРезервПриОплате:
+    """DRF-2299: оплата позже окна резерва — товар удерживается заново или честный отказ."""
+
+    @pytest.fixture(autouse=True)
+    def _on(self, payments_on):
+        pass
+
+    def _order_with_product(self, available, reservation="released", **kw):
+        from apps.catalog.models import Product, ProductStatus
+
+        product = Product.objects.create(
+            name="Перфоратор",
+            code_1c="pay-rh",
+            slug="pay-rh",
+            unit="шт",
+            price=Decimal("5000.00"),
+            currency="RUB",
+            status=ProductStatus.PUBLISHED,
+            is_active=True,
+            available_quantity=Decimal(available),
+        )
+        order = make_order(reservation_status=reservation, **kw)
+        order.items.update(product=product)
+        return order, product
+
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
+    def test_товар_есть_удерживаем_заново_и_даём_ссылку(self, _api, client):
+        order, product = self._order_with_product("4")
+
+        resp = client.post(f"{url(order)}?t={order.access_token}")
+
+        assert resp.status_code == 200
+        order.refresh_from_db()
+        product.refresh_from_db()
+        assert order.reservation_status == "held"
+        assert order.reserved_until is not None
+        assert product.available_quantity == Decimal("3") and product.reserved_quantity == Decimal(
+            "1"
+        )
+
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
+    def test_товара_нет_отказ_и_платёж_не_создан(self, api, client):
+        order, product = self._order_with_product("0")
+
+        resp = client.post(f"{url(order)}?t={order.access_token}")
+
+        assert resp.status_code == 409 and resp.json()["code"] == "reservation_expired"
+        api.assert_not_called()
+        assert not Payment.objects.filter(order=order).exists()
+        product.refresh_from_db()
+        assert product.available_quantity == Decimal("0")
+
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
+    def test_при_ручном_расчёте_остаток_не_трогаем(self, api, client):
+        order, product = self._order_with_product(
+            "4", delivery_calc_status="manual_required", delivery_cost=None
+        )
+        resp = client.post(f"{url(order)}?t={order.access_token}")
+        assert resp.status_code == 409 and resp.json()["code"] == "delivery_pending"
+        product.refresh_from_db()
+        assert product.available_quantity == Decimal("4")  # rehold не дошёл
+
+    def test_эндпоинт_троттлится(self):
+        from apps.core.throttling import OrdersRateThrottle
+        from apps.payments.api import OrderPaymentView
+
+        assert OrdersRateThrottle in OrderPaymentView.throttle_classes

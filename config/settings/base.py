@@ -396,6 +396,8 @@ REST_FRAMEWORK = {
         "reviews": env("REVIEWS_THROTTLE_RATE", default="10/hour"),
         # #517: подписка/отписка «Сообщить о поступлении» (только authenticated).
         "subscription": env("SUBSCRIPTION_THROTTLE_RATE", default="30/min"),
+        # DRF-2298: сброс пароля — второй ключ по адресу поверх IP-лимита auth.
+        "password_reset_email": env("PASSWORD_RESET_EMAIL_THROTTLE_RATE", default="3/hour"),
     },
 }
 
@@ -429,6 +431,9 @@ NOTIFICATION_RETENTION_DAYS = env.int("NOTIFICATION_RETENTION_DAYS", default=365
 # notificationUrl (куда слать callback) должны быть внешними https-адресами.
 # Пусто — берётся первый нелокальный ALLOWED_HOSTS (см. payments.services).
 SITE_URL = env("SITE_URL", default="")
+
+# Срок ссылки восстановления пароля покупателя (DRF-2298): час, а не 3 суток Django.
+PASSWORD_RESET_TIMEOUT = env.int("PASSWORD_RESET_TIMEOUT", default=3600)
 
 # --- Исходящая почта (DRF-2296) -------------------------------------------
 # Штатный SMTP Django; провайдер любой. В dev — console (см. dev.py), в тестах
