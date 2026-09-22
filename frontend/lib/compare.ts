@@ -2,6 +2,7 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
+import { emitActionSuccess } from "@/lib/action-feedback";
 import { COMPARE_LIMIT } from "@/lib/constants";
 
 // Список сравнения живёт в localStorage, а не на сервере: выбор «посмотрю эти
@@ -80,6 +81,9 @@ export function toggleCompare(slug: string): boolean {
   }
   if (current.length >= COMPARE_LIMIT) return false;
   write([...current, slug]);
+  // Успешное добавление — столбики в шапке отыгрывают. Удаление и отказ по
+  // лимиту выше сюда не доходят.
+  emitActionSuccess("compare");
   return true;
 }
 

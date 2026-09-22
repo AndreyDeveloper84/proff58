@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { emitActionSuccess } from "@/lib/action-feedback";
 import type { Cart } from "@/lib/types";
 import {
   addToCart as apiAdd,
@@ -81,7 +82,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const add = useCallback(
     async (productId: number, quantity = 1) => {
       const seq = ++seqRef.current;
-      return applyIfLatest(seq, await apiAdd(productId, quantity));
+      const next = await apiAdd(productId, quantity);
+      // Корзина в шапке отыгрывает добавление даже если снимок устарел
+      // (seq-гонка): сервер товар принял. Ошибка сюда не доходит — летит вызову.
+      emitActionSuccess("cart");
+      return applyIfLatest(seq, next);
     },
     [applyIfLatest],
   );

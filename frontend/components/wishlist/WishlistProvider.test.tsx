@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/auth", () => ({
   getWishlist: vi.fn(),
@@ -9,6 +9,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 import { AuthStateProvider } from "@/components/auth/AuthStateProvider";
+import { subscribeActionSuccess } from "@/lib/action-feedback";
 import { ApiError } from "@/lib/api";
 import { addWishlistItem, addWishlistItems, getWishlist, removeWishlistItem } from "@/lib/auth";
 import type { AuthState } from "@/lib/auth-state";
@@ -178,5 +179,97 @@ describe("WishlistProvider", () => {
     renderProbe("authenticated");
 
     expect(await screen.findByText("грузим:нет")).toBeInTheDocument();
+  });
+
+  // --- Шина действий: сердечко в шапке пульсирует только от успешного добавления ---
+
+  describe("шина «товар успешно добавлен»", () => {
+    const listener = vi.fn();
+    let unsubscribe = () => {};
+    beforeEach(() => {
+      listener.mockReset();
+      unsubscribe = subscribeActionSuccess(listener);
+    });
+    afterEach(() => unsubscribe());
+
+    it("гость: добавление издаёт событие, удаление — нет", async () => {
+      renderProbe("anonymous");
+      await screen.findByText("готово:нет");
+
+      fireEvent.click(screen.getByRole("button"));
+      await screen.findByText("готово:в избранном");
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener).toHaveBeenCalledWith("wishlist");
+
+      fireEvent.click(screen.getByRole("button"));
+      await screen.findByText("готово:нет");
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it("восстановление сохранённого списка и перенос при входе не издают событие", async () => {
+      localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify([7, 9]));
+      mockedGet.mockResolvedValue([
+        { product_id: 7, product_name: "Дрель", product_slug: "drel" },
+        { product_id: 9, product_name: "Пила", product_slug: "pila" },
+      ]);
+      renderProbe("authenticated");
+
+      await waitFor(() => expect(mockedAddMany).toHaveBeenCalledWith([7, 9]));
+      await screen.findByText("готово:в избранном");
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it("вошедший: событие приходит после подтверждения сервером", async () => {
+      let resolveAdd: () => void = () => {};
+      mockedAdd.mockReturnValue(
+        new Promise<void>((resolve) => {
+          resolveAdd = resolve;
+        }),
+      );
+      renderProbe("authenticated");
+      await screen.findByText("готово:нет");
+
+      fireEvent.click(screen.getByRole("button"));
+      await screen.findByText("готово:в избранном"); // оптимистично
+      expect(listener).not.toHaveBeenCalled();
+
+      resolveAdd();
+      await waitFor(() => expect(listener).toHaveBeenCalledWith("wishlist"));
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it("вошедший: отказ сервера и снятие товара событие не издают", async () => {
+      mockedAdd.mockRejectedValue(new Error("нет связи"));
+      mockedRemove.mockResolvedValue(undefined);
+      mockedGet.mockResolvedValue([{ product_id: 8, product_name: "Пила", product_slug: "pila" }]);
+      const { unmount } = renderProbe("authenticated");
+      await screen.findByText("готово:нет");
+
+      fireEvent.click(screen.getByRole("button"));
+      await waitFor(() => expect(mockedAdd).toHaveBeenCalled());
+      await screen.findByText("готово:нет");
+      expect(listener).not.toHaveBeenCalled();
+      unmount();
+
+      renderProbe("authenticated", 8);
+      await screen.findByText("готово:в избранном");
+      fireEvent.click(screen.getByRole("button"));
+      await waitFor(() => expect(mockedRemove).toHaveBeenCalledWith(8));
+      await screen.findByText("готово:нет");
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    // Протухшая сессия: сервер отказал, товар лёг в браузер — это успешное
+    // добавление, и шапка обязана его подтвердить.
+    it("fallback в гостевой список после 403 — тоже успешное добавление", async () => {
+      mockedAdd.mockRejectedValue(new ApiError("Сессия истекла.", 403));
+      renderProbe("unknown");
+      await screen.findByText("готово:нет");
+
+      fireEvent.click(screen.getByRole("button"));
+
+      await waitFor(() => expect(stored()).toEqual([7]));
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
   });
 });

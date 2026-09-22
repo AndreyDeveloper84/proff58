@@ -14,6 +14,7 @@ import { useCart } from "@/components/cart/CartProvider";
 import { PromoCodeField } from "@/components/cart/PromoCodeField";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { Button } from "@/components/ui/button";
+import { emitActionSuccess } from "@/lib/action-feedback";
 import { ApiError } from "@/lib/api";
 import { addWishlistItem } from "@/lib/auth";
 import { formatPrice, pluralize } from "@/lib/format";
@@ -114,6 +115,8 @@ export default function CartPage() {
   const handleMoveToWishlist = () =>
     run(async () => {
       for (const line of selectedLines) await addWishlistItem(line.product_id);
+      // Перенос идёт мимо WishlistProvider — сердечко в шапке дёргаем сами, один раз.
+      if (selectedLines.length > 0) emitActionSuccess("wishlist");
       for (const line of selectedLines) await remove(line.id);
       setNotice("Товары перенесены в избранное");
     });

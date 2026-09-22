@@ -31,6 +31,7 @@ import {
 } from "react";
 
 import { useAuthState } from "@/components/auth/AuthStateProvider";
+import { emitActionSuccess } from "@/lib/action-feedback";
 import { ApiError } from "@/lib/api";
 import {
   addWishlistItem,
@@ -173,6 +174,12 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
       const request = willAdd ? addWishlistItem(productId) : removeWishlistItem(productId);
       request
+        .then(() => {
+          // Сердечко в шапке пульсирует только после подтверждения сервером:
+          // оптимистичное состояние может откатиться. Гостевую ветку (и
+          // fallback ниже) издаёт сам toggleGuestWishlist.
+          if (willAdd) emitActionSuccess("wishlist");
+        })
         .catch((error: unknown) => {
           applyLocally(!willAdd);
           // Сессии нет: дальше человек гость, и список у него браузерный.

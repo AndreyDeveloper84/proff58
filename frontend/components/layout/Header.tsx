@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import {
-  BarChart3,
   Clock3,
   Cog,
   Heart,
@@ -14,11 +13,9 @@ import {
   Phone,
   Search,
   ShieldCheck,
-  ShoppingCart,
   Store,
   Truck,
   User,
-  UserRound,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -31,6 +28,14 @@ import { useCompare } from "@/lib/compare";
 import { resolveStorefront, SITE, type ResolvedStorefront, type TopLink } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { CallLink, CopyContact } from "@/components/contacts/CopyContact";
+import {
+  AccountActionIcon,
+  ACTION_DURATION_MS,
+  CartActionIcon,
+  CompareActionIcon,
+  usePulse,
+  WishlistActionIcon,
+} from "./HeaderActionIcons";
 import { SearchBar } from "./SearchBar";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -80,6 +85,9 @@ export function Header({
   // «может быть вошёл» ссылка идёт по назначению — см. lib/auth-state.
   const authState = useAuthState();
   const profileHref = accountLinkHref("/account/profile", authState);
+  // Кивок иконки кабинета при активации ссылки. Переход не ждёт анимацию:
+  // preventDefault нет, шапка живёт в layout и доигрывает уже на новой странице.
+  const accountPulse = usePulse(ACTION_DURATION_MS.account);
 
   const logo = logoUrl ? (
     <Image
@@ -273,13 +281,13 @@ export function Header({
         <div className="ml-auto hidden shrink-0 items-center gap-1 lg:flex">
           <Link
             href="/wishlist"
-            className="relative flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
+            className="hdr-action relative flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
             aria-label={
               wishlistCount > 0 ? `Избранное, товаров: ${wishlistCount}` : "Избранное"
             }
           >
             <span className="relative">
-              <Heart className="h-5 w-5" aria-hidden />
+              <WishlistActionIcon className="h-5 w-5" />
               {wishlistCount > 0 && (
                 <span className="absolute -right-2 -top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
                   {wishlistCount > 99 ? "99+" : wishlistCount}
@@ -290,13 +298,13 @@ export function Header({
           </Link>
           <Link
             href="/compare"
-            className="relative flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
+            className="hdr-action relative flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
             aria-label={
               compareCount > 0 ? `Сравнение, товаров: ${compareCount}` : "Сравнение"
             }
           >
             <span className="relative">
-              <BarChart3 className="h-5 w-5" aria-hidden />
+              <CompareActionIcon className="h-5 w-5" />
               {compareCount > 0 && (
                 <span className="absolute -right-2 -top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
                   {compareCount}
@@ -307,11 +315,11 @@ export function Header({
           </Link>
           <Link
             href="/cart"
-            className="relative flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
+            className="hdr-action relative flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
             aria-label={count > 0 ? `Корзина, товаров: ${count}` : "Корзина"}
           >
             <span className="relative">
-              <ShoppingCart className="h-5 w-5" aria-hidden />
+              <CartActionIcon className="h-5 w-5" />
               {count > 0 && (
                 <span className="absolute -right-2 -top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
                   {count > 99 ? "99+" : count}
@@ -322,10 +330,11 @@ export function Header({
           </Link>
           <Link
             href={profileHref}
-            className="flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
+            className="hdr-action flex w-[68px] flex-col items-center gap-0.5 rounded-md py-1 text-header-ink transition hover:text-accent"
             aria-label="Личный кабинет"
+            onClick={accountPulse.fire}
           >
-            <UserRound className="h-5 w-5" aria-hidden />
+            <AccountActionIcon className="h-5 w-5" pulse={accountPulse} />
             <span className="text-xs">Кабинет</span>
           </Link>
         </div>
@@ -347,10 +356,10 @@ export function Header({
           </Link>
           <Link
             href="/cart"
-            className="relative grid h-10 w-10 shrink-0 place-items-center rounded-md text-header-ink transition hover:bg-header-ink/10"
+            className="hdr-action relative grid h-10 w-10 shrink-0 place-items-center rounded-md text-header-ink transition hover:bg-header-ink/10"
             aria-label={count > 0 ? `Корзина, товаров: ${count}` : "Корзина"}
           >
-            <ShoppingCart className="h-5 w-5" aria-hidden />
+            <CartActionIcon className="h-5 w-5" />
             {count > 0 && (
               <span className="absolute right-1 top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-ink">
                 {count > 99 ? "99+" : count}
