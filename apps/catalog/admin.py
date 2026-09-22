@@ -801,6 +801,18 @@ class ProductAdmin(admin.ModelAdmin):
     autocomplete_fields = ["category"]
     list_select_related = ("category",)
 
+    def has_delete_permission(self, request, obj=None):
+        """Товар из админки не удаляется никем, включая суперпользователя (DRF-2300).
+
+        Товар связан с 1С по `code_1c` и с историей заказов (`OrderItem.product`);
+        удаление обрывает эти связи и каскадом уносит фото, характеристики и записи
+        обмена. Снять с витрины — галочка «Показывать на сайте» или действие
+        «Вернуть на проверку». Возврат `False` убирает кнопку в карточке, вырезает
+        `delete_selected` из действий и даёт 403 на прямой POST по `…/delete/`.
+        Удаление через ORM (импорт, служебные очистки, тесты) остаётся как есть.
+        """
+        return False
+
     def response_change(self, request, obj):
         """Кнопка «Сохранить и следующий →»: правка потоком, без возврата в список."""
         if "_save_and_next" in request.POST:
