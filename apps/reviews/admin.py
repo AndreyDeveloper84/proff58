@@ -85,16 +85,22 @@ class ReviewAdmin(TimestampColumnsMixin, admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if change and "status" in form.changed_data:
             obj.moderated_at = timezone.now()
+            if obj.status != ReviewStatus.REJECTED:
+                # Причина относится к отклонению; при одобрении из карточки она
+                # иначе оставалась в ответе API «мои отзывы» (DRF-2295).
+                obj.rejection_reason = ""
         super().save_model(request, obj, form, change)
 
-    @admin.action(description="Одобрить выбранные")
+    # DRF-2295: без permissions= массовое одобрение было доступно любому staff с одним
+    # правом просмотра — Django фильтрует по правам только действия, где они заданы.
+    @admin.action(description="Одобрить выбранные", permissions=["change"])
     def approve_selected(self, request, queryset):
         n = queryset.exclude(status=ReviewStatus.APPROVED).update(
             status=ReviewStatus.APPROVED, rejection_reason="", moderated_at=timezone.now()
         )
         self.message_user(request, f"Опубликовано отзывов: {n}.", messages.SUCCESS)
 
-    @admin.action(description="Отклонить выбранные (типовая причина)")
+    @admin.action(description="Отклонить выбранные (типовая причина)", permissions=["change"])
     def reject_selected(self, request, queryset):
         n = queryset.exclude(status=ReviewStatus.REJECTED).update(
             status=ReviewStatus.REJECTED,
