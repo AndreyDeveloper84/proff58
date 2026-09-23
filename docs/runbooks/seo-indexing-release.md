@@ -32,12 +32,26 @@
 ## Проверки перед открытием (robots ещё закрыт)
 
 1. `/robots.txt` → `Disallow: /`.
-2. 74 карточки allowlist: 200, `<meta name="robots" content="index, follow">`, canonical, title без
+2. Все карточки allowlist (сейчас 107 = партия 1 «74» + партия 2 «33 дрели»): 200, `<meta name="robots" content="index, follow">`, canonical, title без
    двойного суффикса, JSON-LD Product, главное фото 200.
 3. 11 заблокированных release-gate: 200, `noindex`, нет в sitemap.
 4. Посторонняя карточка и разделы каталога: `noindex`.
-5. `/sitemap.xml`: ровно 74 URL, все = canonical.
+5. `/sitemap.xml`: ровно `count` из allowlist URL, все = canonical.
 6. Burst: 85 карточек подряд без пауз — 0 × 429/500.
+
+## Добавление партии
+
+Allowlist (`data/seo/indexable_products.json`) — объединение партий; каждая партия ссылается на
+свой замороженный manifest гейта и его sha256 (`batches[]`). Порядок:
+
+1. Гейт партии (read-only): commercial + фото с main + обязательные оси типа + HTTP-проверка карточки,
+   display-фото и JSON-LD. Результат — manifest в `docs/catalog/appendix/<дата>-<партия>/`.
+2. В allowlist добавить запись в `batches[]` (id, tool_types, manifest, sha256, count) и id в
+   `product_ids`; `count` = длина списка. Пересечение партий запрещено — это проверяет тест.
+3. PR с manifest и allowlist; после merge — деплой frontend (`up -d frontend`).
+4. Проверка на проде: `/sitemap.xml` = новый `count`, новые карточки `index, follow`.
+
+Откат партии — убрать её id и запись `batches[]`, задеплоить frontend.
 
 ## Открытие
 
