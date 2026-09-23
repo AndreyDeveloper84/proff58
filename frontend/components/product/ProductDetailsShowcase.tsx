@@ -4,8 +4,6 @@ import {
   CircleGauge,
   Hammer,
   MessageSquareText,
-  PackageCheck,
-  PlugZap,
   RotateCcw,
   ShieldCheck,
   Truck,
@@ -16,32 +14,8 @@ import { Collapsible } from "./Collapsible";
 import { SITE } from "@/lib/site";
 import { pickUseCases } from "@/lib/pdp-usecases";
 import { hasRealSpecs, keySpecs } from "@/lib/specs";
+import { groupProductSpecs } from "@/lib/spec-groups";
 import type { ProductDetail, ProductSpec } from "@/lib/types";
-
-type SpecGroup = {
-  title: string;
-  icon: typeof Zap;
-  specs: ProductSpec[];
-};
-
-const GROUPS = [
-  {
-    title: "Производительность",
-    icon: CircleGauge,
-    test:
-      /мощност|энерги|частот|оборот|скорост|производительност|давлен|расход|усили|диаметр|глубин|крутящ/i,
-  },
-  {
-    title: "Оснастка",
-    icon: Wrench,
-    test: /патрон|оснаст|креплен|насад|режим|реверс|муфт|комплект|кейс|диск|бур|сверл/i,
-  },
-  {
-    title: "Питание и корпус",
-    icon: PlugZap,
-    test: /питан|напряжен|аккумулятор|ёмкост|емкост|кабел|вес|размер|габарит|материал|корпус|длин|ширин|высот/i,
-  },
-] as const;
 
 /**
  * Ключевые параметры блока «Главное в работе».
@@ -65,25 +39,6 @@ export function selectKeySpecs(specs: ProductSpec[], limit = 4): ProductSpec[] {
  */
 export function hasPassportSpecs(specs: ProductSpec[]): boolean {
   return hasRealSpecs(specs);
-}
-
-export function groupProductSpecs(specs: ProductSpec[]): SpecGroup[] {
-  const buckets = GROUPS.map((group) => ({ ...group, specs: [] as ProductSpec[] }));
-  const other: ProductSpec[] = [];
-
-  for (const spec of specs) {
-    const bucket = buckets.find((group) => group.test.test(spec.label));
-    (bucket?.specs ?? other).push(spec);
-  }
-
-  return [
-    ...buckets.map(({ title, icon, specs: groupedSpecs }) => ({
-      title,
-      icon,
-      specs: groupedSpecs,
-    })),
-    { title: "Дополнительно", icon: PackageCheck, specs: other },
-  ].filter((group) => group.specs.length > 0);
 }
 
 const METRIC_ICONS = [Zap, Hammer, Wrench, CircleGauge];
