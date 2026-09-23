@@ -2,10 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { Check, Clock, Mail, MapPin, Phone, TriangleAlert } from "lucide-react";
 
+import { PhoneContact } from "@/components/contacts/CopyContact";
+import { FaqAccordion } from "@/components/info/FaqAccordion";
 import { InfoBlocks } from "@/components/info/InfoBlocks";
 import { YandexMap } from "@/components/info/YandexMap";
 import { buttonVariants } from "@/components/ui/button";
 import type { InfoSection as Section } from "@/lib/info-pages";
+import { ROUTE_ANCHOR } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 // Секции инфо-страницы. Структура блоков живёт здесь, в коде, а их наполнение —
@@ -19,22 +22,46 @@ import { cn } from "@/lib/utils";
 
 const WARNING_TONE = "предупреждение";
 
+// «8 (8412) 20-20-87» → «tel:+78412202087»: восьмёрку междугородней связи
+// меняем на +7, иначе с части мобильных звонок уходит не туда.
+function phoneHref(phone: string): string {
+  const digits = phone.replace(/\D/g, "").replace(/^8(?=\d{10}$)/, "7");
+  return `tel:+${digits}`;
+}
+
+// Кнопке со звонком в админке задают только ссылку — номер для буфера берём из неё.
+function phoneFromHref(href: string): string {
+  const digits = href.replace(/\D/g, "");
+  const m = digits.match(/^7(\d{4})(\d{2})(\d{2})(\d{2})$/);
+  return m ? `+7 ${m[1]} ${m[2]}-${m[3]}-${m[4]}` : `+${digits}`;
+}
+
 function Buttons({ buttons }: { buttons: Section["buttons"] }) {
   if (buttons.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-3">
-      {buttons.map((button) => (
-        <Link
-          key={`${button.label}-${button.href}`}
-          href={button.href || "#"}
-          className={buttonVariants({
-            variant: button.style === "outline" ? "outline" : "accent",
-            size: "lg",
-          })}
-        >
-          {button.label}
-        </Link>
-      ))}
+      {buttons.map((button) => {
+        const className = buttonVariants({
+          variant: button.style === "outline" ? "outline" : "accent",
+          size: "lg",
+        });
+        // Кнопка со звонком ведёт себя как номер везде на сайте: на ПК копирует
+        // его, на телефоне звонит.
+        return button.href.startsWith("tel:") ? (
+          <PhoneContact
+            key={`${button.label}-${button.href}`}
+            display={phoneFromHref(button.href)}
+            href={button.href}
+            className={className}
+          >
+            {button.label}
+          </PhoneContact>
+        ) : (
+          <Link key={`${button.label}-${button.href}`} href={button.href || "#"} className={className}>
+            {button.label}
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -123,7 +150,9 @@ function Cards({ section }: { section: Section }) {
         {section.items.map((item) => (
           <article
             key={item.title}
-            className="rounded-xl border border-line bg-surface p-5 transition-colors hover:border-accent/40"
+            // Карточка ничего не открывает, поэтому и на наведение не реагирует:
+            // подсветка рамки обещала переход, которого нет.
+            className="rounded-xl border border-line bg-surface p-5"
           >
             {item.image ? (
               // Иллюстрация — часть содержимого карточки, а не фон: у неё своя
@@ -210,24 +239,7 @@ function Faq({ section }: { section: Section }) {
   return (
     <section className="space-y-4">
       {section.heading ? <Heading>{section.heading}</Heading> : null}
-      <div className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
-        {answered.map((item, index) => (
-          // <details> вместо состояния в React: аккордеон работает без JS,
-          // открывается по ссылке-якорю и доступен с клавиатуры «из коробки».
-          <details key={item.title} className="group" open={index === 0}>
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left text-base font-medium text-ink">
-              {item.title}
-              <span
-                aria-hidden
-                className="text-ink-3 transition-transform group-open:rotate-45"
-              >
-                +
-              </span>
-            </summary>
-            <p className="px-5 pb-4 text-sm leading-relaxed text-ink-2">{item.text}</p>
-          </details>
-        ))}
-      </div>
+      <FaqAccordion items={answered} />
     </section>
   );
 }
@@ -267,35 +279,52 @@ function Chips({ section }: { section: Section }) {
   );
 }
 
+// Иконки контактов нейтральные: зелёным подсвечивается только то, на что
+// навели или куда пришёл фокус, — как у телефона в шапке и подвале.
+const CONTACT_ICON = "size-4 shrink-0 text-ink-3";
+
 function ContactLines({ section }: { section: Section }) {
   const { phone, email, hours, address } = section.meta;
   return (
     <ul className="space-y-2 text-sm text-ink-2">
       {address ? (
         <li className="flex items-center gap-2">
-          <MapPin aria-hidden className="size-4 text-accent" />
+          <MapPin aria-hidden className={CONTACT_ICON} />
           {address}
         </li>
       ) : null}
       {phone ? (
-        <li className="flex items-center gap-2">
-          <Phone aria-hidden className="size-4 text-accent" />
-          <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className="hover:text-accent">
+        <li>
+          <PhoneContact
+            display={phone}
+            href={phoneHref(phone)}
+            className="group flex items-center gap-2"
+          >
+            <Phone
+              aria-hidden
+              className={cn(
+                CONTACT_ICON,
+                "transition-colors group-hover:text-accent group-focus-visible:text-accent",
+              )}
+            />
             {phone}
-          </a>
+          </PhoneContact>
         </li>
       ) : null}
       {email ? (
-        <li className="flex items-center gap-2">
-          <Mail aria-hidden className="size-4 text-accent" />
-          <a href={`mailto:${email}`} className="hover:text-accent">
+        <li>
+          <a href={`mailto:${email}`} className="group flex items-center gap-2 hover:text-accent">
+            <Mail
+              aria-hidden
+              className={cn(CONTACT_ICON, "transition-colors group-hover:text-accent")}
+            />
             {email}
           </a>
         </li>
       ) : null}
       {hours ? (
         <li className="flex items-center gap-2">
-          <Clock aria-hidden className="size-4 text-accent" />
+          <Clock aria-hidden className={CONTACT_ICON} />
           {hours}
         </li>
       ) : null}
@@ -329,7 +358,12 @@ function Contacts({ section }: { section: Section }) {
 
 function MapSection({ section }: { section: Section }) {
   return (
-    <section className="grid items-stretch gap-6 lg:grid-cols-2">
+    // scroll-mt — под липкую шапку: 65 px на телефоне, ~102 px с верхней
+    // полосой на desktop, плюс зазор, чтобы заголовок не прилипал к ней.
+    <section
+      id={ROUTE_ANCHOR}
+      className="grid scroll-mt-20 items-stretch gap-6 lg:scroll-mt-28 lg:grid-cols-2"
+    >
       <div className="space-y-5 rounded-xl border border-line bg-surface p-6">
         {section.heading ? <Heading>{section.heading}</Heading> : null}
         {section.meta.address ? (
@@ -341,7 +375,7 @@ function MapSection({ section }: { section: Section }) {
         <ContactLines section={{ ...section, meta: { ...section.meta, address: undefined } }} />
         <Buttons buttons={section.buttons} />
       </div>
-      <YandexMap address={section.meta.address} className="h-full min-h-64" />
+      <YandexMap address={section.meta.address} className="h-full" />
     </section>
   );
 }

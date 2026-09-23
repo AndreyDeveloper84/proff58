@@ -70,6 +70,22 @@ describe("InfoSection", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it("карточки способов получения не обещают переход при наведении", () => {
+    const { container } = render(
+      <InfoSection
+        section={section({
+          layout: "cards",
+          heading: "Способы получения",
+          items: [{ title: "Самовывоз", text: "Сегодня" }],
+        })}
+      />,
+    );
+
+    const card = container.querySelector("article")!;
+    expect(card.className).not.toMatch(/hover:|cursor-pointer|translate|shadow/);
+    expect(card.className).toContain("border-line");
+  });
+
   it("шаги нумеруются сами", () => {
     render(
       <InfoSection
@@ -150,9 +166,11 @@ describe("InfoSection", () => {
     );
 
     expect(screen.getByTitle(/Карта: Пенза/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "8 (800) 600-44-99" })).toHaveAttribute(
+    // На секцию ведёт адрес из шапки: /info/about#route.
+    expect(screen.getByTitle(/Карта: Пенза/).closest("section")).toHaveAttribute("id", "route");
+    expect(screen.getByRole("link", { name: /^8 \(800\) 600-44-99/ })).toHaveAttribute(
       "href",
-      "tel:88006004499",
+      "tel:+78006004499",
     );
   });
 });

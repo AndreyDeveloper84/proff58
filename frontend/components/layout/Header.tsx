@@ -13,7 +13,6 @@ import {
   Phone,
   Search,
   ShieldCheck,
-  Store,
   Truck,
   User,
   Wrench,
@@ -25,9 +24,16 @@ import { useWishlist } from "@/components/wishlist/WishlistProvider";
 import { accountLinkHref } from "@/lib/auth-state";
 import type { InfoPageLink } from "@/lib/info-pages";
 import { useCompare } from "@/lib/compare";
-import { resolveStorefront, SITE, type ResolvedStorefront, type TopLink } from "@/lib/site";
+import {
+  resolveStorefront,
+  SITE,
+  STORE_ROUTE_HREF,
+  streetAddress,
+  type ResolvedStorefront,
+  type TopLink,
+} from "@/lib/site";
 import { cn } from "@/lib/utils";
-import { CallLink, CopyContact } from "@/components/contacts/CopyContact";
+import { CopyContact, PhoneContact } from "@/components/contacts/CopyContact";
 import {
   AccountActionIcon,
   ACTION_DURATION_MS,
@@ -53,6 +59,11 @@ const INFO_PREFIX = "/info/";
 // Кружок-счётчик у правого верхнего угла иконки 20 px: перекрывает только
 // 4–5 px уголка, столбики/корзина/сердце с их анимациями остаются открытыми.
 const DESKTOP_BADGE = "left-[calc(100%-5px)] -top-2";
+
+// Иконка телефона серая, как остальные иконки служебной полосы; зелёная — только
+// когда наведён или в фокусе сам номер (`group` на ссылке).
+const PHONE_ICON =
+  "h-3.5 w-3.5 shrink-0 text-topbar-ink transition-colors group-hover:text-accent group-focus-visible:text-accent";
 
 const TOP_LINK_ICONS: Record<string, LucideIcon> = {
   "Сервис и ремонт": Wrench,
@@ -93,6 +104,7 @@ export function Header({
   // Кивок иконки кабинета при активации ссылки. Переход не ждёт анимацию:
   // preventDefault нет, шапка живёт в layout и доигрывает уже на новой странице.
   const accountPulse = usePulse(ACTION_DURATION_MS.account);
+  const storeAddressLine = `${storefront.region} · ${streetAddress(storefront.address, storefront.region)}`;
 
   const logo = logoUrl ? (
     <Image
@@ -127,19 +139,16 @@ export function Header({
       <div className="hidden border-b border-header-line bg-header lg:block">
         <div className="mx-auto flex h-9 w-full max-w-[1680px] items-center justify-between px-4 text-xs text-topbar-ink sm:px-6 xl:px-8">
           <div className="flex items-center gap-5">
-            <span className="flex items-center gap-1.5 font-medium">
-              <MapPin className="h-3.5 w-3.5 text-accent" aria-hidden />
-              {storefront.region}
-            </span>
-            {/* UX-03: подпись короткая, а в буфер уходит полный адрес магазина. */}
-            <CopyContact
-              kind="address"
-              value={storefront.address}
-              className="flex items-center gap-1.5 font-medium text-accent hover:brightness-90"
+            {/* Город и адрес — одна нейтральная строка и ссылка к карте проезда:
+                человеку, который ищет магазин, нужен маршрут, а не адрес в буфере.
+                Зелёный — только на наведении и фокусе, как у остальных пунктов. */}
+            <Link
+              href={STORE_ROUTE_HREF}
+              className="flex items-center gap-1.5 font-medium transition-colors hover:text-accent focus-visible:text-accent"
             >
-              <Store className="h-3.5 w-3.5" aria-hidden />
-              {storefront.store}
-            </CopyContact>
+              <MapPin className="h-3.5 w-3.5" aria-hidden />
+              {storeAddressLine}
+            </Link>
             {/* Инфо-пункты: каждый раскрывает подсказку по hover/фокусу — сюда
                 переехала бывшая сервисная полоса главной — и ведёт на свою страницу,
                 если она опубликована. «Контакты» рендерятся из storefront
@@ -179,14 +188,14 @@ export function Header({
                           value={storefront.address}
                           className="block text-sm font-semibold text-header-ink"
                         />
-                        <span className="flex items-center justify-between gap-3">
-                          <CopyContact
-                            kind="phone"
-                            value={storefront.phone.display}
-                            className="text-sm text-topbar-ink"
-                          />
-                          <CallLink href={storefront.phone.href} className="text-sm" />
-                        </span>
+                        <PhoneContact
+                          display={storefront.phone.display}
+                          href={storefront.phone.href}
+                          className="group flex items-center gap-1.5 text-sm text-topbar-ink"
+                        >
+                          <Phone className={PHONE_ICON} aria-hidden />
+                          {storefront.phone.display}
+                        </PhoneContact>
                         <a
                           href={`mailto:${storefront.email}`}
                           className="block text-sm text-topbar-ink hover:text-accent"
@@ -267,19 +276,21 @@ export function Header({
           />
         </div>
 
-        {/* UX-03: нажатие на номер копирует его; звонок — отдельной ссылкой рядом. */}
+        {/* Номер: на ПК нажатие копирует, на телефоне и планшете — звонит. */}
         <div className="hidden shrink-0 flex-col text-header-ink xl:flex">
-          <CopyContact
-            kind="phone"
-            value={storefront.phone.display}
-            className="text-base font-bold leading-tight"
-          />
-          <span className="flex items-center gap-2 text-xs leading-tight">
-            <CallLink href={storefront.phone.href} />
-            {storefront.phoneNote ? (
-              <span className="font-normal text-topbar-ink">{storefront.phoneNote}</span>
-            ) : null}
-          </span>
+          <PhoneContact
+            display={storefront.phone.display}
+            href={storefront.phone.href}
+            className="group flex items-center gap-2 text-base font-bold leading-tight"
+          >
+            <Phone className={cn(PHONE_ICON, "h-4 w-4")} aria-hidden />
+            {storefront.phone.display}
+          </PhoneContact>
+          {storefront.phoneNote ? (
+            <span className="text-xs font-normal leading-tight text-topbar-ink">
+              {storefront.phoneNote}
+            </span>
+          ) : null}
         </div>
 
         {/* Действия — desktop: избранное · сравнение (future) · корзина · кабинет */}
@@ -402,23 +413,26 @@ export function Header({
             {/* Телефон и тема — в одной строке. Переключатель здесь только для
                 самых узких экранов (<640px), где в шапке места под него нет. */}
             <div className="flex min-h-11 items-center justify-between gap-3 py-2.5">
-              <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <CopyContact
-                  kind="phone"
-                  value={storefront.phone.display}
-                  className="min-h-11 text-base font-semibold text-header-ink"
-                />
-                <CallLink href={storefront.phone.href} className="inline-flex min-h-11 items-center text-sm" />
-              </span>
+              <PhoneContact
+                display={storefront.phone.display}
+                href={storefront.phone.href}
+                className="group flex min-h-11 items-center gap-2 text-base font-semibold text-header-ink"
+              >
+                <Phone className={cn(PHONE_ICON, "h-4 w-4")} aria-hidden />
+                {storefront.phone.display}
+              </PhoneContact>
               <span className="sm:hidden">
                 <ThemeToggle />
               </span>
             </div>
-            <CopyContact
-              kind="address"
-              value={storefront.address}
-              className="min-h-11 py-2 text-sm text-topbar-ink"
-            />
+            <Link
+              href={STORE_ROUTE_HREF}
+              className="flex min-h-11 items-center gap-2 py-2 text-sm text-topbar-ink hover:text-accent focus-visible:text-accent"
+              onClick={() => setOpen(false)}
+            >
+              <MapPin className="h-4 w-4" aria-hidden />
+              {storeAddressLine}
+            </Link>
           </nav>
         </div>
       )}

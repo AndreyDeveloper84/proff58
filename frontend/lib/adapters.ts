@@ -47,7 +47,7 @@ const LISTING_TIMEOUT_MS = 8_000;
 export class CatalogFetchError extends Error {}
 
 type ApiAttr = { name: string; slug: string; unit?: string; value: unknown; is_key?: boolean };
-type ApiProduct = {
+export type ApiProduct = {
   id: number;
   name: string;
   // Короткая форма для плитки; backend отдаёт витринное имя, если она не задана.

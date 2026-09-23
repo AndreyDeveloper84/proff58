@@ -3,7 +3,17 @@
 import pytest
 from rest_framework.test import APIClient
 
-from apps.catalog.models import Category, Product, ProductStatus, StockStatus
+from apps.catalog.models import (
+    Attribute,
+    AttributeOption,
+    AttributeType,
+    Category,
+    Product,
+    ProductAttributeValue,
+    ProductImage,
+    ProductStatus,
+    StockStatus,
+)
 
 
 @pytest.fixture
@@ -297,3 +307,218 @@ def test_ids_filter_garbage_returns_nothing(client, tree):
     _, leaf = tree
     make_product(leaf, "Товар А", "idsg-a")
     assert client.get("/api/catalog/products/?ids=abc,,").json()["count"] == 0
+
+
+# --- Быстрый поиск в шапке: товары + разделы ----------------------------------
+
+QUICK = "/api/catalog/search/quick/"
+
+
+def set_tool_type(product, slug, value):
+    """Проставить товару вид (tool_type) — вариант SELECT-характеристики."""
+    attr, _ = Attribute.objects.get_or_create(
+        slug="tool_type",
+        defaults={"name": "Тип инструмента", "attribute_type": AttributeType.SELECT},
+    )
+    option, _ = AttributeOption.objects.get_or_create(
+        attribute=attr, value=value, defaults={"slug": slug}
+    )
+    ProductAttributeValue.objects.create(product=product, attribute=attr, value_option=option)
+
+
+@pytest.fixture
+def screws(db):
+    """«шуруп»: шурупы в крепеже, шуруповёрты в инструменте, биты в оснастке."""
+    krepezh = Category.add_root(name="Крепёж", slug="krepezh")
+    tools = Category.add_root(name="Аккумуляторный инструмент", slug="akkum")
+    osnastka = Category.add_root(name="Оснастка", slug="osnastka")
+    for i in range(3):
+        set_tool_type(
+            make_product(krepezh, f"Шуруп по дереву 4x{i}", f"shurup-{i}"), "shurupy", "Шурупы"
+        )
+    for i in range(2):
+        set_tool_type(
+            make_product(tools, f"Шуруповёрт Makita {i}", f"shurupovert-{i}"),
+            "shurupoverty",
+            "Шуруповёрты",
+        )
+    for i in range(4):
+        set_tool_type(
+            make_product(osnastka, f"Бита для шуруповёрта PH{i}", f"bita-{i}"), "bity", "Биты"
+        )
+    return krepezh, tools, osnastka
+
+
+@pytest.mark.django_db
+def test_quick_shape(client, screws):
+    data = client.get(QUICK, {"q": "шуруп"}).json()
+    assert set(data) == {"query", "products", "categories"}
+    assert data["query"] == "шуруп"
+    product = data["products"][0]
+    # Карточка — та же, что в листинге: фото, короткое имя, бренд, цена, наличие.
+    for key in ("slug", "card_name", "brand", "price", "stock_status", "main_image"):
+        assert key in product
+    assert set(data["categories"][0]) == {"name", "category", "tool_type"}
+    assert set(data["categories"][0]["category"]) == {"name", "slug"}
+
+
+@pytest.mark.django_db
+def test_quick_limits(client, db):
+    roots = [Category.add_root(name=f"Раздел {i}", slug=f"razdel-{i}") for i in range(5)]
+    for i in range(10):
+        make_product(roots[i % 5], f"Перфоратор {i:02d}", f"ql-{i}")
+    data = client.get(QUICK, {"q": "перфоратор"}).json()
+    assert len(data["products"]) == 6
+    assert len(data["categories"]) == 3
+
+
+@pytest.mark.django_db
+def test_quick_short_query_empty(client, screws):
+    assert client.get(QUICK, {"q": "ш"}).json() == {"query": "ш", "products": [], "categories": []}
+    assert client.get(QUICK).json() == {"query": "", "products": [], "categories": []}
+
+
+@pytest.mark.django_db
+def test_quick_only_visible_products(client, tree):
+    _, leaf = tree
+    make_product(leaf, "Перфоратор видимый", "qv-1")
+    make_product(leaf, "Перфоратор черновик", "qv-2", status=ProductStatus.DRAFT)
+    make_product(leaf, "Перфоратор выключен", "qv-3", is_active=False)
+    data = client.get(QUICK, {"q": "перфоратор"}).json()
+    assert [p["slug"] for p in data["products"]] == ["qv-1"]
+
+
+@pytest.mark.django_db
+def test_quick_products_keep_search_order(client, tree):
+    """Порядок товаров — как у полного поиска: сначала доступное."""
+    _, leaf = tree
+    make_product(leaf, "Перфоратор", "qo-out", stock_status=StockStatus.OUT_OF_STOCK)
+    make_product(leaf, "Большой перфоратор", "qo-in", stock_status=StockStatus.IN_STOCK)
+    data = client.get(QUICK, {"q": "перфоратор"}).json()
+    assert [p["slug"] for p in data["products"]] == ["qo-in", "qo-out"]
+
+
+@pytest.mark.django_db
+def test_quick_categories_split_by_tool_type(client, screws):
+    """«шуруп» разводит шурупы, шуруповёрты и оснастку, у каждого — своя ссылка."""
+    categories = client.get(QUICK, {"q": "шуруп"}).json()["categories"]
+    assert {
+        "name": "Шурупы",
+        "category": {"name": "Крепёж", "slug": "krepezh"},
+        "tool_type": "shurupy",
+    } in categories
+    assert {
+        "name": "Шуруповёрты",
+        "category": {"name": "Аккумуляторный инструмент", "slug": "akkum"},
+        "tool_type": "shurupoverty",
+    } in categories
+    assert {
+        "name": "Биты",
+        "category": {"name": "Оснастка", "slug": "osnastka"},
+        "tool_type": "bity",
+    } in categories
+
+
+@pytest.mark.django_db
+def test_quick_category_without_tool_type_links_category(client, tree):
+    _, leaf = tree
+    make_product(leaf, "Перфоратор", "qc-1")
+    categories = client.get(QUICK, {"q": "перфоратор"}).json()["categories"]
+    assert categories == [
+        {
+            "name": "Перфораторы",
+            "category": {"name": "Перфораторы", "slug": "perf"},
+            "tool_type": None,
+        }
+    ]
+
+
+@pytest.mark.django_db
+def test_quick_named_group_beats_bigger_one(client, screws):
+    """Раздел, в названии которого есть запрос, выше раздела с бо́льшим числом совпадений.
+
+    Бит (4) больше, чем шуруповёртов (2), но «шуруповёрт» ищут шуруповёрты.
+    """
+    categories = client.get(QUICK, {"q": "шуруповёрт"}).json()["categories"]
+    assert [c["tool_type"] for c in categories][:2] == ["shurupoverty", "bity"]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("query", ["шуруповерт", "ШУРУПОВЁРТ"])
+def test_quick_name_match_ignores_yo_and_case(client, db, query):
+    """«е» и «ё», регистр — одно и то же с обеих сторон сравнения."""
+    osnastka = Category.add_root(name="Оснастка", slug="osnastka")
+    tools = Category.add_root(name="Инструмент", slug="instr")
+    spelled = "шуруповерт" if "е" in query else "шуруповёрт"
+    for i in range(4):
+        set_tool_type(
+            make_product(osnastka, f"Бита для {spelled}а {i}", f"qy-bita-{i}"), "bity", "Биты"
+        )
+    # Вариант написан через «ё», запрос — через «е», и наоборот.
+    option = "Шуруповёрты" if "е" in query else "Шуруповерты"
+    set_tool_type(make_product(tools, f"{spelled.title()} Makita", "qy-drill"), "shv", option)
+    categories = client.get(QUICK, {"q": query}).json()["categories"]
+    assert [c["tool_type"] for c in categories] == ["shv", "bity"]
+
+
+@pytest.mark.django_db
+def test_quick_same_tool_type_in_two_categories(client, db):
+    """Один вид в двух разделах — два элемента, различимые по разделу."""
+    a = Category.add_root(name="Сетевой инструмент", slug="set")
+    b = Category.add_root(name="Аккумуляторный инструмент", slug="akk")
+    set_tool_type(make_product(a, "Дрель сетевая", "qd-1"), "dreli", "Дрели")
+    set_tool_type(make_product(b, "Дрель аккумуляторная", "qd-2"), "dreli", "Дрели")
+    categories = client.get(QUICK, {"q": "дрель"}).json()["categories"]
+    assert sorted(c["category"]["slug"] for c in categories) == ["akk", "set"]
+    assert {c["name"] for c in categories} == {"Дрели"}
+
+
+@pytest.mark.django_db
+def test_quick_same_label_not_duplicated(client, tree):
+    """Вид с тем же именем, что и раздел, не дублирует раздел в подсказках."""
+    _, leaf = tree
+    make_product(leaf, "Перфоратор без вида", "qs-1")
+    make_product(leaf, "Перфоратор без вида 2", "qs-2")
+    set_tool_type(make_product(leaf, "Перфоратор с видом", "qs-3"), "perforatory", "Перфораторы")
+    categories = client.get(QUICK, {"q": "перфоратор"}).json()["categories"]
+    assert len(categories) == 1
+    assert categories[0]["category"]["slug"] == "perf"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("hide", ["leaf_inactive", "parent_inactive", "off_site"])
+def test_quick_hidden_category_not_offered(client, tree, hide):
+    root, leaf = tree
+    hidden = root.add_child(name="Скрытые перфораторы", slug="hidden-perf")
+    make_product(leaf, "Перфоратор видимый", "qh-1")
+    make_product(hidden, "Перфоратор из скрытого", "qh-2")
+    if hide == "leaf_inactive":
+        Category.objects.filter(pk=hidden.pk).update(is_active=False)
+    elif hide == "off_site":
+        Category.objects.filter(pk=hidden.pk).update(on_site=False)
+    else:
+        # Выключенный предок прячет всё поддерево: и видимый лист тоже.
+        Category.objects.filter(pk=root.pk).update(is_active=False)
+    data = client.get(QUICK, {"q": "перфоратор"}).json()
+    slugs = [c["category"]["slug"] for c in data["categories"]]
+    assert "hidden-perf" not in slugs
+    if hide == "parent_inactive":
+        assert slugs == []
+    else:
+        assert slugs == ["perf"]
+    # Товары при этом остаются: видимость товара от раздела не зависит (как в поиске).
+    assert len(data["products"]) == 2
+
+
+@pytest.mark.django_db
+def test_quick_query_count(client, screws, django_assert_max_num_queries):
+    krepezh, _, _ = screws
+    for i in range(15):
+        p = make_product(krepezh, f"Шуруп кровельный {i}", f"qn-{i}", brand="Bosch")
+        ProductImage.objects.create(product=p, image=f"products/{i}.jpg", is_main=True)
+        set_tool_type(p, "shurupy", "Шурупы")
+    # Пул поиска, товары (+2 prefetch), виды товаров, цепочки категорий.
+    with django_assert_max_num_queries(6):
+        resp = client.get(QUICK, {"q": "шуруп"})
+    assert resp.status_code == 200
+    assert len(resp.json()["products"]) == 6

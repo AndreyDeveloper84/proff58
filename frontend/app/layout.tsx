@@ -6,7 +6,7 @@ import { AuthStateProvider } from "@/components/auth/AuthStateProvider";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { WishlistProvider } from "@/components/wishlist/WishlistProvider";
 import { Header } from "@/components/layout/Header";
-import { CopyToastRegion } from "@/components/contacts/CopyToastRegion";
+import { ToastRegion } from "@/components/ui/ToastRegion";
 import { QuickViewProvider } from "@/components/quickview/QuickViewProvider";
 import { Footer } from "@/components/layout/Footer";
 import { THEME_INIT_SCRIPT } from "@/components/layout/ThemeToggle";
@@ -124,8 +124,8 @@ export default async function RootLayout({
                   />
                 </div>
               </QuickViewProvider>
-              {/* UX-03: единый регион уведомлений «скопировано» для шапки, подвала и 404. */}
-              <CopyToastRegion />
+              {/* Единый регион всплывающих уведомлений: «скопировано» (UX-03), корзина и т. п. */}
+              <ToastRegion />
             </WishlistProvider>
           </CartProvider>
         </AuthStateProvider>

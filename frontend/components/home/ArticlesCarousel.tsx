@@ -1,18 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import type { Article } from "@/lib/articles";
 import { cn } from "@/lib/utils";
 
-// Лента статей: горизонтальный scroll-snap вместо JS-анимации — так листание
-// работает и без гидратации, и жестом на телефоне. На десктопе в кадре три
-// карточки и стрелки листают по одной; на мобильной карточка занимает 82 %
-// ширины (край следующей виден — подсказка, что лента прокручивается),
-// стрелки скрыты, а положение показывает ряд точек.
+// Лента советов (материалы раздела /articles): горизонтальный scroll-snap вместо
+// JS-анимации — так листание работает и без гидратации, и жестом на телефоне.
+// На xl в кадре три карточки, на планшете две — стрелки листают по одной; на
+// мобильной карточка занимает 82 % ширины (край следующей виден — подсказка,
+// что лента прокручивается), стрелки скрыты, а положение показывает ряд точек.
+// Когда материалов не больше трёх, на xl видны все — стрелки там не нужны.
 export function ArticlesCarousel({ articles }: { articles: Article[] }) {
+  const headingId = useId();
+  const fitsOnDesktop = articles.length <= 3;
   const trackRef = useRef<HTMLUListElement>(null);
   const [active, setActive] = useState(0);
   const [atStart, setAtStart] = useState(true);
@@ -53,22 +56,31 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
   };
 
   return (
-    <div className="min-w-0" aria-label="Полезные статьи и обзоры">
+    <section className="min-w-0" aria-labelledby={headingId}>
       <div className="mb-2 flex items-center gap-2">
-        <h2 className="font-sans text-sm font-bold text-ink">Полезные статьи и обзоры</h2>
+        {/* На телефоне полное название не помещается в строку со ссылкой —
+            там короткое «Полезные советы». Скрытый вариант (display: none)
+            не попадает в имя заголовка, озвучивается только видимый. */}
+        <h2 id={headingId} className="min-w-0 font-sans text-sm font-bold text-ink">
+          <span className="sm:hidden">Полезные советы</span>
+          <span className="hidden sm:inline">Советы по выбору и работе с инструментом</span>
+        </h2>
         <Link
           href="/articles"
-          className="ml-auto inline-flex items-center gap-1 text-sm font-semibold text-accent transition hover:gap-1.5"
+          className="ml-auto inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-sm font-semibold text-accent transition hover:gap-1.5"
         >
-          Все статьи
+          Все советы
           <ArrowRight className="h-3 w-3" aria-hidden />
         </Link>
-        <div className="hidden gap-1 sm:flex">
+        <div
+          data-testid="articles-arrows"
+          className={cn("hidden gap-1 sm:flex", fitsOnDesktop && "xl:hidden")}
+        >
           <button
             type="button"
             onClick={() => scrollBy(-1)}
             disabled={atStart}
-            aria-label="Предыдущие статьи"
+            aria-label="Предыдущие советы"
             className="grid h-11 w-11 place-items-center rounded-sm border border-line bg-surface sm:h-9 sm:w-9 text-ink-2 transition hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink-2"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -77,7 +89,7 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
             type="button"
             onClick={() => scrollBy(1)}
             disabled={atEnd}
-            aria-label="Следующие статьи"
+            aria-label="Следующие советы"
             className="grid h-11 w-11 place-items-center rounded-sm border border-line bg-surface sm:h-9 sm:w-9 text-ink-2 transition hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink-2"
           >
             <ChevronRight className="h-4 w-4" aria-hidden />
@@ -134,7 +146,7 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
         ))}
       </ul>
 
-      {/* Точки — навигация мобильной версии: показывают, сколько ещё статей
+      {/* Точки — навигация мобильной версии: показывают, сколько ещё советов
           в ленте, и переключают карточку тапом. */}
       <div className="mt-1.5 flex justify-center gap-1.5 sm:hidden">
         {articles.map((article, index) => (
@@ -142,7 +154,7 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
             key={article.slug}
             type="button"
             onClick={() => scrollTo(index)}
-            aria-label={`Статья ${index + 1}: ${article.title}`}
+            aria-label={`Совет ${index + 1}: ${article.title}`}
             aria-current={index === active}
             className={cn(
               "h-1.5 rounded-full transition-all",
@@ -151,6 +163,6 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
           />
         ))}
       </div>
-    </div>
+    </section>
   );
 }

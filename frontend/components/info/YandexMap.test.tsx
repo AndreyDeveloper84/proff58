@@ -2,38 +2,47 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { YandexMap } from "./YandexMap";
-import { resolveStorefront } from "@/lib/site";
+import { resolveStorefront, STORE_MAP, yandexMapWidgetUrl } from "@/lib/site";
 
-// Карта ищет по адресу из настроек витрины, а не по зашитым координатам:
-// переезд магазина не должен требовать правки кода.
+// Карта ставит метку по координатам магазина (STORE_MAP), а кнопка маршрута ведёт
+// в ту же точку. У Яндекса порядок разный: ll/pt — «долгота,широта», rtext —
+// «широта,долгота»; перепутанный порядок уводит метку в Сомали.
 
 describe("YandexMap", () => {
-  it("ищет по адресу магазина из настроек витрины", () => {
+  it("показывает метку магазина по координатам", () => {
     render(<YandexMap />);
-    const frame = screen.getByTitle(/Карта:/) as HTMLIFrameElement;
-    const url = new URL(frame.src);
+    const url = new URL((screen.getByTitle(/Карта:/) as HTMLIFrameElement).src);
 
     expect(url.origin + url.pathname).toBe("https://yandex.ru/map-widget/v1/");
-    expect(url.searchParams.get("text")).toBe(resolveStorefront().address);
+    expect(url.searchParams.get("ll")).toBe("44.943818,53.217561");
+    expect(url.searchParams.get("pt")).toBe("44.943818,53.217561,pm2rdm");
+    expect(url.searchParams.get("z")).toBe("16");
   });
 
-  it("принимает свой адрес и масштаб", () => {
-    render(<YandexMap address="Пенза, Московская, 1" zoom={14} />);
-    const url = new URL((screen.getByTitle(/Карта:/) as HTMLIFrameElement).src);
-
-    expect(url.searchParams.get("text")).toBe("Пенза, Московская, 1");
-    expect(url.searchParams.get("z")).toBe("14");
-  });
-
-  it("грузится лениво — карта ниже первого экрана", () => {
+  it("кнопка маршрута ведёт в ту же точку в Яндекс Картах", () => {
     render(<YandexMap />);
-    expect(screen.getByTitle(/Карта:/)).toHaveAttribute("loading", "lazy");
+    const link = screen.getByRole("link", { name: "Открыть маршрут в Яндекс Картах" });
+    const url = new URL(link.getAttribute("href")!);
+
+    expect(url.origin + url.pathname).toBe("https://yandex.ru/maps/");
+    expect(url.searchParams.get("rtext")).toBe("~53.217561,44.943818");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));
   });
 
-  it("пустой проп адреса откатывается к адресу магазина, а не к карте мира", () => {
-    render(<YandexMap address="   " />);
-    const url = new URL((screen.getByTitle(/Карта:/) as HTMLIFrameElement).src);
+  it("URL из Конструктора подменяет собранный без правки компонента", () => {
+    const custom = "https://yandex.ru/map-widget/v1/?um=constructor%3Aabc&source=constructor";
+    expect(yandexMapWidgetUrl({ ...STORE_MAP, widgetUrl: custom })).toBe(custom);
+  });
 
-    expect(url.searchParams.get("text")).toBe(resolveStorefront().address);
+  it("фрейм подписан и грузится лениво — карта ниже первого экрана", () => {
+    render(<YandexMap address="Пенза, Московская, 1" />);
+    const frame = screen.getByTitle("Карта: Пенза, Московская, 1");
+    expect(frame).toHaveAttribute("loading", "lazy");
+  });
+
+  it("пустой проп адреса подписывает фрейм адресом магазина", () => {
+    render(<YandexMap address="   " />);
+    expect(screen.getByTitle(`Карта: ${resolveStorefront().address}`)).toBeInTheDocument();
   });
 });

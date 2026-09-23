@@ -18,13 +18,13 @@ import { emitActionSuccess } from "@/lib/action-feedback";
 import { ApiError } from "@/lib/api";
 import { addWishlistItem } from "@/lib/auth";
 import { formatPrice, pluralize } from "@/lib/format";
+import { showToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 export default function CartPage() {
   const { cart, loading, total, update, remove } = useCart();
   const [mutating, setMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const selectionInitialized = useRef(false);
 
@@ -45,7 +45,6 @@ export default function CartPage() {
   const run = useCallback(async (action: () => Promise<unknown>): Promise<boolean> => {
     setMutating(true);
     setError(null);
-    setNotice(null);
     try {
       await action();
       return true;
@@ -109,7 +108,8 @@ export default function CartPage() {
   const handleRemoveSelected = () =>
     run(async () => {
       for (const line of selectedLines) await remove(line.id);
-      setNotice("Выбранные товары удалены");
+      // Toast, а не плашка над списком: не сдвигает корзину и скрывается сам.
+      showToast("Выбранные товары удалены");
     });
 
   const handleMoveToWishlist = () =>
@@ -118,7 +118,7 @@ export default function CartPage() {
       // Перенос идёт мимо WishlistProvider — сердечко в шапке дёргаем сами, один раз.
       if (selectedLines.length > 0) emitActionSuccess("wishlist");
       for (const line of selectedLines) await remove(line.id);
-      setNotice("Товары перенесены в избранное");
+      showToast("Товары перенесены в избранное");
     });
 
   if (loading) {
@@ -170,14 +170,6 @@ export default function CartPage() {
           {error}
         </div>
       )}
-      {notice && (
-        <div
-          role="status"
-          className="mb-4 rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-accent"
-        >
-          {notice}
-        </div>
-      )}
 
       {isEmpty ? (
         <section className="flex min-h-80 flex-col items-center justify-center gap-4 rounded-lg border border-line bg-surface p-8 text-center">
@@ -217,7 +209,7 @@ export default function CartPage() {
                   className="ml-auto inline-flex min-h-10 items-center gap-2 rounded-md px-2 text-xs font-medium text-ink-3 transition hover:bg-raised hover:text-danger disabled:opacity-40 sm:text-sm"
                 >
                   <Trash2 className="h-4 w-4" aria-hidden />
-                  <span className="hidden sm:inline">Удалить выбранные</span>
+                  <span className="sr-only sm:not-sr-only">Удалить выбранные</span>
                 </button>
                 <button
                   type="button"
@@ -226,7 +218,7 @@ export default function CartPage() {
                   className="inline-flex min-h-10 items-center gap-2 rounded-md px-2 text-xs font-medium text-ink-3 transition hover:bg-raised hover:text-accent disabled:opacity-40 sm:text-sm"
                 >
                   <Heart className="h-4 w-4" aria-hidden />
-                  <span className="hidden sm:inline">Перенести в избранное</span>
+                  <span className="sr-only sm:not-sr-only">Перенести в избранное</span>
                 </button>
               </div>
 

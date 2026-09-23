@@ -14,8 +14,15 @@ import { ProductJsonLd } from "@/components/product/ProductJsonLd";
 import { CompareButton } from "@/components/product/CompareButton";
 import { ShareButton } from "@/components/product/ShareButton";
 import { ProductVideo } from "@/components/product/ProductVideo";
-import { ProductDetailsShowcase } from "@/components/product/ProductDetailsShowcase";
+import {
+  hasPassportSpecs,
+  ProductDescription,
+  ProductOverview,
+  ProductPassport,
+} from "@/components/product/ProductDetailsShowcase";
+import { ProductTabs, type ProductTab } from "@/components/product/ProductTabs";
 import { SpecChips } from "@/components/product/SpecChips";
+import { PhoneContact } from "@/components/contacts/CopyContact";
 import { SITE } from "@/lib/site";
 import { productSeoMetadata } from "@/lib/seo";
 
@@ -45,6 +52,29 @@ export default async function ProductPage({ params }: Props) {
     : related.crossSell.length || related.analogs.length
       ? "Смотрите также"
       : "Совместимые товары";
+
+  // Вкладки карточки. Вкладка есть, только когда у неё есть контент: раньше ссылка
+  // «Характеристики» появлялась при любой строке specs, а раздел — только при
+  // настоящем паспорте (не одном «Типе инструмента»), и ссылка вела в пустоту.
+  // «О товаре» есть всегда: в ней панель специалиста.
+  const hasDescription = product.description.trim().length > 0;
+  const tabs: ProductTab[] = [
+    { id: "overview", label: "О товаре", content: <ProductOverview product={product} /> },
+  ];
+  if (hasPassportSpecs(product.specs)) {
+    tabs.push({
+      id: "characteristics",
+      label: "Характеристики",
+      content: <ProductPassport specs={product.specs} />,
+    });
+  }
+  if (hasDescription) {
+    tabs.push({
+      id: "description",
+      label: "Описание",
+      content: <ProductDescription description={product.description} />,
+    });
+  }
 
   // Главная → Каталог → …категории (из breadcrumb)… → Товар (последний — текст, без ссылки).
   const crumbs = [
@@ -146,7 +176,11 @@ export default async function ProductPage({ params }: Props) {
                 <span className="mt-0.5 block text-xs text-ink-3">Только официальные поставки</span>
               </span>
             </div>
-            <a href={SITE.phone.href} className="flex items-start gap-2.5 hover:text-accent">
+            <PhoneContact
+              display={SITE.phone.display}
+              href={SITE.phone.href}
+              className="flex items-start gap-2.5"
+            >
               <MessageSquareText className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
               <span>
                 <strong className="block text-sm font-semibold text-ink">
@@ -154,50 +188,32 @@ export default async function ProductPage({ params }: Props) {
                 </strong>
                 <span className="mt-0.5 block text-xs text-ink-3">Поможем с выбором инструмента</span>
               </span>
-            </a>
+            </PhoneContact>
           </div>
         </div>
       </div>
 
-      {(product.specs.length > 0 || product.description) && (
-        <section className="mt-8 overflow-hidden rounded-lg border border-line bg-surface">
-          <nav
-            aria-label="Разделы карточки товара"
-            className="flex gap-6 overflow-x-auto border-b border-line bg-surface px-4 text-sm font-semibold text-ink-2 sm:px-5"
-          >
-            <a
-              href="#overview"
-              className="min-h-12 shrink-0 border-b-2 border-accent py-3.5 text-ink"
-            >
-              О товаре
-            </a>
-            {product.specs.length > 0 && (
-              <a href="#characteristics" className="min-h-12 shrink-0 py-3.5 hover:text-accent">
-                Характеристики
-              </a>
-            )}
-            {product.description && (
-              <a href="#description" className="min-h-12 shrink-0 py-3.5 hover:text-accent">
-                Описание
-              </a>
-            )}
-            {relatedTabLabel && (
-              <a href="#compatible" className="min-h-12 shrink-0 py-3.5 hover:text-accent">
-                {relatedTabLabel}
-              </a>
-            )}
-            {reviews && (
-              <a href="#reviews" className="min-h-12 shrink-0 py-3.5 hover:text-accent">
-                Отзывы {reviews.summary.count || ""}
-              </a>
-            )}
-          </nav>
-
-          <div id="overview" className="scroll-mt-28 bg-raised p-4 sm:p-5 lg:p-6">
-            <ProductDetailsShowcase product={product} />
-          </div>
-        </section>
-      )}
+      {/* Совместимость и отзывы — отдельные секции ниже, а не вкладки: обычные
+          якоря справа от полосы вкладок, вне role=tablist. */}
+      <ProductTabs
+        tabs={tabs}
+        extraLinks={
+          (relatedTabLabel || reviews) && (
+            <>
+              {relatedTabLabel && (
+                <a href="#compatible" className="min-h-12 shrink-0 py-3.5 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
+                  {relatedTabLabel}
+                </a>
+              )}
+              {reviews && (
+                <a href="#reviews" className="min-h-12 shrink-0 py-3.5 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
+                  Отзывы {reviews.summary.count || ""}
+                </a>
+              )}
+            </>
+          )
+        }
+      />
 
       {product.videoUrl && (
         <section aria-label="Видео" className="mt-8">

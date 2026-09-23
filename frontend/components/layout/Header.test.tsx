@@ -311,21 +311,27 @@ describe("Инфо-пункты служебной полосы (DRF-1442)", () 
     expect(screen.queryByRole("link", { name: "Доставка и оплата" })).toBeNull();
   });
 
-  // UX-03: номер и адрес копируются по нажатию, звонок — отдельное подписанное действие.
-  it("телефон и адрес — кнопки копирования, «Позвонить» — отдельная tel-ссылка", () => {
+  it("адрес магазина — одна нейтральная строка-ссылка к карте проезда", () => {
     render(<Header />);
 
-    const phone = screen.getAllByRole("button", { name: /Скопировать номер телефона/ })[0];
-    expect(phone.getAttribute("aria-label")).toContain(SITE.phone.display);
-    // Адрес копируется полный — даже там, где на экране короткая подпись магазина.
-    for (const address of screen.getAllByRole("button", { name: /Скопировать адрес/ })) {
-      expect(address.getAttribute("aria-label")).toContain(SITE.address);
+    const address = screen.getByRole("link", { name: "Пенза · 1-й Онежский проезд, 12" });
+    expect(address).toHaveAttribute("href", "/info/about#route");
+    // Обычное состояние — серый текст служебной полосы, зелёный только на hover/focus.
+    expect(address.className).not.toMatch(/(^|\s)text-accent/);
+    expect(address.className).toContain("hover:text-accent");
+  });
+
+  // Номер — tel-ссылка (на ПК копирует), отдельной надписи «Позвонить» нигде нет.
+  it("телефон — tel-ссылки без «Позвонить», иконка серая до наведения", () => {
+    render(<Header />);
+
+    const phones = screen.getAllByRole("link", { name: /^8 \(8412\) 20-20-87/ });
+    expect(phones.length).toBeGreaterThan(0);
+    for (const phone of phones) {
+      expect(phone).toHaveAttribute("href", SITE.phone.href);
+      const icon = phone.querySelector("svg");
+      if (icon) expect(icon.getAttribute("class")).not.toMatch(/(^|\s)text-accent/);
     }
-    expect(screen.getAllByRole("link", { name: "Позвонить" })[0]).toHaveAttribute(
-      "href",
-      SITE.phone.href,
-    );
-    // Сам номер больше не tel-ссылка: его назначение — копирование.
-    expect(screen.queryByRole("link", { name: SITE.phone.display })).not.toBeInTheDocument();
+    expect(screen.queryByText("Позвонить")).not.toBeInTheDocument();
   });
 });

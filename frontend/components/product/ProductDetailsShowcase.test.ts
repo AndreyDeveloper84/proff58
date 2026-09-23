@@ -1,5 +1,15 @@
+import { createElement } from "react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { groupProductSpecs, hasPassportSpecs, selectKeySpecs } from "./ProductDetailsShowcase";
+import { groupProductSpecs } from "@/lib/spec-groups";
+import type { ProductDetail } from "@/lib/types";
+import {
+  hasPassportSpecs,
+  ProductDescription,
+  ProductOverview,
+  ProductPassport,
+  selectKeySpecs,
+} from "./ProductDetailsShowcase";
 
 // Порядок — как его отдаёт detail-эндпоинт (DATA-01): ключевые по типу товара, затем
 // остальные, служебный тип инструмента — последним.
@@ -65,5 +75,58 @@ describe("наполнение карточки", () => {
         { label: "Мощность", value: "950 Вт" },
       ]),
     ).toBe(true);
+  });
+});
+
+describe("куски вкладок карточки", () => {
+  const product = {
+    specs,
+    description: "Короткое описание перфоратора",
+  } as unknown as ProductDetail;
+
+  it("«О товаре» — без паспорта и описания, но с «Главным в работе» и специалистом", () => {
+    render(createElement(ProductOverview, { product }));
+    expect(screen.getByText("Главное в работе")).toBeInTheDocument();
+    expect(screen.queryByText("Технический паспорт")).not.toBeInTheDocument();
+    expect(screen.queryByText("Короткое описание перфоратора")).not.toBeInTheDocument();
+    expect(document.querySelector('[data-event="pdp_expert_help"]')).not.toBeNull();
+  });
+
+  it("«О товаре» без паспорта всё равно не пустая: остаётся панель специалиста", () => {
+    const bare = { specs: [], description: "" } as unknown as ProductDetail;
+    render(createElement(ProductOverview, { product: bare }));
+    expect(screen.queryByText("Главное в работе")).not.toBeInTheDocument();
+    expect(screen.getByText("Задать вопрос специалисту")).toBeInTheDocument();
+  });
+
+  // Якоря #characteristics/#description теперь у панелей вкладок: второй такой id
+  // внутри панели ломал бы и aria-controls, и переход по прямому URL.
+  it("паспорт и описание не несут своих якорных id", () => {
+    const { container } = render(
+      createElement("div", null, [
+        createElement(ProductPassport, { key: "p", specs }),
+        createElement(ProductDescription, { key: "d", description: "Текст" }),
+      ]),
+    );
+    expect(screen.getByText("Технический паспорт")).toBeInTheDocument();
+    expect(container.querySelector("#characteristics, #description")).toBeNull();
+  });
+
+  it("длинный паспорт сворачивается и растворяется в фоне панели, а не в белом", () => {
+    const many = Array.from({ length: 15 }, (_, i) => ({ label: `Параметр ${i}`, value: `${i}` }));
+    render(createElement(ProductPassport, { specs: many }));
+    const toggle = screen.getByRole("button", { name: /Все характеристики/ });
+    const region = document.getElementById(toggle.getAttribute("aria-controls")!);
+    expect(region).not.toBeNull();
+    expect(region!.querySelector(".from-raised")).not.toBeNull();
+    expect(region!.querySelector(".from-surface")).toBeNull();
+  });
+
+  it("длинное описание сворачивается в цвет своей карточки", () => {
+    render(createElement(ProductDescription, { description: "а".repeat(700) }));
+    const toggle = screen.getByRole("button", { name: /Показать всё/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    const region = document.getElementById(toggle.getAttribute("aria-controls")!);
+    expect(region!.querySelector(".from-surface")).not.toBeNull();
   });
 });

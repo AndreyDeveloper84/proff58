@@ -5,7 +5,7 @@ import { WhyBuyStrip } from "@/components/home/HomeBottom";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { getArticleCards } from "@/lib/articles-source";
 
-export const metadata = { title: "Статьи и обзоры" };
+export const metadata = { title: "Советы по выбору и работе с инструментом" };
 
 // Статьи ведутся в админке — пререндер зацементировал бы ленту до следующей
 // сборки.
@@ -22,11 +22,11 @@ export default async function ArticlesIndexPage() {
             Главная
           </Link>
           <span aria-hidden>›</span>
-          <span className="text-ink-2">Статьи</span>
+          <span className="text-ink-2">Полезные советы</span>
         </nav>
 
         <h1 className="font-display text-[28px] font-semibold text-ink lg:text-[32px]">
-          Статьи и обзоры
+          Советы по выбору и работе с инструментом
         </h1>
         <p className="mt-1 max-w-[640px] text-sm text-ink-2">
           Разбираем характеристики инструмента и оснастки так, чтобы по ним можно было выбирать:
@@ -35,7 +35,7 @@ export default async function ArticlesIndexPage() {
 
         {/* Первая статья — крупной карточкой, остальные сеткой: список короткий,
             и однородная плитка выглядела бы пустовато. */}
-        <section aria-label="Все статьи" className="mt-5 grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <section aria-label="Все советы" className="mt-5 grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <Link
             href={`/articles/${lead.slug}`}
             className="group flex flex-col overflow-hidden rounded-md border border-line bg-surface transition hover:border-accent/60 hover:shadow-md lg:self-start"

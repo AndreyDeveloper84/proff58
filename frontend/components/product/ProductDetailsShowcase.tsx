@@ -4,44 +4,19 @@ import {
   CircleGauge,
   Hammer,
   MessageSquareText,
-  PackageCheck,
-  PlugZap,
   RotateCcw,
   ShieldCheck,
   Truck,
   Wrench,
   Zap,
 } from "lucide-react";
+import { PhoneContact } from "@/components/contacts/CopyContact";
 import { Collapsible } from "./Collapsible";
 import { SITE } from "@/lib/site";
 import { pickUseCases } from "@/lib/pdp-usecases";
 import { hasRealSpecs, keySpecs } from "@/lib/specs";
+import { groupProductSpecs } from "@/lib/spec-groups";
 import type { ProductDetail, ProductSpec } from "@/lib/types";
-
-type SpecGroup = {
-  title: string;
-  icon: typeof Zap;
-  specs: ProductSpec[];
-};
-
-const GROUPS = [
-  {
-    title: "Производительность",
-    icon: CircleGauge,
-    test:
-      /мощност|энерги|частот|оборот|скорост|производительност|давлен|расход|усили|диаметр|глубин|крутящ/i,
-  },
-  {
-    title: "Оснастка",
-    icon: Wrench,
-    test: /патрон|оснаст|креплен|насад|режим|реверс|муфт|комплект|кейс|диск|бур|сверл/i,
-  },
-  {
-    title: "Питание и корпус",
-    icon: PlugZap,
-    test: /питан|напряжен|аккумулятор|ёмкост|емкост|кабел|вес|размер|габарит|материал|корпус|длин|ширин|высот/i,
-  },
-] as const;
 
 /**
  * Ключевые параметры блока «Главное в работе».
@@ -65,25 +40,6 @@ export function selectKeySpecs(specs: ProductSpec[], limit = 4): ProductSpec[] {
  */
 export function hasPassportSpecs(specs: ProductSpec[]): boolean {
   return hasRealSpecs(specs);
-}
-
-export function groupProductSpecs(specs: ProductSpec[]): SpecGroup[] {
-  const buckets = GROUPS.map((group) => ({ ...group, specs: [] as ProductSpec[] }));
-  const other: ProductSpec[] = [];
-
-  for (const spec of specs) {
-    const bucket = buckets.find((group) => group.test.test(spec.label));
-    (bucket?.specs ?? other).push(spec);
-  }
-
-  return [
-    ...buckets.map(({ title, icon, specs: groupedSpecs }) => ({
-      title,
-      icon,
-      specs: groupedSpecs,
-    })),
-    { title: "Дополнительно", icon: PackageCheck, specs: other },
-  ].filter((group) => group.specs.length > 0);
 }
 
 const METRIC_ICONS = [Zap, Hammer, Wrench, CircleGauge];
@@ -158,12 +114,14 @@ function SpecGroups({ specs }: { specs: ProductSpec[] }) {
   );
 
   return (
-    <section id="characteristics" className="scroll-mt-28" aria-labelledby="passport-title">
+    <section aria-labelledby="passport-title">
       <h2 id="passport-title" className="mb-3 font-display text-xl font-semibold text-ink">
         Технический паспорт
       </h2>
       {specs.length > 14 ? (
-        <Collapsible collapsedHeight={720} moreLabel="Все характеристики">
+        // Свёрнутая карточка паспорта растворяется в фоне панели (bg-raised), а не
+        // обрывается белой полосой поверх него.
+        <Collapsible collapsedHeight={720} moreLabel="Все характеристики" fade="raised">
           {content}
         </Collapsible>
       ) : (
@@ -175,7 +133,7 @@ function SpecGroups({ specs }: { specs: ProductSpec[] }) {
 
 const USE_CASE_ICONS = [BadgeCheck, Wrench, CircleGauge];
 
-function ExpertPanel({ specs, wide = false }: { specs: ProductSpec[]; wide?: boolean }) {
+function ExpertPanel({ specs }: { specs: ProductSpec[] }) {
   // Сценарии зависят от типа инструмента: у перфоратора это бурение и штробление,
   // у мойки — фасад и автомобиль. Для типа без своей записи остаётся честный
   // запасной набор про помощь магазина — выдумывать применение нельзя.
@@ -191,24 +149,13 @@ function ExpertPanel({ specs, wide = false }: { specs: ProductSpec[]; wide?: boo
         <h2 className="font-display text-2xl font-semibold">
           {isGeneric ? "Поможем с выбором" : "Подойдёт для"}
         </h2>
-        {/* Без паспорта рядом панель занимает всю ширину — сценарии тогда идут
-            в ряд, иначе три строки текста растягиваются на весь экран. */}
-        <div
-          className={
-            wide
-              ? "mt-4 grid gap-4 sm:grid-cols-3"
-              : "mt-4 divide-y divide-white/10"
-          }
-        >
+        {/* Панель во всю ширину вкладки — сценарии идут в ряд, иначе три строки
+            текста растягиваются на весь экран. */}
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
           {items.map((item) => {
             const Icon = item.icon;
             return (
-              <div
-                key={item.title}
-                className={
-                  wide ? "flex gap-3" : "flex gap-3 border-t border-white/10 py-4 first:border-t-0 first:pt-0"
-                }
-              >
+              <div key={item.title} className="flex gap-3">
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-white/15 text-accent">
                   <Icon className="h-5 w-5" aria-hidden />
                 </span>
@@ -226,10 +173,11 @@ function ExpertPanel({ specs, wide = false }: { specs: ProductSpec[]; wide?: boo
       {/* Телефон, а не мессенджер: адрес бота MAX приходит с сервера и может быть
           пуст, а битую ссылку в signature-панели показывать нельзя. Звонок —
           то, что работает всегда. */}
-      <a
+      <PhoneContact
+        display={SITE.phone.display}
         href={SITE.phone.href}
         data-event="pdp_expert_help"
-        className="group m-3 mt-0 flex min-h-16 items-center gap-3 rounded-md bg-surface p-3 text-ink transition hover:bg-raised sm:m-4 sm:mt-0"
+        className="group m-3 mt-0 flex min-h-16 items-center gap-3 rounded-md bg-surface p-3 text-ink transition hover:bg-raised hover:text-ink sm:m-4 sm:mt-0"
       >
         <MessageSquareText className="h-6 w-6 shrink-0 text-accent" aria-hidden />
         <span className="min-w-0 flex-1">
@@ -237,7 +185,7 @@ function ExpertPanel({ specs, wide = false }: { specs: ProductSpec[]; wide?: boo
           <span className="mt-0.5 block text-xs text-ink-3">{SITE.phone.display}</span>
         </span>
         <ArrowRight className="h-5 w-5 text-accent transition-transform group-hover:translate-x-0.5" aria-hidden />
-      </a>
+      </PhoneContact>
     </aside>
   );
 }
@@ -272,44 +220,44 @@ function PurchaseConfidence() {
   );
 }
 
-export function ProductDetailsShowcase({ product }: { product: ProductDetail }) {
-  if (!product.specs.length && !product.description) return null;
-
-  const hasPassport = hasPassportSpecs(product.specs);
-
+/**
+ * Вкладка «О товаре»: выжимка без паспорта и описания — «Главное в работе»,
+ * сценарии применения с выходом на специалиста и обещания магазина. Панель
+ * специалиста есть всегда, поэтому вкладка не бывает пустой.
+ *
+ * Липкую обёртку у панели специалиста убрали: внутри вкладок (overflow-hidden)
+ * sticky всё равно не работал, а рядом больше нет длинного паспорта.
+ */
+export function ProductOverview({ product }: { product: ProductDetail }) {
   return (
     <div className="space-y-5">
-      {hasPassport && <MetricCards specs={product.specs} />}
-
-      {hasPassport ? (
-        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.18fr)_minmax(320px,.82fr)]">
-          <SpecGroups specs={product.specs} />
-          <div className="lg:sticky lg:top-28">
-            <ExpertPanel specs={product.specs} />
-          </div>
-        </div>
-      ) : (
-        <ExpertPanel specs={product.specs} wide />
-      )}
-
+      {hasPassportSpecs(product.specs) && <MetricCards specs={product.specs} />}
+      <ExpertPanel specs={product.specs} />
       <PurchaseConfidence />
-
-      {product.description && (
-        <section id="description" className="scroll-mt-28 rounded-lg border border-line bg-surface p-4 sm:p-5">
-          <h2 className="mb-3 font-display text-xl font-semibold text-ink">Описание</h2>
-          {product.description.length > 600 ? (
-            <Collapsible collapsedHeight={240}>
-              <p className="whitespace-pre-line text-sm leading-relaxed text-ink-2">
-                {product.description}
-              </p>
-            </Collapsible>
-          ) : (
-            <p className="whitespace-pre-line text-sm leading-relaxed text-ink-2">
-              {product.description}
-            </p>
-          )}
-        </section>
-      )}
     </div>
+  );
+}
+
+/** Вкладка «Характеристики». id не ставим: якорь #characteristics — сама панель. */
+export function ProductPassport({ specs }: { specs: ProductSpec[] }) {
+  return <SpecGroups specs={specs} />;
+}
+
+/** Вкладка «Описание». id не ставим: якорь #description — сама панель. */
+export function ProductDescription({ description }: { description: string }) {
+  const text = (
+    <p className="whitespace-pre-line text-sm leading-relaxed text-ink-2">{description}</p>
+  );
+  return (
+    <section
+      aria-labelledby="description-title"
+      className="rounded-lg border border-line bg-surface p-4 sm:p-5"
+    >
+      <h2 id="description-title" className="mb-3 font-display text-xl font-semibold text-ink">
+        Описание
+      </h2>
+      {/* Collapsible лежит внутри карточки bg-surface — градиент в её цвет (fade по умолчанию). */}
+      {description.length > 600 ? <Collapsible collapsedHeight={240}>{text}</Collapsible> : text}
+    </section>
   );
 }
