@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { groupProductSpecs, hasPassportSpecs, selectKeySpecs } from "./ProductDetailsShowcase";
+import { groupProductSpecs } from "@/lib/spec-groups";
+import { hasPassportSpecs, selectKeySpecs } from "./ProductDetailsShowcase";
 
 // Порядок — как его отдаёт detail-эндпоинт (DATA-01): ключевые по типу товара, затем
 // остальные, служебный тип инструмента — последним.
