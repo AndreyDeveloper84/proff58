@@ -24,6 +24,7 @@ urlpatterns = [
         views.ProductSuggestView.as_view(),
         name="product-suggest",
     ),
+    path("search/quick/", views.SearchQuickView.as_view(), name="search-quick"),
     path(
         "search/facets/",
         views.SearchFacetsView.as_view(),

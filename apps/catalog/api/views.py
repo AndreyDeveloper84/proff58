@@ -22,7 +22,7 @@ from ..availability_subscriptions import (
     subscribe,
     unsubscribe,
 )
-from ..filters import ProductFilter, availability_rank, visible_products
+from ..filters import ProductFilter, availability_rank, search_products, visible_products
 from ..models import Category, ProductAttributeValue, StockStatus
 from ..sales import bestsellers_queryset
 from ..seo_index import indexable_product_ids
@@ -293,6 +293,168 @@ class ProductSuggestView(APIView):
             .values("id", "name", "slug")[:SUGGEST_LIMIT]
         )
         return Response(list(rows))
+
+
+#: Быстрый поиск в шапке: сколько товаров и разделов показывает панель.
+QUICK_SEARCH_PRODUCTS = 6
+QUICK_SEARCH_CATEGORIES = 3
+#: Сколько первых совпадений поиска смотрим, подбирая разделы. Разделы считаются
+#: по той же ранжированной выдаче, что и товары, но глубже первой шестёрки: иначе
+#: запрос «шуруп» показал бы раздел только тех шести товаров, что стоят первыми.
+QUICK_SEARCH_POOL = 300
+
+
+def _fold(text: str) -> str:
+    """Нормализация для сравнения подписей: регистр и «ё» → «е»."""
+    return (text or "").casefold().replace("ё", "е")
+
+
+def _storefront_categories(paths) -> dict[str, dict]:
+    """Категории, до которых покупатель доходит по дереву витрины, — ``{path: row}``.
+
+    Один выключенный (``is_active``/``on_site``) предок прячет всё поддерево,
+    поэтому смотрим всю цепочку: префиксы ``path`` длиной, кратной ``steplen``, —
+    ровно предки узла (MP_Node). Та же логика, что ``facet_audit.visible_categories``,
+    но одним запросом только по нужным цепочкам, а не по всему дереву.
+    """
+    step = Category.steplen
+    chains = {
+        path: [path[:i] for i in range(step, len(path) + 1, step)] for path in set(paths) if path
+    }
+    wanted = {prefix for chain in chains.values() for prefix in chain}
+    if not wanted:
+        return {}
+    rows = {
+        row["path"]: row
+        for row in Category.objects.filter(path__in=wanted).values(
+            "path", "name", "slug", "is_active", "on_site"
+        )
+    }
+    return {
+        path: rows[path]
+        for path, chain in chains.items()
+        if all(p in rows and rows[p]["is_active"] and rows[p]["on_site"] for p in chain)
+    }
+
+
+class SearchQuickView(APIView):
+    """Быстрый поиск в шапке витрины: до 6 товаров и до 3 разделов по запросу.
+
+    ``GET /api/catalog/search/quick/?q=`` → ``{"query", "products", "categories"}``.
+    Запрос короче двух символов — пустые списки.
+
+    Ранжированный поиск — тот же, что у ``products/?search=`` (``search_products``),
+    и выполняется ОДИН раз: первые совпадения дают и товары, и разделы. Товары —
+    карточки листинга (``ProductListSerializer`` с ценами одного bulk-вызова).
+
+    Раздел — пара «категория + вид товара (tool_type)»: запрос «шуруп» должен
+    развести шурупы, шуруповёрты и оснастку, а они часто лежат в одной категории.
+    Выше стоят разделы, чьё название содержит сам запрос, дальше — по числу
+    совпадений. Скрытые на витрине категории (сама или предок выключены) не
+    предлагаются: ссылка на них вела бы в 404.
+
+    Серверного кэша нет намеренно: цены в карточке зависят от пользователя.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        q = (request.query_params.get("q") or "").strip()
+        if len(q) < 2:
+            return Response({"query": q, "products": [], "categories": []})
+
+        pool = list(
+            search_products(visible_products(), q).values_list(
+                "id", "category_id", "category__path"
+            )[:QUICK_SEARCH_POOL]
+        )
+        return Response(
+            {
+                "query": q,
+                "products": self._products(request, [pid for pid, _, _ in pool]),
+                "categories": self._categories(q, pool),
+            }
+        )
+
+    def _products(self, request, ids: list[int]) -> list:
+        top = ids[:QUICK_SEARCH_PRODUCTS]
+        if not top:
+            return []
+        order = {pid: i for i, pid in enumerate(top)}
+        products = sorted(
+            with_card_prefetch(visible_products().filter(id__in=top)),
+            key=lambda p: order[p.id],
+        )
+        context = {
+            "request": request,
+            "view": self,
+            "price_map": price_map_for_products(products, request.user),
+        }
+        return ProductListSerializer(products, many=True, context=context).data
+
+    def _categories(self, q: str, pool) -> list[dict]:
+        visible = _storefront_categories(path for _, _, path in pool)
+        if not visible:
+            return []
+        # Вид товара одним запросом по всем совпадениям пула (у товара он один:
+        # unique_together product+attribute).
+        tool_types = {
+            pid: (slug, value)
+            for pid, slug, value in ProductAttributeValue.objects.filter(
+                product_id__in=[pid for pid, _, _ in pool],
+                attribute__slug="tool_type",
+                value_option__isnull=False,
+            )
+            .exclude(value_option__slug="")
+            .values_list("product_id", "value_option__slug", "value_option__value")
+        }
+
+        groups: dict[tuple, dict] = {}
+        for index, (pid, _, path) in enumerate(pool):
+            category = visible.get(path)
+            if category is None:
+                continue
+            tool_slug, tool_name = tool_types.get(pid, (None, None))
+            key = (path, tool_slug)
+            group = groups.get(key)
+            if group is None:
+                groups[key] = group = {
+                    "name": tool_name or category["name"],
+                    "category": category,
+                    "tool_type": tool_slug,
+                    "count": 0,
+                    "first": index,
+                }
+            group["count"] += 1
+
+        needle = _fold(q)
+
+        def sort_key(group):
+            named = needle in _fold(group["name"]) or needle in _fold(group["category"]["name"])
+            return (0 if named else 1, -group["count"], group["first"])
+
+        out: list[dict] = []
+        seen: set[tuple[str, str]] = set()
+        for group in sorted(groups.values(), key=sort_key):
+            # Одинаковые подписи не повторяем: вид с тем же именем, что и раздел,
+            # или одноимённые разделы в разных ветках дерева выглядели бы дублями.
+            label = (_fold(group["name"]), _fold(group["category"]["name"]))
+            if label in seen:
+                continue
+            seen.add(label)
+            out.append(
+                {
+                    "name": group["name"],
+                    "category": {
+                        "name": group["category"]["name"],
+                        "slug": group["category"]["slug"],
+                    },
+                    "tool_type": group["tool_type"],
+                }
+            )
+            if len(out) == QUICK_SEARCH_CATEGORIES:
+                break
+        return out
 
 
 class SitemapProductsView(APIView):

@@ -58,12 +58,13 @@ FRONTEND_PATHS = [
     # собственных локаций запрос уходил в Django за редиректом 301.
     "/api/delivery/zones",
     "/api/delivery/slots",
-    "/api/search/suggest",
+    "/api/search/quick",
 ]
 
 # Пути, которые ОБЯЗАНЫ оставаться на Django (web:8000).
 WEB_PATHS = [
     "/api/catalog/categories/",
+    "/api/catalog/search/quick/",  # сам Django-эндпоинт быстрого поиска (зовёт BFF)
     "/api/catalog/products/drel/",
     "/api/catalog/products/drel/facets/",
     "/api/1c/products/import",  # интегратор 1С — только Django (X-Api-Key)
