@@ -2,8 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CallLink, CopyContact } from "./CopyContact";
-import { CopyToastRegion } from "./CopyToastRegion";
-import { dismissCopyToast } from "./copy-toast";
+import { ToastRegion } from "@/components/ui/ToastRegion";
+import { dismissToast } from "@/lib/toast";
 
 // UX-03: телефон и адрес копируются по нажатию, уведомление — только после успеха.
 const PHONE = "8 (8412) 20-20-87";
@@ -16,6 +16,9 @@ function setClipboard(writeText: unknown) {
   });
 }
 
+// Live-область уведомлений: всегда в разметке, внутри — только текст сообщения.
+const live = () => screen.getByTestId("toast-live");
+
 function renderAll() {
   return render(
     <>
@@ -24,7 +27,7 @@ function renderAll() {
         Магазин на Онежском
       </CopyContact>
       <CallLink href="tel:+78412202087" />
-      <CopyToastRegion />
+      <ToastRegion />
     </>,
   );
 }
@@ -34,7 +37,7 @@ describe("CopyContact (UX-03)", () => {
     document.execCommand = vi.fn(() => false);
   });
   afterEach(() => {
-    act(() => dismissCopyToast());
+    act(() => dismissToast());
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -46,9 +49,7 @@ describe("CopyContact (UX-03)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Скопировать номер телефона/ }));
 
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Номер скопирован в буфер обмена"),
-    );
+    await waitFor(() => expect(live()).toHaveTextContent("Номер скопирован в буфер обмена"));
     expect(writeText).toHaveBeenCalledWith(PHONE);
   });
 
@@ -59,9 +60,7 @@ describe("CopyContact (UX-03)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Скопировать адрес/ }));
 
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Адрес скопирован в буфер обмена"),
-    );
+    await waitFor(() => expect(live()).toHaveTextContent("Адрес скопирован в буфер обмена"));
     expect(writeText).toHaveBeenCalledWith(ADDRESS);
   });
 
@@ -71,10 +70,10 @@ describe("CopyContact (UX-03)", () => {
     renderAll();
 
     fireEvent.click(screen.getByRole("button", { name: /Скопировать номер телефона/ }));
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(live()).toBeEmptyDOMElement();
 
     await act(async () => finish());
-    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(live()).toHaveTextContent("Номер скопирован в буфер обмена");
   });
 
   it("запрет буфера: понятное сообщение и текст, выделенный для ручного копирования", async () => {
@@ -83,8 +82,9 @@ describe("CopyContact (UX-03)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Скопировать номер телефона/ }));
 
-    const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Не удалось скопировать автоматически");
+    await waitFor(() => expect(live()).toHaveTextContent("Не удалось скопировать автоматически"));
+    // Одно объявление: без role=alert внутри polite-региона.
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.queryByText("Номер скопирован в буфер обмена")).not.toBeInTheDocument();
     const manual = screen.getByLabelText("Текст для копирования вручную") as HTMLInputElement;
     expect(manual.value).toBe(PHONE);
@@ -98,7 +98,7 @@ describe("CopyContact (UX-03)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Скопировать адрес/ }));
 
-    await waitFor(() => expect(screen.getByRole("status")).toBeInTheDocument());
+    await waitFor(() => expect(live()).toHaveTextContent("Адрес скопирован"));
     expect(document.execCommand).toHaveBeenCalledWith("copy");
   });
 
@@ -109,12 +109,13 @@ describe("CopyContact (UX-03)", () => {
 
     for (let i = 0; i < 4; i++) {
       fireEvent.click(phone);
-      await waitFor(() => expect(screen.getByRole("status")).toBeInTheDocument());
+      await waitFor(() => expect(live()).toHaveTextContent("Номер скопирован"));
     }
     fireEvent.click(screen.getByRole("button", { name: /Скопировать адрес/ }));
 
-    await waitFor(() => expect(screen.getAllByRole("status")).toHaveLength(1));
-    expect(screen.getByRole("status")).toHaveTextContent("Адрес скопирован");
+    await waitFor(() => expect(live()).toHaveTextContent("Адрес скопирован"));
+    expect(live()).not.toHaveTextContent("Номер скопирован");
+    expect(screen.getAllByRole("button", { name: "Закрыть уведомление" })).toHaveLength(1);
   });
 
   it("уведомление само исчезает и закрывается кнопкой", async () => {
@@ -123,14 +124,14 @@ describe("CopyContact (UX-03)", () => {
     renderAll();
 
     fireEvent.click(screen.getByRole("button", { name: /Скопировать номер телефона/ }));
-    await waitFor(() => expect(screen.getByRole("status")).toBeInTheDocument());
+    await waitFor(() => expect(live()).toHaveTextContent("Номер скопирован"));
     fireEvent.click(screen.getByRole("button", { name: "Закрыть уведомление" }));
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(live()).toBeEmptyDOMElement();
 
     fireEvent.click(screen.getByRole("button", { name: /Скопировать номер телефона/ }));
-    await waitFor(() => expect(screen.getByRole("status")).toBeInTheDocument());
-    act(() => vi.advanceTimersByTime(3000));
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    await waitFor(() => expect(live()).toHaveTextContent("Номер скопирован"));
+    act(() => vi.advanceTimersByTime(4000));
+    expect(live()).toBeEmptyDOMElement();
   });
 
   it("копирование — кнопка (клавиатура, фокус), звонок — отдельная tel-ссылка", () => {

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { showCopyManual, showCopySuccess } from "./copy-toast";
+import { showManualCopy, showToast } from "@/lib/toast";
 
 const MESSAGES = {
   phone: {
@@ -72,8 +72,8 @@ export function CopyContact({
 }) {
   const text = MESSAGES[kind];
   const onClick = async () => {
-    if (await copyText(value)) showCopySuccess(text.ok);
-    else showCopyManual(text.manual, value);
+    if (await copyText(value)) showToast(text.ok);
+    else showManualCopy(text.manual, value);
   };
   return (
     <button

@@ -18,13 +18,13 @@ import { emitActionSuccess } from "@/lib/action-feedback";
 import { ApiError } from "@/lib/api";
 import { addWishlistItem } from "@/lib/auth";
 import { formatPrice, pluralize } from "@/lib/format";
+import { showToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 export default function CartPage() {
   const { cart, loading, total, update, remove } = useCart();
   const [mutating, setMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const selectionInitialized = useRef(false);
 
@@ -45,7 +45,6 @@ export default function CartPage() {
   const run = useCallback(async (action: () => Promise<unknown>): Promise<boolean> => {
     setMutating(true);
     setError(null);
-    setNotice(null);
     try {
       await action();
       return true;
@@ -109,7 +108,8 @@ export default function CartPage() {
   const handleRemoveSelected = () =>
     run(async () => {
       for (const line of selectedLines) await remove(line.id);
-      setNotice("Выбранные товары удалены");
+      // Toast, а не плашка над списком: не сдвигает корзину и скрывается сам.
+      showToast("Выбранные товары удалены");
     });
 
   const handleMoveToWishlist = () =>
@@ -118,7 +118,7 @@ export default function CartPage() {
       // Перенос идёт мимо WishlistProvider — сердечко в шапке дёргаем сами, один раз.
       if (selectedLines.length > 0) emitActionSuccess("wishlist");
       for (const line of selectedLines) await remove(line.id);
-      setNotice("Товары перенесены в избранное");
+      showToast("Товары перенесены в избранное");
     });
 
   if (loading) {
@@ -168,14 +168,6 @@ export default function CartPage() {
           className="mb-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger"
         >
           {error}
-        </div>
-      )}
-      {notice && (
-        <div
-          role="status"
-          className="mb-4 rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-accent"
-        >
-          {notice}
         </div>
       )}
 
