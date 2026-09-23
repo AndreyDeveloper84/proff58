@@ -13,7 +13,6 @@ import {
   Phone,
   Search,
   ShieldCheck,
-  Store,
   Truck,
   User,
   Wrench,
@@ -25,7 +24,14 @@ import { useWishlist } from "@/components/wishlist/WishlistProvider";
 import { accountLinkHref } from "@/lib/auth-state";
 import type { InfoPageLink } from "@/lib/info-pages";
 import { useCompare } from "@/lib/compare";
-import { resolveStorefront, SITE, type ResolvedStorefront, type TopLink } from "@/lib/site";
+import {
+  resolveStorefront,
+  SITE,
+  STORE_ROUTE_HREF,
+  streetAddress,
+  type ResolvedStorefront,
+  type TopLink,
+} from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { CallLink, CopyContact } from "@/components/contacts/CopyContact";
 import {
@@ -93,6 +99,7 @@ export function Header({
   // Кивок иконки кабинета при активации ссылки. Переход не ждёт анимацию:
   // preventDefault нет, шапка живёт в layout и доигрывает уже на новой странице.
   const accountPulse = usePulse(ACTION_DURATION_MS.account);
+  const storeAddressLine = `${storefront.region} · ${streetAddress(storefront.address, storefront.region)}`;
 
   const logo = logoUrl ? (
     <Image
@@ -127,19 +134,16 @@ export function Header({
       <div className="hidden border-b border-header-line bg-header lg:block">
         <div className="mx-auto flex h-9 w-full max-w-[1680px] items-center justify-between px-4 text-xs text-topbar-ink sm:px-6 xl:px-8">
           <div className="flex items-center gap-5">
-            <span className="flex items-center gap-1.5 font-medium">
-              <MapPin className="h-3.5 w-3.5 text-accent" aria-hidden />
-              {storefront.region}
-            </span>
-            {/* UX-03: подпись короткая, а в буфер уходит полный адрес магазина. */}
-            <CopyContact
-              kind="address"
-              value={storefront.address}
-              className="flex items-center gap-1.5 font-medium text-accent hover:brightness-90"
+            {/* Город и адрес — одна нейтральная строка и ссылка к карте проезда:
+                человеку, который ищет магазин, нужен маршрут, а не адрес в буфере.
+                Зелёный — только на наведении и фокусе, как у остальных пунктов. */}
+            <Link
+              href={STORE_ROUTE_HREF}
+              className="flex items-center gap-1.5 font-medium transition-colors hover:text-accent focus-visible:text-accent"
             >
-              <Store className="h-3.5 w-3.5" aria-hidden />
-              {storefront.store}
-            </CopyContact>
+              <MapPin className="h-3.5 w-3.5" aria-hidden />
+              {storeAddressLine}
+            </Link>
             {/* Инфо-пункты: каждый раскрывает подсказку по hover/фокусу — сюда
                 переехала бывшая сервисная полоса главной — и ведёт на свою страницу,
                 если она опубликована. «Контакты» рендерятся из storefront
@@ -414,11 +418,14 @@ export function Header({
                 <ThemeToggle />
               </span>
             </div>
-            <CopyContact
-              kind="address"
-              value={storefront.address}
-              className="min-h-11 py-2 text-sm text-topbar-ink"
-            />
+            <Link
+              href={STORE_ROUTE_HREF}
+              className="flex min-h-11 items-center gap-2 py-2 text-sm text-topbar-ink hover:text-accent focus-visible:text-accent"
+              onClick={() => setOpen(false)}
+            >
+              <MapPin className="h-4 w-4" aria-hidden />
+              {storeAddressLine}
+            </Link>
           </nav>
         </div>
       )}

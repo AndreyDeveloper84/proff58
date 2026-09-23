@@ -131,6 +131,57 @@ export const SITE = {
   payments: ["Картой онлайн", "Наличными", "Безналичный (B2B)", "При получении"],
 } as const;
 
+// Точка магазина на карте проезда — единственное место, где она задана.
+// Порядок у Яндекса разный: в `ll`/`pt` виджета — «долгота,широта», в `rtext`
+// маршрута — «широта,долгота». Поэтому URL собираем здесь, а не в компоненте.
+//
+// `widgetUrl` — заготовка под карту из Яндекс Конструктора: вставить сюда адрес
+// из её iframe-кода (`https://yandex.ru/map-widget/v1/?um=constructor:…`), и
+// компонент возьмёт его как есть. Годится только iframe-вариант кода: скриптовый
+// (`<script src=…constructor…>`) режет CSP (`script-src 'self'`).
+export type StoreMapConfig = {
+  lat: number;
+  lon: number;
+  zoom: number;
+  widgetUrl?: string;
+};
+
+export const STORE_MAP: StoreMapConfig = {
+  lat: 53.217561,
+  lon: 44.943818,
+  zoom: 16,
+};
+
+/** Адрес виджета карты с меткой магазина. */
+export function yandexMapWidgetUrl(map: StoreMapConfig = STORE_MAP): string {
+  if (map.widgetUrl) return map.widgetUrl;
+  const point = `${map.lon},${map.lat}`;
+  return `https://yandex.ru/map-widget/v1/?${new URLSearchParams({
+    ll: point,
+    z: String(map.zoom),
+    pt: `${point},pm2rdm`,
+  })}`;
+}
+
+/** Маршрут до магазина в Яндекс Картах: точка отправления — где человек сейчас. */
+export function yandexRouteUrl(map: StoreMapConfig = STORE_MAP): string {
+  return `https://yandex.ru/maps/?${new URLSearchParams({
+    rtext: `~${map.lat},${map.lon}`,
+    rtt: "auto",
+  })}`;
+}
+
+/** Якорь секции «Как к нам проехать» на странице «О компании». */
+export const ROUTE_ANCHOR = "route";
+/** Куда ведёт адрес магазина в шапке: сразу к карте проезда. */
+export const STORE_ROUTE_HREF = `/info/about#${ROUTE_ANCHOR}`;
+
+/** Адрес без города: «г. Пенза, 1-й Онежский проезд, 12» → «1-й Онежский проезд, 12». */
+export function streetAddress(address: string, city: string): string {
+  const escaped = city.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return address.replace(new RegExp(`^(г\\.\\s*)?${escaped},\\s*`, "i"), "").trim() || address;
+}
+
 export type ResolvedStorefront = {
   region: string;
   address: string;
