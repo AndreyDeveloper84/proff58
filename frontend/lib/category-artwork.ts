@@ -10,6 +10,7 @@ type Artwork = { photo?: string; skeleton?: string };
 // Порядок важен: перфораторы проверяются до общего «электроинструмента»,
 // иначе подкатегория получила бы чертёж шуруповёрта.
 const RULES: Array<[RegExp, Artwork]> = [
+  [/хоз\s*товар|хозяйственн/, { photo: "hoztovary.webp" }],
   [/перфоратор/, { photo: "electroinstrument.webp", skeleton: "perforatory.png" }],
   [/оснаст|расход/, { photo: "osnastka.webp", skeleton: "osnastka.png" }],
   [/электроинструмент/, { photo: "electroinstrument.webp", skeleton: "electroinstrument.png" }],
