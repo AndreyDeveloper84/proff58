@@ -116,7 +116,7 @@ export default async function ArticlePage({ params }: Props) {
           </Link>
           <span aria-hidden>›</span>
           <Link href="/articles" className="transition hover:text-accent">
-            Статьи
+            Полезные советы
           </Link>
           <span aria-hidden>›</span>
           <span className="line-clamp-1 text-ink-2">{article.title}</span>
@@ -243,7 +243,7 @@ export default async function ArticlePage({ params }: Props) {
                 href="/articles"
                 className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-semibold text-accent transition hover:gap-1.5"
               >
-                Все статьи
+                Все советы
                 <ArrowRight className="h-3 w-3" aria-hidden />
               </Link>
             </div>
