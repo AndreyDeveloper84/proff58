@@ -209,7 +209,7 @@ export default function CartPage() {
                   className="ml-auto inline-flex min-h-10 items-center gap-2 rounded-md px-2 text-xs font-medium text-ink-3 transition hover:bg-raised hover:text-danger disabled:opacity-40 sm:text-sm"
                 >
                   <Trash2 className="h-4 w-4" aria-hidden />
-                  <span className="hidden sm:inline">Удалить выбранные</span>
+                  <span className="sr-only sm:not-sr-only">Удалить выбранные</span>
                 </button>
                 <button
                   type="button"
@@ -218,7 +218,7 @@ export default function CartPage() {
                   className="inline-flex min-h-10 items-center gap-2 rounded-md px-2 text-xs font-medium text-ink-3 transition hover:bg-raised hover:text-accent disabled:opacity-40 sm:text-sm"
                 >
                   <Heart className="h-4 w-4" aria-hidden />
-                  <span className="hidden sm:inline">Перенести в избранное</span>
+                  <span className="sr-only sm:not-sr-only">Перенести в избранное</span>
                 </button>
               </div>
 

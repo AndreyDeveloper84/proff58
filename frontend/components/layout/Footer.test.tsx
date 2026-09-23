@@ -22,6 +22,8 @@ const EXISTING_PREFIXES = [
 const BOT_URL = "https://max.ru/proff58_bot";
 const withBot = { ...resolveStorefront(), maxHref: BOT_URL };
 
+const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 describe("Footer (#591)", () => {
   it("все ссылки ведут на существующие маршруты или внешние адреса", () => {
     render(<Footer />);
@@ -94,21 +96,19 @@ describe("Информационные страницы в подвале", () =
     expect(screen.getAllByRole("link", { name: "Доставка" })).toHaveLength(1);
   });
 
-  // UX-03: номер и адрес копируются по нажатию, звонок — отдельное подписанное действие.
-  it("телефон и адрес — кнопки копирования, «Позвонить» — отдельная tel-ссылка", () => {
+  // Номер — одна tel-ссылка (на ПК копирует), адрес копируется; «Позвонить» нет.
+  it("телефон — tel-ссылка без надписи «Позвонить», адрес — кнопка копирования", () => {
     render(<Footer />);
 
-    const phone = screen.getAllByRole("button", { name: /Скопировать номер телефона/ })[0];
-    expect(phone.getAttribute("aria-label")).toContain(SITE.phone.display);
-    // Адрес копируется полный — даже там, где на экране короткая подпись магазина.
+    const phone = screen.getByRole("link", { name: new RegExp(`^${escape(SITE.phone.display)}`) });
+    expect(phone).toHaveAttribute("href", SITE.phone.href);
     for (const address of screen.getAllByRole("button", { name: /Скопировать адрес/ })) {
       expect(address.getAttribute("aria-label")).toContain(SITE.address);
     }
-    expect(screen.getAllByRole("link", { name: "Позвонить" })[0]).toHaveAttribute(
-      "href",
-      SITE.phone.href,
-    );
-    // Сам номер больше не tel-ссылка: его назначение — копирование.
-    expect(screen.queryByRole("link", { name: SITE.phone.display })).not.toBeInTheDocument();
+    expect(screen.queryByText("Позвонить")).not.toBeInTheDocument();
+    // Иконка телефона серая, зелёная только на hover/focus самой ссылки.
+    const icon = phone.querySelector("svg")!;
+    expect(icon.getAttribute("class")).not.toMatch(/(^|\s)text-accent/);
+    expect(icon.getAttribute("class")).toContain("group-hover:text-accent");
   });
 });

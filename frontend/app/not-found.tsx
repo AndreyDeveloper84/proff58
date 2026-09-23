@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SearchX } from "lucide-react";
+import { Phone, SearchX } from "lucide-react";
 
-import { CallLink, CopyContact } from "@/components/contacts/CopyContact";
+import { PhoneContact } from "@/components/contacts/CopyContact";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -62,11 +62,18 @@ export default function NotFound() {
           >
             На главную
           </Link>
-          {/* UX-03: номер копируется, звонок — отдельным действием. */}
-          <span className="inline-flex h-11 items-center gap-3 rounded-md border border-line px-4 text-sm font-medium text-ink-2">
-            <CopyContact kind="phone" value={SITE.phone.display} />
-            <CallLink href={SITE.phone.href} />
-          </span>
+          {/* Номер: на ПК копируется, на телефоне звонит. */}
+          <PhoneContact
+            display={SITE.phone.display}
+            href={SITE.phone.href}
+            className="group inline-flex h-11 items-center gap-2 rounded-md border border-line px-4 text-sm font-medium text-ink-2 hover:border-accent"
+          >
+            <Phone
+              className="h-4 w-4 shrink-0 text-ink-3 transition-colors group-hover:text-accent group-focus-visible:text-accent"
+              aria-hidden
+            />
+            {SITE.phone.display}
+          </PhoneContact>
         </div>
       </div>
     </main>

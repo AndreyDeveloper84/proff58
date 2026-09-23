@@ -321,17 +321,17 @@ describe("Инфо-пункты служебной полосы (DRF-1442)", () 
     expect(address.className).toContain("hover:text-accent");
   });
 
-  // UX-03: номер и адрес копируются по нажатию, звонок — отдельное подписанное действие.
-  it("телефон и адрес — кнопки копирования, «Позвонить» — отдельная tel-ссылка", () => {
+  // Номер — tel-ссылка (на ПК копирует), отдельной надписи «Позвонить» нигде нет.
+  it("телефон — tel-ссылки без «Позвонить», иконка серая до наведения", () => {
     render(<Header />);
 
-    const phone = screen.getAllByRole("button", { name: /Скопировать номер телефона/ })[0];
-    expect(phone.getAttribute("aria-label")).toContain(SITE.phone.display);
-    expect(screen.getAllByRole("link", { name: "Позвонить" })[0]).toHaveAttribute(
-      "href",
-      SITE.phone.href,
-    );
-    // Сам номер больше не tel-ссылка: его назначение — копирование.
-    expect(screen.queryByRole("link", { name: SITE.phone.display })).not.toBeInTheDocument();
+    const phones = screen.getAllByRole("link", { name: /^8 \(8412\) 20-20-87/ });
+    expect(phones.length).toBeGreaterThan(0);
+    for (const phone of phones) {
+      expect(phone).toHaveAttribute("href", SITE.phone.href);
+      const icon = phone.querySelector("svg");
+      if (icon) expect(icon.getAttribute("class")).not.toMatch(/(^|\s)text-accent/);
+    }
+    expect(screen.queryByText("Позвонить")).not.toBeInTheDocument();
   });
 });

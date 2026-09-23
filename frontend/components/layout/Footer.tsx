@@ -8,7 +8,7 @@ import {
   MessageSquareText,
   Phone,
 } from "lucide-react";
-import { CallLink, CopyContact } from "@/components/contacts/CopyContact";
+import { CopyContact, PhoneContact } from "@/components/contacts/CopyContact";
 import { INFO_PAGES, INFO_PAGE_SLUGS } from "@/lib/info-content";
 import type { InfoPageLink } from "@/lib/info-pages";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
@@ -121,7 +121,7 @@ export function Footer({
         <div>
           <h2 className="mb-2 font-sans text-sm font-bold text-ink">Контакты</h2>
           <ul className="space-y-2 text-sm text-ink-2">
-            {/* UX-03: адрес и номер копируются по нажатию; звонок — отдельной ссылкой. */}
+            {/* Адрес копируется по нажатию; номер на ПК копируется, на телефоне звонит. */}
             <li>
               <CopyContact
                 kind="address"
@@ -132,16 +132,18 @@ export function Footer({
                 {storefront.address}
               </CopyContact>
             </li>
-            <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <CopyContact
-                kind="phone"
-                value={storefront.phone.display}
-                className="flex items-center gap-2"
+            <li>
+              <PhoneContact
+                display={storefront.phone.display}
+                href={storefront.phone.href}
+                className="group flex items-center gap-2"
               >
-                <Phone className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
+                <Phone
+                  className="h-3.5 w-3.5 shrink-0 text-ink-2 transition-colors group-hover:text-accent group-focus-visible:text-accent"
+                  aria-hidden
+                />
                 {storefront.phone.display}
-              </CopyContact>
-              <CallLink href={storefront.phone.href} />
+              </PhoneContact>
             </li>
             <li>
               <a href={`mailto:${storefront.email}`} className="flex items-center gap-2 hover:text-accent">

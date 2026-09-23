@@ -168,9 +168,9 @@ describe("InfoSection", () => {
     expect(screen.getByTitle(/Карта: Пенза/)).toBeInTheDocument();
     // На секцию ведёт адрес из шапки: /info/about#route.
     expect(screen.getByTitle(/Карта: Пенза/).closest("section")).toHaveAttribute("id", "route");
-    expect(screen.getByRole("link", { name: "8 (800) 600-44-99" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /^8 \(800\) 600-44-99/ })).toHaveAttribute(
       "href",
-      "tel:88006004499",
+      "tel:+78006004499",
     );
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useSyncExternalStore, type MouseEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { showManualCopy, showToast } from "@/lib/toast";
 
@@ -56,8 +56,7 @@ export async function copyText(text: string): Promise<boolean> {
  * успехе показывается только после реального копирования; если буфер недоступен —
  * текст выводится выделенным, чтобы его можно было скопировать руками.
  *
- * Это кнопка, а не ссылка: звонок вынесен в отдельное явно подписанное действие
- * «Позвонить» (`CallLink`), потому что назначение прежней tel-ссылки изменилось.
+ * Для телефона — `PhoneContact`: там нажатие ещё и звонит с телефона.
  */
 export function CopyContact({
   kind,
@@ -88,11 +87,91 @@ export function CopyContact({
   );
 }
 
-/** Отдельное действие звонка рядом с копируемым номером. */
-export function CallLink({ href, className }: { href: string; className?: string }) {
+// Мышь с наведением — «ПК»: там номер копируют, звонить с компьютера нечем.
+// Решаем по типу указателя, а не по ширине экрана: планшет в альбомной
+// ориентации шире многих ноутбуков, но звонить с него как раз можно.
+const COPY_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
+
+function subscribePointer(onChange: () => void) {
+  if (typeof window.matchMedia !== "function") return () => {};
+  const query = window.matchMedia(COPY_POINTER_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+function prefersCopy(): boolean {
+  return typeof window.matchMedia === "function" && window.matchMedia(COPY_POINTER_QUERY).matches;
+}
+
+/**
+ * Номер в международном виде для буфера: «8 (8412) 20-20-87» → «+7 8412 20-20-87».
+ * Скобки убираем: вставленный в мессенджер или форму номер со скобками часто
+ * не распознаётся как телефон.
+ */
+export function internationalPhone(display: string): string {
+  return display
+    .trim()
+    .replace(/^(\+7|8)(?=[\s(])/, "+7")
+    .replace(/[()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Телефон магазина — одинаково в шапке, подвале, карточке товара и на инфо-страницах.
+ *
+ * Всегда настоящая `tel:`-ссылка: без JS и на телефоне/планшете она открывает
+ * звонок. На устройстве с мышью нажатие (и Enter с клавиатуры) копирует номер и
+ * показывает «Номер скопирован». Касание пальцем на ноутбуке с сенсорным экраном
+ * остаётся звонком — смотрим на то, чем нажали, а не только на устройство.
+ *
+ * Доступное имя начинается с видимого текста и дополняется скрытым пояснением
+ * действия. На сервере режим — «звонок», клиент уточняет его после гидратации.
+ * Отдельной надписи «Позвонить» больше нет: номер и есть действие.
+ */
+export function PhoneContact({
+  display,
+  href,
+  children,
+  className,
+  "data-event": dataEvent,
+}: {
+  /** Номер как на экране, из настроек витрины: «8 (8412) 20-20-87». */
+  display: string;
+  /** tel:-ссылка того же номера. */
+  href: string;
+  /** Видимое содержимое; по умолчанию сам номер. Иконка берёт цвет текста. */
+  children?: ReactNode;
+  className?: string;
+  "data-event"?: string;
+}) {
+  const copyMode = useSyncExternalStore(subscribePointer, prefersCopy, () => false);
+  const number = internationalPhone(display);
+
+  const onClick = async (event: MouseEvent<HTMLAnchorElement>) => {
+    const pointerType = (event.nativeEvent as PointerEvent).pointerType;
+    if (!copyMode || pointerType === "touch" || pointerType === "pen") return;
+    event.preventDefault();
+    if (await copyText(number)) showToast("Номер скопирован");
+    else showManualCopy(MESSAGES.phone.manual, number);
+  };
+
   return (
-    <a href={href} className={cn("font-medium text-accent hover:underline", className)}>
-      Позвонить
+    <a
+      href={href}
+      onClick={onClick}
+      title={copyMode ? "Скопировать номер" : "Позвонить"}
+      data-event={dataEvent}
+      className={cn(
+        "transition-colors hover:text-accent focus-visible:text-accent",
+        copyMode && "cursor-copy",
+        className,
+      )}
+    >
+      {children ?? display}
+      <span className="sr-only">
+        {copyMode ? `, скопировать номер ${number}` : `, позвонить по номеру ${number}`}
+      </span>
     </a>
   );
 }
