@@ -369,7 +369,7 @@ export function SearchBar({
           onFocus={openPanel}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="h-11 w-full rounded-md border border-line bg-surface py-2 pl-9 pr-8 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
+          className="h-11 w-full rounded-md border border-line bg-surface py-2 pl-9 pr-8 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none [&::-webkit-search-cancel-button]:hidden"
           aria-label="Поиск товаров"
           aria-autocomplete="list"
           aria-expanded={expanded}

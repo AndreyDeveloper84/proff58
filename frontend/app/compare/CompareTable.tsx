@@ -383,16 +383,20 @@ export function CompareTable() {
               return (
                 <tbody key={group.title}>
                   <tr>
+                    {/* Заголовок раздела — на всю строку: в узком первом столбце
+                        «Производительность» рвалась посреди слова. Липкая сама
+                        подпись внутри ячейки — при горизонтальной прокрутке она
+                        остаётся у левого края, как названия характеристик. */}
                     <th
                       scope="rowgroup"
-                      className="sticky left-0 z-10 border-b border-r border-line bg-raised px-3 py-2.5 text-left sm:px-5"
+                      colSpan={products.length + 1}
+                      className="border-b border-line bg-raised p-0 text-left"
                     >
-                      <span className="flex items-center gap-2 font-semibold text-ink">
+                      <span className="sticky left-0 flex w-max items-center gap-2 px-3 py-2.5 font-semibold text-ink sm:px-5">
                         <Icon className="h-4 w-4 shrink-0 text-accent" aria-hidden />
-                        <span className="min-w-0 break-words">{group.title}</span>
+                        {group.title}
                       </span>
                     </th>
-                    <td colSpan={products.length} className="border-b border-line bg-raised" />
                   </tr>
                   {group.rows.map((row) => (
                     <tr key={row.label} className="group">
