@@ -53,6 +53,19 @@ export function CompareTable() {
   // избавляет от прокрутки одинаковых значений.
   const [onlyDiff, setOnlyDiff] = useState(false);
 
+  // Убранный из списка товар выбрасываем из кэша: вернувшись в сравнение, он
+  // загрузится заново, а не покажет цену и остаток на момент первого запроса.
+  // Правка состояния прямо в рендере — штатный для React приём «состояние от
+  // пропсов»: без эффекта и без лишнего кадра со старыми данными.
+  const orderKey = order.join(",");
+  const [cachedFor, setCachedFor] = useState(orderKey);
+  if (cachedFor !== orderKey) {
+    setCachedFor(orderKey);
+    if ([...cache.keys()].some((slug) => !order.includes(slug))) {
+      setCache((prev) => new Map([...prev].filter(([slug]) => order.includes(slug))));
+    }
+  }
+
   const pending = order.filter((slug) => !cache.has(slug));
   const pendingKey = pending.join(",");
 

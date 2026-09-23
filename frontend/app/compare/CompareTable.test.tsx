@@ -272,6 +272,23 @@ describe("CompareTable", () => {
     expect(api).toHaveBeenCalledTimes(1);
   });
 
+  it("убранный и снова добавленный товар загружается заново — без старой цены", async () => {
+    select("bosch", "makita");
+    const api = mockApi([BOSCH, MAKITA]);
+
+    render(<CompareTable />);
+    await screen.findByText("Перфоратор Makita");
+
+    fireEvent.click(screen.getByLabelText("Убрать Перфоратор Makita из сравнения"));
+    act(() => {
+      toggleCompare("makita");
+    });
+
+    await waitFor(() => expect(api).toHaveBeenCalledTimes(2));
+    expect(requested(api.mock.calls[1][0])).toEqual(["makita"]);
+    expect(await screen.findByText("Перфоратор Makita")).toBeInTheDocument();
+  });
+
   it("добавленный товар догружается один, таблица не мигает загрузкой", async () => {
     select("bosch");
     const api = mockApi([BOSCH, MAKITA]);
