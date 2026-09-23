@@ -147,36 +147,41 @@ class ProductFilter(django_filters.FilterSet):
         return queryset.filter(id__in=ids[:MAX_IDS_FILTER])
 
     def filter_search(self, queryset, name, value):
-        """Поиск по name/article/brand/code_1c (#52), trigram V1.
+        """Поиск по name/article/brand/code_1c (#52) — см. ``search_products``."""
+        return search_products(queryset, value)
 
-        Матчинг ускоряется trigram-GIN (name/article/brand — icontains и
-        trigram_similar) и btree (article/code_1c). По code_1c — только
-        точное/префиксное совпадение (это техкод, fuzzy не нужен).
 
-        Ранг — взвешенный (Case/When по типу совпадения + сходство имени);
-        аннотируется ДО фильтра. Ordering задаётся здесь же при len(q) >= 2,
-        чтобы во view не было ссылки на _rank, которой может не быть.
+def search_products(queryset, q):
+    """Поиск по name/article/brand/code_1c (#52), trigram V1.
 
-        Первый ключ порядка — наличие (``availability_rank``), как в каталоге:
-        релевантность решает уже внутри доступных товаров. Аннотацию ставим
-        здесь же, а не полагаемся на вьюху, — фильтром пользуются и другие
-        вызывающие, и ссылка на чужую аннотацию сломала бы им запрос.
-        """
-        q = (value or "").strip()
-        if len(q) < 2:
-            return queryset
+    Матчинг ускоряется trigram-GIN (name/article/brand — icontains и
+    trigram_similar) и btree (article/code_1c). По code_1c — только
+    точное/префиксное совпадение (это техкод, fuzzy не нужен).
 
-        rank = Case(
-            When(Q(article__iexact=q) | Q(code_1c__iexact=q), then=Value(100.0)),
-            When(Q(article__istartswith=q) | Q(code_1c__istartswith=q), then=Value(50.0)),
-            When(brand__icontains=q, then=Value(20.0)),
-            When(name__icontains=q, then=Value(10.0)),
-            default=Value(0.0),
-            output_field=FloatField(),
-        ) + TrigramSimilarity("name", q)
-        return search_match(
-            queryset.annotate(_rank=rank, _availability=availability_rank()), q
-        ).order_by("_availability", "-_rank", "name", "id")
+    Ранг — взвешенный (Case/When по типу совпадения + сходство имени);
+    аннотируется ДО фильтра. Ordering задаётся здесь же при len(q) >= 2,
+    чтобы во view не было ссылки на _rank, которой может не быть.
+
+    Первый ключ порядка — наличие (``availability_rank``), как в каталоге:
+    релевантность решает уже внутри доступных товаров. Аннотацию ставим
+    здесь же, а не полагаемся на вьюху, — фильтром пользуются и другие
+    вызывающие, и ссылка на чужую аннотацию сломала бы им запрос.
+    """
+    q = (q or "").strip()
+    if len(q) < 2:
+        return queryset
+
+    rank = Case(
+        When(Q(article__iexact=q) | Q(code_1c__iexact=q), then=Value(100.0)),
+        When(Q(article__istartswith=q) | Q(code_1c__istartswith=q), then=Value(50.0)),
+        When(brand__icontains=q, then=Value(20.0)),
+        When(name__icontains=q, then=Value(10.0)),
+        default=Value(0.0),
+        output_field=FloatField(),
+    ) + TrigramSimilarity("name", q)
+    return search_match(
+        queryset.annotate(_rank=rank, _availability=availability_rank()), q
+    ).order_by("_availability", "-_rank", "name", "id")
 
 
 def search_match(queryset, q):
