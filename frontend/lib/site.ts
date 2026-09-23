@@ -119,7 +119,7 @@ export const SITE = {
       title: "Помощь",
       links: [
         { label: "Поиск по каталогу", href: "/search" },
-        { label: "Статьи и обзоры", href: "/articles" },
+        { label: "Полезные советы", href: "/articles" },
       ],
     },
   ],

@@ -11,7 +11,7 @@ import { ARTICLES } from "@/lib/articles";
 import { HOME_CONTENT } from "@/lib/home-content";
 import { ArticlesCarousel } from "./ArticlesCarousel";
 
-// #590: нижняя зона главной — «Почему покупают у нас» + статьи.
+// #590: нижняя зона главной — «Почему покупают у нас» + советы (раздел /articles).
 //
 // Карточка e-mail-подписки убрана: рассылки в проекте нет и не планируется, а
 // неактивная форма на витрине выглядела рабочей и молча ничего не делала.
@@ -52,12 +52,16 @@ export function WhyBuyStrip() {
 
 // Карточка MAX-помощи из правой колонки убрана: она дублировала подвал, который
 // начинается сразу под ней («Мы в мессенджерах»).
+// Главная не должна перегружаться: в ленте не больше трёх материалов, остальные —
+// по ссылке «Все советы».
+export const HOME_ARTICLES_LIMIT = 3;
+
 export function HomeBottom() {
   return (
     <section className="bg-canvas">
       <div className="mx-auto flex w-full max-w-[1680px] min-w-0 flex-col gap-2 px-4 pb-4 pt-2 sm:px-6 xl:px-8">
         <WhyBuyStrip />
-        <ArticlesCarousel articles={ARTICLES} />
+        <ArticlesCarousel articles={ARTICLES.slice(0, HOME_ARTICLES_LIMIT)} />
       </div>
     </section>
   );

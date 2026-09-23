@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -12,6 +12,11 @@ vi.mock("@/components/cart/CartProvider", () => ({
 // Recommendations тянет каталог — в юнит-тесте не нужен.
 vi.mock("@/components/home/Recommendations", () => ({
   Recommendations: () => null,
+}));
+
+const showToastMock = vi.fn();
+vi.mock("@/lib/toast", () => ({
+  showToast: (...args: unknown[]) => showToastMock(...args),
 }));
 
 import CartPage from "./page";
@@ -123,5 +128,51 @@ describe("CartPage — промо-breakdown (#571)", () => {
     render(<CartPage />);
     expect(screen.queryByLabelText("Промокод")).toBeNull();
     expect(screen.queryByText("Скидка по акциям")).toBeNull();
+  });
+});
+
+
+describe("CartPage — уведомление об удалении выбранных (задача 7)", () => {
+  beforeEach(() => {
+    // mockClear, а не mockReset: реализации задаются явно в каждом тесте.
+    useCartMock.mockClear();
+    showToastMock.mockClear();
+  });
+
+  it("удаление выбранных — toast «Выбранные товары удалены», без плашки над корзиной", async () => {
+    const remove = vi.fn(() => Promise.resolve());
+    useCartMock.mockReturnValue({
+      cart: makeCart({ total: "1000.00", grand_total: "1000.00" }),
+      loading: false,
+      total: 1000,
+      update: vi.fn(),
+      remove,
+    });
+    render(<CartPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Удалить выбранные" }));
+
+    await waitFor(() => expect(showToastMock).toHaveBeenCalledWith("Выбранные товары удалены"));
+    expect(remove).toHaveBeenCalledWith(1);
+    // Inline-сообщения больше нет: toast живёт в общем регионе layout и не сдвигает контент.
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByText("Выбранные товары удалены")).toBeNull();
+  });
+
+  it("ошибка удаления остаётся inline role=alert, toast не показывается", async () => {
+    const remove = vi.fn(() => Promise.reject(new Error("сеть")));
+    useCartMock.mockReturnValue({
+      cart: makeCart({ total: "1000.00", grand_total: "1000.00" }),
+      loading: false,
+      total: 1000,
+      update: vi.fn(),
+      remove,
+    });
+    render(<CartPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Удалить выбранные" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Не удалось обновить корзину");
+    expect(showToastMock).not.toHaveBeenCalled();
   });
 });

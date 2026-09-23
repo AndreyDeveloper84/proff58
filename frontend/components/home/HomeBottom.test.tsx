@@ -1,11 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { HomeBottom } from "./HomeBottom";
+import { HOME_ARTICLES_LIMIT, HomeBottom } from "./HomeBottom";
 import { ARTICLES } from "@/lib/articles";
 import { HOME_CONTENT } from "@/lib/home-content";
 
-// #590: нижняя зона — почему покупают, лента статей, подписка-заглушка.
+// #590: нижняя зона — почему покупают и лента советов (раздел /articles).
+const shown = ARTICLES.slice(0, HOME_ARTICLES_LIMIT);
 describe("HomeBottom (#590)", () => {
   it("показывает 6 причин «почему покупают у нас»", () => {
     render(<HomeBottom />);
@@ -14,23 +15,44 @@ describe("HomeBottom (#590)", () => {
     }
   });
 
-  it("карточки статей ведут в раздел /articles", () => {
+  it("карточки советов ведут в раздел /articles, ссылка «Все советы» — на весь раздел", () => {
     render(<HomeBottom />);
-    for (const article of ARTICLES) {
+    for (const article of shown) {
       const card = screen.getByText(article.title);
       expect(card.closest("a")).toHaveAttribute("href", `/articles/${article.slug}`);
     }
-    expect(screen.getByRole("link", { name: /Все статьи/ })).toHaveAttribute("href", "/articles");
+    expect(screen.getByRole("link", { name: /Все советы/ })).toHaveAttribute("href", "/articles");
+    expect(screen.queryByRole("link", { name: /Все статьи/ })).toBeNull();
   });
 
-  // Листание ленты — это стрелки на десктопе и точки на мобильной; и то и другое
-  // должно быть доступно с клавиатуры и озвучено скринридеру.
-  it("у ленты статей есть управление: стрелки и точки по числу статей", () => {
+  it("главная не перегружена: не больше трёх материалов", () => {
     render(<HomeBottom />);
-    expect(screen.getByRole("button", { name: "Предыдущие статьи" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Следующие статьи" })).toBeInTheDocument();
-    const dots = screen.getAllByRole("button", { name: /^Статья \d+:/ });
-    expect(dots).toHaveLength(ARTICLES.length);
+    expect(HOME_ARTICLES_LIMIT).toBe(3);
+    expect(ARTICLES.length).toBeGreaterThan(HOME_ARTICLES_LIMIT); // иначе проверка ниже пустая
+    for (const article of ARTICLES.slice(HOME_ARTICLES_LIMIT)) {
+      expect(screen.queryByText(article.title)).toBeNull();
+    }
+  });
+
+  it("заголовок — советы, а не «статьи и обзоры»: полный на планшете и шире, короткий на телефоне", () => {
+    render(<HomeBottom />);
+    const heading = screen.getByRole("heading", { level: 2, name: /Советы по выбору/ });
+    expect(screen.getByText("Советы по выбору и работе с инструментом")).toHaveClass("hidden", "sm:inline");
+    expect(screen.getByText("Полезные советы")).toHaveClass("sm:hidden");
+    expect(heading.closest("section")).toHaveAttribute("aria-labelledby", heading.id);
+    expect(screen.queryByText(/Полезные статьи/)).toBeNull();
+  });
+
+  // Листание ленты — это стрелки на планшете/десктопе и точки на мобильной; и то
+  // и другое должно быть доступно с клавиатуры и озвучено скринридеру. На xl три
+  // материала видны целиком — стрелки там прячутся.
+  it("у ленты советов есть управление: стрелки (кроме xl) и точки по числу материалов", () => {
+    render(<HomeBottom />);
+    expect(screen.getByRole("button", { name: "Предыдущие советы" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Следующие советы" })).toBeInTheDocument();
+    expect(screen.getByTestId("articles-arrows")).toHaveClass("sm:flex", "xl:hidden");
+    const dots = screen.getAllByRole("button", { name: /^Совет \d+:/ });
+    expect(dots).toHaveLength(shown.length);
   });
 
   // Карточка подписки убрана вместе с планами на рассылку: неактивная форма
