@@ -266,6 +266,7 @@ pytest apps/catalog              # только каталог (~350 тесто�
 
 - `/api/catalog/` — `categories/`, `categories/<slug>/facets/`, `products/`,
   `products/<slug>/`, `products/<slug>/compatible/`, `search/suggest/`,
+  `search/quick/` (быстрый поиск в шапке: ≤6 товаров + ≤3 раздела/вида),
   `bestsellers/` (товары с реальными продажами за окно — см. `apps/catalog/sales.py`)
 - `/api/ai/products/<slug>/recommendations/`
 - `/api/` — `cart/`, `cart/items/`, `orders/`, `orders/<number>/`
