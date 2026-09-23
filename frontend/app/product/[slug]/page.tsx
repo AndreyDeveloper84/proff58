@@ -22,6 +22,7 @@ import {
 } from "@/components/product/ProductDetailsShowcase";
 import { ProductTabs, type ProductTab } from "@/components/product/ProductTabs";
 import { SpecChips } from "@/components/product/SpecChips";
+import { PhoneContact } from "@/components/contacts/CopyContact";
 import { SITE } from "@/lib/site";
 import { productSeoMetadata } from "@/lib/seo";
 
@@ -175,7 +176,11 @@ export default async function ProductPage({ params }: Props) {
                 <span className="mt-0.5 block text-xs text-ink-3">Только официальные поставки</span>
               </span>
             </div>
-            <a href={SITE.phone.href} className="flex items-start gap-2.5 hover:text-accent">
+            <PhoneContact
+              display={SITE.phone.display}
+              href={SITE.phone.href}
+              className="flex items-start gap-2.5"
+            >
               <MessageSquareText className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
               <span>
                 <strong className="block text-sm font-semibold text-ink">
@@ -183,7 +188,7 @@ export default async function ProductPage({ params }: Props) {
                 </strong>
                 <span className="mt-0.5 block text-xs text-ink-3">Поможем с выбором инструмента</span>
               </span>
-            </a>
+            </PhoneContact>
           </div>
         </div>
       </div>

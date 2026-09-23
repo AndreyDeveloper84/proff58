@@ -107,12 +107,11 @@ describe("ProductTabs", () => {
 
   it("клик меняет хэш через replaceState и не крутит страницу", () => {
     const replaceState = vi.spyOn(window.history, "replaceState");
-    const stateBefore = window.history.state;
     renderTabs();
 
     fireEvent.click(tab("Описание"));
 
-    expect(replaceState).toHaveBeenCalledWith(stateBefore, "", "#description");
+    expect(replaceState).toHaveBeenCalledWith(null, "", "#description");
     expect(window.location.hash).toBe("#description");
     expect(scrollIntoView).not.toHaveBeenCalled();
     expect(scrollTo).not.toHaveBeenCalled();

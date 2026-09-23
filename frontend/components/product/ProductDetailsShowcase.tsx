@@ -10,6 +10,7 @@ import {
   Wrench,
   Zap,
 } from "lucide-react";
+import { PhoneContact } from "@/components/contacts/CopyContact";
 import { Collapsible } from "./Collapsible";
 import { SITE } from "@/lib/site";
 import { pickUseCases } from "@/lib/pdp-usecases";
@@ -172,10 +173,11 @@ function ExpertPanel({ specs }: { specs: ProductSpec[] }) {
       {/* Телефон, а не мессенджер: адрес бота MAX приходит с сервера и может быть
           пуст, а битую ссылку в signature-панели показывать нельзя. Звонок —
           то, что работает всегда. */}
-      <a
+      <PhoneContact
+        display={SITE.phone.display}
         href={SITE.phone.href}
         data-event="pdp_expert_help"
-        className="group m-3 mt-0 flex min-h-16 items-center gap-3 rounded-md bg-surface p-3 text-ink transition hover:bg-raised sm:m-4 sm:mt-0"
+        className="group m-3 mt-0 flex min-h-16 items-center gap-3 rounded-md bg-surface p-3 text-ink transition hover:bg-raised hover:text-ink sm:m-4 sm:mt-0"
       >
         <MessageSquareText className="h-6 w-6 shrink-0 text-accent" aria-hidden />
         <span className="min-w-0 flex-1">
@@ -183,7 +185,7 @@ function ExpertPanel({ specs }: { specs: ProductSpec[] }) {
           <span className="mt-0.5 block text-xs text-ink-3">{SITE.phone.display}</span>
         </span>
         <ArrowRight className="h-5 w-5 text-accent transition-transform group-hover:translate-x-0.5" aria-hidden />
-      </a>
+      </PhoneContact>
     </aside>
   );
 }

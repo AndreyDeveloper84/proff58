@@ -84,9 +84,11 @@ export function ProductTabs({ tabs, extraLinks }: { tabs: ProductTab[]; extraLin
     const hash = `#${id}`;
     handledHash.current = hash;
     if (window.location.hash !== hash) {
-      // Передаём текущий history.state: в нём служебные поля App Router (__NA и
-      // дерево маршрута), без них «назад» на эту запись перезагрузил бы страницу.
-      window.history.replaceState(window.history.state, "", hash);
+      // state = null — так, как велит документация Next: App Router сам
+      // переносит свои служебные поля и сверяет URL роутера. С чужим state (где
+      // уже есть __NA) он пропускает синхронизацию, и хэш потом терялся бы при
+      // первом router.refresh().
+      window.history.replaceState(null, "", hash);
     }
   }, []);
 
