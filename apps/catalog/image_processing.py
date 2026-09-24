@@ -215,7 +215,14 @@ def _scale(product: Image.Image) -> float:
 
 def product_share(product: Image.Image) -> float:
     """Какую долю стороны квадрата (без полей) займёт товар после вписывания."""
-    return max(product.width, product.height) * _scale(product) / _inner()
+    return product_share_for_size(product.width, product.height)
+
+
+def product_share_for_size(width: int, height: int) -> float:
+    """Как `product_share`, но по размеру без декодирования пикселей — когда сам
+    объект уже не нужен (после `content_bbox`/маски rembg знаем только рамку)."""
+    scale = min(_inner() / width, _inner() / height, MAX_UPSCALE)
+    return max(width, height) * scale / _inner()
 
 
 def fit_into_square(product: Image.Image) -> Image.Image:

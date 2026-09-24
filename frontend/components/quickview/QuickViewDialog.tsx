@@ -59,6 +59,7 @@ function Gallery({ images, name }: { images: ProductImageData[]; name: string })
         <ProductImage
           src={images[index]?.url}
           alt={images[index]?.alt || name}
+          normalized={images[index]?.normalized}
           className="aspect-square w-full sm:aspect-[4/3] lg:aspect-square"
         />
         {images.length > 1 && (
@@ -96,7 +97,7 @@ function Gallery({ images, name }: { images: ProductImageData[]; name: string })
                   i === index ? "border-accent" : "border-line hover:border-accent/60",
                 )}
               >
-                <ProductImage src={img.url} alt="" />
+                <ProductImage src={img.url} alt="" normalized={img.normalized} />
               </button>
             </li>
           ))}
@@ -180,7 +181,10 @@ export function QuickViewDialog({ product, onClose }: { product: Product; onClos
   const detail = state.status === "ready" ? state.detail : null;
   // Пока подробности грузятся — фото из карточки списка, чтобы окно не было пустым.
   const images: ProductImageData[] =
-    detail?.images ?? (product.image ? [{ url: product.image, alt: title, isMain: true }] : []);
+    detail?.images ??
+    (product.image
+      ? [{ url: product.image, alt: title, isMain: true, normalized: product.imageNormalized }]
+      : []);
   const shown = detail ?? product;
   const specs = keySpecs(shown.specs, 6);
 

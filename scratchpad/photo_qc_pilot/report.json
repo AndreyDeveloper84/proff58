@@ -1,0 +1,90 @@
+{
+  "kind": "product_images_manifest_preview",
+  "items": [
+    {
+      "item": "scratchpad/photo_qc_pilot/hanskonner.webp",
+      "kind": "white",
+      "decision": "auto_accept",
+      "reasons": [],
+      "features": {
+        "source_width": 1200,
+        "source_height": 800,
+        "content_width": 954,
+        "content_height": 634,
+        "touches_edge": false,
+        "product_share": 1.0,
+        "small": false,
+        "torn": false,
+        "pale_content_share": 0.041,
+        "suspect_backdrop": false
+      }
+    },
+    {
+      "item": "scratchpad/photo_qc_pilot/hanskonner-poster.webp",
+      "kind": "white",
+      "decision": "needs_review",
+      "reasons": [
+        "suspect_backdrop"
+      ],
+      "features": {
+        "source_width": 1200,
+        "source_height": 800,
+        "content_width": 604,
+        "content_height": 603,
+        "touches_edge": false,
+        "product_share": 1.0,
+        "small": false,
+        "torn": false,
+        "pale_content_share": 0.1475,
+        "suspect_backdrop": true
+      }
+    },
+    {
+      "item": "scratchpad/photo_qc_pilot/vihr.webp",
+      "kind": "white",
+      "decision": "needs_review",
+      "reasons": [
+        "suspect_backdrop"
+      ],
+      "features": {
+        "source_width": 970,
+        "source_height": 929,
+        "content_width": 657,
+        "content_height": 795,
+        "touches_edge": false,
+        "product_share": 1.0,
+        "small": false,
+        "torn": false,
+        "pale_content_share": 0.1949,
+        "suspect_backdrop": true
+      }
+    },
+    {
+      "item": "scratchpad/photo_qc_pilot/zubr.webp",
+      "kind": "white",
+      "decision": "needs_review",
+      "reasons": [
+        "touches_edge"
+      ],
+      "features": {
+        "source_width": 560,
+        "source_height": 504,
+        "content_width": 456,
+        "content_height": 504,
+        "touches_edge": true,
+        "product_share": 0.9767,
+        "small": false,
+        "torn": false,
+        "pale_content_share": 0.0522,
+        "suspect_backdrop": false
+      }
+    },
+    {
+      "item": "scratchpad/photo_qc_pilot/huter.webp",
+      "kind": "black",
+      "decision": "needs_rembg",
+      "reasons": [],
+      "note": "нейросеть недоступна в этом образе — не измерено"
+    }
+  ]
+}

@@ -49,11 +49,20 @@ def cut_out(img: Image.Image) -> Image.Image:
     return remove(img, session=_session, post_process_mask=True)
 
 
-def render(img: Image.Image) -> image_processing.Square | None:
-    """Вырезать товар, положить на белый квадрат. None — нейросеть товар не нашла."""
+def render(
+    img: Image.Image,
+) -> tuple[image_processing.Square, tuple[int, int, int, int]] | None:
+    """Вырезать товар, положить на белый квадрат. None — нейросеть товар не нашла.
+
+    Второй элемент пары — рамка маски В КООРДИНАТАХ ИСХОДНОГО `img` (до вписывания
+    в квадрат): контролёр качества (`image_quality`) использует её, чтобы проверить
+    касание краёв ИСХОДНОГО кадра, а не полей уже готового квадрата 1200×1200,
+    где по построению всегда есть отступ.
+    """
     cutout = cut_out(img.convert("RGB")).convert("RGBA")
     bbox = cutout.getchannel("A").point(lambda v: 255 if v > ALPHA_CUT else 0).getbbox()
     if bbox is None:
         return None
     product = image_processing.flatten_on_white(cutout.crop(bbox))
-    return image_processing.to_square(product, measure_pieces=True)
+    square = image_processing.to_square(product, measure_pieces=True)
+    return square, bbox

@@ -98,6 +98,8 @@ def _record_row(image: ProductImage, files: dict[str, dict]) -> dict:
     file_meta = files.get(name)
     display_name = image.display.name or ""
     display_meta = files.get(display_name) if display_name else None
+    candidate_name = image.candidate.name or ""
+    candidate_meta = files.get(candidate_name) if candidate_name else None
     return {
         "id": image.pk,
         "product_id": image.product_id,
@@ -116,6 +118,15 @@ def _record_row(image: ProductImage, files: dict[str, dict]) -> dict:
         "display_file_checksum": (display_meta or {}).get("checksum"),
         "display_db_checksum": image.display_checksum or None,
         "processing_status": image.processing_status,
+        # Доработка контролёра качества: кандидат — отдельный файл, отдельно от
+        # принятой копии (может совпадать с display_file, если кандидат уже
+        # промоутирован — тогда это ОДИН файл на диске, не дубль).
+        "candidate_file": candidate_name,
+        "candidate_file_exists": candidate_meta is not None,
+        "candidate_file_checksum": (candidate_meta or {}).get("checksum"),
+        "candidate_db_checksum": image.candidate_checksum or None,
+        "purpose": image.purpose,
+        "qc_decision": image.qc_decision or None,
     }
 
 
@@ -132,6 +143,7 @@ def build_snapshot(subdir: str = DEFAULT_SUBDIR) -> dict:
     ]
     referenced = {r["file"] for r in records if r["file"]}
     referenced |= {r["display_file"] for r in records if r["display_file"]}
+    referenced |= {r["candidate_file"] for r in records if r["candidate_file"]}
     orphans = sorted(set(files) - referenced)
     by_source: dict[str, int] = {}
     for row in records:
@@ -267,17 +279,34 @@ def build_rollback_plan(
 
     files = scan_media_files(subdir)
     targets = [_record_row(image, files) for image in qs.order_by("pk")]
+
+    def _distinct_files(t: dict) -> set[str]:
+        # Только СУЩЕСТВУЮЩИЕ файлы (как раньше, без display) — пропавший файл не
+        # в счёт удаления. Кандидат может совпадать с display_file (промоутированный
+        # кандидат — один файл на диске под двумя полями): считаем его один раз.
+        names: set[str] = set()
+        if t["file_exists"]:
+            names.add(t["file"])
+        if t["display_file_exists"]:
+            names.add(t["display_file"])
+        if t["candidate_file_exists"]:
+            names.add(t["candidate_file"])
+        return names
+
     return {
         "kind": "product_images_rollback_plan",
         "source": source,
         "since": since.isoformat() if since else None,
         "until": until.isoformat() if until else None,
         "records_to_delete": len(targets),
-        # оба файла записи: исходный и витринная копия (ADR-0014)
-        "files_to_delete": sum(
-            int(t["file_exists"]) + int(t["display_file_exists"]) for t in targets
-        ),
+        # исходный + витринная копия + кандидат (без дублей на один файл, ADR-0014)
+        "files_to_delete": sum(len(_distinct_files(t)) for t in targets),
         "display_files_to_delete": sum(1 for t in targets if t["display_file_exists"]),
+        "candidate_files_to_delete": sum(
+            1
+            for t in targets
+            if t["candidate_file_exists"] and t["candidate_file"] != t["display_file"]
+        ),
         "files_missing": sum(1 for t in targets if t["file"] and not t["file_exists"]),
         "display_files_missing": sum(
             1 for t in targets if t["display_file"] and not t["display_file_exists"]
@@ -319,6 +348,12 @@ def apply_rollback(plan: dict) -> dict:
             conflicts.append(
                 {"id": pk, "reason": "витринная копия изменилась между планом и применением"}
             )
+        elif (
+            "candidate_file" in target and (image.candidate.name or "") != target["candidate_file"]
+        ):
+            # Планы до доработки контролёра ключа не знают — тот же принцип обратной
+            # совместимости, что у display_file выше.
+            conflicts.append({"id": pk, "reason": "кандидат изменился между планом и применением"})
     if conflicts:
         raise RollbackRefused(
             f"откат не применён целиком: конфликтов {len(conflicts)} " f"(первый: {conflicts[0]})"
@@ -328,16 +363,27 @@ def apply_rollback(plan: dict) -> dict:
     files_deleted = 0
     files_absent = 0
     display_files_deleted = 0
+    candidate_files_deleted = 0
     for image in live.values():
-        # Витринная копия производна от оригинала и без него смысла не имеет.
-        for name, is_display in ((image.image.name, False), (image.display.name, True)):
-            if not name:
-                continue
+        # Витринная копия и кандидат производны от оригинала и без него смысла не
+        # имеют. Кандидат может указывать на ТОТ ЖЕ файл, что и display (промоушен
+        # переиспользует имя) — группируем по физическому имени, чтобы удалить его
+        # только один раз, но засчитать в оба счётчика, если оба поля на него ссылались.
+        names: dict[str, set[str]] = {}
+        if image.image.name:
+            names.setdefault(image.image.name, set())
+        if image.display.name:
+            names.setdefault(image.display.name, set()).add("display")
+        if image.candidate.name:
+            names.setdefault(image.candidate.name, set()).add("candidate")
+        for name, kinds in names.items():
             try:
                 (root / name).unlink()
                 files_deleted += 1
-                if is_display:
+                if "display" in kinds:
                     display_files_deleted += 1
+                if "candidate" in kinds:
+                    candidate_files_deleted += 1
             except FileNotFoundError:
                 files_absent += 1
     deleted, _ = ProductImage.objects.filter(pk__in=list(live)).delete()
@@ -346,6 +392,7 @@ def apply_rollback(plan: dict) -> dict:
         "rows_deleted": deleted,
         "files_deleted": files_deleted,
         "files_absent": files_absent,
+        "candidate_files_deleted": candidate_files_deleted,
         "display_files_deleted": display_files_deleted,
     }
 
@@ -365,6 +412,8 @@ def audit(subdir: str = DEFAULT_SUBDIR) -> dict:
     no_checksum: list[dict] = []
     missing_display: list[dict] = []
     display_mismatch: list[dict] = []
+    missing_candidate: list[dict] = []
+    candidate_mismatch: list[dict] = []
     referenced: set[str] = set()
 
     for image in ProductImage.objects.order_by("pk").iterator(chunk_size=500):
@@ -387,6 +436,23 @@ def audit(subdir: str = DEFAULT_SUBDIR) -> dict:
                         "file": display_name,
                         "db_checksum": image.display_checksum or None,
                         "file_checksum": display_meta["checksum"],
+                    }
+                )
+        candidate_name = image.candidate.name or ""
+        if candidate_name:
+            referenced.add(candidate_name)
+            candidate_meta = files.get(candidate_name)
+            if candidate_meta is None:
+                missing_candidate.append({"id": image.pk, "file": candidate_name})
+            elif candidate_meta["checksum"] is None or candidate_meta["checksum"] != (
+                image.candidate_checksum or None
+            ):
+                candidate_mismatch.append(
+                    {
+                        "id": image.pk,
+                        "file": candidate_name,
+                        "db_checksum": image.candidate_checksum or None,
+                        "file_checksum": candidate_meta["checksum"],
                     }
                 )
         meta = files.get(name)
@@ -416,10 +482,185 @@ def audit(subdir: str = DEFAULT_SUBDIR) -> dict:
         "orphan_files_total": len(orphans),
         "missing_display_file_total": len(missing_display),
         "display_checksum_mismatch_total": len(display_mismatch),
+        "missing_candidate_file_total": len(missing_candidate),
+        "candidate_checksum_mismatch_total": len(candidate_mismatch),
         "missing_file": missing_file,
         "checksum_mismatch": checksum_mismatch,
         "without_checksum": no_checksum,
         "missing_display_file": missing_display,
         "display_checksum_mismatch": display_mismatch,
+        "missing_candidate_file": missing_candidate,
+        "candidate_checksum_mismatch": candidate_mismatch,
         "orphan_files": orphans,
     }
+
+
+def audit_archive() -> dict:
+    """Сверка архива отклонённых фото (§7.1) с закрытым хранилищем.
+
+    Отдельная функция и отдельное хранилище (`PRIVATE_MEDIA_ROOT`, не
+    `MEDIA_ROOT`): архив не входит в обычный `audit()`/`scan_media_files`, его
+    файлы не должны попасть в список сирот публичного media.
+    """
+    from .models import RejectedImageCandidate, private_media_storage
+
+    root = Path(private_media_storage.location)
+    files: dict[str, dict] = {}
+    if root.exists():
+        for path in sorted(root.rglob("*")):
+            if path.is_file():
+                rel = path.relative_to(root).as_posix()
+                files[rel] = {"size": path.stat().st_size, "checksum": sha256_file(path)}
+
+    missing: list[dict] = []
+    mismatch: list[dict] = []
+    referenced: set[str] = set()
+    for row in (
+        RejectedImageCandidate.objects.order_by("pk")
+        .values("pk", "file", "checksum", "readable")
+        .iterator(chunk_size=500)
+    ):
+        name = row["file"] or ""
+        if not name:
+            continue
+        referenced.add(name)
+        meta = files.get(name)
+        if meta is None:
+            if row["readable"]:  # уже помеченные нечитаемыми не дублируем в отчёт
+                missing.append({"id": row["pk"], "file": name})
+        elif meta["checksum"] != row["checksum"]:
+            mismatch.append(
+                {
+                    "id": row["pk"],
+                    "file": name,
+                    "db_checksum": row["checksum"],
+                    "file_checksum": meta["checksum"],
+                }
+            )
+    orphans = sorted(set(files) - referenced)
+    return {
+        "kind": "product_images_archive_audit",
+        "records_total": RejectedImageCandidate.objects.count(),
+        "files_total": len(files),
+        "missing_file_total": len(missing),
+        "checksum_mismatch_total": len(mismatch),
+        "orphan_files_total": len(orphans),
+        "missing_file": missing,
+        "checksum_mismatch": mismatch,
+        "orphan_files": orphans,
+    }
+
+
+# --- откат ПРОГОНА ОБРАБОТКИ (не сбора!): восстановить решение, не удаляя фото --
+
+#: Поля, которые снимает и восстанавливает откат прогона обработки. НЕ включает
+#: `image`/`checksum`/`source*`/`fetched_at`/`is_main`/`sort_order` — прогон
+#: обработки их не трогает, а восстанавливать нечего.
+PROCESSING_ROLLBACK_FIELDS = (
+    "processing_status",
+    "processing_mode",
+    "processing_version",
+    "review_reason",
+    "duplicate_of_id",
+    "fingerprint",
+    "display",
+    "display_checksum",
+    "display_render_key",
+    "candidate",
+    "candidate_checksum",
+    "candidate_render_key",
+    "candidate_mode",
+    "qc_decision",
+    "qc_source",
+    "qc_rules_version",
+    "qc_reasons",
+    "main_fit_auto",
+)
+
+
+def _processing_row(image: ProductImage) -> dict:
+    row = {f: getattr(image, f) for f in PROCESSING_ROLLBACK_FIELDS}
+    row["display"] = image.display.name or ""
+    row["candidate"] = image.candidate.name or ""
+    row["qc_reasons"] = list(image.qc_reasons or [])
+    row["id"] = image.pk
+    # Не поле отката, а условие применимости: прогон обработки не должен был
+    # тронуть исходник — если он сменился, восстанавливать уже нечего (H6-стиль).
+    row["source_image_name"] = image.image.name or ""
+    return row
+
+
+def build_processing_run_snapshot(image_ids: list[int]) -> dict:
+    """Снимок «до» — вызывать ПЕРЕД прогоном `process_product_images --manifest`."""
+    rows = {
+        str(image.pk): _processing_row(image)
+        for image in ProductImage.objects.filter(pk__in=image_ids)
+    }
+    return {"kind": "product_images_processing_run", "ids": list(image_ids), "before": rows}
+
+
+def finalize_processing_run_snapshot(snapshot: dict) -> dict:
+    """Снимок «после» — вызывать СРАЗУ ПОСЛЕ прогона, в тот же снимок."""
+    ids = snapshot["ids"]
+    snapshot["after"] = {
+        str(image.pk): _processing_row(image) for image in ProductImage.objects.filter(pk__in=ids)
+    }
+    return snapshot
+
+
+def build_processing_rollback_plan(snapshot: dict) -> dict:
+    """Отдельно от `build_rollback_plan` (откат СБОРА): здесь ничего не удаляется,
+    только восстанавливаются поля решения. Конфликт — если с момента прогона
+    кто-то (человек или другой прогон) уже поменял решение по этому фото, или
+    файл прежней принятой копии пропал: план с любым конфликтом не применяется
+    целиком (тот же принцип fail-closed, что у отката `tool_type`).
+    """
+    if snapshot.get("kind") != "product_images_processing_run":
+        raise RollbackRefused("на вход подан не снимок прогона обработки")
+    if "after" not in snapshot:
+        raise RollbackRefused("в снимке нет состояния «после» — прогон не был завершён")
+
+    storage = ProductImage._meta.get_field("display").storage
+    items = []
+    for id_str, before in snapshot["before"].items():
+        pk = int(id_str)
+        after = snapshot["after"].get(id_str)
+        image = ProductImage.objects.filter(pk=pk).first()
+        item = {"id": pk}
+        if image is None:
+            item["action"], item["reason"] = "conflict", "запись исчезла после прогона"
+        elif after is None:
+            item["action"], item["reason"] = "conflict", "для записи нет состояния «после»"
+        elif _processing_row(image) != after:
+            item["action"], item["reason"] = (
+                "conflict",
+                "запись изменилась после прогона (новое решение человека или воркера)",
+            )
+        elif before["display"] and not storage.exists(before["display"]):
+            item["action"], item["reason"] = "conflict", "файл прежней принятой копии недоступен"
+        else:
+            item["action"] = "restore"
+        items.append(item)
+
+    return {
+        "kind": "product_images_processing_rollback_plan",
+        "restore": sum(1 for i in items if i["action"] == "restore"),
+        "conflict": sum(1 for i in items if i["action"] == "conflict"),
+        "items": items,
+        "snapshot": snapshot,
+    }
+
+
+@transaction.atomic
+def apply_processing_rollback(plan: dict) -> dict:
+    if plan.get("kind") != "product_images_processing_rollback_plan":
+        raise RollbackRefused("на вход подан не план отката обработки")
+    if plan["conflict"]:
+        raise RollbackRefused(
+            f"откат не применён целиком: конфликтов {plan['conflict']} из {len(plan['items'])}"
+        )
+    restored = 0
+    for id_str, before in plan["snapshot"]["before"].items():
+        fields = {f: before[f] for f in PROCESSING_ROLLBACK_FIELDS}
+        restored += ProductImage.objects.filter(pk=int(id_str)).update(**fields)
+    return {"restored": restored}

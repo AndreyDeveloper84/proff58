@@ -71,14 +71,23 @@ class ProductImageSerializer(serializers.Serializer):
     url = serializers.SerializerMethodField()
     alt = serializers.CharField()
     is_main = serializers.BooleanField()
+    #: Витрина уже нормализовала копию (белый квадрат 1200×1200, поля 7%) — фронт
+    #: не даёт компоненту свой отступ поверх встроенного (двойные поля, §8 задания).
+    #: Явное поле, а не разбор URL по подстроке `products/display/`: старые ответы
+    #: без него по-прежнему безопасны (компонент трактует отсутствие как False).
+    normalized = serializers.SerializerMethodField()
 
     def get_url(self, obj):
         return _image_url(obj, self.context)
+
+    def get_normalized(self, obj):
+        return obj.is_normalized
 
 
 class ProductListSerializer(serializers.ModelSerializer):
     category = CategoryRefSerializer(read_only=True)
     main_image = serializers.SerializerMethodField()
+    main_image_normalized = serializers.SerializerMethodField()
     price_type = serializers.SerializerMethodField()
     attributes = serializers.SerializerMethodField()
     stock_qty = serializers.SerializerMethodField()
@@ -101,6 +110,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "stock_status",
             "stock_qty",
             "main_image",
+            "main_image_normalized",
             "short_description",
             "attributes",
             "is_hit",
@@ -151,12 +161,19 @@ class ProductListSerializer(serializers.ModelSerializer):
         attrs = [a for a in map(_attr_dict, pavs) if not _is_blank(a["value"])]
         return attrs[:CARD_ATTRS_LIMIT]
 
-    def get_main_image(self, obj):
+    def _main_image_obj(self, obj):
         images = list(obj.images.all())  # prefetched — без новых запросов
         if not images:
             return None
-        main = next((i for i in images if i.is_main), images[0])
-        return _image_url(main, self.context)
+        return next((i for i in images if i.is_main), images[0])
+
+    def get_main_image(self, obj):
+        main = self._main_image_obj(obj)
+        return _image_url(main, self.context) if main else None
+
+    def get_main_image_normalized(self, obj):
+        main = self._main_image_obj(obj)
+        return main.is_normalized if main else None
 
     def get_price_type(self, obj):
         return ""  # реальное значение проставляется в to_representation (один price_for на товар)

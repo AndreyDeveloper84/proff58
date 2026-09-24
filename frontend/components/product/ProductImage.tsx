@@ -5,22 +5,34 @@ import { cn } from "@/lib/utils";
 // Светлая фото-зона: товар читается на тёмном каталоге. Нет фото → фирменный
 // плейсхолдер «Фото готовится» (временное состояние, не дефект).
 // priority — для главного фото PDP (LCP грузится сразу, без lazy).
+// normalized — фото уже прошло автообработку (белый холст 1200×1200, встроенные
+// поля 7%): свой отступ не добавляем, иначе поле удваивается. Обычный исходник
+// (false/не передан) получает небольшой отступ — меньше прежних 12px, но не ноль.
 export function ProductImage({
   src,
   alt,
   priority = false,
   sizes = "(max-width: 768px) 50vw, 25vw",
   className,
+  normalized = false,
 }: {
   src?: string;
   alt: string;
   priority?: boolean;
   sizes?: string;
   className?: string;
+  normalized?: boolean;
 }) {
   return (
     <div
-      className={cn("@container relative aspect-square overflow-hidden rounded-md bg-photo", className)}
+      className={cn(
+        "@container relative aspect-square overflow-hidden rounded-md",
+        // Реальное фото — на белой фотозоне в обеих темах (белый фон файла не
+        // должен выглядеть заплаткой на сером/тёмном); плейсхолдер «Фото
+        // готовится» остаётся на обычной фотозоне bg-photo.
+        src ? "bg-photo-product" : "bg-photo",
+        className,
+      )}
     >
       {src ? (
         <Image
@@ -28,7 +40,7 @@ export function ProductImage({
           alt={alt}
           fill
           sizes={sizes}
-          className="object-contain p-3"
+          className={cn("object-contain", normalized ? "" : "p-2")}
           {...(priority ? { priority: true } : { loading: "lazy" })}
         />
       ) : (

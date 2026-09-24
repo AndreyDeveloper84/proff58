@@ -39,7 +39,22 @@ def _media(tmp_path, settings):
 
 @pytest.fixture
 def autoprocess_on(settings):
+    """Флаг включён, ОБА маршрута уже проверены на выборке и публикуют без человека.
+
+    Соответствует состоянию системы после калибровки (§5.4): большинство тестов
+    этого файла проверяют полный автоматический путь до витрины. Наблюдение по
+    умолчанию (маршрут не в `PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES`, кандидат остаётся
+    в `observed`) — отдельные тесты `test_image_quality.py::test_*_observed_by_default*`.
+    """
     settings.FEATURES = {**settings.FEATURES, image_autoprocess.FLAG: True}
+    settings.PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES = {"trim", "rembg_black"}
+
+
+@pytest.fixture
+def autoprocess_observed(settings):
+    """Как `autoprocess_on`, но маршруты ещё НЕ проверены — режим наблюдения."""
+    settings.FEATURES = {**settings.FEATURES, image_autoprocess.FLAG: True}
+    settings.PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES = set()
 
 
 def _png(bg=(255, 255, 255)):
@@ -164,19 +179,48 @@ def test_revert_to_original_removes_copy_and_sticks(
     assert image_autoprocess.process_image(image.pk) == "rejected"
 
 
-def test_accept_only_review_candidates_with_copy(admin_client, autoprocess_on, _media):
+def test_accept_candidate_requires_matching_checksum_and_revision(
+    admin_client, autoprocess_on, _media
+):
+    """Массового «принять» нет — только по конкретному кандидату со сверкой (§8
+    ревью плана): чужой/устаревший checksum не публикует чужой файл."""
     candidate = _processed("p1")
     ProductImage.objects.filter(pk=candidate.pk).update(
-        processing_status=ImageProcessingStatus.NEEDS_REVIEW
+        processing_status=ImageProcessingStatus.NEEDS_REVIEW, display=""
     )
+    candidate.refresh_from_db()
+    assert candidate.candidate  # промоушен при _processed всё равно заполнил кандидата
+
     blank = _photo("p2")
     ProductImage.objects.filter(pk=blank.pk).update(
         processing_status=ImageProcessingStatus.NEEDS_REVIEW
     )
 
-    resp = _action(admin_client, "action_accept", candidate, blank)
+    # Неверный checksum — отказ, статус не меняется.
+    resp = admin_client.post(
+        reverse("admin:catalog_productimage_accept_candidate", args=[candidate.pk]),
+        {"checksum": "wrong", "revision": candidate.revision},
+        follow=True,
+    )
+    candidate.refresh_from_db()
+    assert candidate.processing_status == ImageProcessingStatus.NEEDS_REVIEW
+    assert "уже изменился" in resp.content.decode()
 
-    statuses = dict(ProductImage.objects.values_list("pk", "processing_status"))
-    assert statuses[candidate.pk] == ImageProcessingStatus.DONE
-    assert statuses[blank.pk] == ImageProcessingStatus.NEEDS_REVIEW
-    assert "Не принято: 1" in resp.content.decode()
+    # У пустого кандидата нет вовсе — тоже отказ.
+    resp = admin_client.post(
+        reverse("admin:catalog_productimage_accept_candidate", args=[blank.pk]),
+        {"checksum": "", "revision": blank.revision},
+        follow=True,
+    )
+    blank.refresh_from_db()
+    assert blank.processing_status == ImageProcessingStatus.NEEDS_REVIEW
+
+    # Верные checksum и revision — принято, витрина получает файл кандидата.
+    admin_client.post(
+        reverse("admin:catalog_productimage_accept_candidate", args=[candidate.pk]),
+        {"checksum": candidate.candidate_checksum, "revision": candidate.revision},
+        follow=True,
+    )
+    candidate.refresh_from_db()
+    assert candidate.processing_status == ImageProcessingStatus.DONE
+    assert candidate.display.name == candidate.candidate.name

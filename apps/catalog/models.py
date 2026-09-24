@@ -21,8 +21,10 @@
 import os
 import uuid
 
+from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.core.exceptions import ValidationError
+from django.core.files.storage import FileSystemStorage
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
 from django.db.models import (
@@ -901,10 +903,11 @@ class ImageSource(models.TextChoices):
 
 
 class ImageProcessingStatus(models.TextChoices):
-    """Где фото на пути автообработки (ADR-0014).
+    """Где фото на пути автообработки (ADR-0014, доработка контролёра качества).
 
-    Витрина показывает обработанную копию ``display`` только в статусе ``DONE``;
-    во всех остальных — исходный файл ``image``.
+    Витрина показывает принятую копию ``display`` только в статусе ``DONE``; во всех
+    остальных — исходный файл ``image``. Готовый, но ещё не принятый результат живёт
+    в ``candidate`` и статуса витрины не меняет ни при каких промежуточных статусах.
     """
 
     NONE = "none", _("Не обрабатывалось")
@@ -917,6 +920,16 @@ class ImageProcessingStatus(models.TextChoices):
     SKIPPED = "skipped", _("Фон не трогаем: кадр не студийный")
     REJECTED = "rejected", _("Оставлен оригинал")
     FAILED = "failed", _("Ошибка обработки")
+    #: Контролёр решил `auto_accept`, но маршрут ещё не включён в
+    #: `PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES` (режим наблюдения): решение зафиксировано
+    #: в `qc_*`, кандидат готов, витрина не меняется, человеку не показывается.
+    OBSERVED = "observed", _("Готово, ждёт включения маршрута")
+    #: Контролёр отклонил кандидата (`auto_reject_candidate`) либо человек отклонил
+    #: его вручную. Байты кандидата ушли в архив «Отклонённые фото», в самой записи
+    #: `candidate` не хранится. Отличие от `REJECTED`: здесь отклонён РЕЗУЛЬТАТ
+    #: обработки, а не принято решение больше не трогать исходник — новая обработка
+    #: (другой исходник, параметры, версия правил) может предложить кандидата снова.
+    CANDIDATE_REJECTED = "candidate_rejected", _("Кандидат отклонён")
 
 
 class ImageProcessingMode(models.TextChoices):
@@ -936,6 +949,53 @@ class ImageReviewReason(models.TextChoices):
     #: Исторический: так помечались копии с прочим фоном, пока их делала нейросеть.
     #: Новые записи её не получают — прочий фон автообработка не трогает (ADR-0014).
     NOT_WHITE = "not_white", _("Фон был не белый — копию сделала нейросеть")
+
+
+class ImagePurpose(models.TextChoices):
+    """Назначение кадра — отдельно от цвета фона и статуса обработки.
+
+    Автоматически из содержимого не выводится (OCR и классификатор — не в первой
+    версии): по умолчанию `UNKNOWN`, дальше меняет только человек в админке. Кадр с
+    назначением `PROMO`/`KIT`/`IN_USE` контролёр никогда не переводит в `auto_accept`
+    и не пускает по маршруту `rembg_manual` без дополнительного вопроса.
+    """
+
+    UNKNOWN = "unknown", _("Неизвестно")
+    WHOLE = "whole", _("Товар целиком")
+    DETAIL = "detail", _("Деталь товара")
+    KIT = "kit", _("Комплектация / кейс")
+    PROMO = "promo", _("Рекламный кадр")
+    IN_USE = "in_use", _("Фото в работе")
+
+
+class ImageMainFit(models.TextChoices):
+    """Пригодность кадра для главного фото — отдельно от технической приёмки копии.
+
+    Автопринятие копии `main_fit_human` никогда не меняет: подтверждение модели и
+    комплектации — решение человека.
+    """
+
+    UNCHECKED = "unchecked", _("Не проверено")
+    SUITABLE = "suitable", _("Подходит")
+    UNSUITABLE = "unsuitable", _("Не подходит")
+
+
+class ImageQcDecision(models.TextChoices):
+    """Вердикт контролёра качества по кандидату (§5.4 задания на доработку)."""
+
+    AUTO_ACCEPT = "auto_accept", _("Принять автоматически")
+    AUTO_REJECT_CANDIDATE = "auto_reject_candidate", _("Отклонить кандидата")
+    NEEDS_REVIEW = "needs_review", _("Нужна проверка человеком")
+
+
+class ImageQcSource(models.TextChoices):
+    """Кто вынес решение контролёра — приоритет всегда у подтверждённого человеком."""
+
+    AUTO = "auto", _("Автоматика")
+    HUMAN = "human", _("Человек")
+    #: Старый `done`/`rejected` из-под прежней автообработки (до контролёра):
+    #: решение НЕ считается проверенной разметкой для калибровки (§5.4).
+    LEGACY = "legacy", _("Унаследовано без контролёра")
 
 
 def product_image_display_path(instance, filename: str) -> str:
@@ -963,6 +1023,11 @@ class ProductImage(models.Model):
     на них держатся дедуп сбора и сверка ИЗО-02. Результат обработки — вторым
     файлом ``display``; витрина берёт его через ``storefront_image``.
     """
+
+    #: Для выпадающих списков в шаблоне админки (`select` без формы модели —
+    #: назначение и пригодность меняются точечными action-view, а не общим save()).
+    PURPOSE_CHOICES = ImagePurpose.choices
+    MAIN_FIT_CHOICES = ImageMainFit.choices
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
     image = models.ImageField(_("Файл"), upload_to="products/")
@@ -1025,7 +1090,7 @@ class ProductImage(models.Model):
     )
     processing_status = models.CharField(
         _("Обработка"),
-        max_length=16,
+        max_length=24,
         choices=ImageProcessingStatus.choices,
         default=ImageProcessingStatus.NONE,
     )
@@ -1058,6 +1123,107 @@ class ProductImage(models.Model):
         help_text=_("Хэш изображения оригинала: по нему находятся одинаковые кадры товара."),
     )
 
+    # --- Кандидат и решение контролёра качества (доработка ADR-0014) ---
+    # `display` — только ПРИНЯТАЯ копия. Свежий результат обработки живёт отдельно в
+    # `candidate`, пока не принят автоматикой (`_promote`) или человеком
+    # (`accept_candidate`): постановка в очередь, ошибка и отклонение кандидата
+    # витрину не трогают ни при каких обстоятельствах.
+    candidate = models.ImageField(
+        _("Файл-кандидат"),
+        upload_to=product_image_display_path,
+        blank=True,
+        help_text=_("Свежий результат обработки, ждущий решения. На витрину не идёт."),
+    )
+    candidate_checksum = models.CharField(
+        _("Контрольная сумма кандидата"), max_length=64, blank=True, default=""
+    )
+    candidate_render_key = models.CharField(
+        _("Ключ отрисовки кандидата"),
+        max_length=64,
+        blank=True,
+        default="",
+        help_text=_(
+            "sha256(исходник + версия параметров + маршрут). Тот же ключ — тот же "
+            "результат: повторная задача не рисует файл и не зовёт nейросеть заново."
+        ),
+    )
+    candidate_mode = models.CharField(
+        _("Способ отрисовки кандидата"),
+        max_length=16,
+        choices=ImageProcessingMode.choices,
+        blank=True,
+    )
+    candidate_created_at = models.DateTimeField(_("Кандидат создан"), null=True, blank=True)
+    display_render_key = models.CharField(
+        _("Ключ отрисовки принятой копии"),
+        max_length=64,
+        blank=True,
+        default="",
+        help_text=_("Ключ отрисовки, которым сделан текущий display — для отката и аудита."),
+    )
+
+    qc_decision = models.CharField(
+        _("Решение контролёра"), max_length=24, choices=ImageQcDecision.choices, blank=True
+    )
+    qc_source = models.CharField(
+        _("Кто решил"), max_length=8, choices=ImageQcSource.choices, blank=True
+    )
+    qc_rules_version = models.PositiveSmallIntegerField(_("Версия правил контролёра"), default=0)
+    qc_features = models.JSONField(_("Измеренные признаки"), default=dict, blank=True)
+    qc_reasons = models.JSONField(_("Причины решения"), default=list, blank=True)
+    qc_decided_at = models.DateTimeField(_("Решение принято"), null=True, blank=True)
+
+    # --- Назначение кадра и пригодность главным (§4 задания) ---
+    purpose = models.CharField(
+        _("Назначение кадра"),
+        max_length=16,
+        choices=ImagePurpose.choices,
+        default=ImagePurpose.UNKNOWN,
+    )
+    main_fit_auto = models.CharField(
+        _("Пригодность главным (авто)"),
+        max_length=16,
+        choices=ImageMainFit.choices,
+        default=ImageMainFit.UNCHECKED,
+    )
+    main_fit_human = models.CharField(
+        _("Пригодность главным (человек)"),
+        max_length=16,
+        choices=ImageMainFit.choices,
+        default=ImageMainFit.UNCHECKED,
+        help_text=_("Подтверждение человеком — приоритетнее автоматического предположения."),
+    )
+    main_fit_reason = models.CharField(
+        _("Причина по пригодности"), max_length=255, blank=True, default=""
+    )
+
+    # --- Точечные ручные решения ---
+    manual_rembg_requested = models.BooleanField(
+        _("Запрошено ручное удаление фона"),
+        default=False,
+        help_text=_(
+            "«Предметное фото: подготовить удаление фона» — точечное действие человека "
+            "для сложного НЕ чёрного фона; авто-правило `other → rembg` не расширяет."
+        ),
+    )
+    needs_source_replacement = models.BooleanField(_("Нужна замена исходника"), default=False)
+    source_replacement_reason = models.CharField(
+        _("Почему нужна замена"), max_length=255, blank=True, default=""
+    )
+
+    # --- Конкурентность решений ---
+    revision = models.PositiveIntegerField(
+        _("Ревизия решения"),
+        default=0,
+        help_text=_(
+            "Растёт при каждом решении человека. Воркер, начавший обработку при "
+            "меньшей ревизии, не перезаписывает более новое решение (устаревший "
+            "результат отбрасывается, статус `stale`)."
+        ),
+    )
+    attempts = models.PositiveSmallIntegerField(_("Попыток обработки"), default=0)
+    last_error = models.CharField(_("Последняя ошибка"), max_length=500, blank=True, default="")
+
     class Meta:
         verbose_name = _("Изображение товара")
         verbose_name_plural = _("Изображения товаров")
@@ -1084,7 +1250,11 @@ class ProductImage(models.Model):
         ]
         # Индекс через Meta, а не db_index: у CharField db_index создаёт ещё и
         # бесполезный для статуса `_like`-индекс (varchar_pattern_ops).
-        indexes = [models.Index(fields=["processing_status"], name="productimage_proc_status_idx")]
+        indexes = [
+            models.Index(fields=["processing_status"], name="productimage_proc_status_idx"),
+            models.Index(fields=["purpose"], name="productimage_purpose_idx"),
+            models.Index(fields=["qc_decision"], name="productimage_qc_decision_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"Фото {self.product} #{self.pk}"
@@ -1098,10 +1268,13 @@ class ProductImage(models.Model):
         super().save(*args, **kwargs)
         self._loaded_image_name = self.image.name or ""
 
-    #: Поля обработки: теряют смысл, как только меняется исходный файл.
+    #: Поля обработки/кандидата: пишет воркер на каждую попытку. Теряют смысл, как
+    #: только меняется исходный файл — `_drop_processing` сбрасывает их вместе с
+    #: `CONTENT_FIELDS`.
     PROCESSING_FIELDS = (
         "display",
         "display_checksum",
+        "display_render_key",
         "processing_status",
         "processing_mode",
         "processing_version",
@@ -1109,18 +1282,58 @@ class ProductImage(models.Model):
         "review_reason",
         "duplicate_of",
         "fingerprint",
+        "candidate",
+        "candidate_checksum",
+        "candidate_render_key",
+        "candidate_mode",
+        "candidate_created_at",
+        "qc_decision",
+        "qc_source",
+        "qc_rules_version",
+        "qc_features",
+        "qc_reasons",
+        "qc_decided_at",
+        "main_fit_auto",
+    )
+    #: Поля назначения/ручных решений: описывают СОДЕРЖИМОЕ старого исходника, а не
+    #: обработку. Пишет только человек (кроме `attempts`/`last_error` — операционные
+    #: счётчики воркера). Замена исходника обнуляет их вместе с `PROCESSING_FIELDS`:
+    #: новый файл может быть чем угодно, старое назначение к нему не относится.
+    CONTENT_FIELDS = (
+        "purpose",
+        "main_fit_human",
+        "main_fit_reason",
+        "manual_rembg_requested",
+        "needs_source_replacement",
+        "source_replacement_reason",
+        "attempts",
+        "last_error",
     )
 
     @property
     def storefront_image(self):
-        """Файл для витрины и превью: готовая копия, иначе исходный файл (ADR-0014).
+        """Файл для витрины и превью: принятая копия, иначе исходный файл (ADR-0014).
 
         Проверяется, что копия указана, а не что файл есть на диске: обращение к
         диску на каждое фото витрины слишком дорого. Пропажу файла ловит аудит.
+        Кандидат (`candidate`) сюда никогда не попадает — постановка в очередь,
+        ошибка обработки и отклонение кандидата витрину не меняют.
         """
         if self.processing_status == ImageProcessingStatus.DONE and self.display:
             return self.display
         return self.image
+
+    @property
+    def qc_reasons_display(self) -> str:
+        """Причины решения контролёра по-русски — для шаблона админки."""
+        from . import image_quality
+
+        return ", ".join(image_quality.REASON_LABELS.get(r, r) for r in (self.qc_reasons or []))
+
+    @property
+    def is_normalized(self) -> bool:
+        """Витрина показывает нормализованную копию (белый квадрат, поля 7%), а не исходник."""
+        return self.processing_status == ImageProcessingStatus.DONE and bool(self.display)
 
     @classmethod
     def from_db(cls, db, field_names, values):
@@ -1132,17 +1345,27 @@ class ProductImage(models.Model):
         return instance
 
     def _drop_processing(self, save_kwargs: dict) -> None:
-        """Исходное фото заменили — копия прежнего фото на витрине недопустима.
+        """Исходное фото заменили — прежние копия, кандидат и решения недопустимы.
 
-        Файл старой копии удаляется после коммита: копия принадлежит только этой
-        записи (ADR-0014), а если транзакция откатится, файл должен остаться.
+        Файлы старой копии и кандидата удаляются после коммита: они принадлежат
+        только этой записи (ADR-0014), а если транзакция откатится, файлы должны
+        остаться. Архив отклонённых кандидатов (`RejectedImageCandidate`) не трогаем —
+        это самостоятельный снимок, а не файл текущей записи.
         """
-        if self.processing_status == ImageProcessingStatus.NONE and not self.display:
+        untouched = self.processing_status == ImageProcessingStatus.NONE and not self.display
+        if untouched and not self.candidate:
             return
         old_display = self.display.name or ""
+        old_candidate = self.candidate.name or ""
         storage = self.display.storage
         self.display = ""
         self.display_checksum = ""
+        self.display_render_key = ""
+        self.candidate = ""
+        self.candidate_checksum = ""
+        self.candidate_render_key = ""
+        self.candidate_mode = ""
+        self.candidate_created_at = None
         self.processing_status = ImageProcessingStatus.NONE
         self.processing_mode = ""
         self.processing_version = 0
@@ -1150,10 +1373,193 @@ class ProductImage(models.Model):
         self.review_reason = ""
         self.duplicate_of = None
         self.fingerprint = ""
+        self.qc_decision = ""
+        self.qc_source = ""
+        self.qc_rules_version = 0
+        self.qc_features = {}
+        self.qc_reasons = []
+        self.qc_decided_at = None
+        self.main_fit_auto = ImageMainFit.UNCHECKED
+        self.purpose = ImagePurpose.UNKNOWN
+        self.main_fit_human = ImageMainFit.UNCHECKED
+        self.main_fit_reason = ""
+        self.manual_rembg_requested = False
+        self.needs_source_replacement = False
+        self.source_replacement_reason = ""
+        self.attempts = 0
+        self.last_error = ""
         if save_kwargs.get("update_fields") is not None:
-            save_kwargs["update_fields"] = {*save_kwargs["update_fields"], *self.PROCESSING_FIELDS}
-        if old_display:
+            save_kwargs["update_fields"] = {
+                *save_kwargs["update_fields"],
+                *self.PROCESSING_FIELDS,
+                *self.CONTENT_FIELDS,
+            }
+        if old_display and old_display != old_candidate:
             transaction.on_commit(lambda: storage.delete(old_display))
+        if old_candidate:
+            transaction.on_commit(lambda: storage.delete(old_candidate))
+
+
+class ProductImageEvent(models.Model):
+    """Append-only история решений по фото: кто, что и когда решил.
+
+    Не журнал каждой попытки обработки — признаки и причины конкретного кандидата
+    уже хранятся на самой записи (`qc_features`/`qc_reasons`). Здесь только СОБЫТИЯ,
+    меняющие видимое поведение: решение контролёра, приём/отклонение кандидата,
+    возврат из архива, закрепление оригинала, назначение и главное фото. До этой
+    доработки admin actions ничего не журналировали (только `message_user`).
+    """
+
+    class Kind(models.TextChoices):
+        QC_DECISION = "qc_decision", _("Решение контролёра")
+        ACCEPT_CANDIDATE = "accept_candidate", _("Кандидат принят")
+        REJECT_CANDIDATE = "reject_candidate", _("Кандидат отклонён")
+        RETURN_TO_REVIEW = "return_to_review", _("Возвращён на проверку из архива")
+        REVERT_ORIGINAL = "revert_original", _("Оригинал закреплён")
+        REPROCESS = "reprocess", _("Отправлен на переобработку")
+        SET_PURPOSE = "set_purpose", _("Изменено назначение кадра")
+        SET_MAIN_FIT = "set_main_fit", _("Изменена пригодность главным")
+        SET_MAIN = "set_main", _("Назначено главным фото")
+        MANUAL_REMBG_REQUESTED = "manual_rembg_requested", _("Запрошено ручное удаление фона")
+        SOURCE_REPLACEMENT = "source_replacement", _("Отмечена нужда в замене исходника")
+
+    # SET_NULL + отдельные ref-поля: событие переживает удаление фото/товара
+    # (откат импорта, ручное удаление) — история решений не должна каскадно исчезать.
+    image = models.ForeignKey(
+        "ProductImage",
+        verbose_name=_("Фото"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="events",
+    )
+    image_ref = models.PositiveBigIntegerField(_("ID фото"))
+    product_ref = models.PositiveBigIntegerField(_("ID товара"))
+    kind = models.CharField(_("Тип события"), max_length=32, choices=Kind.choices)
+    source = models.CharField(_("Источник"), max_length=8, choices=ImageQcSource.choices)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("Кто"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    render_key = models.CharField(_("Ключ отрисовки"), max_length=64, blank=True, default="")
+    checksum = models.CharField(_("Контрольная сумма"), max_length=64, blank=True, default="")
+    before = models.JSONField(_("До"), default=dict, blank=True)
+    after = models.JSONField(_("После"), default=dict, blank=True)
+    reasons = models.JSONField(_("Причины"), default=list, blank=True)
+    note = models.CharField(_("Заметка"), max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(_("Когда"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Событие по фото")
+        verbose_name_plural = _("События по фото")
+        ordering = ["-created_at", "-pk"]
+        indexes = [
+            models.Index(fields=["image_ref"], name="imgevent_image_ref_idx"),
+            models.Index(fields=["product_ref"], name="imgevent_product_ref_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} · фото {self.image_ref}"
+
+
+#: Архив отклонённых кандидатов — вне /media/, за защищённой выдачей (§7.1).
+private_media_storage = FileSystemStorage(location=str(settings.PRIVATE_MEDIA_ROOT))
+
+
+def rejected_candidate_path(instance, filename: str) -> str:
+    if instance.product_ref is None:
+        raise ValueError("архивная запись без товара: сначала задайте product_ref")
+    return f"rejected/{instance.product_ref}/{os.path.basename(filename)}"
+
+
+class RejectedImageCandidate(models.Model):
+    """Единый архив отклонённых кандидатов фото (§7.1).
+
+    Хранит именно БАЙТЫ отклонённого кандидата, не только статус `ProductImage`:
+    повторная обработка создаёт новый кандидат и не должна затирать прежний
+    отклонённый вариант. Переживает переобработку, смену кандидата и удаление
+    записи товара/фото (SET_NULL + `product_snapshot`). Автоочистки и срока
+    хранения нет — решение о судьбе файлов принимает владелец отдельно.
+    """
+
+    class Status(models.TextChoices):
+        REJECTED = "rejected", _("Отклонён")
+        RETURNED = "returned", _("Возвращён на проверку")
+
+    image = models.ForeignKey(
+        "ProductImage",
+        verbose_name=_("Фото"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="rejected_candidates",
+    )
+    image_ref = models.PositiveBigIntegerField(_("ID фото"))
+    product_ref = models.PositiveBigIntegerField(_("ID товара"))
+    #: Имя/артикул товара и URL исходника на момент отклонения — переживает
+    #: удаление записей (в отличие от FK, которые станут NULL).
+    product_snapshot = models.JSONField(_("Снимок товара и исходника"), default=dict, blank=True)
+
+    file = models.FileField(
+        _("Файл"), upload_to=rejected_candidate_path, storage=private_media_storage, max_length=255
+    )
+    checksum = models.CharField(_("Контрольная сумма"), max_length=64, blank=True, default="")
+    readable = models.BooleanField(
+        _("Файл читается"), default=True, help_text=_("False — показывать ссылку, а не превью.")
+    )
+
+    render_key = models.CharField(_("Ключ отрисовки"), max_length=64, blank=True, default="")
+    processing_version = models.PositiveSmallIntegerField(_("Версия обработки"), default=0)
+    qc_rules_version = models.PositiveSmallIntegerField(_("Версия правил контролёра"), default=0)
+    mode = models.CharField(
+        _("Способ отрисовки"), max_length=16, choices=ImageProcessingMode.choices, blank=True
+    )
+    reasons = models.JSONField(_("Причины"), default=list, blank=True)
+    reason_text = models.CharField(_("Причина"), max_length=255, blank=True, default="")
+    source = models.CharField(
+        _("Источник решения"),
+        max_length=8,
+        choices=ImageQcSource.choices,
+        default=ImageQcSource.AUTO,
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("Кто отклонил"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    status = models.CharField(
+        _("Статус"), max_length=8, choices=Status.choices, default=Status.REJECTED
+    )
+
+    created_at = models.DateTimeField(_("Когда"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Отклонённое фото")
+        verbose_name_plural = _("Отклонённые фото")
+        ordering = ["-created_at", "-pk"]
+        constraints = [
+            # Повтор задачи с тем же исходником/параметрами/файлом не плодит копии
+            # в архиве; разные отклонённые варианты (другой render_key) — отдельные
+            # строки.
+            models.UniqueConstraint(
+                fields=["image_ref", "render_key", "checksum"],
+                name="uniq_rejected_candidate_render",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["product_ref"], name="rejcand_product_ref_idx"),
+            models.Index(fields=["status"], name="rejcand_status_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"Отклонено: фото {self.image_ref} товара {self.product_ref}"
 
 
 class ProductAttributeValue(models.Model):

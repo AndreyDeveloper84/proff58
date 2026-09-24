@@ -1,0 +1,24 @@
+{% extends "admin/change_form.html" %}
+
+{% block object-tools-items %}
+{{ block.super }}
+{% if original %}
+<li style="width:100%;">
+  <div class="module" style="margin:.6rem 0;padding:.8rem 1rem;border:1px solid #ccc;border-radius:6px;">
+    <h3 style="margin-top:0;">Действия с архивной записью</h3>
+    {% if original.status == "returned" %}
+      <p><em>Уже возвращено на проверку.</em></p>
+    {% elif original.image_id %}
+      <form method="post" action="{% url 'admin:catalog_rejectedimagecandidate_return_to_review' original.pk %}">
+        {% csrf_token %}
+        <input type="submit" class="button default" value="Вернуть на проверку"
+               onclick="return confirm('Кандидат снова станет ждать решения человека на карточке фото. Само по себе на витрину не публикует.');">
+      </form>
+      <p><small>Возврат сработает, только если исходник фото не менялся с момента отклонения.</small></p>
+    {% else %}
+      <p><em>Запись фото удалена — вернуть на проверку некуда. Создайте новый вариант через карточку товара.</em></p>
+    {% endif %}
+  </div>
+</li>
+{% endif %}
+{% endblock %}

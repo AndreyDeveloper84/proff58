@@ -476,6 +476,7 @@ export function SearchBar({
                             src={p.image}
                             alt=""
                             sizes="52px"
+                            normalized={p.imageNormalized}
                             className="h-[52px] w-[52px] [&_img]:p-1 [&_svg]:h-5 [&_svg]:w-5"
                           />
                         </div>

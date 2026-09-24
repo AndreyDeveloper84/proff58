@@ -313,6 +313,7 @@ export function CompareTable() {
                         src={p.images[0]?.url}
                         alt={p.name}
                         sizes="112px"
+                        normalized={p.images[0]?.normalized}
                         className="ring-1 ring-line"
                       />
                     </Link>

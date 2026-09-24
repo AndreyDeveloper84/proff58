@@ -14,6 +14,7 @@ htmlcov
 .coverage
 staticfiles
 media
+private_media
 *.sqlite3
 
 # --- Непродуктовое из образа web (#442/TD-05) ---

@@ -40,7 +40,22 @@ def _media(tmp_path, settings):
 
 @pytest.fixture
 def autoprocess_on(settings):
+    """Флаг включён, ОБА маршрута уже проверены на выборке и публикуют без человека.
+
+    Соответствует состоянию системы после калибровки (§5.4): большинство тестов
+    этого файла проверяют полный автоматический путь до витрины. Наблюдение по
+    умолчанию (маршрут не в `PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES`, кандидат остаётся
+    в `observed`) — отдельные тесты `test_image_quality.py::test_*_observed_by_default*`.
+    """
     settings.FEATURES = {**settings.FEATURES, image_autoprocess.FLAG: True}
+    settings.PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES = {"trim", "rembg_black"}
+
+
+@pytest.fixture
+def autoprocess_observed(settings):
+    """Как `autoprocess_on`, но маршруты ещё НЕ проверены — режим наблюдения."""
+    settings.FEATURES = {**settings.FEATURES, image_autoprocess.FLAG: True}
+    settings.PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES = set()
 
 
 def _fake_cutout(img):
@@ -116,16 +131,20 @@ def test_other_background_is_left_alone_even_by_rembg_worker(autoprocess_on, mon
 
 
 def test_empty_mask_goes_to_review_without_copy(autoprocess_on, monkeypatch):
+    """Нейросеть ничего не нашла — пустой результат, тот же вердикт, что у пустого
+    trim-результата: контролёр отклоняет кандидата сам, без человека (§5.4)."""
     monkeypatch.setattr(image_rembg, "is_available", lambda: True)
     monkeypatch.setattr(image_rembg, "cut_out", lambda img: Image.new("RGBA", img.size))
     image = _photo()
     _queued(image)
 
     assert (
-        image_autoprocess.process_image(image.pk, rembg=True) == ImageProcessingStatus.NEEDS_REVIEW
+        image_autoprocess.process_image(image.pk, rembg=True)
+        == ImageProcessingStatus.CANDIDATE_REJECTED
     )
     image.refresh_from_db()
     assert not image.display
+    assert not image.candidate
 
 
 def test_without_rembg_installed_photo_keeps_waiting(autoprocess_on, monkeypatch, _media):
@@ -191,6 +210,9 @@ def test_rembg_task_routed_to_its_own_queue(settings):
 
 def test_render_crops_to_mask_and_fits_square(monkeypatch):
     monkeypatch.setattr(image_rembg, "cut_out", _fake_cutout)
-    square = image_rembg.render(Image.new("RGB", (800, 600), (0, 0, 0)))
+    rendered = image_rembg.render(Image.new("RGB", (800, 600), (0, 0, 0)))
+    assert rendered is not None
+    square, bbox = rendered
     img = Image.open(io.BytesIO(square.content))
     assert img.size == (image_processing.CANVAS, image_processing.CANVAS)
+    assert bbox is not None and len(bbox) == 4

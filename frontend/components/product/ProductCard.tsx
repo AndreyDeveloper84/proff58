@@ -126,12 +126,15 @@ export function ProductCard({
           −{product.price.discountPct}%
         </span>
       )}
-      <ProductImage src={product.image} alt={title} />
+      <ProductImage src={product.image} alt={title} normalized={product.imageNormalized} />
     </a>
   );
 
+  // Затемнение «нет в наличии» переехало с целой карточки (там задевало и фото)
+  // на сам блок цена+кнопка — визуальная иерархия сохраняется, фото остаётся
+  // естественным, а статус уже читается по подписи StatusLabel (текст+точка/иконка).
   const priceCta = buyable ? (
-    <div className="mt-auto flex items-end justify-between gap-2 pt-2">
+    <div className={cn("mt-auto flex items-end justify-between gap-2 pt-2", dimmed && "opacity-70")}>
       <ProductPrice price={product.price} compact />
       <AddToCartButton
         productId={product.id}
@@ -141,7 +144,7 @@ export function ProductCard({
       />
     </div>
   ) : (
-    <div className="mt-auto pt-2">
+    <div className={cn("mt-auto pt-2", dimmed && "opacity-70")}>
       <AddToCartButton
         productId={product.id}
         productSlug={product.slug}
@@ -163,7 +166,6 @@ export function ProductCard({
           // вылезала за нижнюю границу. Ряд выравнивается растяжением карточек
           // (items-stretch у дорожки карусели), поэтому разной высоты не будет.
           "relative flex min-h-[300px] flex-col overflow-hidden rounded-sm border border-line bg-card shadow-card transition hover:border-accent/60 hover:shadow-md focus-within:border-accent/60",
-          dimmed && "opacity-70",
           className,
         )}
       >
@@ -190,7 +192,8 @@ export function ProductCard({
               src={product.image}
               alt={title}
               sizes="220px"
-              className="h-[140px] w-full aspect-auto rounded-none bg-card"
+              normalized={product.imageNormalized}
+              className="h-[140px] w-full aspect-auto rounded-none"
             />
           </a>
           <a
@@ -206,15 +209,21 @@ export function ProductCard({
           <div className="mt-auto flex items-end justify-between gap-2 pt-2">
             <div>
               <StatusLabel product={product} compact />
-              <ProductPrice price={product.price} micro />
+              {/* Затемняем только цену — фото и подпись статуса остаются в полной
+                  силе, дублировать сигнал «нет в наличии» на них незачем. */}
+              <div className={cn(dimmed && "opacity-70")}>
+                <ProductPrice price={product.price} micro />
+              </div>
             </div>
-            <AddToCartButton
-              productId={product.id}
-              productSlug={product.slug}
-              stock={product.stock}
-              hasPrice={product.price.final != null}
-              compact
-            />
+            <div className={cn(dimmed && "opacity-70")}>
+              <AddToCartButton
+                productId={product.id}
+                productSlug={product.slug}
+                stock={product.stock}
+                hasPrice={product.price.final != null}
+                compact
+              />
+            </div>
           </div>
         </div>
 
@@ -235,10 +244,7 @@ export function ProductCard({
       <article
         data-event="product_card_click"
         data-product-id={product.id}
-        className={cn(
-          "flex gap-4 rounded-lg border border-line bg-card p-3 shadow-card transition hover:border-accent/60 hover:shadow-md focus-within:border-accent/60",
-          dimmed && "opacity-70",
-        )}
+        className="flex gap-4 rounded-lg border border-line bg-card p-3 shadow-card transition hover:border-accent/60 hover:shadow-md focus-within:border-accent/60"
       >
         <div className="w-40 shrink-0">{media}</div>
         <div className="flex min-w-0 flex-1 flex-col">
@@ -271,10 +277,7 @@ export function ProductCard({
     <article
       data-event="product_card_click"
       data-product-id={product.id}
-      className={cn(
-        "group flex flex-col rounded-lg border border-line bg-card p-3 shadow-card transition duration-150 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md focus-within:border-accent/60 motion-reduce:transform-none motion-reduce:transition-none",
-        dimmed && "opacity-70",
-      )}
+      className="group flex flex-col rounded-lg border border-line bg-card p-3 shadow-card transition duration-150 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md focus-within:border-accent/60 motion-reduce:transform-none motion-reduce:transition-none"
     >
       {/* В шапке — только статус и бейдж. Кнопки отсюда убраны: в плитке
           шириной ~165px «Нет в наличии» плюс две круглые кнопки в строку не

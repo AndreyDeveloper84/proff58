@@ -56,7 +56,11 @@ export function ProductGallery({ images, name }: { images: ProductImageData[]; n
                   i === active ? "border-accent" : "border-line hover:border-accent/60",
                 )}
               >
-                <ProductImage src={img.url} alt={img.alt || `${name} — фото ${i + 1}`} />
+                <ProductImage
+                  src={img.url}
+                  alt={img.alt || `${name} — фото ${i + 1}`}
+                  normalized={img.normalized}
+                />
               </button>
             </li>
           ))}
@@ -94,6 +98,7 @@ export function ProductGallery({ images, name }: { images: ProductImageData[]; n
               src={current?.url}
               alt={current?.alt || name}
               priority
+              normalized={current?.normalized}
               className={MAIN_PHOTO_SIZE}
             />
           </button>

@@ -1,0 +1,93 @@
+{% extends "admin/change_form.html" %}
+
+{% comment %}
+Точечные решения по кандидату (принять/отклонить/назначение/пригодность/ручной
+rembg) — отдельные `<form>` вне основной формы карточки (нельзя вкладывать формы
+друг в друга), каждая со своим CSRF-токеном и «свежими» скрытыми checksum/revision
+из ТЕКУЩЕГО состояния записи на момент открытия этой страницы. Так модератор не
+может принять кандидата, которого не видел: если запись изменится после открытия
+страницы, `accept_candidate`/`reject_candidate` откажут по несовпадению.
+{% endcomment %}
+
+{% block object-tools-items %}
+{{ block.super }}
+{% if original %}
+<li style="width:100%;">
+  <div class="module" style="margin:.6rem 0;padding:.8rem 1rem;border:1px solid #ccc;border-radius:6px;">
+    <h3 style="margin-top:0;">Решение по фото</h3>
+
+    {% if original.candidate %}
+      <p>
+        <strong>Кандидат ждёт решения</strong>
+        {% if original.qc_reasons %}
+          — причины: {{ original.qc_reasons_display }}
+        {% endif %}
+      </p>
+      <form method="post" action="{% url 'admin:catalog_productimage_accept_candidate' original.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="checksum" value="{{ original.candidate_checksum }}">
+        <input type="hidden" name="revision" value="{{ original.revision }}">
+        <input type="submit" class="button default" value="Принять кандидата">
+      </form>
+      <form method="post" action="{% url 'admin:catalog_productimage_reject_candidate' original.pk %}" style="display:inline;margin-left:.5rem;">
+        {% csrf_token %}
+        <input type="hidden" name="checksum" value="{{ original.candidate_checksum }}">
+        <input type="hidden" name="revision" value="{{ original.revision }}">
+        <input type="text" name="reason_text" placeholder="Причина (необязательно)" style="width:220px;">
+        <input type="submit" class="button" value="Отклонить кандидата (в архив)">
+      </form>
+    {% else %}
+      <p><em>Кандидата нет — витрина показывает {% if original.processing_status == "done" %}принятую копию{% else %}оригинал{% endif %}.</em></p>
+    {% endif %}
+
+    <p style="margin-top:1rem;">
+      <form method="post" action="{% url 'admin:catalog_productimage_set_main' original.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <input type="submit" class="button" value="Сделать главным фото товара"
+               {% if original.is_main %}disabled{% endif %}>
+      </form>
+    </p>
+
+    <p>
+      <form method="post" action="{% url 'admin:catalog_productimage_set_purpose' original.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <label>Назначение кадра:
+          <select name="purpose">
+            {% for value, label in original.PURPOSE_CHOICES %}
+              <option value="{{ value }}" {% if value == original.purpose %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <input type="submit" class="button" value="Сохранить назначение">
+      </form>
+    </p>
+
+    <p>
+      <form method="post" action="{% url 'admin:catalog_productimage_set_main_fit' original.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <label>Пригодность главным (человек):
+          <select name="fit">
+            {% for value, label in original.MAIN_FIT_CHOICES %}
+              <option value="{{ value }}" {% if value == original.main_fit_human %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <input type="text" name="reason" placeholder="Причина" value="{{ original.main_fit_reason }}" style="width:220px;">
+        <input type="submit" class="button" value="Сохранить">
+      </form>
+    </p>
+
+    {% if original.processing_status == "skipped" %}
+      <p>
+        <form method="post" action="{% url 'admin:catalog_productimage_request_manual_rembg' original.pk %}" style="display:inline;">
+          {% csrf_token %}
+          <input type="submit" class="button"
+                 value="Предметное фото: подготовить удаление фона"
+                 onclick="return confirm('Кадр — реальный предмет на сложном фоне (не сцена/комплект/реклама)? Маршрут ещё не проверен на выборке, результат всегда пойдёт на ручную проверку.');">
+        </form>
+      </p>
+    {% endif %}
+  </div>
+</li>
+{% endif %}
+{% endblock %}

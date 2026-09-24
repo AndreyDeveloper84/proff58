@@ -12,12 +12,20 @@
     check_product_images                 # только сводка
     check_product_images --list          # + пути и товары
     check_product_images --delete-broken # снять битые с витрины (спросит подтверждение)
+    check_product_images --main-conflicts  # read-only: товары с 0 или 2+ is_main
+
+`--main-conflicts` — отдельная read-only диагностика (доработка контролёра
+качества, §7 задания): в БД нет ограничения «один `is_main` на товар» (только
+код держит инвариант при обычной работе), поэтому перед любой автоматической
+нормализацией нужно сначала УВИДЕТЬ существующие конфликты, а не чинить их
+миграцией наугад. Ничего не правит.
 """
 
 from __future__ import annotations
 
 from django.core.exceptions import SuspiciousFileOperation
 from django.core.management.base import BaseCommand
+from django.db.models import Count
 
 from apps.catalog.models import ProductImage
 
@@ -52,8 +60,15 @@ class Command(BaseCommand):
             action="store_true",
             help="Удалить записи о битых файлах, чтобы карточка показывала «Фото готовится».",
         )
+        parser.add_argument(
+            "--main-conflicts",
+            action="store_true",
+            help="Read-only: товары с 0 или 2+ is_main=True. Ничего не меняет.",
+        )
 
     def handle(self, *args, **options):
+        if options["main_conflicts"]:
+            return self._main_conflicts()
         try:
             from PIL import Image, ImageFile
         except ImportError:
@@ -132,3 +147,34 @@ class Command(BaseCommand):
         ids = [i.pk for i in broken + missing]
         ProductImage.objects.filter(pk__in=ids).delete()
         self.stdout.write(self.style.SUCCESS(f"Удалено записей: {len(ids)}"))
+
+    def _main_conflicts(self) -> None:
+        """Read-only: товары, где `is_main` нарушает инвариант «ровно одно фото»."""
+        from apps.catalog.models import Product
+
+        main_counts = (
+            ProductImage.objects.filter(is_main=True)
+            .values("product_id")
+            .annotate(n=Count("id"))
+            .filter(n__gt=1)
+            .order_by("-n")
+        )
+        multiple = list(main_counts)
+        no_main = (
+            Product.objects.filter(images__isnull=False)
+            .exclude(images__is_main=True)
+            .values_list("pk", flat=True)
+            .distinct()
+            .order_by("pk")
+        )
+        no_main_ids = list(no_main)
+
+        self.stdout.write("КОНФЛИКТЫ is_main (read-only, ничего не изменено)")
+        self.stdout.write(f"  товаров с 2+ is_main: {len(multiple)}")
+        for row in multiple[:20]:
+            self.stdout.write(f"    товар #{row['product_id']}: {row['n']} главных фото")
+        if len(multiple) > 20:
+            self.stdout.write(f"    ... и ещё {len(multiple) - 20}")
+        self.stdout.write(f"  товаров с фото, но без главного: {len(no_main_ids)}")
+        if no_main_ids:
+            self.stdout.write(f"    например: {', '.join(map(str, no_main_ids[:20]))}")

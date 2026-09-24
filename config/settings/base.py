@@ -160,6 +160,9 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+# Архив отклонённых кандидатов на фото (см. apps/catalog/image_archive.py): не в
+# /media/ и не за именем в nginx — выдаётся только защищённым view для персонала.
+PRIVATE_MEDIA_ROOT = BASE_DIR / "private_media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -552,6 +555,20 @@ FEATURES = {
     # Автообработка фото товаров (ADR-0014): витринные копии на белом фоне.
     "product_image_autoprocess": env.bool("FEATURE_PRODUCT_IMAGE_AUTOPROCESS", default=False),
 }
+
+# Контролёр качества фото (доработка ADR-0014). Маршруты обработки, чьё решение
+# `auto_accept` реально публикуется без человека — прошли проверку на отдельной
+# размеченной выборке (§5.4). Список пуст по умолчанию: пока ни один маршрут не
+# подтверждён, все "auto_accept" уходят в режим наблюдения (`observed`), не на
+# витрину. Значения — коды `apps.catalog.image_quality.Route`.
+PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES = {
+    r.strip() for r in env.list("PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES", default=[]) if r.strip()
+}
+
+# Полное отключение нейросети rembg: обычная обработка (обрезка полей) работает
+# независимо от этого флага. При False задача rembg возвращает операционный статус
+# "выключено", а не облачный fallback и не плохую оценку фото.
+PRODUCT_IMAGE_REMBG_ENABLED = env.bool("PRODUCT_IMAGE_REMBG_ENABLED", default=True)
 
 
 LOGGING = {

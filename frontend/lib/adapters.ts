@@ -61,13 +61,16 @@ export type ApiProduct = {
   stock_status?: string | null;
   stock_qty?: number | null;
   main_image?: string | null;
+  // Нормализовано ли главное фото автообработкой (белый холст, встроенные поля) —
+  // ProductImage тогда не добавляет свой отступ. null/undefined — обычный исходник.
+  main_image_normalized?: boolean | null;
   short_description?: string | null;
   attributes?: ApiAttr[];
   // Рейтинг продаж backend: товар в топе продаж за окно (apps.catalog.sales).
   is_hit?: boolean;
 };
 
-type ApiImage = { url: string; alt?: string | null; is_main?: boolean };
+type ApiImage = { url: string; alt?: string | null; is_main?: boolean; normalized?: boolean };
 // Detail-эндпоинт (/products/{slug}/) = ApiProduct + description/images/breadcrumb.
 type ApiProductDetail = ApiProduct & {
   description?: string | null;
@@ -186,6 +189,7 @@ export function apiProductToProduct(ap: ApiProduct): Product {
     cardName: ap.card_name || ap.name,
     brand: ap.brand ?? "",
     image: ap.main_image ?? undefined,
+    imageNormalized: ap.main_image_normalized === true,
     // Порядок характеристик — с backend (по типу товара, DATA-01): не пересортировываем.
     // Пустые значения отбрасываем, но «0 Дж» и «Нет» — не пустые: formatSpecValue
     // превращает 0 и false в непустую строку, и фильтр по строке их сохраняет.
@@ -226,10 +230,15 @@ function apiProductToDetail(ap: ApiProductDetail): ProductDetail {
   const base = apiProductToProduct(ap);
   const images: ProductImageData[] = (ap.images ?? [])
     .filter((im) => im && im.url)
-    .map((im) => ({ url: im.url, alt: im.alt || base.name, isMain: im.is_main === true }));
+    .map((im) => ({
+      url: im.url,
+      alt: im.alt || base.name,
+      isMain: im.is_main === true,
+      normalized: im.normalized === true,
+    }));
   // main_image как fallback, если detail не отдал галерею.
   if (!images.length && base.image) {
-    images.push({ url: base.image, alt: base.name, isMain: true });
+    images.push({ url: base.image, alt: base.name, isMain: true, normalized: base.imageNormalized });
   }
   // главное фото — первым (isMain), затем остальные.
   images.sort((a, b) => Number(b.isMain) - Number(a.isMain));

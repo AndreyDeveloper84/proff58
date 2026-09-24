@@ -44,6 +44,7 @@ services:
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
+      - private_media_volume:/app/private_media
       - ./logs:/app/logs
       - ./var:/app/var
     depends_on:
@@ -153,6 +154,7 @@ services:
       - .env
     volumes:
       - media_volume:/app/media
+      - private_media_volume:/app/private_media
       - ./logs:/app/logs
     depends_on:
       - db
@@ -179,6 +181,7 @@ services:
       U2NET_HOME: /models
     volumes:
       - media_volume:/app/media
+      - private_media_volume:/app/private_media
       - rembg_models:/models
       - ./logs:/app/logs
     # swap на VPS уже занят: без memswap_limit процесс ушёл бы в swap и затормозил web
@@ -225,4 +228,7 @@ volumes:
   pgdata:
   static_volume:
   media_volume:
+  # Архив отклонённых кандидатов (§7.1) — вне media_volume и НЕ монтируется в
+  # nginx: доступ только через защищённый admin-view (staff + право на модель).
+  private_media_volume:
   rembg_models:

@@ -27,6 +27,7 @@ from apps.catalog.models import (
     Product,
     ProductImage,
     ProductStatus,
+    RejectedImageCandidate,
 )
 from apps.catalog.tasks import process_product_image
 
@@ -41,7 +42,22 @@ def _media(tmp_path, settings):
 
 @pytest.fixture
 def autoprocess_on(settings):
+    """Флаг включён, ОБА маршрута уже проверены на выборке и публикуют без человека.
+
+    Соответствует состоянию системы после калибровки (§5.4): большинство тестов
+    этого файла проверяют полный автоматический путь до витрины. Наблюдение по
+    умолчанию (маршрут не в `PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES`, кандидат остаётся
+    в `observed`) — отдельные тесты `test_image_quality.py::test_*_observed_by_default*`.
+    """
     settings.FEATURES = {**settings.FEATURES, image_autoprocess.FLAG: True}
+    settings.PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES = {"trim", "rembg_black"}
+
+
+@pytest.fixture
+def autoprocess_observed(settings):
+    """Как `autoprocess_on`, но маршруты ещё НЕ проверены — режим наблюдения."""
+    settings.FEATURES = {**settings.FEATURES, image_autoprocess.FLAG: True}
+    settings.PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES = set()
 
 
 def _encode(img, fmt="PNG"):
@@ -193,7 +209,11 @@ def test_white_photo_gets_display_and_original_untouched(autoprocess_on, _media)
 
     version = image_processing.PROCESSING_VERSION
     assert image.display.name.startswith(f"products/display/{image.product_id}/")
-    assert image.display.name.endswith(f"-v{version}.webp")
+    assert image.display.name.endswith(".webp")
+    # Кэш-бастинг /media/ теперь через render_key (не суффикс версии в имени файла):
+    # ключ уже зависит от версии обработки — имя файла меняется при любом изменении
+    # параметров/маршрута.
+    assert image.display_render_key and image.display_render_key[:8] in image.display.name
     display_bytes = (_media / image.display.name).read_bytes()
     assert image.display_checksum == hashlib.sha256(display_bytes).hexdigest()
     assert image.processing_mode == ImageProcessingMode.TRIM
@@ -288,7 +308,10 @@ def test_new_parameters_version_replaces_copy(
     with django_capture_on_commit_callbacks(execute=True):
         assert image_autoprocess.process_image(image.pk) == ImageProcessingStatus.DONE
     image.refresh_from_db()
-    assert image.display.name.endswith(f"-v{newer}.webp")
+    assert image.display.name.endswith(".webp")
+    assert str(old) != str(
+        _media / image.display.name
+    )  # версия сменилась — новый render_key, новый файл
     assert not old.exists()
 
 
@@ -488,9 +511,17 @@ def test_all_white_picture_needs_review_not_storefront():
 
 
 @pytest.mark.django_db
-def test_blank_photo_goes_to_review(autoprocess_on):
+def test_blank_photo_is_auto_rejected_without_archive_file(autoprocess_on):
+    """Пустой результат — достоверный технический брак (§5.4): контролёр отклоняет
+    кандидата уверенно, без человека. Байтов нет — архивной записи тоже нет (§7.1:
+    сбой до создания файла не изображается сохранённым фото)."""
     image = _photo(_product(), Image.new("RGB", (500, 500), (255, 255, 255)))
-    assert image_autoprocess.process_image(image.pk) == ImageProcessingStatus.NEEDS_REVIEW
+    assert image_autoprocess.process_image(image.pk) == ImageProcessingStatus.CANDIDATE_REJECTED
+    image.refresh_from_db()
+    assert image.qc_decision == "auto_reject_candidate"
+    assert not image.candidate
+    assert not image.display
+    assert RejectedImageCandidate.objects.filter(image_ref=image.pk).count() == 0
 
 
 @pytest.mark.django_db

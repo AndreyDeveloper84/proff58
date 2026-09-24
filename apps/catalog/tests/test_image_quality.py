@@ -40,7 +40,22 @@ def _media(tmp_path, settings):
 
 @pytest.fixture
 def autoprocess_on(settings):
+    """Флаг включён, ОБА маршрута уже проверены на выборке и публикуют без человека.
+
+    Соответствует состоянию системы после калибровки (§5.4): большинство тестов
+    этого файла проверяют полный автоматический путь до витрины. Наблюдение по
+    умолчанию (маршрут не в `PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES`, кандидат остаётся
+    в `observed`) — отдельные тесты `test_image_quality.py::test_*_observed_by_default*`.
+    """
     settings.FEATURES = {**settings.FEATURES, image_autoprocess.FLAG: True}
+    settings.PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES = {"trim", "rembg_black"}
+
+
+@pytest.fixture
+def autoprocess_observed(settings):
+    """Как `autoprocess_on`, но маршруты ещё НЕ проверены — режим наблюдения."""
+    settings.FEATURES = {**settings.FEATURES, image_autoprocess.FLAG: True}
+    settings.PRODUCT_IMAGE_AUTO_ACCEPT_ROUTES = set()
 
 
 def _shot(size=(800, 600), bg=(255, 255, 255), box=(100, 150, 700, 450)):
@@ -121,10 +136,14 @@ def test_small_photo_waits_for_review_with_reason(autoprocess_on):
 
     assert _run(image) == ImageProcessingStatus.NEEDS_REVIEW
     assert image.review_reason == ImageReviewReason.SMALL
-    assert image.display  # копия готова, но на витрине пока оригинал
+    assert image.candidate  # кандидат готов, но на витрине пока оригинал
+    assert not image.display
     assert _image_url(image) == image.image.url
 
-    assert image_autoprocess.accept_review(image.pk) is True
+    accepted = image_autoprocess.accept_candidate(
+        image.pk, expected_checksum=image.candidate_checksum, expected_revision=image.revision
+    )
+    assert accepted is True
     image.refresh_from_db()
     assert _image_url(image) == image.display.url
 
@@ -146,7 +165,8 @@ def test_repeated_shot_goes_to_review_and_points_to_first(autoprocess_on):
     assert _run(second) == ImageProcessingStatus.NEEDS_REVIEW
     assert second.review_reason == ImageReviewReason.DUPLICATE
     assert second.duplicate_of_id == first.pk
-    assert second.display  # копия есть: менеджер может и оставить кадр
+    assert second.candidate  # кандидат есть: менеджер может принять или отклонить
+    assert not second.display  # витрину дубль не трогает без решения человека
 
     # повторная обработка первого кадра не делает дублем и его
     ProductImage.objects.filter(pk=first.pk).update(processing_status=ImageProcessingStatus.NONE)
@@ -190,9 +210,12 @@ def test_repeated_dark_shot_is_not_sent_to_rembg(autoprocess_on, monkeypatch):
 
 
 def test_blank_photo_reason_is_empty(autoprocess_on):
+    """Пустой результат — достоверный технический брак: контролёр отклоняет
+    кандидата сам, без человека (§5.4)."""
     image = _photo(_product(), Image.new("RGB", (500, 500), (255, 255, 255)))
-    assert _run(image) == ImageProcessingStatus.NEEDS_REVIEW
+    assert _run(image) == ImageProcessingStatus.CANDIDATE_REJECTED
     assert image.review_reason == ImageReviewReason.EMPTY
+    assert image.qc_decision == "auto_reject_candidate"
 
 
 def _cut_center(img):

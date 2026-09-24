@@ -24,6 +24,10 @@ export type Product = {
   cardName?: string;
   brand: string;
   image?: string;
+  // Нормализовано ли главное фото автообработкой (белый холст 1200×1200, встроенные
+  // поля 7%) — параллельно image, т.к. в плитках список несёт только одно фото.
+  // undefined/false — обычный исходник, ProductImage добавляет свой небольшой отступ.
+  imageNormalized?: boolean;
   rating?: number;
   reviews?: number;
   specs: ProductSpec[];
@@ -37,7 +41,9 @@ export type Product = {
 };
 
 // Изображение товара для галереи карточки (PDP). isMain — главное фото (показываем первым).
-export type ProductImageData = { url: string; alt: string; isMain: boolean };
+// normalized — файл уже прошёл автообработку (белый холст, встроенные поля) —
+// ProductImage тогда не добавляет свой отступ поверх встроенного.
+export type ProductImageData = { url: string; alt: string; isMain: boolean; normalized?: boolean };
 
 // Секции совместимости карточки товара (бэк: /products/{slug}/compatible/).
 export type CompatibilitySections = {

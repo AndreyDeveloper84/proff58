@@ -39,15 +39,18 @@ from django.utils import timezone
 
 from apps.catalog.image_reversibility import (
     RollbackRefused,
+    apply_processing_rollback,
     apply_rollback,
     audit,
+    audit_archive,
     build_plan,
+    build_processing_rollback_plan,
     build_rollback_plan,
     build_snapshot,
 )
 from apps.catalog.models import ImageSource
 
-MODES = ("snapshot", "plan", "rollback", "audit")
+MODES = ("snapshot", "plan", "rollback", "audit", "processing-rollback")
 
 
 def _parse_dt(value: str | None) -> datetime | None:
@@ -83,9 +86,15 @@ class Command(BaseCommand):
         parser.add_argument("--since", help="mode=rollback: нижняя граница fetched_at (ISO).")
         parser.add_argument("--until", help="mode=rollback: верхняя граница fetched_at (ISO).")
         parser.add_argument(
+            "--snapshot",
+            help="mode=processing-rollback: файл снимка прогона обработки "
+            "(`process_product_images --manifest ... --snapshot ...`).",
+        )
+        parser.add_argument(
             "--apply",
             action="store_true",
-            help="Снять dry-run и действительно удалить записи и файлы прогона.",
+            help="Снять dry-run: mode=rollback — удалить записи и файлы прогона сбора; "
+            "mode=processing-rollback — восстановить поля решения (записи не удаляются).",
         )
 
     def handle(self, *args, **options):
@@ -96,6 +105,7 @@ class Command(BaseCommand):
             "plan": self._plan,
             "rollback": self._rollback,
             "audit": self._audit,
+            "processing-rollback": self._processing_rollback,
         }[mode]
         try:
             payload = handler(options, subdir)
@@ -180,7 +190,43 @@ class Command(BaseCommand):
         payload = audit(subdir)
         self.stdout.write("POST-AUDIT (БД против файлов)")
         self._audit_summary(payload, indent="  ")
+        archive = audit_archive()
+        payload["archive"] = archive
+        self.stdout.write("АРХИВ ОТКЛОНЁННЫХ ФОТО (закрытое хранилище)")
+        self.stdout.write(f"  записей архива:        {archive['records_total']}")
+        self.stdout.write(f"  запись без файла:      {archive['missing_file_total']}")
+        self.stdout.write(f"  checksum разошёлся:    {archive['checksum_mismatch_total']}")
+        self._report_orphans(archive["orphan_files_total"])
         return payload
+
+    def _processing_rollback(self, options, subdir: str) -> dict:
+        snap_path = options.get("snapshot")
+        if not snap_path:
+            raise CommandError("mode=processing-rollback требует --snapshot FILE")
+        snapshot = json.loads(Path(snap_path).read_text(encoding="utf-8"))
+        plan = build_processing_rollback_plan(snapshot)
+        self.stdout.write("ОТКАТ ПРОГОНА ОБРАБОТКИ (не сбора — записи не удаляются)")
+        self.stdout.write(f"  фото в снимке:         {len(plan['items'])}")
+        self.stdout.write(f"  будет восстановлено:   {plan['restore']}")
+        self.stdout.write(f"  конфликтов:            {plan['conflict']}")
+        for item in plan["items"]:
+            if item["action"] == "conflict":
+                self.stdout.write(self.style.WARNING(f"    #{item['id']}: {item['reason']}"))
+
+        if not options["apply"]:
+            self.stdout.write(self.style.WARNING("  DRY-RUN: ничего не восстановлено."))
+            plan["applied"] = False
+            return plan
+        if plan["conflict"]:
+            raise CommandError(
+                f"откат не применён целиком: конфликтов {plan['conflict']} — "
+                "план с конфликтом не выполняется ни для одной записи"
+            )
+        result = apply_processing_rollback(plan)
+        plan["applied"] = True
+        plan["result"] = result
+        self.stdout.write(self.style.SUCCESS(f"  ВОССТАНОВЛЕНО: {result['restored']} записей"))
+        return plan
 
     # --- вывод ----------------------------------------------------------
 

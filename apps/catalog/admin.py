@@ -7,6 +7,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -21,7 +22,7 @@ from apps.core.features import is_enabled
 from apps.pricing.models import PriceRecord
 from apps.pricing.services import WHOLESALE, price_for
 
-from . import image_autoprocess, moderation, processing, queues
+from . import image_autoprocess, image_quality, moderation, processing, queues
 from . import links as links_service
 from .availability_subscriptions import ProductAvailabilitySubscription
 from .models import (
@@ -37,7 +38,9 @@ from .models import (
     CompatibilityKind,
     EnrichmentLog,
     GroupCategoryMapping,
+    ImageMainFit,
     ImageProcessingStatus,
+    ImagePurpose,
     ImportRun,
     OneCGroup,
     Product,
@@ -46,6 +49,7 @@ from .models import (
     ProductImage,
     ProductSalesStat,
     ProductStatus,
+    RejectedImageCandidate,
     SiteCategory,
     Source,
 )
@@ -493,36 +497,46 @@ def _photo_thumb(url: str, *, height: int = 70, width: int = 110):
     )
 
 
-def _review_note(obj: ProductImage):
-    """Почему фото ждёт проверки; у дубля — ссылка на первый такой же кадр."""
-    if obj.processing_status != ImageProcessingStatus.NEEDS_REVIEW or not obj.review_reason:
+def _reasons_note(obj: ProductImage):
+    """Причины решения контролёра человеческим текстом (`qc_reasons` — источник
+    истины; `review_reason` — устаревшее одиночное поле для старых фильтров)."""
+    reasons = obj.qc_reasons or []
+    if not reasons:
         return ""
-    reason = obj.get_review_reason_display()
+    labels = [image_quality.REASON_LABELS.get(r, r) for r in reasons]
+    extra = ""
     if obj.duplicate_of_id:
         url = reverse("admin:catalog_productimage_change", args=[obj.duplicate_of_id])
-        return format_html(
-            '<br><small>{}: <a href="{}">фото #{}</a></small>', reason, url, obj.duplicate_of_id
-        )
-    return format_html("<br><small>{}</small>", reason)
+        extra = format_html(' · <a href="{}">фото #{}</a>', url, obj.duplicate_of_id)
+    return format_html("<br><small>{}{}</small>", "; ".join(labels), extra)
 
 
-def _processed_cell(obj: ProductImage):
-    """«Стало»: копия после автообработки и её статус (ADR-0014)."""
-    status = obj.get_processing_status_display()
-    if obj.display:
-        return format_html(
-            "{}<br><small>{}</small>{}", _photo_thumb(obj.display.url), status, _review_note(obj)
-        )
-    return format_html("<small>{}</small>{}", status, _review_note(obj))
+def _candidate_cell(obj: ProductImage):
+    """«Кандидат»: свежий результат, ждущий решения — отдельно от принятого (`display`)."""
+    if not obj.candidate:
+        return mark_safe("<small>—</small>")
+    return format_html(
+        "{}<br><small>{}</small>{}",
+        _photo_thumb(obj.candidate.url),
+        obj.get_processing_status_display(),
+        _reasons_note(obj),
+    )
+
+
+def _accepted_cell(obj: ProductImage):
+    """«Принято»: то, что реально видит витрина (`storefront_image`)."""
+    if obj.processing_status == ImageProcessingStatus.DONE and obj.display:
+        return format_html("{}<br><small>Витрина: копия</small>", _photo_thumb(obj.display.url))
+    return mark_safe("<small>Витрина: оригинал</small>")
 
 
 class ProductImageInline(admin.TabularInline):
-    """Фото товара: «было» и «стало» рядом — видно, что сделала автообработка."""
+    """Фото товара: исходник и текущее решение — видно, что сделала автообработка."""
 
     model = ProductImage
     extra = 1
-    fields = ("preview", "processed", "image", "alt", "is_main", "sort_order")
-    readonly_fields = ("preview", "processed")
+    fields = ("preview", "processed", "image", "alt", "is_main_readonly", "sort_order")
+    readonly_fields = ("preview", "processed", "is_main_readonly")
 
     @admin.display(description=_("Было"))
     def preview(self, obj):
@@ -530,82 +544,410 @@ class ProductImageInline(admin.TabularInline):
             return "—"
         return _photo_thumb(obj.image.url)
 
-    @admin.display(description=_("Стало"))
+    @admin.display(description=_("Решение"))
     def processed(self, obj):
         if not obj or not obj.pk:
             return "—"
         url = reverse("admin:catalog_productimage_change", args=[obj.pk])
-        return format_html('{}<br><a href="{}">решение по фото</a>', _processed_cell(obj), url)
+        return format_html(
+            '{}{}<br><a href="{}">решение по фото</a>',
+            _accepted_cell(obj),
+            _candidate_cell(obj),
+            url,
+        )
+
+    @admin.display(description=_("Главное"))
+    def is_main_readonly(self, obj):
+        """Только просмотр: главное фото назначается атомарно действием на
+        странице фото (`set_main`), не полем формы — иначе на товар легко
+        получить два `is_main=True` одновременно (см. `--main-conflicts`)."""
+        return "✓" if obj and obj.is_main else ""
+
+
+class SuspectBackdropFilter(admin.SimpleListFilter):
+    title = _("Подозрительный фон")
+    parameter_name = "suspect_backdrop"
+
+    def lookups(self, request, model_admin):
+        return (("1", _("Да")),)
+
+    def queryset(self, request, queryset):
+        if self.value() == "1":
+            return queryset.filter(qc_reasons__contains=[image_quality.Reason.SUSPECT_BACKDROP])
+        return queryset
+
+
+class TouchesEdgeFilter(admin.SimpleListFilter):
+    title = _("Касание края кадра")
+    parameter_name = "touches_edge"
+
+    def lookups(self, request, model_admin):
+        return (("1", _("Да")),)
+
+    def queryset(self, request, queryset):
+        if self.value() == "1":
+            return queryset.filter(qc_reasons__contains=[image_quality.Reason.TOUCHES_EDGE])
+        return queryset
+
+
+class LowResolutionFilter(admin.SimpleListFilter):
+    title = _("Низкое разрешение (мелкое фото)")
+    parameter_name = "low_resolution"
+
+    def lookups(self, request, model_admin):
+        return (("1", _("Да")),)
+
+    def queryset(self, request, queryset):
+        if self.value() == "1":
+            return queryset.filter(qc_reasons__contains=[image_quality.Reason.SMALL])
+        return queryset
+
+
+class UnknownPurposeFilter(admin.SimpleListFilter):
+    title = _("Неизвестное назначение")
+    parameter_name = "unknown_purpose"
+
+    def lookups(self, request, model_admin):
+        return (("1", _("Да")),)
+
+    def queryset(self, request, queryset):
+        if self.value() == "1":
+            return queryset.filter(purpose=ImagePurpose.UNKNOWN)
+        return queryset
+
+
+class LikelyDuplicateFilter(admin.SimpleListFilter):
+    title = _("Вероятный дубль")
+    parameter_name = "likely_duplicate"
+
+    def lookups(self, request, model_admin):
+        return (("1", _("Да")),)
+
+    def queryset(self, request, queryset):
+        if self.value() == "1":
+            return queryset.filter(duplicate_of__isnull=False)
+        return queryset
+
+
+class WaitingRembgFilter(admin.SimpleListFilter):
+    title = _("Ожидание проверки rembg")
+    parameter_name = "waiting_rembg"
+
+    def lookups(self, request, model_admin):
+        return (("1", _("Да")),)
+
+    def queryset(self, request, queryset):
+        if self.value() == "1":
+            return queryset.filter(processing_status=ImageProcessingStatus.NEEDS_REMBG)
+        return queryset
+
+
+class ObservedFilter(admin.SimpleListFilter):
+    """Кандидаты, готовые к принятию, но чей маршрут ещё не включён (наблюдение)."""
+
+    title = _("Наблюдение (маршрут не включён)")
+    parameter_name = "observed"
+
+    def lookups(self, request, model_admin):
+        return (("1", _("Да")),)
+
+    def queryset(self, request, queryset):
+        if self.value() == "1":
+            return queryset.filter(processing_status=ImageProcessingStatus.OBSERVED)
+        return queryset
 
 
 @admin.register(ProductImage)
 class ProductImageAdmin(admin.ModelAdmin):
-    """«Фото товаров»: результат автообработки и решения по нему (ADR-0014).
+    """«Фото товаров»: кандидат, принятая копия и решения по ним.
 
-    Очередь проверки — фильтр «Обработка: Ждёт проверки». Добавлять фото отсюда
-    нельзя: фото добавляется в карточке товара.
+    Принятая копия (`display`) и кандидат (`candidate`) показаны раздельно —
+    постановка в очередь, ошибка обработки и отклонение кандидата витрину не
+    меняют. Массового «принять» нет: только по конкретному кандидату со страницы
+    фото (сверка checksum/ревизии — см. `image_autoprocess.accept_candidate`).
+    Добавлять фото отсюда нельзя: фото добавляется в карточке товара.
     """
 
+    change_form_template = "admin/catalog/productimage/change_form.html"
+
     list_display = (
-        "before",
-        "after",
+        "original_thumb",
+        "accepted_thumb",
+        "candidate_thumb",
         "product_link",
         "processing_status",
-        "processing_mode",
+        "qc_decision",
+        "purpose",
+        "main_fit_column",
         "source",
         "processed_at",
     )
-    list_filter = ("processing_status", "review_reason", "processing_mode", "source")
+    list_filter = (
+        "processing_status",
+        "qc_decision",
+        "purpose",
+        "main_fit_auto",
+        "main_fit_human",
+        "review_reason",
+        "processing_mode",
+        "source",
+        SuspectBackdropFilter,
+        TouchesEdgeFilter,
+        LowResolutionFilter,
+        UnknownPurposeFilter,
+        LikelyDuplicateFilter,
+        WaitingRembgFilter,
+        ObservedFilter,
+    )
     search_fields = ("product__name", "product__code_1c", "product__article")
     list_select_related = ("product",)
     raw_id_fields = ("product",)  # 47 тысяч товаров в выпадающем списке не открыть
     list_per_page = 50
-    actions = ["action_reprocess", "action_revert_to_original", "action_accept"]
+    actions = ["action_reprocess", "action_revert_to_original", "action_reject_candidate"]
     fields = (
         "product",
-        "before",
-        "after",
+        "original_full",
+        "accepted_full",
+        "candidate_full",
         "image",
         "alt",
         "is_main",
         "sort_order",
         "source",
         "source_url",
+        "purpose",
+        "main_fit_auto",
+        "main_fit_human",
+        "main_fit_reason",
+        "needs_source_replacement",
+        "source_replacement_reason",
         "processing_status",
+        "qc_decision",
+        "qc_source",
+        "qc_features_pretty",
         "review_reason",
         "duplicate_of",
         "processing_mode",
         "processing_version",
         "processed_at",
+        "revision",
+        "attempts",
+        "last_error",
     )
     readonly_fields = (
-        "before",
-        "after",
+        "original_full",
+        "accepted_full",
+        "candidate_full",
         "source",
         "source_url",
         "processing_status",
+        "qc_decision",
+        "qc_source",
+        "qc_features_pretty",
         "review_reason",
         "duplicate_of",
         "processing_mode",
         "processing_version",
         "processed_at",
+        "revision",
+        "attempts",
+        "last_error",
+        # is_main НЕ readonly здесь специально не делаем: поле остаётся редактируемым
+        # для совместимости с формой, но реальное назначение идёт атомарным действием
+        # «Сделать главным» (см. шаблон карточки) — оно снимает is_main у остальных
+        # фото товара под блокировкой, обычное сохранение формы этого не делает.
     )
 
     def has_add_permission(self, request):
         return False
 
-    @admin.display(description=_("Было"))
-    def before(self, obj):
+    # --- список -----------------------------------------------------------------
+
+    @admin.display(description=_("Исходник"))
+    def original_thumb(self, obj):
         return _photo_thumb(obj.image.url, height=90, width=120) if obj.image else "—"
 
-    @admin.display(description=_("Стало"))
-    def after(self, obj):
-        return _processed_cell(obj)
+    @admin.display(description=_("Принято"))
+    def accepted_thumb(self, obj):
+        return _accepted_cell(obj)
+
+    @admin.display(description=_("Кандидат"))
+    def candidate_thumb(self, obj):
+        return _candidate_cell(obj)
 
     @admin.display(description=_("Товар"), ordering="product__name")
     def product_link(self, obj):
         url = reverse("admin:catalog_product_change", args=[obj.product_id])
         return format_html('<a href="{}">{}</a>', url, obj.product.name[:80])
+
+    @admin.display(description=_("Пригодность главным"))
+    def main_fit_column(self, obj):
+        if obj.main_fit_human != ImageMainFit.UNCHECKED:
+            return format_html("{} (человек)", obj.get_main_fit_human_display())
+        return format_html("{} (авто)", obj.get_main_fit_auto_display())
+
+    # --- карточка -----------------------------------------------------------------
+
+    @admin.display(description=_("Исходник"))
+    def original_full(self, obj):
+        if not obj or not obj.image:
+            return "—"
+        return _photo_thumb(obj.image.url, height=360, width=480)
+
+    @admin.display(description=_("Принято (витрина)"))
+    def accepted_full(self, obj):
+        if not obj or obj.processing_status != ImageProcessingStatus.DONE or not obj.display:
+            return mark_safe("<small>Витрина показывает оригинал</small>")
+        return _photo_thumb(obj.display.url, height=360, width=480)
+
+    @admin.display(description=_("Кандидат"))
+    def candidate_full(self, obj):
+        if not obj or not obj.candidate:
+            return "—"
+        return format_html(
+            "{}{}", _photo_thumb(obj.candidate.url, height=360, width=480), _reasons_note(obj)
+        )
+
+    @admin.display(description=_("Признаки"))
+    def qc_features_pretty(self, obj):
+        if not obj or not obj.qc_features:
+            return "—"
+        rows = "".join(
+            format_html("<tr><td>{}</td><td>{}</td></tr>", k, v) for k, v in obj.qc_features.items()
+        )
+        return format_html("<table>{}</table>", mark_safe(rows))
+
+    # --- действия менеджера (детальная страница, точечные, со сверкой) ------------
+
+    def get_urls(self):
+        return [
+            path(
+                "<int:pk>/accept-candidate/",
+                self.admin_site.admin_view(self.accept_candidate_view),
+                name="catalog_productimage_accept_candidate",
+            ),
+            path(
+                "<int:pk>/reject-candidate/",
+                self.admin_site.admin_view(self.reject_candidate_view),
+                name="catalog_productimage_reject_candidate",
+            ),
+            path(
+                "<int:pk>/set-main/",
+                self.admin_site.admin_view(self.set_main_view),
+                name="catalog_productimage_set_main",
+            ),
+            path(
+                "<int:pk>/set-purpose/",
+                self.admin_site.admin_view(self.set_purpose_view),
+                name="catalog_productimage_set_purpose",
+            ),
+            path(
+                "<int:pk>/set-main-fit/",
+                self.admin_site.admin_view(self.set_main_fit_view),
+                name="catalog_productimage_set_main_fit",
+            ),
+            path(
+                "<int:pk>/request-manual-rembg/",
+                self.admin_site.admin_view(self.request_manual_rembg_view),
+                name="catalog_productimage_request_manual_rembg",
+            ),
+            *super().get_urls(),
+        ]
+
+    def _redirect_to_change(self, pk):
+        return redirect("admin:catalog_productimage_change", pk)
+
+    def accept_candidate_view(self, request, pk):
+        if not self.has_change_permission(request) or request.method != "POST":
+            raise PermissionDenied
+        ok = image_autoprocess.accept_candidate(
+            pk,
+            expected_checksum=request.POST.get("checksum", ""),
+            expected_revision=int(request.POST.get("revision") or -1),
+            actor=request.user,
+        )
+        if ok:
+            self.message_user(request, "Кандидат принят, на витрине копия.", level=messages.SUCCESS)
+        else:
+            self.message_user(
+                request,
+                "Не принято: кандидат уже изменился (обновите страницу) или его нет.",
+                level=messages.WARNING,
+            )
+        return self._redirect_to_change(pk)
+
+    def reject_candidate_view(self, request, pk):
+        if not self.has_change_permission(request) or request.method != "POST":
+            raise PermissionDenied
+        ok = image_autoprocess.reject_candidate(
+            pk,
+            expected_checksum=request.POST.get("checksum", ""),
+            expected_revision=int(request.POST.get("revision") or -1),
+            reason_text=request.POST.get("reason_text", ""),
+            actor=request.user,
+        )
+        if ok:
+            self.message_user(
+                request, "Кандидат отклонён и сохранён в архиве.", level=messages.SUCCESS
+            )
+        else:
+            self.message_user(
+                request,
+                "Не отклонено: кандидат уже изменился (обновите страницу) или его нет.",
+                level=messages.WARNING,
+            )
+        return self._redirect_to_change(pk)
+
+    def set_main_view(self, request, pk):
+        if not self.has_change_permission(request) or request.method != "POST":
+            raise PermissionDenied
+        image_autoprocess.set_main(pk, actor=request.user)
+        self.message_user(request, "Назначено главным фото товара.", level=messages.SUCCESS)
+        return self._redirect_to_change(pk)
+
+    def set_purpose_view(self, request, pk):
+        if not self.has_change_permission(request) or request.method != "POST":
+            raise PermissionDenied
+        purpose = request.POST.get("purpose", "")
+        if purpose not in ImagePurpose.values:
+            raise PermissionDenied
+        image_autoprocess.set_purpose(pk, purpose, actor=request.user)
+        self.message_user(request, "Назначение кадра сохранено.", level=messages.SUCCESS)
+        return self._redirect_to_change(pk)
+
+    def set_main_fit_view(self, request, pk):
+        if not self.has_change_permission(request) or request.method != "POST":
+            raise PermissionDenied
+        fit = request.POST.get("fit", "")
+        if fit not in ImageMainFit.values:
+            raise PermissionDenied
+        image_autoprocess.set_main_fit(
+            pk, fit, reason=request.POST.get("reason", ""), actor=request.user
+        )
+        self.message_user(request, "Пригодность главным сохранена.", level=messages.SUCCESS)
+        return self._redirect_to_change(pk)
+
+    def request_manual_rembg_view(self, request, pk):
+        if not self.has_change_permission(request) or request.method != "POST":
+            raise PermissionDenied
+        result = image_autoprocess.request_manual_rembg(pk, actor=request.user)
+        messages_by_code = {
+            "ok": ("Запрошено удаление фона — фото уйдёт в очередь rembg.", messages.SUCCESS),
+            "not_found": ("Фото не найдено.", messages.WARNING),
+            "not_other_background": (
+                "Действие только для «прочего» фона (не чёрного) — этот кадр в другом статусе.",
+                messages.WARNING,
+            ),
+            "protected_purpose": (
+                "Назначение кадра — сцена/комплект/реклама: сначала смените назначение.",
+                messages.WARNING,
+            ),
+        }
+        text, level = messages_by_code.get(result, ("Неизвестный результат.", messages.ERROR))
+        self.message_user(request, text, level=level)
+        return self._redirect_to_change(pk)
+
+    # --- массовые действия (безопасны без сверки конкретного кандидата) -----------
 
     @admin.action(description=_("Обработать заново"))
     def action_reprocess(self, request, queryset):
@@ -618,35 +960,205 @@ class ProductImageAdmin(admin.ModelAdmin):
             )
             return
         ids = list(queryset.values_list("pk", flat=True))
-        queued = sum(image_autoprocess.reprocess(pk) for pk in ids)
+        queued = sum(image_autoprocess.reprocess(pk, actor=request.user) for pk in ids)
         self.message_user(
             request,
             f"Поставлено на обработку: {queued} из {len(ids)}",
             level=messages.SUCCESS if queued == len(ids) else messages.WARNING,
         )
 
-    @admin.action(description=_("Вернуть оригинал"))
+    @admin.action(description=_("Вернуть оригинал (запретить автообработку)"))
     def action_revert_to_original(self, request, queryset):
         ids = list(queryset.values_list("pk", flat=True))
-        reverted = sum(image_autoprocess.revert_to_original(pk) for pk in ids)
+        reverted = sum(image_autoprocess.revert_to_original(pk, actor=request.user) for pk in ids)
         self.message_user(
             request,
             f"Оставлен оригинал: {reverted}. Автообработка эти фото больше не трогает.",
             level=messages.SUCCESS,
         )
 
-    @admin.action(description=_("Принять копию"))
-    def action_accept(self, request, queryset):
-        ids = list(queryset.values_list("pk", flat=True))
-        accepted = sum(image_autoprocess.accept_review(pk) for pk in ids)
-        self.message_user(request, f"Принято копий: {accepted}", level=messages.SUCCESS)
-        if accepted < len(ids):
+    @admin.action(description=_("Отклонить кандидата (в архив)"))
+    def action_reject_candidate(self, request, queryset):
+        """Массовое отклонение — по актуальным на момент клика checksum/revision
+        (риск гонки для списка меньше, чем на детальной странице: между отметкой
+        галочек и кликом страница не перезагружается)."""
+        rejected = 0
+        skipped = 0
+        for image in queryset:
+            if not image.candidate:
+                skipped += 1
+                continue
+            ok = image_autoprocess.reject_candidate(
+                image.pk,
+                expected_checksum=image.candidate_checksum,
+                expected_revision=image.revision,
+                reason_text="Отклонено массовым действием",
+                actor=request.user,
+            )
+            rejected += int(ok)
+            skipped += int(not ok)
+        self.message_user(
+            request,
+            f"Отклонено: {rejected}. Без кандидата или уже изменились: {skipped}.",
+            level=messages.SUCCESS if not skipped else messages.WARNING,
+        )
+
+
+@admin.register(RejectedImageCandidate)
+class RejectedImageCandidateAdmin(admin.ModelAdmin):
+    """«Отклонённые фото» (§7.1): единый архив автоматических и ручных отклонений.
+
+    Файлы лежат в закрытом хранилище (вне `/media/`) — превью и скачивание идут
+    через `file_view`, который сам проверяет право на просмотр этой модели, а не
+    полагается на то, что ссылка «слишком длинная, чтобы её угадать». Удаление и
+    массовая очистка запрещены намеренно: решение о судьбе файлов — за владельцем.
+    """
+
+    change_form_template = "admin/catalog/rejectedimagecandidate/change_form.html"
+    list_display = ("preview", "product_link", "reason_text", "source", "status", "created_at")
+    list_filter = ("source", "status", "mode")
+    search_fields = (
+        "product_snapshot__product_name",
+        "product_snapshot__code_1c",
+        "product_snapshot__article",
+        "reason_text",
+    )
+    date_hierarchy = "created_at"
+    list_select_related = ("image",)
+    list_per_page = 50
+    actions = ["action_return_to_review"]
+    readonly_fields = (
+        "preview_full",
+        "image",
+        "image_ref",
+        "product_ref",
+        "product_snapshot_pretty",
+        "checksum",
+        "readable",
+        "render_key",
+        "processing_version",
+        "qc_rules_version",
+        "mode",
+        "reasons",
+        "reason_text",
+        "source",
+        "actor",
+        "status",
+        "created_at",
+    )
+    fields = readonly_fields
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # Единый архив: без автоочистки и без ручного удаления одной записью —
+        # решение о судьбе файлов принимает владелец отдельно (§7.1).
+        return False
+
+    @admin.display(description=_("Товар"))
+    def product_link(self, obj):
+        name = (obj.product_snapshot or {}).get("product_name") or f"товар #{obj.product_ref}"
+        if obj.image_id:
+            url = reverse("admin:catalog_product_change", args=[obj.image.product_id])
+            return format_html('<a href="{}">{}</a>', url, name[:80])
+        return format_html("{} <small>(запись удалена)</small>", name[:80])
+
+    def _preview(self, obj, *, height, width):
+        if not obj.readable:
+            return format_html(
+                '<a href="{}">файл не читается — скачать</a>',
+                reverse("admin:catalog_rejectedimagecandidate_file", args=[obj.pk]),
+            )
+        return format_html(
+            '<img src="{}" alt="" style="max-height:{}px;max-width:{}px;'
+            'border-radius:4px;object-fit:contain;background:#f4f4f4;">',
+            reverse("admin:catalog_rejectedimagecandidate_file", args=[obj.pk]),
+            height,
+            width,
+        )
+
+    @admin.display(description=_("Отклонённый кадр"))
+    def preview(self, obj):
+        return self._preview(obj, height=70, width=110)
+
+    @admin.display(description=_("Отклонённый кадр"))
+    def preview_full(self, obj):
+        if not obj or not obj.pk:
+            return "—"
+        return self._preview(obj, height=360, width=480)
+
+    @admin.display(description=_("Снимок товара/исходника"))
+    def product_snapshot_pretty(self, obj):
+        if not obj or not obj.product_snapshot:
+            return "—"
+        rows = "".join(
+            format_html("<tr><td>{}</td><td>{}</td></tr>", k, v)
+            for k, v in obj.product_snapshot.items()
+        )
+        return format_html("<table>{}</table>", mark_safe(rows))
+
+    def get_urls(self):
+        return [
+            path(
+                "<int:pk>/file/",
+                self.admin_site.admin_view(self.file_view),
+                name="catalog_rejectedimagecandidate_file",
+            ),
+            path(
+                "<int:pk>/return-to-review/",
+                self.admin_site.admin_view(self.return_to_review_view),
+                name="catalog_rejectedimagecandidate_return_to_review",
+            ),
+            *super().get_urls(),
+        ]
+
+    def file_view(self, request, pk):
+        """Выдача архивного файла ТОЛЬКО персоналу с правом просмотра модели —
+        не публичный `/media/`, доступ не держится на длине/секретности URL."""
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        obj = get_object_or_404(RejectedImageCandidate, pk=pk)
+        if not obj.readable or not obj.file:
+            raise Http404
+        try:
+            fh = obj.file.open("rb")
+        except (OSError, FileNotFoundError) as exc:
+            raise Http404 from exc
+        response = FileResponse(fh, content_type="image/webp")
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
+    def return_to_review_view(self, request, pk):
+        if not self.has_change_permission(request) or request.method != "POST":
+            raise PermissionDenied
+        ok = image_autoprocess.return_candidate_to_review(pk, actor=request.user)
+        if ok:
             self.message_user(
                 request,
-                f"Не принято: {len(ids) - accepted} — принять можно только фото "
-                "«Ждёт проверки» с готовой копией.",
+                "Возвращено на проверку — кандидат снова ждёт решения человека "
+                "(само по себе на витрину не публикует).",
+                level=messages.SUCCESS,
+            )
+        else:
+            self.message_user(
+                request,
+                "Не удалось: исходник изменился с момента отклонения, либо запись/фото исчезли.",
                 level=messages.WARNING,
             )
+        return redirect("admin:catalog_rejectedimagecandidate_change", pk)
+
+    @admin.action(description=_("Вернуть на проверку"))
+    def action_return_to_review(self, request, queryset):
+        ids = list(queryset.values_list("pk", flat=True))
+        returned = sum(
+            image_autoprocess.return_candidate_to_review(pk, actor=request.user) for pk in ids
+        )
+        self.message_user(
+            request,
+            f"Возвращено на проверку: {returned} из {len(ids)}",
+            level=messages.SUCCESS if returned == len(ids) else messages.WARNING,
+        )
 
 
 class ProductAttributeValueInline(admin.TabularInline):

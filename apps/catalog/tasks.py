@@ -39,9 +39,13 @@ def purge_old_sales_facts_task() -> int:
     acks_late=True,
     reject_on_worker_lost=True,
 )
-def process_product_image(image_id: int) -> str:
-    """Витринная копия фото товара (ADR-0014). Очередь `images`, воркер celery-images."""
-    result = process_image(image_id)
+def process_product_image(image_id: int, force: bool = False) -> str:
+    """Витринная копия фото товара (ADR-0014). Очередь `images`, воркер celery-images.
+
+    `force=True` — применение по ID (`process_product_images --manifest --apply`)
+    обходит флаг `product_image_autoprocess`, но не `content_locked`/`rejected`.
+    """
+    result = process_image(image_id, force=force)
     logger.info("process_product_image %s: %s", image_id, result)
     return result
 
@@ -55,8 +59,8 @@ def process_product_image(image_id: int) -> str:
     acks_late=True,
     reject_on_worker_lost=False,
 )
-def remove_photo_background(image_id: int) -> str:
+def remove_photo_background(image_id: int, force: bool = False) -> str:
     """Удаление фона нейросетью (ADR-0014). Очередь `rembg`, сервис celery-rembg."""
-    result = process_image(image_id, rembg=True)
+    result = process_image(image_id, rembg=True, force=force)
     logger.info("remove_photo_background %s: %s", image_id, result)
     return result
