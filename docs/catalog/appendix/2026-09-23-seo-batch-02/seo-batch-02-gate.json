@@ -1,9 +1,12 @@
 {
- "blocked": 12,
- "frozen_at": "2026-09-23T19:28:11+0300",
- "indexable_candidates": 33,
+ "blocked": 7,
+ "blocked_reason": "всем 7 не хватает оси chuck (тип патрона): у РЕСАНТА/Hanskonner карт с этим полем нет, у ЗУБР DB-125-42ABF «кулачковый, эксцентриковый, угловой» — канон не решён (drop_to_report по DRILLS-CHAR-01)",
+ "frozen_at": "2026-09-24T08:18:15+0300",
+ "indexable_candidates": 38,
+ "revision": "rev2",
  "rules": {
   "commercial": "is_active AND status=published AND available_quantity>0 AND price>0",
+  "data_source": "значения power/voltage дописаны правилами из обозначения модели (PR feat/drills-power-voltage-rules), applied на стенде 24.09: create power 113, power_source 102, voltage 24, перезаписей 0",
   "http": "карточка 200, display-фото 200, JSON-LD Product; проверено 2026-09-23 с паузой 3 с",
   "media": ">=1 файл изображения И есть main",
   "release_required_axes": {
@@ -13,13 +16,19 @@
     "torque",
     "voltage"
    ],
-   "mains": [
+   "mains_drill": [
+    "power_source",
+    "chuck",
+    "power"
+   ],
+   "mains_driver": [
     "power_source",
     "chuck",
     "torque",
     "power"
    ]
-  }
+  },
+  "subtype": "mains_drill — название содержит «дрел» (у сетевых дрелей производитель момент затяжки не публикует: карты resanta ДУ-15/680, ДУ-16/1100МК без поля); остальные сетевые — mains_driver (СШ-550: 25/36 Н·м на карте)"
  },
  "scope_total": 45,
  "skus": [
@@ -50,6 +59,7 @@
     "voltage"
    ],
    "slug": "00034231",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -79,6 +89,7 @@
     "voltage"
    ],
    "slug": "00034232",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -108,6 +119,7 @@
     "voltage"
    ],
    "slug": "00036066",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -137,6 +149,7 @@
     "voltage"
    ],
    "slug": "00038509",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -166,6 +179,7 @@
     "voltage"
    ],
    "slug": "00039058",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -195,6 +209,7 @@
     "voltage"
    ],
    "slug": "00039516",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -224,6 +239,7 @@
     "voltage"
    ],
    "slug": "00042858",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -255,6 +271,7 @@
     "voltage"
    ],
    "slug": "00039484",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -284,6 +301,7 @@
     "voltage"
    ],
    "slug": "00043892",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -313,6 +331,7 @@
     "voltage"
    ],
    "slug": "00040389",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -342,6 +361,7 @@
     "voltage"
    ],
    "slug": "00043714",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -373,6 +393,7 @@
     "voltage"
    ],
    "slug": "00039485",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -402,6 +423,7 @@
     "voltage"
    ],
    "slug": "00003197",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -433,6 +455,7 @@
     "voltage"
    ],
    "slug": "00045992",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -462,6 +485,7 @@
     "voltage"
    ],
    "slug": "00034220",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -491,6 +515,7 @@
     "voltage"
    ],
    "slug": "00036064",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -520,6 +545,7 @@
     "voltage"
    ],
    "slug": "00036065",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -549,6 +575,7 @@
     "voltage"
    ],
    "slug": "00039632",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -578,6 +605,7 @@
     "voltage"
    ],
    "slug": "00039631",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -607,6 +635,7 @@
     "voltage"
    ],
    "slug": "00045993",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -636,6 +665,7 @@
     "voltage"
    ],
    "slug": "0110000509",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -665,6 +695,7 @@
     "voltage"
    ],
    "slug": "00045994",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -694,6 +725,7 @@
     "voltage"
    ],
    "slug": "00045995",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -723,6 +755,7 @@
     "voltage"
    ],
    "slug": "00036838",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -752,6 +785,7 @@
     "voltage"
    ],
    "slug": "00034224",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -781,6 +815,7 @@
     "voltage"
    ],
    "slug": "00038637",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -810,6 +845,7 @@
     "voltage"
    ],
    "slug": "00034225",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -839,6 +875,7 @@
     "voltage"
    ],
    "slug": "00034226",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -868,11 +905,12 @@
     "voltage"
    ],
    "slug": "00034228",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
    "article": "75/14/6",
-   "attributes_total": 6,
+   "attributes_total": 7,
    "commercial": true,
    "has_main": true,
    "http": {
@@ -887,8 +925,7 @@
    "images": 3,
    "indexable_candidate": false,
    "missing_axes": [
-    "chuck",
-    "voltage"
+    "chuck"
    ],
    "name": "Шуруповёрт аккумуляторный РЕСАНТА ДА-18-2ЛК-У (Li-ion) ударный",
    "power_source": "battery",
@@ -900,6 +937,7 @@
     "voltage"
    ],
    "slug": "00034543",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -931,6 +969,7 @@
     "voltage"
    ],
    "slug": "00034542",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -960,6 +999,7 @@
     "voltage"
    ],
    "slug": "00034221",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -989,6 +1029,7 @@
     "voltage"
    ],
    "slug": "00034222",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -1018,6 +1059,7 @@
     "voltage"
    ],
    "slug": "00034223",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -1047,11 +1089,12 @@
     "voltage"
    ],
    "slug": "00045996",
+   "subtype": "battery",
    "tool_type": "dreli-shurupoverty"
   },
   {
    "article": "HID21100DS",
-   "attributes_total": 4,
+   "attributes_total": 5,
    "commercial": true,
    "has_main": true,
    "http": {
@@ -1064,21 +1107,18 @@
     "vseinstrumenti"
    ],
    "images": 3,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "power_source",
-    "torque"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Дрель Hanskonner HID21100DS ударная 1000Вт, 13мм 2 скорости",
-   "power_source": null,
+   "power_source": "mains",
    "product_id": 43855,
    "required_axes": [
     "power_source",
     "chuck",
-    "torque",
     "power"
    ],
    "slug": "00042667",
+   "subtype": "mains_drill",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -1096,20 +1136,18 @@
     "resanta"
    ],
    "images": 3,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "torque"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Дрель ударная РЕСАНТА ДУ-15/680",
    "power_source": "mains",
    "product_id": 43974,
    "required_axes": [
     "power_source",
     "chuck",
-    "torque",
     "power"
    ],
    "slug": "00024104",
+   "subtype": "mains_drill",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -1127,20 +1165,18 @@
     "resanta"
    ],
    "images": 3,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "torque"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Дрель ударная РЕСАНТА ДУ-15/850",
    "power_source": "mains",
    "product_id": 43975,
    "required_axes": [
     "power_source",
     "chuck",
-    "torque",
     "power"
    ],
    "slug": "00024106",
+   "subtype": "mains_drill",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -1158,25 +1194,23 @@
     "resanta"
    ],
    "images": 3,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "torque"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Дрель ударная РЕСАНТА ДУ-15/950",
    "power_source": "mains",
    "product_id": 43976,
    "required_axes": [
     "power_source",
     "chuck",
-    "torque",
     "power"
    ],
    "slug": "00031144",
+   "subtype": "mains_drill",
    "tool_type": "dreli-shurupoverty"
   },
   {
    "article": "75/8/5",
-   "attributes_total": 4,
+   "attributes_total": 5,
    "commercial": true,
    "has_main": true,
    "http": {
@@ -1189,21 +1223,18 @@
     "resanta"
    ],
    "images": 3,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "torque",
-    "power"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Дрель ударная РЕСАНТА ДУ-16/1100МК",
    "power_source": "mains",
    "product_id": 43977,
    "required_axes": [
     "power_source",
     "chuck",
-    "torque",
     "power"
    ],
    "slug": "00031143",
+   "subtype": "mains_drill",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -1233,6 +1264,7 @@
     "power"
    ],
    "slug": "00010241",
+   "subtype": "mains_driver",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -1262,6 +1294,7 @@
     "power"
    ],
    "slug": "00034239",
+   "subtype": "mains_driver",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -1291,11 +1324,12 @@
     "power"
    ],
    "slug": "00034240",
+   "subtype": "mains_driver",
    "tool_type": "dreli-shurupoverty"
   },
   {
    "article": "75/16/2",
-   "attributes_total": 4,
+   "attributes_total": 5,
    "commercial": true,
    "has_main": true,
    "http": {
@@ -1310,8 +1344,7 @@
    "images": 3,
    "indexable_candidate": false,
    "missing_axes": [
-    "chuck",
-    "power"
+    "chuck"
    ],
    "name": "Шуруповёрт сетев. СШ-550-1 РЕСАНТА",
    "power_source": "mains",
@@ -1323,6 +1356,7 @@
     "power"
    ],
    "slug": "00031148",
+   "subtype": "mains_driver",
    "tool_type": "dreli-shurupoverty"
   },
   {
@@ -1354,9 +1388,11 @@
     "power"
    ],
    "slug": "00024115",
+   "subtype": "mains_driver",
    "tool_type": "dreli-shurupoverty"
   }
  ],
+ "supersedes": "rev1 (33 кандидата): требование torque у сетевых дрелей снято, добавлены power/voltage из обозначения модели",
  "tool_type": "dreli-shurupoverty",
  "track": "SEO-BATCH-02"
 }
