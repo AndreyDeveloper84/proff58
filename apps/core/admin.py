@@ -13,7 +13,21 @@ class SiteSettingsForm(forms.ModelForm):
 
     class Meta:
         model = SiteSettings
-        exclude = ("contacts",)
+        fields = (
+            "name",
+            "logo",
+            "primary_color",
+            "accent_color",
+            "requisites",
+            "region",
+            "reviews_enabled",
+            "b2b_enabled",
+            "promotions_enabled",
+            "articles_enabled",
+            "max_chat_enabled",
+            "ai_assist_enabled",
+            "video_reviews_enabled",
+        )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

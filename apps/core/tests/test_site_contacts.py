@@ -57,3 +57,11 @@ def test_api_темы_отдаёт_контакты():
     s.save()
     data = APIClient().get("/api/core/theme/").json()
     assert data["contacts"]["phone_display"] == "8 (8412) 11-11-11"
+
+
+@pytest.mark.django_db
+def test_api_темы_отдаёт_флаг_отзывов_и_он_выключен_миграцией():
+    s = SiteSettings.get_solo()
+    assert s.reviews_enabled is False
+    data = APIClient().get("/api/core/theme/").json()
+    assert data["features"] == {"reviews": False}

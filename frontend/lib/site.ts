@@ -192,6 +192,8 @@ export type ResolvedStorefront = {
   phone: { display: string; href: string };
   phoneNote: string;
   maxHref: string;
+  /** Раздел отзывов включён в настройках сайта (T4). По умолчанию выключен. */
+  reviewsEnabled: boolean;
 };
 
 // SiteSettings.contacts — JSONField без жёсткой схемы. Поддерживаем только
@@ -201,6 +203,7 @@ export function resolveStorefront(input?: {
   contacts?: Record<string, unknown>;
   /** Бот магазина в MAX — собран сервером из MAX_BOT_USERNAME (может отсутствовать). */
   max_bot_url?: string;
+  features?: { reviews?: boolean };
 }): ResolvedStorefront {
   const contacts = input?.contacts ?? {};
   const text = (...keys: string[]): string => {
@@ -229,5 +232,6 @@ export function resolveStorefront(input?: {
     // Приоритет: явная ссылка из настроек сайта → бот из переменных окружения.
     // Пусто — плитка «наш бот в MAX» не рисуется (битую ссылку не показываем).
     maxHref: text("max_url", "max_href") || (input?.max_bot_url ?? "").trim(),
+    reviewsEnabled: input?.features?.reviews === true,
   };
 }
