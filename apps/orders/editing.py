@@ -107,7 +107,7 @@ def update_quantities(
     заморозка) → ValidationError и откат. Возвращает заказ и список изменений
     для журнала. Повторный вызов с теми же количествами ничего не меняет.
     """
-    for item_id, qty in quantities.items():
+    for qty in quantities.values():
         if qty < 0:
             raise ValidationError("Количество не может быть отрицательным.")
 
