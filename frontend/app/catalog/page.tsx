@@ -41,30 +41,23 @@ function CategoryCard({
     >
       <div
         className={cn(
-          "pointer-events-none absolute inset-x-2 top-1 h-[78px]",
+          "pointer-events-none absolute inset-x-2 top-1 h-[78px] transition duration-300 group-hover:scale-[1.03]",
           featured
             ? "lg:inset-x-3 lg:top-1 lg:h-[124px]"
             : "lg:inset-y-2 lg:left-2 lg:right-auto lg:top-2 lg:h-auto lg:w-[108px]",
-          // Тёмная тема: под фото — светлая подложка, как у карточек товаров
-          // (bg-photo). Тележка, аккумуляторы, ящики сняты тёмными и на тёмной
-          // карточке сливались с фоном. Сами фото без фильтров — цвета исходные;
-          // в светлой теме подложки нет, там карточка уже светлая.
-          artwork && "dark:top-2 dark:rounded-md dark:bg-photo dark:p-1.5",
         )}
         aria-hidden
       >
         {artwork ? (
-          <div className="relative h-full w-full transition duration-300 group-hover:scale-[1.03]">
-            <Image
-              src={artwork}
-              alt=""
-              fill
-              loading="eager"
-              unoptimized
-              sizes={featured ? "(max-width: 1023px) 40vw, 280px" : "(max-width: 1023px) 40vw, 108px"}
-              className="object-contain"
-            />
-          </div>
+          <Image
+            src={artwork}
+            alt=""
+            fill
+            loading="eager"
+            unoptimized
+            sizes={featured ? "(max-width: 1023px) 40vw, 280px" : "(max-width: 1023px) 40vw, 108px"}
+            className="object-contain"
+          />
         ) : (
           <span className="mx-auto grid h-full aspect-square place-items-center rounded-full bg-accent/[0.07] text-accent">
             <Boxes className="h-10 w-10" strokeWidth={1.4} />
