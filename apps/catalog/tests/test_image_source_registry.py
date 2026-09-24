@@ -18,7 +18,7 @@ from apps.catalog.models import Category, ImageSource, Product, ProductImage, Pr
 
 pytestmark = pytest.mark.django_db
 
-NEW_SOURCES = ("hanskonner", "einhell", "thorvik")
+NEW_SOURCES = ("hanskonner", "einhell", "thorvik", "dns")
 OLD_SOURCES = ("manual", "resanta", "vihr", "interskol", "zubr", "huter", "vseinstrumenti")
 
 
@@ -64,6 +64,8 @@ def test_registry_labels_name_actual_hosts():
     assert labels["thorvik"] == "thorvik.ru"
     # einhell.ru — мёртвая заглушка; фактический manufacturer-источник — einhell.de
     assert labels["einhell"] == "einhell.de"
+    # MEDIA-SOURCE-02: маркетплейс DNS, значение — короткий код, метка — фактический хост
+    assert labels["dns"] == "dns-shop.ru"
 
 
 @pytest.mark.parametrize("source", NEW_SOURCES)

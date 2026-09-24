@@ -896,6 +896,8 @@ class ImageSource(models.TextChoices):
     HANSKONNER = "hanskonner", _("hanskonner.ru")
     EINHELL = "einhell", _("einhell.de")
     THORVIK = "thorvik", _("thorvik.ru")
+    # MEDIA-SOURCE-02: маркетплейс DNS — добор к ВИ (решение владельца 2026-08-11, в пул 2026-09-22).
+    DNS = "dns", _("dns-shop.ru")
 
 
 class ImageProcessingStatus(models.TextChoices):
