@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { MessageSquareText } from "lucide-react";
 import {
   maxCancel,
@@ -150,9 +151,12 @@ export function MaxAuthFlow({
         onClick={start}
         disabled={phase === "starting"}
         data-event="max_auth_started"
-        className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink transition hover:brightness-95 disabled:opacity-50"
+        className="inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink transition hover:brightness-95 disabled:opacity-50"
       >
-        <MessageSquareText className="h-4 w-4" aria-hidden />
+        {/* Логотип MAX в белом скруглённом квадрате — как на кнопках других сервисов. */}
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-white" aria-hidden>
+          <Image src="/brands/max-colored.png" alt="" width={20} height={20} className="h-5 w-5" />
+        </span>
         {phase === "starting" ? "Создаём ссылку…" : (ctaLabel ?? "Войти через MAX")}
       </button>
     );

@@ -12,7 +12,20 @@ vi.mock("@/components/account/MaxAuthFlow", () => ({
 }));
 
 import { login, register } from "@/lib/auth";
-import LoginPage from "./page";
+import { LoginForm } from "./LoginForm";
+import type { OAuthProviderId } from "@/lib/oauth";
+
+// Форма без соцвхода — как на стенде, где провайдеры ещё не включены.
+function LoginPage(props: { providers?: OAuthProviderId[]; oauthError?: string; oauthProvider?: string }) {
+  return (
+    <LoginForm
+      providers={props.providers ?? []}
+      next={null}
+      oauthError={props.oauthError}
+      oauthProvider={props.oauthProvider}
+    />
+  );
+}
 
 const mockedLogin = login as unknown as ReturnType<typeof vi.fn>;
 const mockedRegister = register as unknown as ReturnType<typeof vi.fn>;
@@ -23,9 +36,9 @@ function switchToRegister() {
 
 describe("Форма входа", () => {
   beforeEach(() => {
-    replaceMock.mockReset();
-    mockedLogin.mockReset().mockResolvedValue({});
-    mockedRegister.mockReset().mockResolvedValue({});
+    replaceMock.mockClear();
+    mockedLogin.mockClear().mockResolvedValue({});
+    mockedRegister.mockClear().mockResolvedValue({});
   });
 
   it("вход спрашивает e-mail и пароль, а телефон — нет", () => {
@@ -150,4 +163,111 @@ describe("Форма входа", () => {
 
     expect(screen.getByText(/Забыли пароль/)).toBeInTheDocument();
   });
+
+  it("ошибка входа по паролю показывается над кнопкой", async () => {
+    mockedLogin.mockImplementation(() => Promise.reject(new Error("Неверный e-mail или пароль.")));
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText(/E-mail/), { target: { value: "buyer@proff58.ru" } });
+    fireEvent.change(screen.getByLabelText(/Пароль/), { target: { value: "wrong" } });
+    fireEvent.click(screen.getByRole("button", { name: "Войти" }));
+
+    expect(await screen.findByText("Неверный e-mail или пароль.")).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
 });
+
+describe("Форма входа: вёрстка по макету", () => {
+  beforeEach(() => {
+    replaceMock.mockClear();
+    window.history.pushState({}, "", "/account/login");
+  });
+
+  it("кнопка-глаз показывает и прячет пароль, сообщая состояние читалкам", () => {
+    render(<LoginPage />);
+    const input = screen.getByLabelText(/Пароль/);
+    expect(input).toHaveAttribute("type", "password");
+
+    const toggle = screen.getByRole("button", { name: "Показать пароль" });
+    expect(toggle).toHaveAttribute("type", "button");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(toggle);
+    expect(input).toHaveAttribute("type", "text");
+    const hide = screen.getByRole("button", { name: "Скрыть пароль" });
+    expect(hide).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(hide);
+    expect(input).toHaveAttribute("type", "password");
+  });
+
+  it("поля без видимых подписей, но с placeholder", () => {
+    render(<LoginPage />);
+    expect(screen.getByLabelText(/E-mail/)).toHaveAttribute("placeholder", "E-mail");
+    expect(screen.getByLabelText(/Пароль/)).toHaveAttribute("placeholder", "Пароль");
+  });
+
+  it("нижняя строка: «Нет аккаунта? Зарегистрироваться», в регистрации — «Уже есть аккаунт? Войти»", () => {
+    render(<LoginPage />);
+    expect(screen.getByText("Нет аккаунта?")).toBeInTheDocument();
+    expect(screen.queryByText(/Без пароля можно войти через MAX/)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Зарегистрироваться" }));
+    expect(screen.getByText("Уже есть аккаунт?")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Забыли пароль?" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Войти" }));
+    expect(screen.getByRole("heading", { name: "Вход в личный кабинет" })).toBeInTheDocument();
+  });
+
+  it("без провайдеров — нет блока «или войдите через» и согласия, остаётся «или»", () => {
+    render(<LoginPage />);
+    expect(screen.queryByText("или войдите через")).toBeNull();
+    expect(screen.queryByText("или по e-mail")).toBeNull();
+    expect(screen.queryByText(/обработку персональных данных/)).toBeNull();
+    expect(screen.getByText("или")).toBeInTheDocument();
+  });
+
+  it("с провайдерами — разделители и согласие под соцкнопками", () => {
+    render(<LoginPage providers={["yandex"]} />);
+    expect(screen.getByText("или войдите через")).toBeInTheDocument();
+    expect(screen.getByText("или по e-mail")).toBeInTheDocument();
+    expect(
+      screen.getByText("Продолжая, вы соглашаетесь на обработку персональных данных."),
+    ).toBeInTheDocument();
+  });
+
+  it("oauth_error показывает текст и убирает код из адреса, сохраняя next", async () => {
+    window.history.pushState({}, "", "/account/login?next=%2Fcart&oauth_error=email_exists&provider=vkid");
+    render(<LoginPage oauthError="email_exists" oauthProvider="vkid" />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Аккаунт с этой почтой уже есть. Войдите паролем или через MAX, затем привяжите VK ID в личном кабинете.",
+    );
+    await waitFor(() =>
+      expect(replaceMock).toHaveBeenCalledWith("/account/login?next=%2Fcart", { scroll: false }),
+    );
+  });
+
+  it("неизвестный код и чужой провайдер — безопасный общий текст", async () => {
+    window.history.pushState({}, "", "/account/login?oauth_error=%3Cscript%3E&provider=evil");
+    render(<LoginPage oauthError="<script>" oauthProvider="evil" />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Не удалось войти. Попробуйте ещё раз или выберите другой способ.",
+    );
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/account/login", { scroll: false }));
+  });
+
+  it("no_email с чужим провайдером не выводит его имя", () => {
+    render(<LoginPage oauthError="no_email" oauthProvider="evil" />);
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Сервис входа не передал адрес почты.");
+    expect(alert).not.toHaveTextContent("evil");
+  });
+
+  it("без oauth_error адрес не трогаем и ошибки нет", () => {
+    render(<LoginPage />);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+});
+
