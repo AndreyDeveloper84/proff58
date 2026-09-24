@@ -25,6 +25,10 @@ urlpatterns = [
     path("api/", include("apps.notifications.api.urls")),
     path("api/leads/", include("apps.leads.api.urls")),
     path("api/ai/", include("apps.ai.api.urls")),
+    # Вход через VK ID / Яндекс ID: публичные start/callback/providers (nginx /api/ → Django)
+    # и кабинет — перед include accounts, чтобы префикс account/oauth/ разбирал он.
+    path("api/oauth/", include("apps.integration_oauth.urls")),
+    path("api/account/oauth/", include("apps.integration_oauth.api.urls")),
     path("api/account/", include("apps.accounts.api.urls")),
     path("api/core/", include("apps.core.urls")),
     path("api/delivery/", include("apps.delivery.urls")),
