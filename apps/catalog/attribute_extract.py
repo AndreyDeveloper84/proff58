@@ -210,26 +210,35 @@ class AttributeRules:
         for rule in self.rules_for(tool_type_slug):
             if rule.derive is None or rule.slug in present:
                 continue
-            value = self._derive_one(rule, present)
+            value = self._derive_one(rule, present, norm)
             if value is not None:
                 out.append(value)
                 present.add(value.slug)
         return out
 
-    def _derive_one(self, rule: AttrRule, present: set[str]) -> AttrValue | None:
+    def _derive_one(self, rule: AttrRule, present: set[str], norm: str = "") -> AttrValue | None:
         """Инференс select-значения по наличию/отсутствию других атрибутов.
 
         Фолбэк того же правила: если keyword/regex ничего не дали (свой slug ещё
         НЕ извлечён), значение выводится из соседних атрибутов. Срабатывает, если:
         * все ``requires_present`` присутствуют;
-        * ни один ``requires_absent`` не присутствует.
+        * ни один ``requires_absent`` не присутствует;
+        * ``requires_name_regex`` (если задан) совпал с нормализованным названием.
         Источник берётся из ``derive.source`` (по умолчанию ``inferred`` —
         слабейший приоритет, корректируется keyword/1С/ручным).
+
+        ``requires_name_regex`` — собственное условие вывода, а не ``skip_regex``
+        правила: тот гасит извлечение keyword/regex и на вывод намеренно не влияет
+        (SEO-BATCH-02: патрон выводится только у шуруповёртов, но само правило
+        chuck остаётся живым для остальных дрелей).
         """
         d = rule.derive or {}
         if any(s not in present for s in d.get("requires_present", [])):
             return None
         if any(s in present for s in d.get("requires_absent", [])):
+            return None
+        name_re = d.get("requires_name_regex")
+        if name_re and not re.search(name_re, norm):
             return None
         opt = next((o for o in rule.options if o.slug == d.get("set_option")), None)
         if opt is None:
