@@ -73,17 +73,18 @@ describe("Индекс каталога: фото разделов в тёмно
     }
   });
 
-  // Тёмные предметы (тележка, ящики, аккумуляторы) сливались с тёмной карточкой:
-  // под фото — светлая подложка, как у карточек товаров. Только в тёмной теме.
-  it("в тёмной теме фото раздела лежит на светлой подложке bg-photo", async () => {
+  // Плитки не должны сливаться с фоном в тёмной теме: плитка — bg-card (как
+  // карточки товаров), страница в тёмной теме — общий фон сайта (canvas).
+  it("плитка раздела отличается от фона страницы в тёмной теме", async () => {
     const { container } = render(await CatalogIndexPage());
 
+    const main = container.querySelector("main")!;
+    expect(main.className.split(/\s+/)).toContain("dark:bg-canvas");
     for (const image of container.querySelectorAll('img[src*="/catalog/categories/"]')) {
-      const plate = image.closest('[aria-hidden="true"]')!;
-      const tokens = (plate.getAttribute("class") ?? "").split(/\s+/);
-      expect(tokens).toContain("dark:bg-photo");
-      // Светлая тема не меняется: подложки без префикса dark: нет.
-      expect(tokens).not.toContain("bg-photo");
+      const tile = image.closest("a")!;
+      const tokens = tile.className.split(/\s+/);
+      expect(tokens).toContain("bg-card");
+      expect(tokens).not.toContain("bg-surface");
     }
   });
 
