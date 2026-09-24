@@ -12,7 +12,7 @@ vi.mock("@/components/account/MaxAuthFlow", () => ({
 }));
 
 import { login, register } from "@/lib/auth";
-import LoginPage from "./page";
+import { LoginForm } from "./LoginForm";
 
 const mockedLogin = login as unknown as ReturnType<typeof vi.fn>;
 const mockedRegister = register as unknown as ReturnType<typeof vi.fn>;
@@ -29,7 +29,7 @@ describe("Форма входа", () => {
   });
 
   it("вход спрашивает e-mail и пароль, а телефон — нет", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     expect(screen.getByLabelText(/E-mail/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Пароль/)).toBeInTheDocument();
@@ -37,7 +37,7 @@ describe("Форма входа", () => {
   });
 
   it("на входе есть ссылка «Забыли пароль?» на страницу восстановления", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     expect(screen.getByRole("link", { name: "Забыли пароль?" })).toHaveAttribute(
       "href",
@@ -45,14 +45,21 @@ describe("Форма входа", () => {
     );
   });
 
+  it("без настроенного бота вход через MAX не показывается", () => {
+    render(<LoginForm maxEnabled={false} />);
+    expect(screen.queryByTestId("max-auth")).not.toBeInTheDocument();
+    expect(screen.queryByText(/войти через MAX/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Войти$/ })).toBeInTheDocument();
+  });
+
   it("вход через MAX остаётся — это путь без пароля", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     expect(screen.getByTestId("max-auth")).toBeInTheDocument();
   });
 
   it("входит по e-mail", async () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     fireEvent.change(screen.getByLabelText(/E-mail/), { target: { value: "buyer@proff58.ru" } });
     fireEvent.change(screen.getByLabelText(/Пароль/), { target: { value: "StrongPass2026" } });
     fireEvent.click(screen.getByRole("button", { name: "Войти" }));
@@ -62,7 +69,7 @@ describe("Форма входа", () => {
 
   it("после входа не уводит на чужой сайт через ?next=//…", async () => {
     window.history.pushState({}, "", "/account/login?next=//evil.example/x");
-    render(<LoginPage />);
+    render(<LoginForm />);
     fireEvent.change(screen.getByLabelText(/E-mail/), { target: { value: "buyer@proff58.ru" } });
     fireEvent.change(screen.getByLabelText(/Пароль/), { target: { value: "StrongPass2026" } });
     fireEvent.click(screen.getByRole("button", { name: "Войти" }));
@@ -72,7 +79,7 @@ describe("Форма входа", () => {
   });
 
   it("частное лицо регистрируется без реквизитов", async () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     switchToRegister();
     fireEvent.change(screen.getByLabelText(/E-mail/), { target: { value: "person@proff58.ru" } });
     fireEvent.change(screen.getByLabelText(/Пароль/), { target: { value: "StrongPass2026" } });
@@ -89,7 +96,7 @@ describe("Форма входа", () => {
   });
 
   it("организация вводит реквизиты и они уходят на сервер", async () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     switchToRegister();
     fireEvent.click(screen.getByRole("radio", { name: "Организация" }));
 
@@ -116,7 +123,7 @@ describe("Форма входа", () => {
   });
 
   it("не отправляет реквизиты с некорректным КПП", async () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     switchToRegister();
     fireEvent.click(screen.getByRole("radio", { name: "Организация" }));
 
@@ -132,7 +139,7 @@ describe("Форма входа", () => {
   });
 
   it("КПП обязателен для организации, но не для ИП", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     switchToRegister();
     fireEvent.click(screen.getByRole("radio", { name: "Организация" }));
 
@@ -146,7 +153,7 @@ describe("Форма входа", () => {
   });
 
   it("подсказывает вход через MAX вместо сброса пароля — сброса пока нет", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     expect(screen.getByText(/Забыли пароль/)).toBeInTheDocument();
   });
