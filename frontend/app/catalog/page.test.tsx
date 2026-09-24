@@ -73,6 +73,20 @@ describe("Индекс каталога: фото разделов в тёмно
     }
   });
 
+  // Тёмные предметы (тележка, ящики, аккумуляторы) сливались с тёмной карточкой:
+  // под фото — светлая подложка, как у карточек товаров. Только в тёмной теме.
+  it("в тёмной теме фото раздела лежит на светлой подложке bg-photo", async () => {
+    const { container } = render(await CatalogIndexPage());
+
+    for (const image of container.querySelectorAll('img[src*="/catalog/categories/"]')) {
+      const plate = image.closest('[aria-hidden="true"]')!;
+      const tokens = (plate.getAttribute("class") ?? "").split(/\s+/);
+      expect(tokens).toContain("dark:bg-photo");
+      // Светлая тема не меняется: подложки без префикса dark: нет.
+      expect(tokens).not.toContain("bg-photo");
+    }
+  });
+
   it("проверка ловит приглушение с префиксами вариантов", () => {
     const probe = document.createElement("div");
     probe.className = "object-contain dark:opacity-80 group-hover:grayscale dark:mix-blend-multiply";
