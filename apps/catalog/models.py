@@ -162,7 +162,8 @@ class Category(PackageFields, MP_Node):
         """
         return f"/catalog/{self.slug}"
 
-    def save(self, *args, **kwargs):  # noqa: DJ012 — давний порядок методов, линтер видит модель через PackageFields
+    # DJ012: давний порядок методов; линтер видит модель через примесь PackageFields.
+    def save(self, *args, **kwargs):  # noqa: DJ012
         if not self.slug:
             self.slug = slugify(self.name, allow_unicode=True)
         super().save(*args, **kwargs)
@@ -717,7 +718,8 @@ class Product(PackageFields, TimeStampedModel):
         """Виден ли товар на витрине."""
         return self.is_active and self.status == ProductStatus.PUBLISHED
 
-    def get_absolute_url(self) -> str:  # noqa: DJ012 — давний порядок методов, линтер видит модель через PackageFields
+    # DJ012: давний порядок методов; линтер видит модель через примесь PackageFields.
+    def get_absolute_url(self) -> str:  # noqa: DJ012
         """Адрес товара на витрине (Next.js `/product/[slug]`).
 
         Нужен кнопке «Смотреть на сайте» в админке. Витрина отдаёт только
