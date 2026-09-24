@@ -278,14 +278,21 @@ def _log(
     idempotency_key: str = "",
 ) -> NotificationLog | None:
     try:
-        return NotificationLog.objects.create(
-            user=user,
-            channel=channel,
-            event=event,
-            status=status,
-            error_message=error,
-            idempotency_key=idempotency_key,
-        )
+        fields = {
+            "user": user,
+            "channel": channel,
+            "event": event,
+            "status": status,
+            "error_message": error,
+        }
+        if idempotency_key:
+            # Повтор события с тем же ключом (например, skipped без получателей)
+            # не должен падать на уникальном индексе — возвращаем прежнюю строку.
+            log, _created = NotificationLog.objects.get_or_create(
+                idempotency_key=idempotency_key, defaults=fields
+            )
+            return log
+        return NotificationLog.objects.create(idempotency_key="", **fields)
     except Exception:
         logger.exception("Failed to write NotificationLog")
         return None
@@ -316,6 +323,22 @@ STAFF_EVENTS: dict[str, dict] = {
         ),
         "version": 1,
     },
+    "staff_refund_requested": {
+        "subject": "Заявка на возврат по заказу №{order_number}",
+        "template": (
+            "Новая заявка на возврат #{request_id}\n"
+            "Заказ: №{order_number}\n"
+            "Оставлена: {created_at}\n"
+            "Покупатель: {customer}\n"
+            "Телефон: {customer_phone}\n"
+            "Причина: {reason}\n"
+            "Комментарий: {comment}\n"
+            "\n"
+            "Открыть в админке (нужен вход сотрудника):\n"
+            "{admin_url}\n"
+        ),
+        "version": 1,
+    },
     "staff_inquiry_created": {
         "subject": "Новая заявка: {kind} — {product}",
         "template": (
@@ -334,9 +357,38 @@ STAFF_EVENTS: dict[str, dict] = {
 }
 
 
-# Письма покупателю (DRF-2299): пока одно событие. Отдельный реестр от служебных:
-# получатель — конкретный адрес из заказа, а не список сотрудников.
+# Письма покупателю (DRF-2299, T2). Отдельный реестр от служебных: получатель —
+# конкретный адрес из заказа, а не список сотрудников. Письмо о заказе — не
+# фискальный чек: чек 54-ФЗ отправляет касса АТОЛ Онлайн по данным платежа.
 CUSTOMER_EVENTS: dict[str, dict] = {
+    "customer_order_created": {
+        "subject": "Заказ №{order_number} принят",
+        "template": (
+            "Здравствуйте{name_note}!\n\n"
+            "Ваш заказ №{order_number} от {created_at} принят.\n\n"
+            "Состав заказа:\n{items}\n"
+            "Товары: {goods_total} {currency}\n"
+            "Доставка: {delivery_line}\n"
+            "Итого: {total_line}\n\n"
+            "Получение: {delivery}\n"
+            "Оплата: {payment}\n"
+            "{order_url_line}"
+            "\n"
+            "Если возникли вопросы — ответьте на это письмо или позвоните нам.\n"
+        ),
+        "version": 1,
+    },
+    "customer_order_status_changed": {
+        "subject": "Заказ №{order_number}: {status_title}",
+        "template": (
+            "Здравствуйте!\n\n"
+            "{status_text}\n"
+            "{order_url_line}"
+            "\n"
+            "Если возникли вопросы — ответьте на это письмо или позвоните нам.\n"
+        ),
+        "version": 1,
+    },
     "customer_delivery_calculated": {
         "subject": "Заказ №{order_number}: стоимость доставки рассчитана — можно оплатить",
         "template": (

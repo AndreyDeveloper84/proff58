@@ -365,4 +365,3 @@ class TestQuoteForOrder:
         assert q.status == CALCULATED
         assert q.cost == Decimal("450")
         assert q.snapshot["provider"] == "ok"
-

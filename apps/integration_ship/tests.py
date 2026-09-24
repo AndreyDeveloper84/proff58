@@ -81,11 +81,15 @@ class _BrokenProvider:
 class TestProductionSafety:
     """T1: stub-тариф 0 ₽ никогда не попадает в рабочий режим."""
 
-    @override_settings(FEATURES={"external_ship": False}, SHIP_PROVIDER="stub", SHIP_ALLOW_STUB=True)
+    @override_settings(
+        FEATURES={"external_ship": False}, SHIP_PROVIDER="stub", SHIP_ALLOW_STUB=True
+    )
     def test_feature_off_no_providers(self):
         assert services.get_providers() == []
 
-    @override_settings(FEATURES={"external_ship": True}, SHIP_PROVIDER="stub", SHIP_ALLOW_STUB=False)
+    @override_settings(
+        FEATURES={"external_ship": True}, SHIP_PROVIDER="stub", SHIP_ALLOW_STUB=False
+    )
     def test_stub_forbidden_without_explicit_allow(self, caplog):
         with caplog.at_level("WARNING"):
             assert services.get_providers() == []
