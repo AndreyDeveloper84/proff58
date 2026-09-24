@@ -1,153 +1,132 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const replaceMock = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), replace: replaceMock }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 vi.mock("@/lib/auth", () => ({ login: vi.fn(), register: vi.fn() }));
 // MaxAuthFlow ходит в сеть за deeplink — подменяем заглушкой.
 vi.mock("@/components/account/MaxAuthFlow", () => ({
   MaxAuthFlow: () => <div data-testid="max-auth" />,
 }));
+vi.mock("@/lib/oauth-providers", () => ({ getLoginOAuthProviders: vi.fn() }));
 
-import { login, register } from "@/lib/auth";
+import { getLoginOAuthProviders } from "@/lib/oauth-providers";
 import LoginPage from "./page";
 
-const mockedLogin = login as unknown as ReturnType<typeof vi.fn>;
-const mockedRegister = register as unknown as ReturnType<typeof vi.fn>;
+const mockedProviders = getLoginOAuthProviders as unknown as ReturnType<typeof vi.fn>;
 
-function switchToRegister() {
-  fireEvent.click(screen.getByRole("button", { name: /Зарегистрироваться/ }));
+// Серверная страница — async-компонент: вызываем как функцию и рендерим результат.
+async function renderPage(params: Record<string, string> = {}) {
+  render(await LoginPage({ searchParams: Promise.resolve(params) }));
 }
 
-describe("Форма входа", () => {
+describe("Страница входа", () => {
   beforeEach(() => {
-    replaceMock.mockReset();
-    mockedLogin.mockReset().mockResolvedValue({});
-    mockedRegister.mockReset().mockResolvedValue({});
+    mockedProviders.mockClear();
+    mockedProviders.mockImplementation(() => Promise.resolve(["vkid", "yandex"]));
   });
 
-  it("вход спрашивает e-mail и пароль, а телефон — нет", () => {
-    render(<LoginPage />);
+  it("рисует кнопки только включённых провайдеров, у VK ID — ещё и Mail", async () => {
+    await renderPage();
 
-    expect(screen.getByLabelText(/E-mail/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Пароль/)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/Телефон/)).toBeNull();
+    expect(screen.getByRole("link", { name: "Войти через VK ID" })).toHaveAttribute(
+      "href",
+      "/api/oauth/vkid/start/",
+    );
+    expect(screen.getByRole("link", { name: "Войти через Mail" })).toHaveAttribute(
+      "href",
+      "/api/oauth/vkid/start/?via=mail_ru",
+    );
+    expect(screen.getByRole("link", { name: "Войти через Яндекс ID" })).toHaveAttribute(
+      "href",
+      "/api/oauth/yandex/start/",
+    );
   });
 
-  it("на входе есть ссылка «Забыли пароль?» на страницу восстановления", () => {
-    render(<LoginPage />);
+  it("передаёт провайдеру проверенный next", async () => {
+    await renderPage({ next: "/cart?step=2" });
 
+    const next = encodeURIComponent("/cart?step=2");
+    expect(screen.getByRole("link", { name: "Войти через VK ID" })).toHaveAttribute(
+      "href",
+      `/api/oauth/vkid/start/?next=${next}`,
+    );
+    expect(screen.getByRole("link", { name: "Войти через Mail" })).toHaveAttribute(
+      "href",
+      `/api/oauth/vkid/start/?via=mail_ru&next=${next}`,
+    );
+    expect(screen.getByRole("link", { name: "Войти через Яндекс ID" })).toHaveAttribute(
+      "href",
+      `/api/oauth/yandex/start/?next=${next}`,
+    );
+  });
+
+  it("чужой next (//evil) провайдеру не передаёт", async () => {
+    await renderPage({ next: "//evil.example/x" });
+
+    expect(screen.getByRole("link", { name: "Войти через VK ID" })).toHaveAttribute(
+      "href",
+      "/api/oauth/vkid/start/",
+    );
+  });
+
+  it("только Яндекс ID — без VK ID и Mail", async () => {
+    mockedProviders.mockImplementation(() => Promise.resolve(["yandex"]));
+    await renderPage();
+
+    expect(screen.getByRole("link", { name: "Войти через Яндекс ID" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Войти через VK ID" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Войти через Mail" })).toBeNull();
+  });
+
+  it("без провайдеров блока «или войдите через» нет", async () => {
+    mockedProviders.mockImplementation(() => Promise.resolve([]));
+    await renderPage();
+
+    expect(screen.queryByText("или войдите через")).toBeNull();
+    expect(screen.queryByRole("link", { name: /Войти через/ })).toBeNull();
+    // Вход через MAX и по паролю на месте.
+    expect(screen.getByTestId("max-auth")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Войти" })).toBeInTheDocument();
+  });
+
+  it("правая колонка: четыре пункта и строка про защищённое соединение", async () => {
+    await renderPage();
+
+    const aside = screen.getByRole("complementary");
+    expect(within(aside).getByRole("heading", { name: "В личном кабинете удобно" })).toBeInTheDocument();
+    for (const [title, text] of [
+      [
+        "История и статусы заказов",
+        "Следите за доставкой и получайте уведомления о каждом этапе заказа.",
+      ],
+      ["Счета для организаций", "Скачивайте счета на оплату в одном месте."],
+      ["Избранные товары", "Сохраняйте интересные товары и возвращайтесь к ним позже."],
+      [
+        "Уведомления в MAX",
+        "Статусы заказов и сообщения о поступлении товара — в приложении MAX.",
+      ],
+    ]) {
+      expect(within(aside).getByText(title)).toBeInTheDocument();
+      expect(within(aside).getByText(text)).toBeInTheDocument();
+    }
+    expect(within(aside).getByText("Данные передаются по защищённому соединению")).toBeInTheDocument();
+  });
+
+  it("«Забыли пароль?» ведёт на восстановление, заголовок — «Вход в личный кабинет»", async () => {
+    await renderPage();
+
+    expect(screen.getByRole("heading", { level: 1, name: "Вход в личный кабинет" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Забыли пароль?" })).toHaveAttribute(
       "href",
       "/account/forgot-password",
     );
   });
 
-  it("вход через MAX остаётся — это путь без пароля", () => {
-    render(<LoginPage />);
+  it("oauth_error из адреса доходит до формы", async () => {
+    await renderPage({ oauth_error: "cancelled" });
 
-    expect(screen.getByTestId("max-auth")).toBeInTheDocument();
-  });
-
-  it("входит по e-mail", async () => {
-    render(<LoginPage />);
-    fireEvent.change(screen.getByLabelText(/E-mail/), { target: { value: "buyer@proff58.ru" } });
-    fireEvent.change(screen.getByLabelText(/Пароль/), { target: { value: "StrongPass2026" } });
-    fireEvent.click(screen.getByRole("button", { name: "Войти" }));
-
-    await waitFor(() => expect(mockedLogin).toHaveBeenCalledWith("buyer@proff58.ru", "StrongPass2026"));
-  });
-
-  it("после входа не уводит на чужой сайт через ?next=//…", async () => {
-    window.history.pushState({}, "", "/account/login?next=//evil.example/x");
-    render(<LoginPage />);
-    fireEvent.change(screen.getByLabelText(/E-mail/), { target: { value: "buyer@proff58.ru" } });
-    fireEvent.change(screen.getByLabelText(/Пароль/), { target: { value: "StrongPass2026" } });
-    fireEvent.click(screen.getByRole("button", { name: "Войти" }));
-
-    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/account/profile"));
-    window.history.pushState({}, "", "/account/login");
-  });
-
-  it("частное лицо регистрируется без реквизитов", async () => {
-    render(<LoginPage />);
-    switchToRegister();
-    fireEvent.change(screen.getByLabelText(/E-mail/), { target: { value: "person@proff58.ru" } });
-    fireEvent.change(screen.getByLabelText(/Пароль/), { target: { value: "StrongPass2026" } });
-
-    expect(screen.queryByLabelText(/ИНН/)).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "Зарегистрироваться" }));
-
-    await waitFor(() =>
-      expect(mockedRegister).toHaveBeenCalledWith(
-        expect.objectContaining({ email: "person@proff58.ru", customer_type: "b2c" }),
-      ),
-    );
-  });
-
-  it("организация вводит реквизиты и они уходят на сервер", async () => {
-    render(<LoginPage />);
-    switchToRegister();
-    fireEvent.click(screen.getByRole("radio", { name: "Организация" }));
-
-    fireEvent.change(screen.getByLabelText(/E-mail/), { target: { value: "org@proff58.ru" } });
-    fireEvent.change(screen.getByLabelText(/Пароль/), { target: { value: "StrongPass2026" } });
-    fireEvent.change(screen.getByLabelText(/Название организации/), {
-      target: { value: "ООО «Профессионал»" },
-    });
-    fireEvent.change(screen.getByLabelText(/ИНН/), { target: { value: "5836123456" } });
-    fireEvent.change(screen.getByLabelText(/КПП/), { target: { value: "583601001" } });
-    fireEvent.click(screen.getByRole("button", { name: "Зарегистрироваться" }));
-
-    await waitFor(() =>
-      expect(mockedRegister).toHaveBeenCalledWith({
-        email: "org@proff58.ru",
-        password: "StrongPass2026",
-        full_name: "",
-        customer_type: "b2b",
-        company_name: "ООО «Профессионал»",
-        inn: "5836123456",
-        kpp: "583601001",
-      }),
-    );
-  });
-
-  it("не отправляет реквизиты с некорректным КПП", async () => {
-    render(<LoginPage />);
-    switchToRegister();
-    fireEvent.click(screen.getByRole("radio", { name: "Организация" }));
-
-    fireEvent.change(screen.getByLabelText(/E-mail/), { target: { value: "org@proff58.ru" } });
-    fireEvent.change(screen.getByLabelText(/Пароль/), { target: { value: "StrongPass2026" } });
-    fireEvent.change(screen.getByLabelText(/Название организации/), { target: { value: "ООО" } });
-    fireEvent.change(screen.getByLabelText(/ИНН/), { target: { value: "5836123456" } });
-    fireEvent.change(screen.getByLabelText(/КПП/), { target: { value: "123" } });
-    fireEvent.click(screen.getByRole("button", { name: "Зарегистрироваться" }));
-
-    expect(await screen.findByText(/КПП должен содержать 9 цифр/)).toBeInTheDocument();
-    expect(mockedRegister).not.toHaveBeenCalled();
-  });
-
-  it("КПП обязателен для организации, но не для ИП", () => {
-    render(<LoginPage />);
-    switchToRegister();
-    fireEvent.click(screen.getByRole("radio", { name: "Организация" }));
-
-    // ИНН из 10 цифр — организация: поле обязательное.
-    fireEvent.change(screen.getByLabelText(/ИНН/), { target: { value: "5836123456" } });
-    expect(screen.getByLabelText(/КПП/)).toBeRequired();
-
-    // 12 цифр — ИП, у него КПП не существует.
-    fireEvent.change(screen.getByLabelText(/ИНН/), { target: { value: "583601234567" } });
-    expect(screen.getByLabelText(/КПП/)).not.toBeRequired();
-  });
-
-  it("подсказывает вход через MAX вместо сброса пароля — сброса пока нет", () => {
-    render(<LoginPage />);
-
-    expect(screen.getByText(/Забыли пароль/)).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Вход отменён.");
   });
 });
