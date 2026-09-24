@@ -73,6 +73,21 @@ describe("Индекс каталога: фото разделов в тёмно
     }
   });
 
+  // Плитки не должны сливаться с фоном в тёмной теме: плитка — bg-card (как
+  // карточки товаров), страница в тёмной теме — общий фон сайта (canvas).
+  it("плитка раздела отличается от фона страницы в тёмной теме", async () => {
+    const { container } = render(await CatalogIndexPage());
+
+    const main = container.querySelector("main")!;
+    expect(main.className.split(/\s+/)).toContain("dark:bg-canvas");
+    for (const image of container.querySelectorAll('img[src*="/catalog/categories/"]')) {
+      const tile = image.closest("a")!;
+      const tokens = tile.className.split(/\s+/);
+      expect(tokens).toContain("bg-card");
+      expect(tokens).not.toContain("bg-surface");
+    }
+  });
+
   it("проверка ловит приглушение с префиксами вариантов", () => {
     const probe = document.createElement("div");
     probe.className = "object-contain dark:opacity-80 group-hover:grayscale dark:mix-blend-multiply";

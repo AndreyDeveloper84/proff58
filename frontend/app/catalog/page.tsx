@@ -35,7 +35,7 @@ function CategoryCard({
     <Link
       href={`/catalog/${category.slug}`}
       className={cn(
-        "group relative flex min-h-[132px] overflow-hidden rounded-md border border-line bg-surface p-3 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md",
+        "group relative flex min-h-[132px] overflow-hidden rounded-md border border-line bg-card p-3 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md",
         featured ? "lg:min-h-[184px] lg:p-4" : "lg:min-h-[128px]",
       )}
     >
@@ -104,7 +104,11 @@ export default async function CatalogIndexPage() {
   const categories = await getCategoryTreeOrNull();
 
   return (
-    <main className="min-h-[70vh] bg-surface pb-20 lg:pb-0">
+    // Тёмная тема: фон страницы — общий фон сайта (canvas), а плитки — bg-card,
+    // как карточки товаров в листинге. Раньше и страница, и плитки были
+    // bg-surface — в тёмной теме один цвет, и плитки сливались с фоном.
+    // В светлой теме surface и card одинаково белые — там ничего не меняется.
+    <main className="min-h-[70vh] bg-surface pb-20 dark:bg-canvas lg:pb-0">
       <div className="mx-auto w-full max-w-[1680px] px-4 py-5 sm:px-6 xl:px-8">
         <nav
           aria-label="Хлебные крошки"
