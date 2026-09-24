@@ -126,6 +126,17 @@ def _external_quote(zone, items) -> DeliveryQuote:
     from apps.integration_ship import services as ship
     from apps.integration_ship.ports import RateRequest
 
+    if not ship.get_providers():
+        # Реального провайдера нет (stub запрещён вне тестов, интеграция не
+        # подключена) — стоимость неизвестна, считает менеджер, а не 0 ₽.
+        return DeliveryQuote(
+            zone_slug=zone.slug,
+            method=zone.delivery_type,
+            status=MANUAL_REQUIRED,
+            cost=None,
+            reason="provider_unavailable",
+        )
+
     total_weight = sum((getattr(getattr(it, "product", None), "weight_kg", 0) or 0) for it in items)
     req = RateRequest(from_city="Пенза", to_city=zone.name, weight_kg=Decimal(str(total_weight)))
     rates = ship.get_rates(req)

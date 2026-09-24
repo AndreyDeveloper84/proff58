@@ -214,8 +214,33 @@ SMTP) — Celery уже сделал 3 попытки с backoff; после и�
 только логируется (`apps.orders.receivers`, `apps.leads.receivers`), заказ и заявка
 уже сохранены.
 
-Письма покупателям о статусах, SMS и MAX сотрудникам в этот канал не входят. Сброс
-пароля (DRF-2298) использует `channels/email.send_email` с адресом покупателя.
+SMS и MAX сотрудникам в этот канал не входят. Сброс пароля (DRF-2298) использует
+`channels/email.send_email` с адресом покупателя.
+
+**Заявка на возврат (T2, 24.09.2026):** `refund_requested → apps.payments.receivers →
+notify_staff("staff_refund_requested")`, ключ `staff-refund-requested-<id>`, те же
+получатели `STAFF_NOTIFICATION_EMAILS`, ссылка на карточку заявки в админке.
+
+### 11.1 Письма покупателю (T2)
+
+Тот же outbox и SMTP-транспорт, отдельных переменных нет. Получатель — `customer_email`
+заказа, иначе e-mail аккаунта; нет ни того, ни другого — письма нет (без записи в журнале).
+
+| Событие | Ключ идемпотентности | Что внутри |
+|---|---|---|
+| `customer_order_created` (`order_created`, `apps.orders.receivers`) | `customer-order-created-<order_id>` | номер, дата, состав, сумма товаров, доставка (`manual_required` → «стоимость уточнит менеджер», итог «предварительно»), способ получения и оплаты, ссылка на заказ (гостю — без токена) |
+| `customer_order_status_changed` (`order_status_changed`) | `customer-order-status-<order_id>-<new_status>` | статусы `confirmed/ready/shipped/completed/cancelled` — тот же whitelist, что у MAX; `shipped` — с трек-номером, если есть |
+| `customer_delivery_calculated` (DRF-2299) | см. выше | — |
+
+Повтор события с тем же ключом второго письма не создаёт. Сбой SMTP/брокера — строка
+`failed` в журнале и ретраи, заказ не теряется.
+
+**Фискальные чеки (54-ФЗ) отправляет касса АТОЛ Онлайн**, а не сайт: e-mail покупателя
+уходит в чек при регистрации платежа (`apps/payments/atolpay/receipt.py`, `buyer.email`).
+Письмо о заказе чек не подменяет.
+
+**Реальная отправка не проверялась:** SMTP-доступа и согласованного тестового адреса в
+этой задаче не было; проверить транспорт — `manage.py notifications_email_check --to <адрес>`.
 
 **Одно письмо покупателю через outbox** — `customer_delivery_calculated` (DRF-2299): после
 ручного расчёта доставки, со ссылкой на оплату. Гостю в ссылке — его токен доступа к

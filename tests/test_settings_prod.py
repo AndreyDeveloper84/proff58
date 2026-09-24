@@ -37,6 +37,17 @@ def test_prod_rejects_insecure_default(monkeypatch):
         _load_prod()
 
 
+@pytest.mark.parametrize(
+    "weak", ["change-me", "", "short-key", "INSECURE-abcdefghijklmnopqrstuvwxyz"]
+)
+def test_prod_rejects_placeholder_or_short_key(monkeypatch, weak):
+    """T9: заглушка из .env.example, пустой или короткий ключ не запускают прод."""
+    monkeypatch.setenv("DJANGO_SECRET_KEY", weak)
+    monkeypatch.setenv("DJANGO_ALLOWED_HOSTS", "proff58.ru")
+    with pytest.raises(ImproperlyConfigured, match="DJANGO_SECRET_KEY"):
+        _load_prod()
+
+
 def test_prod_accepts_real_secret_key(monkeypatch):
     monkeypatch.setenv("DJANGO_SECRET_KEY", "x7-real-strong-secret-please-rotate")
     monkeypatch.setenv("DJANGO_ALLOWED_HOSTS", "proff58.ru")

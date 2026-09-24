@@ -553,6 +553,12 @@ FEATURES = {
     "product_image_autoprocess": env.bool("FEATURE_PRODUCT_IMAGE_AUTOPROCESS", default=False),
 }
 
+# Внешние перевозчики (integration_ship). Stub-провайдер (0 ₽) — только с явным
+# SHIP_ALLOW_STUB=True (dev/тесты); в рабочем режиме без реального провайдера
+# внешняя зона уходит в ручной расчёт менеджером.
+SHIP_PROVIDER = env("SHIP_PROVIDER", default="stub")
+SHIP_ALLOW_STUB = env.bool("SHIP_ALLOW_STUB", default=False)
+
 
 LOGGING = {
     "version": 1,

@@ -111,9 +111,9 @@ def create_request(
             )
         )
 
-    # Канала уведомлений менеджеров на сайте пока нет — заметная строка в логе,
-    # сама заявка видна в админке «Платежи → Заявки на возврат».
-    logger.warning("Заявка на возврат #%s по заказу %s: %s", request.pk, order.order_number, reason)
+    # Письмо менеджерам уходит по событию refund_requested (receivers.py, T2);
+    # строка в логе остаётся на случай ненастроенных получателей.
+    logger.info("Заявка на возврат #%s по заказу %s: %s", request.pk, order.order_number, reason)
     return request
 
 
