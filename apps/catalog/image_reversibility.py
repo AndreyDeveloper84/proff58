@@ -504,7 +504,7 @@ def audit_archive() -> dict:
     """
     from .models import RejectedImageCandidate, private_media_storage
 
-    root = Path(private_media_storage.location)
+    root = Path(private_media_storage().location)
     files: dict[str, dict] = {}
     if root.exists():
         for path in sorted(root.rglob("*")):

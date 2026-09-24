@@ -1466,8 +1466,16 @@ class ProductImageEvent(models.Model):
         return f"{self.get_kind_display()} · фото {self.image_ref}"
 
 
-#: Архив отклонённых кандидатов — вне /media/, за защищённой выдачей (§7.1).
-private_media_storage = FileSystemStorage(location=str(settings.PRIVATE_MEDIA_ROOT))
+def private_media_storage() -> FileSystemStorage:
+    """Архив отклонённых кандидатов — вне /media/, за защищённой выдачей (§7.1).
+
+    Callable, а не готовый экземпляр: `FileSystemStorage(location=...)` сериализует
+    в миграцию АБСОЛЮТНЫЙ путь на момент `makemigrations` — на другой машине/в
+    контейнере с другим `BASE_DIR` это дало бы вечный дрейф `--check`. Django
+    поддерживает `storage=<callable>` у `FileField` начиная с 4.2 ровно для этого:
+    вызывается лениво, в миграции остаётся ссылка на функцию, а не путь.
+    """
+    return FileSystemStorage(location=str(settings.PRIVATE_MEDIA_ROOT))
 
 
 def rejected_candidate_path(instance, filename: str) -> str:
