@@ -212,7 +212,9 @@ class DeleteAccountView(APIView):
     - Order (снимок): контактные и B2B-реквизиты обезличиваются. Сами записи
       заказов сохраняются как бухгалтерские документы (обязательный срок хранения),
       но без ПДн;
-    - WishlistItem: удаляется (user-owned, хранить не требуется).
+    - WishlistItem: удаляется (user-owned, хранить не требуется);
+    - привязки внешних входов (VK ID / Яндекс ID): снимает подписчик события
+      ``user_deleted`` (apps.integration_oauth) после коммита.
     """
 
     permission_classes = [IsAuthenticated]
@@ -270,6 +272,15 @@ class DeleteAccountView(APIView):
             user_obj.max_chat_id = None
             user_obj.is_active = False
             user_obj.save(update_fields=["phone", "full_name", "email", "max_chat_id", "is_active"])
+
+            # Интеграции входа (VK ID / Яндекс ID) снимают свои привязки по событию:
+            # accounts о них не знает (слой 0, CLAUDE.md §4). После коммита — чтобы
+            # подписчик не снял привязки у аккаунта, удаление которого откатилось.
+            from apps.core.events import user_deleted
+
+            transaction.on_commit(
+                lambda uid=user_obj.pk: user_deleted.send(sender=User, user_id=uid)
+            )
 
         return Response({"ok": True, "detail": "Аккаунт удалён, данные обезличены."})
 
@@ -337,14 +348,17 @@ _RESET_INVALID = {"detail": "Ссылка недействительна или 
 
 
 def _reset_eligible(user) -> bool:
-    """Кому сброс доступен: активный покупатель с паролем.
+    """Кому сброс доступен: активный покупатель с паролем (или с входом, который
+    зарегистрировал модуль выше — см. ``apps.accounts.services.is_reset_eligible``).
 
     Аккаунт из MAX (`has_usable_password()` False) пароля через сброс не получает —
     e-mail у него не подтверждён, а вход через MAX и так без пароля. Сотрудники
     админки (`is_staff`) восстанавливают доступ административным порядком, а не
     через публичную форму витрины.
     """
-    return user.is_active and not user.is_staff and user.has_usable_password()
+    from apps.accounts.services import is_reset_eligible
+
+    return is_reset_eligible(user)
 
 
 def _find_reset_user(email: str):
