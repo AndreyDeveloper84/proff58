@@ -1,12 +1,11 @@
 {
- "blocked": 7,
- "blocked_reason": "всем 7 не хватает оси chuck (тип патрона): у РЕСАНТА/Hanskonner карт с этим полем нет, у ЗУБР DB-125-42ABF «кулачковый, эксцентриковый, угловой» — канон не решён (drop_to_report по DRILLS-CHAR-01)",
- "frozen_at": "2026-09-24T08:18:15+0300",
- "indexable_candidates": 38,
- "revision": "rev2",
+ "blocked": 0,
+ "frozen_at": "2026-09-24T14:52:35+0300",
+ "indexable_candidates": 45,
+ "revision": "rev3",
  "rules": {
+  "chuck_provenance": "аккумуляторные шуруповёрты/винтоверты без явного типа — вывод bystrozazhimnoy (source=inferred, решение владельца 24.09); ЗУБР DB-125-42ABF — карта производителя «кулачковый, эксцентриковый, угловой» = БЗП + насадки; РЕСАНТА СШ-550-1/-2 — «быстрозажимной» из описания карточки",
   "commercial": "is_active AND status=published AND available_quantity>0 AND price>0",
-  "data_source": "значения power/voltage дописаны правилами из обозначения модели (PR feat/drills-power-voltage-rules), applied на стенде 24.09: create power 113, power_source 102, voltage 24, перезаписей 0",
   "http": "карточка 200, display-фото 200, JSON-LD Product; проверено 2026-09-23 с паузой 3 с",
   "media": ">=1 файл изображения И есть main",
   "release_required_axes": {
@@ -28,7 +27,7 @@
     "power"
    ]
   },
-  "subtype": "mains_drill — название содержит «дрел» (у сетевых дрелей производитель момент затяжки не публикует: карты resanta ДУ-15/680, ДУ-16/1100МК без поля); остальные сетевые — mains_driver (СШ-550: 25/36 Н·м на карте)"
+  "subtype": "mains_drill — название содержит «дрел»: у сетевых дрелей производитель момент затяжки не публикует"
  },
  "scope_total": 45,
  "skus": [
@@ -40,8 +39,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -70,8 +68,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -100,8 +97,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -130,8 +126,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -160,8 +155,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -190,8 +184,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -220,8 +213,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -244,23 +236,20 @@
   },
   {
    "article": "HCD1865BL",
-   "attributes_total": 6,
+   "attributes_total": 7,
    "commercial": true,
    "has_main": true,
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "hanskonner"
    ],
    "images": 1,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "chuck"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Шуруповёрт аккумуляторный Hanskonner HCD1865BL 18В 65Нм 2акк 2,4Ач, бесщеточнаый",
    "power_source": "battery",
    "product_id": 836,
@@ -282,8 +271,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -312,8 +300,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -342,8 +329,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -366,23 +352,20 @@
   },
   {
    "article": "HCD1865BLI",
-   "attributes_total": 6,
+   "attributes_total": 7,
    "commercial": true,
    "has_main": true,
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "hanskonner"
    ],
    "images": 1,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "chuck"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Шуруповёрт аккумуляторный Hanskonner ударный HCD1865BLI 18В 65Нм 2акк 2,4Ач, бесщеточнаый",
    "power_source": "battery",
    "product_id": 843,
@@ -404,8 +387,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "interskol"
@@ -428,23 +410,20 @@
   },
   {
    "article": "DB-125-42ABF",
-   "attributes_total": 9,
+   "attributes_total": 10,
    "commercial": true,
    "has_main": true,
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
    ],
    "images": 3,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "chuck"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Шуруповёрт аккумуляторный ЗУБР DB-125-42ABF КОМБИ +УШМ+фонарь 12В 45Нм бесщеточная 2АКБ тип7 (4 и 2Ач) кейс",
    "power_source": "battery",
    "product_id": 964,
@@ -466,8 +445,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -496,8 +474,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -526,8 +503,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -556,8 +532,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -586,8 +561,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -616,8 +590,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -646,8 +619,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -676,8 +648,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -706,8 +677,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -736,8 +706,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -766,8 +735,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -796,8 +764,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -826,8 +793,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -856,8 +822,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -886,8 +851,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -910,23 +874,20 @@
   },
   {
    "article": "75/14/6",
-   "attributes_total": 7,
+   "attributes_total": 8,
    "commercial": true,
    "has_main": true,
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "resanta"
    ],
    "images": 3,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "chuck"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Шуруповёрт аккумуляторный РЕСАНТА ДА-18-2ЛК-У (Li-ion) ударный",
    "power_source": "battery",
    "product_id": 997,
@@ -942,23 +903,20 @@
   },
   {
    "article": "75/14/10",
-   "attributes_total": 7,
+   "attributes_total": 8,
    "commercial": true,
    "has_main": true,
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "resanta"
    ],
    "images": 3,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "chuck"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Шуруповёрт аккумуляторный РЕСАНТА ДА-20-2ЛК-Б (Li-ion) бесщеточный",
    "power_source": "battery",
    "product_id": 998,
@@ -980,8 +938,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -1010,8 +967,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -1040,8 +996,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -1070,8 +1025,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -1100,8 +1054,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -1129,8 +1082,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "resanta"
@@ -1158,8 +1110,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "resanta"
@@ -1187,8 +1138,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "resanta"
@@ -1216,8 +1166,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "resanta"
@@ -1245,8 +1194,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -1275,8 +1223,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -1305,8 +1252,7 @@
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "vseinstrumenti"
@@ -1329,23 +1275,20 @@
   },
   {
    "article": "75/16/2",
-   "attributes_total": 5,
+   "attributes_total": 6,
    "commercial": true,
    "has_main": true,
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "resanta"
    ],
    "images": 3,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "chuck"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Шуруповёрт сетев. СШ-550-1 РЕСАНТА",
    "power_source": "mains",
    "product_id": 45506,
@@ -1361,23 +1304,20 @@
   },
   {
    "article": "75/16/1",
-   "attributes_total": 5,
+   "attributes_total": 6,
    "commercial": true,
    "has_main": true,
    "http": {
     "card_http": 200,
     "image_http": 200,
-    "jsonld": true,
-    "meta_before_release": "noindex"
+    "jsonld": true
    },
    "image_sources": [
     "resanta"
    ],
    "images": 3,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "chuck"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Шуруповёрт сетев. СШ-550-2 РЕСАНТА",
    "power_source": "mains",
    "product_id": 45507,
@@ -1392,7 +1332,7 @@
    "tool_type": "dreli-shurupoverty"
   }
  ],
- "supersedes": "rev1 (33 кандидата): требование torque у сетевых дрелей снято, добавлены power/voltage из обозначения модели",
+ "supersedes": "rev2 (38 кандидатов): добавлены тип патрона (правило вывода + карты производителя) — остаток 7 закрыт",
  "tool_type": "dreli-shurupoverty",
  "track": "SEO-BATCH-02"
 }
