@@ -59,3 +59,13 @@ export function loginHref(next?: string): string {
 export function accountLinkHref(path: string, state: AuthState): string {
   return state === "anonymous" ? loginHref(path) : path;
 }
+
+/**
+ * `?next=` формы входа → путь внутри сайта или null.
+ *
+ * Только путь от корня: «//чужой-сайт» и «/\чужой-сайт» браузер трактует как
+ * другой хост — это открытый редирект после входа.
+ */
+export function safeNextPath(next: string | null | undefined): string | null {
+  return next && /^\/(?![/\\])/.test(next) ? next : null;
+}
