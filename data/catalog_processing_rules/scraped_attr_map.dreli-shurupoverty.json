@@ -193,12 +193,13 @@
           "attribute_type": "select",
           "normalize": "option_map",
           "values": {
-            "ключевой": "klyuchevoy"
+            "ключевой": "klyuchevoy",
+            "быстрозажимной": "bystrozazhimnoy"
           },
           "confidence": "medium",
           "on_unknown_value": "drop_to_report",
           "on_ambiguous": "drop_to_report",
-          "comment": "DRILLS-CHAR-01: ключевой → klyuchevoy; кулачковый/HEX → drop_to_report"
+          "comment": "DRILLS-CHAR-01: ключевой → klyuchevoy; кулачковый/HEX → drop_to_report SEO-BATCH-02: значение добавлено для СШ-550-1/-2, где поля в таблице нет, а описание карточки говорит «быстрозажимной патрон» (выгрузка resanta-ssh550-chuck)."
         },
         "Напряжение сети адаптера питания, В, Гц": {
           "action": "ignore",
@@ -1017,12 +1018,13 @@
             "бесключевой": "bystrozazhimnoy",
             "hex": "hex",
             "нех": "hex",
-            "шестигранный": "hex"
+            "шестигранный": "hex",
+            "кулачковый, эксцентриковый, угловой": "bystrozazhimnoy"
           },
           "confidence": "medium",
           "on_unknown_value": "drop_to_report",
           "on_ambiguous": "drop_to_report",
-          "comment": "DRILLS-CHAR-02: HEX/НЕХ(кириллица)/шестигранный → hex (бит-держатель 1/4\"); ключевой → klyuchevoy; мульти-комбо → report"
+          "comment": "DRILLS-CHAR-02: HEX/НЕХ(кириллица)/шестигранный → hex (бит-держатель 1/4\"); ключевой → klyuchevoy; мульти-комбо → report SEO-BATCH-02: у модульных наборов ЗУБР сам производитель пишет ту же связку как «БЗП, угловой, эксцентриковый» (DB-50-22-H3), поэтому «кулачковый, эксцентриковый, угловой» (DB-125-42ABF) — тот же быстрозажимной патрон плюс две насадки. Одиночный «кулачковый» остаётся в drop_to_report: там связки нет."
         },
         "Размер патрона, мм": {
           "action": "unmapped",
