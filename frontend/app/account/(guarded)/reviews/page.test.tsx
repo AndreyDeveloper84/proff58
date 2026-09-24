@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const pushMock = vi.fn();
 const replaceMock = vi.fn();
-const notFoundMock = vi.fn(() => {
-  throw new Error("NEXT_NOT_FOUND");
-});
+// Настоящий notFound() бросает NEXT_NOT_FOUND; в тесте только фиксируем вызов,
+// иначе исключение из рендера React попадает в vitest как unhandled error.
+const notFoundMock = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock, replace: replaceMock }),
   usePathname: () => "/account/reviews",
@@ -89,12 +89,7 @@ describe("MyReviewsPage (#573)", () => {
   it("off-состояние с бэка — 404, а не «временно отключён» (T4)", async () => {
     mockedGetMyReviews.mockResolvedValue("disabled");
     notFoundMock.mockClear();
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    try {
-      render(<MyReviewsPage />);
-    } catch {
-      /* React бросает NEXT_NOT_FOUND наверх */
-    }
+    render(<MyReviewsPage />);
     await waitFor(() => expect(notFoundMock).toHaveBeenCalled());
     expect(screen.queryByText(/временно отключён/)).toBeNull();
   });
