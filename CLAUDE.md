@@ -70,7 +70,7 @@ docker-compose.yml · docker-compose.prod.yml
 Магазин не знает о CRM/AI/интеграциях — только сигналы. `sync_1c` — единственное
 место, где встречаются 1С и каталог; каталог про 1С не знает.
 
-События (`apps/core/events.py`): `user_registered`, `b2b_verified`,
+События (`apps/core/events.py`): `user_registered`, `user_deleted`, `b2b_verified`,
 `product_created/updated`, `order_created`, `order_paid`, `order_status_changed`,
 `payment_succeeded/failed`, `price_changed`. Издавать через `transaction.on_commit`
 с идентификаторами/снимком в payload.
@@ -271,6 +271,11 @@ pytest apps/catalog              # только каталог (~350 тесто�
 - `/api/ai/products/<slug>/recommendations/`
 - `/api/` — `cart/`, `cart/items/`, `orders/`, `orders/<number>/`
 - `/api/1c/` — обмен с 1С (см. §5)
+- `/api/oauth/` — вход через VK ID (в т.ч. Mail: `via=mail_ru`) и Яндекс ID
+  (`apps/integration_oauth`): `providers/`, `<provider>/start/`, `<provider>/callback/` —
+  Django напрямую, start/callback всегда отвечают 302 (`oauth_error` при ошибке)
+- `/api/account/oauth/` — кабинет: список привязок, `<provider>/link/`,
+  `<provider>/unlink/` (снаружи — только через Next-BFF)
 - `/healthz/` — health (БД + Redis)
 
 ## 11. Поток работы и стиль

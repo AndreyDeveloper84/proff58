@@ -111,10 +111,15 @@ if SENTRY_DSN:
     from sentry_sdk.integrations.celery import CeleryIntegration
     from sentry_sdk.integrations.django import DjangoIntegration
 
+    from config.sentry_scrub import scrub_oauth_event
+
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration(), CeleryIntegration()],
         traces_sample_rate=0.1,
         send_default_pii=False,
+        # Колбэк входа через VK ID / Яндекс ID несёт в query код авторизации и state.
+        before_send=scrub_oauth_event,
+        before_send_transaction=scrub_oauth_event,
         environment=env("SENTRY_ENVIRONMENT", default="production"),
     )

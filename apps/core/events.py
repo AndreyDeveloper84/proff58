@@ -17,6 +17,7 @@ Payload каждого сигнала (kwargs у `.send()`) — стабильн
 снапшоты, НЕ живые ORM-инстансы. Подписчик при необходимости перечитывает объект
 из БД (надёжно под Celery/несколькими воркерами — инстанс может устареть):
   user_registered       — user_id
+  user_deleted          — user_id                              # аккаунт обезличен (ADR-0015)
   b2b_verified          — user_id, organization_id
   product_created       — product_id, source                   # source: EventSource
   product_updated       — product_id, source, changed_fields: list[str]
@@ -57,6 +58,9 @@ class EventSource:
 
 # --- accounts ---
 user_registered = Signal()
+# user_deleted — издатель apps.accounts DeleteAccountView (обезличивание, ADR-0015);
+# подписчики снимают свои привязки к пользователю (integration_oauth).
+user_deleted = Signal()
 b2b_verified = Signal()
 
 # --- catalog ---

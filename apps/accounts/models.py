@@ -89,6 +89,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.full_name or self.email or self.phone or f"Пользователь #{self.pk}"
 
     @property
+    def is_anonymized(self) -> bool:
+        """Аккаунт удалён покупателем: выключен и обезличен (DeleteAccountView).
+
+        Отличает удалённый аккаунт от заблокированного оператором (тот тоже
+        ``is_active=False``, но с данными): интеграциям входа важно, можно ли
+        считать привязку к нему «ничьей».
+        """
+        return not self.is_active and (self.phone or "").startswith("deleted-")
+
+    @property
     def is_b2b(self) -> bool:
         return self.customer_type == CustomerType.B2B
 
