@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { PhoneContact } from "@/components/contacts/CopyContact";
 import { Collapsible } from "./Collapsible";
-import { SITE } from "@/lib/site";
+import { resolveStorefront, type ResolvedStorefront } from "@/lib/site";
 import { pickUseCases } from "@/lib/pdp-usecases";
 import { hasRealSpecs, keySpecs } from "@/lib/specs";
 import { groupProductSpecs } from "@/lib/spec-groups";
@@ -133,7 +133,7 @@ function SpecGroups({ specs }: { specs: ProductSpec[] }) {
 
 const USE_CASE_ICONS = [BadgeCheck, Wrench, CircleGauge];
 
-function ExpertPanel({ specs }: { specs: ProductSpec[] }) {
+function ExpertPanel({ specs, phone }: { specs: ProductSpec[]; phone: ResolvedStorefront["phone"] }) {
   // Сценарии зависят от типа инструмента: у перфоратора это бурение и штробление,
   // у мойки — фасад и автомобиль. Для типа без своей записи остаётся честный
   // запасной набор про помощь магазина — выдумывать применение нельзя.
@@ -174,15 +174,15 @@ function ExpertPanel({ specs }: { specs: ProductSpec[] }) {
           пуст, а битую ссылку в signature-панели показывать нельзя. Звонок —
           то, что работает всегда. */}
       <PhoneContact
-        display={SITE.phone.display}
-        href={SITE.phone.href}
+        display={phone.display}
+        href={phone.href}
         data-event="pdp_expert_help"
         className="group m-3 mt-0 flex min-h-16 items-center gap-3 rounded-md bg-surface p-3 text-ink transition hover:bg-raised hover:text-ink sm:m-4 sm:mt-0"
       >
         <MessageSquareText className="h-6 w-6 shrink-0 text-accent" aria-hidden />
         <span className="min-w-0 flex-1">
           <strong className="block text-sm font-semibold">Задать вопрос специалисту</strong>
-          <span className="mt-0.5 block text-xs text-ink-3">{SITE.phone.display}</span>
+          <span className="mt-0.5 block text-xs text-ink-3">{phone.display}</span>
         </span>
         <ArrowRight className="h-5 w-5 text-accent transition-transform group-hover:translate-x-0.5" aria-hidden />
       </PhoneContact>
@@ -228,11 +228,18 @@ function PurchaseConfidence() {
  * Липкую обёртку у панели специалиста убрали: внутри вкладок (overflow-hidden)
  * sticky всё равно не работал, а рядом больше нет длинного паспорта.
  */
-export function ProductOverview({ product }: { product: ProductDetail }) {
+/** phone — из SiteSettings (T3); без пропа — запасной номер из lib/site. */
+export function ProductOverview({
+  product,
+  phone = resolveStorefront().phone,
+}: {
+  product: ProductDetail;
+  phone?: ResolvedStorefront["phone"];
+}) {
   return (
     <div className="space-y-5">
       {hasPassportSpecs(product.specs) && <MetricCards specs={product.specs} />}
-      <ExpertPanel specs={product.specs} />
+      <ExpertPanel specs={product.specs} phone={phone} />
       <PurchaseConfidence />
     </div>
   );

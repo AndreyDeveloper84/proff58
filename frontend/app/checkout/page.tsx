@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useStorefront } from "@/components/site/StorefrontProvider";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,6 @@ import {
   normalizePhone,
 } from "@/lib/validation";
 import { stashOrder } from "@/lib/order-storage";
-import { SITE } from "@/lib/site";
 
 type CustomerType = "b2c" | "b2b";
 type DeliveryMethod = "courier" | "pickup";
@@ -41,6 +41,7 @@ const inputClass =
   "h-11 w-full rounded-md border border-line bg-field px-3 text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none";
 
 export default function CheckoutPage() {
+  const storefront = useStorefront();
   const router = useRouter();
   const { cart, loading, total, refresh } = useCart();
 
@@ -612,7 +613,7 @@ export default function CheckoutPage() {
             <span>
               <span className="block text-sm text-ink">Самовывоз</span>
               <span className="mt-0.5 block text-xs text-ink-3">
-                {SITE.address} · бесплатно
+                {storefront.address} · бесплатно
               </span>
             </span>
           </label>
@@ -622,8 +623,8 @@ export default function CheckoutPage() {
           {delivery === "pickup" && (
             <div className="rounded-md border border-line bg-raised p-3 text-xs leading-5 text-ink-2">
               <span className="block font-semibold text-ink">Самовывоз из магазина</span>
-              <span className="block">{SITE.address}</span>
-              <span className="block">{SITE.schedule}</span>
+              <span className="block">{storefront.address}</span>
+              <span className="block">{storefront.schedule}</span>
               <span className="mt-1 block text-ink-3">
                 Сообщим, когда заказ будет готов к выдаче.
               </span>

@@ -1,5 +1,6 @@
-// Единый источник контента шапки/подвала. Чистые данные (без JSX).
-// TODO: в будущем заменить на данные из SiteSettings.contacts/requisites через BFF.
+// Контент шапки/подвала. Контакты (телефон, e-mail, адрес, график) — в
+// SiteSettings.contacts (админка → Настройки сайта → Контакты); значения здесь —
+// только запасные, если API недоступен или поле в настройках пустое (T3).
 /** Пункт служебной полосы шапки. `href` есть не у каждого: у части пунктов
     страницы нет вовсе, и тогда пункт остаётся подсказкой (см. Header). */
 export type TopLink = {
@@ -17,8 +18,8 @@ export const SITE = {
   // номеру 8-800, а городской номер бесплатным по стране не является.
   phoneNote: "",
   schedule: "Пн–Сб 09:00–19:00, Вс 09:00–15:00",
-  email: "penzainstrument@yandex.ru", // TODO: SiteSettings
-  address: "г. Пенза, 1-й Онежский проезд, 12", // TODO: SiteSettings
+  email: "penzainstrument@yandex.ru", // запасное, см. SiteSettings.contacts.email
+  address: "г. Пенза, 1-й Онежский проезд, 12", // запасное, см. SiteSettings.contacts.address
 
   // #586: шапка по утверждённому макету главной.
   header: {
