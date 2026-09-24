@@ -6,6 +6,7 @@
   PATCH  /api/cart/items/{id}/            — изменить количество
   DELETE /api/cart/items/{id}/            — мягкое удаление (undo-window)
   POST   /api/cart/items/{id}/restore/    — восстановить мягко удалённую строку (#380)
+  POST   /api/cart/delivery-quote/        — расчёт доставки СДЭК по серверной корзине
   POST   /api/orders/                     — оформить заказ (цена серверная)
   GET    /api/orders/                     — список своих заказов (только аутентифицированный)
   GET    /api/orders/{number}/            — заказ по номеру (только владелец)
@@ -17,6 +18,7 @@ from __future__ import annotations
 import re
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
@@ -27,7 +29,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.catalog.models import Product
-from apps.core.throttling import OrdersRateThrottle
+from apps.core.throttling import DeliveryQuoteRateThrottle, OrdersRateThrottle
+from apps.delivery.services import DeliveryInputError, DeliveryQuoteError, quote_carrier
 
 from .. import fulfillment, services
 from ..models import Cart, CartItem, CartStatus, Order
@@ -140,6 +143,64 @@ class CartView(APIView):
         if cart is None:
             return Response(CartViewSerializer(_empty_cart_view()).data)
         return _cart_response(request, cart)
+
+
+class CartDeliveryQuoteView(APIView):
+    """POST /api/cart/delivery-quote/ — цена доставки СДЭК для текущей корзины (DRF-2299).
+
+    Тело: ``zone``, ``method`` (``cdek_pvz``/``cdek_courier``), ``city_code``,
+    ``city_name``, ``pvz_code`` (для пункта выдачи) или ``address`` (для курьера).
+    Считает по серверной корзине; сумму доставки браузер не присылает никогда.
+    ``quote_id`` из ответа передаётся в POST /api/orders/ как ``delivery_quote_id``.
+    Цены нет (упаковка не задана, СДЭК не ответил) — ``status=manual_required`` и
+    ``reason``: заказ оформляется, стоимость рассчитает менеджер.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [DeliveryQuoteRateThrottle]
+
+    def post(self, request):
+        cart = _get_active_cart(request)
+        if cart is None:
+            return Response({"detail": "Корзина пуста."}, status=status.HTTP_400_BAD_REQUEST)
+        user = request.user if request.user.is_authenticated else None
+        view = services.get_cart_view(cart, user)
+        data = request.data if isinstance(request.data, dict) else {}
+        try:
+            quote, quote_id = quote_carrier(
+                zone_slug=str(data.get("zone") or ""),
+                method=str(data.get("method") or ""),
+                lines=[(line.item.product_id, line.item.quantity) for line in view.lines],
+                goods_total=view.grand_total,
+                destination={
+                    "city_code": data.get("city_code"),
+                    "city_name": data.get("city_name"),
+                    "pvz_code": data.get("pvz_code"),
+                    "address": data.get("address"),
+                },
+            )
+        except DeliveryInputError as exc:
+            return Response(
+                {"detail": exc.message, "field": exc.field}, status=status.HTTP_400_BAD_REQUEST
+            )
+        snap = quote.snapshot
+        return Response(
+            {
+                "quote_id": quote_id,
+                "status": quote.status,
+                "cost": f"{quote.cost:.2f}" if quote.cost is not None else None,
+                "reason": quote.reason,
+                "period_min": snap.get("period_min"),
+                "period_max": snap.get("period_max"),
+                "address": snap.get("address", ""),
+                "city_name": snap.get("city_name", ""),
+                # Промокод «бесплатная доставка» к СДЭК не применяется (если владелец
+                # не включил) — чекаут не должен показывать доставку за 0.
+                "free_delivery_promo_applies": bool(
+                    getattr(settings, "PROMO_FREE_DELIVERY_EXTERNAL", False)
+                ),
+            }
+        )
 
 
 class CartPromoView(APIView):
@@ -291,6 +352,7 @@ class OrdersView(APIView):
             "delivery_address": data["delivery_address"],
             "delivery_zone": data["delivery_zone"],
             "delivery_slot_id": data["delivery_slot_id"],
+            "delivery_quote_id": data["delivery_quote_id"],
             "comment": data["comment"],
         }
         try:
@@ -303,6 +365,11 @@ class OrdersView(APIView):
             )
         except DjangoValidationError as exc:
             return Response({"detail": exc.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
+        except DeliveryQuoteError as exc:
+            # DRF-2299: расчёт СДЭК истёк или корзина изменилась — пересчитать.
+            return Response(
+                {"detail": exc.message, "code": exc.code}, status=status.HTTP_409_CONFLICT
+            )
         resp_data = OrderSerializer(order).data
         if order.access_token:
             resp_data["access_token"] = order.access_token
