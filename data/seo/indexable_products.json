@@ -1,11 +1,35 @@
 {
   "_note": "PF-SH-RELEASE-01: товары, открытые для индексации. Ровно INDEXABLE_CANDIDATE замороженного release-gate manifest; меняется только новым гейтом. Откат: убрать id (или очистить список) и перезапустить web.",
-  "source_manifest": "docs/catalog/appendix/2026-09-21-pf-sh-release-gate-01/pf-sh-release-gate-01.json",
-  "manifest_sha256": "112281b5d5b51e93b0f7ee15dfb9bc404ad9a6963087352811d5d3d74f4c866c",
-  "count": 74,
+  "batches": [
+    {
+      "id": "pf-sh-release-gate-01",
+      "tool_types": [
+        "perforatory",
+        "shlifmashiny"
+      ],
+      "manifest": "docs/catalog/appendix/2026-09-21-pf-sh-release-gate-01/pf-sh-release-gate-01.json",
+      "manifest_sha256": "112281b5d5b51e93b0f7ee15dfb9bc404ad9a6963087352811d5d3d74f4c866c",
+      "count": 74
+    },
+    {
+      "id": "seo-batch-02-drills",
+      "tool_types": [
+        "dreli-shurupoverty"
+      ],
+      "manifest": "docs/catalog/appendix/2026-09-23-seo-batch-02/seo-batch-02-gate.json",
+      "manifest_sha256": "5739da24d13a19f5b61e0a0ef735cd90137faf09bfd8341470ca06d8f219148e",
+      "count": 38
+    }
+  ],
+  "count": 112,
   "product_ids": [
+    417,
+    418,
+    419,
+    498,
     513,
     514,
+    545,
     568,
     578,
     579,
@@ -24,6 +48,36 @@
     721,
     722,
     723,
+    832,
+    833,
+    838,
+    840,
+    841,
+    931,
+    965,
+    966,
+    967,
+    968,
+    969,
+    970,
+    971,
+    972,
+    973,
+    974,
+    975,
+    976,
+    977,
+    978,
+    979,
+    1046,
+    1047,
+    1048,
+    1049,
+    43855,
+    43974,
+    43975,
+    43976,
+    43977,
     44422,
     44458,
     44459,
@@ -77,6 +131,9 @@
     45272,
     45273,
     45439,
-    45451
+    45451,
+    45499,
+    45503,
+    45504
   ]
 }

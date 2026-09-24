@@ -1,0 +1,1398 @@
+{
+ "blocked": 7,
+ "blocked_reason": "всем 7 не хватает оси chuck (тип патрона): у РЕСАНТА/Hanskonner карт с этим полем нет, у ЗУБР DB-125-42ABF «кулачковый, эксцентриковый, угловой» — канон не решён (drop_to_report по DRILLS-CHAR-01)",
+ "frozen_at": "2026-09-24T08:18:15+0300",
+ "indexable_candidates": 38,
+ "revision": "rev2",
+ "rules": {
+  "commercial": "is_active AND status=published AND available_quantity>0 AND price>0",
+  "data_source": "значения power/voltage дописаны правилами из обозначения модели (PR feat/drills-power-voltage-rules), applied на стенде 24.09: create power 113, power_source 102, voltage 24, перезаписей 0",
+  "http": "карточка 200, display-фото 200, JSON-LD Product; проверено 2026-09-23 с паузой 3 с",
+  "media": ">=1 файл изображения И есть main",
+  "release_required_axes": {
+   "battery": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "mains_drill": [
+    "power_source",
+    "chuck",
+    "power"
+   ],
+   "mains_driver": [
+    "power_source",
+    "chuck",
+    "torque",
+    "power"
+   ]
+  },
+  "subtype": "mains_drill — название содержит «дрел» (у сетевых дрелей производитель момент затяжки не публикует: карты resanta ДУ-15/680, ДУ-16/1100МК без поля); остальные сетевые — mains_driver (СШ-550: 25/36 Н·м на карте)"
+ },
+ "scope_total": 45,
+ "skus": [
+  {
+   "article": "GVB-250",
+   "attributes_total": 9,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Винтоверт аккумуляторный ЗУБР GVB-250 20В бесщеточная без АКБ и ЗУ Профессионал. в коробке",
+   "power_source": "battery",
+   "product_id": 417,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00034231",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "GVB-250-22",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Винтоверт аккумуляторный ЗУБР GVB-250-22 20В бесщеточная 2АКБ 2Ач Профессионал. в кейсе",
+   "power_source": "battery",
+   "product_id": 418,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00034232",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "GVB-250-42",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Винтоверт аккумуляторный ЗУБР GVB-250-42 20В бесщеточная 2АКБ 4Ач Профессионал. в кейсе",
+   "power_source": "battery",
+   "product_id": 419,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00036066",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "4513960",
+   "attributes_total": 8,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Дрель ударная аккум. Einhell PXC TC-ID 18 Li 18В без АККУМ и ЗУ",
+   "power_source": "battery",
+   "product_id": 498,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00038509",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "PSD-4S",
+   "attributes_total": 9,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Отвертка аккумуляторная ЗУБР GO 4 Vmax +33биты, кейс",
+   "power_source": "battery",
+   "product_id": 545,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00039058",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "HCD18165BLI",
+   "attributes_total": 9,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный Hanskonner HCD18165BLI 18В 165Нм 1акк-4Ач,, 1акк 2Ач бесщеточнаый",
+   "power_source": "battery",
+   "product_id": 832,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00039516",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "HCD1855R",
+   "attributes_total": 8,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный Hanskonner HCD1855R 18В 55Нм 2акк 2Ач",
+   "power_source": "battery",
+   "product_id": 833,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00042858",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "HCD1865BL",
+   "attributes_total": 6,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "hanskonner"
+   ],
+   "images": 1,
+   "indexable_candidate": false,
+   "missing_axes": [
+    "chuck"
+   ],
+   "name": "Шуруповёрт аккумуляторный Hanskonner HCD1865BL 18В 65Нм 2акк 2,4Ач, бесщеточнаый",
+   "power_source": "battery",
+   "product_id": 836,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00039484",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "HCD2065BL",
+   "attributes_total": 8,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный Hanskonner HCD2065BL 18В 65Нм БЕЗ АКБ и ЗУ,бесщеточнаый",
+   "power_source": "battery",
+   "product_id": 838,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00043892",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "HCD2065BLIC",
+   "attributes_total": 9,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный Hanskonner HCD2065BLIC 18В 65Нм 2акк-2Ач,бесщеточнаый",
+   "power_source": "battery",
+   "product_id": 840,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00040389",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "HCD2065C",
+   "attributes_total": 9,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный Hanskonner HCD2065C 18В 60Нм 2акк-2Ач,бесщеточнаый",
+   "power_source": "battery",
+   "product_id": 841,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00043714",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "HCD1865BLI",
+   "attributes_total": 6,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "hanskonner"
+   ],
+   "images": 1,
+   "indexable_candidate": false,
+   "missing_axes": [
+    "chuck"
+   ],
+   "name": "Шуруповёрт аккумуляторный Hanskonner ударный HCD1865BLI 18В 65Нм 2акк 2,4Ач, бесщеточнаый",
+   "power_source": "battery",
+   "product_id": 843,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00039485",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "51688",
+   "attributes_total": 7,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "interskol"
+   ],
+   "images": 2,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ДА-10/10,8 ЭРLi-On \"Интерскол\"",
+   "power_source": "battery",
+   "product_id": 931,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00003197",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DB-125-42ABF",
+   "attributes_total": 9,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": false,
+   "missing_axes": [
+    "chuck"
+   ],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DB-125-42ABF КОМБИ +УШМ+фонарь 12В 45Нм бесщеточная 2АКБ тип7 (4 и 2Ач) кейс",
+   "power_source": "battery",
+   "product_id": 964,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00045992",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DB-201",
+   "attributes_total": 9,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DB-201 20В бесщеточная без АКБ и ЗУ Профессионал. в коробке",
+   "power_source": "battery",
+   "product_id": 965,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00034220",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DB-201-22",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DB-201-22 20В бесщеточная 2АКБ 2f/x и ЗУ Профессионал. в кейсе",
+   "power_source": "battery",
+   "product_id": 966,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00036064",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DB-201-42",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DB-201-42 20В бесщеточная 2АКБ 4f/x и ЗУ Профессионал. в кейсе",
+   "power_source": "battery",
+   "product_id": 967,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00036065",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DB-211-42",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DB-211 20В 100Нм бесщеточная 2АКБ 4Ач Профессионал",
+   "power_source": "battery",
+   "product_id": 968,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00039632",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DB-211",
+   "attributes_total": 9,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DB-211 20В 100Нм бесщеточная без АКБ и ЗУ Профессионал. в коробке",
+   "power_source": "battery",
+   "product_id": 969,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00039631",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DB-50-22",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DB-50-22 КОМПАКТ 20В 50Нм бесщеточная 2АКБ LMS 2Ач и ЗУ ПРОФ кейс",
+   "power_source": "battery",
+   "product_id": 970,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00045993",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DB-50-42",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DB-50-22 КОМПАКТ 20В 50Нм бесщеточная 2АКБ LMS 4Ач и ЗУ ПРОФ кейс",
+   "power_source": "battery",
+   "product_id": 971,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "0110000509",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DB-50-22-H3",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DB-50-22 КОМПАКТ КОМБИ модульная 20В 50Нм бесщеточная 2АКБ LMS 2Ач ПРОФ кейс",
+   "power_source": "battery",
+   "product_id": 972,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00045994",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DB-70-22",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DB-70-22 20В 70Нм бесщеточная 2АКБ LMS 2Ач и ЗУ ПРОФ кейс",
+   "power_source": "battery",
+   "product_id": 973,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00045995",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DL-121",
+   "attributes_total": 9,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DL-121 12В без АКБ и ЗУ",
+   "power_source": "battery",
+   "product_id": 974,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00036838",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DL-121-22F",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DL-121-22F 12В 2 АКБ 2А/ч +фонарь Профессионал. в кейсе",
+   "power_source": "battery",
+   "product_id": 975,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00034224",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DL-121-42",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DL-121-42 12В 2 АКБ 4А/ч Профессионал. в сумке",
+   "power_source": "battery",
+   "product_id": 976,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00038637",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DL-201",
+   "attributes_total": 9,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DL-201 20В без АКБ и ЗУ Профессионал. в коробке",
+   "power_source": "battery",
+   "product_id": 977,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00034225",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DL-201-22",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DL-201-22 20В 2АКБ 2А/ч Профессионал. в кейсе",
+   "power_source": "battery",
+   "product_id": 978,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00034226",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DL-201-42",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ЗУБР DL-201-42 20В 2АКБ 4А/ч Профессионал. в кейсе",
+   "power_source": "battery",
+   "product_id": 979,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00034228",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "75/14/6",
+   "attributes_total": 7,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": false,
+   "missing_axes": [
+    "chuck"
+   ],
+   "name": "Шуруповёрт аккумуляторный РЕСАНТА ДА-18-2ЛК-У (Li-ion) ударный",
+   "power_source": "battery",
+   "product_id": 997,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00034543",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "75/14/10",
+   "attributes_total": 7,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": false,
+   "missing_axes": [
+    "chuck"
+   ],
+   "name": "Шуруповёрт аккумуляторный РЕСАНТА ДА-20-2ЛК-Б (Li-ion) бесщеточный",
+   "power_source": "battery",
+   "product_id": 998,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00034542",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DBS-201",
+   "attributes_total": 9,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ударный ЗУБР DBS-201 20В бесщеточная без АКБ и ЗУ Профессионал. в коробке",
+   "power_source": "battery",
+   "product_id": 1046,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00034221",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DBS-201-22",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ударный ЗУБР DBS-201-22 20В бесщеточная 2 АКБ 2А/ч Профессионал. в кейсе",
+   "power_source": "battery",
+   "product_id": 1047,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00034222",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DBS-201-42",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ударный ЗУБР DBS-201-42 20В бесщеточная 2 АКБ 4А/ч Профессионал. в кейсе",
+   "power_source": "battery",
+   "product_id": 1048,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00034223",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "DBS-70-42",
+   "attributes_total": 10,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт аккумуляторный ударный ЗУБР DBS-70-42 20В 70Нм бесщеточная 2 АКБ LMS 4А/ч ПРОФ кейс",
+   "power_source": "battery",
+   "product_id": 1049,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "voltage"
+   ],
+   "slug": "00045996",
+   "subtype": "battery",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "HID21100DS",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Дрель Hanskonner HID21100DS ударная 1000Вт, 13мм 2 скорости",
+   "power_source": "mains",
+   "product_id": 43855,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "power"
+   ],
+   "slug": "00042667",
+   "subtype": "mains_drill",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "75/8/2",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Дрель ударная РЕСАНТА ДУ-15/680",
+   "power_source": "mains",
+   "product_id": 43974,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "power"
+   ],
+   "slug": "00024104",
+   "subtype": "mains_drill",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "75/8/3",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Дрель ударная РЕСАНТА ДУ-15/850",
+   "power_source": "mains",
+   "product_id": 43975,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "power"
+   ],
+   "slug": "00024106",
+   "subtype": "mains_drill",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "75/8/4",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Дрель ударная РЕСАНТА ДУ-15/950",
+   "power_source": "mains",
+   "product_id": 43976,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "power"
+   ],
+   "slug": "00031144",
+   "subtype": "mains_drill",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "75/8/5",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Дрель ударная РЕСАНТА ДУ-16/1100МК",
+   "power_source": "mains",
+   "product_id": 43977,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "power"
+   ],
+   "slug": "00031143",
+   "subtype": "mains_drill",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "ЗСШ-550-45",
+   "attributes_total": 8,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт сетев. ЗУБР ЗСШ-550-45, 550Вт,патрон HEX 1/4 (6.35мм), 220В, 550 Вт, 0-4500 об/мин, 0-15мм",
+   "power_source": "mains",
+   "product_id": 45499,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "power"
+   ],
+   "slug": "00010241",
+   "subtype": "mains_driver",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "ДШ-М1-400-2",
+   "attributes_total": 8,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт сетев. ДШ-М1-400-2 ЗУБР 400Вт, 0-450/0-1800 об/мин",
+   "power_source": "mains",
+   "product_id": 45503,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "power"
+   ],
+   "slug": "00034239",
+   "subtype": "mains_driver",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "ДШ-М3-500-2",
+   "attributes_total": 8,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шуруповёрт сетев. ДШ-М3-500-2 ЗУБР 500Вт, 0-450/0-1800 об/мин",
+   "power_source": "mains",
+   "product_id": 45504,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "power"
+   ],
+   "slug": "00034240",
+   "subtype": "mains_driver",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "75/16/2",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": false,
+   "missing_axes": [
+    "chuck"
+   ],
+   "name": "Шуруповёрт сетев. СШ-550-1 РЕСАНТА",
+   "power_source": "mains",
+   "product_id": 45506,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "power"
+   ],
+   "slug": "00031148",
+   "subtype": "mains_driver",
+   "tool_type": "dreli-shurupoverty"
+  },
+  {
+   "article": "75/16/1",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": 200,
+    "jsonld": true,
+    "meta_before_release": "noindex"
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": false,
+   "missing_axes": [
+    "chuck"
+   ],
+   "name": "Шуруповёрт сетев. СШ-550-2 РЕСАНТА",
+   "power_source": "mains",
+   "product_id": 45507,
+   "required_axes": [
+    "power_source",
+    "chuck",
+    "torque",
+    "power"
+   ],
+   "slug": "00024115",
+   "subtype": "mains_driver",
+   "tool_type": "dreli-shurupoverty"
+  }
+ ],
+ "supersedes": "rev1 (33 кандидата): требование torque у сетевых дрелей снято, добавлены power/voltage из обозначения модели",
+ "tool_type": "dreli-shurupoverty",
+ "track": "SEO-BATCH-02"
+}

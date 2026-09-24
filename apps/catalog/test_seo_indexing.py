@@ -20,9 +20,7 @@ from apps.catalog.models import Category, Product, ProductStatus
 from apps.catalog.seo_index import indexable_product_ids
 
 ALLOWLIST = Path(settings.BASE_DIR) / "data" / "seo" / "indexable_products.json"
-MANIFEST_DIR = (
-    Path(settings.BASE_DIR) / "docs" / "catalog" / "appendix" / "2026-09-21-pf-sh-release-gate-01"
-)
+BASE = Path(settings.BASE_DIR)
 
 
 @pytest.fixture
@@ -93,16 +91,24 @@ def test_missing_allowlist_file_means_nothing_indexable(cat, tmp_path):
     assert rows == []
 
 
-def test_allowlist_matches_frozen_release_manifest():
-    """Allowlist = ровно INDEXABLE_CANDIDATE из замороженного manifest, sha совпадает."""
+def test_allowlist_matches_frozen_release_manifests():
+    """Allowlist = объединение INDEXABLE_CANDIDATE всех партий; sha каждой совпадает.
+
+    Партий больше одной (SEO-BATCH-02): id добавляются только новым гейтом, его manifest
+    замораживается вместе с sha, а заблокированные SKU не могут попасть в список ни из одной партии.
+    """
     allow = json.loads(ALLOWLIST.read_text(encoding="utf-8"))
-    manifest_path = MANIFEST_DIR / "pf-sh-release-gate-01.json"
-    # sha заморожен от LF-блоба (git, Linux); checkout на Windows с autocrlf даёт CRLF.
-    raw = manifest_path.read_bytes().replace(b"\r\n", b"\n")
-    assert hashlib.sha256(raw).hexdigest() == allow["manifest_sha256"]
-    manifest = json.loads(raw)
-    candidates = sorted(s["product_id"] for s in manifest["skus"] if s["indexable_candidate"])
-    assert sorted(allow["product_ids"]) == candidates
-    assert len(candidates) == 74
-    blocked = {s["product_id"] for s in manifest["skus"] if not s["indexable_candidate"]}
-    assert blocked.isdisjoint(allow["product_ids"])
+    union: set[int] = set()
+    for batch in allow["batches"]:
+        # sha заморожен от LF-блоба (git, Linux); checkout на Windows с autocrlf даёт CRLF.
+        raw = (BASE / batch["manifest"]).read_bytes().replace(b"\r\n", b"\n")
+        assert hashlib.sha256(raw).hexdigest() == batch["manifest_sha256"], batch["id"]
+        manifest = json.loads(raw)
+        candidates = {s["product_id"] for s in manifest["skus"] if s["indexable_candidate"]}
+        blocked = {s["product_id"] for s in manifest["skus"] if not s["indexable_candidate"]}
+        assert len(candidates) == batch["count"], batch["id"]
+        assert blocked.isdisjoint(allow["product_ids"]), batch["id"]
+        assert candidates.isdisjoint(union), batch["id"]
+        union |= candidates
+    assert sorted(allow["product_ids"]) == sorted(union)
+    assert allow["count"] == len(union) == 112
