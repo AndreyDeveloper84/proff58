@@ -298,3 +298,71 @@ class TestQuoteForOrder:
         assert q.status == MANUAL_REQUIRED
         assert q.cost is None
         assert q.reason == "missing_dimensions"
+
+    def _cdek_item(self):
+        """Строка с заполненными весогабаритами (у Product их пока нет — задел)."""
+
+        class _Product:
+            weight_kg = Decimal("2")
+            length_cm = 10
+            width_cm = 10
+            height_cm = 10
+
+        class _Item:
+            product = _Product()
+
+        return _Item()
+
+    def test_cdek_with_dimensions_no_provider_manual(self):
+        """T1: внешняя зона без реального провайдера → manual_required, не 0 ₽."""
+        from django.test import override_settings
+
+        from apps.delivery.services import MANUAL_REQUIRED, quote_for_order
+
+        self._zone("cdek", is_external=True, price=Decimal("0"))
+        item = self._cdek_item()
+        with override_settings(
+            FEATURES={"external_ship": True}, SHIP_PROVIDER="stub", SHIP_ALLOW_STUB=False
+        ):
+            q = quote_for_order(zone_slug="cdek", goods_total=Decimal("100"), items=[item])
+        assert q.status == MANUAL_REQUIRED
+        assert q.cost is None
+        assert q.reason == "provider_unavailable"
+
+    def test_cdek_provider_error_manual(self, monkeypatch):
+        """T1: ошибка/таймаут провайдера → manual_required."""
+        from apps.delivery.services import MANUAL_REQUIRED, quote_for_order
+        from apps.integration_ship import services as ship
+
+        class _Broken:
+            name = "broken"
+
+            def get_rates(self, request):
+                raise TimeoutError("timeout")
+
+        monkeypatch.setattr(ship, "get_providers", lambda: [_Broken()])
+        self._zone("cdek", is_external=True, price=Decimal("0"))
+        q = quote_for_order(zone_slug="cdek", goods_total=Decimal("100"), items=[self._cdek_item()])
+        assert q.status == MANUAL_REQUIRED
+        assert q.cost is None
+        assert q.reason == "no_available_tariff"
+
+    def test_cdek_provider_success_calculated(self, monkeypatch):
+        """T1: успешный расчёт провайдера попадает в quote."""
+        from apps.delivery.services import CALCULATED, quote_for_order
+        from apps.integration_ship import services as ship
+        from apps.integration_ship.ports import RateResult
+
+        class _Ok:
+            name = "ok"
+
+            def get_rates(self, request):
+                return [RateResult(provider="ok", name="Курьер", cost=Decimal("450"), days_min=2)]
+
+        monkeypatch.setattr(ship, "get_providers", lambda: [_Ok()])
+        self._zone("cdek", is_external=True, price=Decimal("0"))
+        q = quote_for_order(zone_slug="cdek", goods_total=Decimal("100"), items=[self._cdek_item()])
+        assert q.status == CALCULATED
+        assert q.cost == Decimal("450")
+        assert q.snapshot["provider"] == "ok"
+
