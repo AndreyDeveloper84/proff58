@@ -1,5 +1,10 @@
 # Шапка + подвал витрины — Implementation Plan
 
+> **Исторический документ (июнь 2026).** Контакты с тех пор переехали в
+> `SiteSettings.contacts` (T3, 24.09.2026), маршруты `/promo`, `/delivery`, `/warranty`,
+> `/service`, `/about` в коде не существуют — инфо-страницы живут под `/info/<slug>`.
+> TODO ниже оставлены как есть и не актуальны.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Обогатить шапку (две строки: инфо-панель + основная) и добавить подвал
