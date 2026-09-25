@@ -50,11 +50,17 @@ def load_order() -> dict:
     return {"default": default, "by_tool_type": by_tool_type, "last": last}
 
 
-def _tool_type_slug(pavs) -> str | None:
+def tool_type_option(pavs):
+    """Опция вида инструмента товара (AttributeOption) из префетченных значений или None."""
     for pav in pavs:
         if pav.attribute.slug == TOOL_TYPE_SLUG and pav.value_option_id:
-            return pav.value_option.slug or None
+            return pav.value_option
     return None
+
+
+def _tool_type_slug(pavs) -> str | None:
+    option = tool_type_option(pavs)
+    return (option.slug or None) if option else None
 
 
 def ordered_pavs(pavs) -> list:

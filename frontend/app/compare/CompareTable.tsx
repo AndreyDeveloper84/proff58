@@ -25,8 +25,9 @@ type RowGroup = { title: string; icon: SpecGroup["icon"]; rows: Row[] };
 // (снят с публикации). Без отметки такой slug вечно числился бы «загружающимся».
 type CacheEntry = ProductDetail | "missing";
 
-// Раздел каталога для кнопки «Добавить товар».
+// Раздел каталога и вид инструмента для кнопки «Добавить товар».
 type Section = { name: string; slug: string };
+type ToolType = { name: string; slug: string };
 
 /**
  * Таблица сравнения.
@@ -163,8 +164,7 @@ export function CompareTable() {
         .map((g) => ({ ...g, rows: g.rows.filter((r) => r.differs) }))
         .filter((g) => g.rows.length > 0)
     : groups;
-  const section = commonSection(products);
-  const addLabel = section ? `Добавить товар из раздела «${section.name}»` : "Добавить товар";
+  const add = addTarget(commonSection(products), commonToolType(products));
   // Ширина таблицы — от числа колонок: первый столбец + минимум на товар. Узкие
   // колонки ломали бы кнопки и цены, широкие на телефоне — не нужны.
   const tableStyle = { "--compare-cols": products.length } as CSSProperties;
@@ -211,13 +211,13 @@ export function CompareTable() {
               // Модалки подбора нет: ведём в раздел, общий для сравниваемых
               // товаров, — там лежат именно сопоставимые с ними позиции.
               <Link
-                href={section ? `/catalog/${section.slug}` : "/catalog"}
-                aria-label={addLabel}
-                title={addLabel}
+                href={add.href}
+                aria-label={add.label}
+                title={add.label}
                 className="inline-flex h-10 min-w-0 items-center gap-2 rounded-md px-2.5 text-sm font-medium text-brand hover:bg-surface sm:px-3"
               >
                 <Plus className="h-4 w-4 shrink-0" aria-hidden />
-                <span className="hidden max-w-80 truncate sm:inline">{addLabel}</span>
+                <span className="hidden max-w-80 truncate sm:inline">{add.label}</span>
                 <span className="sm:hidden">Добавить</span>
               </Link>
             )}
@@ -495,9 +495,6 @@ export function buildGroups(products: ProductDetail[]): RowGroup[] {
 /**
  * Самый глубокий раздел каталога, общий для всех товаров (общий префикс
  * хлебных крошек). null — товары из разных верхних разделов.
- *
- * Фильтр по типу инструмента (?tool_type=) сюда не добавляется: detail-ответ
- * отдаёт тип подписью опции, а каталогу нужен её slug.
  */
 export function commonSection(products: ProductDetail[]): Section | null {
   if (products.length === 0) return null;
@@ -514,4 +511,31 @@ export function commonSection(products: ProductDetail[]): Section | null {
     prefix = prefix.slice(0, i);
   }
   return prefix.at(-1) ?? null;
+}
+
+/** Вид инструмента, общий для всех товаров. null — вид есть не у всех или различается. */
+export function commonToolType(products: ProductDetail[]): ToolType | null {
+  const first = products[0]?.toolType;
+  if (!first) return null;
+  return products.every((p) => p.toolType?.slug === first.slug) ? first : null;
+}
+
+/**
+ * Куда ведёт «Добавить товар»: в общий раздел, суженный до общего вида.
+ * Без общего раздела — в корень каталога: у него нет фильтра по виду.
+ */
+export function addTarget(
+  section: Section | null,
+  toolType: ToolType | null,
+): { href: string; label: string } {
+  if (!section) return { href: "/catalog", label: "Добавить товар" };
+  const href = `/catalog/${section.slug}`;
+  const label = `Добавить товар из раздела «${section.name}»`;
+  if (!toolType) return { href, label };
+  // Лист «Перфораторы» с видом «Перфораторы»: второе имя повторило бы первое.
+  const sameName = toolType.name.trim().toLowerCase() === section.name.trim().toLowerCase();
+  return {
+    href: `${href}?tool_type=${encodeURIComponent(toolType.slug)}`,
+    label: sameName ? label : `${label}: ${toolType.name}`,
+  };
 }

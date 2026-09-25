@@ -11,6 +11,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import Profile
 from apps.catalog.models import (
     Attribute,
+    AttributeOption,
     AttributeType,
     Category,
     Product,
@@ -110,6 +111,46 @@ def test_product_detail_card(client, tree):
     } in data["attributes"]
     assert [c["slug"] for c in data["breadcrumb"]] == ["ei", "dreli-grp", "dreli"]
     assert data["main_image"] is not None
+
+
+def _set_tool_type(product, value, slug):
+    attr, _ = Attribute.objects.get_or_create(
+        slug="tool_type",
+        defaults={"name": "Тип инструмента", "attribute_type": AttributeType.SELECT},
+    )
+    option = AttributeOption.objects.create(attribute=attr, value=value, slug=slug)
+    ProductAttributeValue.objects.create(product=product, attribute=attr, value_option=option)
+
+
+@pytest.mark.django_db
+def test_product_detail_tool_type_slug_and_name(client, tree):
+    _, _, leaf = tree
+    p = make_product(leaf, "Перфоратор Bosch", "perf-bosch")
+    _set_tool_type(p, "Перфораторы", "perforatory")
+
+    data = client.get("/api/catalog/products/perf-bosch/").json()
+    assert data["tool_type"] == {"slug": "perforatory", "name": "Перфораторы"}
+
+
+@pytest.mark.django_db
+def test_product_detail_tool_type_null_without_type_or_slug(client, tree):
+    _, _, leaf = tree
+    make_product(leaf, "Без вида", "no-type")
+    no_slug = make_product(leaf, "Вид без slug", "no-slug")
+    _set_tool_type(no_slug, "Без slug", "")
+
+    assert client.get("/api/catalog/products/no-type/").json()["tool_type"] is None
+    assert client.get("/api/catalog/products/no-slug/").json()["tool_type"] is None
+
+
+@pytest.mark.django_db
+def test_product_list_has_no_tool_type_field(client, tree):
+    _, _, leaf = tree
+    p = make_product(leaf, "Перфоратор", "perf-list")
+    _set_tool_type(p, "Перфораторы", "perforatory")
+
+    results = client.get("/api/catalog/products/").json()["results"]
+    assert "tool_type" not in results[0]
 
 
 @pytest.mark.django_db
