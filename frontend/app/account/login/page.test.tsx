@@ -10,11 +10,14 @@ vi.mock("@/components/account/MaxAuthFlow", () => ({
   MaxAuthFlow: () => <div data-testid="max-auth" />,
 }));
 vi.mock("@/lib/oauth-providers", () => ({ getLoginOAuthProviders: vi.fn() }));
+vi.mock("@/lib/theme", () => ({ getSiteTheme: vi.fn() }));
 
 import { getLoginOAuthProviders } from "@/lib/oauth-providers";
+import { getSiteTheme } from "@/lib/theme";
 import LoginPage from "./page";
 
 const mockedProviders = getLoginOAuthProviders as unknown as ReturnType<typeof vi.fn>;
+const mockedTheme = getSiteTheme as unknown as ReturnType<typeof vi.fn>;
 
 // Серверная страница — async-компонент: вызываем как функцию и рендерим результат.
 async function renderPage(params: Record<string, string> = {}) {
@@ -25,6 +28,36 @@ describe("Страница входа", () => {
   beforeEach(() => {
     mockedProviders.mockClear();
     mockedProviders.mockImplementation(() => Promise.resolve(["vkid", "yandex"]));
+    mockedTheme.mockClear();
+    mockedTheme.mockImplementation(() => Promise.resolve({ max_bot_url: "https://max.ru/proff58_bot" }));
+  });
+
+  it("с настроенным ботом MAX — кнопка входа через MAX и пункт про уведомления", async () => {
+    await renderPage();
+
+    expect(screen.getByTestId("max-auth")).toBeInTheDocument();
+    expect(screen.getByText("Уведомления в MAX")).toBeInTheDocument();
+    expect(screen.getByText("или войдите через")).toBeInTheDocument();
+  });
+
+  it("без настроенного бота MAX не показывается нигде, соцкнопки идут первыми", async () => {
+    mockedTheme.mockImplementation(() => Promise.resolve({ max_bot_url: "" }));
+    await renderPage();
+
+    expect(screen.queryByTestId("max-auth")).not.toBeInTheDocument();
+    expect(screen.queryByText(/подтвердите вход в приложении/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Уведомления в MAX")).not.toBeInTheDocument();
+    expect(screen.getByText("Войдите через")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Войти$/ })).toBeInTheDocument();
+  });
+
+  it("без бота MAX и без провайдеров — сразу форма по e-mail, без висящего «или»", async () => {
+    mockedTheme.mockImplementation(() => Promise.resolve({ max_bot_url: "" }));
+    mockedProviders.mockImplementation(() => Promise.resolve([]));
+    await renderPage();
+
+    expect(screen.queryByText(/^или/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Войти$/ })).toBeInTheDocument();
   });
 
   it("рисует кнопки только включённых провайдеров, у VK ID — ещё и Mail", async () => {

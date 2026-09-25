@@ -12,9 +12,15 @@ DEBUG = False
 # прод поднялся бы с общеизвестным ключом (подделка session-cookie и подписанных
 # токенов сброса пароля вплоть до входа за is_staff).
 SECRET_KEY = env("DJANGO_SECRET_KEY")
-if SECRET_KEY == "insecure-change-me-in-prod":
+_WEAK_SECRET_MARKERS = ("change-me", "changeme", "insecure")
+if (
+    not SECRET_KEY
+    or len(SECRET_KEY) < 32
+    or any(marker in SECRET_KEY.lower() for marker in _WEAK_SECRET_MARKERS)
+):
     raise ImproperlyConfigured(
-        "DJANGO_SECRET_KEY равен небезопасному дефолту — задайте уникальный ключ в проде."
+        "DJANGO_SECRET_KEY пуст, короче 32 символов или похож на заглушку (change-me, "
+        "insecure…) — задайте уникальный случайный ключ в проде."
     )
 
 # Оплата под env (#311 закрыт): состояние платежа строится только по тому, что

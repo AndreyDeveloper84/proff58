@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { notFound, usePathname, useRouter } from "next/navigation";
+import { useStorefront } from "@/components/site/StorefrontProvider";
 import { Star } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { StarDisplay } from "@/components/reviews/StarRating";
@@ -21,6 +22,9 @@ const STATUS_BADGE: Record<ReviewStatus, string> = {
 
 export default function MyReviewsPage() {
   const router = useRouter();
+  // T4: выключенный раздел — 404, а не «временно отключён».
+  const { reviewsEnabled } = useStorefront();
+  if (!reviewsEnabled) notFound();
   const pathname = usePathname();
   const [items, setItems] = useState<MyReview[]>([]);
   const [disabled, setDisabled] = useState(false);
@@ -68,11 +72,8 @@ export default function MyReviewsPage() {
   return (
     <AccountShell title="Отзывы">
       {disabled ? (
-        <EmptyState
-          icon={<Star className="h-10 w-10" aria-hidden />}
-          title="Раздел отзывов временно отключён"
-          description="Загляните позже — мы вернём его, как только закончим настройку."
-        />
+        // Флаг выключили между рендером и запросом — тоже 404.
+        notFound()
       ) : failed ? (
         <ErrorState
           title="Не удалось загрузить отзывы"

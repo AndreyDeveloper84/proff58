@@ -78,9 +78,13 @@ export function LoginForm({
   next,
   oauthError,
   oauthProvider,
+  maxEnabled = true,
 }: {
   /** Включённые провайдеры (SSR); пусто — соцблока нет вовсе. */
   providers: OAuthProviderId[];
+  /** Бот MAX настроен на сервере (max_bot_url непустой). Без него кнопку
+   * «Войти через MAX» не показываем: она давала бы только ошибку 503. */
+  maxEnabled?: boolean;
   /** Проверенный ?next= для ссылок старта у провайдеров; null — не передаём. */
   next: string | null;
   /** ?oauth_error= после неудачного входа у провайдера. */
@@ -171,17 +175,26 @@ export function LoginForm({
         Проверяйте заказы, счета и уведомления в одном месте.
       </p>
 
-      <div className="mt-6">
-        <MaxAuthFlow mode="login" onCompleted={() => router.push(nextTarget())} />
-        <p className="mt-2 text-center text-xs text-ink-3">
-          Без пароля — подтвердите вход в приложении
-        </p>
-      </div>
+      {maxEnabled && (
+        <div className="mt-6">
+          <MaxAuthFlow mode="login" onCompleted={() => router.push(nextTarget())} />
+          <p className="mt-2 text-center text-xs text-ink-3">
+            Без пароля — подтвердите вход в приложении
+          </p>
+        </div>
+      )}
 
       {hasProviders ? (
         <>
+          {/* Без MAX соцкнопки идут первыми — «или» перед ними не к чему. */}
           <Divider>
-            {mode === "login" ? "или войдите через" : "или зарегистрируйтесь через"}
+            {mode === "login"
+              ? maxEnabled
+                ? "или войдите через"
+                : "Войдите через"
+              : maxEnabled
+                ? "или зарегистрируйтесь через"
+                : "Зарегистрируйтесь через"}
           </Divider>
           <OAuthButtons providers={providers} next={next} />
           <p className="mt-3 text-center text-xs text-ink-3">
@@ -189,8 +202,10 @@ export function LoginForm({
           </p>
           <Divider>или по e-mail</Divider>
         </>
-      ) : (
+      ) : maxEnabled ? (
         <Divider>или</Divider>
+      ) : (
+        <div className="mt-6" />
       )}
 
       {oauthMessage && (

@@ -1,5 +1,7 @@
 "use client";
 
+import { useStorefront } from "@/components/site/StorefrontProvider";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -38,9 +40,16 @@ const PRIMARY_NAV: NavItem[] = [
   { label: "Счета", href: "/account/invoices", icon: FileText, match: "/account/invoices" },
   // Избранное живёт на витрине (/wishlist) — оно доступно и без аккаунта.
   { label: "Избранное", href: "/wishlist", icon: Heart, match: "/wishlist" },
-  // #573: отзывы; страница сама показывает off/empty-состояния (прецедент — «Счета»).
-  { label: "Отзывы", href: "/account/reviews", icon: Star, match: "/account/reviews" },
 ];
+
+// T4: пункт «Отзывы» есть только при включённом разделе (SiteSettings.reviews_enabled);
+// выключенный раздел не показываем вовсе — маршрут отдаёт 404.
+const REVIEWS_NAV: NavItem = {
+  label: "Отзывы",
+  href: "/account/reviews",
+  icon: Star,
+  match: "/account/reviews",
+};
 
 const SETTINGS_NAV: NavItem[] = [
   {
@@ -77,6 +86,8 @@ function SidebarLink({ item, active }: { item: NavItem; active: boolean }) {
 }
 
 function AccountSidebar({ pathname }: { pathname: string }) {
+  const { reviewsEnabled } = useStorefront();
+  const primaryNav = reviewsEnabled ? [...PRIMARY_NAV, REVIEWS_NAV] : PRIMARY_NAV;
   const isActive = (item: NavItem) =>
     Boolean(item.match && (pathname === item.match || pathname.startsWith(`${item.match}/`)));
 
@@ -87,7 +98,7 @@ function AccountSidebar({ pathname }: { pathname: string }) {
         className="rounded-lg border border-line bg-surface p-3"
       >
         <div className="space-y-1">
-          {PRIMARY_NAV.map((item) => (
+          {primaryNav.map((item) => (
             <SidebarLink key={item.label} item={item} active={isActive(item)} />
           ))}
         </div>

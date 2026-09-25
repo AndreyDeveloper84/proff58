@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Bell, FileText, Heart, Lock, Package } from "lucide-react";
 import { safeNextPath } from "@/lib/auth-state";
 import { getLoginOAuthProviders } from "@/lib/oauth-providers";
+import { getSiteTheme } from "@/lib/theme";
 import { LoginForm } from "./LoginForm";
 
 export const metadata: Metadata = { title: "Вход" };
@@ -40,7 +41,15 @@ const BENEFITS = [
 ];
 
 export default async function LoginPage({ searchParams }: Props) {
-  const [sp, providers] = await Promise.all([searchParams, getLoginOAuthProviders()]);
+  const [sp, providers, theme] = await Promise.all([
+    searchParams,
+    getLoginOAuthProviders(),
+    getSiteTheme(),
+  ]);
+  // Бот MAX не настроен (max_bot_url пуст) — вход через MAX дал бы только 503:
+  // не показываем ни кнопку, ни обещание уведомлений в MAX.
+  const maxEnabled = Boolean(theme.max_bot_url);
+  const benefits = maxEnabled ? BENEFITS : BENEFITS.filter((b) => b.title !== "Уведомления в MAX");
 
   return (
     <main className="mx-auto w-full max-w-[1480px] px-4 pb-10 pt-5 sm:px-6 lg:px-8 lg:pt-7">
@@ -56,12 +65,13 @@ export default async function LoginPage({ searchParams }: Props) {
           next={safeNextPath(first(sp.next))}
           oauthError={first(sp.oauth_error)}
           oauthProvider={first(sp.provider)}
+          maxEnabled={maxEnabled}
         />
 
         <aside className="flex flex-col rounded-lg border border-line bg-card p-6 shadow-card sm:p-8">
           <h2 className="text-xl font-semibold text-ink">В личном кабинете удобно</h2>
           <ul className="mt-7 space-y-6">
-            {BENEFITS.map(({ Icon, title, text }) => (
+            {benefits.map(({ Icon, title, text }) => (
               <li key={title} className="flex gap-4">
                 <Icon className="h-7 w-7 shrink-0 text-ink-2" strokeWidth={1.5} aria-hidden />
                 <div>

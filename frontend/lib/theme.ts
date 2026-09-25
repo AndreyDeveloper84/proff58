@@ -10,6 +10,8 @@ export interface SiteTheme {
   contacts: Record<string, unknown>;
   /** Ссылка на бота магазина в MAX. Пусто — бот не настроен, плитку не рисуем. */
   max_bot_url?: string;
+  /** Публичные бизнес-флаги (T4): выключенный раздел витрина не показывает. */
+  features?: { reviews?: boolean };
 }
 
 const DEFAULT_THEME: SiteTheme = {
@@ -20,6 +22,7 @@ const DEFAULT_THEME: SiteTheme = {
   region: "Пенза",
   contacts: {},
   max_bot_url: "",
+  features: { reviews: false },
 };
 
 export async function getSiteTheme(): Promise<SiteTheme> {

@@ -23,7 +23,8 @@ import {
 import { ProductTabs, type ProductTab } from "@/components/product/ProductTabs";
 import { SpecChips } from "@/components/product/SpecChips";
 import { PhoneContact } from "@/components/contacts/CopyContact";
-import { SITE } from "@/lib/site";
+import { resolveStorefront } from "@/lib/site";
+import { getSiteTheme } from "@/lib/theme";
 import { productSeoMetadata } from "@/lib/seo";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -40,7 +41,8 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await getProduct(slug);
   if (!product) notFound();
-  const reviews = await fetchProductReviewsSafe(slug);
+  const [reviews, theme] = await Promise.all([fetchProductReviewsSafe(slug), getSiteTheme()]);
+  const storefront = resolveStorefront(theme);
 
   // Вкладка связанных товаров. Раньше она появлялась при любом непустом объекте
   // секций — даже когда все пять пусты, и вела в никуда. Подпись зависит от того,
@@ -59,7 +61,7 @@ export default async function ProductPage({ params }: Props) {
   // «О товаре» есть всегда: в ней панель специалиста.
   const hasDescription = product.description.trim().length > 0;
   const tabs: ProductTab[] = [
-    { id: "overview", label: "О товаре", content: <ProductOverview product={product} /> },
+    { id: "overview", label: "О товаре", content: <ProductOverview product={product} phone={storefront.phone} /> },
   ];
   if (hasPassportSpecs(product.specs)) {
     tabs.push({
@@ -177,8 +179,8 @@ export default async function ProductPage({ params }: Props) {
               </span>
             </div>
             <PhoneContact
-              display={SITE.phone.display}
-              href={SITE.phone.href}
+              display={storefront.phone.display}
+              href={storefront.phone.href}
               className="flex items-start gap-2.5"
             >
               <MessageSquareText className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
