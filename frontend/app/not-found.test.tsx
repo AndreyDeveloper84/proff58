@@ -1,5 +1,8 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Страница читает контакты с сервера (T3); в тесте — запасные значения.
+vi.mock("@/lib/theme", () => ({ getSiteTheme: async () => ({}) }));
 
 import NotFound from "./not-found";
 
@@ -7,8 +10,8 @@ import NotFound from "./not-found";
 // found» по-английски и без единой ссылки. Проверяем ровно то, ради чего её
 // заменили: страница на русском и из неё есть куда пойти.
 describe("Страница 404", () => {
-  it("объясняет по-русски и даёт выходы", () => {
-    render(<NotFound />);
+  it("объясняет по-русски и даёт выходы", async () => {
+    render(await NotFound());
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Такой страницы нет");
     expect(screen.getByRole("link", { name: "Каталог товаров" })).toHaveAttribute(
@@ -20,8 +23,8 @@ describe("Страница 404", () => {
 
   // Форма, а не клиентский компонент: страница ошибки должна работать и тогда,
   // когда со скриптами что-то не так.
-  it("поиск работает обычной формой методом GET", () => {
-    const { container } = render(<NotFound />);
+  it("поиск работает обычной формой методом GET", async () => {
+    const { container } = render(await NotFound());
 
     const form = container.querySelector("form")!;
     expect(form).toHaveAttribute("action", "/search");

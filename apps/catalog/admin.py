@@ -108,6 +108,7 @@ class CategoryAdmin(TreeAdmin):
         "external_id_1c",
         "products_count",
         "published_count",
+        "package_display",
         "on_site",
         "is_active",
         "sort_order",
@@ -123,6 +124,17 @@ class CategoryAdmin(TreeAdmin):
         "action_activate",
         "action_deactivate",
     ]
+
+    @admin.display(description="Упаковка СДЭК")
+    def package_display(self, obj):
+        """Типовая коробка раздела (DRF-2299): «—» — не задана здесь (наследуется сверху)."""
+        dims = (obj.package_length_cm, obj.package_width_cm, obj.package_height_cm)
+        parts = []
+        if obj.package_weight_g:
+            parts.append(f"{obj.package_weight_g / 1000:g} кг")
+        if all(dims):
+            parts.append("×".join(str(d) for d in dims) + " см")
+        return ", ".join(parts) or "—"
 
     @staticmethod
     def _subtree_count_sq(*, published=False):
@@ -1662,6 +1674,21 @@ class ProductAdmin(admin.ModelAdmin):
                     "stock_status",
                     "price_updated_at",
                     "stock_updated_at",
+                ),
+            },
+        ),
+        (
+            _("Упаковка для доставки СДЭК"),
+            {
+                "classes": ("collapse",),
+                "description": _(
+                    "Обычно пусто: берётся типовая коробка раздела каталога. Заполняйте, "
+                    "только если товар заметно отличается — например, указать один вес, "
+                    "а габариты оставить от раздела."
+                ),
+                "fields": (
+                    "package_weight_g",
+                    ("package_length_cm", "package_width_cm", "package_height_cm"),
                 ),
             },
         ),

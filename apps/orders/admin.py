@@ -7,6 +7,7 @@ from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -16,6 +17,7 @@ from django.utils.safestring import mark_safe
 
 from apps.core.admin import TimestampColumnsMixin
 
+from .editing import editable_reason, expected_total, financial_fields_locked, update_quantities
 from .fulfillment import advance_fulfillment, next_steps
 from .models import (
     B2BInvoice,
@@ -29,10 +31,42 @@ from .models import (
 from .transitions import allowed_transitions, can_transition
 
 
+class OrderItemInlineFormSet(forms.BaseInlineFormSet):
+    """Проверка правок состава до сохранения (T8). Сама запись — в
+    ``editing.update_quantities`` под замком (см. OrderAdmin.save_formset)."""
+
+    def clean(self):
+        super().clean()
+        order = self.instance
+        if order.pk is None:
+            return
+        wanted = self.wanted_quantities()
+        if not wanted:
+            return
+        reason = editable_reason(order)
+        if reason:
+            raise forms.ValidationError(f"Состав заказа изменить нельзя: {reason}.")
+
+    def wanted_quantities(self) -> dict[int, int]:
+        """{id строки: новое количество} только по реально изменённым строкам;
+        удаление — количество 0."""
+        wanted: dict[int, int] = {}
+        for form in self.forms:
+            item = form.instance
+            if item.pk is None or not hasattr(form, "cleaned_data"):
+                continue
+            if form.cleaned_data.get("DELETE"):
+                wanted[item.pk] = 0
+            elif "quantity" in form.changed_data:
+                wanted[item.pk] = int(form.cleaned_data["quantity"])
+        return wanted
+
+
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
+    formset = OrderItemInlineFormSet
     extra = 0
-    readonly_fields = (
+    fields = (
         "product",
         "code_1c",
         "article",
@@ -46,7 +80,35 @@ class OrderItemInline(admin.TabularInline):
         "quantity",
         "line_total",
     )
-    can_delete = False
+    # Снимок цены и товара — только чтение; количество правится, пока заказ не
+    # оплачен и не собран (editing.editable_reason), запись идёт через сервис.
+    _snapshot_fields = (
+        "product",
+        "code_1c",
+        "article",
+        "name",
+        "unit",
+        "price_base",
+        "price_final",
+        "discount",
+        "price_type",
+        "currency",
+        "line_total",
+    )
+
+    def has_add_permission(self, request, obj=None):
+        return False  # новые строки — только через оформление заказа
+
+    def _locked(self, obj) -> bool:
+        return obj is None or obj.pk is None or bool(editable_reason(obj))
+
+    def has_delete_permission(self, request, obj=None):
+        return not self._locked(obj) and super().has_delete_permission(request, obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        if self._locked(obj):
+            return self._snapshot_fields + ("quantity",)
+        return self._snapshot_fields
 
 
 class OrderAdminForm(forms.ModelForm):
@@ -108,14 +170,14 @@ class OrderAdminForm(forms.ModelForm):
         if old_status == manual and cost is not None and new_status == manual:
             cleaned["delivery_calc_status"] = calculated
             self.delivery_auto_calculated = True
-        if old_status == manual and cost is not None:
+        # Итог правится только согласованно с доставкой: любая правка total или
+        # delivery_cost сверяется с формулой place_order (T8). Итог при manual_required
+        # без стоимости — предварительный, только товары.
+        if (old_status == manual and cost is not None) or (
+            {"total", "delivery_cost"} & set(self.changed_data)
+        ):
             goods = sum((i.line_total or 0 for i in self.instance.items.all()), Decimal("0"))
-            expected = (
-                goods
-                - (self.instance.items_discount_total or 0)
-                + cost
-                - (self.instance.delivery_discount or 0)
-            )
+            expected = expected_total(self.instance, delivery_cost=cost)
             if cleaned.get("total") != expected:
                 raise forms.ValidationError(
                     {
@@ -123,7 +185,7 @@ class OrderAdminForm(forms.ModelForm):
                             f"Сумма заказа должна быть {expected:.2f} {self.instance.currency}: "
                             f"товары {goods:.2f} − скидка "
                             f"{(self.instance.items_discount_total or 0):.2f} + доставка "
-                            f"{cost:.2f} − скидка на доставку "
+                            f"{(cost if cost is not None else 0):.2f} − скидка на доставку "
                             f"{(self.instance.delivery_discount or 0):.2f}."
                         )
                     }
@@ -168,13 +230,12 @@ class OrderAdmin(TimestampColumnsMixin, admin.ModelAdmin):
     # доставки, разбивка НДС, скидки, номер, резерв, токен и поля, которые пишет
     # 1С, — только для чтения.
     #
-    # ВНЕ этого списка сознательно оставлены `total`, `delivery_cost`,
-    # `delivery_zone` и `delivery_calc_status`: при delivery_calc_status=
-    # manual_required стоимость доставки определяет менеджер (см. help_text поля),
-    # и сегодня админка — единственное место, где это делается. Пересчёта итогов
-    # вне place_order пока нет, так что заморозка total обрубила бы живой сценарий.
-    # Правильное решение — действие «Указать стоимость доставки», которое зовёт
-    # сервис; до него поля остаются редактируемыми.
+    # ВНЕ этого списка — `total`, `delivery_cost`, `delivery_zone`,
+    # `delivery_calc_status`: при manual_required стоимость доставки вводит менеджер.
+    # Правка total сверяется с формулой итога (OrderAdminForm.clean), количество
+    # строк меняется через сервис editing.update_quantities (save_formset), а у
+    # оплаченного/отгруженного заказа все денежные поля замораживает
+    # get_readonly_fields (T8).
     readonly_fields = (
         "display_status",
         "status_panel",
@@ -441,6 +502,63 @@ class OrderAdmin(TimestampColumnsMixin, admin.ModelAdmin):
         Удаление через ORM (DRF-1002, служебные очистки) остаётся как есть.
         """
         return False
+
+    # Поля, которые нельзя править у оплаченного/отгруженного/отменённого заказа:
+    # деньги и доставка заморожены, возврат — через «Заявки на возврат».
+    _FINANCIAL_FIELDS = (
+        "total",
+        "delivery_cost",
+        "delivery_zone",
+        "delivery_calc_status",
+        "delivery_method",
+        "delivery_address",
+        "delivery_slot",
+        "payment_status",
+    )
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = list(super().get_readonly_fields(request, obj))
+        if obj is None or obj.pk is None:
+            return fields
+        if financial_fields_locked(obj):
+            fields.extend(f for f in self._FINANCIAL_FIELDS if f not in fields)
+        elif obj.payment_method == "online" and "payment_status" not in fields:
+            # Онлайн-оплату двигает касса (payments.services), не рука менеджера.
+            fields.append("payment_status")
+        return fields
+
+    def save_formset(self, request, form, formset, change):
+        """Строки заказа сохраняются не formset-ом, а сервисом (T8): резерв, итог
+        и НДС пересчитываются под замком; отказ сервиса откатывает всё сохранение."""
+        if formset.model is not OrderItem:
+            return super().save_formset(request, form, formset, change)
+        # construct_change_message ждёт эти списки от formset.save(); мы его не зовём.
+        formset.new_objects, formset.changed_objects, formset.deleted_objects = [], [], []
+        wanted = formset.wanted_quantities()
+        if not wanted:
+            return
+        try:
+            order, log = update_quantities(form.instance.pk, wanted, actor_id=request.user.pk)
+        except ValidationError as exc:
+            # Сервис откатил свой savepoint; всё сохранение откатим в response_change —
+            # там уже отработал штатный журнал, и транзакция ещё открыта.
+            request._order_edit_error = "; ".join(exc.messages)
+            return
+        if log:
+            self.log_change(request, order, "Состав: " + "; ".join(log))
+            self.message_user(
+                request,
+                f"Итог пересчитан: {order.total:.2f} {order.currency}.",
+                level=messages.INFO,
+            )
+
+    def response_change(self, request, obj):
+        error = getattr(request, "_order_edit_error", "")
+        if error:
+            transaction.set_rollback(True)  # changeform_view держит atomic вокруг всего
+            self.message_user(request, f"Изменения не сохранены. {error}", level=messages.ERROR)
+            return redirect("admin:orders_order_change", obj.pk)
+        return super().response_change(request, obj)
 
     def get_urls(self):
         return [

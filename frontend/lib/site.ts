@@ -1,5 +1,6 @@
-// Единый источник контента шапки/подвала. Чистые данные (без JSX).
-// TODO: в будущем заменить на данные из SiteSettings.contacts/requisites через BFF.
+// Контент шапки/подвала. Контакты (телефон, e-mail, адрес, график) — в
+// SiteSettings.contacts (админка → Настройки сайта → Контакты); значения здесь —
+// только запасные, если API недоступен или поле в настройках пустое (T3).
 /** Пункт служебной полосы шапки. `href` есть не у каждого: у части пунктов
     страницы нет вовсе, и тогда пункт остаётся подсказкой (см. Header). */
 export type TopLink = {
@@ -17,8 +18,8 @@ export const SITE = {
   // номеру 8-800, а городской номер бесплатным по стране не является.
   phoneNote: "",
   schedule: "Пн–Сб 09:00–19:00, Вс 09:00–15:00",
-  email: "penzainstrument@yandex.ru", // TODO: SiteSettings
-  address: "г. Пенза, 1-й Онежский проезд, 12", // TODO: SiteSettings
+  email: "penzainstrument@yandex.ru", // запасное, см. SiteSettings.contacts.email
+  address: "г. Пенза, 1-й Онежский проезд, 12", // запасное, см. SiteSettings.contacts.address
 
   // #586: шапка по утверждённому макету главной.
   header: {
@@ -191,6 +192,8 @@ export type ResolvedStorefront = {
   phone: { display: string; href: string };
   phoneNote: string;
   maxHref: string;
+  /** Раздел отзывов включён в настройках сайта (T4). По умолчанию выключен. */
+  reviewsEnabled: boolean;
 };
 
 // SiteSettings.contacts — JSONField без жёсткой схемы. Поддерживаем только
@@ -200,6 +203,7 @@ export function resolveStorefront(input?: {
   contacts?: Record<string, unknown>;
   /** Бот магазина в MAX — собран сервером из MAX_BOT_USERNAME (может отсутствовать). */
   max_bot_url?: string;
+  features?: { reviews?: boolean };
 }): ResolvedStorefront {
   const contacts = input?.contacts ?? {};
   const text = (...keys: string[]): string => {
@@ -228,5 +232,6 @@ export function resolveStorefront(input?: {
     // Приоритет: явная ссылка из настроек сайта → бот из переменных окружения.
     // Пусто — плитка «наш бот в MAX» не рисуется (битую ссылку не показываем).
     maxHref: text("max_url", "max_href") || (input?.max_bot_url ?? "").trim(),
+    reviewsEnabled: input?.features?.reviews === true,
   };
 }

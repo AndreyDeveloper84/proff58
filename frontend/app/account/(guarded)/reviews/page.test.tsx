@@ -3,9 +3,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const pushMock = vi.fn();
 const replaceMock = vi.fn();
+// Настоящий notFound() бросает NEXT_NOT_FOUND; в тесте только фиксируем вызов,
+// иначе исключение из рендера React попадает в vitest как unhandled error.
+const notFoundMock = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock, replace: replaceMock }),
   usePathname: () => "/account/reviews",
+  notFound: () => notFoundMock(),
+}));
+// T4: раздел показывается только при включённом флаге из настроек сайта.
+vi.mock("@/components/site/StorefrontProvider", () => ({
+  useStorefront: () => ({ reviewsEnabled: true }),
 }));
 vi.mock("@/lib/auth", () => ({
   checkAuth: vi.fn(),
@@ -72,15 +80,18 @@ describe("MyReviewsPage (#573)", () => {
     expect(screen.getByText(/Нецензурная лексика/)).toBeTruthy();
   });
 
-  it("пустое состояние и off-состояние", async () => {
+  it("пустое состояние", async () => {
     mockedGetMyReviews.mockResolvedValue([]);
-    const { unmount } = render(<MyReviewsPage />);
-    expect(await screen.findByText("Отзывов пока нет")).toBeTruthy();
-    unmount();
-
-    mockedGetMyReviews.mockResolvedValue("disabled");
     render(<MyReviewsPage />);
-    expect(await screen.findByText(/временно отключён/)).toBeTruthy();
+    expect(await screen.findByText("Отзывов пока нет")).toBeTruthy();
+  });
+
+  it("off-состояние с бэка — 404, а не «временно отключён» (T4)", async () => {
+    mockedGetMyReviews.mockResolvedValue("disabled");
+    notFoundMock.mockClear();
+    render(<MyReviewsPage />);
+    await waitFor(() => expect(notFoundMock).toHaveBeenCalled());
+    expect(screen.queryByText(/временно отключён/)).toBeNull();
   });
 
   it("гость уводится на логин", async () => {

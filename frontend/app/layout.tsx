@@ -15,6 +15,7 @@ import { getInfoPageLinks } from "@/lib/info-pages";
 import { getSiteTheme } from "@/lib/theme";
 import { siteOrigin } from "@/lib/seo";
 import { resolveStorefront } from "@/lib/site";
+import { StorefrontProvider } from "@/components/site/StorefrontProvider";
 import "./globals.css";
 
 // Body / UI — Inter; display (заголовки/цена/спек-статы) — узкий Oswald.
@@ -102,6 +103,7 @@ export default async function RootLayout({
       <body className="min-h-full antialiased">
         {/* CartProvider — общее состояние корзины (счётчик Header, add-to-cart);
             WishlistProvider — избранное (сердечки карточек знают друг о друге). */}
+        <StorefrontProvider value={storefront}>
         <AuthStateProvider state={authState}>
           <CartProvider>
             <WishlistProvider>
@@ -129,6 +131,7 @@ export default async function RootLayout({
             </WishlistProvider>
           </CartProvider>
         </AuthStateProvider>
+        </StorefrontProvider>
       </body>
     </html>
   );

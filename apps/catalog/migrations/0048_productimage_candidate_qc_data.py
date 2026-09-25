@@ -89,7 +89,7 @@ def reverse_move(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("catalog", "0046_productimageevent_rejectedimagecandidate_and_more"),
+        ("catalog", "0047_productimageevent_rejectedimagecandidate_and_more"),
     ]
 
     operations = [

@@ -35,36 +35,29 @@ function CategoryCard({
     <Link
       href={`/catalog/${category.slug}`}
       className={cn(
-        "group relative flex min-h-[132px] overflow-hidden rounded-md border border-line bg-surface p-3 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md",
+        "group relative flex min-h-[132px] overflow-hidden rounded-md border border-line bg-card p-3 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md",
         featured ? "lg:min-h-[184px] lg:p-4" : "lg:min-h-[128px]",
       )}
     >
       <div
         className={cn(
-          "pointer-events-none absolute inset-x-2 top-1 h-[78px]",
+          "pointer-events-none absolute inset-x-2 top-1 h-[78px] transition duration-300 group-hover:scale-[1.03]",
           featured
             ? "lg:inset-x-3 lg:top-1 lg:h-[124px]"
             : "lg:inset-y-2 lg:left-2 lg:right-auto lg:top-2 lg:h-auto lg:w-[108px]",
-          // Тёмная тема: под фото — светлая подложка, как у карточек товаров
-          // (bg-photo). Тележка, аккумуляторы, ящики сняты тёмными и на тёмной
-          // карточке сливались с фоном. Сами фото без фильтров — цвета исходные;
-          // в светлой теме подложки нет, там карточка уже светлая.
-          artwork && "dark:top-2 dark:rounded-md dark:bg-photo dark:p-1.5",
         )}
         aria-hidden
       >
         {artwork ? (
-          <div className="relative h-full w-full transition duration-300 group-hover:scale-[1.03]">
-            <Image
-              src={artwork}
-              alt=""
-              fill
-              loading="eager"
-              unoptimized
-              sizes={featured ? "(max-width: 1023px) 40vw, 280px" : "(max-width: 1023px) 40vw, 108px"}
-              className="object-contain"
-            />
-          </div>
+          <Image
+            src={artwork}
+            alt=""
+            fill
+            loading="eager"
+            unoptimized
+            sizes={featured ? "(max-width: 1023px) 40vw, 280px" : "(max-width: 1023px) 40vw, 108px"}
+            className="object-contain"
+          />
         ) : (
           <span className="mx-auto grid h-full aspect-square place-items-center rounded-full bg-accent/[0.07] text-accent">
             <Boxes className="h-10 w-10" strokeWidth={1.4} />
@@ -111,7 +104,11 @@ export default async function CatalogIndexPage() {
   const categories = await getCategoryTreeOrNull();
 
   return (
-    <main className="min-h-[70vh] bg-surface pb-20 lg:pb-0">
+    // Тёмная тема: фон страницы — общий фон сайта (canvas), а плитки — bg-card,
+    // как карточки товаров в листинге. Раньше и страница, и плитки были
+    // bg-surface — в тёмной теме один цвет, и плитки сливались с фоном.
+    // В светлой теме surface и card одинаково белые — там ничего не меняется.
+    <main className="min-h-[70vh] bg-surface pb-20 dark:bg-canvas lg:pb-0">
       <div className="mx-auto w-full max-w-[1680px] px-4 py-5 sm:px-6 xl:px-8">
         <nav
           aria-label="Хлебные крошки"

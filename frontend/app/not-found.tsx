@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { Phone, SearchX } from "lucide-react";
 
 import { PhoneContact } from "@/components/contacts/CopyContact";
-import { SITE } from "@/lib/site";
+import { resolveStorefront, SITE } from "@/lib/site";
+import { getSiteTheme } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "Страница не найдена",
@@ -14,7 +15,8 @@ export const metadata: Metadata = {
 // «404 This page could not be found» по-английски, посреди пустого экрана, без
 // единой ссылки. Человек, попавший сюда по старой ссылке или опечатке, упирался
 // в тупик. Здесь тот же тупик превращён в развилку: поиск и живые разделы.
-export default function NotFound() {
+export default async function NotFound() {
+  const storefront = resolveStorefront(await getSiteTheme());
   return (
     <main className="mx-auto w-full max-w-[1200px] px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
       <div className="mx-auto max-w-2xl text-center">
@@ -64,15 +66,15 @@ export default function NotFound() {
           </Link>
           {/* Номер: на ПК копируется, на телефоне звонит. */}
           <PhoneContact
-            display={SITE.phone.display}
-            href={SITE.phone.href}
+            display={storefront.phone.display}
+            href={storefront.phone.href}
             className="group inline-flex h-11 items-center gap-2 rounded-md border border-line px-4 text-sm font-medium text-ink-2 hover:border-accent"
           >
             <Phone
               className="h-4 w-4 shrink-0 text-ink-3 transition-colors group-hover:text-accent group-focus-visible:text-accent"
               aria-hidden
             />
-            {SITE.phone.display}
+            {storefront.phone.display}
           </PhoneContact>
         </div>
       </div>

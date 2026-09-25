@@ -32,7 +32,7 @@
 ## Проверки перед открытием (robots ещё закрыт)
 
 1. `/robots.txt` → `Disallow: /`.
-2. Все карточки allowlist (сейчас 112 = партия 1 «74» + партия 2 «38 дрелей»): 200, `<meta name="robots" content="index, follow">`, canonical, title без
+2. Все карточки allowlist (сейчас 147 = партия 1 «74» + партия 2 «45 дрелей» + партия 3 «28: цепи, шины, бензопилы, УШМ, буры»): 200, `<meta name="robots" content="index, follow">`, canonical, title без
    двойного суффикса, JSON-LD Product, главное фото 200.
 3. 11 заблокированных release-gate: 200, `noindex`, нет в sitemap.
 4. Посторонняя карточка и разделы каталога: `noindex`.

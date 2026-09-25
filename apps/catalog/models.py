@@ -59,7 +59,49 @@ class Source(models.TextChoices):
     SCRAPER = "scraper", _("Парсер сайтов производителей")
 
 
-class Category(MP_Node):
+class PackageFields(models.Model):
+    """Упаковка для доставки СДЭК (DRF-2299): одинаковые поля у раздела и товара.
+
+    Вес наследуется отдельно от габаритов: у товара чаще уточняют только вес, а
+    коробка та же. Пустое поле — «взять у раздела выше» (см. catalog/packaging.py).
+    Значения вводит сайт: ни 1С, ни поставщики контента их не присылают, и импорт
+    1С эти поля не трогает.
+    """
+
+    package_weight_g = models.PositiveIntegerField(
+        _("Вес в упаковке, г"),
+        null=True,
+        blank=True,
+        help_text=_("Пусто — берётся у раздела выше."),
+    )
+    package_length_cm = models.PositiveSmallIntegerField(
+        _("Длина упаковки, см"), null=True, blank=True
+    )
+    package_width_cm = models.PositiveSmallIntegerField(
+        _("Ширина упаковки, см"), null=True, blank=True
+    )
+    package_height_cm = models.PositiveSmallIntegerField(
+        _("Высота упаковки, см"),
+        null=True,
+        blank=True,
+        help_text=_("Габариты задаются тройкой: либо все три, либо ни одного."),
+    )
+
+    class Meta:
+        abstract = True
+
+    def clean(self):
+        super().clean()
+        dims = [self.package_length_cm, self.package_width_cm, self.package_height_cm]
+        if any(d is not None for d in dims) and not all(d for d in dims):
+            from django.core.exceptions import ValidationError
+
+            raise ValidationError(
+                {"package_height_cm": _("Укажите все три габарита упаковки или ни одного.")}
+            )
+
+
+class Category(PackageFields, MP_Node):
     """Категория каталога сайта. Произвольная глубина вложенности."""
 
     name = models.CharField(_("Название"), max_length=255)
@@ -122,7 +164,8 @@ class Category(MP_Node):
         """
         return f"/catalog/{self.slug}"
 
-    def save(self, *args, **kwargs):
+    # DJ012: давний порядок методов; линтер видит модель через примесь PackageFields.
+    def save(self, *args, **kwargs):  # noqa: DJ012
         if not self.slug:
             self.slug = slugify(self.name, allow_unicode=True)
         super().save(*args, **kwargs)
@@ -448,7 +491,7 @@ class ContentSource(models.TextChoices):
     MARKETPLACE = "marketplace", _("Маркетплейс")
 
 
-class Product(TimeStampedModel):
+class Product(PackageFields, TimeStampedModel):
     """Товар.
 
     Идентичность из 1С: code_1c (внутренний код / external_id) и article (SKU).
@@ -677,7 +720,8 @@ class Product(TimeStampedModel):
         """Виден ли товар на витрине."""
         return self.is_active and self.status == ProductStatus.PUBLISHED
 
-    def get_absolute_url(self) -> str:
+    # DJ012: давний порядок методов; линтер видит модель через примесь PackageFields.
+    def get_absolute_url(self) -> str:  # noqa: DJ012
         """Адрес товара на витрине (Next.js `/product/[slug]`).
 
         Нужен кнопке «Смотреть на сайте» в админке. Витрина отдаёт только

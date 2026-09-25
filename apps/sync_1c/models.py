@@ -48,7 +48,8 @@ class NomenclatureStaging(models.Model):
         help_text=_("Все поля строки/узла из выгрузки 1С в исходном виде."),
     )
 
-    # Поля, распознанные парсером (nullable — пока не знаем полную схему)
+    # Поля, распознанные нормализатором (nullable: в строке 1С может не быть
+    # цены/остатка/активности — по контракту docs/1c-api-spec.md это допустимо)
     name_1c = models.CharField(_("Название в 1С"), max_length=512, blank=True)
     unit = models.CharField(_("Единица измерения"), max_length=32, blank=True)
     price = models.DecimalField(

@@ -41,4 +41,6 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 # Celery: в dev/тестах задачи выполняются inline (без воркера и Redis).
 # В проде это не задаётся → работает реальный воркер.
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=True)
+# Stub-провайдер перевозчика разрешён только локально (T1: не 0 ₽ на проде).
+SHIP_ALLOW_STUB = env.bool("SHIP_ALLOW_STUB", default=True)
 CELERY_TASK_EAGER_PROPAGATES = True
