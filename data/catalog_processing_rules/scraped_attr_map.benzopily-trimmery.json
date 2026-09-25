@@ -1,0 +1,474 @@
+{
+  "schema_version": 1,
+  "category": "benzopily-trimmery",
+  "scope_tool_types": [
+    "bp-benzopily",
+    "bp-cepi",
+    "bp-shiny",
+    "bp-trimmery",
+    "pily"
+  ],
+  "target_category": {
+    "id": null,
+    "slug": null,
+    "name": "Бензо- и садовая техника: пилы, цепи, шины, триммеры"
+  },
+  "created": "2026-09-02",
+  "inputs": {
+    "issue": "DRF-1439",
+    "export": "huter.su, 654 карточки (/tmp/huter_export.json на стенде)",
+    "match_plan": "/tmp/huter_applied2.json — 64 наших товара, из них 29 в скоупе карты",
+    "measure": "29 товаров скоупа = 54 подписи / 379 значений (bp-benzopily 5, bp-cepi 11, bp-shiny 3, bp-trimmery 8, pily 2)"
+  },
+  "policy": {
+    "scope": "Карта покрывает СЕМЕЙСТВО типов: бензопилы, цепи, шины, триммеры и цепные аккумуляторные пилы (tool_type=pily). Оси шины и цепи общие для всех пяти: длина шины стоит и на пиле, и на цепи, и на шине — это ось совместимости, а не размер конкретного изделия. Поэтому один файл, а не пять копий; список типов — в scope_tool_types.",
+    "new_axes": "Заводятся 7 новых Attribute: bar_length, chain_pitch, chain_links, chain_gauge, engine_displacement, chain_auto_oiling, split_shaft. Каждый проверен на дубль по СМЫСЛУ по всем 77 существующим атрибутам (DRF-1439 §обязательные проверки), обоснования — в docs/catalog/2026-09-02-benzopily-trimmery-axes.md.",
+    "min_two_values": "Ось не заводится, если в замере у неё меньше двух РАЗНЫХ значений (правило DRF-1428). По этой причине отклонены и лежат в unmapped: «Антивибрационная система» (только «Есть», 11 раз), «Тормоз цепи» (только «Есть», 6), «Уровень звукового давления, дБ» (только 96, 6), «Ширина скоса диском/леской» (255 и 460 у всех шести триммеров), «Число оборотов» (9500±500 у всех шести), «Зажигание» (обе подписи значат «электронное»).",
+    "voltage": "«Напряжение аккумулятора, В» — это существующий voltage, новый атрибут НЕ заводится (проверка DRF-1439 §2). Значения 20 В проходят порог battery (<60 В) и пишутся; сетевые 220/230 из «Напряжение питающей сети, В» импортёр сам отбрасывает в skipped_voltage.",
+    "power_and_weight": "«Мощность, Вт/кВт/л.с.» и «Вес, кг» из карты исключены сознательно — это трек DRF-1440 (единицы мощности и weight/weight_kg). Поля лежат в unmapped, чтобы два трека не столкнулись на одних осях.",
+    "decimal_comma": "Десятичная запятая источника («25,4», «51,7», «1,3») — штатный нормализатор decimal, он же приводит «14,6» и «6,5». Отдельного правила не требуется.",
+    "quotes_in_select": "Кавычки вокруг значения select — оформление источника: «Easy Load», « Easy Load » и Easy Load дают ОДНУ опцию. Снимает option_key (кавычки любого начертания + схлопывание пробелов), словари значений держим без кавычек.",
+    "suspicious_values": "«Шаг цепи, дюйм = 1.4» и «Длина шины, мм = 152.4» разобраны, а не проглочены — см. comment у соответствующих полей и docs.",
+    "known_source_defect_500_505": "Источник сам непоследователен на 20-дюймовой шине: одну и ту же длину он подписывает и 500, и 505 мм (обе — его собственные номиналы, ни одна не является точным переводом из дюймов, поэтому нормализатор их не трогает). В фасете bar_length 20-дюймовые шины разойдутся на два значения. Картой это не чинится — решение владельца, вынесено в отчёт DRF-1439.",
+    "known_source_defect_links": "У цепи C2 (наш товар «Цепь 63 звена C2 3/8 1.3мм 18\"») источник отдаёт «Количество звеньев = 62», наше имя из 1С говорит 63. Расхождение источника с 1С, не ошибка карты; PAV пока нет, поэтому конфликта импортёр не увидит — проверить перед заливкой.",
+    "combined_field": "«Толщина звена и шаг цепи, мм/дюймы» несёт ДВЕ оси в одном поле — на месте правила список из двух правил с extract-регулярками. Без этого пять флагманских бензопил остались бы вовсе без характеристик цепи.",
+    "unmapped": "Поле без подходящего существующего Attribute — в unmapped с кандидатом; новые Attribute/AttributeOption команда импорта не создаёт.",
+    "packaging": "Комплектация («Защитные очки», «Тип ремня», «Тип диска», «Тип ножа в комплекте», «Кол-во аккумуляторов») — ignore, как в perforatory/shlifmashiny: это состав коробки, а не характеристика изделия."
+  },
+  "normalizers": {
+    "int": "первое целое число строки",
+    "decimal": "первое число строки, десятичная запятая -> точка; «25,4» -> 25.4, «1,3» -> 1.3",
+    "range_upper_decimal": "«A-B» -> B; если диапазона нет — как decimal («9500±500» -> 9500)",
+    "bar_length_mm": "первое число строки; ТОЧНЫЙ перевод из дюймов приводится к номинальному ряду: «152.4» -> 150 (6.0 x 25.4), «254» -> 250. Номиналы 350/400/450/500/505 целыми дюймами не делятся и не трогаются. «400/16\"» -> 400, «150/6» -> 150 (первое число — миллиметры)",
+    "option_map": "значение -> option_key (снятие кавычек + схлопывание пробелов + lower) -> словарь values; неизвестное -> drop_to_report",
+    "boolean_map": "значение -> option_key -> словарь values (true/false); неизвестное -> drop_to_report",
+    "extract": "необязательная regex по сырому значению ДО нормализации; в атрибут идёт group(1)"
+  },
+  "sources": {
+    "huter": {
+      "fields": {
+        "Длина шины, мм": {
+          "action": "map",
+          "attribute": "bar_length",
+          "attribute_type": "decimal",
+          "unit": "мм",
+          "normalize": "bar_length_mm",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "13 значений. «152.4» — не ошибка единиц: 152.4 = 6.0 x 25.4 ровно, это 6-дюймовая шина цепи C9 для ELS-20Li, и ту же пилу источник в поле «Длина шины, мм/дюйм» подписывает как «150/6». Нормализатор приводит к номиналу 150, иначе в фасете рядом встанут 150 и 152.4 про одну шину."
+        },
+        "Длина шины, мм/дюйм": {
+          "action": "map",
+          "attribute": "bar_length",
+          "attribute_type": "decimal",
+          "unit": "мм",
+          "normalize": "bar_length_mm",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "вторая подпись той же оси у пил: «300/12», «400/16\"», «250/10”» — берётся первое число (мм). Кавычка/типографская кавычка в дюймовой части значения не мешает."
+        },
+        "Шаг цепи, дюйм": {
+          "action": "map",
+          "attribute": "chain_pitch",
+          "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "0.25": "pitch-1-4",
+            "1/4": "pitch-1-4",
+            "1.4": "pitch-1-4",
+            "0.325": "pitch-0-325",
+            "0.375": "pitch-3-8",
+            "3/8": "pitch-3-8",
+            "0.404": "pitch-0-404"
+          },
+          "values_confidence": {
+            "1.4": "low"
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report",
+          "comment": "«1.4» — НЕ 0.404 (так предполагала постановка) и не отдельный шаг: это дробь 1/4 с потерянной косой чертой. Доказательство из самих данных: значение стоит на цепи C10, чьё название и у источника («Цепь С10 Huter (8\"-1/4-45 ...)»), и у нас («Цепь 45 звена C10 1/4 8\" HUTER») содержит 1/4; соседняя цепь C9 того же шага подписана корректно «0.25», а совместимая с ней пила — «Шаг цепи = 1/4». Ставим pitch-1-4 с confidence=low, чтобы значение было видно в отчёте."
+        },
+        "Шаг цепи": {
+          "action": "map",
+          "attribute": "chain_pitch",
+          "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "1/4": "pitch-1-4",
+            "0.325": "pitch-0-325",
+            "3/8": "pitch-3-8",
+            "0.404": "pitch-0-404"
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report",
+          "comment": "подпись без единицы у аккумуляторных пил; значения даны дробью"
+        },
+        "Толщина звена, мм": {
+          "action": "map",
+          "attribute": "chain_gauge",
+          "attribute_type": "decimal",
+          "unit": "мм",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Толщина звена и шаг цепи, мм/дюймы": [
+          {
+            "action": "map",
+            "attribute": "chain_gauge",
+            "attribute_type": "decimal",
+            "unit": "мм",
+            "normalize": "decimal",
+            "extract": "^\\s*([\\d.,]+)",
+            "confidence": "high",
+            "on_ambiguous": "drop_to_report",
+            "comment": "«1,3 / 3/8» -> 1.3; «1.5/0.325» -> 1.5"
+          },
+          {
+            "action": "map",
+            "attribute": "chain_pitch",
+            "attribute_type": "select",
+            "normalize": "option_map",
+            "extract": "[/]\\s*(\\S+)\\s*$",
+            "values": {
+              "1/4": "pitch-1-4",
+              "0.25": "pitch-1-4",
+              "0.325": "pitch-0-325",
+              "0.375": "pitch-3-8",
+              "3/8": "pitch-3-8",
+              "0.404": "pitch-0-404"
+            },
+            "confidence": "high",
+            "on_unknown_value": "drop_to_report",
+            "on_ambiguous": "drop_to_report",
+            "comment": "«1,3 / 3/8» -> 3/8; «1.5/0.325» -> 0.325. Единственный источник характеристик цепи для пяти бензопил."
+          }
+        ],
+        "Количество звеньев, шт.": {
+          "action": "map",
+          "attribute": "chain_links",
+          "attribute_type": "decimal",
+          "unit": "шт.",
+          "normalize": "int",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "тип decimal — конвенция каталога для счётных осей (package_quantity, piece_count тоже decimal)"
+        },
+        "Количество звеньев цепи, шт": {
+          "action": "map",
+          "attribute": "chain_links",
+          "attribute_type": "decimal",
+          "unit": "шт.",
+          "normalize": "int",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "вторая подпись той же оси у пил"
+        },
+        "Объём двигателя, см³": {
+          "action": "map",
+          "attribute": "engine_displacement",
+          "attribute_type": "decimal",
+          "unit": "см³",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "десятичная запятая источника: «25,4» -> 25.4, «51,7» -> 51.7"
+        },
+        "Рабочий объем двигателя, см3": {
+          "action": "map",
+          "attribute": "engine_displacement",
+          "attribute_type": "decimal",
+          "unit": "см³",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "вторая подпись той же оси (мотопомпы/мотобуры; в скоупе карты не встречается, словарь готов)"
+        },
+        "Автоматическая смазка цепи": {
+          "action": "map",
+          "attribute": "chain_auto_oiling",
+          "attribute_type": "boolean",
+          "normalize": "boolean_map",
+          "values": {
+            "есть": true,
+            "нет": false,
+            "да": true
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Разъемная штанга": {
+          "action": "map",
+          "attribute": "split_shaft",
+          "attribute_type": "boolean",
+          "normalize": "boolean_map",
+          "values": {
+            "есть": true,
+            "нет": false,
+            "да": true
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Тип катушки": {
+          "action": "map",
+          "attribute": "quick_load",
+          "attribute_type": "boolean",
+          "normalize": "boolean_map",
+          "values": {
+            "easy load": true,
+            "стандартная": false
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report",
+          "comment": "НОВЫЙ АТРИБУТ НЕ НУЖЕН. «Easy Load» — фирменное имя Huter для быстрой заправки лески, то есть существующий quick_load («Быстрая заправка лески», boolean, заведён в P1 вместе с head_design/line_feed). Три написания источника — «Стандартная», «Easy Load», ««Easy Load»» — дают ДВЕ опции: option_key снимает кавычки."
+        },
+        "Напряжение аккумулятора, В": {
+          "action": "map",
+          "attribute": "voltage",
+          "attribute_type": "decimal",
+          "unit": "В",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "существующий voltage, новая ось не нужна: значения 12 и 20 В ниже порога 60 В, инструмент аккумуляторный"
+        },
+        "Напряжение питающей сети, В": {
+          "action": "map",
+          "attribute": "voltage",
+          "attribute_type": "decimal",
+          "unit": "В",
+          "normalize": "voltage_first",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report",
+          "comment": "«220-230В, ~50 Гц» -> 220; сетевые значения импортёр отбрасывает в skipped_voltage"
+        },
+        "Емкость аккумулятора, А*ч": {
+          "action": "map",
+          "attribute": "battery_capacity",
+          "attribute_type": "decimal",
+          "unit": "А·ч",
+          "normalize": "decimal",
+          "confidence": "high",
+          "on_ambiguous": "drop_to_report"
+        },
+        "Частота вращения, об/мин": {
+          "action": "map",
+          "attribute": "no_load_speed",
+          "attribute_type": "decimal",
+          "unit": "об/мин",
+          "normalize": "range_upper_decimal",
+          "confidence": "medium",
+          "on_ambiguous": "drop_to_report",
+          "comment": "та же подпись, что в карте shlifmashiny"
+        },
+        "Тип двигателя": {
+          "action": "map",
+          "attribute": "motor_type",
+          "attribute_type": "select",
+          "normalize": "option_map",
+          "values": {
+            "щеточный": "brushed",
+            "щёточный": "brushed",
+            "бесщеточный": "brushless",
+            "бесщёточный": "brushless"
+          },
+          "confidence": "high",
+          "on_unknown_value": "drop_to_report",
+          "on_ambiguous": "drop_to_report",
+          "comment": "у Huter в этом поле лежат ДВА разных смысла: тип щёток («Бесщеточный») и тактность («2-х тактный, с воздушным охлаждением»). Словарь знает только тип щёток, остальное уходит в drop_to_report — тактность просится в отдельную ось engine_stroke, но извлекается из прозы, а не из словаря (следующая волна)."
+        },
+        "Мощность, Вт": {
+          "action": "unmapped",
+          "candidate_attribute": "power",
+          "reason": "существующий power; единицы Вт/кВт/л.с. в одном источнике — трек DRF-1440, здесь не трогаем"
+        },
+        "Мощность, кВт": {
+          "action": "unmapped",
+          "candidate_attribute": "power",
+          "reason": "трек DRF-1440 (нормализация кВт -> Вт)"
+        },
+        "Мощность, л.с.": {
+          "action": "unmapped",
+          "candidate_attribute": "power",
+          "reason": "трек DRF-1440 (нормализация л.с. -> Вт)"
+        },
+        "Вес, кг": {
+          "action": "unmapped",
+          "candidate_attribute": "weight_kg",
+          "reason": "трек DRF-1440 (weight в граммах vs weight_kg в килограммах, брутто/нетто)"
+        },
+        "Антивибрационная система": {
+          "action": "unmapped",
+          "candidate_attribute": "anti_vibration",
+          "reason": "ОТКЛОНЕНА правилом DRF-1428: 11 значений, все «Есть» — одна опция ничего не сужает. Источник вариант «Нет» не пишет вовсе. Вернуться, когда появится второй бренд с «Нет»."
+        },
+        "Тормоз цепи": {
+          "action": "unmapped",
+          "candidate_attribute": "chain_brake",
+          "reason": "ОТКЛОНЕНА правилом DRF-1428: 6 значений, все «Есть»"
+        },
+        "Уровень звукового давления, дБ": {
+          "action": "unmapped",
+          "candidate_attribute": "noise_level",
+          "reason": "ОТКЛОНЕНА правилом DRF-1428: в скоупе карты 6 значений и все 96. Второе значение (80) в постановке пришло с воздуходувки, которая в скоуп не входит. Ось откроется вместе с bp-vozdukhoduvki/bp-generatory."
+        },
+        "Уровень шума, Дб": {
+          "action": "unmapped",
+          "candidate_attribute": "noise_power_level",
+          "reason": "подпись не различает LpA (звуковое давление) и LwA (звуковая мощность) — величины отличаются на ~11 дБ; смешивать в один фасет нельзя (та же ловушка, что брутто/нетто у веса)"
+        },
+        "Число оборотов, об/мин": {
+          "action": "unmapped",
+          "candidate_attribute": "max_speed",
+          "reason": "максимальные обороты, а не холостой ход — в no_load_speed класть нельзя; плюс все 6 значений одинаковы (9500±500)"
+        },
+        "Максимальные обороты, об/мин": {
+          "action": "unmapped",
+          "candidate_attribute": "max_speed",
+          "reason": "максимальные обороты != обороты холостого хода"
+        },
+        "Емкость топливного бака, мл": {
+          "action": "unmapped",
+          "candidate_attribute": "fuel_tank_capacity",
+          "reason": "ось живая (3 разных значения), но у Huter та же величина встречается в двух единицах — «мл» у пил и «л» у генераторов/мотопомп; единицу оси надо выбрать разом по всей бензотехнике, не по пяти пилам"
+        },
+        "Емкость масляного бака, мл": {
+          "action": "unmapped",
+          "candidate_attribute": "oil_tank_capacity",
+          "reason": "то же: единица оси решается вместе с fuel_tank_capacity"
+        },
+        "Диаметр нейлоновой лески, мм": {
+          "action": "unmapped",
+          "candidate_attribute": "line_diameter",
+          "reason": "в существующий diameter класть нельзя: там диаметр самого изделия (свёрла, буры, диски), а тут — расходника в комплекте"
+        },
+        "Ширина скоса диском, мм": {
+          "action": "unmapped",
+          "candidate_attribute": "cutting_width",
+          "reason": "ОТКЛОНЕНА правилом DRF-1428: 6 значений, все 255"
+        },
+        "Ширина скоса леской, мм": {
+          "action": "unmapped",
+          "candidate_attribute": "cutting_width_line",
+          "reason": "ОТКЛОНЕНА правилом DRF-1428: 6 значений, все 460"
+        },
+        "Ширина кошения за один проход, cм": {
+          "action": "unmapped",
+          "candidate_attribute": "cutting_width",
+          "reason": "та же величина в сантиметрах; 2 значения, оба 42"
+        },
+        "Скорость пиления, м/сек": {
+          "action": "unmapped",
+          "candidate_attribute": "chain_speed",
+          "reason": "ось скорости цепи; всего 2 значения, ждём второй бренд"
+        },
+        "Зажигание": {
+          "action": "unmapped",
+          "candidate_attribute": "ignition_type",
+          "reason": "ОТКЛОНЕНА: «электронное (CDI)» и «Электронный» — одно и то же значение, после нормализации остаётся одна опция"
+        },
+        "Тип затяжки цепи": {
+          "action": "unmapped",
+          "candidate_attribute": "chain_tension_type",
+          "reason": "1 значение"
+        },
+        "Быстрая затяжка цепи": {
+          "action": "unmapped",
+          "candidate_attribute": "quick_chain_tension",
+          "reason": "1 значение"
+        },
+        "Расположение двигателя": {
+          "action": "unmapped",
+          "candidate_attribute": "engine_position",
+          "reason": "1 значение"
+        },
+        "Тип рукоятки": {
+          "action": "unmapped",
+          "candidate_attribute": "handle_type",
+          "reason": "1 значение"
+        },
+        "Режущий элемент": {
+          "action": "unmapped",
+          "candidate_attribute": "cutting_element",
+          "reason": "1 значение"
+        },
+        "Тип ремня": {
+          "action": "ignore",
+          "reason": "комплектация (что лежит в коробке), не характеристика изделия"
+        },
+        "Тип диска": {
+          "action": "ignore",
+          "reason": "комплектация; в существующий disc_type класть нельзя — там диски УШМ (отрезной/лепестковый/алмазный), а «3Т»/«40ТР» — ножи триммера"
+        },
+        "Тип ножа в комплекте": {
+          "action": "ignore",
+          "reason": "комплектация"
+        },
+        "Защитные очки": {
+          "action": "ignore",
+          "reason": "комплектация"
+        },
+        "Количество аккумуляторов": {
+          "action": "ignore",
+          "reason": "комплектация"
+        },
+        "Тип комплектующих": {
+          "action": "ignore",
+          "reason": "дублирует tool_type (цепь/шина); опции tool_type создаются только из манифеста"
+        },
+        "Колёса": {
+          "action": "ignore",
+          "reason": "1 значение, к пилам/триммерам не применимо"
+        },
+        "Плавный пуск": {
+          "action": "ignore",
+          "reason": "1 значение; атрибута нет"
+        },
+        "Род тока": {
+          "action": "ignore",
+          "reason": "1 значение, дублирует power_source"
+        },
+        "Класс товара": {
+          "action": "ignore",
+          "reason": "маркетинговая метка источника"
+        },
+        "Страна бренда": {
+          "action": "ignore",
+          "reason": "свойство бренда, не товара"
+        },
+        "Бренд": {
+          "action": "ignore",
+          "reason": "дублирует бренд карточки"
+        },
+        "Габариты упаковки": {
+          "action": "ignore",
+          "reason": "упаковка; атрибута нет"
+        },
+        "Гарантия": {
+          "action": "ignore",
+          "reason": "коммерческое условие, не характеристика"
+        },
+        "Расширенная гарантия": {
+          "action": "ignore",
+          "reason": "коммерческое условие, не характеристика"
+        }
+      },
+      "fallbacks": [],
+      "derived": []
+    }
+  },
+  "model_prefixes": [
+    "BS",
+    "GGT",
+    "GET",
+    "ELS",
+    "CS"
+  ],
+  "_model_prefixes_note": "Модельные префиксы Huter в скоупе. Основная ступень здесь всё равно SKU: manufacturer_sku источника совпадает с нашим артикулом 1С у всех 29 товаров (тем же способом матчились фотографии, PR #675/#676). Односимвольный префикс «C» (цепи C1…C10) сознательно НЕ добавлен: у источника индекс цепи набран кириллической «С» («Цепь С10»), а у нас латинской, транслит разводит их в разные ключи — ступень модели тут не работает, а ложные срабатывания на латинскую C в чужих названиях создаёт."
+}

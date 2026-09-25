@@ -18,20 +18,125 @@
 потомков/предков без рекурсивных JOIN-ов.
 """
 
-from django.db import models
+import os
+import uuid
+
+from django.contrib.postgres.indexes import GinIndex
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models, transaction
+from django.db.models import (
+    CheckConstraint,
+    F,
+    Index,
+    Q,
+    UniqueConstraint,
+)
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node
 
+from apps.core.models import TimeStampedModel
 
-class Category(MP_Node):
+
+class Source(models.TextChoices):
+    """Источник значения характеристики. Значения совпадают с ключами карты
+    ``source_priority`` в ``data/attribute_rules.json``; приоритет перезаписи
+    берётся оттуда (см. apps.catalog.management.commands.enrich_attributes).
+    """
+
+    MANUAL = "manual", _("Вручную")
+    IMPORT_1C = "import_1c", _("Импорт 1С")
+    REGEX = "regex", _("Regex по названию")
+    KEYWORD = "keyword", _("Ключевое слово")
+    RULES = "rules", _("Правила каталога")
+    LLM = "llm", _("AI/LLM")
+    INFERRED = "inferred", _("Инференс по атрибутам")
+    WEB = "web", _("Web-поиск")
+    MARKETPLACE = "marketplace", _("Маркетплейс")
+    SCRAPER = "scraper", _("Парсер сайтов производителей")
+
+
+class PackageFields(models.Model):
+    """Упаковка для доставки СДЭК (DRF-2299): одинаковые поля у раздела и товара.
+
+    Вес наследуется отдельно от габаритов: у товара чаще уточняют только вес, а
+    коробка та же. Пустое поле — «взять у раздела выше» (см. catalog/packaging.py).
+    Значения вводит сайт: ни 1С, ни поставщики контента их не присылают, и импорт
+    1С эти поля не трогает.
+    """
+
+    package_weight_g = models.PositiveIntegerField(
+        _("Вес в упаковке, г"),
+        null=True,
+        blank=True,
+        help_text=_("Пусто — берётся у раздела выше."),
+    )
+    package_length_cm = models.PositiveSmallIntegerField(
+        _("Длина упаковки, см"), null=True, blank=True
+    )
+    package_width_cm = models.PositiveSmallIntegerField(
+        _("Ширина упаковки, см"), null=True, blank=True
+    )
+    package_height_cm = models.PositiveSmallIntegerField(
+        _("Высота упаковки, см"),
+        null=True,
+        blank=True,
+        help_text=_("Габариты задаются тройкой: либо все три, либо ни одного."),
+    )
+
+    class Meta:
+        abstract = True
+
+    def clean(self):
+        super().clean()
+        dims = [self.package_length_cm, self.package_width_cm, self.package_height_cm]
+        if any(d is not None for d in dims) and not all(d for d in dims):
+            from django.core.exceptions import ValidationError
+
+            raise ValidationError(
+                {"package_height_cm": _("Укажите все три габарита упаковки или ни одного.")}
+            )
+
+
+class Category(PackageFields, MP_Node):
     """Категория каталога сайта. Произвольная глубина вложенности."""
 
     name = models.CharField(_("Название"), max_length=255)
     slug = models.SlugField(_("Slug"), max_length=255, unique=True)
     description = models.TextField(_("Описание"), blank=True)
     image = models.ImageField(_("Изображение"), upload_to="categories/", blank=True)
+    hero_image = models.ImageField(_("Hero: фон"), upload_to="categories/hero/", blank=True)
+    hero_eyebrow = models.CharField(_("Hero: слоган"), max_length=120, blank=True)
+    hero_cta_label = models.CharField(_("Hero: текст кнопки"), max_length=60, blank=True)
+    hero_cta_href = models.CharField(_("Hero: ссылка кнопки"), max_length=512, blank=True)
     is_active = models.BooleanField(_("Активна"), default=True)
+    on_site = models.BooleanField(
+        _("Показывать на сайте"),
+        default=True,
+        help_text=_("False — группа 1С не размещается на витрине (под скрытым корнем)."),
+    )
+    external_id_1c = models.CharField(
+        _("Код группы 1С"),
+        max_length=50,
+        null=True,
+        blank=True,
+        unique=True,
+        help_text=_(
+            "external_id группы 1С для листа дерева. Единственная связь категории "
+            "с учётной системой (ADR-0002). Узлы-контейнеры остаются пустыми."
+        ),
+    )
+    is_site_v2 = models.BooleanField(
+        _("Узел витрины v2"),
+        default=False,
+        db_index=True,
+        help_text=_(
+            "True — узел курируемого v2-дерева сайта (создан build_skeleton/build_section). "
+            "Отличает витринное дерево от легаси-категорий, зеркалящих группы 1С. Раздел "
+            "«Категории (сайт)» показывает только такие узлы."
+        ),
+    )
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
     meta_title = models.CharField(_("Meta title"), max_length=255, blank=True)
     meta_description = models.CharField(_("Meta description"), max_length=512, blank=True)
@@ -39,13 +144,26 @@ class Category(MP_Node):
     node_order_by = ["sort_order", "name"]
 
     class Meta:
-        verbose_name = _("Категория")
-        verbose_name_plural = _("Категории")
+        # Полное дерево, включая легаси-узлы, зеркалящие группы 1С. Рабочее
+        # дерево витрины — SiteCategory («Категории»), оно и стоит в меню;
+        # это остаётся в служебном разделе (на staging тут ~136 легаси-узлов,
+        # в которых ещё висят товары, поэтому убрать совсем нельзя).
+        verbose_name = _("Категория (все узлы, вкл. 1С)")
+        verbose_name_plural = _("Категории: все узлы (вкл. 1С)")
 
     def __str__(self) -> str:
         return self.name
 
-    def save(self, *args, **kwargs):
+    def get_absolute_url(self) -> str:
+        """Адрес категории на витрине (Next.js `/catalog/[category]`).
+
+        Нужен кнопке «Смотреть на сайте» в админке: витрина и админка живут за
+        одним nginx на одном хосте, поэтому путь относительный.
+        """
+        return f"/catalog/{self.slug}"
+
+    # DJ012: давний порядок методов; линтер видит модель через примесь PackageFields.
+    def save(self, *args, **kwargs):  # noqa: DJ012
         if not self.slug:
             self.slug = slugify(self.name, allow_unicode=True)
         super().save(*args, **kwargs)
@@ -71,6 +189,11 @@ class Attribute(models.Model):
     unit = models.CharField(_("Единица измерения"), max_length=32, blank=True)
     is_filterable = models.BooleanField(_("Показывать в фильтре"), default=False)
     is_comparable = models.BooleanField(_("Показывать в сравнении"), default=False)
+    is_ai_feature = models.BooleanField(
+        _("AI-характеристика"),
+        default=False,
+        help_text=_("Плохо извлекается regex/словарём из названия — кандидат на добор LLM (#62)."),
+    )
 
     class Meta:
         verbose_name = _("Характеристика")
@@ -86,6 +209,12 @@ class AttributeOption(models.Model):
 
     attribute = models.ForeignKey(Attribute, on_delete=models.CASCADE, related_name="options")
     value = models.CharField(_("Значение"), max_length=255)
+    slug = models.SlugField(
+        _("Slug"),
+        max_length=120,
+        blank=True,
+        help_text=_("ЧПУ-идентификатор варианта (для SEO-фасетов вида ?tool_type=perforatory)."),
+    )
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
 
     class Meta:
@@ -93,9 +222,25 @@ class AttributeOption(models.Model):
         verbose_name_plural = _("Варианты характеристик")
         ordering = ["sort_order", "value"]
         unique_together = [("attribute", "value")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["attribute", "slug"],
+                condition=~models.Q(slug=""),
+                name="uniq_attributeoption_attr_slug_nonempty",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.attribute.name}: {self.value}"
+
+
+class FacetGroup(models.TextChoices):
+    """Раздел фильтра в сайдбаре витрины (§22.4). «Базовые» (бренд/наличие/цена/тип
+    питания) и навигация (tool_type) определяются отдельно, поэтому здесь только две
+    группы технических фильтров: основные и дополнительные (последние сворачиваются)."""
+
+    MAIN = "main", _("Основные")
+    EXTRA = "extra", _("Дополнительные")
 
 
 class CategoryAttribute(models.Model):
@@ -108,6 +253,36 @@ class CategoryAttribute(models.Model):
         Attribute, on_delete=models.CASCADE, related_name="category_attributes"
     )
     is_required = models.BooleanField(_("Обязательна"), default=False)
+    is_filter = models.BooleanField(
+        _("Использовать в фильтре"),
+        default=True,
+        help_text=_("Характеристика участвует в фасетных фильтрах этой категории."),
+    )
+    group = models.CharField(
+        _("Группа фильтра"),
+        max_length=8,
+        choices=FacetGroup.choices,
+        default=FacetGroup.MAIN,
+        help_text=_(
+            "Раздел в сайдбаре: «Основные» или «Дополнительные» (свёрнуты по умолчанию). "
+            "Куратор переносит сюда второстепенные характеристики (вход — coverage-отчёт #225)."
+        ),
+    )
+    is_seo_facet = models.BooleanField(
+        _("SEO-фасет"),
+        default=False,
+        help_text=_("На основе значений строятся посадочные страницы (вторая ось навигации)."),
+    )
+    display_name = models.CharField(
+        _("Подпись в фильтре"),
+        max_length=255,
+        blank=True,
+        help_text=_(
+            "Переопределение названия характеристики для этой категории "
+            "(глобальный Attribute может делиться между разными категориями). "
+            "Пусто — используется название характеристики. Ключ фильтра (slug) не меняется."
+        ),
+    )
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
 
     class Meta:
@@ -123,6 +298,7 @@ class CategoryAttribute(models.Model):
 class MappingRuleType(models.TextChoices):
     ARTICLE = "article", _("По артикулу (точное совпадение)")
     NAME_CONTAINS = "name_contains", _("По слову в названии")
+    REGEX = "regex", _("По регулярному выражению (имя)")
     BRAND_PREFIX = "brand_prefix", _("По бренду + серии модели")
     SOURCE_GROUP = "source_group", _("По исходной группе 1С")
 
@@ -142,6 +318,15 @@ class CategoryMappingRule(models.Model):
         help_text=_(
             "Артикул / слово в названии / серия модели / название группы 1С — "
             "в зависимости от типа правила."
+        ),
+    )
+    exclude_pattern = models.CharField(
+        _("Исключение (regex по имени)"),
+        max_length=255,
+        blank=True,
+        help_text=_(
+            "Негативный guard: если выражение найдено в названии — правило НЕ "
+            "срабатывает (напр. «бур», но исключить «бурения земл|мотобур»)."
         ),
     )
     brand = models.CharField(
@@ -164,12 +349,115 @@ class CategoryMappingRule(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = _("Правило сопоставления")
-        verbose_name_plural = _("Правила сопоставления")
+        verbose_name = _("Правило автораскладки")
+        verbose_name_plural = _("Автораскладка товаров по категориям")
         ordering = ["priority", "id"]
 
     def __str__(self) -> str:
         return f"[{self.get_rule_type_display()}] {self.pattern} → {self.target_category}"
+
+
+class OneCGroupStatus(models.TextChoices):
+    ACTIVE = "active", _("Активна (есть товары)")
+    STALE = "stale", _("Пустая (нет товаров)")
+    DISCOVERED = "discovered", _("Найдена в выгрузке (нет в маппинге)")
+
+
+# Разделитель материализованного пути групп 1С (unit separator — сортируется раньше
+# печатных символов, поэтому родитель идёт перед детьми в pre-order).
+ONEC_TREE_SEP = "\x1f"
+
+
+class OneCGroup(models.Model):
+    """Группа номенклатуры 1С — отдельный реестр (НЕ часть дерева сайта).
+
+    Источник истины: ``data/group_mapping.json`` (код ``external_id`` + имя ``group_1c``
+    + ``site_path``); живость/счётчики — по ``Product.source_group`` (последняя выгрузка).
+    Синкается командой ``catalog_sync_1c_groups``. Связь с категорией сайта — через
+    ``mapped_category`` и правила сопоставления (см. ``GroupCategoryMap``).
+
+    Статусы: ``active`` — есть товары; ``stale`` — была в маппинге, но товаров нет;
+    ``discovered`` — встретилась в ``source_group``, но в маппинге её нет (надо сопоставить).
+    Принцип: 1С — источник, сайт — мастер структуры; пере-импорт дерево сайта не меняет.
+    """
+
+    code = models.CharField(_("Код 1С (external_id)"), max_length=50, blank=True, db_index=True)
+    name = models.CharField(_("Имя группы 1С"), max_length=255, unique=True)
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="children",
+        verbose_name=_("Родительская группа 1С"),
+    )
+    tree_path = models.CharField(
+        _("Путь в дереве 1С"),
+        max_length=1024,
+        blank=True,
+        db_index=True,
+        # db_collation="C" — побайтовая сортировка: разделитель \x1f (0x1f) меньше пробела
+        # и любых букв, поэтому родитель идёт строго перед детьми (pre-order). Локальная
+        # UTF-8-коллация игнорирует управляющие символы и ломала бы вложенность.
+        db_collation="C",
+        help_text=_("Материализованный путь имён (для древовидной сортировки админки)."),
+    )
+    site_path = models.JSONField(_("Путь на сайте (из маппинга)"), default=list, blank=True)
+    mapped_category = models.ForeignKey(
+        "Category",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="onec_groups",
+        verbose_name=_("Категория сайта"),
+    )
+    product_count = models.PositiveIntegerField(_("Товаров (по source_group)"), default=0)
+    status = models.CharField(
+        _("Статус"),
+        max_length=12,
+        choices=OneCGroupStatus.choices,
+        default=OneCGroupStatus.DISCOVERED,
+        db_index=True,
+    )
+    updated_at = models.DateTimeField(_("Обновлено"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("Группа 1С")
+        verbose_name_plural = _("Группы 1С")
+        ordering = ["name"]
+        indexes = [models.Index(fields=["status", "name"])]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code or '—'})"
+
+
+class GroupCategoryMapping(OneCGroup):
+    """Proxy-вид OneCGroup для отдельного раздела админки «Сопоставление групп и категорий».
+
+    Та же таблица, что и «Группы 1С», но админка сфокусирована на правке
+    ``mapped_category`` (группа → категория сайта) и действии «применить» (расставить
+    товары группы по ``source_group`` в выбранную категорию). Своей таблицы не создаёт.
+    """
+
+    class Meta:
+        proxy = True
+        verbose_name = _("Сопоставление группы и категории")
+        verbose_name_plural = _("Сопоставление групп и категорий")
+
+
+class SiteCategory(Category):
+    """Proxy-вид Category для раздела админки «Категории (сайт)».
+
+    Показывает ТОЛЬКО курируемое v2-дерево (поддеревья корней-разделов из
+    ``semantic.SECTION_RULES``), без легаси-категорий, зеркалящих группы 1С.
+    Та же таблица, что и «Категории»; фильтрация — в админке.
+    """
+
+    class Meta:
+        proxy = True
+        # Рабочее дерево витрины — именно оно называется «Категории» в меню.
+        verbose_name = _("Категория")
+        verbose_name_plural = _("Категории")
 
 
 class ProductStatus(models.TextChoices):
@@ -185,7 +473,23 @@ class StockStatus(models.TextChoices):
     ON_ORDER = "on_order", _("Под заказ")
 
 
-class Product(models.Model):
+class EnrichStatus(models.TextChoices):
+    PENDING = "pending", _("Ожидает")
+    IN_QUEUE = "in_queue", _("В очереди")
+    DONE = "done", _("Готово")
+    MODERATION = "moderation", _("На модерации")
+    FAILED = "failed", _("Ошибка")
+
+
+class ContentSource(models.TextChoices):
+    MANUAL = "manual", _("Вручную")
+    IMPORT_1C = "import_1c", _("Импорт 1С")
+    LLM = "llm", _("AI-генерация")
+    WEB = "web", _("Web-поиск")
+    MARKETPLACE = "marketplace", _("Маркетплейс")
+
+
+class Product(PackageFields, TimeStampedModel):
     """Товар.
 
     Идентичность из 1С: code_1c (внутренний код / external_id) и article (SKU).
@@ -236,6 +540,35 @@ class Product(models.Model):
         default=False,
         help_text=_("Если да — авторазбор её больше не меняет."),
     )
+    content_locked = models.BooleanField(
+        _("Контент защищён"),
+        default=False,
+        help_text=_(
+            "Если включено — импорт из 1С не перезаписывает контентные поля "
+            "(витринное название, описание, SEO). ADR: 1С не затирает ручную работу."
+        ),
+    )
+    enrich_status = models.CharField(
+        _("Статус обогащения"),
+        max_length=12,
+        choices=EnrichStatus.choices,
+        default=EnrichStatus.PENDING,
+        db_index=True,
+    )
+    content_source = models.CharField(
+        _("Источник карточного контента"),
+        max_length=12,
+        choices=ContentSource.choices,
+        blank=True,
+        default="",
+    )
+    content_confidence = models.FloatField(_("Уверенность контента"), null=True, blank=True)
+    content_field_sources = models.JSONField(
+        _("Провенанс карточных полей"),
+        default=dict,
+        blank=True,
+        help_text="{'name':'manual','description':'web'} — истинный источник по полю",
+    )
     matched_rule = models.ForeignKey(
         CategoryMappingRule,
         on_delete=models.SET_NULL,
@@ -246,9 +579,19 @@ class Product(models.Model):
     )
     brand = models.CharField(_("Бренд"), max_length=100, blank=True, db_index=True)
     name = models.CharField(_("Название (витрина)"), max_length=512)
+    card_name = models.CharField(
+        _("Название (карточка)"),
+        max_length=512,
+        blank=True,
+        help_text=_(
+            "Короткая форма для плитки каталога. Пусто — показывается витринное "
+            "название. Заполняет команда normalize_product_names."
+        ),
+    )
     slug = models.SlugField(_("Slug"), max_length=512, unique=True, blank=True)
     description = models.TextField(_("Описание"), blank=True)
     short_description = models.CharField(_("Краткое описание"), max_length=512, blank=True)
+    video_url = models.URLField(_("Видео (URL)"), blank=True)
     meta_title = models.CharField(_("Meta title"), max_length=255, blank=True)
     meta_description = models.CharField(_("Meta description"), max_length=512, blank=True)
 
@@ -261,7 +604,14 @@ class Product(models.Model):
     stock_quantity = models.DecimalField(_("Остаток"), max_digits=14, decimal_places=3, default=0)
     reserved_quantity = models.DecimalField(_("Резерв"), max_digits=14, decimal_places=3, default=0)
     available_quantity = models.DecimalField(
-        _("Доступно"), max_digits=14, decimal_places=3, default=0
+        _("Доступно"),
+        max_digits=14,
+        decimal_places=3,
+        default=0,
+        # DRF-1003: минус означает, что одну единицу продали дважды. В БД это
+        # запрещено constraint'ом; валидатор нужен, чтобы форма админки показала
+        # понятную ошибку вместо IntegrityError.
+        validators=[MinValueValidator(0)],
     )
     stock_status = models.CharField(
         _("Наличие"), max_length=12, choices=StockStatus.choices, default=StockStatus.OUT_OF_STOCK
@@ -282,6 +632,16 @@ class Product(models.Model):
         default=False,
         help_text=_("Виден на витрине только если статус «Опубликован» и этот флаг включён."),
     )
+    is_hit_manual = models.BooleanField(
+        _("Хит продаж (вручную)"),
+        default=False,
+        db_index=True,
+        help_text=_(
+            "Витринная подборка магазина, пока 1С не присылает продажи. Товары с "
+            "реальными продажами за окно всё равно идут первыми — ручная отметка "
+            "их не вытесняет и не подменяет (см. apps.catalog.sales)."
+        ),
+    )
 
     attrs_cache = models.JSONField(
         _("Кэш характеристик"),
@@ -290,15 +650,34 @@ class Product(models.Model):
         help_text=_("Денормализованный JSON значений характеристик для фасетных фильтров."),
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         verbose_name = _("Товар")
         verbose_name_plural = _("Товары")
         ordering = ["name"]
         indexes = [
             models.Index(fields=["status", "category"]),
+            # GIN по attrs_cache — ускоряет фасетные containment-фильтры (attrs_cache @> {...})
+            # и has_key. Сам GROUP BY не ускоряет (его сужает фильтр+категория).
+            GinIndex(fields=["attrs_cache"], name="catalog_product_attrs_gin"),
+            # Trigram-GIN (pg_trgm) для поиска по каталогу (#52): ускоряет icontains
+            # и trigram_similar (typo-tolerance) по name/article/brand. Требует
+            # расширения pg_trgm — оно создаётся в миграции 0007 ПЕРЕД индексами.
+            GinIndex(fields=["name"], opclasses=["gin_trgm_ops"], name="catalog_product_name_trgm"),
+            GinIndex(
+                fields=["article"], opclasses=["gin_trgm_ops"], name="catalog_product_article_trgm"
+            ),
+            GinIndex(
+                fields=["brand"], opclasses=["gin_trgm_ops"], name="catalog_product_brand_trgm"
+            ),
+        ]
+        constraints = [
+            # DRF-1003: страховка на уровне БД. Причина минуса может быть любой —
+            # зависший резерв, гонка при оформлении, кривая выгрузка, ручная правка.
+            # Constraint ловит их все и превращает тихую порчу данных в ошибку.
+            CheckConstraint(
+                name="catalog_product_available_qty_non_negative",
+                check=Q(available_quantity__gte=0),
+            ),
         ]
 
     def __str__(self) -> str:
@@ -339,6 +718,77 @@ class Product(models.Model):
         """Виден ли товар на витрине."""
         return self.is_active and self.status == ProductStatus.PUBLISHED
 
+    # DJ012: давний порядок методов; линтер видит модель через примесь PackageFields.
+    def get_absolute_url(self) -> str:  # noqa: DJ012
+        """Адрес товара на витрине (Next.js `/product/[slug]`).
+
+        Нужен кнопке «Смотреть на сайте» в админке. Витрина отдаёт только
+        опубликованное (`visible_products()`), поэтому для черновика ссылка
+        приведёт на 404 — предпросмотр черновиков отдельная задача (C1).
+        """
+        return f"/product/{self.slug}"
+
+    def missing_required_attributes(self) -> list[str]:
+        """Имена обязательных характеристик категории, у которых нет значения.
+
+        Проверяется ТОЛЬКО текущая категория товара (без наследования по дереву).
+        «Заполнено» определяется через ``attr_value_to_json``: значение считается
+        заполненным, если оно не None и не пустая строка (boolean False —
+        валидное заполненное значение, см. read_models). Если категория не
+        задана — список пуст (правило про категорию проверяется отдельно).
+        """
+        if not self.category_id or self.pk is None:
+            # Без pk нельзя обратиться к attribute_values (новый товар ещё не
+            # сохранён). Для нового товара правило применяется в admin.save_related
+            # уже после сохранения инлайнов.
+            return []
+
+        # Локальный импорт: read_models импортирует модели — избегаем цикла.
+        from .read_models import attr_value_to_json
+
+        required = CategoryAttribute.objects.filter(
+            category_id=self.category_id, is_required=True
+        ).select_related("attribute")
+
+        # Значения товара по attribute_id (один проход; используем prefetch при наличии).
+        pav_by_attr = {pav.attribute_id: pav for pav in self.attribute_values.all()}
+
+        missing: list[str] = []
+        for ca in required:
+            pav = pav_by_attr.get(ca.attribute_id)
+            filled = False
+            if pav is not None:
+                value = attr_value_to_json(pav)
+                filled = value is not None and value != ""
+            if not filled:
+                missing.append(ca.attribute.name)
+        return missing
+
+    def publication_errors(self) -> list[str]:
+        """Единый источник правил публикации. Пустой список = можно публиковать.
+
+        Цена НЕ проверяется (источник истины — 1С, может временно отсутствовать).
+        """
+        errors: list[str] = []
+        if not self.category_id:
+            errors.append("Укажите категорию")
+        missing = self.missing_required_attributes()
+        if missing:
+            errors.append("Заполните обязательные характеристики: " + ", ".join(missing))
+        return errors
+
+    def clean(self):
+        """Блокируем перевод в «Опубликован» при незаполненных правилах.
+
+        Программные save() из импорта 1С не зовут clean() — импорт не страдает.
+        Покрывает редактирование существующего товара через admin-форму.
+        """
+        super().clean()
+        if self.status == ProductStatus.PUBLISHED:
+            errors = self.publication_errors()
+            if errors:
+                raise ValidationError(errors)
+
     def recalc_stock_status(self) -> None:
         """Пересчитать статус наличия по доступному остатку."""
         if self.available_quantity and self.available_quantity > 0:
@@ -347,8 +797,216 @@ class Product(models.Model):
             self.stock_status = StockStatus.OUT_OF_STOCK
 
 
+class CompatibilityKind(models.TextChoices):
+    ACCESSORY = "accessory", _("Аксессуар / оснастка / расходник")
+    COMPATIBLE = "compatible", _("Совместим")
+    CROSS_SELL = "cross_sell", _("С этим товаром покупают")
+    ANALOG = "analog", _("Аналог / замена")
+
+
+# Виды связей, у которых направление не значит ничего: «покупают вместе» и
+# «аналог» взаимны по смыслу, поэтому ребро хранится канонически min(id)→max(id)
+# и обратный дубль невозможен. ACCESSORY сюда не входит — там направление и есть
+# факт («к дрели — свёрла», но не наоборот).
+SYMMETRIC_COMPATIBILITY_KINDS = frozenset(
+    {
+        CompatibilityKind.COMPATIBLE,
+        CompatibilityKind.CROSS_SELL,
+        CompatibilityKind.ANALOG,
+    }
+)
+
+
+class CompatibilityOrigin(models.TextChoices):
+    """Кто поставил связь — видно в админке, чтобы отличать разбор ИИ от руки."""
+
+    MANUAL = "manual", _("Менеджер")
+    AI = "ai", _("Предложено ИИ")
+
+
+class ProductCompatibility(TimeStampedModel):
+    """Явная каталожная связь товар↔товар (движок совместимости, #79).
+
+    Два вида связи:
+
+    * ``ACCESSORY`` — НАПРАВЛЕННАЯ: source — основной товар (инструмент),
+      target — аксессуар/оснастка/расходник к нему. Направление значимо и НЕ
+      канонизируется: ребро A→B и B→A — это два разных факта (A — аксессуар к B
+      и наоборот).
+    * ``COMPATIBLE`` / ``CROSS_SELL`` / ``ANALOG`` — СИММЕТРИЧНЫЕ («совместим с»,
+      «покупают вместе», «аналог»). Чтобы не плодить обратные дубли (A↔B и B↔A),
+      храним ребро в каноническом виде ``min(id) → max(id)``; полный перечень —
+      ``SYMMETRIC_COMPATIBILITY_KINDS``.
+
+    Канонизация делается в :meth:`clean` и :meth:`save`. ``bulk_create`` обходит
+    ``save()`` — массовый импорт совместимостей вне scope V1 (при добавлении
+    учесть канонизацию вручную).
+    """
+
+    source = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="compat_out",
+        verbose_name=_("Товар-источник"),
+    )
+    target = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="compat_in",
+        verbose_name=_("Связанный товар"),
+    )
+    kind = models.CharField(_("Тип связи"), max_length=20, choices=CompatibilityKind.choices)
+    note = models.CharField(_("Примечание"), max_length=512, blank=True)
+    sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
+    origin = models.CharField(
+        _("Источник связи"),
+        max_length=10,
+        choices=CompatibilityOrigin.choices,
+        default=CompatibilityOrigin.MANUAL,
+    )
+
+    class Meta:
+        verbose_name = _("Связь совместимости товаров")
+        verbose_name_plural = _("Связи совместимости товаров")
+        ordering = ["sort_order", "id"]
+        constraints = [
+            UniqueConstraint(
+                fields=["source", "target", "kind"],
+                name="catalog_productcompat_uniq",
+            ),
+            CheckConstraint(
+                check=~Q(source=F("target")),
+                name="catalog_productcompat_no_self_link",
+            ),
+        ]
+        indexes = [
+            Index(fields=["source", "kind"]),
+            Index(fields=["target", "kind"]),
+        ]
+
+    def _canonicalize(self) -> None:
+        # Симметричные виды храним каноническим min(id)→max(id) (защита от обратных
+        # дублей). ACCESSORY направленный — не трогаем.
+        if (
+            self.kind in SYMMETRIC_COMPATIBILITY_KINDS
+            and self.source_id
+            and self.target_id
+            and self.source_id > self.target_id
+        ):
+            self.source_id, self.target_id = self.target_id, self.source_id
+
+    @classmethod
+    def canonical_pair(cls, source_id, target_id, kind):
+        """Каноническая пара (source_id, target_id) для данного вида связи."""
+        if (
+            kind in SYMMETRIC_COMPATIBILITY_KINDS
+            and source_id
+            and target_id
+            and source_id > target_id
+        ):
+            return target_id, source_id
+        return source_id, target_id
+
+    def clean(self):
+        self._canonicalize()
+        super().clean()
+
+    def save(self, *args, **kwargs):
+        self._canonicalize()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.source} → {self.target} ({self.get_kind_display()})"
+
+
+class ImageSource(models.TextChoices):
+    """Откуда взялся файл изображения.
+
+    Нужен, чтобы откат прогона сбора трогал **только** спарсенное и никогда не
+    задевал загруженное руками (``MANUAL``). Значения совпадают с кодами
+    источников парсера (``parser/`` → ``Export.source``).
+    """
+
+    MANUAL = "manual", _("Загружено вручную")
+    RESANTA = "resanta", _("resanta.ru")
+    VIHR = "vihr", _("vihr.su")
+    INTERSKOL = "interskol", _("interskol.ru")
+    ZUBR = "zubr", _("zubr.ru")
+    HUTER = "huter", _("huter.su")
+    VSEINSTRUMENTI = "vseinstrumenti", _("vseinstrumenti.ru")
+    # MEDIA-SOURCE-01: manufacturer-сайты для commercial-наполнения (DRILLS-MEDIA-01).
+    # Значение = фактический хост источника, не бренд товара: einhell.ru — мёртвая
+    # заглушка, карточки Einhell живут на einhell.de.
+    HANSKONNER = "hanskonner", _("hanskonner.ru")
+    EINHELL = "einhell", _("einhell.de")
+    THORVIK = "thorvik", _("thorvik.ru")
+    # MEDIA-SOURCE-02: маркетплейс DNS — добор к ВИ (решение владельца 2026-08-11, в пул 2026-09-22).
+    DNS = "dns", _("dns-shop.ru")
+
+
+class ImageProcessingStatus(models.TextChoices):
+    """Где фото на пути автообработки (ADR-0014).
+
+    Витрина показывает обработанную копию ``display`` только в статусе ``DONE``;
+    во всех остальных — исходный файл ``image``.
+    """
+
+    NONE = "none", _("Не обрабатывалось")
+    QUEUED = "queued", _("В очереди")
+    NEEDS_REMBG = "needs_rembg", _("Ждёт удаления фона")
+    NEEDS_REVIEW = "needs_review", _("Ждёт проверки")
+    DONE = "done", _("Обработано")
+    #: Прочий фон: карточка с характеристиками, товар в кейсе, съёмка в работе.
+    #: Фон там — часть кадра, а не подложка: копию не делаем, менеджера не зовём.
+    SKIPPED = "skipped", _("Фон не трогаем: кадр не студийный")
+    REJECTED = "rejected", _("Оставлен оригинал")
+    FAILED = "failed", _("Ошибка обработки")
+
+
+class ImageProcessingMode(models.TextChoices):
+    """Чем сделана витринная копия: обрезкой полей без нейросети или удалением фона."""
+
+    TRIM = "trim", _("Обрезка полей")
+    REMBG = "rembg", _("Удаление фона")
+
+
+class ImageReviewReason(models.TextChoices):
+    """Почему автообработка отдала фото менеджеру, а не на витрину."""
+
+    DUPLICATE = "duplicate", _("Такой же кадр у товара уже есть")
+    EMPTY = "empty", _("Товар на фото не найден")
+    SMALL = "small", _("Мелкое фото: товар меньше половины квадрата")
+    TORN = "torn", _("Нейросеть разорвала картинку на куски")
+    #: Исторический: так помечались копии с прочим фоном, пока их делала нейросеть.
+    #: Новые записи её не получают — прочий фон автообработка не трогает (ADR-0014).
+    NOT_WHITE = "not_white", _("Фон был не белый — копию сделала нейросеть")
+
+
+def product_image_display_path(instance, filename: str) -> str:
+    """Путь витринной копии: ``products/display/<товар>/<имя>`` (ADR-0014).
+
+    Отдельное поддерево, а не папка оригинала: копии производные, их проще
+    посчитать и пересоздать целиком. Имя (с версией обработки) задаёт
+    вызывающий — новое имя на каждую версию обходит кэш ``/media/`` в nginx.
+    """
+    if instance.product_id is None:
+        # иначе файл ляжет в products/display/None/ раньше, чем упадёт сохранение записи
+        raise ValueError("витринная копия без товара: сначала сохраните ProductImage с product")
+    return f"products/display/{instance.product_id}/{os.path.basename(filename)}"
+
+
 class ProductImage(models.Model):
-    """Изображение товара."""
+    """Изображение товара.
+
+    Провенанс (``source``/``source_url``/``checksum``/``fetched_at``) добавлен
+    треком ИЗО: без него повторный прогон сбора фотографий гарантированно
+    плодил дубли, а откат прогона был невозможен — записи нечем было отличить
+    от загруженных руками.
+
+    Автообработка (ADR-0014) исходный ``image`` и его ``checksum`` не трогает:
+    на них держатся дедуп сбора и сверка ИЗО-02. Результат обработки — вторым
+    файлом ``display``; витрина берёт его через ``storefront_image``.
+    """
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
     image = models.ImageField(_("Файл"), upload_to="products/")
@@ -356,13 +1014,190 @@ class ProductImage(models.Model):
     is_main = models.BooleanField(_("Главное фото"), default=False)
     sort_order = models.PositiveSmallIntegerField(_("Порядок"), default=0)
 
+    # --- Провенанс (ИЗО-02) ---
+    source = models.CharField(
+        _("Источник"),
+        max_length=16,
+        choices=ImageSource.choices,
+        default=ImageSource.MANUAL,
+        db_index=True,
+        help_text=_("Откат прогона сбора удаляет только НЕ manual-записи."),
+    )
+    # DJ001 осознанно: null здесь несёт смысл «источника нет», и он ОБЯЗАН быть
+    # NULL, а не '' — частичное unique-ограничение ниже иначе схлопнет все
+    # ручные записи одного товара в одну (в Postgres NULL != NULL, '' == '').
+    source_url = models.URLField(  # noqa: DJ001
+        _("URL источника"),
+        max_length=1000,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text=_("Абсолютный URL картинки на сайте производителя."),
+    )
+    checksum = models.CharField(  # noqa: DJ001  (см. комментарий у source_url)
+        _("Контрольная сумма"),
+        max_length=64,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text=_(
+            "sha256 исходного файла image (не витринной копии): "
+            "одна и та же картинка под разными URL."
+        ),
+    )
+    fetched_at = models.DateTimeField(
+        _("Получено"),
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text=_("Момент скачивания. Вместе с source задаёт границы отката прогона."),
+    )
+
+    # --- Автообработка (ADR-0014): витринная копия рядом с неизменным оригиналом ---
+    display = models.ImageField(
+        _("Витринный файл"),
+        upload_to=product_image_display_path,
+        blank=True,
+        help_text=_("Обработанная копия (белый фон, квадрат). Оригинал image не меняется."),
+    )
+    display_checksum = models.CharField(
+        _("Контрольная сумма витринного файла"),
+        max_length=64,
+        blank=True,
+        default="",
+        help_text=_("sha256 файла display; аудит сверяет его отдельно от checksum оригинала."),
+    )
+    processing_status = models.CharField(
+        _("Обработка"),
+        max_length=16,
+        choices=ImageProcessingStatus.choices,
+        default=ImageProcessingStatus.NONE,
+    )
+    processing_mode = models.CharField(
+        _("Способ обработки"), max_length=16, choices=ImageProcessingMode.choices, blank=True
+    )
+    processing_version = models.PositiveSmallIntegerField(
+        _("Версия обработки"),
+        default=0,
+        help_text=_("Версия параметров, с которыми сделан display; 0 — не обрабатывалось."),
+    )
+    processed_at = models.DateTimeField(_("Обработано"), null=True, blank=True)
+    review_reason = models.CharField(
+        _("Почему на проверке"), max_length=16, choices=ImageReviewReason.choices, blank=True
+    )
+    duplicate_of = models.ForeignKey(
+        "self",
+        verbose_name=_("Дубль кадра"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text=_("Фото этого же товара, повтором которого оказался этот кадр."),
+    )
+    fingerprint = models.CharField(
+        _("Отпечаток кадра"),
+        max_length=64,
+        blank=True,
+        default="",
+        help_text=_("Хэш изображения оригинала: по нему находятся одинаковые кадры товара."),
+    )
+
     class Meta:
         verbose_name = _("Изображение товара")
         verbose_name_plural = _("Изображения товаров")
-        ordering = ["-is_main", "sort_order"]
+        # pk — детерминированный tie-breaker (VI-INT-03): у secondary-изображений
+        # sort_order одинаковый (0), а Postgres порядок равных ключей не
+        # гарантирует. Существующие sort_order не меняются, UPDATE не требуется.
+        ordering = ["-is_main", "sort_order", "pk"]
+        constraints = [
+            # Основной ключ идемпотентности: одинаковые байты не ложатся дважды
+            # ОДНОМУ товару. Ограничение частичное и привязано к товару —
+            # одна картинка у РАЗНЫХ товаров (серия под одним фото) законна.
+            models.UniqueConstraint(
+                fields=["product", "checksum"],
+                condition=models.Q(checksum__isnull=False),
+                name="uniq_product_image_checksum",
+            ),
+            # Дешёвая предпроверка ДО скачивания: тот же URL тому же товару
+            # второй раз не пишется и трафик на него не тратится.
+            models.UniqueConstraint(
+                fields=["product", "source_url"],
+                condition=models.Q(source_url__isnull=False),
+                name="uniq_product_image_source_url",
+            ),
+        ]
+        # Индекс через Meta, а не db_index: у CharField db_index создаёт ещё и
+        # бесполезный для статуса `_like`-индекс (varchar_pattern_ops).
+        indexes = [models.Index(fields=["processing_status"], name="productimage_proc_status_idx")]
 
     def __str__(self) -> str:
         return f"Фото {self.product} #{self.pk}"
+
+    def save(self, *args, **kwargs):
+        loaded = getattr(self, "_loaded_image_name", None)
+        # флаг читает сигнал автообработки: замена файла ставит новую обработку
+        self._image_replaced = loaded is not None and (self.image.name or "") != loaded
+        if self._image_replaced:
+            self._drop_processing(kwargs)
+        super().save(*args, **kwargs)
+        self._loaded_image_name = self.image.name or ""
+
+    #: Поля обработки: теряют смысл, как только меняется исходный файл.
+    PROCESSING_FIELDS = (
+        "display",
+        "display_checksum",
+        "processing_status",
+        "processing_mode",
+        "processing_version",
+        "processed_at",
+        "review_reason",
+        "duplicate_of",
+        "fingerprint",
+    )
+
+    @property
+    def storefront_image(self):
+        """Файл для витрины и превью: готовая копия, иначе исходный файл (ADR-0014).
+
+        Проверяется, что копия указана, а не что файл есть на диске: обращение к
+        диску на каждое фото витрины слишком дорого. Пропажу файла ловит аудит.
+        """
+        if self.processing_status == ImageProcessingStatus.DONE and self.display:
+            return self.display
+        return self.image
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        # Имя исходного файла на момент чтения: по нему save() узнаёт замену фото.
+        instance._loaded_image_name = (
+            (instance.image.name or "") if "image" in field_names else None
+        )
+        return instance
+
+    def _drop_processing(self, save_kwargs: dict) -> None:
+        """Исходное фото заменили — копия прежнего фото на витрине недопустима.
+
+        Файл старой копии удаляется после коммита: копия принадлежит только этой
+        записи (ADR-0014), а если транзакция откатится, файл должен остаться.
+        """
+        if self.processing_status == ImageProcessingStatus.NONE and not self.display:
+            return
+        old_display = self.display.name or ""
+        storage = self.display.storage
+        self.display = ""
+        self.display_checksum = ""
+        self.processing_status = ImageProcessingStatus.NONE
+        self.processing_mode = ""
+        self.processing_version = 0
+        self.processed_at = None
+        self.review_reason = ""
+        self.duplicate_of = None
+        self.fingerprint = ""
+        if save_kwargs.get("update_fields") is not None:
+            save_kwargs["update_fields"] = {*save_kwargs["update_fields"], *self.PROCESSING_FIELDS}
+        if old_display:
+            transaction.on_commit(lambda: storage.delete(old_display))
 
 
 class ProductAttributeValue(models.Model):
@@ -379,6 +1214,27 @@ class ProductAttributeValue(models.Model):
     value_boolean = models.BooleanField(_("Булево"), null=True, blank=True)
     value_option = models.ForeignKey(
         AttributeOption, on_delete=models.SET_NULL, null=True, blank=True
+    )
+
+    # --- Провенанс (откуда значение и насколько ему доверяем) ---
+    source = models.CharField(
+        _("Источник"),
+        max_length=12,
+        choices=Source.choices,
+        default=Source.MANUAL,
+        help_text=_(
+            "Приоритет перезаписи берётся из source_priority в attribute_rules.json: "
+            "manual не затирается regex/keyword."
+        ),
+    )
+    confidence = models.SmallIntegerField(
+        _("Уверенность"),
+        default=100,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text=_(
+            "0–100. Только аналитика/AI, в решении о перезаписи НЕ участвует "
+            "(перезапись решает source)."
+        ),
     )
 
     class Meta:
@@ -404,3 +1260,428 @@ class ProductAttributeValue(models.Model):
         if t in (AttributeType.SELECT, AttributeType.MULTISELECT):
             return self.value_option
         return None
+
+
+# ---------------------------------------------------------------------------
+# Журналы загрузки и обогащения каталога (видимы в админке)
+# ---------------------------------------------------------------------------
+
+
+class ImportRunStatus(models.TextChoices):
+    RUNNING = "running", _("Выполняется")
+    DONE = "done", _("Завершён")
+    FAILED = "failed", _("Ошибка")
+
+
+class ImportRun(models.Model):
+    """Запуск загрузки/обогащения каталога. Счётчики итогов — в stats (JSONB)."""
+
+    started_at = models.DateTimeField(_("Начат"), auto_now_add=True)
+    finished_at = models.DateTimeField(_("Завершён"), null=True, blank=True)
+    source = models.CharField(
+        _("Источник"), max_length=255, help_text=_("Имя файла / команды запуска.")
+    )
+    status = models.CharField(
+        _("Статус"),
+        max_length=10,
+        choices=ImportRunStatus.choices,
+        default=ImportRunStatus.RUNNING,
+    )
+    stats = models.JSONField(
+        _("Счётчики"),
+        default=dict,
+        blank=True,
+        help_text=_(
+            "categories_created, products_imported, tool_type_assigned, unmatched, "
+            "recategorize_flagged, excluded."
+        ),
+    )
+
+    class Meta:
+        verbose_name = _("Запуск импорта")
+        verbose_name_plural = _("Запуски импорта")
+        ordering = ["-started_at"]
+
+    def __str__(self) -> str:
+        return f"{self.source} @ {self.started_at:%Y-%m-%d %H:%M} [{self.get_status_display()}]"
+
+
+class EnrichmentResult(models.TextChoices):
+    ASSIGNED = "assigned", _("tool_type проставлен")
+    MODERATION = "moderation", _("В очередь модерации")
+    RECATEGORIZE = "recategorize", _("Сменить категорию")
+
+
+class EnrichmentLog(models.Model):
+    """Решение правил по каждому товару при извлечении tool_type.
+
+    Цель — открыть админку и увидеть, что именно сделали правила: какой
+    tool_type проставлен, по какому ключевому слову, либо почему товар ушёл
+    в модерацию / на смену категории.
+    """
+
+    run = models.ForeignKey(
+        ImportRun,
+        on_delete=models.CASCADE,
+        related_name="enrichment_logs",
+        verbose_name=_("Запуск"),
+    )
+    product_external_id = models.CharField(_("Код 1С товара"), max_length=50, db_index=True)
+    raw_name = models.CharField(_("Название из 1С"), max_length=512)
+    category_path = models.CharField(_("Путь категории"), max_length=512, blank=True)
+    result = models.CharField(
+        _("Результат"), max_length=12, choices=EnrichmentResult.choices, db_index=True
+    )
+    tool_type = models.CharField(_("tool_type"), max_length=255, blank=True)
+    matched_keyword = models.CharField(_("Сработавшее слово"), max_length=255, blank=True)
+    created_at = models.DateTimeField(_("Создан"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Лог обогащения")
+        verbose_name_plural = _("Логи обогащения")
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["result", "tool_type"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.product_external_id} → {self.get_result_display()}"
+
+
+class ModerationProduct(Product):
+    """Proxy для очереди модерации обогащения в admin."""
+
+    class Meta:
+        proxy = True
+        verbose_name = _("Товар с AI-описанием")
+        verbose_name_plural = _("Проверить AI-описания")
+
+
+# #517: ProductAvailabilitySubscription вынесена в отдельный модуль (прецедент —
+# apps.accounts.wishlist, #329). Импортируем здесь, чтобы модель регистрировалась
+# при загрузке app (иначе reverse-аксессор product.availability_subscriptions и
+# makemigrations «не видят» модель до первого lazy-импорта).
+from apps.catalog import availability_subscriptions as _availability_subscriptions  # noqa: E402
+
+ProductAvailabilitySubscription = _availability_subscriptions.ProductAvailabilitySubscription
+# ---------------------------------------------------------------------------
+# Catalog processing: audit/apply foundation
+# ---------------------------------------------------------------------------
+
+
+class CatalogProcessingRunKind(models.TextChoices):
+    MANUAL = "manual", _("Вручную")
+    RULES = "rules", _("Правила")
+    RESEARCH = "research", _("Исследование")
+    AI = "ai", _("AI")
+    IMPORT = "import", _("Импорт")
+
+
+class CatalogProcessingMode(models.TextChoices):
+    TOOL_TYPE = "tool_type", _("Тип инструмента")
+
+
+class CatalogProcessingRunStatus(models.TextChoices):
+    DRAFT = "draft", _("Черновик")
+    RUNNING = "running", _("В работе")
+    COMPLETED = "completed", _("Завершён")
+    FAILED = "failed", _("Ошибка")
+    CANCELLED = "cancelled", _("Отменён")
+
+
+class CatalogProcessingItemStatus(models.TextChoices):
+    PENDING = "pending", _("Ожидает")
+    PROCESSING = "processing", _("В обработке")
+    NEEDS_REVIEW = "needs_review", _("Требует проверки")
+    COMPLETED = "completed", _("Завершён")
+    FAILED = "failed", _("Ошибка")
+
+
+class CatalogChangeStatus(models.TextChoices):
+    PROPOSED = "proposed", _("Предложено")
+    APPROVED = "approved", _("Одобрено")
+    REJECTED = "rejected", _("Отклонено")
+    APPLIED = "applied", _("Применено")
+    SKIPPED = "skipped", _("Пропущено")
+    CONFLICT = "conflict", _("Конфликт")
+    INVALID = "invalid", _("Невалидно")
+    FAILED = "failed", _("Ошибка")
+    REVERSED = "reversed", _("Отменено")
+
+
+class CatalogProcessingRun(models.Model):
+    """Один логический запуск обработки каталога."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    kind = models.CharField(
+        _("Тип запуска"), max_length=16, choices=CatalogProcessingRunKind.choices
+    )
+    mode = models.CharField(_("Режим"), max_length=16, choices=CatalogProcessingMode.choices)
+    status = models.CharField(
+        _("Статус"),
+        max_length=16,
+        choices=CatalogProcessingRunStatus.choices,
+        default=CatalogProcessingRunStatus.DRAFT,
+        db_index=True,
+    )
+    idempotency_key = models.CharField(_("Ключ идемпотентности"), max_length=128, unique=True)
+    scope = models.JSONField(_("Скоуп"), default=dict, blank=True)
+    ruleset_version = models.CharField(_("Версия правил"), max_length=64, blank=True)
+    ruleset_hash = models.CharField(_("Хеш правил"), max_length=64, blank=True)
+    taxonomy_hash = models.CharField(_("Хеш таксономии"), max_length=64, blank=True)
+    stats = models.JSONField(_("Статистика"), default=dict, blank=True)
+    created_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Инициатор"),
+    )
+    created_at = models.DateTimeField(_("Создан"), auto_now_add=True)
+    finished_at = models.DateTimeField(_("Завершён"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("Запуск обработки каталога")
+        verbose_name_plural = _("Запуски обработки каталога")
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.kind}/{self.mode} [{self.status}]"
+
+
+class CatalogProcessingItem(models.Model):
+    """Snapshot одного товара внутри запуска обработки каталога."""
+
+    run = models.ForeignKey(
+        CatalogProcessingRun,
+        on_delete=models.PROTECT,
+        related_name="items",
+        verbose_name=_("Запуск"),
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Товар"),
+    )
+    product_ref = models.PositiveBigIntegerField(_("ID товара для аудита"), db_index=True)
+    status = models.CharField(
+        _("Статус"),
+        max_length=16,
+        choices=CatalogProcessingItemStatus.choices,
+        default=CatalogProcessingItemStatus.PENDING,
+        db_index=True,
+    )
+    input_snapshot = models.JSONField(_("Входной снапшот"), default=dict, blank=True)
+    input_hash = models.CharField(_("Хеш входа"), max_length=64)
+    baseline_hashes = models.JSONField(_("Базовые хеши"), default=dict, blank=True)
+    needed_targets = models.JSONField(_("Целевые поля"), default=list, blank=True)
+    error_code = models.CharField(_("Код ошибки"), max_length=32, blank=True)
+    error_detail = models.CharField(_("Детали ошибки"), max_length=255, blank=True)
+    created_at = models.DateTimeField(_("Создан"), auto_now_add=True)
+    finished_at = models.DateTimeField(_("Завершён"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("Элемент обработки")
+        verbose_name_plural = _("Элементы обработки")
+        ordering = ["created_at"]
+        unique_together = [("run", "product_ref")]
+
+    def __str__(self) -> str:
+        return f"Item#{self.product_ref} [{self.status}]"
+
+
+class CatalogChange(models.Model):
+    """Append-only запись предложения и результата изменения каталога."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    item = models.ForeignKey(
+        CatalogProcessingItem,
+        on_delete=models.PROTECT,
+        related_name="changes",
+        verbose_name=_("Элемент"),
+    )
+    product_ref = models.PositiveBigIntegerField(_("ID товара для аудита"), db_index=True)
+    target_kind = models.CharField(_("Тип цели"), max_length=32)
+    target_key = models.CharField(_("Ключ цели"), max_length=64, blank=True)
+    status = models.CharField(
+        _("Статус"),
+        max_length=16,
+        choices=CatalogChangeStatus.choices,
+        default=CatalogChangeStatus.PROPOSED,
+        db_index=True,
+    )
+    idempotency_key = models.CharField(_("Ключ идемпотентности"), max_length=128, unique=True)
+    before_value = models.JSONField(_("Старое значение"), default=dict, blank=True)
+    proposed_value = models.JSONField(_("Предложенное значение"), default=dict, blank=True)
+    after_value = models.JSONField(_("Итоговое значение"), null=True, blank=True)
+    baseline_hash = models.CharField(_("Базовый хеш"), max_length=64, blank=True)
+    source = models.CharField(_("Источник"), max_length=16, choices=Source.choices)
+    confidence = models.SmallIntegerField(
+        _("Уверенность"),
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    rule_ref = models.CharField(_("Ссылка на правило"), max_length=64, blank=True)
+    ruleset_hash = models.CharField(_("Хеш набора правил"), max_length=64, blank=True)
+    reason_code = models.CharField(_("Код причины"), max_length=32, blank=True)
+    reason_detail = models.CharField(_("Детали причины"), max_length=255, blank=True)
+    comment = models.CharField(_("Комментарий модератора"), max_length=512, blank=True)
+    evidence = models.JSONField(_("Доказательства"), default=dict, blank=True)
+    reviewed_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Проверил"),
+    )
+    reviewed_at = models.DateTimeField(_("Время проверки"), null=True, blank=True)
+    applied_at = models.DateTimeField(_("Время применения"), null=True, blank=True)
+    applied_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Применил"),
+    )
+    reversal_of = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Отмена изменения"),
+    )
+    created_at = models.DateTimeField(_("Создан"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Изменение каталога")
+        verbose_name_plural = _("Изменения каталога")
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["product_ref", "target_kind", "created_at"]),
+            models.Index(fields=["status", "created_at"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                name="catalog_change_confidence_range",
+                check=models.Q(confidence__gte=0, confidence__lte=100),
+            ),
+            models.CheckConstraint(
+                name="catalog_change_approved_requires_review",
+                check=~models.Q(status=CatalogChangeStatus.APPROVED)
+                | (models.Q(reviewed_by__isnull=False) & models.Q(reviewed_at__isnull=False)),
+            ),
+            models.CheckConstraint(
+                name="catalog_change_rejected_requires_review",
+                check=~models.Q(status=CatalogChangeStatus.REJECTED)
+                | (models.Q(reviewed_by__isnull=False) & models.Q(reviewed_at__isnull=False)),
+            ),
+            models.CheckConstraint(
+                name="catalog_change_applied_requires_after_value",
+                check=~models.Q(status=CatalogChangeStatus.APPLIED)
+                | (models.Q(after_value__isnull=False) & models.Q(applied_at__isnull=False)),
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Change {self.target_kind} [{self.status}]"
+
+
+class SalesSource(models.TextChoices):
+    """Откуда пришёл факт продажи.
+
+    Разделение источников принципиально: заказы сайта пересчитываются из
+    ``orders`` при каждом прогоне (идемпотентно), а выгрузка 1С приходит
+    порциями и накапливается — стирать её пересчётом сайта нельзя.
+    """
+
+    SITE = "site", _("Заказы сайта")
+    ONEC = "1c", _("Продажи 1С")
+
+
+class ProductSalesFact(models.Model):
+    """Сколько штук товара продано за один день по одному источнику.
+
+    Сырьё для рейтинга «хитов»: агрегат по дням, а не по документам — на
+    витрине важна динамика, а не первичка. Скользящее окно считается по этим
+    строкам (см. ``apps.catalog.sales.rebuild_sales_stats``), поэтому «хит»
+    всегда можно объяснить конкретными продажами.
+    """
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="sales_facts",
+        verbose_name=_("Товар"),
+    )
+    source = models.CharField(_("Источник"), max_length=8, choices=SalesSource.choices)
+    date = models.DateField(_("Дата продажи"))
+    quantity = models.DecimalField(_("Продано"), max_digits=12, decimal_places=3)
+    updated_at = models.DateTimeField(_("Обновлён"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("Продажи товара за день")
+        verbose_name_plural = _("Продажи товаров по дням")
+        constraints = [
+            # Идемпотентность: повторная выгрузка того же дня перезаписывает
+            # количество, а не удваивает его.
+            models.UniqueConstraint(
+                fields=["product", "source", "date"], name="catalog_salesfact_unique_day"
+            ),
+            models.CheckConstraint(
+                name="catalog_salesfact_quantity_positive", check=models.Q(quantity__gt=0)
+            ),
+        ]
+        indexes = [
+            # Основной запрос пересчёта: «все продажи за окно, сгруппировать по товару».
+            models.Index(fields=["date", "product"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.product_id} · {self.date} · {self.quantity} ({self.source})"
+
+
+class ProductSalesStat(models.Model):
+    """Готовый рейтинг продаж товара за скользящее окно.
+
+    Денормализация ради витрины: сортировать выдачу и рисовать бейдж «Хит»
+    по агрегату фактов на лету — это seq scan на каждый запрос. Строка есть
+    ТОЛЬКО у товаров с продажами за окно: отсутствие строки означает «не
+    продавался», и такой товар в «хиты» не попадёт даже случайно.
+    """
+
+    product = models.OneToOneField(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="sales_stat",
+        verbose_name=_("Товар"),
+    )
+    quantity = models.DecimalField(_("Продано за окно"), max_digits=14, decimal_places=3)
+    days_with_sales = models.PositiveIntegerField(_("Дней с продажами"), default=0)
+    window_days = models.PositiveIntegerField(_("Окно, дней"))
+    rank = models.PositiveIntegerField(_("Место в рейтинге"))
+    is_hit = models.BooleanField(
+        _("Хит продаж"),
+        default=False,
+        help_text=_("Топ рейтинга при достаточном числе продаж — источник бейджа «Хит»."),
+    )
+    last_sold_on = models.DateField(_("Последняя продажа"), null=True, blank=True)
+    computed_at = models.DateTimeField(_("Пересчитан"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("Рейтинг продаж товара")
+        verbose_name_plural = _("Рейтинг продаж товаров")
+        ordering = ["rank"]
+        indexes = [
+            models.Index(fields=["-quantity"]),
+            models.Index(fields=["is_hit", "rank"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"#{self.rank} · {self.product_id} · {self.quantity}"

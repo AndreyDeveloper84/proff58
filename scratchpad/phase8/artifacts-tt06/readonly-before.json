@@ -1,0 +1,21 @@
+{
+  "untouchable_hash": "be36cf755b4933529ff91164fd5170467e93605309097b7be8c3fe569eac50aa",
+  "products": 47225,
+  "pav_11_count": 0,
+  "content_locked": [],
+  "manual_tool_type": [],
+  "options_missing": [],
+  "expected": {
+    "4": "izm-areometry",
+    "22": "spetsialnye-klyuchi",
+    "123": "domkraty",
+    "164": "zaryadnye",
+    "179": "bp-kompressory",
+    "377": "sharoshki",
+    "422": "bp-vozdukhoduvki",
+    "4944": "yashchiki-sumki",
+    "4945": "krep-bolty",
+    "11232": "payalniki",
+    "23606": "hoz-himiya"
+  }
+}

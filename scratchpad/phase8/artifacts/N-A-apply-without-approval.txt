@@ -1,0 +1,4 @@
+change 08f37e8d-76f1-4184-99ef-39a5d8450653 status_before proposed -> apply result: invalid change_not_approved
+   status_after proposed
+change 30ffa6e7-4b7f-44aa-a631-71b0b08b5428 status_before proposed -> apply result: invalid change_not_approved
+   status_after proposed

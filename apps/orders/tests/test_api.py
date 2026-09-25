@@ -1,0 +1,525 @@
+"""Тесты API заказов и корзины."""
+
+from __future__ import annotations
+
+from decimal import Decimal
+
+import pytest
+
+from apps.orders.models import Order
+
+
+# ---------------------------------------------------------------------------
+# Корзина
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_cart_add_and_get(api, product):
+    resp = api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body["lines"]) == 1
+    assert body["lines"][0]["quantity"] == 2
+    assert body["lines"][0]["price_final"] == "1000.00"
+    assert body["total"] == "2000.00"
+
+
+@pytest.mark.django_db
+def test_cart_update_and_delete(api, product):
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
+    cart = api.get("/api/cart/").json()
+    item_id = cart["lines"][0]["id"]
+
+    resp = api.patch(f"/api/cart/items/{item_id}/", {"quantity": 5}, format="json")
+    assert resp.status_code == 200
+    assert resp.json()["lines"][0]["quantity"] == 5
+
+    resp = api.delete(f"/api/cart/items/{item_id}/")
+    assert resp.status_code == 200
+    assert resp.json()["lines"] == []
+
+
+# ---------------------------------------------------------------------------
+# Ручной ввод количества (UX-06): границы контракта
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+@pytest.mark.parametrize("bad", [0, -3, "1.5", "abc", "", None, 2_147_483_648, 10**30])
+def test_cart_update_rejects_invalid_quantity(api, product, bad):
+    """Ноль, отрицательное, дробь, текст и число больше предела столбца — 400, не 500.
+
+    Количество в строке при этом не меняется: ноль не удаляет товар, удаление —
+    отдельное действие (DELETE)."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+
+    resp = api.patch(f"/api/cart/items/{item_id}/", {"quantity": bad}, format="json")
+
+    assert resp.status_code == 400
+    assert api.get("/api/cart/").json()["lines"][0]["quantity"] == 2
+
+
+@pytest.mark.django_db
+def test_cart_update_accepts_large_manual_quantity(api, product):
+    """Произвольного лимита (99) нет: 159 и предел столбца принимаются, итог — с сервера."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+
+    resp = api.patch(f"/api/cart/items/{item_id}/", {"quantity": 159}, format="json")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["lines"][0]["quantity"] == 159
+    assert body["total"] == "159000.00"
+
+    resp = api.patch(f"/api/cart/items/{item_id}/", {"quantity": 2_147_483_647}, format="json")
+    assert resp.status_code == 200
+
+
+@pytest.mark.django_db
+def test_cart_add_to_huge_line_does_not_overflow(api, product):
+    """Повторное добавление к строке у предела не роняет запрос переполнением integer."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+    api.patch(f"/api/cart/items/{item_id}/", {"quantity": 2_147_483_647}, format="json")
+
+    resp = api.post("/api/cart/items/", {"product_id": product.id, "quantity": 5}, format="json")
+
+    assert resp.status_code == 200
+    assert resp.json()["lines"][0]["quantity"] == 2_147_483_647
+
+
+# ---------------------------------------------------------------------------
+# Undo-удаление (#380)
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_cart_delete_is_soft(api, product):
+    """DELETE скрывает строку (soft-delete), физически не удаляет."""
+    from apps.orders.models import CartItem
+
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+
+    resp = api.delete(f"/api/cart/items/{item_id}/")
+    assert resp.status_code == 200
+    assert resp.json()["lines"] == []
+
+    # Строка в БД, но помечена как удалённая
+    item = CartItem.objects.get(pk=item_id)
+    assert item.is_deleted is True
+    assert item.deleted_at is not None
+
+
+@pytest.mark.django_db
+def test_cart_restore_after_delete(api, product):
+    """POST /restore/ возвращает строку в корзину."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 3}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+
+    api.delete(f"/api/cart/items/{item_id}/")
+    assert api.get("/api/cart/").json()["lines"] == []
+
+    resp = api.post(f"/api/cart/items/{item_id}/restore/")
+    assert resp.status_code == 200
+    lines = resp.json()["lines"]
+    assert len(lines) == 1
+    assert lines[0]["quantity"] == 3
+
+
+@pytest.mark.django_db
+def test_cart_restore_twice_is_404(api, product):
+    """Повторный /restore/ для уже восстановленной строки → 404."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+
+    api.delete(f"/api/cart/items/{item_id}/")
+    api.post(f"/api/cart/items/{item_id}/restore/")
+    resp = api.post(f"/api/cart/items/{item_id}/restore/")
+    assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+def test_cart_add_after_delete_restores(api, product):
+    """Добавление товара, у которого есть soft-deleted строка — восстанавливает её."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
+    item_id = api.get("/api/cart/").json()["lines"][0]["id"]
+
+    api.delete(f"/api/cart/items/{item_id}/")
+    resp = api.post("/api/cart/items/", {"product_id": product.id, "quantity": 5}, format="json")
+    assert resp.status_code == 200
+    lines = resp.json()["lines"]
+    assert len(lines) == 1
+    assert lines[0]["quantity"] == 5
+
+
+# ---------------------------------------------------------------------------
+# Смешение валют в корзине (#375)
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_cart_no_mixed_currencies_by_default(api, product):
+    """Однородная корзина: has_mixed_currencies=False, total корректен."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
+    body = api.get("/api/cart/").json()
+    assert body["has_mixed_currencies"] is False
+    assert body["total"] == "2000.00"
+
+
+@pytest.mark.django_db
+def test_cart_mixed_currencies_zeroes_total(api, product, db):
+    """Корзина с двумя валютами: has_mixed_currencies=True, total='0.00' (#375)."""
+    from apps.catalog.models import ProductStatus
+
+    # product уже стоит 1000 RUB (из conftest); добавляем USD-товар
+    product_usd = product.__class__.objects.create(
+        name="Зарубежный товар",
+        code_1c="1c-ord-usd",
+        article="ART-USD",
+        slug="foreign-product-usd",
+        unit="шт",
+        price=Decimal("50.00"),
+        currency="USD",
+        status=ProductStatus.PUBLISHED,
+        is_active=True,
+        available_quantity=Decimal("10"),
+    )
+
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    api.post("/api/cart/items/", {"product_id": product_usd.id, "quantity": 1}, format="json")
+
+    body = api.get("/api/cart/").json()
+    assert body["has_mixed_currencies"] is True
+    assert body["total"] == "0.00"
+    assert len(body["lines"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# Гостевая валидация контакта + идемпотентность (#321)
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_guest_order_without_name_rejected(api, product):
+    """Гость без customer_name → 400."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {"customer_phone": "+79990000001"}, format="json")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_guest_order_without_phone_rejected(api, product):
+    """Гость без customer_phone → 400."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {"customer_name": "Гость"}, format="json")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_guest_order_happy_path(api, product):
+    """Гостевой заказ с именем и телефоном → 201 + access_token."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post(
+        "/api/orders/",
+        {"customer_name": "Иван", "customer_phone": "+79990000002"},
+        format="json",
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["customer_name"] == "Иван"
+    assert "access_token" in body
+
+
+@pytest.mark.django_db
+def test_cart_idempotency_double_order_rejected(api, product):
+    """Повторное оформление уже оформленной корзины → 400."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    data = {"customer_name": "Иван", "customer_phone": "+79990000003"}
+    first = api.post("/api/orders/", data, format="json")
+    assert first.status_code == 201
+    second = api.post("/api/orders/", data, format="json")
+    assert second.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Backend-цена: тело запроса игнорируется
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# B2B-валидация реквизитов и способа оплаты (#323)
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_b2b_order_invalid_inn_rejected(api, product, db):
+    """B2B-заказ с пустым ИНН → 400."""
+    from django.contrib.auth import get_user_model
+
+    from apps.accounts.models import Profile
+
+    User = get_user_model()
+    user = User.objects.create_user(phone="+79990001111", customer_type="b2b")
+    Profile.objects.create(user=user, company_name="ООО Тест", inn="")
+
+    api.force_authenticate(user=user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {}, format="json")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_b2b_order_empty_company_rejected(api, product, db):
+    """B2B-заказ с пустым названием организации → 400."""
+    from django.contrib.auth import get_user_model
+
+    from apps.accounts.models import Profile
+
+    User = get_user_model()
+    user = User.objects.create_user(phone="+79990001112", customer_type="b2b")
+    Profile.objects.create(user=user, company_name="", inn="7700000000")
+
+    api.force_authenticate(user=user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {}, format="json")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_b2b_order_card_payment_rejected(api, b2b_user, product):
+    """B2B-заказ с оплатой картой → 400."""
+    api.force_authenticate(user=b2b_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {"payment_method": "card"}, format="json")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_b2b_order_forced_invoice(api, b2b_user, product):
+    """B2B без payment_method → автоматически ставится invoice."""
+    from .conftest import make_wholesale
+
+    make_wholesale(product, "800.00")
+    api.force_authenticate(user=b2b_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {}, format="json")
+    assert resp.status_code == 201
+    assert resp.json()["payment_method"] == "invoice"
+
+
+@pytest.mark.django_db
+def test_b2c_order_invoice_payment_rejected(api, b2c_user, product):
+    """B2C-заказ с оплатой по счёту → 400."""
+    api.force_authenticate(user=b2c_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {"payment_method": "invoice"}, format="json")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_guest_b2b_without_requisites_rejected(api, product):
+    """#430 (M-06): гостевой B2B без валидных реквизитов → 400."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post(
+        "/api/orders/",
+        {"customer_name": "Иван", "customer_phone": "+79990001234", "customer_type": "b2b"},
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "b2b_requisites" in str(resp.json())
+
+
+@pytest.mark.django_db
+def test_guest_b2b_invoice_allowed_with_requisites(api, product):
+    """#430 (M-06, ADR #444): гость оформляет B2B invoice с валидными реквизитами."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post(
+        "/api/orders/",
+        {
+            "customer_name": "Директор",
+            "customer_phone": "+79990001234",
+            "customer_email": "buh@guest.ru",
+            "customer_type": "b2b",
+            "company_name": 'ООО "Гость"',
+            "inn": "7701234567",
+            "kpp": "770101001",
+            "legal_address": "г. Пенза, ул. Мира, 1",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201, resp.json()
+    body = resp.json()
+    assert body["customer_type"] == "b2b"
+    assert body["payment_method"] == "invoice"
+    assert int(body["vat_rate"]) == 22
+
+
+@pytest.mark.django_db
+def test_order_ignores_price_from_body(api, product):
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
+    # Подкладываем фейковую цену в тело — должна быть проигнорирована.
+    resp = api.post(
+        "/api/orders/",
+        {
+            "customer_name": "Гость",
+            "customer_phone": "+79990000000",
+            "price": "1",
+            "price_final": "1",
+            "total": "1",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["total"] == "2000.00"
+    assert body["items"][0]["price_final"] == "1000.00"
+
+
+@pytest.mark.django_db
+def test_order_empty_cart_rejected(api):
+    resp = api.post("/api/orders/", {"customer_name": "Гость"}, format="json")
+    assert resp.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Доступ к заказам
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_orders_list_requires_auth(api):
+    resp = api.get("/api/orders/")
+    assert resp.status_code in (401, 403)
+
+
+@pytest.mark.django_db
+def test_orders_list_only_own(api, b2c_user, product):
+    api.force_authenticate(user=b2c_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    api.post("/api/orders/", {}, format="json")
+
+    resp = api.get("/api/orders/")
+    assert resp.status_code == 200
+    # #438 (m-05): пагинированный ответ (count/results).
+    body = resp.json()
+    assert body["count"] == 1
+    assert len(body["results"]) == 1
+
+
+@pytest.mark.django_db
+def test_orders_list_paginated(api, b2c_user, product):
+    """#438 (m-05): история заказов пагинируется (limit/offset)."""
+    from apps.orders.models import Order
+
+    api.force_authenticate(user=b2c_user)
+    for i in range(3):
+        Order.objects.create(order_number=f"P-{i}", user=b2c_user, customer_phone="+79001112233")
+
+    resp = api.get("/api/orders/?limit=2")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["count"] == 3
+    assert len(body["results"]) == 2
+    assert body["next"] is not None
+
+
+@pytest.mark.django_db
+def test_order_detail_owner_only(api, b2c_user, b2b_user, product):
+    api.force_authenticate(user=b2c_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    create = api.post("/api/orders/", {}, format="json")
+    number = create.json()["order_number"]
+
+    # Владелец видит
+    resp = api.get(f"/api/orders/{number}/")
+    assert resp.status_code == 200
+
+    # Чужой пользователь — не видит (404)
+    other = type(api)()
+    other.force_authenticate(user=b2b_user)
+    resp = other.get(f"/api/orders/{number}/")
+    assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+def test_order_detail_anonymous_closed(api, b2c_user, product):
+    api.force_authenticate(user=b2c_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    number = api.post("/api/orders/", {}, format="json").json()["order_number"]
+
+    anon = type(api)()
+    resp = anon.get(f"/api/orders/{number}/")
+    assert resp.status_code in (401, 403)
+
+
+@pytest.mark.django_db
+def test_b2b_order_via_api_snapshots_requisites(api, b2b_user, product):
+    """#430 (M-06): единый ценник (розница) для B2B + снимок реквизитов и НДС."""
+    api.force_authenticate(user=b2b_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 2}, format="json")
+    resp = api.post("/api/orders/", {}, format="json")
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["customer_type"] == "b2b"
+    assert body["inn"] == "7700000000"
+    # Единый ценник: та же розничная цена, что и для B2C.
+    assert body["items"][0]["price_final"] == "1000.00"
+    assert body["total"] == "2000.00"
+    # Снимок НДС 22% (2000 включает НДС): 2000*22/122 = 360.66; без НДС = 1639.34.
+    assert int(body["vat_rate"]) == 22
+    assert body["vat_amount"] == "360.66"
+    assert body["amount_without_vat"] == "1639.34"
+
+
+@pytest.mark.django_db
+def test_order_persisted_after_api_create(api, b2c_user, product):
+    api.force_authenticate(user=b2c_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    api.post("/api/orders/", {}, format="json")
+    assert Order.objects.filter(user=b2c_user).count() == 1
+    order = Order.objects.get(user=b2c_user)
+    assert order.total == Decimal("1000.00")
+
+
+# ---------------------------------------------------------------------------
+# Резерв в контракте API (#568)
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+def test_order_response_contains_reservation_fields(api, product):
+    """POST /api/orders/ отдаёт reserved_until + статус резерва (для таймера UI)."""
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post(
+        "/api/orders/",
+        {"customer_name": "Иван", "customer_phone": "+79990000042"},
+        format="json",
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["reservation_status"] == "held"
+    assert body["reserved_until"] is not None
+    assert body["reservation_expired"] is False
+
+
+@pytest.mark.django_db
+def test_reservation_expired_true_before_janitor(api, b2c_user, product):
+    """HELD с прошедшим сроком → reservation_expired=true (janitor ещё не добежал)."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    api.force_authenticate(user=b2c_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    resp = api.post("/api/orders/", {}, format="json")
+    order_number = resp.json()["order_number"]
+    Order.objects.filter(order_number=order_number).update(
+        reserved_until=timezone.now() - timedelta(minutes=1)
+    )
+
+    detail = api.get(f"/api/orders/{order_number}/")
+    assert detail.status_code == 200
+    body = detail.json()
+    assert body["reservation_status"] == "held"
+    assert body["reservation_expired"] is True
+
+
+@pytest.mark.django_db
+def test_reservation_fields_in_orders_list(api, b2c_user, product):
+    """Новые поля есть и в GET-списке заказов, не только в POST-ответе."""
+    api.force_authenticate(user=b2c_user)
+    api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    api.post("/api/orders/", {}, format="json")
+
+    listing = api.get("/api/orders/")
+    assert listing.status_code == 200
+    payload = listing.json()
+    rows = payload["results"] if isinstance(payload, dict) and "results" in payload else payload
+    assert rows, "список заказов пуст"
+    assert "reserved_until" in rows[0]
+    assert "reservation_expired" in rows[0]

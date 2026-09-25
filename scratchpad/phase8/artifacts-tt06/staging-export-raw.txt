@@ -1,0 +1,1931 @@
+Экспортировано: /app/var/catalog-processing/outbox/3b11e43d-53c4-4fc7-bb4c-b4e66591aef3.json
+items: 20, checksum: b281bd671d81783970bf9f2859530795c19bfc97344d8490211f78ba291583d4
+/app/var/catalog-processing/outbox/3b11e43d-53c4-4fc7-bb4c-b4e66591aef3.json
+{
+  "allowed_options": [
+    {
+      "slug": "adaptery",
+      "value": "Адаптеры и переходники"
+    },
+    {
+      "slug": "akkumulyatory",
+      "value": "Аккумуляторы"
+    },
+    {
+      "slug": "aksessuary-dlya-klyuchey",
+      "value": "Аксессуары для ключей"
+    },
+    {
+      "slug": "armiruyushchie-lenty-binty",
+      "value": "Армирующие ленты и бинты"
+    },
+    {
+      "slug": "avtomaty-predohraniteli",
+      "value": "Автоматы и предохранители"
+    },
+    {
+      "slug": "batarejki-akkumulyatory",
+      "value": "Батарейки и аккумуляторы"
+    },
+    {
+      "slug": "betonosmesiteli",
+      "value": "Бетоносмесители"
+    },
+    {
+      "slug": "bity",
+      "value": "Биты"
+    },
+    {
+      "slug": "bloki-pitaniya",
+      "value": "Блоки питания"
+    },
+    {
+      "slug": "bokorezy",
+      "value": "Бокорезы и кусачки"
+    },
+    {
+      "slug": "bolgarki-ushm",
+      "value": "Болгарки (УШМ)"
+    },
+    {
+      "slug": "boltorezy",
+      "value": "Болторезы"
+    },
+    {
+      "slug": "bp-benzopily",
+      "value": "Бензопилы"
+    },
+    {
+      "slug": "bp-cepi",
+      "value": "Цепи"
+    },
+    {
+      "slug": "bp-fitingi",
+      "value": "Фитинги и переходники"
+    },
+    {
+      "slug": "bp-gazonokosilki",
+      "value": "Газонокосилки"
+    },
+    {
+      "slug": "bp-generatory",
+      "value": "Генераторы"
+    },
+    {
+      "slug": "bp-kompressory",
+      "value": "Компрессоры"
+    },
+    {
+      "slug": "bp-kraskoraspyliteli",
+      "value": "Краскораспылители и краскопульты"
+    },
+    {
+      "slug": "bp-motobloki",
+      "value": "Мотоблоки и культиваторы"
+    },
+    {
+      "slug": "bp-motobury",
+      "value": "Мотобуры и шнеки"
+    },
+    {
+      "slug": "bp-motopompy",
+      "value": "Мотопомпы"
+    },
+    {
+      "slug": "bp-nabory-pnevmoinstrumenta",
+      "value": "Наборы пневмоинструмента"
+    },
+    {
+      "slug": "bp-osnastka-pnevmomolotkov",
+      "value": "Оснастка и запчасти для пневмомолотков"
+    },
+    {
+      "slug": "bp-pnevmocilindry",
+      "value": "Пневмоцилиндры"
+    },
+    {
+      "slug": "bp-pnevmodreli",
+      "value": "Пневмодрели"
+    },
+    {
+      "slug": "bp-pnevmogaikoverty",
+      "value": "Пневмогайковёрты"
+    },
+    {
+      "slug": "bp-pnevmomolotki",
+      "value": "Пневмомолотки и зубила"
+    },
+    {
+      "slug": "bp-pnevmopistolety",
+      "value": "Пневмопистолеты"
+    },
+    {
+      "slug": "bp-pnevmoshlif",
+      "value": "Пневмошлифмашины"
+    },
+    {
+      "slug": "bp-pnevmosteplery",
+      "value": "Пневмостеплеры и нейлеры"
+    },
+    {
+      "slug": "bp-podgotovka-vozduha",
+      "value": "Подготовка сжатого воздуха"
+    },
+    {
+      "slug": "bp-shiny",
+      "value": "Шины направляющие"
+    },
+    {
+      "slug": "bp-shlangi",
+      "value": "Шланги и рукава"
+    },
+    {
+      "slug": "bp-snegouborshchiki",
+      "value": "Снегоуборщики"
+    },
+    {
+      "slug": "bp-trimmery",
+      "value": "Триммеры и мотокосы"
+    },
+    {
+      "slug": "bp-vibroplity",
+      "value": "Виброплиты и трамбовки"
+    },
+    {
+      "slug": "bp-vozdukhoduvki",
+      "value": "Воздуходувки"
+    },
+    {
+      "slug": "bruski-shlif",
+      "value": "Бруски и оселки"
+    },
+    {
+      "slug": "bury",
+      "value": "Буры"
+    },
+    {
+      "slug": "chashki-shlif",
+      "value": "Шлифовальные чашки"
+    },
+    {
+      "slug": "dinamometricheskie-klyuchi",
+      "value": "Динамометрические ключи"
+    },
+    {
+      "slug": "domkraty",
+      "value": "Домкраты"
+    },
+    {
+      "slug": "dreli-shurupoverty",
+      "value": "Дрели и шуруповёрты"
+    },
+    {
+      "slug": "elektronozhnitsy",
+      "value": "Электроножницы по металлу"
+    },
+    {
+      "slug": "elektroustanovochnye-izdeliya",
+      "value": "Электроустановочные изделия"
+    },
+    {
+      "slug": "feny",
+      "value": "Фены строительные"
+    },
+    {
+      "slug": "fiksatory-germetiki-rezby",
+      "value": "Фиксаторы и герметики резьбы"
+    },
+    {
+      "slug": "fonari",
+      "value": "Фонари"
+    },
+    {
+      "slug": "frezery",
+      "value": "Фрезеры"
+    },
+    {
+      "slug": "girlyandy",
+      "value": "Гирлянды"
+    },
+    {
+      "slug": "golovki",
+      "value": "Головки и торцевые ключи"
+    },
+    {
+      "slug": "golovki-shlif",
+      "value": "Шлифовальные головки"
+    },
+    {
+      "slug": "gravery",
+      "value": "Граверы"
+    },
+    {
+      "slug": "hoz-furnitura",
+      "value": "Дверная и оконная фурнитура"
+    },
+    {
+      "slug": "hoz-grabli",
+      "value": "Грабли"
+    },
+    {
+      "slug": "hoz-himiya",
+      "value": "Бытовая химия и пасты"
+    },
+    {
+      "slug": "hoz-homuty",
+      "value": "Хомуты"
+    },
+    {
+      "slug": "hoz-izolenta",
+      "value": "Изолента"
+    },
+    {
+      "slug": "hoz-kolesa",
+      "value": "Колёса и комплектующие"
+    },
+    {
+      "slug": "hoz-kovriki",
+      "value": "Коврики"
+    },
+    {
+      "slug": "hoz-krany",
+      "value": "Краны и смесители"
+    },
+    {
+      "slug": "hoz-lenty",
+      "value": "Ленты клейкие и сигнальные"
+    },
+    {
+      "slug": "hoz-lezviya",
+      "value": "Лезвия и полотна"
+    },
+    {
+      "slug": "hoz-lopaty",
+      "value": "Лопаты и движки снеговые"
+    },
+    {
+      "slug": "hoz-masla",
+      "value": "Масла и смазки"
+    },
+    {
+      "slug": "hoz-meshki",
+      "value": "Мешки и пакеты"
+    },
+    {
+      "slug": "hoz-metly",
+      "value": "Мётлы, веники, черенки"
+    },
+    {
+      "slug": "hoz-nozhi",
+      "value": "Ножи"
+    },
+    {
+      "slug": "hoz-nozhnitsy",
+      "value": "Ножницы"
+    },
+    {
+      "slug": "hoz-opryskivateli",
+      "value": "Опрыскиватели и лейки"
+    },
+    {
+      "slug": "hoz-plenka",
+      "value": "Плёнка"
+    },
+    {
+      "slug": "hoz-podvodki",
+      "value": "Подводки сантехнические"
+    },
+    {
+      "slug": "hoz-radiatory",
+      "value": "Радиаторы и отопление"
+    },
+    {
+      "slug": "hoz-schetchiki",
+      "value": "Счётчики воды"
+    },
+    {
+      "slug": "hoz-sekatory",
+      "value": "Секаторы и сучкорезы"
+    },
+    {
+      "slug": "hoz-setki",
+      "value": "Сетки и укрывной материал"
+    },
+    {
+      "slug": "hoz-shchetki",
+      "value": "Щётки и швабры"
+    },
+    {
+      "slug": "hoz-shlangi",
+      "value": "Шланги"
+    },
+    {
+      "slug": "hoz-sifony",
+      "value": "Сифоны"
+    },
+    {
+      "slug": "hoz-steklorezy",
+      "value": "Стеклорезы"
+    },
+    {
+      "slug": "hoz-tachki",
+      "value": "Тачки и тележки"
+    },
+    {
+      "slug": "hoz-trosy",
+      "value": "Тросы, верёвки, шнуры"
+    },
+    {
+      "slug": "hoz-truby-fitingi",
+      "value": "Трубы и фитинги"
+    },
+    {
+      "slug": "hoz-uplotniteli",
+      "value": "Уплотнители"
+    },
+    {
+      "slug": "hoz-vedra",
+      "value": "Вёдра, тазы, канистры"
+    },
+    {
+      "slug": "hoz-vily",
+      "value": "Вилы"
+    },
+    {
+      "slug": "ibp-preobrazovateli",
+      "value": "ИБП и преобразователи"
+    },
+    {
+      "slug": "izm-analizatory",
+      "value": "Влагомеры, анализаторы, приборы"
+    },
+    {
+      "slug": "izm-areometry",
+      "value": "Ареометры (денсиметры)"
+    },
+    {
+      "slug": "izm-dalnomery",
+      "value": "Дальномеры"
+    },
+    {
+      "slug": "izm-indikatory",
+      "value": "Индикаторы, детекторы, пробники"
+    },
+    {
+      "slug": "izm-kalibry",
+      "value": "Калибры"
+    },
+    {
+      "slug": "izm-kleshchi",
+      "value": "Токоизмерительные клещи"
+    },
+    {
+      "slug": "izm-kleyma",
+      "value": "Клейма и шаблоны"
+    },
+    {
+      "slug": "izm-kolesa",
+      "value": "Измерительные колёса (курвиметры)"
+    },
+    {
+      "slug": "izm-lineyki",
+      "value": "Линейки и рейки"
+    },
+    {
+      "slug": "izm-lupy",
+      "value": "Лупы"
+    },
+    {
+      "slug": "izm-mikrometry",
+      "value": "Микрометры и нутромеры"
+    },
+    {
+      "slug": "izm-multimetry",
+      "value": "Мультиметры и тестеры"
+    },
+    {
+      "slug": "izm-niveliry",
+      "value": "Нивелиры и построители"
+    },
+    {
+      "slug": "izm-ruletki",
+      "value": "Рулетки"
+    },
+    {
+      "slug": "izm-shtangen",
+      "value": "Штангенциркули и глубиномеры"
+    },
+    {
+      "slug": "izm-shtativy",
+      "value": "Штативы, отражатели, держатели"
+    },
+    {
+      "slug": "izm-termometry",
+      "value": "Термометры, пирометры, тепловизоры"
+    },
+    {
+      "slug": "izm-ugolniki",
+      "value": "Угольники, угломеры, транспортиры"
+    },
+    {
+      "slug": "izm-urovni",
+      "value": "Уровни"
+    },
+    {
+      "slug": "kabel-provod",
+      "value": "Кабель и провод"
+    },
+    {
+      "slug": "klemmy-nakonechniki",
+      "value": "Клеммы, наконечники и гильзы"
+    },
+    {
+      "slug": "klyuchi-gaechnye",
+      "value": "Гаечные ключи"
+    },
+    {
+      "slug": "kobury-dlya-instrumenta",
+      "value": "Кобуры для инструмента"
+    },
+    {
+      "slug": "koronki",
+      "value": "Коронки"
+    },
+    {
+      "slug": "korshchetki",
+      "value": "Корщётки"
+    },
+    {
+      "slug": "kovshi-shtukaturnye",
+      "value": "Ковши штукатурные"
+    },
+    {
+      "slug": "kraskoraspyliteli",
+      "value": "Краскораспылители"
+    },
+    {
+      "slug": "krep-bolty",
+      "value": "Болты и винты"
+    },
+    {
+      "slug": "krep-dyubeli",
+      "value": "Дюбели и анкеры"
+    },
+    {
+      "slug": "krep-gaiki",
+      "value": "Гайки"
+    },
+    {
+      "slug": "krep-gvozdi",
+      "value": "Гвозди"
+    },
+    {
+      "slug": "krep-karabiny",
+      "value": "Карабины, крюки, рымы"
+    },
+    {
+      "slug": "krep-provoloka",
+      "value": "Проволока"
+    },
+    {
+      "slug": "krep-samorezy",
+      "value": "Саморезы"
+    },
+    {
+      "slug": "krep-shaiby",
+      "value": "Шайбы"
+    },
+    {
+      "slug": "krep-shpilki",
+      "value": "Шпильки"
+    },
+    {
+      "slug": "krep-shplinty",
+      "value": "Шплинты"
+    },
+    {
+      "slug": "krep-shurupy",
+      "value": "Шурупы и глухари"
+    },
+    {
+      "slug": "krep-skoby",
+      "value": "Скобы"
+    },
+    {
+      "slug": "krep-styazhki",
+      "value": "Хомуты-стяжки"
+    },
+    {
+      "slug": "krep-svp",
+      "value": "Системы выравнивания плитки"
+    },
+    {
+      "slug": "krep-takelazh",
+      "value": "Тросы, канаты, такелаж"
+    },
+    {
+      "slug": "krep-zaklepki",
+      "value": "Заклёпки"
+    },
+    {
+      "slug": "krep-zamki",
+      "value": "Замки и скобянка"
+    },
+    {
+      "slug": "krugi-almaznye",
+      "value": "Алмазные круги"
+    },
+    {
+      "slug": "krugi-shlif",
+      "value": "Отрезные и шлифовальные круги"
+    },
+    {
+      "slug": "kukhonnye-razdelochnye-nozhi",
+      "value": "Кухонные и разделочные ножи"
+    },
+    {
+      "slug": "lampy",
+      "value": "Лампы"
+    },
+    {
+      "slug": "lebedki-tali",
+      "value": "Лебёдки и тали"
+    },
+    {
+      "slug": "lenty-shlif",
+      "value": "Ленты шлифовальные"
+    },
+    {
+      "slug": "lobziki",
+      "value": "Лобзики"
+    },
+    {
+      "slug": "lomy-gvozdodery",
+      "value": "Ломы, гвоздодёры, монтировки"
+    },
+    {
+      "slug": "meshki-pylesos",
+      "value": "Мешки для пылесосов"
+    },
+    {
+      "slug": "metchiki",
+      "value": "Метчики"
+    },
+    {
+      "slug": "metchiki-plashki",
+      "value": "Метчики и плашки"
+    },
+    {
+      "slug": "mfi",
+      "value": "Многофункциональные инструменты"
+    },
+    {
+      "slug": "miksery",
+      "value": "Строительные миксеры"
+    },
+    {
+      "slug": "molotki",
+      "value": "Молотки и кувалды"
+    },
+    {
+      "slug": "montazhnye-korobki",
+      "value": "Монтажные коробки"
+    },
+    {
+      "slug": "nabory-bit",
+      "value": "Наборы бит и насадок"
+    },
+    {
+      "slug": "nabory-burov",
+      "value": "Наборы буров"
+    },
+    {
+      "slug": "nabory-elektro",
+      "value": "Наборы электроинструмента"
+    },
+    {
+      "slug": "nabory-instrumenta",
+      "value": "Наборы инструмента"
+    },
+    {
+      "slug": "nabory-koronok",
+      "value": "Наборы коронок"
+    },
+    {
+      "slug": "nabory-metchikov-plashek",
+      "value": "Наборы метчиков и плашек"
+    },
+    {
+      "slug": "nabory-otvertok",
+      "value": "Наборы отвёрток"
+    },
+    {
+      "slug": "nabory-piki",
+      "value": "Наборы пик и долот"
+    },
+    {
+      "slug": "nabory-pilok",
+      "value": "Наборы пилок и полотен"
+    },
+    {
+      "slug": "nabory-shlif",
+      "value": "Наборы абразива"
+    },
+    {
+      "slug": "nabory-sverel",
+      "value": "Наборы свёрл"
+    },
+    {
+      "slug": "nadfili-shlif",
+      "value": "Надфили"
+    },
+    {
+      "slug": "napilniki",
+      "value": "Напильники и надфили"
+    },
+    {
+      "slug": "nazhdachka",
+      "value": "Наждачная бумага и сетка"
+    },
+    {
+      "slug": "nozhi",
+      "value": "Ножи строительные"
+    },
+    {
+      "slug": "nozhnitsy-ruchnye",
+      "value": "Ножницы ручные"
+    },
+    {
+      "slug": "nozhovki",
+      "value": "Ножовки и пилы ручные"
+    },
+    {
+      "slug": "obor-mebel",
+      "value": "Верстаки и мебель мастерской"
+    },
+    {
+      "slug": "obor-moyki",
+      "value": "Мойки высокого давления"
+    },
+    {
+      "slug": "obor-nasosy",
+      "value": "Насосы"
+    },
+    {
+      "slug": "obor-obogrevateli",
+      "value": "Обогреватели и конвекторы"
+    },
+    {
+      "slug": "obor-pena",
+      "value": "Пеногенераторы и автохимия"
+    },
+    {
+      "slug": "obor-pushki",
+      "value": "Тепловые пушки"
+    },
+    {
+      "slug": "obor-shlangi",
+      "value": "Шланги, трубки, насадки"
+    },
+    {
+      "slug": "obor-smazka",
+      "value": "Пресс-маслёнки, шприцы, нагнетатели"
+    },
+    {
+      "slug": "obor-telezhki",
+      "value": "Тележки"
+    },
+    {
+      "slug": "osnastka-bit",
+      "value": "Оснастка для бит"
+    },
+    {
+      "slug": "osnastka-burov",
+      "value": "Оснастка для буров"
+    },
+    {
+      "slug": "osnastka-koronok",
+      "value": "Оснастка для коронок"
+    },
+    {
+      "slug": "osnastka-rezbonarez",
+      "value": "Оснастка для нарезания резьбы"
+    },
+    {
+      "slug": "osnastka-reztsov",
+      "value": "Оснастка для резцов"
+    },
+    {
+      "slug": "osnastka-sverel",
+      "value": "Оснастка для свёрл"
+    },
+    {
+      "slug": "otboynye-molotki",
+      "value": "Отбойные молотки"
+    },
+    {
+      "slug": "otreznye-mashiny-metall",
+      "value": "Отрезные машины по металлу"
+    },
+    {
+      "slug": "otvertki",
+      "value": "Отвёртки"
+    },
+    {
+      "slug": "passatizhi",
+      "value": "Пассатижи и плоскогубцы"
+    },
+    {
+      "slug": "payalniki",
+      "value": "Паяльники"
+    },
+    {
+      "slug": "payalniki-stancii",
+      "value": "Паяльники и паяльные станции"
+    },
+    {
+      "slug": "perehodnye-koltsa",
+      "value": "Переходные кольца"
+    },
+    {
+      "slug": "perenoski",
+      "value": "Переноски"
+    },
+    {
+      "slug": "perforatory",
+      "value": "Перфораторы"
+    },
+    {
+      "slug": "piki-dolota",
+      "value": "Пики и долота"
+    },
+    {
+      "slug": "pilki-polotna",
+      "value": "Пилки и полотна"
+    },
+    {
+      "slug": "pily",
+      "value": "Пилы"
+    },
+    {
+      "slug": "pintsety",
+      "value": "Пинцеты"
+    },
+    {
+      "slug": "pistolety-dlya-peny",
+      "value": "Пистолеты для монтажной пены"
+    },
+    {
+      "slug": "pistolety-kleevye",
+      "value": "Клеевые пистолеты"
+    },
+    {
+      "slug": "plashki",
+      "value": "Плашки"
+    },
+    {
+      "slug": "plitkorezy",
+      "value": "Плиткорезы"
+    },
+    {
+      "slug": "polirovalnye",
+      "value": "Полировальные машины"
+    },
+    {
+      "slug": "prisposobleniya-osnastka",
+      "value": "Приспособления для оснастки"
+    },
+    {
+      "slug": "prochaya-osnastka",
+      "value": "Прочая оснастка"
+    },
+    {
+      "slug": "protyazhki-uzk",
+      "value": "Протяжки для кабеля (УЗК)"
+    },
+    {
+      "slug": "prozhektory",
+      "value": "Прожекторы"
+    },
+    {
+      "slug": "puskovye-provoda",
+      "value": "Пусковые провода"
+    },
+    {
+      "slug": "pusko-zaryadnye",
+      "value": "Пуско-зарядные устройства"
+    },
+    {
+      "slug": "pylesosy",
+      "value": "Строительные пылесосы"
+    },
+    {
+      "slug": "raskhodniki-pajki",
+      "value": "Расходники для пайки"
+    },
+    {
+      "slug": "razemy-soediniteli",
+      "value": "Разъёмы и соединители"
+    },
+    {
+      "slug": "razvertki-frezy",
+      "value": "Развёртки и фрезы"
+    },
+    {
+      "slug": "rele",
+      "value": "Реле"
+    },
+    {
+      "slug": "reztsy",
+      "value": "Резцы"
+    },
+    {
+      "slug": "rubanki",
+      "value": "Электрорубанки"
+    },
+    {
+      "slug": "rukoyatki-dlya-instrumenta",
+      "value": "Рукоятки для ручного инструмента"
+    },
+    {
+      "slug": "sadovye-bury",
+      "value": "Садовые буры"
+    },
+    {
+      "slug": "sharoshki",
+      "value": "Шарошки и борфрезы"
+    },
+    {
+      "slug": "shlifmashiny",
+      "value": "Шлифовальные машины"
+    },
+    {
+      "slug": "shtoborezy",
+      "value": "Штроборезы и бороздоделы"
+    },
+    {
+      "slug": "siz-aptechki",
+      "value": "Аптечки"
+    },
+    {
+      "slug": "siz-golovki",
+      "value": "Пожарные головки и стволы"
+    },
+    {
+      "slug": "siz-izveshchateli",
+      "value": "Извещатели и оповещатели"
+    },
+    {
+      "slug": "siz-kaski",
+      "value": "Каски и подшлемники"
+    },
+    {
+      "slug": "siz-maski",
+      "value": "Маски и полумаски"
+    },
+    {
+      "slug": "siz-nakolenniki",
+      "value": "Наколенники и налокотники"
+    },
+    {
+      "slug": "siz-naushniki",
+      "value": "Наушники и беруши"
+    },
+    {
+      "slug": "siz-obuv",
+      "value": "Обувь"
+    },
+    {
+      "slug": "siz-ochki",
+      "value": "Очки и щитки защитные"
+    },
+    {
+      "slug": "siz-odezhda",
+      "value": "Костюмы, комбинезоны, одежда"
+    },
+    {
+      "slug": "siz-ognetushiteli",
+      "value": "Огнетушители"
+    },
+    {
+      "slug": "siz-perchatki",
+      "value": "Перчатки и рукавицы"
+    },
+    {
+      "slug": "siz-pozh-inventar",
+      "value": "Пожарный инвентарь"
+    },
+    {
+      "slug": "siz-respiratory",
+      "value": "Респираторы, противогазы, фильтры"
+    },
+    {
+      "slug": "siz-rukava",
+      "value": "Пожарные рукава"
+    },
+    {
+      "slug": "siz-shkafy",
+      "value": "Пожарные шкафы и щиты"
+    },
+    {
+      "slug": "siz-stekla",
+      "value": "Стёкла и светофильтры"
+    },
+    {
+      "slug": "siz-vysota",
+      "value": "СИЗ от падения (привязи, пояса, стропы)"
+    },
+    {
+      "slug": "siz-znaki",
+      "value": "Знаки безопасности"
+    },
+    {
+      "slug": "skruchevateli-provoloki",
+      "value": "Скручиватели проволоки"
+    },
+    {
+      "slug": "spetsialnye-klyuchi",
+      "value": "Специальные ключи"
+    },
+    {
+      "slug": "spetsialnye-nozhi",
+      "value": "Специальные ножи"
+    },
+    {
+      "slug": "stabilizatory-napryazheniya",
+      "value": "Стабилизаторы напряжения"
+    },
+    {
+      "slug": "stameski",
+      "value": "Стамески и долота"
+    },
+    {
+      "slug": "stanki-zatochnye",
+      "value": "Станки заточные"
+    },
+    {
+      "slug": "steplery",
+      "value": "Степлеры (скобозабивные)"
+    },
+    {
+      "slug": "steplery-i-zaklepochniki",
+      "value": "Степлеры и заклёпочники"
+    },
+    {
+      "slug": "sterzhni-kleevye",
+      "value": "Клеевые стержни"
+    },
+    {
+      "slug": "str-germetiki",
+      "value": "Герметики"
+    },
+    {
+      "slug": "strippery",
+      "value": "Стрипперы и обжимной инструмент"
+    },
+    {
+      "slug": "str-kelmy",
+      "value": "Кельмы, гладилки, тёрки"
+    },
+    {
+      "slug": "str-kisti",
+      "value": "Кисти"
+    },
+    {
+      "slug": "str-klei",
+      "value": "Клеи"
+    },
+    {
+      "slug": "str-kraski",
+      "value": "Эмали, краски, грунтовки"
+    },
+    {
+      "slug": "str-laki",
+      "value": "Лаки, пропитки, морилки"
+    },
+    {
+      "slug": "str-lestnicy",
+      "value": "Лестницы и стремянки"
+    },
+    {
+      "slug": "str-markery",
+      "value": "Маркеры и карандаши"
+    },
+    {
+      "slug": "str-miksery",
+      "value": "Строительные миксеры и насадки"
+    },
+    {
+      "slug": "stroitelnye-lesa-vyshki",
+      "value": "Строительные леса и вышки-туры"
+    },
+    {
+      "slug": "str-pena",
+      "value": "Монтажная пена"
+    },
+    {
+      "slug": "str-pistolety",
+      "value": "Пистолеты монтажные"
+    },
+    {
+      "slug": "str-pravila",
+      "value": "Правила и отвесы"
+    },
+    {
+      "slug": "str-rastvoriteli",
+      "value": "Растворители и очистители"
+    },
+    {
+      "slug": "str-shpateli",
+      "value": "Шпатели"
+    },
+    {
+      "slug": "str-skoby",
+      "value": "Скобы и гвозди для степлера"
+    },
+    {
+      "slug": "str-smazki",
+      "value": "Смазки и аэрозоли"
+    },
+    {
+      "slug": "str-smesi",
+      "value": "Шпаклёвки, штукатурки, смеси"
+    },
+    {
+      "slug": "strubtsiny",
+      "value": "Струбцины"
+    },
+    {
+      "slug": "str-valiki",
+      "value": "Валики и ролики"
+    },
+    {
+      "slug": "sumki-poyasnye",
+      "value": "Сумки поясные"
+    },
+    {
+      "slug": "svar-apparaty",
+      "value": "Сварочные аппараты, инверторы, плазморезы"
+    },
+    {
+      "slug": "svar-ballony",
+      "value": "Газовые баллоны и газ"
+    },
+    {
+      "slug": "svar-cangi",
+      "value": "Цанги"
+    },
+    {
+      "slug": "svar-derzhateli",
+      "value": "Электрододержатели"
+    },
+    {
+      "slug": "svar-electrody",
+      "value": "Электроды"
+    },
+    {
+      "slug": "svar-gorelki",
+      "value": "Горелки и резаки"
+    },
+    {
+      "slug": "svar-klemmy",
+      "value": "Клеммы, зажимы, кабели"
+    },
+    {
+      "slug": "svar-manometry",
+      "value": "Манометры"
+    },
+    {
+      "slug": "svar-maski",
+      "value": "Маски и щитки сварочные"
+    },
+    {
+      "slug": "svar-provoloka",
+      "value": "Сварочная проволока и прутки"
+    },
+    {
+      "slug": "svar-reduktory",
+      "value": "Газовые редукторы"
+    },
+    {
+      "slug": "svar-rukava",
+      "value": "Газовые рукава"
+    },
+    {
+      "slug": "svar-sopla",
+      "value": "Сопла, мундштуки, наконечники"
+    },
+    {
+      "slug": "svar-sprei",
+      "value": "Спреи и химия сварочная"
+    },
+    {
+      "slug": "svar-zatvory",
+      "value": "Затворы и обратные клапаны"
+    },
+    {
+      "slug": "sverla",
+      "value": "Сверла"
+    },
+    {
+      "slug": "sverlilnye-stanki",
+      "value": "Сверлильные станки"
+    },
+    {
+      "slug": "svetilniki",
+      "value": "Светильники"
+    },
+    {
+      "slug": "syomniki",
+      "value": "Съёмники"
+    },
+    {
+      "slug": "termousadka",
+      "value": "Термоусадка"
+    },
+    {
+      "slug": "tiski",
+      "value": "Тиски"
+    },
+    {
+      "slug": "tochila-nazhdaki",
+      "value": "Точила и наждаки"
+    },
+    {
+      "slug": "topory",
+      "value": "Топоры и колуны"
+    },
+    {
+      "slug": "transformatory",
+      "value": "Трансформаторы"
+    },
+    {
+      "slug": "trosorezy-kabelerezy",
+      "value": "Тросорезы и кабелерезы"
+    },
+    {
+      "slug": "truborezy",
+      "value": "Труборезы"
+    },
+    {
+      "slug": "udliniteli-filtry",
+      "value": "Удлинители и сетевые фильтры"
+    },
+    {
+      "slug": "ustanovki-almaznogo-bureniya",
+      "value": "Установки алмазного бурения"
+    },
+    {
+      "slug": "vibratory-betona",
+      "value": "Вибраторы для бетона"
+    },
+    {
+      "slug": "vorotki",
+      "value": "Воротки и трещотки"
+    },
+    {
+      "slug": "yashchiki-sumki",
+      "value": "Ящики, сумки, органайзеры"
+    },
+    {
+      "slug": "zaklepochniki",
+      "value": "Заклёпочники ручные"
+    },
+    {
+      "slug": "zap-baki",
+      "value": "Топливные баки"
+    },
+    {
+      "slug": "zap-dempfery",
+      "value": "Демпферы и амортизаторы"
+    },
+    {
+      "slug": "zap-dvigateli",
+      "value": "Двигатели"
+    },
+    {
+      "slug": "zap-filtry",
+      "value": "Фильтры"
+    },
+    {
+      "slug": "zap-karbyuratory",
+      "value": "Карбюраторы"
+    },
+    {
+      "slug": "zap-katushki",
+      "value": "Катушки зажигания"
+    },
+    {
+      "slug": "zap-kolenval-shatun",
+      "value": "Коленвалы и шатуны"
+    },
+    {
+      "slug": "zap-korpusa-kryshki",
+      "value": "Корпуса, крышки, кожухи"
+    },
+    {
+      "slug": "zap-krepezh",
+      "value": "Крепёж (болты, шурупы, гайки)"
+    },
+    {
+      "slug": "zap-mufty",
+      "value": "Муфты и сцепления"
+    },
+    {
+      "slug": "zap-platy-bloki",
+      "value": "Платы и блоки управления"
+    },
+    {
+      "slug": "zap-podshipniki",
+      "value": "Подшипники"
+    },
+    {
+      "slug": "zap-porshni-tsilindry",
+      "value": "Поршни и цилиндры"
+    },
+    {
+      "slug": "zap-pruzhiny",
+      "value": "Пружины"
+    },
+    {
+      "slug": "zap-reduktory",
+      "value": "Редукторы"
+    },
+    {
+      "slug": "zap-remkomplekty",
+      "value": "Ремкомплекты"
+    },
+    {
+      "slug": "zap-remni",
+      "value": "Ремни приводные"
+    },
+    {
+      "slug": "zap-shchetki-ugolnye",
+      "value": "Угольные щётки"
+    },
+    {
+      "slug": "zap-shesterni",
+      "value": "Шестерни и зубчатые колёса"
+    },
+    {
+      "slug": "zap-shpindeli-valy",
+      "value": "Шпиндели, валы, стволы, патроны"
+    },
+    {
+      "slug": "zap-startery",
+      "value": "Стартеры"
+    },
+    {
+      "slug": "zap-statory-yakorya",
+      "value": "Статоры, якоря, роторы"
+    },
+    {
+      "slug": "zap-stopornye-koltsa",
+      "value": "Стопорные и опорные кольца"
+    },
+    {
+      "slug": "zap-svechi",
+      "value": "Свечи зажигания"
+    },
+    {
+      "slug": "zap-uplotneniya",
+      "value": "Уплотнения и прокладки"
+    },
+    {
+      "slug": "zap-vtulki",
+      "value": "Втулки"
+    },
+    {
+      "slug": "zap-vyklyuchateli",
+      "value": "Выключатели и кнопки"
+    },
+    {
+      "slug": "zap-zvezdochki",
+      "value": "Звёздочки и барабаны"
+    },
+    {
+      "slug": "zaryadnye",
+      "value": "Зарядные устройства"
+    },
+    {
+      "slug": "zenkovki",
+      "value": "Зенковки и зенкеры"
+    },
+    {
+      "slug": "zubila",
+      "value": "Зубила, керны, пробойники"
+    },
+    {
+      "slug": "zvonki",
+      "value": "Звонки"
+    }
+  ],
+  "checksum": "b281bd671d81783970bf9f2859530795c19bfc97344d8490211f78ba291583d4",
+  "exported_at": "2026-07-28T10:32:46.300676+00:00",
+  "items": [
+    {
+      "article": "",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 173,
+      "category_path": "Автоинструмент и гаражное оборудование / Диагностика и контроль",
+      "code_1c": "00025583",
+      "input_hash": "c679f55cbff14cfcb8b447aff7f6d225cf5c8ebbc52a9473b6ff96c800ad974b",
+      "input_snapshot": {
+        "article": "",
+        "barcode": "",
+        "brand": "",
+        "category_id": 173,
+        "category_path": "Автоинструмент и гаражное оборудование / Диагностика и контроль",
+        "code_1c": "00025583",
+        "name": "Ареометр АНТ-1 (710-770) ц.д. 0,5 ГОСТ 18481-81",
+        "original_name": "Ареометр АНТ-1 (710-770) ц.д. 0,5 ГОСТ 18481-81",
+        "product_id": 4,
+        "source_group": "Автомобильный инструмент"
+      },
+      "name": "Ареометр АНТ-1 (710-770) ц.д. 0,5 ГОСТ 18481-81",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Ареометр АНТ-1 (710-770) ц.д. 0,5 ГОСТ 18481-81",
+      "product_id": 4,
+      "product_ref": 4,
+      "source_group": "Автомобильный инструмент"
+    },
+    {
+      "article": "",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 2,
+      "category_path": "Ручной инструмент / Автомобильный инструмент",
+      "code_1c": "00018091",
+      "input_hash": "58380d2d64ceaee9f3dc38772cd9c4ce9da7bbf9b5bca87aa8de9cf62ee6357c",
+      "input_snapshot": {
+        "article": "",
+        "barcode": "",
+        "brand": "",
+        "category_id": 2,
+        "category_path": "Ручной инструмент / Автомобильный инструмент",
+        "code_1c": "00018091",
+        "name": "Гайковерт ручной РГ56 М",
+        "original_name": "Гайковерт ручной РГ56 М",
+        "product_id": 22,
+        "source_group": "Автомобильный инструмент"
+      },
+      "name": "Гайковерт ручной РГ56 М",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Гайковерт ручной РГ56 М",
+      "product_id": 22,
+      "product_ref": 22,
+      "source_group": "Автомобильный инструмент"
+    },
+    {
+      "article": "",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 386,
+      "category_path": "Электрика и освещение / Кабель и провод",
+      "code_1c": "00008321",
+      "input_hash": "1f01f38183b7c8d20d70367e58a6b9425373f33250aae8d93634fa5a66b75ad4",
+      "input_snapshot": {
+        "article": "",
+        "barcode": "",
+        "brand": "",
+        "category_id": 386,
+        "category_path": "Электрика и освещение / Кабель и провод",
+        "code_1c": "00008321",
+        "name": "Домкрат кабельный ДК-5, две стойки, два винта",
+        "original_name": "Домкрат кабельный ДК-5, две стойки, два винта",
+        "product_id": 123,
+        "source_group": "Автомобильный инструмент"
+      },
+      "name": "Домкрат кабельный ДК-5, две стойки, два винта",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Домкрат кабельный ДК-5, две стойки, два винта",
+      "product_id": 123,
+      "product_ref": 123,
+      "source_group": "Автомобильный инструмент"
+    },
+    {
+      "article": "75552",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 394,
+      "category_path": "Запчасти, аккумуляторы и комплектующие / Зарядные устройства",
+      "code_1c": "00002347",
+      "input_hash": "ac64598146a7c9237d91253fbee50e7b59994550954fb1bfbde5efe57c1123c5",
+      "input_snapshot": {
+        "article": "75552",
+        "barcode": "",
+        "brand": "",
+        "category_id": 394,
+        "category_path": "Запчасти, аккумуляторы и комплектующие / Зарядные устройства",
+        "code_1c": "00002347",
+        "name": "Зарядное устройство PW 325 12 Вольт 18 Ампер",
+        "original_name": "Зарядное устройство PW 325 12 Вольт 18 Ампер",
+        "product_id": 164,
+        "source_group": "Автомобильный инструмент"
+      },
+      "name": "Зарядное устройство PW 325 12 Вольт 18 Ампер",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Зарядное устройство PW 325 12 Вольт 18 Ампер",
+      "product_id": 164,
+      "product_ref": 164,
+      "source_group": "Автомобильный инструмент"
+    },
+    {
+      "article": "",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 158,
+      "category_path": "Силовая техника, пневмо и компрессоры / Компрессоры",
+      "code_1c": "00044009",
+      "input_hash": "68687f5e1c3928f6b6e46b76cb8b39c1c0f4daa9d7c6e21ccabf11ecbc8201bf",
+      "input_snapshot": {
+        "article": "",
+        "barcode": "",
+        "brand": "",
+        "category_id": 158,
+        "category_path": "Силовая техника, пневмо и компрессоры / Компрессоры",
+        "code_1c": "00044009",
+        "name": "Компрессор  Бежецк АСО К-11",
+        "original_name": "Компрессор  Бежецк АСО К-11",
+        "product_id": 179,
+        "source_group": "Автомобильный инструмент"
+      },
+      "name": "Компрессор  Бежецк АСО К-11",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Компрессор  Бежецк АСО К-11",
+      "product_id": 179,
+      "product_ref": 179,
+      "source_group": "Автомобильный инструмент"
+    },
+    {
+      "article": "72570",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 98,
+      "category_path": "Оснастка и расходные материалы / Шарошки и борфрезы / Шарошки",
+      "code_1c": "00040861",
+      "input_hash": "00be43cb2e2d2c41a4150c1485f43cce16b46fda0418a5bac9097687242eee80",
+      "input_snapshot": {
+        "article": "72570",
+        "barcode": "",
+        "brand": "",
+        "category_id": 98,
+        "category_path": "Оснастка и расходные материалы / Шарошки и борфрезы / Шарошки",
+        "code_1c": "00040861",
+        "name": "Шарошки победит 6зубцов ВАЗ 2101,21011,2103,2106,21213,21083,2110,2111,ЗМЗ 406",
+        "original_name": "Шарошки победит 6зубцов ВАЗ 2101,21011,2103,2106,21213,21083,2110,2111,ЗМЗ 406",
+        "product_id": 377,
+        "source_group": "Автомобильный инструмент"
+      },
+      "name": "Шарошки победит 6зубцов ВАЗ 2101,21011,2103,2106,21213,21083,2110,2111,ЗМЗ 406",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Шарошки победит 6зубцов ВАЗ 2101,21011,2103,2106,21213,21083,2110,2111,ЗМЗ 406",
+      "product_id": 377,
+      "product_ref": 377,
+      "source_group": "Автомобильный инструмент"
+    },
+    {
+      "article": "59610",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 3,
+      "category_path": "Электроинструмент",
+      "code_1c": "00037775",
+      "input_hash": "b8de825d7cae1294fe23e3f38c3eb57c8fc0720656b4813999a5cba398386d0e",
+      "input_snapshot": {
+        "article": "59610",
+        "barcode": "",
+        "brand": "",
+        "category_id": 3,
+        "category_path": "Электроинструмент",
+        "code_1c": "00037775",
+        "name": "Воздуходувка аккум DENZEL RB180-36, Li-ion 36В 4Ач, 180км/ч 820м3/ч 2 аккум 18В 4Ач",
+        "original_name": "Воздуходувка аккум DENZEL RB180-36, Li-ion 36В 4Ач, 180км/ч 820м3/ч 2 аккум 18В 4Ач",
+        "product_id": 422,
+        "source_group": "Аккумуляторный инструмент"
+      },
+      "name": "Воздуходувка аккум DENZEL RB180-36, Li-ion 36В 4Ач, 180км/ч 820м3/ч 2 аккум 18В 4Ач",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Воздуходувка аккум DENZEL RB180-36, Li-ion 36В 4Ач, 180км/ч 820м3/ч 2 аккум 18В 4Ач",
+      "product_id": 422,
+      "product_ref": 422,
+      "source_group": "Аккумуляторный инструмент"
+    },
+    {
+      "article": "",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 409,
+      "category_path": "Садовая техника и инвентарь / Прочий бензоинструмент",
+      "code_1c": "00045114",
+      "input_hash": "c127250642060030e7ca63407a4ce2eed9e8ac17a950d1e24d5aa1aab742d7ad",
+      "input_snapshot": {
+        "article": "",
+        "barcode": "",
+        "brand": "",
+        "category_id": 409,
+        "category_path": "Садовая техника и инвентарь / Прочий бензоинструмент",
+        "code_1c": "00045114",
+        "name": "Бак со станиной для швонарезчика Patriot RCS-450",
+        "original_name": "Бак со станиной для швонарезчика Patriot RCS-450",
+        "product_id": 1453,
+        "source_group": "Бензоинструмент и расходники для них"
+      },
+      "name": "Бак со станиной для швонарезчика Patriot RCS-450",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Бак со станиной для швонарезчика Patriot RCS-450",
+      "product_id": 1453,
+      "product_ref": 1453,
+      "source_group": "Бензоинструмент и расходники для них"
+    },
+    {
+      "article": "",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 204,
+      "category_path": "Спецодежда и СИЗ / Респираторы и маски",
+      "code_1c": "00015591",
+      "input_hash": "efaaa65328d4c43395c2f6eaf673be1396ba12a7fe95b6dddb06a2b50972013e",
+      "input_snapshot": {
+        "article": "",
+        "barcode": "",
+        "brand": "",
+        "category_id": 204,
+        "category_path": "Спецодежда и СИЗ / Респираторы и маски",
+        "code_1c": "00015591",
+        "name": "Сумка для противогаза",
+        "original_name": "Сумка для противогаза",
+        "product_id": 1860,
+        "source_group": "Бензоинструмент и расходники для них"
+      },
+      "name": "Сумка для противогаза",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Сумка для противогаза",
+      "product_id": 1860,
+      "product_ref": 1860,
+      "source_group": "Бензоинструмент и расходники для них"
+    },
+    {
+      "article": "DS1000E",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 380,
+      "category_path": "Измерительный инструмент / Весы и счётчики",
+      "code_1c": "00038207",
+      "input_hash": "4d214c5a6d0b7a82f5de8e477010cdaf30cad2aeae24758e56da9ed2a1be09c4",
+      "input_snapshot": {
+        "article": "DS1000E",
+        "barcode": "",
+        "brand": "",
+        "category_id": 380,
+        "category_path": "Измерительный инструмент / Весы и счётчики",
+        "code_1c": "00038207",
+        "name": "Электрогенератор дизельный CHAMPION DS1000E (10/11кВт 17лс 25л 170кг эл.стартер, колеса,счетчик)",
+        "original_name": "Электрогенератор дизельный CHAMPION DS1000E (10/11кВт 17лс 25л 170кг эл.стартер, колеса,счетчик)",
+        "product_id": 2126,
+        "source_group": "Бензоинструмент и расходники для них"
+      },
+      "name": "Электрогенератор дизельный CHAMPION DS1000E (10/11кВт 17лс 25л 170кг эл.стартер, колеса,счетчик)",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Электрогенератор дизельный CHAMPION DS1000E (10/11кВт 17лс 25л 170кг эл.стартер, колеса,счетчик)",
+      "product_id": 2126,
+      "product_ref": 2126,
+      "source_group": "Бензоинструмент и расходники для них"
+    },
+    {
+      "article": "ALV-3003",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 216,
+      "category_path": "Хранение и организация / Органайзеры и кейсы",
+      "code_1c": "00043670",
+      "input_hash": "13a38b15b4902206cb595b9a99346d47c92b18b88edcf89a81acfea7781d0fcc",
+      "input_snapshot": {
+        "article": "ALV-3003",
+        "barcode": "",
+        "brand": "",
+        "category_id": 216,
+        "category_path": "Хранение и организация / Органайзеры и кейсы",
+        "code_1c": "00043670",
+        "name": "Бокс для инструмента для лестницы ALVE",
+        "original_name": "Бокс для инструмента для лестницы ALVE",
+        "product_id": 4944,
+        "source_group": "Вышки. леса, лестницы, стремянки"
+      },
+      "name": "Бокс для инструмента для лестницы ALVE",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Бокс для инструмента для лестницы ALVE",
+      "product_id": 4944,
+      "product_ref": 4944,
+      "source_group": "Вышки. леса, лестницы, стремянки"
+    },
+    {
+      "article": "GV60-1008030-0001",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 358,
+      "category_path": "Крепёж и метизы / Болты",
+      "code_1c": "00034774",
+      "input_hash": "420f44da7e8b007b2b34b71c6e5cc115dc23bcfd4b74615b8616b468c809955b",
+      "input_snapshot": {
+        "article": "GV60-1008030-0001",
+        "barcode": "",
+        "brand": "",
+        "category_id": 358,
+        "category_path": "Крепёж и метизы / Болты",
+        "code_1c": "00034774",
+        "name": "Винт с шестигранной головкой ГОСТ Р ИСО 4017-М8х30-5,6-А2F",
+        "original_name": "Винт с шестигранной головкой ГОСТ Р ИСО 4017-М8х30-5,6-А2F",
+        "product_id": 4945,
+        "source_group": "Вышки. леса, лестницы, стремянки"
+      },
+      "name": "Винт с шестигранной головкой ГОСТ Р ИСО 4017-М8х30-5,6-А2F",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Винт с шестигранной головкой ГОСТ Р ИСО 4017-М8х30-5,6-А2F",
+      "product_id": 4945,
+      "product_ref": 4945,
+      "source_group": "Вышки. леса, лестницы, стремянки"
+    },
+    {
+      "article": "",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 193,
+      "category_path": "Строительный и отделочный инструмент / Герметики и монтажные пены",
+      "code_1c": "00012444",
+      "input_hash": "099b4fd9586167fb8a6ef0be28cd523ca3056767d43ddfd8e95e296b871e008f",
+      "input_snapshot": {
+        "article": "",
+        "barcode": "",
+        "brand": "",
+        "category_id": 193,
+        "category_path": "Строительный и отделочный инструмент / Герметики и монтажные пены",
+        "code_1c": "00012444",
+        "name": "Адгилин М НПЭ",
+        "original_name": "Адгилин М НПЭ",
+        "product_id": 5312,
+        "source_group": "Герметики, пены, клеи и пр отделочные материалы"
+      },
+      "name": "Адгилин М НПЭ",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Адгилин М НПЭ",
+      "product_id": 5312,
+      "product_ref": 5312,
+      "source_group": "Герметики, пены, клеи и пр отделочные материалы"
+    },
+    {
+      "article": "374432",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 21,
+      "category_path": "Запчасти / Запчасти к инструменту / ЗУБР",
+      "code_1c": "00020861",
+      "input_hash": "1348370036cd0a48f6f9756b3343961264e0ebc18fdf4430d70244d6dc01de9e",
+      "input_snapshot": {
+        "article": "374432",
+        "barcode": "",
+        "brand": "",
+        "category_id": 21,
+        "category_path": "Запчасти / Запчасти к инструменту / ЗУБР",
+        "code_1c": "00020861",
+        "name": "Боек 374432",
+        "original_name": "Боек 374432",
+        "product_id": 6503,
+        "source_group": "ЗУБР"
+      },
+      "name": "Боек 374432",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Боек 374432",
+      "product_id": 6503,
+      "product_ref": 6503,
+      "source_group": "ЗУБР"
+    },
+    {
+      "article": "",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 328,
+      "category_path": "Сварочное оборудование / Плазменная резка",
+      "code_1c": "00035429",
+      "input_hash": "61064dfa3cce263c66080eefd183b8cfa253fe6873f846b53e9573d5fb6af6fa",
+      "input_snapshot": {
+        "article": "",
+        "barcode": "",
+        "brand": "",
+        "category_id": 328,
+        "category_path": "Сварочное оборудование / Плазменная резка",
+        "code_1c": "00035429",
+        "name": "Катод (плазмотрона А141",
+        "original_name": "Катод (плазмотрона А141",
+        "product_id": 6798,
+        "source_group": "Запасные части"
+      },
+      "name": "Катод (плазмотрона А141",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Катод (плазмотрона А141",
+      "product_id": 6798,
+      "product_ref": 6798,
+      "source_group": "Запасные части"
+    },
+    {
+      "article": "",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 27,
+      "category_path": "Измерительный инструмент",
+      "code_1c": "00006930",
+      "input_hash": "8ff6e2342e81f23b4cc78d452d8a700e6d454ff7a9d2fe8a41982d5d431859dc",
+      "input_snapshot": {
+        "article": "",
+        "barcode": "",
+        "brand": "",
+        "category_id": 27,
+        "category_path": "Измерительный инструмент",
+        "code_1c": "00006930",
+        "name": "Беспроводной сканер штрих-кода",
+        "original_name": "Беспроводной сканер штрих-кода",
+        "product_id": 10559,
+        "source_group": "Измерительный инструмент"
+      },
+      "name": "Беспроводной сканер штрих-кода",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Беспроводной сканер штрих-кода",
+      "product_id": 10559,
+      "product_ref": 10559,
+      "source_group": "Измерительный инструмент"
+    },
+    {
+      "article": "12-0621",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 57,
+      "category_path": "Сварочное оборудование",
+      "code_1c": "00044304",
+      "input_hash": "6a710c1c6133f47a939d2eda6a0adfc6a964303cdcb5aeaf2c24fcce90c43370",
+      "input_snapshot": {
+        "article": "12-0621",
+        "barcode": "",
+        "brand": "",
+        "category_id": 57,
+        "category_path": "Сварочное оборудование",
+        "code_1c": "00044304",
+        "name": "Паяльник с регулировкой температуры 5 жал 65Вт REXANT",
+        "original_name": "Паяльник с регулировкой температуры 5 жал 65Вт REXANT",
+        "product_id": 11232,
+        "source_group": "Измерительный инструмент"
+      },
+      "name": "Паяльник с регулировкой температуры 5 жал 65Вт REXANT",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Паяльник с регулировкой температуры 5 жал 65Вт REXANT",
+      "product_id": 11232,
+      "product_ref": 11232,
+      "source_group": "Измерительный инструмент"
+    },
+    {
+      "article": "",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 47,
+      "category_path": "Электрика и освещение",
+      "code_1c": "00011002",
+      "input_hash": "28fc6cb571c20770f7ad629c0d8e932e4bc7fe13285f33353375d35866dff25c",
+      "input_snapshot": {
+        "article": "",
+        "barcode": "",
+        "brand": "",
+        "category_id": 47,
+        "category_path": "Электрика и освещение",
+        "code_1c": "00011002",
+        "name": "Автомат SP pius п/э пакет 3кг",
+        "original_name": "Автомат SP pius п/э пакет 3кг",
+        "product_id": 23606,
+        "source_group": "Осветительное и электротехническое оборудование"
+      },
+      "name": "Автомат SP pius п/э пакет 3кг",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Автомат SP pius п/э пакет 3кг",
+      "product_id": 23606,
+      "product_ref": 23606,
+      "source_group": "Осветительное и электротехническое оборудование"
+    },
+    {
+      "article": "",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 50,
+      "category_path": "Не на сайте / Офис",
+      "code_1c": "00011639",
+      "input_hash": "8234c783c298024ebaf5d3b6caaf065963856f169bbc83b060425ae460220cef",
+      "input_snapshot": {
+        "article": "",
+        "barcode": "",
+        "brand": "",
+        "category_id": 50,
+        "category_path": "Не на сайте / Офис",
+        "code_1c": "00011639",
+        "name": "Долг за инструмент",
+        "original_name": "Долг за инструмент",
+        "product_id": 28270,
+        "source_group": "Офис"
+      },
+      "name": "Долг за инструмент",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Долг за инструмент",
+      "product_id": 28270,
+      "product_ref": 28270,
+      "source_group": "Офис"
+    },
+    {
+      "article": "CM075-500G",
+      "barcode": "",
+      "baseline_hash": "c6594a9076fdfcc54c51557a9b78a10e5b1a0e97db7af6f9009fce0bef6f87a9",
+      "brand": "",
+      "category_id": 35,
+      "category_path": "Хозтовары, сад, огород",
+      "code_1c": "00024220",
+      "input_hash": "1dc997da29d3fd024578cc6c26786fc74a43526bbda34458df0f511055499eeb",
+      "input_snapshot": {
+        "article": "CM075-500G",
+        "barcode": "",
+        "brand": "",
+        "category_id": 35,
+        "category_path": "Хозтовары, сад, огород",
+        "code_1c": "00024220",
+        "name": "Агар Чапека-Докса для грибов, гранулированная форм",
+        "original_name": "Агар Чапека-Докса для грибов, гранулированная форм",
+        "product_id": 39029,
+        "source_group": "Хозтовары, сад, огород"
+      },
+      "name": "Агар Чапека-Докса для грибов, гранулированная форм",
+      "needed_targets": [
+        "tool_type"
+      ],
+      "original_name": "Агар Чапека-Докса для грибов, гранулированная форм",
+      "product_id": 39029,
+      "product_ref": 39029,
+      "source_group": "Хозтовары, сад, огород"
+    }
+  ],
+  "run_id": "3b11e43d-53c4-4fc7-bb4c-b4e66591aef3",
+  "schema_version": "1.0",
+  "target_kind": "tool_type",
+  "taxonomy_hash": "a583a9aefeecf1df984cec67a18349a7c0c071a9d0459aaa2c3f59d473bba2f1"
+}

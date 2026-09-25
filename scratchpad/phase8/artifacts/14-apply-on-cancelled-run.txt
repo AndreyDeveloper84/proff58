@@ -1,0 +1,4 @@
+change отменённого batch: 3989ce5c-9cb7-4b80-a7ca-a31fb9377675 proposed {'option_slug': 'perforatory'}
+после approve: approved | в БД: approved
+apply -> invalid run_not_running | change в БД: invalid run_not_running
+item: 1 failed run_not_running

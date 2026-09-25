@@ -14,14 +14,33 @@ from apps.catalog.models import (
     ProductStatus,
     StockStatus,
 )
-from apps.sync_1c import importer, normalizers, parsers, product_writer, use_cases
+from apps.pricing.models import PriceRecord
+from apps.sync_1c import normalizers, parsers, pricing, product_writer, stock, use_cases
 from apps.sync_1c.models import (
     NomenclatureStaging,
-    PriceRecord,
     StagingStatus,
     StockRecord,
     SyncLog,
 )
+
+
+def _import_item(
+    item: dict,
+    *,
+    allow_basic_fields: bool = True,
+    sync_log=None,
+    source_file: str = "",
+    create_missing: bool = True,
+):
+    """Замена importer.import_item для тестов: прямой вызов use_cases.process_row."""
+    product, action, _ = use_cases.process_row(
+        item,
+        sync_log=sync_log,
+        source_file=source_file,
+        create_missing=create_missing,
+        allow_basic_fields=allow_basic_fields,
+    )
+    return product, action
 
 
 @pytest.mark.django_db
@@ -76,7 +95,7 @@ def drills_category(db):
 @pytest.mark.django_db
 def test_import_new_uncategorized_goes_to_review():
     """Новый товар без подходящего правила → «Неразобранные» + needs_review."""
-    product, action = importer.import_item(
+    product, action = _import_item(
         {"external_id": "1c-001", "sku": "X-1", "name": "Нечто", "price": "100", "stock": "5"}
     )
     assert action == "created"
@@ -91,7 +110,7 @@ def test_import_new_categorized_becomes_draft(drills_category):
     CategoryMappingRule.objects.create(
         rule_type=MappingRuleType.NAME_CONTAINS, pattern="дрель", target_category=drills_category
     )
-    product, _ = importer.import_item(
+    product, _ = _import_item(
         {"external_id": "1c-002", "sku": "D-1", "name": "Дрель Bosch", "price": "4500"}
     )
     assert product.category == drills_category
@@ -102,7 +121,7 @@ def test_import_new_categorized_becomes_draft(drills_category):
 @pytest.mark.django_db
 def test_reimport_does_not_overwrite_manual_content(drills_category):
     """Главное правило: повторный импорт не трогает ручную работу."""
-    product, _ = importer.import_item(
+    product, _ = _import_item(
         {
             "external_id": "1c-003",
             "sku": "D-2",
@@ -121,7 +140,7 @@ def test_reimport_does_not_overwrite_manual_content(drills_category):
     product.save()
 
     # Повторная выгрузка из 1С с новой ценой/остатком и другим названием:
-    importer.import_item(
+    _import_item(
         {
             "external_id": "1c-003",
             "sku": "D-2",
@@ -147,7 +166,7 @@ def test_reimport_does_not_overwrite_manual_content(drills_category):
 @pytest.mark.django_db
 def test_import_matches_existing_by_article():
     Product.objects.create(name="Существующий", article="SKU-9", slug="exist-9")
-    product, action = importer.import_item({"sku": "SKU-9", "price": "500"})
+    product, action = _import_item({"sku": "SKU-9", "price": "500"})
     assert action == "updated"
     assert product.price == 500
 
@@ -155,14 +174,16 @@ def test_import_matches_existing_by_article():
 @pytest.mark.django_db
 def test_update_price_and_stock_helpers():
     Product.objects.create(name="Т", code_1c="1c-010", slug="t-010")
-    assert importer.update_price({"external_id": "1c-010", "price": "999", "old_price": "1200"})
-    assert importer.update_stock({"external_id": "1c-010", "stock": "0"})
+    assert pricing.update_price(
+        normalizers.normalize_item({"external_id": "1c-010", "price": "999", "old_price": "1200"})
+    )
+    assert stock.update_stock(normalizers.normalize_item({"external_id": "1c-010", "stock": "0"}))
     p = Product.objects.get(code_1c="1c-010")
     assert p.price == 999
     assert p.old_price == 1200
     assert p.stock_status == StockStatus.OUT_OF_STOCK
     # несуществующий товар:
-    assert importer.update_price({"sku": "НЕТ", "price": "1"}) is False
+    assert pricing.update_price(normalizers.normalize_item({"sku": "НЕТ", "price": "1"})) is False
 
 
 @pytest.mark.django_db
@@ -170,7 +191,7 @@ def test_import_items_batch_counts(drills_category):
     CategoryMappingRule.objects.create(
         rule_type=MappingRuleType.NAME_CONTAINS, pattern="дрель", target_category=drills_category
     )
-    result = importer.import_items(
+    result = use_cases.run_rows(
         [
             {"external_id": "b-1", "name": "Дрель А", "price": "100"},
             {"external_id": "b-2", "name": "Загадка Б", "price": "200"},
@@ -202,8 +223,8 @@ def test_only_one_current_price_constraint():
 @pytest.mark.django_db
 def test_reimport_is_idempotent_no_duplicate_products():
     item = {"external_id": "idem-1", "sku": "S-1", "name": "Товар", "price": "100"}
-    importer.import_item(item)
-    _, action = importer.import_item(item)
+    _import_item(item)
+    _, action = _import_item(item)
     assert action == "updated"
     assert Product.objects.filter(code_1c="idem-1").count() == 1
 
@@ -212,8 +233,8 @@ def test_reimport_is_idempotent_no_duplicate_products():
 def test_price_history_keeps_single_current():
     """Повторное обновление цены: история растёт, актуальная одна."""
     Product.objects.create(name="Т", code_1c="ph-1", slug="ph-1")
-    importer.update_price({"external_id": "ph-1", "price": "100"})
-    importer.update_price({"external_id": "ph-1", "price": "150"})
+    pricing.update_price(normalizers.normalize_item({"external_id": "ph-1", "price": "100"}))
+    pricing.update_price(normalizers.normalize_item({"external_id": "ph-1", "price": "150"}))
     records = PriceRecord.objects.filter(code_1c="ph-1", price_type="retail")
     assert records.count() == 2
     current = records.filter(is_current=True)
@@ -223,7 +244,7 @@ def test_price_history_keeps_single_current():
 
 @pytest.mark.django_db
 def test_run_import_links_rows_to_sync_log():
-    sync_log, result = importer.run_import(
+    sync_log, result = use_cases.import_products(
         [
             {"external_id": "r-1", "name": "Раз", "price": "10"},
             {"external_id": "r-2", "name": "Два", "price": "20"},
@@ -276,7 +297,7 @@ def test_ambiguous_article_goes_to_conflict():
     Product.objects.create(name="Товар 1", article="DUP-ART", slug="t1-dup", price=10)
     Product.objects.create(name="Товар 2", article="DUP-ART", slug="t2-dup", price=20)
     # импорт без code_1c, только по артикулу
-    product, action = importer.import_item({"sku": "DUP-ART", "price": "999"})
+    product, action = _import_item({"sku": "DUP-ART", "price": "999"})
     assert action == "conflict"
     assert product is None
     # ни один товар не изменён
@@ -345,27 +366,35 @@ def test_duplicate_names_get_unique_slugs():
         ]
     )
     assert result.created == 3 and result.errors == 0
-    assert Product.objects.get(code_1c="dup-1").slug == "дрель-2"
-    assert Product.objects.get(code_1c="dup-2").slug == "дрель-3"
+    # Инвариант — УНИКАЛЬНОСТЬ slug (не точный суффикс): bulk использует стабильный
+    # «{base}-{code_1c}» при коллизии, одиночный путь — числовой суффикс.
+    slugs = {Product.objects.get(code_1c=c).slug for c in ("dup-1", "dup-2", "ok-1", "exist-1")}
+    assert len(slugs) == 4  # все уникальны, ни одна строка не потеряна
+    for c in ("dup-1", "dup-2"):
+        assert Product.objects.get(code_1c=c).slug.startswith("дрель")  # база сохранена
     assert Product.objects.get(code_1c="ok-1").slug == "молоток"
-    assert Product.objects.filter(slug="дрель").count() == 1
+    assert Product.objects.filter(slug="дрель").count() == 1  # существующий не тронут
 
 
 @pytest.mark.django_db
 def test_bad_row_recorded_and_batch_continues():
-    """Сбой одной строки попадает в SyncLog.error_details и staging.ERROR, остальные ок."""
-    original = product_writer.create_product
+    """Сбой обработки одной строки → staging.ERROR + SyncLog.error_details, остальные ок.
 
-    def side_effect(item):
+    В bulk-пути запись товара собирается через build_new_product — туда и инжектим сбой;
+    классификация строки изолирована (partial-failure), батч продолжается.
+    """
+    original = product_writer.build_new_product
+
+    def side_effect(item, **kwargs):
         if item.code_1c == "bad-1":
             raise RuntimeError("boom bad-1")
-        return original(item)
+        return original(item, **kwargs)
 
-    with mock.patch("apps.sync_1c.product_writer.create_product", side_effect=side_effect):
+    with mock.patch("apps.sync_1c.product_writer.build_new_product", side_effect=side_effect):
         sync_log, result = use_cases.import_products(
             [
                 {"external_id": "ok-1", "name": "Молоток", "price": "100"},
-                {"external_id": "bad-1", "name": "Дрель", "price": "200"},  # сбой записи
+                {"external_id": "bad-1", "name": "Дрель", "price": "200"},  # сбой обработки
                 {"external_id": "ok-2", "name": "Пила", "price": "300"},
             ]
         )
@@ -398,3 +427,84 @@ def test_normalize_item_aliases_and_decimal():
     assert item.article == "a1"
     assert str(item.price) == "1234.50"
     assert item.is_active is True
+
+
+@pytest.mark.django_db
+def test_new_product_arrives_normalized():
+    """Новая позиция из 1С попадает на витрину уже без телеграфных сокращений.
+
+    Иначе каталог набирал бы «Перф.ЗУБР» заново после каждой новой номенклатуры,
+    и разовую чистку названий пришлось бы повторять (DRF-1603).
+    """
+    product, action = _import_item(
+        {
+            "external_id": "1c-norm-1",
+            "sku": "NORM-1",
+            "name": "Круг алмаз. отрез. 115х1,0 Turbo",
+            "price": "1000",
+            "stock": "1",
+        }
+    )
+    assert action == "created"
+    assert product.name == "Круг алмазный отрезной 115х1,0 Turbo"
+    # Исходная строка 1С цела — это точка отката.
+    assert product.original_name == "Круг алмаз. отрез. 115х1,0 Turbo"
+    # Плитке каталога достаётся короткая форма — сокращения в ней сохраняются.
+    assert product.card_name == "Круг алмаз. отрез. 115х1,0 Turbo"
+
+
+@pytest.mark.django_db
+def test_new_product_type_abbreviation_expanded():
+    """Сокращённый тип раскрывается даже без пробела перед брендом.
+
+    Дальше по строке цепочка обрывается на «ЗУБР»: род зависимого слова в этой
+    позиции неизвестен, и «удар.» честнее оставить как есть.
+    """
+    product, _ = _import_item(
+        {
+            "external_id": "1c-norm-1b",
+            "sku": "NORM-1B",
+            "name": "Перф.ЗУБР ЗПМ-50-1700 удар. SDS-Max",
+            "price": "1000",
+        }
+    )
+    assert product.name == "Перфоратор ЗУБР ЗПМ-50-1700 удар. SDS-Max"
+
+
+@pytest.mark.django_db
+def test_repeat_import_keeps_showcase_name():
+    """Повторный импорт витринное имя не переписывает — даже нормализованное."""
+    product, _ = _import_item(
+        {
+            "external_id": "1c-norm-2",
+            "sku": "NORM-2",
+            "name": "Круг алмаз. отрез. 115х1,0",
+            "price": "100",
+            "stock": "5",
+        }
+    )
+    product.name = "Отрезной круг, поправлено вручную"
+    product.save()
+
+    _import_item(
+        {
+            "external_id": "1c-norm-2",
+            "sku": "NORM-2",
+            "name": "Круг алмаз. отрез. 115х1,0 НОВОЕ ИМЯ",
+            "price": "120",
+            "stock": "3",
+        }
+    )
+    product.refresh_from_db()
+    assert product.name == "Отрезной круг, поправлено вручную"
+    assert product.original_name == "Круг алмаз. отрез. 115х1,0 НОВОЕ ИМЯ"
+
+
+@pytest.mark.django_db
+def test_article_in_name_survives_import():
+    """Артикул в хвосте остаётся: у запчастей он единственный различитель."""
+    product, _ = _import_item(
+        {"external_id": "1c-norm-3", "sku": "322890", "name": "Пружина 322890", "price": "10"}
+    )
+    assert product.name == "Пружина 322890"
+    assert product.original_name == "Пружина 322890"

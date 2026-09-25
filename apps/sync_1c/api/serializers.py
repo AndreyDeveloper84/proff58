@@ -5,8 +5,12 @@
 и валидируется по типам.
 """
 
+from decimal import Decimal
+
 from django.conf import settings
 from rest_framework import serializers
+
+from apps.orders.models import FulfillmentStatus
 
 
 class _IdentifiedItem(serializers.Serializer):
@@ -55,6 +59,52 @@ class StockItemSerializer(_IdentifiedItem):
     reserved = serializers.DecimalField(max_digits=14, decimal_places=3, required=False)
     available_stock = serializers.DecimalField(max_digits=14, decimal_places=3, required=False)
     warehouse = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)  # идентификатор обязателен
+        # is None, а не «truthy»: stock="0" (нулевой остаток) — валиден.
+        if all(attrs.get(k) is None for k in ("stock", "reserved", "available_stock")):
+            raise serializers.ValidationError(
+                "Нужно хотя бы одно поле остатка: stock / reserved / available_stock."
+            )
+        return attrs
+
+
+class SalesItemSerializer(_IdentifiedItem):
+    """Строка выгрузки продаж из 1С: сколько штук товара продано в конкретный день.
+
+    День, а не документ: витрине нужна динамика продаж, первичка учёта остаётся
+    в 1С. Количество строго положительное — «продано 0» не факт продажи, а шум,
+    возвраты 1С шлёт отдельной корректировкой того же дня (последняя выигрывает).
+    """
+
+    date = serializers.DateField()
+    quantity = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal("0"))
+
+
+class OrderConfirmItemSerializer(serializers.Serializer):
+    """Строка подтверждения заказа из 1С (POST /orders/confirm), контракт §5.6.
+
+    1С присылает только ось обработки (`fulfillment_status`) и результат резерва;
+    `payment_status`/`sync_1c_status` 1С не передаёт. Идентификатор заказа —
+    `site_order_id` ИЛИ `order_number` (обязателен один).
+    """
+
+    site_order_id = serializers.IntegerField(required=False)
+    order_number = serializers.CharField(required=False, allow_blank=True)
+    onec_order_id = serializers.CharField(required=False, allow_blank=True)
+    onec_order_number = serializers.CharField(required=False, allow_blank=True)
+    tracking = serializers.CharField(required=False, allow_blank=True)
+    comment = serializers.CharField(required=False, allow_blank=True)
+    fulfillment_status = serializers.ChoiceField(choices=FulfillmentStatus.choices, required=False)
+    reserve = serializers.JSONField(required=False)
+
+    def validate(self, attrs):
+        if attrs.get("site_order_id") is None and not attrs.get("order_number"):
+            raise serializers.ValidationError(
+                "Нужен идентификатор заказа: site_order_id или order_number."
+            )
+        return attrs
 
 
 class ItemsEnvelopeSerializer(serializers.Serializer):

@@ -1,0 +1,56 @@
+{
+  "1109": {
+    "old_option_id": 22,
+    "old_slug": "akkumulyatory",
+    "new_option_id": 43,
+    "new_slug": "adaptery"
+  },
+  "24866": {
+    "old_option_id": 262,
+    "old_slug": "svar-provoloka",
+    "new_option_id": 81,
+    "new_slug": "raskhodniki-pajki"
+  },
+  "28886": {
+    "old_option_id": 215,
+    "old_slug": "krep-gvozdi",
+    "new_option_id": 202,
+    "new_slug": "bp-pnevmosteplery"
+  },
+  "28887": {
+    "old_option_id": 215,
+    "old_slug": "krep-gvozdi",
+    "new_option_id": 202,
+    "new_slug": "bp-pnevmosteplery"
+  },
+  "34643": {
+    "old_option_id": 68,
+    "old_slug": "lebedki-tali",
+    "new_option_id": 433,
+    "new_slug": "sterzhni-kleevye"
+  },
+  "34644": {
+    "old_option_id": 68,
+    "old_slug": "lebedki-tali",
+    "new_option_id": 433,
+    "new_slug": "sterzhni-kleevye"
+  },
+  "35057": {
+    "old_option_id": 68,
+    "old_slug": "lebedki-tali",
+    "new_option_id": 29,
+    "new_slug": "passatizhi"
+  },
+  "35058": {
+    "old_option_id": 68,
+    "old_slug": "lebedki-tali",
+    "new_option_id": 29,
+    "new_slug": "passatizhi"
+  },
+  "36379": {
+    "old_option_id": 271,
+    "old_slug": "svar-maski",
+    "new_option_id": 232,
+    "new_slug": "siz-ochki"
+  }
+}

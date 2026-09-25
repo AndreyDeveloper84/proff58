@@ -1,20 +1,131 @@
 """Настройки для продакшн-окружения."""
 
+from django.core.exceptions import ImproperlyConfigured
+
 from .base import *  # noqa: F401,F403
 from .base import ALLOWED_HOSTS, env
 
 DEBUG = False
 
-# Для входа в админку за nginx/HTTPS Django требует доверенные origin-ы.
-_public_hosts = [h for h in ALLOWED_HOSTS if h not in ("*", "localhost", "127.0.0.1")]
-CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in _public_hosts] + [
-    f"http://{h}" for h in _public_hosts
-]
+# SECRET_KEY: fail-fast в проде (#8 код-ревью). Без дефолта — отсутствие env
+# бросит ImproperlyConfigured; публичный дефолт из base отвергаем явно, иначе
+# прод поднялся бы с общеизвестным ключом (подделка session-cookie и подписанных
+# токенов сброса пароля вплоть до входа за is_staff).
+SECRET_KEY = env("DJANGO_SECRET_KEY")
+_WEAK_SECRET_MARKERS = ("change-me", "changeme", "insecure")
+if (
+    not SECRET_KEY
+    or len(SECRET_KEY) < 32
+    or any(marker in SECRET_KEY.lower() for marker in _WEAK_SECRET_MARKERS)
+):
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY пуст, короче 32 символов или похож на заглушку (change-me, "
+        "insecure…) — задайте уникальный случайный ключ в проде."
+    )
+
+# Оплата под env (#311 закрыт): состояние платежа строится только по тому, что
+# подтвердила касса перезапросом статуса, сумма сверяется с заказом, терминальные
+# статусы не откатываются (см. payments/transitions). У АТОЛ Pay подписи callback
+# нет вовсе, поэтому вход дополнительно закрыт секретом ATOLPAY_CALLBACK_TOKEN.
+#
+# По умолчанию ВЫКЛЮЧЕНО: включать там, где касса действительно настроена —
+# выпущен ATOLPAY_TOKEN, задан ATOLPAY_CALLBACK_TOKEN, в ЛК загружены настройки
+# провайдера чеков. Без этого покупатель упрётся в ошибку уже после оформления.
+PAYMENTS_ENABLED = env.bool("PAYMENTS_ENABLED", default=False)
+
+# Межсервисные запросы внутри Docker (Next SSR → Django по http://web:8000) приходят с Host "web".
+# Добавляем внутренний хост точечно в prod (не глобально в base) — управляемо через env.
+ALLOWED_HOSTS += env.list("INTERNAL_ALLOWED_HOSTS", default=["web"])
+
+# Кэш — общий Redis для всех воркеров gunicorn. LocMem был бы у каждого процесса
+# свой, и прогретое дерево каталога не переиспользовалось бы между воркерами.
+# Отдельная БД Redis (2), чтобы не пересекаться с брокером (0) и result-backend (1)
+# Celery.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": env("REDIS_CACHE_URL", default="redis://redis:6379/2"),
+        "TIMEOUT": env.int("DJANGO_CACHE_TTL", default=300),
+    }
+}
+
+# Кэш фасетов каталога (#222, P1-2) включён в проде; TTL — бэкстоп поверх версионной
+# инвалидации по сигналам изменения данных каталога (см. apps/catalog/facets.py).
+FACETS_CACHE_TTL = env.int("FACETS_CACHE_TTL", default=300)
+
+# Fail-fast: без реального домена CSRF_TRUSTED_ORIGINS пуст → вход в админку сломан (#282).
+_internal = {"*", "localhost", "127.0.0.1", "web"}
+if "*" in ALLOWED_HOSTS:
+    raise ImproperlyConfigured(
+        "DJANGO_ALLOWED_HOSTS содержит '*' — в проде запрещено. Укажите явные домены."
+    )
+_public_hosts = [h for h in ALLOWED_HOSTS if h not in _internal]
+if not _public_hosts:
+    raise ImproperlyConfigured(
+        "DJANGO_ALLOWED_HOSTS не содержит публичного домена — задайте его в env "
+        "(напр. DJANGO_ALLOWED_HOSTS=proff58.ru)."
+    )
+# Только https: на http сайт не отвечает (SECURE_SSL_REDIRECT + HSTS), лишняя
+# доверенная зона тут ни к чему.
+CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in _public_hosts]
 
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
+SECURE_REDIRECT_EXEMPT = [r"^healthz/?$"]
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Почта сотрудникам (DRF-2296): если получатели заданы, транспорт обязан быть
+# рабочим уже на старте, а не выясняться по журналу FAILED после первого заказа.
+from .base import (  # noqa: E402
+    DEFAULT_FROM_EMAIL,
+    EMAIL_BACKEND,
+    EMAIL_HOST,
+    EMAIL_USE_SSL,
+    EMAIL_USE_TLS,
+    SITE_URL,
+    STAFF_NOTIFICATION_EMAILS,
+)
+
+if STAFF_NOTIFICATION_EMAILS:
+    if EMAIL_BACKEND.endswith("smtp.EmailBackend") and not EMAIL_HOST:
+        raise ImproperlyConfigured(
+            "STAFF_NOTIFICATION_EMAILS заданы, а EMAIL_HOST пуст — письма сотрудникам "
+            "не уйдут. Задайте SMTP-транспорт или очистите список получателей."
+        )
+    if DEFAULT_FROM_EMAIL in ("", "webmaster@localhost"):
+        raise ImproperlyConfigured(
+            "STAFF_NOTIFICATION_EMAILS заданы, а DEFAULT_FROM_EMAIL не настроен — "
+            "SMTP-провайдер отвергнет отправителя."
+        )
+    if not SITE_URL:
+        raise ImproperlyConfigured(
+            "STAFF_NOTIFICATION_EMAILS заданы, а SITE_URL пуст — ссылка в админку в письме "
+            "будет неполной."
+        )
+if EMAIL_USE_TLS and EMAIL_USE_SSL:
+    raise ImproperlyConfigured("EMAIL_USE_TLS и EMAIL_USE_SSL взаимоисключающие — оставьте один.")
+
+SENTRY_DSN = env("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    # Импортируем лениво: sentry-sdk нужен только в проде с заданным DSN, без него
+    # модуль настроек импортируется и там, где пакет не установлен (dev/тесты).
+    import sentry_sdk
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    from config.sentry_scrub import scrub_oauth_event
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration(), CeleryIntegration()],
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+        # Колбэк входа через VK ID / Яндекс ID несёт в query код авторизации и state.
+        before_send=scrub_oauth_event,
+        before_send_transaction=scrub_oauth_event,
+        environment=env("SENTRY_ENVIRONMENT", default="production"),
+    )

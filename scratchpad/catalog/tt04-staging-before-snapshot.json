@@ -1,0 +1,39 @@
+{
+  "task": "TT-04 staging: seed izm-areometry (урезанный скоуп после аудита)",
+  "date": "2026-07-28",
+  "environment": "staging dev.proff58.ru, БД proff58_staging, деплой 7714625",
+  "state_before": {
+    "options_tool_type_total": 328,
+    "distinct_slugs": 328,
+    "izm-areometry": "отсутствует",
+    "value_conflict": "опций со value LIKE '%реометр%' в БД нет",
+    "affected_products": 0,
+    "affected_pav": 0,
+    "categoryattribute_tool_type_count": 19,
+    "reconcile_blocking": ["missing_in_live: izm-areometry"],
+    "taxonomy_identity_hash": "524d4e317a804160548ebd5f4d0c590cb08a9b69910b23355df7558902616439",
+    "fingerprint_untouchable_fields": "0b44ad4e6ecb926e666b9e2f275fbb7b6f90306fd28f1e112ad62072768bb21d",
+    "fingerprint_fields": ["code_1c", "article", "name", "category_id", "price", "stock_quantity", "status", "is_active"],
+    "n_products_fingerprint": 47225
+  },
+  "dry_run_rehearsal": {
+    "created": 1,
+    "present": 328,
+    "display_updated": 0,
+    "display_mismatch": 0,
+    "rehearsal_option": {"slug": "izm-areometry", "value": "Ареометры (денсиметры)", "sort_order": 18},
+    "rollback_clean": true
+  },
+  "rollback_plan": {
+    "condition": "только если у новой опции 0 PAV (гарантировано: свежая опция)",
+    "step_1": "DELETE FROM catalog_attributeoption WHERE attribute_id=1 AND slug='izm-areometry' AND id NOT IN (SELECT DISTINCT value_option_id FROM catalog_productattributevalue WHERE value_option_id IS NOT NULL);",
+    "step_2": "проверить catalog_taxonomy_reconcile: вернулся единственный blocking missing_in_live=[izm-areometry]",
+    "full_restore": "pg_dump ДО записи: /home/taximeter/backups/tt04-pre-staging-areometry.dump (сервер), копия scratchpad/catalog/backups/tt04-pre-staging-areometry.dump"
+  },
+  "audit_facts": {
+    "remap_origin": "remap hoz-lupy/hoz-provoloka/hoz-zamki -> izm-lupy/krep-provoloka/krep-zamki выполнен на стенде задолго до TT-04 штатной СТАРОЙ load_tool_types (update_or_create по value с перезаписью slug) после PR #470 (10.07.2026, canonical-slug в tool_type_rules.json); следы в ~/.bash_history сервера; django_admin_log пуст",
+    "catalog_0027": "применена деплоем 2026-07-22 13:44 UTC; id=16 = steplery-i-zaklepochniki, у неё 10 PAV на стенде (локально 0) — решение о её судьбе на стенде звучит иначе: удалять опцию с товарами нельзя",
+    "drel": "на стенде не существует (id=398 = inch другого атрибута); вопрос drel чисто локальный",
+    "pav_drift": "krep-zamki 247 (локально 250), steplery 42 (43), id=16 10 (0) — стенд живёт через обмен с 1С, локальный снимок не эталон"
+  }
+}

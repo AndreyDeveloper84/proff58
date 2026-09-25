@@ -1,0 +1,66 @@
+{
+  "canonical": {
+    "gate": {
+      "declared_mismatches": [],
+      "gate_passed": true,
+      "legacy_taxonomy_hash_allowed": null,
+      "metrics": {
+        "correct": 102,
+        "decisions": {
+          "correct": 102,
+          "unverifiable": 1
+        },
+        "precision": 0.9902912621359223,
+        "rows": 103,
+        "wilson95": [
+          0.9470405148534974,
+          0.9982841526917288
+        ]
+      },
+      "report_schema_version": 1,
+      "thresholds": {
+        "min_rows_gate": 100,
+        "precision_gate": 0.99
+      },
+      "warnings": []
+    },
+    "gate_version": "2.0",
+    "inputs": {
+      "corpus": {
+        "artifact_sha256": "6663a6fe48c2c2656604a179c1f70338a08a9d3e2a364a5ec2f663600b85d6e3",
+        "corpus_id": "staging-tool-type-6ebb8ac9d856",
+        "items": 54,
+        "path": "data/catalog_processing_rules/applied_corpus_tool_type.v1.json"
+      },
+      "gate_sample": {
+        "artifact_sha256": "cd40728fd203a73e420fc94ee81afc5aa7e52ac92838894ffbe84b4b39b3148c",
+        "path": "apps/catalog/tests/fixtures/phase7d-gate-sample-official.json",
+        "rows": 103
+      },
+      "labels": {
+        "artifact_sha256": "32226d845980f4227b093563be91141672659ff56f466912f4b20989e78953c9",
+        "labels": 103,
+        "path": "apps/catalog/tests/fixtures/phase7d-labels.json"
+      },
+      "ruleset": {
+        "artifact_sha256": "db0beb02aee972e7b76e4bd7be81283b7ec8964e559f90c77d9ed7623aeafdc5",
+        "path": "data/catalog_processing_rules/tool_type.v2.json",
+        "rules": 47,
+        "ruleset_hash": "57ee4213c12a603ff962bb03b41ac686582e8560b8705987c415724d0c88d89d",
+        "ruleset_id": "tool_type.v2",
+        "version": 1
+      },
+      "taxonomy_manifest": {
+        "artifact_sha256": "5b3b3f3de4380612429b88ffb50a452af0a600975ad04734f5da4f87a4a6ab8a",
+        "manifest_semantic_hash": "d918468decfa7f29a7411aa9fc9400ae17a56d213599d64372798da1b733c75d",
+        "manifest_version": 1,
+        "options": 373,
+        "path": "data/catalog_processing_rules/tool_type_taxonomy.v1.json",
+        "taxonomy_identity_hash": "603f99aff49ecd416cc4f49744f912c500d811602d2bb01036f7839b6088f96f"
+      }
+    },
+    "matcher_version": "1.0",
+    "schema_version": 1
+  },
+  "canonical_hash": "7d95943e3b4ad03f3990e8f09e806030f81a3de639c0d649ef0f32bd07cd7188"
+}

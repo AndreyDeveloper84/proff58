@@ -1,0 +1,8 @@
+### n16-stale-current-input
+  "skipped": 0,
+  "errors": 1,
+  "dry_run": true,
+  "result_checksum": "ee20bf6f9c201e8219da228d428bc2f9b88949a7e503ebe99248b390bc4ac5ce",
+  "export_checksum": "b9c5b3f15d04e31e47f51d67e307256bcc6833e3b95068818760f46dfd7c9a1b"
+}
+EXIT=0

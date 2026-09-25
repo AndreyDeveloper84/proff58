@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Счёт {{ invoice.order_number }}</title>
+<style>
+  @page { size: A4; margin: 15mm; }
+  /* DejaVu Sans есть в образе (fonts-dejavu-core) — кириллица в PDF гарантирована. */
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 12px; margin: 0; }
+  h1 { font-size: 20px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #333; padding: 6px 10px; text-align: left; }
+  th { background: #f5f5f5; }
+  .total { font-weight: bold; font-size: 16px; margin-top: 15px; }
+  .section { margin-top: 20px; }
+  .muted { color: #555; font-size: 12px; }
+  .nowrap { white-space: nowrap; }
+  .note { color: #8a5a00; }
+  table.bank td { vertical-align: top; }
+  table.sign { margin-top: 30px; border: none; }
+  table.sign td { border: none; padding: 10px 8px 0; }
+  table.sign td.line { border-bottom: 1px solid #333; width: 200px; }
+</style>
+</head>
+<body>
+<h1>Счёт № {{ invoice.order_number }} от {{ invoice.date|date:"d.m.Y" }}</h1>
+
+{% comment %}Банковская часть — обязательная: без неё платёжное поручение не заполнить,
+   и счёт остаётся справкой, а не документом на оплату. Многострочные заметки — только
+   блочным comment: короткий синтаксис в Django однострочный, текст печатался в счёте.{% endcomment %}
+{% if invoice.seller.bank_account %}
+<table class="bank">
+  <tr>
+    <td>
+      {% if invoice.seller.bank_name %}{{ invoice.seller.bank_name }}{% endif %}<br>
+      <span class="muted">Банк получателя</span>
+    </td>
+    <td class="nowrap">
+      БИК<br><span class="muted">Сч. №</span>
+    </td>
+    <td class="nowrap">
+      {{ invoice.seller.bank_bik }}<br>{{ invoice.seller.bank_corr_account }}
+    </td>
+  </tr>
+  <tr>
+    <td>
+      ИНН {{ invoice.seller.inn }}{% if invoice.seller.kpp %} КПП {{ invoice.seller.kpp }}{% endif %}<br>
+      {{ invoice.seller.company_name }}<br>
+      <span class="muted">Получатель</span>
+    </td>
+    <td class="nowrap">Сч. №</td>
+    <td class="nowrap">{{ invoice.seller.bank_account }}</td>
+  </tr>
+</table>
+{% endif %}
+
+<div class="section">
+  <strong>Поставщик:</strong><br>
+  {% if invoice.seller.company_name %}{{ invoice.seller.company_name }}<br>{% endif %}
+  {% if invoice.seller.inn %}ИНН: {{ invoice.seller.inn }}{% if invoice.seller.kpp %}, КПП: {{ invoice.seller.kpp }}{% endif %}<br>{% endif %}
+  {% if invoice.seller.ogrn %}ОГРН: {{ invoice.seller.ogrn }}<br>{% endif %}
+  {% if invoice.seller.address %}{{ invoice.seller.address }}<br>{% endif %}
+  {% if invoice.seller.phone %}Тел.: {{ invoice.seller.phone }}<br>{% endif %}
+</div>
+
+<div class="section">
+  <strong>Покупатель:</strong><br>
+  {{ invoice.buyer.company_name }}<br>
+  ИНН: {{ invoice.buyer.inn }}
+  {% if invoice.buyer.kpp %} КПП: {{ invoice.buyer.kpp }}{% endif %}<br>
+  {% if invoice.buyer.legal_address %}{{ invoice.buyer.legal_address }}<br>{% endif %}
+</div>
+
+<table>
+  <thead>
+    <tr><th>№</th><th>Наименование</th><th>Артикул</th><th>Ед.</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr>
+  </thead>
+  <tbody>
+    {% for item in invoice.items %}
+    <tr>
+      <td>{{ forloop.counter }}</td>
+      <td>{{ item.name }}</td>
+      <td>{{ item.article }}</td>
+      <td>{{ item.unit|default:"шт" }}</td>
+      <td>{{ item.quantity }}</td>
+      <td>{{ item.price }}</td>
+      <td>{{ item.total }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if invoice.items_discount_total %}<div>Скидка{% if invoice.promo_code %} (промокод {{ invoice.promo_code }}){% endif %}: −{{ invoice.items_discount_total }} {{ invoice.currency }}</div>{% endif %}
+<div class="total">Итого: {{ invoice.total }} {{ invoice.currency }}</div>
+{% comment %}Ставка НДС — обязательный реквизит счёта. vat_rate=0 у неплательщика (УСН):
+   пишем «Без НДС», а не молчим, иначе бухгалтерия покупателя не примет документ.{% endcomment %}
+<div>
+  {% if invoice.vat_rate %}
+    В том числе НДС {{ invoice.vat_rate }}%: {{ invoice.vat_amount }} {{ invoice.currency }}
+  {% else %}
+    Без НДС
+  {% endif %}
+</div>
+<div class="section">Всего наименований {{ invoice.items|length }}, на сумму {{ invoice.total }} {{ invoice.currency }}</div>
+
+{% if invoice.delivery_pending %}
+<div class="section note">
+  Стоимость доставки уточняет менеджер — счёт предварительный, итоговая сумма может измениться.
+</div>
+{% endif %}
+
+<div class="section">
+  <em>Оплатой счёта покупатель подтверждает согласие с условиями продажи. Товар отпускается
+  после поступления денег на расчётный счёт поставщика.</em>
+</div>
+
+{% if invoice.seller.director %}
+<table class="sign">
+  <tr>
+    <td>Руководитель</td>
+    <td class="line"></td>
+    <td>{{ invoice.seller.director }}</td>
+  </tr>
+  <tr>
+    <td>Главный бухгалтер</td>
+    <td class="line"></td>
+    <td>{{ invoice.seller.accountant|default:invoice.seller.director }}</td>
+  </tr>
+</table>
+{% endif %}
+</body>
+</html>

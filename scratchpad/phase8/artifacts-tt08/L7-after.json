@@ -1,0 +1,100 @@
+{
+  "canonical": {
+    "attribute_slug": "tool_type",
+    "live_taxonomy_identity_hash": "887eea5d442455fbb97c9eda888c0307f46a1f7e2e51bd56c2bd8a11d3949175",
+    "rows": [
+      {
+        "attrs_cache_tool_type": "Леска триммерная",
+        "option_slug": "bp-leska",
+        "option_value": "Леска триммерная",
+        "product_id": 28238
+      },
+      {
+        "attrs_cache_tool_type": "Леска триммерная",
+        "option_slug": "bp-leska",
+        "option_value": "Леска триммерная",
+        "product_id": 28239
+      },
+      {
+        "attrs_cache_tool_type": "Леска триммерная",
+        "option_slug": "bp-leska",
+        "option_value": "Леска триммерная",
+        "product_id": 28240
+      },
+      {
+        "attrs_cache_tool_type": "Леска триммерная",
+        "option_slug": "bp-leska",
+        "option_value": "Леска триммерная",
+        "product_id": 28241
+      },
+      {
+        "attrs_cache_tool_type": "Леска триммерная",
+        "option_slug": "bp-leska",
+        "option_value": "Леска триммерная",
+        "product_id": 28242
+      },
+      {
+        "attrs_cache_tool_type": "Леска триммерная",
+        "option_slug": "bp-leska",
+        "option_value": "Леска триммерная",
+        "product_id": 28243
+      },
+      {
+        "attrs_cache_tool_type": "Леска триммерная",
+        "option_slug": "bp-leska",
+        "option_value": "Леска триммерная",
+        "product_id": 28244
+      },
+      {
+        "attrs_cache_tool_type": "Леска триммерная",
+        "option_slug": "bp-leska",
+        "option_value": "Леска триммерная",
+        "product_id": 28245
+      },
+      {
+        "attrs_cache_tool_type": "Леска триммерная",
+        "option_slug": "bp-leska",
+        "option_value": "Леска триммерная",
+        "product_id": 28246
+      },
+      {
+        "attrs_cache_tool_type": "Леска триммерная",
+        "option_slug": "bp-leska",
+        "option_value": "Леска триммерная",
+        "product_id": 28247
+      },
+      {
+        "attrs_cache_tool_type": "Леска триммерная",
+        "option_slug": "bp-leska",
+        "option_value": "Леска триммерная",
+        "product_id": 28248
+      },
+      {
+        "attrs_cache_tool_type": "Леска триммерная",
+        "option_slug": "bp-leska",
+        "option_value": "Леска триммерная",
+        "product_id": 28249
+      }
+    ],
+    "rows_count": 12,
+    "schema_version": 1,
+    "selector": {
+      "kind": "explicit_ids",
+      "value": [
+        28238,
+        28239,
+        28240,
+        28241,
+        28242,
+        28243,
+        28244,
+        28245,
+        28246,
+        28247,
+        28248,
+        28249
+      ]
+    }
+  },
+  "canonical_hash": "94e25dcb0305f18c4507da5f85edba5196ba24690afd55274aa9357ef3ec82fb"
+}

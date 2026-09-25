@@ -1,0 +1,121 @@
+{
+  "canonical": {
+    "attribute_slug": "tool_type",
+    "live_taxonomy_identity_hash": "7ac7a9a26eeffcb6360993b3c1a5942ddee4da7c80b8e31ad9b47853e2a06ef9",
+    "rows": [
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 35608
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39279
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39280
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39281
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39282
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39283
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39284
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39285
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39286
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39287
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39288
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39289
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39290
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39291
+      },
+      {
+        "attrs_cache_tool_type": "Воронки",
+        "option_slug": "hoz-voronki",
+        "option_value": "Воронки",
+        "product_id": 39292
+      }
+    ],
+    "rows_count": 15,
+    "schema_version": 1,
+    "selector": {
+      "kind": "explicit_ids",
+      "value": [
+        35608,
+        39279,
+        39280,
+        39281,
+        39282,
+        39283,
+        39284,
+        39285,
+        39286,
+        39287,
+        39288,
+        39289,
+        39290,
+        39291,
+        39292
+      ]
+    }
+  },
+  "canonical_hash": "cf55620a296f66180b1ea3903e45828d00459771b6c61b3f5bfad08506825b5c"
+}

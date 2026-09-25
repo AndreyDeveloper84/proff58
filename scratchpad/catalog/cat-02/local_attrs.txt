@@ -1,0 +1,2 @@
+{'length': ('decimal', True), 'size': ('decimal', True)}
+['izmeritelnyy', 'izmeritelnyy-dalnomery', 'izmeritelnyy-detektory-i-iskateli', 'izmeritelnyy-instrument', 'izmeritelnyy-instrument-na-moderaciyu', 'izmeritelnyy-lazernye-urovni-i-niveliry', 'izmeritelnyy-multimetry-i-elektroizmerenie', 'izmeritelnyy-pirometry-i-termometry', 'izmeritelnyy-ruletki', 'izmeritelnyy-shtangencirkuli-i-mikrometry', 'izmeritelnyy-uglomery-i-uklonomery', 'izmeritelnyy-ugolniki-i-lineyki', 'izmeritelnyy-urovni', 'izmeritelnyy-vesy-i-schetchiki']

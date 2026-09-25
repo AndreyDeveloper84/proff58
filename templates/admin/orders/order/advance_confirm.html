@@ -1,0 +1,38 @@
+{% extends "admin/base_site.html" %}
+
+{% comment %}
+Подтверждение смены статуса заказа. Состояние меняется только POST-ом с этой
+страницы: переход по ссылке не должен двигать заказ и уведомлять покупателя.
+{% endcomment %}
+
+{% block content %}
+<div style="max-width:38rem;">
+  <h2 style="margin-top:0;">
+    Перевести заказ {{ order.order_number }} в «{{ target_label }}»?
+  </h2>
+
+  <p style="opacity:.75;">
+    Сейчас: <b>{{ order.display_status }}</b><br>
+    Покупатель: {{ order.customer_name|default:"—" }} · {{ order.customer_phone|default:"—" }}<br>
+    Сумма: {{ order.total }} {{ order.currency }}
+  </p>
+
+  <div class="callout {% if is_cancel %}callout-danger{% else %}callout-info{% endif %}"
+       style="border-left-width:4px;">
+    <b>Что произойдёт:</b>
+    <ul style="margin:.4rem 0 0 1.1rem;">
+      <li>Статус обработки станет «{{ target_label }}».</li>
+      {% for line in consequences %}<li>{{ line }}</li>{% endfor %}
+    </ul>
+  </div>
+
+  <form method="post" style="margin-top:1rem;">
+    {% csrf_token %}
+    <button type="submit" class="default"
+            {% if is_cancel %}style="background:#dc3545;border-color:#dc3545;"{% endif %}>
+      Да, перевести в «{{ target_label }}»
+    </button>
+    <a href="{{ back_url }}" class="button" style="margin-left:.5rem;">Отмена</a>
+  </form>
+</div>
+{% endblock %}

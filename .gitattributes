@@ -1,0 +1,5 @@
+# Артефакты контура распознавания tool_type пиннингуются по sha256 сырых байтов
+# (release manifest, Wave 7.1/H3). Любая конвертация перевода строк меняет
+# artifact_sha256 и разводит Windows и CI — конвертация отключена полностью.
+data/catalog_processing_rules/*.json -text
+apps/catalog/tests/fixtures/*.json -text

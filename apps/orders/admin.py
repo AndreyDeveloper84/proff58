@@ -1,0 +1,711 @@
+"""Админка заказов и корзины (минимальная для #26)."""
+
+from decimal import Decimal
+
+from django import forms
+from django.contrib import admin, messages
+from django.contrib.admin.models import LogEntry
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
+from django.shortcuts import redirect
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
+from django.utils import timezone
+from django.utils.html import format_html, format_html_join
+from django.utils.safestring import mark_safe
+
+from apps.core.admin import TimestampColumnsMixin
+
+from .editing import editable_reason, expected_total, financial_fields_locked, update_quantities
+from .fulfillment import advance_fulfillment, next_steps
+from .models import (
+    B2BInvoice,
+    Cart,
+    CartItem,
+    DeliveryCalcStatus,
+    FulfillmentStatus,
+    Order,
+    OrderItem,
+)
+from .transitions import allowed_transitions, can_transition
+
+
+class OrderItemInlineFormSet(forms.BaseInlineFormSet):
+    """Проверка правок состава до сохранения (T8). Сама запись — в
+    ``editing.update_quantities`` под замком (см. OrderAdmin.save_formset)."""
+
+    def clean(self):
+        super().clean()
+        order = self.instance
+        if order.pk is None:
+            return
+        wanted = self.wanted_quantities()
+        if not wanted:
+            return
+        reason = editable_reason(order)
+        if reason:
+            raise forms.ValidationError(f"Состав заказа изменить нельзя: {reason}.")
+
+    def wanted_quantities(self) -> dict[int, int]:
+        """{id строки: новое количество} только по реально изменённым строкам;
+        удаление — количество 0."""
+        wanted: dict[int, int] = {}
+        for form in self.forms:
+            item = form.instance
+            if item.pk is None or not hasattr(form, "cleaned_data"):
+                continue
+            if form.cleaned_data.get("DELETE"):
+                wanted[item.pk] = 0
+            elif "quantity" in form.changed_data:
+                wanted[item.pk] = int(form.cleaned_data["quantity"])
+        return wanted
+
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    formset = OrderItemInlineFormSet
+    extra = 0
+    fields = (
+        "product",
+        "code_1c",
+        "article",
+        "name",
+        "unit",
+        "price_base",
+        "price_final",
+        "discount",
+        "price_type",
+        "currency",
+        "quantity",
+        "line_total",
+    )
+    # Снимок цены и товара — только чтение; количество правится, пока заказ не
+    # оплачен и не собран (editing.editable_reason), запись идёт через сервис.
+    _snapshot_fields = (
+        "product",
+        "code_1c",
+        "article",
+        "name",
+        "unit",
+        "price_base",
+        "price_final",
+        "discount",
+        "price_type",
+        "currency",
+        "line_total",
+    )
+
+    def has_add_permission(self, request, obj=None):
+        return False  # новые строки — только через оформление заказа
+
+    def _locked(self, obj) -> bool:
+        return obj is None or obj.pk is None or bool(editable_reason(obj))
+
+    def has_delete_permission(self, request, obj=None):
+        return not self._locked(obj) and super().has_delete_permission(request, obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        if self._locked(obj):
+            return self._snapshot_fields + ("quantity",)
+        return self._snapshot_fields
+
+
+class OrderAdminForm(forms.ModelForm):
+    """Форма заказа, знающая матрицу переходов обработки.
+
+    До этого админка была единственным местом, где `fulfillment_status` менялся
+    в обход `transitions.py`: обмен с 1С и жизненный цикл счёта матрицу
+    соблюдают, а ручная правка поля — нет. Итог — «Выполнен» → «Новый» и
+    «Отменён» → «В доставке» сохранялись молча.
+    """
+
+    class Meta:
+        model = Order
+        # Состав полей всё равно задаёт ModelAdmin.get_form (он исключает
+        # readonly_fields), базовой форме перечислять их незачем.
+        fields = "__all__"  # noqa: DJ007
+
+    def clean_fulfillment_status(self):
+        new = self.cleaned_data["fulfillment_status"]
+        if not self.instance.pk:
+            return new  # новый заказ — двигать нечего
+        # На момент clean_<field> instance ещё хранит значение из БД: поля формы
+        # переносятся в объект позже, в _post_clean.
+        old = self.instance.fulfillment_status
+        if can_transition(old, new):
+            return new
+
+        labels = dict(FulfillmentStatus.choices)
+        targets = allowed_transitions(old)
+        allowed = ", ".join(sorted(str(labels[t]) for t in targets))
+        message = f"Из статуса «{labels[old]}» нельзя перевести в «{labels[new]}»."
+        message += f" Допустимо: {allowed}." if allowed else " Это конечный статус."
+        raise forms.ValidationError(message)
+
+    def clean(self):
+        """Ручной расчёт доставки (DRF-2299): ввод стоимости закрывает «предварительность».
+
+        Пока статус `manual_required`, итог заказа без доставки и оплата закрыта.
+        Менеджер вписывает стоимость — статус сам становится «Рассчитано», но только
+        если итог сошёлся: иначе оплата открылась бы на неверную сумму, а чек кассы
+        не свёлся бы с заказом. Перевести в «Рассчитано» без стоимости нельзя.
+        """
+        cleaned = super().clean()
+        self.delivery_auto_calculated = False
+        if not self.instance.pk or "delivery_calc_status" not in cleaned:
+            return cleaned
+        old_status = self.instance.delivery_calc_status
+        new_status = cleaned.get("delivery_calc_status")
+        cost = cleaned.get("delivery_cost")
+        manual, calculated = DeliveryCalcStatus.MANUAL_REQUIRED, DeliveryCalcStatus.CALCULATED
+
+        if old_status == manual and new_status == calculated and cost is None:
+            raise forms.ValidationError(
+                {
+                    "delivery_cost": "Укажите стоимость доставки — без неё статус «Рассчитано» "
+                    "открыл бы оплату предварительного итога."
+                }
+            )
+        if old_status == manual and cost is not None and new_status == manual:
+            cleaned["delivery_calc_status"] = calculated
+            self.delivery_auto_calculated = True
+        # Итог правится только согласованно с доставкой: любая правка total или
+        # delivery_cost сверяется с формулой place_order (T8). Итог при manual_required
+        # без стоимости — предварительный, только товары.
+        if (old_status == manual and cost is not None) or (
+            {"total", "delivery_cost"} & set(self.changed_data)
+        ):
+            goods = sum((i.line_total or 0 for i in self.instance.items.all()), Decimal("0"))
+            expected = expected_total(self.instance, delivery_cost=cost)
+            if cleaned.get("total") != expected:
+                raise forms.ValidationError(
+                    {
+                        "total": (
+                            f"Сумма заказа должна быть {expected:.2f} {self.instance.currency}: "
+                            f"товары {goods:.2f} − скидка "
+                            f"{(self.instance.items_discount_total or 0):.2f} + доставка "
+                            f"{(cost if cost is not None else 0):.2f} − скидка на доставку "
+                            f"{(self.instance.delivery_discount or 0):.2f}."
+                        )
+                    }
+                )
+        return cleaned
+
+
+@admin.register(Order)
+class OrderAdmin(TimestampColumnsMixin, admin.ModelAdmin):
+    form = OrderAdminForm
+    change_form_template = "admin/orders/order/change_form.html"
+    list_display = (
+        "order_number",
+        "created",
+        "customer",
+        "total_money",
+        "payment_way",
+        "status_badge",
+        "next_action",
+    )
+    # DRF-1177: способ оплаты — в списке и в фильтрах. С оплатой при получении
+    # (DRF-948) заказы требуют разных действий: онлайн ждёт платежа, наличные —
+    # выдачи в магазине. В общем списке они выглядели одинаково.
+    list_filter = (
+        "fulfillment_status",
+        "payment_status",
+        "payment_method",
+        "sync_1c_status",
+        "customer_type",
+    )
+    search_fields = ("order_number", "customer_name", "customer_phone", "inn")
+    # «Заказы за сегодня» без этого было нечем отфильтровать.
+    date_hierarchy = "created_at"
+    save_on_top = True
+    # user — autocomplete (UserAdmin.search_fields есть), слот — raw_id
+    # (у DeliverySlotAdmin поиска нет). Оба поля рендерили полный селект.
+    autocomplete_fields = ("user",)
+    raw_id_fields = ("delivery_slot",)
+    inlines = [OrderItemInline]
+    # Заказ хранит СНИМКИ на момент оформления: правка их руками не пересчитывает
+    # строки и разъезжается с платежом и выгрузкой в 1С. Поэтому снимок промо и
+    # доставки, разбивка НДС, скидки, номер, резерв, токен и поля, которые пишет
+    # 1С, — только для чтения.
+    #
+    # ВНЕ этого списка — `total`, `delivery_cost`, `delivery_zone`,
+    # `delivery_calc_status`: при manual_required стоимость доставки вводит менеджер.
+    # Правка total сверяется с формулой итога (OrderAdminForm.clean), количество
+    # строк меняется через сервис editing.update_quantities (save_formset), а у
+    # оплаченного/отгруженного заказа все денежные поля замораживает
+    # get_readonly_fields (T8).
+    readonly_fields = (
+        "display_status",
+        "status_panel",
+        "history",
+        "fulfillment_status",
+        "order_number",
+        "promo_code",
+        "promo_snapshot",
+        "items_discount_total",
+        "delivery_discount",
+        "delivery_snapshot",
+        "delivery_slot_snapshot",
+        "vat_rate",
+        "vat_amount",
+        "amount_without_vat",
+        "currency",
+        "reservation_status",
+        "reserved_until",
+        "external_order_id",
+        "external_order_number",
+        "exported_at",
+        "access_token",
+        "created_at",
+        "updated_at",
+    )
+
+    fieldsets = (
+        (
+            None,
+            {
+                "description": (
+                    "Обработка двигается кнопками выше — они зовут доменный сервис "
+                    "(проверка перехода, возврат резерва при отмене, уведомление "
+                    "покупателю). Поле «Обработка» показано только для справки."
+                ),
+                "fields": ("status_panel", "fulfillment_status", "payment_status", "comment"),
+            },
+        ),
+        (
+            "Покупатель",
+            {
+                "fields": (
+                    "user",
+                    "customer_name",
+                    "customer_phone",
+                    "customer_email",
+                    "customer_type",
+                )
+            },
+        ),
+        (
+            "Организация (B2B)",
+            {
+                "classes": ("collapse",),
+                "fields": ("company_name", "inn", "kpp", "legal_address"),
+            },
+        ),
+        (
+            "Доставка",
+            {
+                "description": (
+                    "При «Требуется ручной расчёт» стоимость доставки определяете вы: "
+                    "введите её здесь и поправьте сумму заказа."
+                ),
+                "fields": (
+                    "delivery_method",
+                    "delivery_address",
+                    "delivery_zone",
+                    "delivery_cost",
+                    "delivery_calc_status",
+                    "delivery_slot",
+                    "tracking_number",
+                ),
+            },
+        ),
+        (
+            "Деньги — снимок на момент оформления",
+            {
+                "fields": (
+                    "total",
+                    "currency",
+                    "items_discount_total",
+                    "delivery_discount",
+                    "promo_code",
+                    "vat_rate",
+                    "vat_amount",
+                    "amount_without_vat",
+                    "payment_method",
+                ),
+            },
+        ),
+        (
+            "Резерв склада и выгрузка в 1С",
+            {
+                "fields": (
+                    "reservation_status",
+                    "reserved_until",
+                    "sync_1c_status",
+                    "exported_at",
+                    "external_order_id",
+                    "external_order_number",
+                ),
+            },
+        ),
+        ("История изменений", {"fields": ("history",)}),
+        (
+            "Техническая информация",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "order_number",
+                    "access_token",
+                    "promo_snapshot",
+                    "delivery_snapshot",
+                    "delivery_slot_snapshot",
+                    "created_at",
+                    "updated_at",
+                ),
+            },
+        ),
+    )
+
+    # ------------------------------------------------------------------ список
+
+    @admin.display(description="Покупатель")
+    def customer(self, obj):
+        phone = obj.customer_phone or (obj.user.phone if obj.user_id else "")
+        name = obj.customer_name or (obj.user.full_name if obj.user_id else "") or "—"
+        return format_html("{}<br><span style='opacity:.6;'>{}</span>", name, phone or "—")
+
+    @admin.display(description="Сумма", ordering="total")
+    def total_money(self, obj):
+        return f"{obj.total} {obj.currency}"
+
+    @admin.display(description="Оплата", ordering="payment_method")
+    def payment_way(self, obj):
+        """Чем платят — словами. Пусто у старых заказов, оформленных до DRF-948."""
+        return obj.get_payment_method_display() or "—"
+
+    @admin.display(description="Статус")
+    def status_badge(self, obj):
+        """Один человекочитаемый статус вместо четырёх технических.
+
+        Оси оплаты и выгрузки остаются, но мелкой подписью: менеджеру нужен
+        ответ «что с заказом», а не три равнозначных поля.
+        """
+        return format_html(
+            "<b>{}</b><br><span style='opacity:.6;font-size:.85em;'>оплата: {} · 1С: {}</span>",
+            obj.display_status,
+            obj.get_payment_status_display(),
+            obj.get_sync_1c_status_display(),
+        )
+
+    @admin.display(description="Что сделать")
+    def next_action(self, obj):
+        """Кнопки следующего допустимого шага прямо в списке."""
+        steps = next_steps(obj)
+        if not steps:
+            return format_html("<span style='opacity:.5;'>—</span>")
+        return format_html_join(
+            " ",
+            '<a class="button" style="padding:.15rem .5rem;font-size:.85em;{}" href="{}">{}</a>',
+            (
+                (
+                    (
+                        "background:#dc3545;border-color:#dc3545;"
+                        if value == FulfillmentStatus.CANCELLED
+                        else ""
+                    ),
+                    reverse("admin:orders_order_advance", args=[obj.pk, value]),
+                    label,
+                )
+                for value, label in steps
+            ),
+        )
+
+    # ---------------------------------------------------------------- карточка
+
+    @admin.display(description="Статус заказа")
+    def status_panel(self, obj):
+        """Шапка карточки: где заказ и куда его можно двинуть."""
+        if obj is None or obj.pk is None:
+            return "—"
+        steps = next_steps(obj)
+        buttons = (
+            format_html_join(
+                " ",
+                '<a class="button" style="margin-right:.4rem;{}" href="{}">{}</a>',
+                (
+                    (
+                        (
+                            "background:#dc3545;border-color:#dc3545;"
+                            if value == FulfillmentStatus.CANCELLED
+                            else ""
+                        ),
+                        reverse("admin:orders_order_advance", args=[obj.pk, value]),
+                        label,
+                    )
+                    for value, label in steps
+                ),
+            )
+            if steps
+            else mark_safe(
+                "<span style='opacity:.6;'>Заказ в конечном статусе.</span>"
+            )  # noqa: S308
+        )
+        return format_html(
+            "<div style='padding:.6rem .8rem;border-radius:.4rem;"
+            "background:rgba(128,128,128,.08);max-width:44rem;'>"
+            "<div style='font-size:1.15rem;font-weight:700;margin-bottom:.1rem;'>{}</div>"
+            "<div style='opacity:.65;font-size:.88rem;margin-bottom:.55rem;'>"
+            "оплата: {} · выгрузка в 1С: {} · резерв: {}</div>{}</div>",
+            obj.display_status,
+            obj.get_payment_status_display(),
+            obj.get_sync_1c_status_display(),
+            obj.get_reservation_status_display(),
+            buttons,
+        )
+
+    @admin.display(description="Кто и что менял")
+    def history(self, obj):
+        """Журнал правок из админки (django LogEntry) — «кто поставил этот статус».
+
+        Раньше ответа на этот вопрос не было нигде.
+        """
+        if obj is None or obj.pk is None:
+            return "—"
+        entries = (
+            LogEntry.objects.filter(
+                content_type=ContentType.objects.get_for_model(Order), object_id=str(obj.pk)
+            )
+            .select_related("user")
+            .order_by("-action_time")[:20]
+        )
+        if not entries:
+            return mark_safe(
+                "<span style='opacity:.6;'>Правок из админки пока не было.</span>"
+            )  # noqa: S308
+        return format_html_join(
+            "",
+            "<div style='margin:.15rem 0;'>" "<span style='opacity:.6;'>{}</span> — {} — {}</div>",
+            (
+                (
+                    timezone.localtime(e.action_time).strftime("%d.%m.%Y %H:%M"),
+                    e.user.get_username() if e.user else "система",
+                    e.get_change_message() or e.object_repr,
+                )
+                for e in entries
+            ),
+        )
+
+    # ------------------------------------------------------------------ кнопки
+
+    def has_delete_permission(self, request, obj=None):
+        """Заказ из админки не удаляется никем, включая суперпользователя (DRF-2300).
+
+        Заказ — история продажи: от него каскадом уходят платежи и чеки
+        (`payments.Payment`, `RefundRequest`), отзыв, строки и счёт B2B, а по номеру
+        его знает 1С. Ненужный заказ отменяют через кнопку перехода
+        (`advance_view` → `advance_fulfillment`), которая снимает резерв ровно один
+        раз. Возврат `False` убирает кнопку в карточке, вырезает `delete_selected`
+        из списка действий и даёт 403 на прямой POST по `…/delete/`; заодно
+        `get_deleted_objects` откажет удалять любую модель, чей каскад задел бы заказ.
+        Удаление через ORM (DRF-1002, служебные очистки) остаётся как есть.
+        """
+        return False
+
+    # Поля, которые нельзя править у оплаченного/отгруженного/отменённого заказа:
+    # деньги и доставка заморожены, возврат — через «Заявки на возврат».
+    _FINANCIAL_FIELDS = (
+        "total",
+        "delivery_cost",
+        "delivery_zone",
+        "delivery_calc_status",
+        "delivery_method",
+        "delivery_address",
+        "delivery_slot",
+        "payment_status",
+    )
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = list(super().get_readonly_fields(request, obj))
+        if obj is None or obj.pk is None:
+            return fields
+        if financial_fields_locked(obj):
+            fields.extend(f for f in self._FINANCIAL_FIELDS if f not in fields)
+        elif obj.payment_method == "online" and "payment_status" not in fields:
+            # Онлайн-оплату двигает касса (payments.services), не рука менеджера.
+            fields.append("payment_status")
+        return fields
+
+    def save_formset(self, request, form, formset, change):
+        """Строки заказа сохраняются не formset-ом, а сервисом (T8): резерв, итог
+        и НДС пересчитываются под замком; отказ сервиса откатывает всё сохранение."""
+        if formset.model is not OrderItem:
+            return super().save_formset(request, form, formset, change)
+        # construct_change_message ждёт эти списки от formset.save(); мы его не зовём.
+        formset.new_objects, formset.changed_objects, formset.deleted_objects = [], [], []
+        wanted = formset.wanted_quantities()
+        if not wanted:
+            return
+        try:
+            order, log = update_quantities(form.instance.pk, wanted, actor_id=request.user.pk)
+        except ValidationError as exc:
+            # Сервис откатил свой savepoint; всё сохранение откатим в response_change —
+            # там уже отработал штатный журнал, и транзакция ещё открыта.
+            request._order_edit_error = "; ".join(exc.messages)
+            return
+        if log:
+            self.log_change(request, order, "Состав: " + "; ".join(log))
+            self.message_user(
+                request,
+                f"Итог пересчитан: {order.total:.2f} {order.currency}.",
+                level=messages.INFO,
+            )
+
+    def response_change(self, request, obj):
+        error = getattr(request, "_order_edit_error", "")
+        if error:
+            transaction.set_rollback(True)  # changeform_view держит atomic вокруг всего
+            self.message_user(request, f"Изменения не сохранены. {error}", level=messages.ERROR)
+            return redirect("admin:orders_order_change", obj.pk)
+        return super().response_change(request, obj)
+
+    def get_urls(self):
+        return [
+            path(
+                "<int:order_id>/advance/<str:target>/",
+                self.admin_site.admin_view(self.advance_view),
+                name="orders_order_advance",
+            ),
+            *super().get_urls(),
+        ]
+
+    def advance_view(self, request, order_id, target):
+        """Перевод статуса: GET — страница подтверждения, POST — сам переход.
+
+        Меняем состояние только на POST. Ссылка-переход по GET двигала бы заказ
+        от случайного клика или префетча браузера, а тут денежный контур и
+        уведомление покупателю. Заодно на подтверждении объясняем последствия —
+        как того и требует согласованный принцип «сначала объясни, потом делай».
+        """
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        order = self.get_object(request, str(order_id))
+        if order is None:
+            self.message_user(request, "Заказ не найден.", level=messages.ERROR)
+            return redirect("admin:orders_order_changelist")
+
+        labels = dict(FulfillmentStatus.choices)
+        if request.method != "POST":
+            consequences = ["Покупатель получит уведомление о новом статусе."]
+            if target == FulfillmentStatus.CANCELLED:
+                consequences.insert(0, "Резерв товаров вернётся в свободный остаток.")
+                consequences.append("Отмена необратима — статус конечный.")
+            context = {
+                **self.admin_site.each_context(request),
+                "title": f"Заказ {order.order_number}",
+                "order": order,
+                "target_label": labels.get(target, target),
+                "consequences": consequences,
+                "is_cancel": target == FulfillmentStatus.CANCELLED,
+                "back_url": reverse("admin:orders_order_change", args=[order.pk]),
+            }
+            return TemplateResponse(request, "admin/orders/order/advance_confirm.html", context)
+
+        try:
+            order = advance_fulfillment(order_id, target, actor_id=request.user.pk)
+        except ValidationError as exc:
+            self.message_user(request, "; ".join(exc.messages), level=messages.ERROR)
+        else:
+            self.log_change(request, order, f"Обработка → {order.get_fulfillment_status_display()}")
+            self.message_user(
+                request,
+                f"Заказ {order.order_number}: {order.display_status}.",
+                level=messages.SUCCESS,
+            )
+        return redirect("admin:orders_order_change", order_id)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if change and self._delivery_priced_now(form, obj):
+            self._after_delivery_priced(request, obj)
+
+    @staticmethod
+    def _delivery_priced_now(form, obj) -> bool:
+        """Менеджер только что назначил стоимость доставки: переход «ручной расчёт →
+        рассчитано» либо правка стоимости у уже рассчитанного неоплаченного заказа.
+        `form.initial` — значения из БД до правки (включая автоперевод статуса в clean)."""
+        calculated = DeliveryCalcStatus.CALCULATED
+        if obj.delivery_calc_status != calculated or obj.payment_status != "pending":
+            return False
+        was_manual = form.initial.get("delivery_calc_status") == DeliveryCalcStatus.MANUAL_REQUIRED
+        cost_changed = "delivery_cost" in form.changed_data and obj.delivery_cost is not None
+        return was_manual or cost_changed
+
+    def _after_delivery_priced(self, request, obj):
+        """Резерв удерживается заново (ручной расчёт занимает часы, 30-минутный резерв
+        давно снят), письмо покупателю ставится после коммита (DRF-2299)."""
+        from datetime import timedelta
+
+        from django.db import transaction
+
+        from .reservation import rehold_reservation
+        from .services import notify_delivery_calculated
+
+        ok, reason = rehold_reservation(obj.pk, ttl=timedelta(hours=24))
+        if not ok:
+            self.message_user(
+                request,
+                f"Стоимость доставки сохранена, но {reason}. Свяжитесь с покупателем — "
+                "письмо со ссылкой на оплату не отправлено.",
+                level=messages.WARNING,
+            )
+            return
+        obj.refresh_from_db(fields=["reserved_until", "reservation_status"])
+        result = notify_delivery_calculated(obj, send=False)
+        # Постановка в очередь — после коммита: иначе воркер может взять задачу
+        # раньше, чем увидит строку. robust: ошибка логируется, сохранение не откатится.
+        transaction.on_commit(lambda: notify_delivery_calculated(obj), robust=True)
+        self.message_user(
+            request,
+            f"Резерв товара удержан до {timezone.localtime(obj.reserved_until):%d.%m %H:%M}; {result}.",
+            level=messages.INFO,
+        )
+
+    @admin.display(description="Статус для клиента")
+    def display_status(self, obj):
+        return obj.display_status
+
+
+@admin.register(B2BInvoice)
+class B2BInvoiceAdmin(admin.ModelAdmin):
+    """Счета B2B (#559). Оплату отмечает менеджер action'ом — он ведёт заказ и
+    резерв через invoice_lifecycle (paid + confirm), а не правкой полей руками."""
+
+    list_display = ("number", "order", "status", "issued_at", "valid_until", "paid_at")
+    list_filter = ("status",)
+    search_fields = ("number", "order__order_number", "order__inn", "order__company_name")
+    readonly_fields = ("order", "number", "issued_at", "valid_until", "paid_at", "status")
+    actions = ["mark_paid"]
+
+    def has_add_permission(self, request):  # счёт создаёт только place_order
+        return False
+
+    @admin.action(description="Отметить оплаченным (заказ → оплачен, резерв списан)")
+    def mark_paid(self, request, queryset):
+        from .invoice_lifecycle import mark_invoice_paid
+
+        done = 0
+        for invoice in queryset:
+            try:
+                mark_invoice_paid(invoice.pk)
+                done += 1
+            except ValidationError as exc:
+                self.message_user(request, "; ".join(exc.messages), level=messages.ERROR)
+        if done:
+            self.message_user(request, f"Оплачено счетов: {done}.", level=messages.SUCCESS)
+
+
+class CartItemInline(admin.TabularInline):
+    model = CartItem
+    extra = 0
+    # Без raw_id каждая строка корзины рендерила селект со ВСЕМ каталогом.
+    raw_id_fields = ("product",)
+
+
+@admin.register(Cart)
+class CartAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "session_key", "status", "ordered_at", "created_at")
+    list_filter = ("status",)
+    inlines = [CartItemInline]

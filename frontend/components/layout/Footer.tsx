@@ -1,0 +1,211 @@
+import Image from "next/image";
+import Link from "next/link";
+import {
+  Clock,
+  Cog,
+  Mail,
+  MapPin,
+  MessageSquareText,
+  Phone,
+} from "lucide-react";
+import { CopyContact, PhoneContact } from "@/components/contacts/CopyContact";
+import { INFO_PAGES, INFO_PAGE_SLUGS } from "@/lib/info-content";
+import type { InfoPageLink } from "@/lib/info-pages";
+import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
+import { cn } from "@/lib/utils";
+
+// Компактный подвал по макету. Состав навигации намеренно определяется только
+// существующими маршрутами — отсутствующие backend-разделы не подменяются "#".
+// Стили — только семантические токены (globals.css); литеральный цвет оставлен
+// лишь у чужого бренда (фиолетовый MAX).
+export function Footer({
+  logoUrl,
+  siteName = SITE.brand.name,
+  storefront = resolveStorefront(),
+  infoPages = [],
+}: {
+  logoUrl?: string;
+  siteName?: string;
+  storefront?: ResolvedStorefront;
+  /** Страницы из админки («Доставка», «О компании»). Пусто — раздела нет:
+      правило подвала «не подменять отсутствующие разделы решёткой» сохраняется. */
+  infoPages?: InfoPageLink[];
+}) {
+  // Страницы из кода есть на сайте всегда; из админки добавляем только те, чей
+  // slug ещё не занят — одна и та же страница не должна стоять в списке дважды.
+  const allInfoPages = [
+    ...INFO_PAGE_SLUGS.map((slug) => ({ slug, title: INFO_PAGES[slug].title })),
+    ...infoPages.filter((page) => !INFO_PAGES[page.slug]),
+  ];
+
+  return (
+    <footer className="border-t border-line bg-surface">
+      <div
+        className={cn(
+          // Колонок в подвале 6 (или 7 с «Информацией»). При grid-cols-4 второй
+          // ряд оставался наполовину пустым на 1280–1440 — самых ходовых
+          // десктопных ширинах. Поэтому до xl раскладываем по 3 (ровно два
+          // ряда), а с xl разворачиваем в одну строку.
+          "mx-auto grid w-full max-w-[1680px] grid-cols-1 gap-6 px-4 py-6 sm:grid-cols-2 sm:px-6 lg:grid-cols-3 xl:px-8",
+          allInfoPages.length > 0
+            ? "xl:grid-cols-[1.3fr_1fr_.9fr_.85fr_.75fr_1.15fr_1.15fr]"
+            : "xl:grid-cols-[1.35fr_1.05fr_.9fr_.85fr_1.05fr_1.15fr]",
+        )}
+      >
+        {/* Левый блок: лого + описание */}
+        <div>
+          <span className="flex items-center gap-2">
+            {logoUrl ? (
+              <Image
+                src={logoUrl}
+                alt=""
+                width={34}
+                height={34}
+                className="h-8 w-auto shrink-0 object-contain"
+                aria-hidden
+              />
+            ) : (
+              <Cog className="h-8 w-8 shrink-0 text-accent" strokeWidth={3} aria-hidden />
+            )}
+            <span className="flex flex-col leading-none">
+              <span className="font-sans text-sm font-extrabold uppercase tracking-wide text-ink">
+                {siteName}
+              </span>
+              <span className="mt-0.5 text-xs font-medium uppercase text-ink-3">
+                {SITE.header.tagline}
+              </span>
+            </span>
+          </span>
+          <p className="mt-2 max-w-[300px] text-sm leading-[1.45] text-ink-2">
+            {SITE.footerAbout}
+          </p>
+          {/* Кнопки соцсетей удалены по решению команды: реальных аккаунтов нет,
+              ссылки вели на главные страницы сервисов. Вернуть вместе с адресами. */}
+        </div>
+
+        {/* Группы ссылок */}
+        {SITE.footerColumns.map((col) => (
+          <nav key={col.title} aria-label={col.title}>
+            <h2 className="mb-2 font-sans text-sm font-bold text-ink">{col.title}</h2>
+            <ul className="space-y-1.5 text-sm leading-[1.4]">
+              {col.links.map((l) => (
+                <li key={l.label} className="leading-[1.35]">
+                  <Link href={l.href} className="text-ink-2 hover:text-accent">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
+
+        {/* Информационные страницы: четыре из кода — всегда, остальные из
+            админки — по факту публикации. Дубли по slug отбрасываем: одна и та
+            же страница не должна стоять в списке дважды. */}
+        {allInfoPages.length > 0 && (
+          <nav aria-label="Информация">
+            <h2 className="mb-2 font-sans text-sm font-bold text-ink">Информация</h2>
+            <ul className="space-y-1.5 text-sm leading-[1.4]">
+              {allInfoPages.map((page) => (
+                <li key={page.slug} className="leading-[1.35]">
+                  <Link href={`/info/${page.slug}`} className="text-ink-2 hover:text-accent">
+                    {page.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+
+        {/* Контакты + «Мы в мессенджерах» */}
+        <div>
+          <h2 className="mb-2 font-sans text-sm font-bold text-ink">Контакты</h2>
+          <ul className="space-y-2 text-sm text-ink-2">
+            {/* Адрес копируется по нажатию; номер на ПК копируется, на телефоне звонит. */}
+            <li>
+              <CopyContact
+                kind="address"
+                value={storefront.address}
+                className="flex items-center gap-2"
+              >
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-2" aria-hidden />
+                {storefront.address}
+              </CopyContact>
+            </li>
+            <li>
+              <PhoneContact
+                display={storefront.phone.display}
+                href={storefront.phone.href}
+                className="group flex items-center gap-2"
+              >
+                <Phone
+                  className="h-3.5 w-3.5 shrink-0 text-ink-2 transition-colors group-hover:text-accent group-focus-visible:text-accent"
+                  aria-hidden
+                />
+                {storefront.phone.display}
+              </PhoneContact>
+            </li>
+            <li>
+              <a href={`mailto:${storefront.email}`} className="flex items-center gap-2 hover:text-accent">
+                <Mail className="h-3.5 w-3.5 shrink-0 text-ink-2" aria-hidden />
+                {storefront.email}
+              </a>
+            </li>
+            <li className="flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5 shrink-0 text-ink-2" aria-hidden />
+              {storefront.schedule}
+            </li>
+          </ul>
+        </div>
+
+        {/* Бот магазина в MAX. Без настроенного бота плитки нет: ссылка на
+            max.ru без имени бота вела бы на главную мессенджера и выглядела
+            рабочей — а человек оказывался бы не у нас. */}
+        {storefront.maxHref && (
+          <div>
+          <a
+            href={storefront.maxHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-event="footer_max"
+            className="flex items-center gap-3 rounded-sm border border-line bg-surface p-2.5 transition hover:border-max"
+          >
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-sm bg-[var(--max-tint)]">
+              <Image
+                src="/brands/max-colored.png"
+                alt=""
+                width={44}
+                height={44}
+                className="h-9 w-9 object-contain"
+                aria-hidden
+              />
+            </span>
+            <span className="min-w-0">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-ink">
+                <MessageSquareText className="h-3.5 w-3.5 text-max" aria-hidden />
+                {SITE.maxBot.title}
+              </span>
+              <span className="mt-0.5 block text-xs leading-snug text-ink-2">
+                {SITE.maxBot.text}
+              </span>
+            </span>
+          </a>
+          </div>
+        )}
+      </div>
+
+      {/* Нижняя строка. Политика/соглашение появятся вместе с юр. страницами —
+          битые ссылки не рисуем (#591). */}
+      <div className="border-t border-line">
+        <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-2 px-4 py-3 text-xs text-ink-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 xl:px-8">
+          <span>© 2014–2026 {siteName}. Все права защищены.</span>
+          <div className="flex flex-wrap gap-3">
+            {SITE.payments.map((p) => (
+              <span key={p}>{p}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}

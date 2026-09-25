@@ -1,0 +1,15 @@
+# TT-15 · дампы БД стенда (сняты штатным scripts/backup.sh на хосте)
+
+pg_dump внутри web-контейнера отсутствует (как в TT-12) — дампы сняты на хосте
+staging до write каждого кластера:
+
+| Кластер | Файл на хосте | Размер (байт) |
+|---|---|---:|
+| перед cluster1 | /home/taximeter/backups/staging/db-2026-07-31-0628.sql.gz | 21 538 381 |
+| перед cluster2 | /home/taximeter/backups/staging/db-2026-07-31-0633.sql.gz | 21 539 161 |
+| перед cluster3 | /home/taximeter/backups/staging/db-2026-07-31-0636.sql.gz | 21 539 524 |
+
+Медиа: media-2026-07-31-0628.tgz / -0633.tgz / -0636.tgz (по 2 776 351 байт).
+
+Откат точечный — по картам cluster{1,2,3}-rollback-map.json и паре снимков
+before/after (испытан на стенде в обе стороны, см. протокол §6).

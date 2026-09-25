@@ -1,0 +1,178 @@
+{
+ "track": "PF-SH-RELEASE-GATE-01",
+ "manifest_sha256": "112281b5d5b51e93b0f7ee15dfb9bc404ad9a6963087352811d5d3d74f4c866c",
+ "blockers": {
+  "BLOCKED_MEDIA": {
+   "sku_count": 6,
+   "fix_complexity": "MEDIA",
+   "sku_unlocked_if_fixed": 6,
+   "skus": [
+    {
+     "product_id": 44527,
+     "article": "ЗП-2890 м",
+     "name": "Перфоратор ЗУБР ЗП-2890, SDS+, реверс, 900Вт, 3,2Дж, 3режима ПРОФЕССИОНАЛ",
+     "subtype": "perforator",
+     "secondary": [
+      "IDENTITY_BY_BASE_ARTICLE_MANUAL_CHECK",
+      "VARIANT_IDENTITY_MISMATCH: у ВИ только «ЗП-2890 мс» (=44528), «м»-версии нет",
+      "QUALITY:motor_type",
+      "QUALITY:weight_kg"
+     ]
+    },
+    {
+     "product_id": 45441,
+     "article": "HOS8140BL",
+     "name": "Шлифмашина эксцентриковая HANSKONNER HOS8140BL ф150мм 400Вт, 4000-10000об/мин БЕСЩЕТОЧНАЯ",
+     "subtype": "ekscentrikovaya",
+     "secondary": [
+      "SOURCE_CODE_NOT_FOUND: HOS8140BL нет у ВИ (артикул уже исправлен с HOS814OBL)",
+      "QUALITY:weight_kg"
+     ]
+    },
+    {
+     "product_id": 45117,
+     "article": "4466260",
+     "name": "Шлифмашина лент Einhell TC-BS 8038, 800Вт, 76х533мм",
+     "subtype": "lentochnaya",
+     "secondary": [
+      "SOURCE_CODE_NOT_FOUND: Einhell 4466260 нет в выдаче ВИ",
+      "QUALITY:no_load_speed",
+      "QUALITY:motor_type",
+      "QUALITY:weight_kg"
+     ]
+    },
+    {
+     "product_id": 45142,
+     "article": "",
+     "name": "Шлифмашина полировальная ИНТЕРСКОЛ УПМ-200/1010ЭШ со штангой",
+     "subtype": "polirovalnaya",
+     "secondary": [
+      "BLOCKED_CHARACTERISTICS",
+      "MISSING_ARTICLE (identity по модели в названии)",
+      "TAXONOMY_PARALLEL_TYPE: полировальная в shlifmashiny, есть polirovalnye (1)",
+      "MISSING_ARTICLE: артикула в 1С нет, strict-поиск невозможен"
+     ]
+    },
+    {
+     "product_id": 45200,
+     "article": "4430860",
+     "name": "Шлифмашина угловая Einhell TE-AG 125 CE, 1100Вт, 125мм",
+     "subtype": "ushm",
+     "secondary": [
+      "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+      "SOURCE_CODE_NOT_FOUND: Einhell 4430860 нет в выдаче ВИ",
+      "QUALITY:no_load_speed",
+      "QUALITY:motor_type"
+     ]
+    },
+    {
+     "product_id": 45339,
+     "article": "AG1210100013",
+     "name": "Шлифмашина угловая WORTEX AG 1210-1 125мм, 1000Вт",
+     "subtype": "ushm",
+     "secondary": [
+      "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+      "PRODUCT_IDENTITY_DATA_FIX: в article внутренний код 1С AG1210100013, модель AG 1210-1 однозначна по названию",
+      "PRODUCT_IDENTITY_DATA_FIX",
+      "QUALITY:no_load_speed"
+     ]
+    }
+   ]
+  },
+  "BLOCKED_CHARACTERISTICS": {
+   "sku_count": 4,
+   "fix_complexity": "DATA",
+   "sku_unlocked_if_fixed": 4,
+   "skus": [
+    {
+     "product_id": 45450,
+     "article": "75/6/3",
+     "name": "Шлифмашина эксцентриковая РЕСАНТА ЭШМ-125/5Э",
+     "subtype": "ekscentrikovaya",
+     "secondary": [
+      "ZERO_CHARACTERISTICS",
+      "QUALITY:power_source",
+      "QUALITY:no_load_speed",
+      "QUALITY:motor_type"
+     ]
+    },
+    {
+     "product_id": 45452,
+     "article": "75/6/2",
+     "name": "Шлифмашина эксцентриковая РЕСАНТА ЭШМ-125Э",
+     "subtype": "ekscentrikovaya",
+     "secondary": [
+      "ZERO_CHARACTERISTICS",
+      "QUALITY:power_source",
+      "QUALITY:no_load_speed",
+      "QUALITY:motor_type"
+     ]
+    },
+    {
+     "product_id": 45125,
+     "article": "SB8V2NSZ",
+     "name": "Шлифмашина лент SB8V2; 1020Вт, лента 76х533мм, 250-450м/мин, пылесборник, 4,3кг",
+     "subtype": "lentochnaya",
+     "secondary": [
+      "WRONG_VALUE: voltage=8 В (source=regex, «8» из модели SB8V2) у сетевой 1020 Вт",
+      "QUALITY:power_source",
+      "QUALITY:no_load_speed",
+      "QUALITY:motor_type"
+     ]
+    },
+    {
+     "product_id": 45113,
+     "article": "",
+     "name": "Шлифмашина вибрационная ПШВ-115/300ЭМ \"Интерскол\"",
+     "subtype": "vibracionnaya",
+     "secondary": [
+      "MISSING_ARTICLE (identity по модели в названии)",
+      "ZERO_CHARACTERISTICS",
+      "QUALITY:power_source",
+      "QUALITY:no_load_speed"
+     ]
+    }
+   ]
+  },
+  "BLOCKED_TAXONOMY": {
+   "sku_count": 1,
+   "fix_complexity": "TAXONOMY",
+   "sku_unlocked_if_fixed": 1,
+   "skus": [
+    {
+     "product_id": 44955,
+     "article": "ЗШС-330",
+     "name": "Станок шлифовальный ЗУБР ЗШС-330,330Вт, лента 762х25мм, диск 125мм",
+     "subtype": "stanok",
+     "secondary": [
+      "TAXONOMY_WRONG_TYPE: станок в «Шлифовальные машины», есть stanki-zatochnye/tochila-nazhdaki",
+      "NO_IS_MAIN_FLAG (витрина берёт первое фото)",
+      "QUALITY:no_load_speed",
+      "QUALITY:motor_type"
+     ]
+    }
+   ]
+  }
+ },
+ "non_blocking_gap_classes": {
+  "QUALITY:weight_kg": 80,
+  "TAXONOMY_PARALLEL_TYPE": 40,
+  "QUALITY:no_load_speed": 32,
+  "QUALITY:motor_type": 21,
+  "QUALITY:battery_capacity": 10,
+  "IDENTITY_BY_BASE_ARTICLE_MANUAL_CHECK": 9,
+  "QUALITY:power_source": 5,
+  "ZERO_CHARACTERISTICS": 4,
+  "SOURCE_CODE_NOT_FOUND": 3,
+  "QUALITY:battery_included": 2,
+  "MISSING_ARTICLE (identity по модели в названии)": 2,
+  "PRODUCT_IDENTITY_DATA_FIX": 2,
+  "VARIANT_IDENTITY_MISMATCH": 1,
+  "WRONG_VALUE": 1,
+  "BLOCKED_CHARACTERISTICS": 1,
+  "MISSING_ARTICLE": 1,
+  "TAXONOMY_WRONG_TYPE": 1,
+  "NO_IS_MAIN_FLAG (витрина берёт первое фото)": 1,
+  "CARD_TRANSIENT_500_ON_429 (SSR→API throttle)": 1
+ }
+}

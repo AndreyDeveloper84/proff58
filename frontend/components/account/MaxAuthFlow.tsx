@@ -1,0 +1,218 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { MessageSquareText } from "lucide-react";
+import {
+  maxCancel,
+  maxLinkStart,
+  maxStart,
+  maxStatus,
+  type MaxAttempt,
+  type MaxAttemptStatus,
+} from "@/lib/auth";
+
+// Поток авторизации/привязки через MAX (#492): создаём попытку, на мобильном
+// открываем диплинк бота, на десктопе показываем QR; опрашиваем статус (§7.3) и по
+// completed зовём onCompleted (вход/обновление). Токен бота на фронт не приходит —
+// только диплинк с одноразовым секретом попытки.
+//
+// `start`/`pollStatus` (#520): опциональный override для сценариев за пределами
+// login/link — напр. отслеживание гостевого заказа (свои start/status-эндпоинты,
+// без побочного login()). Без override — обычное mode-based поведение как раньше.
+
+type Phase = "idle" | "starting" | "waiting" | "completed" | "error";
+const TERMINAL_FAIL = ["expired", "cancelled", "failed"];
+const POLL_INTERVAL_MS = 2500;
+
+function isMobile(): boolean {
+  return typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+export function MaxAuthFlow({
+  mode = "login",
+  ctaLabel,
+  onCompleted,
+  start: customStart,
+  pollStatus = maxStatus,
+}: {
+  mode?: "login" | "link";
+  ctaLabel?: string;
+  onCompleted: () => void;
+  start?: () => Promise<MaxAttempt>;
+  pollStatus?: (attemptId: string) => Promise<MaxAttemptStatus>;
+}) {
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [attempt, setAttempt] = useState<MaxAttempt | null>(null);
+  const [qr, setQr] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  // Нейтральная подсказка ожидания (confirmation_required) — не ошибка, другой стиль.
+  const [hint, setHint] = useState("");
+  const poll = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Поколение опроса: ответ, пришедший после stopPoll/нового старта, ничего не планирует.
+  const pollGen = useRef(0);
+
+  const stopPoll = useCallback(() => {
+    pollGen.current += 1;
+    if (poll.current) {
+      clearTimeout(poll.current);
+      poll.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => stopPoll(), [stopPoll]);
+
+  const start = useCallback(async () => {
+    setPhase("starting");
+    setMessage("");
+    setHint("");
+    setQr(null);
+    try {
+      const a = customStart ? await customStart() : mode === "link" ? await maxLinkStart() : await maxStart();
+      setAttempt(a);
+      setPhase("waiting");
+
+      if (isMobile()) {
+        // Мобильный: открываем бота MAX; пользователь вернётся — статус подхватит polling.
+        window.location.href = a.deeplink;
+      } else {
+        // Десктоп: QR с диплинком (self-contained, генерируем на клиенте).
+        const QR = (await import("qrcode")).default;
+        setQr(await QR.toDataURL(a.deeplink, { width: 220, margin: 1 }));
+      }
+
+      // Опрос строго последовательный: следующий запрос — только после ответа на
+      // предыдущий. С setInterval на медленном сервере летело несколько опросов
+      // сразу: один завершал вход и получал новую cookie сессии, а отставшие
+      // возвращались со старой — Django отвечал на них удалением cookie, и
+      // человека выкидывало из только что открытого кабинета.
+      stopPoll();
+      const gen = pollGen.current;
+      const tick = async () => {
+        let done = false;
+        try {
+          const s = await pollStatus(a.attempt_id);
+          if (gen !== pollGen.current) return;
+          if (s.status === "completed") {
+            done = true;
+            stopPoll();
+            setPhase("completed");
+            onCompleted();
+          } else if (s.status === "confirmation_required") {
+            // Бэк ждёт подтверждения в приложении (§ confirm_login). Без этой ветки
+            // polling крутился бы молча — пользователь не знал бы, что делать.
+            setHint("Подтвердите вход в приложении MAX.");
+          } else if (TERMINAL_FAIL.includes(s.status)) {
+            done = true;
+            stopPoll();
+            setPhase("error");
+            setMessage(
+              s.status === "expired"
+                ? "Срок действия ссылки истёк."
+                : s.status === "cancelled"
+                  ? "Вход отменён."
+                  : "Не удалось подтвердить вход.",
+            );
+          }
+        } catch {
+          // Временная ошибка сети — продолжаем опрос со следующего шага.
+        }
+        if (!done && gen === pollGen.current) {
+          poll.current = setTimeout(tick, POLL_INTERVAL_MS);
+        }
+      };
+      poll.current = setTimeout(tick, POLL_INTERVAL_MS);
+    } catch (e) {
+      setPhase("error");
+      setMessage(e instanceof Error ? e.message : "Не удалось начать вход через MAX.");
+    }
+  }, [mode, onCompleted, stopPoll, customStart, pollStatus]);
+
+  const cancel = useCallback(async () => {
+    stopPoll();
+    if (attempt) {
+      try {
+        await maxCancel(attempt.attempt_id);
+      } catch {
+        /* отмена «best-effort» */
+      }
+    }
+    setPhase("idle");
+    setAttempt(null);
+    setQr(null);
+    setMessage("");
+    setHint("");
+  }, [attempt, stopPoll]);
+
+  if (phase === "idle" || phase === "starting") {
+    return (
+      <button
+        type="button"
+        onClick={start}
+        disabled={phase === "starting"}
+        data-event="max_auth_started"
+        className="inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink transition hover:brightness-95 disabled:opacity-50"
+      >
+        {/* Логотип MAX в белом скруглённом квадрате — как на кнопках других сервисов. */}
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-white" aria-hidden>
+          <Image src="/brands/max-colored.png" alt="" width={20} height={20} className="h-5 w-5" />
+        </span>
+        {phase === "starting" ? "Создаём ссылку…" : (ctaLabel ?? "Войти через MAX")}
+      </button>
+    );
+  }
+
+  if (phase === "completed") {
+    return <p className="text-center text-sm font-medium text-accent">Готово! Входим…</p>;
+  }
+
+  // waiting / error
+  return (
+    <div className="rounded-lg border border-line bg-surface p-4 text-center">
+      {qr ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qr} alt="QR-код для входа через MAX" className="mx-auto rounded-md" width={220} height={220} />
+          {/* Сканер в MAX «Устройства» привязывает компьютер к аккаунту MAX и наш код
+              отвергает («не тот QR-код»). Нужна обычная камера телефона. */}
+          <p className="mt-3 text-sm text-ink-2">
+            Наведите на QR-код обычную камеру телефона — откроется чат с ботом в MAX.
+            Нажмите «Начать», и вход подтвердится.
+          </p>
+          <p className="mt-1 text-xs text-ink-3">
+            Сканер в разделе MAX «Устройства» этот код не примет — он для входа в сам MAX.
+          </p>
+        </>
+      ) : (
+        <p className="text-sm text-ink-2">Откройте MAX и подтвердите вход, затем вернитесь на сайт.</p>
+      )}
+
+      {attempt && (
+        <a
+          href={attempt.deeplink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline"
+        >
+          <MessageSquareText className="h-4 w-4" aria-hidden />
+          Открыть MAX
+        </a>
+      )}
+
+      {hint && !message && <p className="mt-3 text-sm font-medium text-accent">{hint}</p>}
+      {message && <p className="mt-3 text-sm text-danger">{message}</p>}
+
+      <div className="mt-4">
+        {phase === "error" ? (
+          <button type="button" onClick={start} className="text-sm font-medium text-accent hover:underline">
+            Повторить
+          </button>
+        ) : (
+          <button type="button" onClick={cancel} className="text-sm text-ink-3 hover:text-ink">
+            Отменить
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

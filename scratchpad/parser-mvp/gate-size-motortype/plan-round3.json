@@ -1,0 +1,106 @@
+{
+ "creates": [],
+ "deletes": [
+  {
+   "attr": "disc_diameter",
+   "name": "Державка с пруж.фиксатором для коронок 32-200, с ш",
+   "pid": 16811,
+   "pub": true,
+   "tt": "krugi-shlif",
+   "was": "200.0000"
+  },
+  {
+   "attr": "disc_diameter",
+   "name": "Диск пильный 255х30мм z-100 ELITECH",
+   "pid": 17099,
+   "pub": true,
+   "tt": "krugi-shlif",
+   "was": "100.0000"
+  },
+  {
+   "attr": "disc_diameter",
+   "name": "Диск пильный 255х30мм z-100 REDVERG",
+   "pid": 17100,
+   "pub": false,
+   "tt": "krugi-shlif",
+   "was": "100.0000"
+  },
+  {
+   "attr": "disc_diameter",
+   "name": "Диск пильный 255х30мм z-100 TRIO-DIAMJND",
+   "pid": 17101,
+   "pub": false,
+   "tt": "krugi-shlif",
+   "was": "100.0000"
+  },
+  {
+   "attr": "disc_diameter",
+   "name": "Диск пильный 255х30мм z-100 ПРАКТИК",
+   "pid": 17102,
+   "pub": false,
+   "tt": "krugi-shlif",
+   "was": "100.0000"
+  },
+  {
+   "attr": "disc_diameter",
+   "name": "Диск пильный 255х30мм z-100 СЕБ",
+   "pid": 17103,
+   "pub": true,
+   "tt": "krugi-shlif",
+   "was": "100.0000"
+  },
+  {
+   "attr": "disc_diameter",
+   "name": "Диск пильный 355х25,4 z-100 СЕБ по пластику",
+   "pid": 17155,
+   "pub": true,
+   "tt": "krugi-shlif",
+   "was": "100.0000"
+  },
+  {
+   "attr": "disc_diameter",
+   "name": "Мини-насадки с алмазным напылением ЗУБР в пластик боксе, Р-180, хвост ",
+   "pid": 18201,
+   "pub": true,
+   "tt": "krugi-shlif",
+   "was": "180.0000"
+  },
+  {
+   "attr": "disc_diameter",
+   "name": "Мини-насадки с алмазным напылением ЗУБР в пластик боксе, Р-180, хвост ",
+   "pid": 18202,
+   "pub": true,
+   "tt": "krugi-shlif",
+   "was": "180.0000"
+  },
+  {
+   "attr": "disc_diameter",
+   "name": "Мини-насадки с алмазным напылением ЗУБР в пластик боксе, Р-180, хвост ",
+   "pid": 18203,
+   "pub": true,
+   "tt": "krugi-shlif",
+   "was": "180.0000"
+  },
+  {
+   "attr": "disc_diameter",
+   "name": "Мини-насадки с алмазным напылением ЗУБР в пластик боксе, Р-180, хвост ",
+   "pid": 18204,
+   "pub": true,
+   "tt": "krugi-shlif",
+   "was": "180.0000"
+  }
+ ],
+ "detail": {
+  "create": {},
+  "delete": {
+   "disc_diameter": 11
+  },
+  "update": {}
+ },
+ "plan": {
+  "CREATE": 0,
+  "DELETE": 11,
+  "SKIP_PRIORITY": 0,
+  "UPDATE": 0
+ }
+}

@@ -1,0 +1,25 @@
+{
+  "total": 5,
+  "created": 0,
+  "would_create": 1,
+  "existing": 0,
+  "skipped": 3,
+  "errors": 1,
+  "dry_run": true,
+  "result_checksum": "fc1595897ec2aafef2288c7c403a1eaedbe9df435fda9c2b1cf97d7e2a1097fc",
+  "export_checksum": "459a2c8e916d2b4246ee15eb51bfe2104de8186d52315794ed3e93a544a3d0eb"
+}
+Ошибки:
+  - product_ref 1: input_hash не совпадает
+Dry-run завершён
+{
+  "total": 5,
+  "created": 0,
+  "would_create": 1,
+  "existing": 0,
+  "skipped": 3,
+  "errors": 1,
+  "dry_run": true,
+  "result_checksum": "fc1595897ec2aafef2288c7c403a1eaedbe9df435fda9c2b1cf97d7e2a1097fc",
+  "export_checksum": "459a2c8e916d2b4246ee15eb51bfe2104de8186d52315794ed3e93a544a3d0eb"
+}

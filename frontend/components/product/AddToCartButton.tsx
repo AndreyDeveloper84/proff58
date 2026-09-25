@@ -1,0 +1,167 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { Bell, Check, FileText, Loader2, ShoppingCart } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { useCart } from "@/components/cart/CartProvider";
+import { ApiError } from "@/lib/api";
+import type { StockState } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+// CTA зависит от наличия и наличия цены — это разные сценарии покупки:
+//   in    → В корзину (реальное добавление через useCart)
+//   order → Под заказ (заявочный, аналитика)
+//   out   → Сообщить о поступлении → ведём на PDP, там живёт подписка
+//   нет цены → Запросить цену → ведём на PDP, там модалка заявки
+//
+// #574: заявочные кнопки раньше рендерились без onClick и вообще ничего не
+// делали (глобального обработчика data-event нет, lib/analytics.track — no-op).
+// Настоящее действие для обоих сценариев есть только на карточке товара, поэтому
+// это ссылки на PDP, а не мёртвые кнопки. Тексты выровнены с PDP.
+export function AddToCartButton({
+  productId,
+  productSlug,
+  stock = "in",
+  hasPrice = true,
+  fullWidth = false,
+  compact = false,
+  showLabel = false,
+}: {
+  productId: number;
+  productSlug: string;
+  stock?: StockState;
+  hasPrice?: boolean;
+  // Растянуть CTA на всю ширину контейнера (в обычной плитке остаётся компактным).
+  fullWidth?: boolean;
+  compact?: boolean;
+  // В карточке сравнения места достаточно для явного CTA, а не одной иконки.
+  showLabel?: boolean;
+}) {
+  const wide = fullWidth ? "w-full" : "";
+  // UX-04: компактный CTA остаётся компактным визуально, но не меньше 44 px по
+  // высоте на сенсорных экранах и 36 px на desktop; подпись — 13 px, не 11.
+  const size = compact ? "h-11 min-h-11 rounded-sm px-2.5 text-[13px] sm:h-9 sm:min-h-9" : "";
+  const href = `/product/${productSlug}`;
+  if (!hasPrice) {
+    return (
+      <Link
+        href={href}
+        className={cn(buttonVariants({ variant: "outline" }), wide, size)}
+        data-event="request_price"
+        data-product-id={productId}
+      >
+        <FileText className="h-4 w-4" aria-hidden />
+        Запросить цену
+      </Link>
+    );
+  }
+  if (stock === "out") {
+    return (
+      <Link
+        href={href}
+        className={cn(buttonVariants({ variant: "outline" }), wide, size)}
+        data-event="notify_restock"
+        data-product-id={productId}
+        // В плитке главной подпись сокращена до «Сообщить»: полная влезала
+        // только в две строки, вылезала за границу карточки и срезала строку
+        // характеристик над собой. Смысл кнопки раскрывает aria-label.
+        aria-label={compact ? "Сообщить о поступлении" : undefined}
+      >
+        <Bell className="h-4 w-4" aria-hidden />
+        {compact ? "Сообщить" : "Сообщить о поступлении"}
+      </Link>
+    );
+  }
+  // in / order / низкий остаток → добавление в корзину (под заказ — предзаказ в корзину).
+  return (
+    <AddInStockButton
+      productId={productId}
+      compact={compact}
+      fullWidth={fullWidth}
+      showLabel={showLabel}
+    />
+  );
+}
+
+type Phase = "idle" | "loading" | "added" | "error";
+
+// Реальное добавление в корзину для товара в наличии с ценой.
+function AddInStockButton({
+  productId,
+  compact = false,
+  fullWidth = false,
+  showLabel = false,
+}: {
+  productId: number;
+  compact?: boolean;
+  fullWidth?: boolean;
+  showLabel?: boolean;
+}) {
+  const { add } = useCart();
+  const [phase, setPhase] = useState<Phase>("idle");
+  // Очищаем таймер «Добавлено»/«ошибка» при размонтировании, чтобы не дёргать состояние.
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  const handleClick = async () => {
+    if (phase === "loading") return;
+    setPhase("loading");
+    try {
+      await add(productId, 1);
+      setPhase("added");
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setPhase("idle"), 1800);
+    } catch (err) {
+      setPhase("error");
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setPhase("idle"), 2500);
+      // Тихо для UI: показываем «ошибку» на кнопке; детали — в консоль для отладки.
+      if (!(err instanceof ApiError)) console.error(err);
+    }
+  };
+
+  const label =
+    phase === "added"
+      ? "Добавлено в корзину"
+      : phase === "error"
+        ? "Не удалось добавить"
+        : "Добавить в корзину";
+
+  return (
+    <Button
+      size={showLabel ? "default" : "icon"}
+      variant="accent"
+      aria-label={label}
+      title={label}
+      disabled={phase === "loading"}
+      onClick={handleClick}
+      data-event="add_to_cart_from_plp"
+      data-product-id={productId}
+      className={cn(compact && "h-8 w-11 min-w-11 rounded-sm", fullWidth && "w-full")}
+    >
+      {phase === "loading" ? (
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+      ) : phase === "added" ? (
+        <Check className="h-4 w-4" aria-hidden />
+      ) : (
+        <ShoppingCart className="h-4 w-4" aria-hidden />
+      )}
+      {showLabel && (
+        <span>
+          {phase === "added"
+            ? "Добавлено"
+            : phase === "error"
+              ? "Повторить"
+              : "В корзину"}
+        </span>
+      )}
+    </Button>
+  );
+}

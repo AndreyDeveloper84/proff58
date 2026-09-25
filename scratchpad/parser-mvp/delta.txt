@@ -1,0 +1,64 @@
+покрытие до → после (из 188 товаров)
+  power_source        158 →  158
+  voltage              17 →   17
+  power               133 →  133
+  energy_impact       127 →  131
+  no_load_speed         0 →   17
+  chuck               138 →  140
+  motor_type            5 →    8
+  battery_included      7 →    7
+  battery_capacity     12 →   12
+  без атрибутов вообще: 26 → 25
+
+=== НОВЫЕ значения (для ручной проверки FP) ===
+[563] Перф. аккум. DH14DSL; 14,4V, 2х3,0А/ч, Li-ion, SDS
+      +chuck            = SDS-plus   matched='sds'
+[569] Перф. аккум. Makita DHR 202RFE SDS plus, 18V, 1,9Д
+      +energy_impact    = 1.9        matched='1,9д'
+[44410] Перф. Bosch GBH 5-38D; 1050Вт, SDS-MAX, 5,9ж, 340о
+      +energy_impact    = 5.9        matched='5,9ж'
+[44424] Перф. DH24PH2; 730Вт, SDS plus, 2,7Дж, 3реж, 0-1050об/мин, 0-3950уд/мин, 2,8 кг  HiKoki
+      +no_load_speed    = 1050       matched='1050об/мин'
+[44431] Перф. DH28PCY2; 850Вт, SDS plus, 3,4 Дж,3 реж, 0-1100об/мин, 0-4300уд/мин, антивибр., 2,9к
+      +no_load_speed    = 1100       matched='1100об/мин'
+[44436] Перф. DH40MC; 1100Вт, SDS-max, 10,5Дж, 620об/мин, 2800уд/мин, 7,1кг
+      +no_load_speed    = 620        matched='620об/мин'
+[44437] Перф. DH40MEY; 1150Вт, SDS-max, 11Дж, 250-500об/мин, 1430-2850уд/мин, антивибр., 7,5кг
+      +no_load_speed    = 500        matched='500об/мин'
+[44441] Перф. DH45ME; бесщ., 1500Вт, SDS-max, 13,4Дж 310об/мин, 2950уд/мин, 9кг
+      +no_load_speed    = 310        matched='310об/мин'
+      +motor_type       = Бесщёточный matched='бесщ'
+[44442] Перф. DH45MEY; бесщ., 1500Вт, SDS-max, 120-310об/мин, 1200-2950уд/мин, 9,5кг
+      +no_load_speed    = 310        matched='310об/мин'
+      +motor_type       = Бесщёточный matched='бесщ'
+[44444] Перф. DH50MR 1400Вт, SDS-max, 20Дж, 110-230об/мин,
+      +no_load_speed    = 230        matched='230об/мин'
+[44445] Перф. DH50MRY 1400Вт, SDS-max, 20Дж, 110-230об/мин
+      +no_load_speed    = 230        matched='230об/мин'
+[44446] Перф. DH52ME бесщ., 1500Вт, SDS-max, 22Дж, 0-110/0-280об/мин, 1000-2400уд/мин, кейс, 11кг
+      +no_load_speed    = 280        matched='280об/мин'
+      +motor_type       = Бесщёточный matched='бесщ'
+[44469] Перф. Hanskonner HRH1652M SDS-MAX 1600Вт, 52мм, 2-15Дж, 150-305об/мин
+      +no_load_speed    = 305        matched='305об/мин'
+[44471] Перф. Hanskonner HRH1855M SDS-MAX 1800Вт, 55мм, 5-19Дж, 100-220об/мин
+      +no_load_speed    = 220        matched='220об/мин'
+[44472] Перф. Hanskonner HRH2145MVE SDS-MAX 2100Вт, 52мм, 20Дж, 320-550об/мин
+      +no_load_speed    = 550        matched='550об/мин'
+[44476] Перф. Makita HR2470; 780Вт, SDS plus, 2,7Дж, 3 реж, 0-1100об/мин, 0-4500уд/мин, 2,6кг
+      +no_load_speed    = 1100       matched='1100об/мин'
+[44482] Перф. Makita HR2800; D-обр., 800Вт, SDS plus, 2,9Д
+      +energy_impact    = 2.9        matched='2,9д'
+[44487] Перф. Makita HR4003C; 1100 Вт, SDS max, 11,4Дж, 250-500об/мин, 1450-2900уд/мин, 6,2кг
+      +no_load_speed    = 500        matched='500об/мин'
+[44497] Перф. RSDS800K Ryobi
+      +chuck            = SDS-plus   matched='sds'
+[44523] Перф.ЗУБР ЗП-26-800 SDS+,800Вт, 3,2Дж, 0-1200об/мин, 0-4800у уд/мин ЗУБР Профессионал
+      +no_load_speed    = 1200       matched='1200об/мин'
+[44531] Перф.ЗУБР ЗП470Э, SDS+, реверс,1,4Дж, 0-1500об/мин
+      +no_load_speed    = 1500       matched='1500об/мин'
+[44532] Перф.ЗУБР ЗПВ-32-1250 ЭВК SDS+, вертикальный, 3,5Д
+      +energy_impact    = 3.5        matched='3,5д'
+[45584] яяПерф. DH38MS; 950Вт, SDS-max, 9,0Дж, 510об/мин,
+      +no_load_speed    = 510        matched='510об/мин'
+
+товаров с изменениями: 23

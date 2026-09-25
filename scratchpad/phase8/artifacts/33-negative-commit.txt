@@ -1,0 +1,19 @@
+### n5-unknown-option-commit
+  "skipped": 0,
+  "errors": 1,
+  "dry_run": false,
+  "result_checksum": "530e29729eca3118cbc66b61d931ba38bffbb410d7b407bd87678803eb96aff1",
+  "export_checksum": "459a2c8e916d2b4246ee15eb51bfe2104de8186d52315794ed3e93a544a3d0eb"
+}
+EXIT=0
+### n6-foreign-ref-commit
+  "skipped": 0,
+  "errors": 1,
+  "dry_run": false,
+  "result_checksum": "f6311ec4ceb6c7b04329553bc508174954cb9fd88fca31c1de3131648e4e6b37",
+  "export_checksum": "459a2c8e916d2b4246ee15eb51bfe2104de8186d52315794ed3e93a544a3d0eb"
+}
+EXIT=0
+changes_after= 0
+pav_after= 0
+items= [(1, 'needs_review', 'import_error'), (2, 'pending', ''), (3, 'pending', ''), (4, 'pending', ''), (5, 'pending', '')]

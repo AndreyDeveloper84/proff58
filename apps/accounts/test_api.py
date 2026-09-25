@@ -1,0 +1,583 @@
+"""Тесты account API (#325, #327, #328)."""
+
+import pytest
+from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient
+
+User = get_user_model()
+
+
+@pytest.fixture
+def client():
+    return APIClient()
+
+
+@pytest.fixture
+def user(db):
+    return User.objects.create_user(
+        phone="+79001112233", email="test@proff58.ru", password="pass123", full_name="Тест"
+    )
+
+
+# ═══════════ #327 Регистрация ═══════════
+
+
+@pytest.mark.django_db
+def test_register(client):
+    resp = client.post(
+        "/api/account/register/",
+        {"email": "new@proff58.ru", "password": "StrongPass2026", "full_name": "Новый"},
+        format="json",
+    )
+    assert resp.status_code == 201
+    assert resp.json()["email"] == "new@proff58.ru"
+    assert User.objects.filter(email="new@proff58.ru").exists()
+
+
+@pytest.mark.django_db
+def test_register_weak_password_rejected(client):
+    """#427 (M-03): пароль проходит валидаторы Django (не только длину)."""
+    # Слишком короткий.
+    resp = client.post(
+        "/api/account/register/",
+        {"email": "weak1@proff58.ru", "password": "abc12"},
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "password" in resp.json()
+    # Полностью числовой.
+    resp = client.post(
+        "/api/account/register/",
+        {"email": "weak2@proff58.ru", "password": "39481726354"},
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "password" in resp.json()
+
+
+@pytest.mark.django_db
+def test_register_without_name(client):
+    """Имя необязательно: форма шлёт full_name="" — регистрация должна проходить.
+
+    Раньше CharField(required=False, default="") без allow_blank валил пустую
+    строку (400 «Это поле не может быть пустым»), хотя поле в UI не обязательное.
+    """
+    resp = client.post(
+        "/api/account/register/",
+        {"email": "noname@proff58.ru", "password": "StrongPass2026", "full_name": ""},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.json()
+    user = User.objects.get(email="noname@proff58.ru")
+    assert user.full_name == ""
+
+
+@pytest.mark.django_db
+def test_register_without_phone(client):
+    """Телефон при регистрации не спрашивают — он контакт заказа, а не логин."""
+    resp = client.post(
+        "/api/account/register/",
+        {"email": "nophone@proff58.ru", "password": "StrongPass2026"},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.json()
+    assert User.objects.get(email="nophone@proff58.ru").phone is None
+
+
+@pytest.mark.django_db
+def test_register_second_user_without_phone(client):
+    """Два аккаунта без телефона уживаются: пустой номер хранится как NULL."""
+    for address in ("first@proff58.ru", "second@proff58.ru"):
+        resp = client.post(
+            "/api/account/register/",
+            {"email": address, "password": "StrongPass2026"},
+            format="json",
+        )
+        assert resp.status_code == 201, resp.json()
+    assert User.objects.filter(phone__isnull=True).count() == 2
+
+
+@pytest.mark.django_db
+def test_register_duplicate_email(client, user):
+    resp = client.post(
+        "/api/account/register/",
+        {"email": "test@proff58.ru", "password": "StrongPass2026"},
+        format="json",
+    )
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_register_duplicate_email_ignores_case(client, user):
+    """Адрес — логин, поэтому Test@ и test@ не могут быть разными людьми."""
+    resp = client.post(
+        "/api/account/register/",
+        {"email": "TEST@proff58.ru", "password": "StrongPass2026"},
+        format="json",
+    )
+    assert resp.status_code == 400
+
+
+# ═══════════ #325 Вход/выход ═══════════
+
+
+@pytest.mark.django_db
+def test_login(client, user):
+    resp = client.post(
+        "/api/account/login/",
+        {"email": "test@proff58.ru", "password": "pass123"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.json()["email"] == "test@proff58.ru"
+
+
+@pytest.mark.django_db
+def test_login_wrong_password(client, user):
+    resp = client.post(
+        "/api/account/login/",
+        {"phone": "+79001112233", "password": "wrong"},
+        format="json",
+    )
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_logout(client, user):
+    client.force_authenticate(user=user)
+    resp = client.post("/api/account/logout/")
+    assert resp.status_code == 200
+
+
+# ═══════════ #328 Профиль ═══════════
+
+
+@pytest.mark.django_db
+def test_me_authenticated(client, user):
+    client.force_authenticate(user=user)
+    resp = client.get("/api/account/me/")
+    assert resp.status_code == 200
+    assert resp.json()["phone"] == "+79001112233"
+
+
+@pytest.mark.django_db
+def test_me_anonymous(client):
+    resp = client.get("/api/account/me/")
+    assert resp.status_code in (401, 403)
+
+
+@pytest.mark.django_db
+def test_me_update(client, user):
+    client.force_authenticate(user=user)
+    resp = client.patch(
+        "/api/account/me/",
+        {"full_name": "Новое Имя", "email": "new@test.ru"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.json()["full_name"] == "Новое Имя"
+
+
+# ═══════════ #329 Избранное ═══════════
+
+
+@pytest.mark.django_db
+def test_wishlist_get_clean_after_login(client, user):
+    """#433 (M-10): чистый GET /wishlist/ (без предшествующего POST) не падает 500."""
+    client.force_authenticate(user=user)
+    resp = client.get("/api/account/wishlist/")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+@pytest.mark.django_db
+def test_wishlist_model_registered_in_app():
+    """#433 (M-10): WishlistItem зарегистрирована в app registry при старте."""
+    from django.apps import apps as django_apps
+
+    assert django_apps.get_model("accounts", "WishlistItem") is not None
+
+
+@pytest.mark.django_db
+def test_wishlist_add_and_list(client, user):
+    from apps.catalog.models import Product, ProductStatus
+
+    p = Product.objects.create(
+        name="Дрель", slug="wish-drel", price=1000, status=ProductStatus.PUBLISHED, is_active=True
+    )
+    client.force_authenticate(user=user)
+    resp = client.post("/api/account/wishlist/", {"product_id": p.id}, format="json")
+    assert resp.status_code == 201
+
+    resp = client.get("/api/account/wishlist/")
+    assert resp.status_code == 200
+    assert len(resp.json()) == 1
+    assert resp.json()[0]["product_slug"] == "wish-drel"
+    # Фото нет — отдаём null, витрина покажет «Фото готовится», а не чужую картинку.
+    assert resp.json()[0]["product_image"] is None
+
+
+@pytest.mark.django_db
+def test_wishlist_отдаёт_главное_фото(client, user):
+    from apps.catalog.models import Product, ProductImage, ProductStatus
+
+    p = Product.objects.create(
+        name="Пила", slug="wish-pila", price=1000, status=ProductStatus.PUBLISHED, is_active=True
+    )
+    ProductImage.objects.create(product=p, image="products/pila.jpg", is_main=True)
+    client.force_authenticate(user=user)
+    client.post("/api/account/wishlist/", {"product_id": p.id}, format="json")
+
+    row = client.get("/api/account/wishlist/").json()[0]
+    assert row["product_image"] == "/media/products/pila.jpg"
+
+
+# --- Перенос гостевого избранного при входе (списком) ---
+
+
+def _make_products(*names):
+    from apps.catalog.models import Product, ProductStatus
+
+    return [
+        Product.objects.create(
+            name=name,
+            slug=f"bulk-{name}",
+            price=1000,
+            status=ProductStatus.PUBLISHED,
+            is_active=True,
+        )
+        for name in names
+    ]
+
+
+@pytest.mark.django_db
+def test_wishlist_bulk_add(client, user):
+    """Список товаров переносится одним запросом — это вход, а не двадцать кликов."""
+    a, b = _make_products("a", "b")
+    client.force_authenticate(user=user)
+
+    resp = client.post("/api/account/wishlist/", {"product_ids": [a.id, b.id]}, format="json")
+
+    assert resp.status_code == 201
+    assert resp.json()["added"] == 2
+    assert {row["product_id"] for row in client.get("/api/account/wishlist/").json()} == {
+        a.id,
+        b.id,
+    }
+
+
+@pytest.mark.django_db
+def test_wishlist_bulk_add_is_idempotent(client, user):
+    """Повторный перенос не падает и не двоит: сеть могла оборвать первый ответ."""
+    a, b = _make_products("c", "d")
+    client.force_authenticate(user=user)
+    client.post("/api/account/wishlist/", {"product_ids": [a.id]}, format="json")
+
+    resp = client.post("/api/account/wishlist/", {"product_ids": [a.id, b.id]}, format="json")
+
+    assert resp.status_code == 201
+    assert len(client.get("/api/account/wishlist/").json()) == 2
+
+
+@pytest.mark.django_db
+def test_wishlist_bulk_add_skips_unknown_ids(client, user):
+    """Товар мог исчезнуть, пока лежал в браузере, — перенос остального не срывается."""
+    a, *_ = _make_products("e")
+    client.force_authenticate(user=user)
+
+    resp = client.post("/api/account/wishlist/", {"product_ids": [a.id, 10**9]}, format="json")
+
+    assert resp.status_code == 201
+    assert resp.json()["added"] == 1
+
+
+@pytest.mark.django_db
+def test_wishlist_bulk_add_rejects_non_list(client, user):
+    client.force_authenticate(user=user)
+
+    resp = client.post("/api/account/wishlist/", {"product_ids": "1,2"}, format="json")
+
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_wishlist_single_add_still_404s_on_unknown(client, user):
+    """Одиночная форма отвечает честно: там id один, и тишина означала бы «сохранили»."""
+    client.force_authenticate(user=user)
+
+    resp = client.post("/api/account/wishlist/", {"product_id": 10**9}, format="json")
+
+    assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+def test_wishlist_delete(client, user):
+    from apps.catalog.models import Product, ProductStatus
+
+    p = Product.objects.create(
+        name="Пила", slug="wish-pila", price=500, status=ProductStatus.PUBLISHED, is_active=True
+    )
+    client.force_authenticate(user=user)
+    client.post("/api/account/wishlist/", {"product_id": p.id}, format="json")
+    resp = client.delete("/api/account/wishlist/", {"product_id": p.id}, format="json")
+    assert resp.status_code == 200
+    assert client.get("/api/account/wishlist/").json() == []
+
+
+# ═══════════ #326 OTP Login ═══════════
+
+
+# ═══════════ #341 Привязка гостевых заказов ═══════════
+
+
+@pytest.mark.django_db
+def test_claim_guest_orders_on_login_requires_verified_phone(client):
+    """#421 (B-01): вход с НЕподтверждённым телефоном НЕ привязывает заказы."""
+    from apps.orders.models import Order
+
+    User.objects.create_user(
+        phone="+79005550001", email="guest1@proff58.ru", password="StrongPass2026"
+    )
+    Order.objects.create(order_number="П-GUEST-1", customer_phone="+79005550001")
+
+    resp = client.post(
+        "/api/account/login/",
+        {"email": "guest1@proff58.ru", "password": "StrongPass2026"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.json().get("claimed_orders", 0) == 0
+    Order.objects.get(order_number="П-GUEST-1").refresh_from_db()
+    assert Order.objects.get(order_number="П-GUEST-1").user_id is None
+
+
+@pytest.mark.django_db
+def test_claim_guest_orders_on_login_with_verified_phone(client):
+    """#421 (B-01): подтверждённый номер привязывает свои гостевые заказы."""
+    from apps.orders.models import Order
+
+    u = User.objects.create_user(
+        phone="+79005550001", email="guest2@proff58.ru", password="StrongPass2026"
+    )
+    u.phone_verified = True
+    u.save(update_fields=["phone_verified"])
+    Order.objects.create(order_number="П-GUEST-1", customer_phone="+79005550001")
+
+    resp = client.post(
+        "/api/account/login/",
+        {"email": "guest2@proff58.ru", "password": "StrongPass2026"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.json().get("claimed_orders", 0) == 1
+    assert Order.objects.get(order_number="П-GUEST-1").user_id == u.pk
+
+
+# ═══════════ #344 Удаление аккаунта ═══════════
+
+
+@pytest.mark.django_db
+def test_delete_account(client):
+    u = User.objects.create_user(phone="+79005550002", password="pass", full_name="Удаляемый")
+    client.force_authenticate(user=u)
+    resp = client.post("/api/account/delete/", {"password": "pass"}, format="json")
+    assert resp.status_code == 200
+    u.refresh_from_db()
+    assert u.is_active is False
+    assert u.full_name == ""
+
+
+@pytest.mark.django_db
+def test_delete_account_требует_пароль(client):
+    """Необратимое действие — одной сессии мало (как при смене телефона)."""
+    u = User.objects.create_user(phone="+79005550002", password="pass", full_name="Удаляемый")
+    client.force_authenticate(user=u)
+    assert client.post("/api/account/delete/").status_code == 400
+    assert (
+        client.post("/api/account/delete/", {"password": "нет"}, format="json").status_code == 400
+    )
+    u.refresh_from_db()
+    assert u.is_active is True
+
+
+@pytest.mark.django_db
+def test_delete_account_без_пароля_у_пришедших_из_max(client):
+    u = User.objects.create_user(phone="+79005550003", password=None)
+    client.force_authenticate(user=u)
+    assert client.get("/api/account/me/").json()["has_password"] is False
+    assert client.post("/api/account/delete/").status_code == 200
+
+
+@pytest.mark.django_db
+def test_delete_account_anonymizes_profile(client):
+    """#426 (M-02): Profile ПДн (ИНН/КПП/юр.адрес/согласие) очищается при удалении."""
+    from django.utils import timezone
+
+    from apps.accounts.models import Profile
+
+    u = User.objects.create_user(
+        phone="+79005550020", password="pass", full_name="ООО Тест", customer_type="b2b"
+    )
+    Profile.objects.create(
+        user=u,
+        company_name="ООО Профи",
+        inn="7700000000",
+        kpp="770001001",
+        legal_address="г. Пенза, ул. Ленина, 1",
+        pd_consent_at=timezone.now(),
+        pd_consent_version="v1",
+    )
+    client.force_authenticate(user=u)
+    resp = client.post("/api/account/delete/", {"password": "pass"}, format="json")
+    assert resp.status_code == 200
+
+    profile = Profile.objects.get(user=u)
+    assert profile.company_name == ""
+    assert profile.inn == ""
+    assert profile.kpp == ""
+    assert profile.legal_address == ""
+    assert profile.pd_consent_at is None
+    assert profile.pd_consent_version == ""
+
+
+@pytest.mark.django_db
+def test_delete_account_removes_wishlist(client):
+    """#426 (M-02): избранное (user-owned) удаляется при удалении аккаунта."""
+    from apps.accounts.wishlist import WishlistItem
+    from apps.catalog.models import Product, ProductStatus
+
+    u = User.objects.create_user(phone="+79005550021", password="pass")
+    product = Product.objects.create(
+        name="Дрель",
+        slug="drel-del",
+        unit="шт",
+        price=1000,
+        status=ProductStatus.PUBLISHED,
+        is_active=True,
+    )
+    WishlistItem.objects.create(user=u, product=product)
+    client.force_authenticate(user=u)
+
+    resp = client.post("/api/account/delete/", {"password": "pass"}, format="json")
+    assert resp.status_code == 200
+    assert WishlistItem.objects.filter(user=u).count() == 0
+
+
+# ═══════════ #343 Смена телефона ═══════════
+
+
+@pytest.mark.django_db
+def test_change_phone(client, user):
+    client.force_authenticate(user=user)
+    resp = client.post(
+        "/api/account/change-phone/",
+        {"new_phone": "+79005550003", "password": "pass123"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    user.refresh_from_db()
+    assert user.phone == "+79005550003"
+    assert user.max_chat_id is None
+
+
+@pytest.mark.django_db
+def test_change_phone_requires_password(client, user):
+    """#427 (M-03): смена телефона требует re-auth текущим паролем."""
+    client.force_authenticate(user=user)
+    # Без пароля.
+    resp = client.post("/api/account/change-phone/", {"new_phone": "+79005550003"}, format="json")
+    assert resp.status_code == 400
+    # Неверный пароль.
+    resp = client.post(
+        "/api/account/change-phone/",
+        {"new_phone": "+79005550003", "password": "wrong"},
+        format="json",
+    )
+    assert resp.status_code == 400
+    user.refresh_from_db()
+    assert user.phone == "+79001112233"  # не изменился
+
+
+@pytest.mark.django_db
+def test_change_phone_normalizes_and_resets_verification(client, user):
+    """#427 (M-03): новый номер приводится к канону и помечается неподтверждённым."""
+    user.phone_verified = True
+    user.max_chat_id = 12345
+    user.save(update_fields=["phone_verified", "max_chat_id"])
+    client.force_authenticate(user=user)
+
+    resp = client.post(
+        "/api/account/change-phone/",
+        {"new_phone": "8 (900) 555-00-03", "password": "pass123"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    user.refresh_from_db()
+    assert user.phone == "+79005550003"  # нормализован
+    assert user.phone_verified is False  # заново подтверждать через MAX
+    assert user.max_chat_id is None
+
+
+# ═══════════ #325 CSRF endpoint ═══════════
+
+
+@pytest.mark.django_db
+def test_csrf_endpoint_returns_token(client):
+    """GET /api/account/csrf/ возвращает csrfToken и устанавливает cookie."""
+    resp = client.get("/api/account/csrf/")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "csrfToken" in data
+    assert len(data["csrfToken"]) > 10
+
+
+# ═══════════ #427 (M-03) Троттлинг auth-эндпоинтов ═══════════
+
+
+@pytest.mark.django_db
+def test_login_throttled():
+    """#427 (M-03): login ограничен низким scope `auth` (брутфорс/enumeration)."""
+    from django.conf import settings
+    from django.core.cache import cache
+    from django.test import override_settings
+
+    cache.clear()
+    rf = {
+        **settings.REST_FRAMEWORK,
+        "DEFAULT_THROTTLE_RATES": {
+            **settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"],
+            "auth": "2/min",
+        },
+    }
+    with override_settings(REST_FRAMEWORK=rf):
+        c = APIClient()
+        body = {"email": "brute@proff58.ru", "password": "x"}
+        assert c.post("/api/account/login/", body, format="json").status_code != 429
+        assert c.post("/api/account/login/", body, format="json").status_code != 429
+        assert c.post("/api/account/login/", body, format="json").status_code == 429
+
+
+@pytest.mark.django_db
+def test_login_sets_session(db):
+    """После логина сессия существует (браузер получает sessionid cookie)."""
+    from django.test import Client as DjangoClient
+
+    User.objects.create_user(email="session@proff58.ru", password="pass123")
+    c = DjangoClient()
+    resp = c.post(
+        "/api/account/login/",
+        data='{"email":"session@proff58.ru","password":"pass123"}',
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert "sessionid" in resp.cookies
+
+
+@pytest.mark.django_db
+def test_me_requires_session(db):
+    """GET /api/account/me/ без сессии → 403."""
+    from django.test import Client as DjangoClient
+
+    c = DjangoClient()
+    resp = c.get("/api/account/me/")
+    assert resp.status_code in (401, 403)

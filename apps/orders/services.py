@@ -1,0 +1,866 @@
+"""Сервисный слой заказов и корзины — вся бизнес-логика #26.
+
+Тонкие вьюхи и «худые» модели: правила, валидация и оркестрация — здесь.
+Цена ВСЕГДА серверная (через ``pricing.price_for``), никогда из тела запроса.
+"""
+
+from __future__ import annotations
+
+import uuid
+from dataclasses import dataclass, field, replace
+from datetime import date, timedelta
+from decimal import Decimal
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from django.db.models.functions import Cast, Least, TruncDate
+from django.utils import timezone
+
+from apps.accounts.models import CustomerType
+from apps.accounts.phone import normalize_phone
+from apps.catalog.models import Product
+from apps.core.events import order_created
+from apps.core.features import is_enabled
+from apps.pricing.services import price_for
+
+from .models import (
+    Cart,
+    CartItem,
+    CartStatus,
+    FulfillmentStatus,
+    Order,
+    OrderItem,
+    PaymentStatus,
+    ReservationStatus,
+    Sync1CStatus,
+)
+
+_ZERO = Decimal("0.00")
+
+# TTL резерва B2B (#423, B-03; #559): 24 часа — вместе со счётом
+# (invoice.valid_until == reserved_until). Для B2C — 30 минут (#568),
+# настройка RESERVATION_TTL_B2C_MINUTES.
+RESERVATION_TTL_B2B_SECONDS = 24 * 3600
+
+
+def _reservation_ttl(customer_type: str) -> timedelta:
+    """TTL резерва по типу покупателя: B2C — минуты из настройки, B2B — 24ч."""
+    if customer_type == CustomerType.B2B:
+        return timedelta(seconds=RESERVATION_TTL_B2B_SECONDS)
+    return timedelta(minutes=int(getattr(settings, "RESERVATION_TTL_B2C_MINUTES", 30)))
+
+
+# ---------------------------------------------------------------------------
+# Корзина
+# ---------------------------------------------------------------------------
+def _ensure_active_product(product: Product) -> None:
+    """Товар должен быть опубликован и виден на витрине, иначе отказ."""
+    if not product.is_visible:
+        raise ValidationError("Товар недоступен для заказа.")
+
+
+# Предел PositiveIntegerField в PostgreSQL (integer). Это граница хранения, а не
+# товарный лимит: остаток сверяется при оформлении заказа.
+MAX_CART_QUANTITY = 2_147_483_647
+
+
+def _validate_qty(qty: int) -> int:
+    """Количество — целое от 1 до предела столбца."""
+    try:
+        qty = int(qty)
+    except (TypeError, ValueError):
+        raise ValidationError("Некорректное количество.") from None
+    if qty < 1:
+        raise ValidationError("Количество должно быть не меньше 1.")
+    if qty > MAX_CART_QUANTITY:
+        raise ValidationError("Слишком большое количество.")
+    return qty
+
+
+def add_to_cart(cart: Cart, product: Product, qty: int = 1) -> CartItem:
+    """Добавить товар в корзину (или увеличить количество существующей строки).
+
+    Если для этого товара есть soft-deleted строка — восстанавливает её.
+    """
+    qty = _validate_qty(qty)
+    _ensure_active_product(product)
+
+    # Проверяем сначала мягко удалённую строку (чтобы не нарушить unique constraint).
+    deleted_item = CartItem.objects.filter(cart=cart, product=product, is_deleted=True).first()
+    if deleted_item:
+        deleted_item.is_deleted = False
+        deleted_item.deleted_at = None
+        deleted_item.quantity = qty
+        deleted_item.save(update_fields=["is_deleted", "deleted_at", "quantity", "updated_at"])
+        return deleted_item
+
+    item, created = CartItem.objects.get_or_create(
+        cart=cart,
+        product=product,
+        is_deleted=False,
+        defaults={"quantity": qty},
+    )
+    if not created:
+        # F() — атомарный инкремент на стороне БД, защита от lost-update (#282).
+        # Least — сумма не выходит за предел столбца: повторное добавление к уже
+        # огромной строке иначе роняло бы запрос ошибкой БД («integer out of range»).
+        # Cast в bigint обязателен: PostgreSQL переполняется уже на самом сложении,
+        # до того как Least успеет что-либо ограничить.
+        CartItem.objects.filter(pk=item.pk).update(
+            quantity=Least(
+                Cast(models.F("quantity"), models.BigIntegerField()) + qty,
+                models.Value(MAX_CART_QUANTITY, output_field=models.BigIntegerField()),
+            ),
+            updated_at=timezone.now(),
+        )
+        item.refresh_from_db()
+    return item
+
+
+def update_cart_item(item: CartItem, qty: int) -> CartItem:
+    """Установить количество строки корзины (абсолютное значение)."""
+    qty = _validate_qty(qty)
+    item.quantity = qty
+    item.save(update_fields=["quantity", "updated_at"])
+    return item
+
+
+def soft_delete_cart_item(item: CartItem) -> None:
+    """Мягко удалить строку — скрыть из корзины с возможностью восстановления (#380)."""
+    item.is_deleted = True
+    item.deleted_at = timezone.now()
+    item.save(update_fields=["is_deleted", "deleted_at", "updated_at"])
+
+
+def restore_cart_item(item: CartItem) -> CartItem:
+    """Восстановить мягко удалённую строку корзины (undo-действие, #380)."""
+    if not item.is_deleted:
+        return item
+    item.is_deleted = False
+    item.deleted_at = None
+    item.save(update_fields=["is_deleted", "deleted_at", "updated_at"])
+    return item
+
+
+@dataclass(frozen=True)
+class CartLine:
+    """Строка корзины с актуальной (серверной) ценой для вывода."""
+
+    item: CartItem
+    product: Product
+    quantity: int
+    price_final: Decimal | None
+    price_base: Decimal | None
+    discount: Decimal | None
+    price_type: str
+    currency: str
+    line_total: Decimal | None  # None, если у товара нет цены
+    promo_discount: Decimal | None = None  # #571: скидка по акции/коду на строку
+
+
+@dataclass(frozen=True)
+class CartView:
+    """Снимок корзины для вывода: строки + итог (+ промо-breakdown, #571).
+
+    ``total`` — сумма строк ДО промо (исторический контракт); ``grand_total`` —
+    к оплате после скидок на товары. Промо-поля присутствуют всегда: при
+    выключенном флаге ``promotions`` они нейтральны (нули/пусто).
+    """
+
+    cart: Cart
+    lines: list[CartLine]
+    total: Decimal
+    currency: str
+    has_mixed_currencies: bool = False
+    items_discount_total: Decimal = _ZERO
+    grand_total: Decimal = _ZERO
+    promo_code: str = ""
+    applied_promotions: list = field(default_factory=list)
+    promo_code_error: dict | None = None
+    promotions_enabled: bool = False
+
+
+def get_cart_view(cart: Cart, user=None) -> CartView:
+    """Собрать представление корзины с АКТУАЛЬНОЙ ценой каждой строки.
+
+    Цена считается на лету через price_for(product, user, qty) — никогда не
+    берётся из хранилища. Строки без цены попадают в выдачу с line_total=None.
+    При смешении валют: has_mixed_currencies=True, total=0 (#375).
+    """
+    lines: list[CartLine] = []
+    total = _ZERO
+    order_currency: str | None = None
+    has_mixed_currencies = False
+
+    items = cart.items.filter(is_deleted=False).select_related("product")
+    for item in items:
+        product = item.product
+        result = price_for(product, user, item.quantity)
+        if order_currency is None:
+            order_currency = result.currency
+        elif result.currency != order_currency:
+            has_mixed_currencies = True
+
+        if result.final is not None and not has_mixed_currencies:
+            line_total = result.final * item.quantity
+            total += line_total
+        elif result.final is not None:
+            line_total = result.final * item.quantity
+        else:
+            line_total = None
+        lines.append(
+            CartLine(
+                item=item,
+                product=product,
+                quantity=item.quantity,
+                price_final=result.final,
+                price_base=result.base,
+                discount=result.discount,
+                price_type=result.price_type,
+                currency=result.currency,
+                line_total=line_total,
+            )
+        )
+
+    if has_mixed_currencies:
+        total = _ZERO
+
+    # --- Акции/промокод (#571): один is_enabled на расчёт (get_solo → БД). ---
+    promotions_enabled = is_enabled("promotions")
+    items_discount = _ZERO
+    applied_payload: list[dict] = []
+    code_error_payload: dict | None = None
+    if promotions_enabled and not has_mixed_currencies and (lines or cart.promo_code):
+        from apps.promotions.services import PromoLineInput, compute_promotions
+
+        customer_type = (
+            getattr(user, "customer_type", CustomerType.B2C)
+            if user is not None and getattr(user, "is_authenticated", False)
+            else CustomerType.B2C
+        )
+        breakdown = compute_promotions(
+            [
+                PromoLineInput(
+                    key=ln.item.pk,
+                    product_id=ln.product.pk,
+                    quantity=ln.quantity,
+                    line_total=ln.line_total,
+                )
+                for ln in lines
+                if ln.line_total is not None
+            ],
+            promo_code=cart.promo_code,
+            customer_type=customer_type,
+            # Контекст корзины: доставка ещё не выбрана — free_delivery-код ждёт
+            # оформления (delivery_status="" по контракту compute_promotions).
+        )
+        items_discount = breakdown.items_discount_total
+        lines = [
+            replace(ln, promo_discount=breakdown.line_discounts.get(ln.item.pk)) for ln in lines
+        ]
+        applied_payload = [
+            {
+                "id": a.promotion_id,
+                "name": a.name,
+                "discount_type": a.discount_type,
+                "scope": a.scope,
+                "promo_code": a.promo_code,
+                "amount": str(a.amount),
+            }
+            for a in breakdown.applied
+        ]
+        if breakdown.code_error is not None:
+            code_error_payload = {
+                "code": breakdown.code_error.code,
+                "message": breakdown.code_error.message,
+            }
+
+    return CartView(
+        cart=cart,
+        lines=lines,
+        total=total,
+        currency=order_currency or "RUB",
+        has_mixed_currencies=has_mixed_currencies,
+        items_discount_total=items_discount,
+        grand_total=max(total - items_discount, _ZERO),
+        promo_code=cart.promo_code if promotions_enabled else "",
+        applied_promotions=applied_payload,
+        promo_code_error=code_error_payload,
+        promotions_enabled=promotions_enabled,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Оформление заказа
+# ---------------------------------------------------------------------------
+def _generate_order_number() -> str:
+    """Человекочитаемый уникальный номер заказа.
+
+    Формат: ``П-YYYYMMDD-XXXXXX`` (дата + короткий случайный суффикс).
+    Уникальность гарантируется БД (unique), коллизию повторяем.
+    """
+    today = timezone.now().strftime("%Y%m%d")
+    for _attempt in range(10):
+        suffix = uuid.uuid4().hex[:6].upper()
+        number = f"П-{today}-{suffix}"
+        if not Order.objects.filter(order_number=number).exists():
+            return number
+    # Крайне маловероятно: отдаём заведомо уникальный длинный хвост.
+    return f"П-{today}-{uuid.uuid4().hex.upper()}"
+
+
+def _customer_snapshot(user, customer_type: str, customer_data: dict) -> dict:
+    """Снимок покупателя для заказа.
+
+    customer_data (контактные данные из формы) имеет приоритет над данными
+    профиля; недостающее добирается из User/Profile. Для B2B копируются
+    реквизиты организации.
+    """
+    customer_data = customer_data or {}
+    snapshot = {
+        "customer_type": customer_type,
+        "customer_name": customer_data.get("customer_name") or "",
+        # #421 (B-01): храним нормализованный номер, чтобы claim по verified-телефону
+        # находил заказ независимо от исходного формата ввода.
+        "customer_phone": normalize_phone(customer_data.get("customer_phone") or ""),
+        "customer_email": customer_data.get("customer_email") or "",
+        "company_name": "",
+        "inn": "",
+        "kpp": "",
+        "legal_address": "",
+    }
+
+    # Добор контактов из учётной записи
+    if user is not None and getattr(user, "is_authenticated", False):
+        if not snapshot["customer_name"]:
+            snapshot["customer_name"] = getattr(user, "full_name", "") or ""
+        if not snapshot["customer_phone"]:
+            snapshot["customer_phone"] = normalize_phone(getattr(user, "phone", "") or "")
+        if not snapshot["customer_email"]:
+            snapshot["customer_email"] = getattr(user, "email", "") or ""
+
+    # Реквизиты B2B: приоритет — переданные данные, затем профиль
+    if customer_type == CustomerType.B2B:
+        profile = None
+        if user is not None and getattr(user, "is_authenticated", False):
+            profile = getattr(user, "profile", None)
+        snapshot["company_name"] = customer_data.get("company_name") or (
+            getattr(profile, "company_name", "") if profile else ""
+        )
+        snapshot["inn"] = customer_data.get("inn") or (
+            getattr(profile, "inn", "") if profile else ""
+        )
+        snapshot["kpp"] = customer_data.get("kpp") or (
+            getattr(profile, "kpp", "") if profile else ""
+        )
+        snapshot["legal_address"] = customer_data.get("legal_address") or (
+            getattr(profile, "legal_address", "") if profile else ""
+        )
+
+    return snapshot
+
+
+@transaction.atomic
+def place_order(
+    cart: Cart,
+    *,
+    user=None,
+    customer_data: dict | None = None,
+    delivery: dict | None = None,
+    payment_method: str = "",
+) -> Order:
+    """Главный use-case: оформить заказ из корзины.
+
+    Гарантии:
+    - идемпотентность: пустая или уже оформленная корзина → ValidationError
+      (повторное оформление не плодит заказы);
+    - цена ВСЕГДА серверная (повторный price_for на момент оформления);
+    - снимок покупателя и строк фиксируется в заказе;
+    - корзина не очищается физически (status=ordered);
+    - событие order_created публикуется РОВНО один раз после commit.
+    """
+    customer_data = customer_data or {}
+    delivery = delivery or {}
+
+    # Блокируем корзину на время оформления (защита от гонок/двойного клика).
+    cart = Cart.objects.select_for_update().get(pk=cart.pk)
+
+    if cart.status != CartStatus.ACTIVE:
+        raise ValidationError("Корзина уже оформлена в заказ.")
+
+    product_ids = list(cart.items.filter(is_deleted=False).values_list("product_id", flat=True))
+    if not product_ids:
+        raise ValidationError("Корзина пуста.")
+
+    # order_by("pk"): замки товаров в одном порядке с rehold_reservation и _adjust_stock,
+    # иначе два параллельных оформления с общими товарами могут взаимно заблокироваться.
+    locked_products = {
+        p.pk: p
+        for p in Product.objects.select_for_update().filter(pk__in=product_ids).order_by("pk")
+    }
+    items = list(cart.items.filter(is_deleted=False))
+
+    # Тип покупателя. Для аутентифицированного — из учётной записи. Для гостя —
+    # #430 (M-06, ADR #444): разрешён гостевой B2B invoice-заказ (запрос счёта без
+    # регистрации). Прежний запрет (#282) снят: единого ценника больше нет опта,
+    # поэтому «объявить себя B2B» не даёт ценового преимущества; B2B-реквизиты
+    # валидируются ниже, цена та же розничная.
+    # Выбор на форме важнее типа учётной записи: аккаунт-физлицо может запросить
+    # счёт на организацию, а юрлицо — оформить розничный заказ (ценник единый,
+    # ADR-0013 §A.4). Без явного выбора — тип аккаунта, гость — розница.
+    chosen = (customer_data.get("customer_type") or "").lower()
+    if chosen in (CustomerType.B2B, CustomerType.B2C):
+        customer_type = chosen
+    elif user is not None and getattr(user, "is_authenticated", False):
+        customer_type = getattr(user, "customer_type", CustomerType.B2C)
+    else:
+        customer_type = CustomerType.B2C
+
+    snapshot = _customer_snapshot(user, customer_type, customer_data)
+
+    # Серверная валидация B2B-реквизитов и способа оплаты (#323, #430/M-06).
+    if customer_type == CustomerType.B2B:
+        from .invoice import validate_b2b_requisites
+
+        errors = validate_b2b_requisites(
+            inn=snapshot["inn"],
+            company_name=snapshot["company_name"],
+            kpp=snapshot["kpp"],
+            legal_address=snapshot["legal_address"],
+            email=snapshot["customer_email"],
+        )
+        if errors:
+            raise ValidationError(errors[0])
+        if payment_method and payment_method != "invoice":
+            raise ValidationError("B2B-заказ оплачивается только по счёту.")
+        payment_method = "invoice"
+        # #558 (Wave 1): доставки для юрлиц нет — заказ оформляется самовывозом,
+        # счёт формируется только на товары. Курьерскую доставку отклоняем явно.
+        if (delivery.get("delivery_method") or "") == "courier":
+            raise ValidationError("Доставка для юрлиц недоступна — только самовывоз.")
+    elif payment_method == "invoice":
+        raise ValidationError("Оплата по счёту доступна только для B2B-заказов.")
+
+    is_guest = user is None or not getattr(user, "is_authenticated", False)
+
+    # Серверная валидация контакта гостя (#321).
+    if is_guest:
+        if not snapshot["customer_name"].strip():
+            raise ValidationError("Имя обязательно для гостевого заказа.")
+        if not snapshot["customer_phone"].strip():
+            raise ValidationError("Телефон обязателен для гостевого заказа.")
+
+    access_token = uuid.uuid4().hex if is_guest else ""
+
+    order = Order(
+        order_number=_generate_order_number(),
+        user=None if is_guest else user,
+        access_token=access_token,
+        fulfillment_status=FulfillmentStatus.NEW,
+        payment_status=PaymentStatus.PENDING,
+        sync_1c_status=Sync1CStatus.PENDING,
+        delivery_method=delivery.get("delivery_method", "") or "",
+        delivery_address=delivery.get("delivery_address", "") or "",
+        comment=delivery.get("comment", "") or "",
+        payment_method=payment_method or "",
+        total=_ZERO,
+        currency="RUB",
+        **snapshot,
+    )
+    order.save()
+
+    total = _ZERO
+    order_currency = None
+    order_items_by_cart_item: dict[int, OrderItem] = {}  # #571: для promo-снимков строк
+    for item in items:
+        product = locked_products.get(item.product_id)
+
+        if product is None or not product.is_visible:
+            raise ValidationError(f"Товар «{getattr(product, 'name', '—')}» недоступен для заказа.")
+
+        qty = item.quantity
+        available = product.available_quantity or _ZERO
+        if Decimal(qty) > available:
+            raise ValidationError(
+                f"Недостаточно товара «{product.name}»: доступно {available}, запрошено {qty}."
+            )
+
+        result = price_for(product, user, qty)
+        if result.final is None:
+            raise ValidationError(f"У товара «{product.name}» не задана цена.")
+
+        if order_currency is None:
+            order_currency = result.currency
+        elif result.currency != order_currency:
+            raise ValidationError(
+                f"Смешение валют в корзине: {order_currency} и {result.currency}."
+            )
+
+        line_total = result.final * qty
+        total += line_total
+
+        Product.objects.filter(pk=product.pk).update(
+            available_quantity=models.F("available_quantity") - qty,
+            reserved_quantity=models.F("reserved_quantity") + qty,
+        )
+
+        order_items_by_cart_item[item.pk] = OrderItem.objects.create(
+            order=order,
+            product=product,
+            code_1c=product.code_1c or "",
+            article=product.article or "",
+            name=product.name,
+            unit=product.unit or "",
+            price_base=result.base,
+            price_final=result.final,
+            discount=result.discount,
+            price_type=result.price_type,
+            currency=result.currency,
+            quantity=qty,
+            line_total=line_total,
+        )
+
+    # #571: скидки считаются СЕРВЕРОМ из промокода корзины (фронт код не передаёт).
+    # Двухфазно: товарные скидки нужны ДО quote (порог free_from считается от суммы
+    # после скидок — контракт quote_for_order), а free_delivery — ПОСЛЕ quote
+    # (скидка на фактическую стоимость). Расчёт детерминирован — обе фазы согласованы.
+    promotions_enabled = is_enabled("promotions")
+    promo_inputs = []
+    items_discount = _ZERO
+    if promotions_enabled:
+        from apps.promotions.services import PromoLineInput, compute_promotions
+
+        promo_inputs = [
+            PromoLineInput(
+                key=cart_item_id,
+                product_id=oi.product_id,
+                quantity=oi.quantity,
+                line_total=oi.line_total,
+            )
+            for cart_item_id, oi in order_items_by_cart_item.items()
+        ]
+        items_discount = compute_promotions(
+            promo_inputs,
+            promo_code=cart.promo_code,
+            customer_type=customer_type,
+        ).items_discount_total
+    goods_after_discount = max(total - items_discount, _ZERO)
+
+    # #429 (M-05, ADR #444): стоимость доставки считается СЕРВЕРОМ по серверной
+    # корзине (единый источник правды), включается в итог и облагается НДС вместе
+    # с товарами. При manual_required (нет весогабаритов для СДЭК) стоимость
+    # неизвестна → delivery_cost=null, итог предварительный (только товары).
+    from apps.delivery.services import NOT_REQUIRED, DeliveryQuote, quote_for_order
+
+    if customer_type == CustomerType.B2B:
+        # #558 (Wave 1): для юрлиц доставка не считается вовсе — независимо от
+        # присланной зоны (она не должна влиять на сумму счёта). Кост 0 и
+        # not_required, снимок несёт машиночитаемую причину; manual_required
+        # для B2B недостижим — счёт всегда только на товары.
+        quote = DeliveryQuote(
+            zone_slug="",
+            method="",
+            status=NOT_REQUIRED,
+            cost=_ZERO,
+            snapshot={"reason": "b2b_delivery_not_supported"},
+        )
+    else:
+        quote = quote_for_order(
+            zone_slug=delivery.get("delivery_zone", "") or "",
+            # #571: порог free_from — от суммы товаров ПОСЛЕ скидок (контракт
+            # quote_for_order): скидка может «отщёлкнуть» бесплатную доставку.
+            goods_total=goods_after_discount,
+            items=items,
+        )
+    order.delivery_zone = quote.zone_slug
+    order.delivery_cost = quote.cost
+    # Значения статусов delivery.services совпадают с Order.DeliveryCalcStatus.
+    order.delivery_calc_status = quote.status
+    order.delivery_snapshot = quote.snapshot
+
+    # #571, фаза 2: финальный breakdown с контекстом доставки (free_delivery-код
+    # дисконтирует фактическую стоимость). Товарные скидки детерминированы и
+    # совпадают с фазой 1. Невалидный код на момент оформления — отказ (кроме
+    # not_beneficial: «не дал выгоды» заказ не блокирует).
+    delivery_discount = _ZERO
+    if promotions_enabled and (promo_inputs or cart.promo_code):
+        from apps.promotions.services import compute_promotions
+
+        breakdown = compute_promotions(
+            promo_inputs,
+            promo_code=cart.promo_code,
+            customer_type=customer_type,
+            delivery_cost=quote.cost,
+            delivery_status=quote.status,
+        )
+        if breakdown.code_error is not None and breakdown.code_error.code != "not_beneficial":
+            raise ValidationError(f"Промокод: {breakdown.code_error.message}")
+        items_discount = breakdown.items_discount_total  # == фаза 1 (детерминизм)
+        goods_after_discount = max(total - items_discount, _ZERO)
+        delivery_discount = breakdown.delivery_discount
+        for cart_item_id, amount in breakdown.line_discounts.items():
+            oi = order_items_by_cart_item.get(cart_item_id)
+            if oi is not None:
+                OrderItem.objects.filter(pk=oi.pk).update(promo_discount=amount)
+        order.promo_code = cart.promo_code
+        order.items_discount_total = items_discount
+        order.delivery_discount = delivery_discount
+        order.promo_snapshot = {
+            "code": cart.promo_code,
+            "items_discount_total": str(items_discount),
+            "delivery_discount": str(delivery_discount),
+            "applied": [
+                {
+                    "id": a.promotion_id,
+                    "name": a.name,
+                    "discount_type": a.discount_type,
+                    "scope": a.scope,
+                    "promo_code": a.promo_code,
+                    "amount": str(a.amount),
+                }
+                for a in breakdown.applied
+            ],
+            "code_error": (
+                {"code": breakdown.code_error.code, "message": breakdown.code_error.message}
+                if breakdown.code_error
+                else None
+            ),
+        }
+
+    grand_total = goods_after_discount + (quote.cost or _ZERO) - delivery_discount
+
+    # #569: слот доставки — только B2C + курьер (у юрлиц доставки нет, #558).
+    # Бронирование под локом строки слота (порядок локов: cart → products → slot):
+    # COUNT живых заказов и вставка сериализуются, при гонке за последнее место
+    # второй покупатель получает ValidationError. Слот необязателен: пустой
+    # справочник не должен останавливать курьерские заказы (обязательность
+    # «когда слоты есть» держит фронт).
+    slot_id = delivery.get("delivery_slot_id")
+    if slot_id:
+        if customer_type == CustomerType.B2B:
+            raise ValidationError("Доставка для юрлиц недоступна — слот доставки не нужен.")
+        if (delivery.get("delivery_method") or "") != "courier":
+            raise ValidationError("Слот доставки доступен только для курьерской доставки.")
+        from apps.delivery.slots import lock_slot_for_booking, slot_snapshot
+        from apps.orders.slots import occupied_count
+
+        slot = lock_slot_for_booking(
+            slot_id,
+            method="courier",
+            zone_slug=delivery.get("delivery_zone", "") or "",
+        )
+        if occupied_count(slot.pk) >= slot.capacity:
+            raise ValidationError("Это время уже занято — выберите другой интервал.")
+        order.delivery_slot = slot
+        order.delivery_slot_snapshot = slot_snapshot(slot)
+
+    order.total = grand_total
+    order.currency = order_currency or "RUB"
+    # #430 (M-06): снимок НДС для B2B (цена включает НДС; ставка фиксируется на
+    # момент заказа). База НДС — итог ПОСЛЕ скидок (#571); для B2B в Wave 1
+    # доставки нет (#558) → база = товарная сумма со скидками. Для B2C поля нулевые.
+    if customer_type == CustomerType.B2B:
+        from apps.pricing.vat import vat_breakdown
+
+        rate = int(getattr(settings, "VAT_RATE_PERCENT", 0))
+        net, vat = vat_breakdown(grand_total, rate)
+        order.vat_rate = rate
+        order.amount_without_vat = net
+        order.vat_amount = vat
+    # #423 (B-03): резерв удержан выше (available -= qty, reserved += qty по строкам).
+    # Фиксируем статус и TTL — janitor освободит его, если заказ не оплатят вовремя.
+    # TTL зависит от типа покупателя (#568): B2C — 30 мин, B2B — 24ч со счётом.
+    order.reservation_status = ReservationStatus.HELD
+    order.reserved_until = timezone.now() + _reservation_ttl(customer_type)
+    order.save(
+        update_fields=[
+            "total",
+            "currency",
+            "delivery_zone",
+            "delivery_cost",
+            "delivery_calc_status",
+            "delivery_snapshot",
+            "delivery_slot",
+            "delivery_slot_snapshot",
+            "promo_code",
+            "promo_snapshot",
+            "items_discount_total",
+            "delivery_discount",
+            "vat_rate",
+            "amount_without_vat",
+            "vat_amount",
+            "reservation_status",
+            "reserved_until",
+            "updated_at",
+        ]
+    )
+
+    # #559 (эпик #557): B2B-заказу выставляется счёт со сроком действия 24ч —
+    # ровно до order.reserved_until (счёт и резерв истекают вместе). Внутри
+    # общей транзакции: заказ без счёта или счёт без заказа невозможны.
+    if customer_type == CustomerType.B2B:
+        from apps.orders.invoice_lifecycle import issue_invoice
+
+        issue_invoice(order)
+
+    # Корзину не удаляем: фиксируем как оформленную (история + идемпотентность).
+    cart.status = CartStatus.ORDERED
+    cart.ordered_at = timezone.now()
+    cart.save(update_fields=["status", "ordered_at", "updated_at"])
+
+    # Публикуем событие после коммита (подписчик увидит закоммиченные данные).
+    order_id = order.id
+    # robust=True (DRF-2293): подписчики события (уведомления в MAX, письмо
+    # сотрудникам, CRM) исполняются после коммита; их ошибка логируется и не
+    # превращается в 500 покупателю при уже созданном заказе.
+    transaction.on_commit(lambda: order_created.send(sender=Order, order_id=order_id), robust=True)
+
+    return order
+
+
+def claim_guest_orders(user) -> int:
+    """Привязать гостевые заказы к аккаунту по телефону. Возвращает число привязанных.
+
+    #421 (B-01): claim разрешён ТОЛЬКО для подтверждённого номера
+    (``user.phone_verified``). Иначе регистрация чужого ещё не занятого номера
+    захватила бы историю заказов, адрес и B2B-реквизиты жертвы. Владение
+    подтверждается через OTP в MAX (см. integration_max.handlers.auth).
+
+    Матчинг — по нормализованному номеру (customer_phone заказов и телефоны
+    пользователей приведены к канону), чтобы разные форматы одного номера не
+    расходились. select_for_update защищает от гонки параллельного claim.
+    """
+    if not getattr(user, "phone_verified", False):
+        return 0
+    phone = normalize_phone(getattr(user, "phone", ""))
+    if not phone:
+        return 0
+    with transaction.atomic():
+        ids = list(
+            Order.objects.select_for_update()
+            .filter(user__isnull=True, customer_phone=phone)
+            .values_list("pk", flat=True)
+        )
+        if not ids:
+            return 0
+        return Order.objects.filter(pk__in=ids).update(user=user)
+
+
+def is_guest_token_expired(order: Order) -> bool:
+    """#438 (m-03): TTL гостевого токена. По истечении доступ по токену закрыт.
+
+    Окно задаётся ``GUEST_ORDER_TOKEN_TTL_DAYS`` (0/None → без ограничения).
+    Ограничивает срок, в течение которого утёкший URL остаётся валидным.
+    Публичная — используется как самостоятельная TTL-проверка внутри
+    ``get_guest_order_by_token()`` (единой точки лукапа гостевого заказа, #520);
+    оставлена отдельной функцией на случай, когда нужен только TTL-чек уже
+    имеющегося ``Order`` без повторного похода в БД за ним.
+    """
+    ttl_days = getattr(settings, "GUEST_ORDER_TOKEN_TTL_DAYS", 0)
+    if not ttl_days:
+        return False
+    return timezone.now() - order.created_at > timedelta(days=int(ttl_days))
+
+
+def get_guest_order_by_token(order_number: str, access_token: str) -> Order | None:
+    """Гостевой заказ по номеру+токену, если он ещё не просрочен (#438). Единая
+    точка для всех модулей, проверяющих владение гостевым заказом (сайт —
+    GuestOrderView/InvoiceView, integration_max — MaxTrackOrderStartView, #520):
+    граница «Запрещено лазить в чужие таблицы» (CLAUDE.md §4) — вызывающие не
+    строят Order.objects.filter(...) сами.
+    """
+    if not access_token:
+        return None
+    order = Order.objects.filter(
+        order_number=order_number, access_token=access_token, user=None
+    ).first()
+    if order is None or is_guest_token_expired(order):
+        return None
+    return order
+
+
+# --- Продажи для рейтинга каталога (блок «Хиты продаж») ---
+
+# Продажей считаем только то, что реально ушло покупателю: заказ отгружен или
+# выполнен. NEW/CONFIRMED/ASSEMBLING — намерение, его ещё могут отменить, а
+# витрина не должна называть хитом то, что не продалось. Возврат снимает продажу.
+SOLD_FULFILLMENT_STATUSES = (FulfillmentStatus.SHIPPED, FulfillmentStatus.COMPLETED)
+REFUNDED_PAYMENT_STATUSES = (PaymentStatus.REFUNDED,)
+
+
+def sold_quantities(since: date, until: date) -> list[tuple[int, date, Decimal]]:
+    """Продажи сайта за период: (product_id, день, количество).
+
+    Единственная точка, где кто-то извне узнаёт объёмы продаж заказов — каталог
+    сам в orders не ходит (ADR-0004). Строки без товара (product обнулён при
+    удалении номенклатуры) пропускаем: привязать продажу не к чему.
+
+    День берём по дате оформления заказа: это момент продажи с точки зрения
+    покупателя, а отгрузка может уехать на неделю.
+    """
+    rows = (
+        OrderItem.objects.filter(
+            product__isnull=False,
+            order__fulfillment_status__in=SOLD_FULFILLMENT_STATUSES,
+            order__created_at__date__gte=since,
+            order__created_at__date__lte=until,
+        )
+        .exclude(order__payment_status__in=REFUNDED_PAYMENT_STATUSES)
+        .annotate(day=TruncDate("order__created_at"))
+        .values("product_id", "day")
+        .annotate(quantity=models.Sum("quantity"))
+        .order_by()
+    )
+    return [(r["product_id"], r["day"], Decimal(r["quantity"])) for r in rows]
+
+
+def notify_delivery_calculated(order: Order, *, send: bool = True) -> str:
+    """Письмо покупателю «доставка рассчитана — можно оплатить» (DRF-2299).
+
+    Возвращает человекочитаемый результат для сообщения менеджеру. ``send=False``
+    только считает результат (для сообщения до коммита); саму постановку в outbox
+    делать после коммита транзакции админки — `transaction.on_commit`.
+    """
+    from apps.notifications.services import notify_customer
+
+    if (
+        order.payment_method != "online"
+        or order.payment_status != PaymentStatus.PENDING
+        or order.fulfillment_status == FulfillmentStatus.CANCELLED
+    ):
+        return "письмо не требуется: заказ не ждёт онлайн-оплаты"
+    email = (order.customer_email or "").strip()
+    if not email and order.user_id:
+        email = (order.user.email or "").strip()
+    if not email:
+        return "у покупателя нет e-mail — сообщите ему сумму по телефону"
+
+    base = (getattr(settings, "SITE_URL", "") or "").rstrip("/")
+    note = ""
+    if order.user_id:
+        pay_url = f"{base}/account/orders/{order.order_number}"
+    elif order.access_token and not is_guest_token_expired(order):
+        pay_url = f"{base}/order/{order.order_number}/thanks?t={order.access_token}"
+    else:
+        pay_url = f"{base}/order/{order.order_number}/thanks"
+        note = (
+            "Ссылка доступа к заказу устарела — откройте страницу заказа из истории браузера.\n\n"
+        )
+
+    if send:
+        notify_customer(
+            email=email,
+            event="customer_delivery_calculated",
+            payload={
+                "order_number": order.order_number,
+                "delivery_cost": f"{(order.delivery_cost or _ZERO):.2f}",
+                "total": f"{order.total:.2f}",
+                "currency": order.currency,
+                "pay_url": pay_url,
+                "note": note,
+            },
+            idempotency_key=f"customer-delivery-calculated-{order.pk}-{order.delivery_cost}",
+        )
+    masked = email[0] + "…@" + email.split("@")[-1] if "@" in email else "…"
+    return f"письмо со ссылкой на оплату поставлено в очередь на {masked}"

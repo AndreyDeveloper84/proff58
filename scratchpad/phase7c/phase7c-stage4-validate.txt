@@ -1,0 +1,6 @@
+4.1 note финализирован; повторный load_ruleset: OK
+4.2 FINAL canonical ruleset_hash = 9bf0271a61e729a900cda57705bdf785b96496efc462448894b27650a04bf330
+    rules=38 fixtures=39 ruleset_id=tool_type.v2 version=1
+    fixtures check: 0 violations
+    taxonomy validation: 0 missing slugs
+    v1-часть parsed deep-equality: rules=True fixtures=True

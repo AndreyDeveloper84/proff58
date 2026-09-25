@@ -1,0 +1,40 @@
+{
+ "apply": false,
+ "scope": 188,
+ "PLAN_CREATE": 26,
+ "PLAN_UPDATE": 0,
+ "PLAN_DELETE": 0,
+ "PLAN_SKIP_PRIORITY": 0,
+ "touched_products": 23,
+ "untouched_hash_before": "4af5d6dc5bbe7e12932fda5ceeec231bcb99d4f022cfa244680851efe5d35879"
+}
+
+CREATE:
+  [563, 'chuck', 'sds-plus', 'keyword']
+  [569, 'energy_impact', '1.9', 'regex']
+  [44410, 'energy_impact', '5.9', 'regex']
+  [44424, 'no_load_speed', '1050', 'regex']
+  [44431, 'no_load_speed', '1100', 'regex']
+  [44436, 'no_load_speed', '620', 'regex']
+  [44437, 'no_load_speed', '500', 'regex']
+  [44441, 'no_load_speed', '310', 'regex']
+  [44441, 'motor_type', 'brushless', 'keyword']
+  [44442, 'no_load_speed', '310', 'regex']
+  [44442, 'motor_type', 'brushless', 'keyword']
+  [44444, 'no_load_speed', '230', 'regex']
+  [44445, 'no_load_speed', '230', 'regex']
+  [44446, 'no_load_speed', '280', 'regex']
+  [44446, 'motor_type', 'brushless', 'keyword']
+  [44469, 'no_load_speed', '305', 'regex']
+  [44471, 'no_load_speed', '220', 'regex']
+  [44472, 'no_load_speed', '550', 'regex']
+  [44476, 'no_load_speed', '1100', 'regex']
+  [44482, 'energy_impact', '2.9', 'regex']
+  [44487, 'no_load_speed', '500', 'regex']
+  [44497, 'chuck', 'sds-plus', 'keyword']
+  [44523, 'no_load_speed', '1200', 'regex']
+  [44531, 'no_load_speed', '1500', 'regex']
+  [44532, 'energy_impact', '3.5', 'regex']
+  [45584, 'no_load_speed', '510', 'regex']
+UPDATE:
+DELETE:

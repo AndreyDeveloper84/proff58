@@ -1,0 +1,3 @@
+changes= [(2, 'proposed', {'option_slug': 'dreli-shurupoverty'}), (1, 'proposed', {'option_slug': 'perforatory'})]
+items= [(1, 'processing', ''), (2, 'processing', ''), (3, 'needs_review', 'unknown'), (4, 'needs_review', 'review'), (5, 'needs_review', 'identity_failed')]
+pav_tool_type_total= 0

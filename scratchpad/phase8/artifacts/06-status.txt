@@ -1,0 +1,76 @@
+{
+  "run_id": "8cc21405-866e-4d0a-9276-3f5f2bd9f63f",
+  "kind": "research",
+  "mode": "tool_type",
+  "status": "running",
+  "created_at": "2026-07-27T09:06:48.414266+00:00",
+  "items": {
+    "total": 5,
+    "by_status": {
+      "processing": 2,
+      "needs_review": 3
+    }
+  },
+  "changes": {
+    "total": 2,
+    "by_status": {
+      "proposed": 2
+    },
+    "pending_review": 2
+  },
+  "errors": [
+    {
+      "product_ref": 3,
+      "code": "unknown",
+      "detail": "CASE-3: идентичность не установлена, предложений нет."
+    },
+    {
+      "product_ref": 4,
+      "code": "review",
+      "detail": "CASE-4: тип спорный, требуется ручная модерация."
+    },
+    {
+      "product_ref": 5,
+      "code": "identity_failed",
+      "detail": "CASE-5: идентичность не подтверждена."
+    }
+  ]
+}
+{
+  "run_id": "8cc21405-866e-4d0a-9276-3f5f2bd9f63f",
+  "kind": "research",
+  "mode": "tool_type",
+  "status": "running",
+  "created_at": "2026-07-27T09:06:48.414266+00:00",
+  "items": {
+    "total": 5,
+    "by_status": {
+      "processing": 2,
+      "needs_review": 3
+    }
+  },
+  "changes": {
+    "total": 2,
+    "by_status": {
+      "proposed": 2
+    },
+    "pending_review": 2
+  },
+  "errors": [
+    {
+      "product_ref": 3,
+      "code": "unknown",
+      "detail": "CASE-3: идентичность не установлена, предложений нет."
+    },
+    {
+      "product_ref": 4,
+      "code": "review",
+      "detail": "CASE-4: тип спорный, требуется ручная модерация."
+    },
+    {
+      "product_ref": 5,
+      "code": "identity_failed",
+      "detail": "CASE-5: идентичность не подтверждена."
+    }
+  ]
+}

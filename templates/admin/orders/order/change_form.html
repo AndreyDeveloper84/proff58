@@ -1,0 +1,24 @@
+{% extends "admin/change_form.html" %}
+
+{% comment %}
+Заголовок карточки — номер заказа, а не общее «Заказы»: человек должен видеть,
+какой именно заказ открыт, не разглядывая хлебные крошки.
+{% endcomment %}
+
+{% block content_title %}
+{% if original %}
+<span style="display:inline-flex;align-items:center;gap:.5rem;font-weight:700;">
+  <i class="fas fa-shopping-cart" style="color:#1ba39c;"></i>
+  Заказ {{ original.order_number }}
+  <span style="font-size:.72rem;font-weight:600;background:rgba(27,163,156,.12);
+               color:#1ba39c;padding:.12rem .5rem;border-radius:999px;">
+    {{ original.total }} {{ original.currency }}
+  </span>
+</span>
+<small style="display:block;margin-top:.3rem;font-size:.8rem;font-weight:400;opacity:.6;">
+  от {{ original.created_at|date:"d.m.Y H:i" }}
+  {% if original.customer_name %} · {{ original.customer_name }}{% endif %}
+  {% if original.customer_phone %} · {{ original.customer_phone }}{% endif %}
+</small>
+{% else %}{{ block.super }}{% endif %}
+{% endblock %}

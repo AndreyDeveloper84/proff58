@@ -9,6 +9,8 @@ from pathlib import Path
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
 
 env = environ.Env(
     DJANGO_DEBUG=(bool, False),
@@ -21,20 +23,43 @@ DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    # Современная тема админки (должна идти перед django.contrib.admin).
+    "jazzmin",
+    # Вместо django.contrib.admin — свой AdminConfig: он подменяет admin.site на
+    # ProffAdminSite со стартовым экраном «Сегодня» (config/admin_site.py).
+    "config.admin_site.ProffAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     # сторонние
     "rest_framework",
     "django_filters",
     "treebeard",
     # приложения проекта
+    "apps.core",
     "apps.accounts",
     "apps.catalog",
     "apps.sync_1c",
+    "apps.pricing",
+    "apps.orders",
+    "apps.payments",
+    "apps.leads",
+    "apps.ai",
+    "apps.integration_max",
+    "apps.integration_oauth",
+    "apps.integration_ship",
+    "apps.notifications",
+    "apps.crm_clients",
+    "apps.crm_sales",
+    "apps.crm_tasks",
+    "apps.analytics",
+    "apps.delivery",
+    "apps.promotions",
+    "apps.content",
+    "apps.reviews",
 ]
 
 MIDDLEWARE = [
@@ -43,6 +68,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Сразу после аутентификации: маркер входа для фронта (нужен request.user).
+    "apps.accounts.middleware.AuthMarkerCookieMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -69,10 +96,54 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {
-    "default": env.db("DATABASE_URL", default="postgres://proff:proff@db:5432/proff58"),
+    # Дефолт — localhost: чтобы локальный pytest/manage работал без Docker (нужен
+    # доступный Postgres на :5432, напр. `docker compose up -d db`). В Docker и CI
+    # хост задаётся явно через DATABASE_URL (env/.env: `db`/`localhost`), дефолт не используется.
+    "default": env.db("DATABASE_URL", default="postgres://proff:proff@localhost:5432/proff58"),
+}
+# По умолчанию Django открывает новое соединение с БД на КАЖДЫЙ запрос — заметная
+# задержка, особенно «подвисание» первого клика после простоя. Держим соединение
+# открытым между запросами; CONN_HEALTH_CHECKS отбраковывает протухшее соединение
+# перед запросом (иначе первый запрос после простоя мог бы упасть на мёртвом сокете).
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("DJANGO_CONN_MAX_AGE", default=60)
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+
+# Кэш приложения. По умолчанию — локальный, чтобы dev и CI не зависели от Redis.
+# В проде переопределяется на общий Redis (см. config/settings/prod.py).
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "proff58-default",
+    }
 }
 
+# Кэш фасетов каталога (#222, P1-2). 0 → выключен (dev/CI: тесты не зависят от кэша и его
+# межтестовой персистентности). В проде включается (см. config/settings/prod.py). Инвалидация —
+# версионная, по сигналам изменения товаров/категорий/привязок атрибутов (apps/catalog/signals.py).
+FACETS_CACHE_TTL = env.int("FACETS_CACHE_TTL", default=0)
+
+# Порог «мало осталось» для витрины (#488): stock_qty в каталог-API отдаётся, только
+# когда доступный остаток 0 < qty ≤ порога (сигнал «мало», без утечки точных больших
+# остатков). Фронт по нему показывает состояние «Мало осталось».
+CATALOG_LOW_STOCK_THRESHOLD = env.int("CATALOG_LOW_STOCK_THRESHOLD", default=5)
+
+# Рейтинг «хитов продаж» (apps.catalog.sales). Окно — скользящее: витрина должна
+# показывать то, что продаётся сейчас, а не вечных лидеров прошлого года.
+# SALES_HIT_MIN_QUANTITY страхует от «хита» с одной проданной штукой, пока
+# статистика не набралась.
+SALES_WINDOW_DAYS = env.int("SALES_WINDOW_DAYS", default=90)
+SALES_HIT_TOP_N = env.int("SALES_HIT_TOP_N", default=24)
+SALES_HIT_MIN_QUANTITY = env.int("SALES_HIT_MIN_QUANTITY", default=3)
+
 AUTH_USER_MODEL = "accounts.User"
+
+# Витрина пускает по e-mail (EmailBackend), админка — по телефону
+# (USERNAME_FIELD, стандартный ModelBackend). Порядок важен: первым отвечает тот,
+# кто нашёл пользователя.
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.auth_backends.EmailBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -93,19 +164,472 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Тема админки django-jazzmin. Бренд «Профессионал».
+#
+# Меню собрано под одного человека-универсала без технического бэкграунда:
+# сверху то, что он делает каждый день, служебные журналы — в конец, а часть
+# моделей скрыта совсем (URL при этом остаются рабочими — hide_models убирает
+# только пункт из сайдбара, доступ разработчика по прямой ссылке сохраняется).
+JAZZMIN_SETTINGS = {
+    "site_title": "Профессионал — админка",
+    "site_header": "Профессионал",
+    "site_brand": "Профессионал",
+    "welcome_sign": "Что нужно сделать сегодня",
+    "copyright": "Профессионал",
+    # Глобальный поиск в шапке: товар, категория и заказ — по ним ищут чаще всего.
+    "search_model": ["catalog.Product", "catalog.SiteCategory", "orders.Order"],
+    "show_ui_builder": False,
+    "related_modal_active": True,
+    # Порядок разделов = порядок рабочего дня. Django сортирует приложения по
+    # алфавиту, из-за чего «Заказы» оказывались между «Доставкой» и «Заявками».
+    "order_with_respect_to": [
+        "orders",
+        "payments",  # возвраты денег — часть работы с заказами, а не служебный журнал
+        "catalog",
+        "leads",
+        "reviews",
+        "content",
+        "promotions",
+        "delivery",
+        "accounts",
+        "core",
+        # ниже — служебное, им пользуются редко
+        "sync_1c",
+        "pricing",
+        "notifications",
+        "ai",
+        "analytics",
+        "auth",
+    ],
+    # Служебные журналы и внутренняя кухня: нужны, но не наравне с «Товарами».
+    "hide_models": [
+        "catalog.productattributevalue",  # правится внутри карточки товара
+        "catalog.enrichmentlog",
+        "catalog.importrun",
+        "catalog.catalogprocessingrun",
+        "catalog.catalogprocessingitem",
+        "catalog.catalogchange",
+        "catalog.onecgroup",
+        "catalog.groupcategorymapping",
+        "catalog.productsalesstat",
+        "catalog.productavailabilitysubscription",
+        "catalog.moderationproduct",
+        "catalog.category",  # полное дерево с легаси-узлами 1С; рабочее — SiteCategory
+        "orders.cart",  # корзины покупателей — диагностика, не рабочий раздел
+        "sync_1c.nomenclaturestaging",
+        "sync_1c.stockrecord",
+        "notifications.notification",
+        "notifications.notificationlog",
+        "analytics.analyticsevent",
+        "ai.aicalllog",
+        "ai.contentfinding",
+        "ai.externalcall",
+        "auth.group",  # прав пока одна роль — суперпользователь
+    ],
+    "icons": {
+        "orders.order": "fas fa-shopping-cart",
+        "orders.b2binvoice": "fas fa-file-invoice",
+        "orders.cart": "fas fa-shopping-basket",
+        "catalog.product": "fas fa-box-open",
+        "catalog.productimage": "fas fa-images",
+        "catalog.sitecategory": "fas fa-sitemap",
+        "catalog.category": "fas fa-folder-tree",
+        "catalog.attribute": "fas fa-ruler-combined",
+        "catalog.categorymappingrule": "fas fa-shuffle",
+        "leads.productinquiry": "fas fa-comment-dots",
+        "reviews.review": "fas fa-star",
+        "content.article": "fas fa-newspaper",
+        "content.banner": "fas fa-image",
+        "content.promotion": "fas fa-bullhorn",
+        "content.seopage": "fas fa-file-lines",
+        "promotions.promotion": "fas fa-percent",
+        "delivery.deliveryzone": "fas fa-map-location-dot",
+        "delivery.pickuppoint": "fas fa-store",
+        "delivery.deliveryslot": "fas fa-clock",
+        "accounts.user": "fas fa-user",
+        "core.sitesettings": "fas fa-sliders",
+        "payments.payment": "fas fa-credit-card",
+        "payments.refund": "fas fa-rotate-left",
+        "payments.refundrequest": "fas fa-hand-holding-dollar",
+        "sync_1c.synclog": "fas fa-arrows-rotate",
+        "pricing.pricerecord": "fas fa-tags",
+        "notifications.usernotificationpreference": "fas fa-bell",
+    },
+    # Ссылки в шапке — на очереди, а не на разделы: человек попадает сразу в работу.
+    "topmenu_links": [
+        {"name": "Сегодня", "url": "admin:index", "icon": "fas fa-house"},
+        {
+            "name": "Новые заказы",
+            "url": "/admin/orders/order/?fulfillment_status__exact=new",
+            "icon": "fas fa-bell",
+        },
+        {
+            "name": "Разбор каталога",
+            "url": "/admin/catalog/product/moderate/",
+            "icon": "fas fa-wand-magic-sparkles",
+        },
+        {
+            "name": "Смотреть сайт",
+            "url": "/",
+            "new_window": True,
+            "icon": "fas fa-arrow-up-right-from-square",
+        },
+    ],
+    # «Полки» — готовые выборки под разделами. Человеку не нужно собирать фильтр:
+    # он открывает полку и работает, пока она не опустеет.
+    "custom_links": {
+        "catalog": [
+            {
+                "name": "Разбор каталога →",
+                "url": "/admin/catalog/product/moderate/",
+                "icon": "fas fa-wand-magic-sparkles",
+            },
+            {
+                "name": "Требуют внимания",
+                "url": "/admin/catalog/product/?moderation=attention",
+                "icon": "fas fa-triangle-exclamation",
+            },
+            {
+                "name": "Без категории",
+                "url": "/admin/catalog/product/?categorized=no",
+                "icon": "fas fa-folder-minus",
+            },
+            {
+                "name": "Без фото",
+                "url": "/admin/catalog/product/?content=no_image",
+                "icon": "fas fa-camera",
+            },
+            {
+                "name": "Без описания",
+                "url": "/admin/catalog/product/?content=no_description",
+                "icon": "fas fa-align-left",
+            },
+        ],
+        "orders": [
+            {
+                "name": "Новые",
+                "url": "/admin/orders/order/?fulfillment_status__exact=new",
+                "icon": "fas fa-bell",
+            },
+            {
+                "name": "Ждут оплаты",
+                "url": "/admin/orders/order/?payment_status__exact=pending",
+                "icon": "fas fa-hourglass-half",
+            },
+            {
+                "name": "Не ушли в 1С",
+                "url": "/admin/orders/order/?sync_1c_status__exact=pending",
+                "icon": "fas fa-arrows-rotate",
+            },
+            {
+                "name": "Просят вернуть деньги",
+                "url": "/admin/payments/refundrequest/?status__exact=pending",
+                "icon": "fas fa-hand-holding-dollar",
+            },
+        ],
+    },
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "theme": "flatly",
+    # dark_mode_theme в jazzmin 3.x объявлен устаревшим и игнорировался — тёмная
+    # тема просто не работала. Теперь она следует настройке системы.
+    "default_theme_mode": "auto",
+    "navbar_fixed": True,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+}
+
 # Celery / Redis
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://redis:6379/1")
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = TIME_ZONE
 
+# Задачи 1С — в выделенную очередь `onec` (worker -Q onec -c 1): обмены идут строго
+# последовательно, что снимает гонку «одна актуальная цена» (#126). Остальные задачи —
+# в дефолтной очереди `celery` (отдельный worker, параллельно).
+CELERY_TASK_DEFAULT_QUEUE = "celery"
+CELERY_TASK_ROUTES = {
+    "apps.sync_1c.tasks.*": {"queue": "onec"},
+    # Автообработка фото (ADR-0014): отдельный воркер celery-images с media на запись.
+    "apps.catalog.tasks.process_product_image": {"queue": "images"},
+    # Удаление фона нейросетью: сервис celery-rembg под профилем, только на бэкфилл.
+    "apps.catalog.tasks.remove_photo_background": {"queue": "rembg"},
+}
+
+# Session/CSRF для SPA (#325): cookie читается JS (HTTPONLY=False), SameSite=Lax
+# позволяет браузеру слать cookies при навигации. CSRF_COOKIE_SECURE и
+# SESSION_COOKIE_SECURE переопределяются в prod.py на True.
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False  # JS должен читать csrftoken для X-CSRFToken заголовка
+CSRF_COOKIE_SAMESITE = "Lax"
+
 REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 24,
+    # #279: глобальный анонимный лимит — защита каталога/фасетов от DoS.
+    # Вьюхи с явным throttle_classes (1С, корзина, заказы) его не наследуют.
+    "DEFAULT_THROTTLE_CLASSES": ["apps.core.throttling.AnonRateThrottle"],
+    # Адрес посетителя для лимитов — последний элемент X-Forwarded-For. Его ставит
+    # наш nginx (перезаписывая, не дописывая) или BFF из X-Real-IP того же nginx;
+    # клиентский заголовок до Django не доходит. Без NUM_PROXIES DRF брал ПЕРВЫЙ
+    # адрес из цепочки — его подставлял сам клиент и обходил лимит входа.
+    "NUM_PROXIES": 1,
+    "DEFAULT_THROTTLE_RATES": {
+        "inquiry": "20/hour",
+        # #9: флуд чувствительных эндпоинтов. onec — поток валидным ключом 1С (по IP),
+        # orders — оформление/добавление в корзину гостем. Настраиваются через env;
+        # пусто/None отключает скоуп (в dev/тестах — выключено, см. dev.py).
+        "onec": env("ONEC_THROTTLE_RATE", default="300/min"),
+        "orders": env("ORDERS_THROTTLE_RATE", default="60/min"),
+        # #279: лимит анонимных запросов к публичному API (каталог, фасеты, поиск).
+        "anon": env("ANON_THROTTLE_RATE", default="200/min"),
+        # #427 (M-03): чувствительные auth-эндпоинты (login/register/OTP/смена
+        # телефона) — низкий лимит против брутфорса пароля и enumeration телефонов.
+        "auth": env("AUTH_THROTTLE_RATE", default="10/min"),
+        # #573: создание отзывов (антиспам очереди модерации).
+        "reviews": env("REVIEWS_THROTTLE_RATE", default="10/hour"),
+        # #517: подписка/отписка «Сообщить о поступлении» (только authenticated).
+        "subscription": env("SUBSCRIPTION_THROTTLE_RATE", default="30/min"),
+        # DRF-2298: сброс пароля — второй ключ по адресу поверх IP-лимита auth.
+        "password_reset_email": env("PASSWORD_RESET_EMAIL_THROTTLE_RATE", default="3/hour"),
+    },
 }
 
 # Ключ для интеграции с 1С (заголовок X-Api-Key). Пустой = API для 1С закрыт.
 ONEC_API_KEY = env("ONEC_API_KEY", default="")
 # Максимум строк в одном пакете 1С (items). Превышение → 400.
 ONEC_MAX_ITEMS = env.int("ONEC_MAX_ITEMS", default=1000)
+
+# Надёжность фон-импорта 1С (#57): зависшие RUNNING + retry.
+# Порог «зависшего» прогона: RUNNING без финализации дольше этого времени janitor
+# (mark_stale_syncs) помечает ERROR. Закрывает дыру «воркер умер между стартом и финалом».
+SYNC_STALE_TIMEOUT = env.int("SYNC_STALE_TIMEOUT", default=30 * 60)  # секунды
+# Hard time_limit задачи импорта (SIGKILL воркера). soft_time_limit на минуту меньше —
+# даёт задаче финализировать прогон в ERROR до жёсткого убийства.
+SYNC_IMPORT_TIME_LIMIT = env.int("SYNC_IMPORT_TIME_LIMIT", default=15 * 60)  # секунды
+
+# MAX Bot (мессенджер) — уведомления и авторизация (docs/max-bot-setup.md).
+MAX_BOT_TOKEN = env("MAX_BOT_TOKEN", default="")
+MAX_WEBHOOK_SECRET = env("MAX_WEBHOOK_SECRET", default="")
+MAX_BOT_API_URL = env("MAX_BOT_API_URL", default="https://platform-api.max.ru")
+# Имя бота для диплинка авторизации (https://max.ru/<username>?start=<token>).
+MAX_BOT_USERNAME = env("MAX_BOT_USERNAME", default="")
+# TTL одноразовой попытки авторизации через MAX, минут (#492, §11.3).
+MAX_AUTH_ATTEMPT_TTL_MINUTES = env.int("MAX_AUTH_ATTEMPT_TTL_MINUTES", default=5)
+
+# Вход через VK ID и Яндекс ID (apps.integration_oauth). Провайдер включён, когда
+# заданы его ключи, SITE_URL (https, без пути — от него строится redirect_uri) и
+# FEATURE_OAUTH_LOGIN. Токены провайдеров сайт не хранит.
+# VK ID: id.vk.ru → приложение «Web»; service token нужен конфиденциальному приложению.
+VKID_CLIENT_ID = env("VKID_CLIENT_ID", default="")
+VKID_SERVICE_TOKEN = env("VKID_SERVICE_TOKEN", default="")
+# Яндекс ID: oauth.yandex.ru → веб-сервисы, права login:email + login:info.
+YANDEX_ID_CLIENT_ID = env("YANDEX_ID_CLIENT_ID", default="")
+YANDEX_ID_CLIENT_SECRET = env("YANDEX_ID_CLIENT_SECRET", default="")
+# Сколько живёт незавершённый вход (state + PKCE verifier в сессии), секунд.
+OAUTH_STATE_TTL_SECONDS = env.int("OAUTH_STATE_TTL_SECONDS", default=600)
+# Таймаут одного запроса к провайдеру и общий бюджет колбэка (обмен + профиль), секунд.
+# Бюджет заметно меньше таймаута gunicorn (120 с), чтобы пользователь получил 302,
+# а не обрыв соединения.
+OAUTH_HTTP_TIMEOUT = env.int("OAUTH_HTTP_TIMEOUT", default=5)
+OAUTH_HTTP_BUDGET = env.int("OAUTH_HTTP_BUDGET", default=15)
+
+# #521: retention policy — outbox (text/chat_id) короче, чем user-facing история.
+NOTIFICATION_LOG_RETENTION_DAYS = env.int("NOTIFICATION_LOG_RETENTION_DAYS", default=90)
+NOTIFICATION_RETENTION_DAYS = env.int("NOTIFICATION_RETENTION_DAYS", default=365)
+
+# Публичный адрес витрины. Нужен кассе: returnUrl (куда вернуть покупателя) и
+# notificationUrl (куда слать callback) должны быть внешними https-адресами.
+# Пусто — берётся первый нелокальный ALLOWED_HOSTS (см. payments.services).
+SITE_URL = env("SITE_URL", default="")
+
+# Срок ссылки восстановления пароля покупателя (DRF-2298): час, а не 3 суток Django.
+PASSWORD_RESET_TIMEOUT = env.int("PASSWORD_RESET_TIMEOUT", default=3600)
+
+# --- Исходящая почта (DRF-2296) -------------------------------------------
+# Штатный SMTP Django; провайдер любой. В dev — console (см. dev.py), в тестах
+# pytest-django подставляет locmem. prod.py проверяет согласованность на старте.
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost")
+SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+# Ящики сотрудников для писем о новых заказах и заявках. Пусто — уведомления
+# сотрудникам пишутся в журнал как «пропущено» и никуда не уходят (так на staging).
+STAFF_NOTIFICATION_EMAILS = [
+    e.strip() for e in env.list("STAFF_NOTIFICATION_EMAILS", default=[]) if e.strip()
+]
+
+# PF-SH-RELEASE-01. Секрет доверенного SSR витрины: запросы Next.js с заголовком
+# X-SSR-Token не попадают под анонимный лимит (иначе все посетители делят один IP
+# контейнера фронта → 429 → SSR 500). Пустое значение выключает обход.
+SSR_INTERNAL_TOKEN = env("SSR_INTERNAL_TOKEN", default="")
+# Замороженный allowlist товаров, открытых для индексации (release-gate manifest).
+# Товары вне списка отдаются витрине с seo_indexable=false (noindex) и не попадают в sitemap.
+SEO_INDEXABLE_PRODUCTS_PATH = env(
+    "SEO_INDEXABLE_PRODUCTS_PATH",
+    default=str(BASE_DIR / "data" / "seo" / "indexable_products.json"),
+)
+
+# --- Оплата -----------------------------------------------------------------
+# Kill-switch онлайн-оплаты (и ручки запуска платежа, и webhook'а).
+PAYMENTS_ENABLED = env.bool("PAYMENTS_ENABLED", default=True)
+
+# Действующая касса. ЮKassa-код остаётся рабочим, но по умолчанию не используется.
+PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="atolpay")  # atolpay | yookassa
+
+# АТОЛ Pay Ecom. Песочница: https://croc-sandbox-api-mobile.atolpay.ru/v1/ecom
+ATOLPAY_BASE_URL = env("ATOLPAY_BASE_URL", default="https://new-api-mobile.atolpay.ru/v1/ecom")
+# Токен из ЛК (Настройки → API Токены); уходит как ``Authorization: Bearer <token>``.
+ATOLPAY_TOKEN = env("ATOLPAY_TOKEN", default="")
+# Подписи у callback АТОЛ нет: единственный признак «свой» — секрет в query
+# notificationUrl. Он же обязателен вместе с перезапросом статуса в API.
+ATOLPAY_CALLBACK_TOKEN = env("ATOLPAY_CALLBACK_TOKEN", default="")
+ATOLPAY_TIMEOUT = env.int("ATOLPAY_TIMEOUT", default=15)
+# Одностадийная оплата: деньги списываются сразу. twoStep потребовал бы ручного
+# /deposit в течение 7 суток — отдельная задача.
+ATOLPAY_SESSION_TYPE = env("ATOLPAY_SESSION_TYPE", default="oneStep")
+
+# Фискализация (54-ФЗ). Чек уходит вместе с регистрацией платежа.
+ATOLPAY_RECEIPT_ENABLED = env.bool("ATOLPAY_RECEIPT_ENABLED", default=True)
+ATOLPAY_RECEIPT_PROVIDER_ID = env.int("ATOLPAY_RECEIPT_PROVIDER_ID", default=100)  # АТОЛ Онлайн
+# Система налогообложения (справочник кассы): 0 — общая, 1 — УСН доход,
+# 2 — УСН доход-расход, 4 — ЕСХН, 5 — патент. Дефолт — как у мерчанта
+# (ИП на УСН «доходы минус расходы», настройка бухгалтера в ЛК АТОЛ Pay).
+ATOLPAY_SNO = env.int("ATOLPAY_SNO", default=2)
+# Код ставки НДС по справочнику кассы (GET /receipts/dictionaries, снято 11.09.2026,
+# песочница и бой совпадают): 5 — без НДС, 10 — 22%, 0 — 20%, 1 — 10%, 4 — 0%,
+# 6 — 5%, 7 — 7%; расчётные: 11 — 22/122, 2 — 20/120, 3 — 10/110, 8 — 5/105,
+# 9 — 7/107. Дефолт «без НДС» — по вкладке «Чеки» в ЛК; код передаёт ставку в
+# каждой позиции явно и ПЕРЕКРЫВАЕТ настройку ЛК, поэтому расходиться им нельзя.
+ATOLPAY_VAT_CODE = env.int("ATOLPAY_VAT_CODE", default=5)
+# Признак способа расчёта: 0 — предоплата 100% (товар отгружается после оплаты).
+ATOLPAY_PAYMENT_METHOD_CODE = env.int("ATOLPAY_PAYMENT_METHOD_CODE", default=0)
+# Признаки предмета расчёта: 0 — товар, 3 — услуга (доставка).
+ATOLPAY_SUBJECT_GOODS = env.int("ATOLPAY_SUBJECT_GOODS", default=0)
+ATOLPAY_SUBJECT_SERVICE = env.int("ATOLPAY_SUBJECT_SERVICE", default=3)
+
+YOOKASSA_SHOP_ID = env("YOOKASSA_SHOP_ID", default="")
+YOOKASSA_SECRET_KEY = env("YOOKASSA_SECRET_KEY", default="")
+YOOKASSA_WEBHOOK_SECRET = env("YOOKASSA_WEBHOOK_SECRET", default="")
+
+# AI-источники контента (capability sourcing).
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+YANDEX_MARKET_API_KEY = env("YANDEX_MARKET_API_KEY", default="")
+SOURCING_ALLOWLIST = {d.lower() for d in env.list("SOURCING_ALLOWLIST", default=[])}
+
+# Вежливый темп загрузки изображений (ИЗО-09): минимальный интервал между
+# запросами К ОДНОМУ хосту, секунды. Троттлинг именно по хосту — разные площадки
+# друг друга не задерживают. 0 отключает паузы (только для тестов/локалки).
+IMAGE_FETCH_INTERVAL_SECONDS = env.float("IMAGE_FETCH_INTERVAL_SECONDS", default=3.0)
+
+# НДС (#430, M-06). Цена включает НДС; ставка настраиваемая, но в заказе/счёте
+# фиксируется её значение на момент оформления (snapshot).
+VAT_RATE_PERCENT = env.int("VAT_RATE_PERCENT", default=22)
+
+# TTL гостевого токена доступа к заказу/счёту (#438, m-03). Дней; 0 = без TTL.
+# Ограничивает срок жизни URL с токеном (ПДн) на случай утечки через логи/историю.
+GUEST_ORDER_TOKEN_TTL_DAYS = env.int("GUEST_ORDER_TOKEN_TTL_DAYS", default=90)
+
+# TTL резерва товара для B2C-заказов, минут (#568). B2B не настраивается: там
+# резерв живёт 24 часа вместе со счётом (#559, invoice.valid_until == reserved_until).
+RESERVATION_TTL_B2C_MINUTES = env.int("RESERVATION_TTL_B2C_MINUTES", default=30)
+
+# Горизонт показа слотов доставки в checkout, дней (#569).
+DELIVERY_SLOT_HORIZON_DAYS = env.int("DELIVERY_SLOT_HORIZON_DAYS", default=14)
+
+# Prometheus-метрики sourcing pipeline (#374). Пустой токен — эндпоинт открыт
+# (только для внутренних сетей). В проде задать непустой METRICS_TOKEN.
+METRICS_TOKEN = env("METRICS_TOKEN", default="")
+
+# Feature-флаги. Инфраструктурные — здесь (через env, меняют разработчики).
+# Бизнес-флаги (reviews/b2b/...) живут в SiteSettings. Проверка — через
+# apps.core.features.is_enabled(); механизм поддерживает override любого флага
+# через этот словарь.
+FEATURES = {
+    "crm": env.bool("FEATURE_CRM", default=False),
+    "ai": env.bool("FEATURE_AI", default=False),
+    "ai_sourcing": env.bool("FEATURE_AI_SOURCING", default=False),
+    "eventbus": env.bool("FEATURE_EVENTBUS", default=True),
+    "analytics": env.bool("FEATURE_ANALYTICS", default=False),
+    "external_integrations": env.bool("FEATURE_EXTERNAL_INTEGRATIONS", default=True),
+    "external_ship": env.bool("FEATURE_EXTERNAL_SHIP", default=False),
+    "catalog_processing": env.bool("FEATURE_CATALOG_PROCESSING", default=False),
+    # Автообработка фото товаров (ADR-0014): витринные копии на белом фоне.
+    "product_image_autoprocess": env.bool("FEATURE_PRODUCT_IMAGE_AUTOPROCESS", default=False),
+    # Вход через VK ID / Яндекс ID: общий рубильник поверх ключей провайдеров.
+    "oauth_login": env.bool("FEATURE_OAUTH_LOGIN", default=True),
+}
+
+# Внешние перевозчики (integration_ship). Stub-провайдер (0 ₽) — только с явным
+# SHIP_ALLOW_STUB=True (dev/тесты); в рабочем режиме без реального провайдера
+# внешняя зона уходит в ручной расчёт менеджером.
+SHIP_PROVIDER = env("SHIP_PROVIDER", default="stub")
+SHIP_ALLOW_STUB = env.bool("SHIP_ALLOW_STUB", default=False)
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+        "django_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "django.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "standard",
+        },
+        "onec_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "1c.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "standard",
+        },
+        "payments_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "payments.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "standard",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "django_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "apps.sync_1c": {
+            "handlers": ["console", "onec_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "payments": {
+            "handlers": ["console", "payments_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}

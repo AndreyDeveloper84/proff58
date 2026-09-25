@@ -1,0 +1,2 @@
+до отмены: running items 5 changes 2
+после отмены: cancelled

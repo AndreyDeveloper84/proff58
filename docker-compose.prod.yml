@@ -2,6 +2,20 @@ services:
   db:
     image: postgres:16
     restart: always
+    # Тюнинг PostgreSQL под объём RAM сервера (через env, дефолты — под 8 ГБ).
+    # Дефолтный shared_buffers=128MB мал для каталога: большие категории читаются
+    # с диска (особенно HDD) по 20–30 с на первом обращении. ~25% RAM в кэш — стандарт.
+    # Сервер с меньшим RAM — переопредели значения в .env (напр. POSTGRES_SHARED_BUFFERS=1GB).
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${POSTGRES_SHARED_BUFFERS:-2GB}
+      - -c
+      - effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-6GB}
+      - -c
+      - work_mem=${POSTGRES_WORK_MEM:-32MB}
+      - -c
+      - maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-256MB}
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -30,6 +44,8 @@ services:
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
+      - ./logs:/app/logs
+      - ./var:/app/var
     depends_on:
       db:
         condition: service_healthy
@@ -37,6 +53,57 @@ services:
         condition: service_started
     expose:
       - "8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz/').status == 200 else 1)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    # Headless-витрина Next (SSR). Тянет реальные данные из Django-API внутри сети compose.
+    # Образ НЕ собирается на сервере: его собирает GitHub Actions (deploy.yml) и
+    # загружает сюда через docker load — на VPS next build не выдерживал диск и ронял
+    # выкладку. Вручную: docker build -t proff58-frontend:latest ./frontend
+    image: proff58-frontend:latest
+    # Образа нет локально → внятная ошибка, а не попытка тянуть его из Docker Hub.
+    pull_policy: never
+    restart: always
+    environment:
+      NODE_ENV: production
+      INTERNAL_API_BASE_URL: http://web:8000
+      # PF-SH-RELEASE-01 (docs/runbooks/seo-indexing-release.md). Значения — из .env
+      # стека (тот же файл читает web через env_file):
+      # - SSR_INTERNAL_TOKEN — секрет SSR, снимает общий анонимный лимит API (429 → 500);
+      # - SEO_INDEXING — переключатель robots.txt: только "production" открывает обход,
+      #   пусто/любое другое значение → Disallow: /;
+      # - SITE_URL — канонический origin (canonical/sitemap/проверка хоста robots).
+      SSR_INTERNAL_TOKEN: ${SSR_INTERNAL_TOKEN:-}
+      SEO_INDEXING: ${SEO_INDEXING:-off}
+      SITE_URL: ${SITE_URL:-https://proff58.ru}
+    depends_on:
+      web:
+        condition: service_healthy
+    expose:
+      - "3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   celery:
     build:
@@ -44,9 +111,79 @@ services:
       args:
         REQUIREMENTS: prod
     restart: always
-    command: celery -A config worker -l info
+    # Только дефолтная очередь; 1С-задачи разбирает отдельный celery-onec (-c 1).
+    command: celery -A config worker -Q celery -l info
     env_file:
       - .env
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - db
+      - redis
+
+  celery-onec:
+    build:
+      context: .
+      args:
+        REQUIREMENTS: prod
+    restart: always
+    # Очередь 1С строго последовательно (concurrency=1) — без гонки «одна актуальная цена» (#126).
+    command: celery -A config worker -Q onec -c 1 -l info
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - db
+      - redis
+
+  celery-images:
+    build:
+      context: .
+      args:
+        REQUIREMENTS: prod
+    restart: always
+    # Автообработка фото (ADR-0014): строго по одному, пишет витринные копии в media.
+    # Медиатом на запись нужен только здесь и у web — у celery его нет.
+    # --max-tasks-per-child: процесс prefork не отдаёт память после крупных фото.
+    command: >-
+      celery -A config worker -Q images -c 1 --prefetch-multiplier 1
+      --max-tasks-per-child 50 -l info
+    env_file:
+      - .env
+    volumes:
+      - media_volume:/app/media
+      - ./logs:/app/logs
+    depends_on:
+      - db
+      - redis
+
+  celery-rembg:
+    build:
+      context: .
+      args:
+        REQUIREMENTS: images
+    # Удаление фона нейросетью (ADR-0014). Только на время бэкфилла:
+    #   docker compose -f docker-compose.prod.yml --profile rembg up -d celery-rembg
+    # ~13 с на фото, пик памяти ~2,1 ГБ (smoke 16.09.2026). Профиль исключает сервис
+    # из обычного деплоя
+    # (`build` / `up -d` без --profile его не собирают и не поднимают).
+    profiles: ["rembg"]
+    restart: "no"
+    command: >-
+      celery -A config worker -Q rembg -c 1 --prefetch-multiplier 1
+      --max-tasks-per-child 200 -l info
+    env_file:
+      - .env
+    environment:
+      U2NET_HOME: /models
+    volumes:
+      - media_volume:/app/media
+      - rembg_models:/models
+      - ./logs:/app/logs
+    # swap на VPS уже занят: без memswap_limit процесс ушёл бы в swap и затормозил web
+    mem_limit: 3g
+    memswap_limit: 3g
     depends_on:
       - db
       - redis
@@ -60,6 +197,8 @@ services:
     command: celery -A config beat -l info
     env_file:
       - .env
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       - db
       - redis
@@ -75,10 +214,15 @@ services:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - static_volume:/app/staticfiles:ro
       - media_volume:/app/media:ro
+      - ./logs:/var/log/nginx
     depends_on:
-      - web
+      web:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
 
 volumes:
   pgdata:
   static_volume:
   media_volume:
+  rembg_models:

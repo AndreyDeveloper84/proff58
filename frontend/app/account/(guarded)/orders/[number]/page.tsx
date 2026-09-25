@@ -1,0 +1,627 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import {
+  Building2,
+  ChevronLeft,
+  CreditCard,
+  Download,
+  FileText,
+  MapPin,
+  Package,
+  Phone,
+  ReceiptText,
+  ShoppingBag,
+  Truck,
+  UserRound,
+  XCircle,
+} from "lucide-react";
+import { AccountShell } from "@/components/account/AccountShell";
+import { AccountDialog } from "@/components/account/AccountDialog";
+import { EmptyState, ErrorState } from "@/components/ui/states";
+import { RefundRequestBlock } from "@/components/order/RefundRequestBlock";
+import { PayOrderButton, canPayOnline } from "@/components/order/PayOrderButton";
+import { ReservationNotice, reservationState } from "@/components/order/ReservationNotice";
+import { ReviewForm } from "@/components/reviews/ReviewForm";
+import { StarDisplay } from "@/components/reviews/StarRating";
+import { ProductImage } from "@/components/product/ProductImage";
+import { cancelOrder, checkAuth, getOrder, loginHref } from "@/lib/auth";
+import {
+  formatDateTime,
+  formatDeliverySlot,
+  formatPrice,
+  humanizeToken,
+  pluralize,
+} from "@/lib/format";
+import { isDelivered, statusBadgeClass } from "@/lib/order-status";
+import { paymentMethodLabel } from "@/lib/payment-methods";
+import { getMyReviewForOrder, reviewStatusText } from "@/lib/reviews";
+import { decodeRouteParam } from "@/lib/route-params";
+import type { MyReview } from "@/lib/types";
+import type { Order, OrderItem } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+const PAYMENT_STATUS_LABELS: Record<Order["payment_status"], string> = {
+  pending: "Ожидает оплаты",
+  paid: "Оплачен",
+  expired: "Срок оплаты истёк",
+  partially_refunded: "Частичный возврат",
+  refunded: "Возвращён",
+};
+
+const DELIVERY_METHOD_LABELS: Record<string, string> = {
+  courier: "Курьерская доставка",
+  delivery: "Доставка",
+  pickup: "Самовывоз",
+  transport_company: "Транспортная компания",
+};
+
+function displayToken(value: string, labels: Record<string, string>) {
+  if (!value) return "Не указан";
+  return labels[value] ?? humanizeToken(value);
+}
+
+function itemPrice(item: OrderItem) {
+  return Number(item.price_final ?? item.price_base ?? 0);
+}
+
+function OrderLoading() {
+  return (
+    <AccountShell title="Детали заказа" mobileBackHref="/account/orders">
+      <div className="space-y-4" aria-label="Загрузка заказа">
+        <div className="h-40 animate-pulse rounded-lg border border-line bg-surface" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="h-48 animate-pulse rounded-lg border border-line bg-surface" />
+          <div className="h-48 animate-pulse rounded-lg border border-line bg-surface" />
+        </div>
+        <div className="h-72 animate-pulse rounded-lg border border-line bg-surface" />
+      </div>
+    </AccountShell>
+  );
+}
+
+export default function OrderDetailsPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useParams<{ number: string }>();
+  // Из useParams номер приходит закодированным — иначе getOrder закодирует его
+  // повторно и Django будет искать заказ «%D0%9F-…» (см. lib/route-params).
+  const orderNumber = decodeRouteParam(params.number);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  // #573: null — отзыва нет (показать CTA), "disabled" — фича выключена, undefined — не грузили.
+  const [review, setReview] = useState<MyReview | null | "disabled" | undefined>(undefined);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    checkAuth()
+      .then((user) => {
+        if (user === "anonymous") {
+          router.replace(loginHref(pathname));
+          return null;
+        }
+        if (user === "error") {
+          setError("Сервис временно недоступен. Попробуйте повторить через минуту.");
+          return null;
+        }
+        return getOrder(orderNumber);
+      })
+      .then((data) => {
+        if (!active || !data) return;
+        setOrder(data);
+        if (isDelivered(data)) {
+          getMyReviewForOrder(data.order_number).then((r) => {
+            if (active) setReview(r);
+          });
+        }
+      })
+      .catch((caught) => {
+        if (!active) return;
+        setError(caught instanceof Error ? caught.message : "Не удалось загрузить заказ.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [orderNumber, router, pathname]);
+
+  const itemsTotal = useMemo(
+    () =>
+      order?.items.reduce(
+        (sum, item) => sum + (Number(item.line_total) || itemPrice(item) * item.quantity),
+        0,
+      ) ?? 0,
+    [order],
+  );
+
+  if (loading) return <OrderLoading />;
+
+  const backToOrdersLink = (
+    <Link
+      href="/account/orders"
+      className="inline-flex h-11 items-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink"
+    >
+      <ChevronLeft className="h-4 w-4" aria-hidden />
+      Вернуться к заказам
+    </Link>
+  );
+
+  if (!order) {
+    return (
+      <AccountShell title="Детали заказа" mobileBackHref="/account/orders">
+        {/* #574: сбой загрузки и «такого заказа нет» — разные ситуации: в первом
+            случае обновление страницы помогает, во втором нет. Раньше текст
+            ошибки подставлялся внутрь блока «Заказ не найден». */}
+        {error ? (
+          <ErrorState
+            title="Не удалось загрузить заказ"
+            description={error}
+            action={backToOrdersLink}
+          />
+        ) : (
+          <EmptyState
+            icon={<ReceiptText className="h-10 w-10" aria-hidden />}
+            title="Заказ не найден"
+            description="Возможно, заказ был удалён или принадлежит другому аккаунту."
+            action={backToOrdersLink}
+          />
+        )}
+      </AccountShell>
+    );
+  }
+
+  const isB2B = order.customer_type === "b2b";
+  const deliveryCost =
+    order.delivery_cost === null ? null : Number(order.delivery_cost) || 0;
+
+  // Отменять или нет — решает сервер (fulfillment.can_customer_cancel): правило
+  // «до сборки и не оплачен» одно, и держать его копию в интерфейсе значит
+  // однажды разойтись с ней. При нажатии сервер проверяет ещё раз.
+  const handleCancel = async () => {
+    setCancelling(true);
+    setCancelError("");
+    try {
+      setOrder(await cancelOrder(order.order_number));
+      setCancelOpen(false);
+    } catch (caught) {
+      setCancelError(
+        caught instanceof Error
+          ? caught.message
+          : "Не удалось отменить заказ. Попробуйте ещё раз.",
+      );
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  return (
+    <AccountShell
+      title={`Заказ № ${order.order_number}`}
+      mobileBackHref="/account/orders"
+    >
+      <div className="space-y-5">
+        <section className="overflow-hidden rounded-lg border border-line bg-surface">
+          <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between lg:p-6">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-xs font-semibold",
+                    statusBadgeClass(order),
+                  )}
+                >
+                  {order.display_status}
+                </span>
+                <span className="rounded-md bg-raised px-2.5 py-1 text-xs font-medium text-ink-2">
+                  {PAYMENT_STATUS_LABELS[order.payment_status]}
+                </span>
+              </div>
+              <p className="mt-3 text-sm text-ink-3">Оформлен {formatDateTime(order.created_at)}</p>
+              <p className="mt-1 text-xs text-ink-3">
+                {order.items.length}{" "}
+                {pluralize(order.items.length, "товар", "товара", "товаров")}
+              </p>
+              {/* Оплата из кабинета: покупатель, закрывший страницу «Спасибо» до
+                  кассы, раньше не мог вернуться к оплате. При ручном расчёте
+                  доставки сервер оплату не откроет — говорим об этом прямо. */}
+              {canPayOnline(order) && (
+                <PayOrderButton orderNumber={order.order_number} className="mt-4" />
+              )}
+              {order.payment_method === "online" &&
+                order.payment_status === "pending" &&
+                order.delivery_calc_status === "manual_required" && (
+                  <p className="mt-4 rounded-md border border-info-line bg-info-bg px-3 py-2 text-sm text-info">
+                    Стоимость доставки уточняется менеджером. Когда он её рассчитает,
+                    здесь появится кнопка оплаты, а на e-mail придёт ссылка.
+                  </p>
+                )}
+            </div>
+            <div className="sm:text-right">
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-3">
+                {deliveryCost === null ? "Предварительный итог" : "Итого"}
+              </p>
+              <p className="mt-1 text-2xl font-bold text-ink">
+                {formatPrice(Number(order.total) || 0, order.currency)}
+              </p>
+              {/* Отмена — рядом с итогом, но текстовой кнопкой: это редкое и
+                  необратимое действие, ему не место среди основных. */}
+              {order.can_cancel && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCancelError("");
+                    setCancelOpen(true);
+                  }}
+                  className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-ink-3 underline-offset-4 transition hover:text-danger hover:underline sm:min-h-0"
+                >
+                  <XCircle className="h-4 w-4" aria-hidden />
+                  Отменить заказ
+                </button>
+              )}
+            </div>
+          </div>
+          {/* #574: резерв — рядом со статусами заказа, а не спрятан в карточке
+              «Оплата» внизу. Это срочная информация: пока она была под сгибом,
+              покупатель узнавал о сроке уже после его истечения. */}
+          {reservationState(order) !== "none" && (
+            <div className="px-5 pb-5 lg:px-6">
+              <ReservationNotice order={order} />
+            </div>
+          )}
+          {isB2B && (
+            <div className="flex flex-col gap-3 border-t border-line bg-raised/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+              <div className="flex items-start gap-3">
+                <FileText className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
+                <div>
+                  <p className="text-sm font-semibold text-ink">Счёт на оплату</p>
+                  <p className="mt-0.5 text-xs text-ink-3">
+                    Скачается PDF-файлом — его можно отправить в бухгалтерию или распечатать.
+                  </p>
+                </div>
+              </div>
+              <a
+                href={`/api/orders/${encodeURIComponent(order.order_number)}/invoice`}
+                download
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink transition hover:brightness-110"
+              >
+                Скачать счёт (PDF)
+                <Download className="h-4 w-4" aria-hidden />
+              </a>
+            </div>
+          )}
+        </section>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <InfoCard icon={Truck} title="Доставка">
+            <InfoRow
+              label="Способ получения"
+              value={displayToken(order.delivery_method, DELIVERY_METHOD_LABELS)}
+            />
+            <InfoRow
+              label="Адрес"
+              value={order.delivery_address || "Пункт самовывоза"}
+              icon={MapPin}
+            />
+            {order.delivery_zone && (
+              <InfoRow label="Зона доставки" value={humanizeToken(order.delivery_zone)} />
+            )}
+            {order.delivery_slot && (
+              <InfoRow
+                label="Дата и время доставки"
+                value={formatDeliverySlot(order.delivery_slot)}
+              />
+            )}
+          </InfoCard>
+
+          <InfoCard icon={CreditCard} title="Оплата">
+            <InfoRow
+              label="Способ оплаты"
+              value={paymentMethodLabel(order.payment_method)}
+            />
+            <InfoRow label="Статус" value={PAYMENT_STATUS_LABELS[order.payment_status]} />
+          </InfoCard>
+
+          <InfoCard icon={UserRound} title="Получатель">
+            <InfoRow label="Имя" value={order.customer_name || "Не указано"} />
+            <InfoRow label="Телефон" value={order.customer_phone || "Не указан"} icon={Phone} />
+            <InfoRow label="Email" value={order.customer_email || "Не указан"} />
+          </InfoCard>
+
+          {isB2B && (
+            <InfoCard icon={Building2} title="Реквизиты покупателя">
+              <InfoRow label="Организация" value={order.company_name || "Не указана"} />
+              <div className="grid grid-cols-2 gap-3">
+                <InfoRow label="ИНН" value={order.inn || "Не указан"} />
+                <InfoRow label="КПП" value={order.kpp || "Не указан"} />
+              </div>
+              <InfoRow label="Юридический адрес" value={order.legal_address || "Не указан"} />
+            </InfoCard>
+          )}
+        </div>
+
+        <section className="overflow-hidden rounded-lg border border-line bg-surface">
+          <div className="flex items-center gap-2 border-b border-line px-4 py-4 sm:px-5">
+            <ShoppingBag className="h-5 w-5 text-accent" aria-hidden />
+            <h2 className="text-sm font-semibold text-ink">Состав заказа</h2>
+            <span className="ml-auto rounded-full bg-raised px-2.5 py-1 text-xs font-semibold text-ink-2">
+              {order.items.length}
+            </span>
+          </div>
+
+          <div className="hidden grid-cols-[minmax(0,1fr)_110px_90px_130px] gap-4 border-b border-line bg-raised/60 px-5 py-2.5 text-xs font-medium text-ink-3 md:grid">
+            <span>Товар</span>
+            <span className="text-right">Цена</span>
+            <span className="text-center">Количество</span>
+            <span className="text-right">Сумма</span>
+          </div>
+
+          <div>
+            {order.items.map((item) => (
+              <OrderLine key={item.id} item={item} orderCurrency={order.currency} />
+            ))}
+          </div>
+
+          <div className="border-t border-line bg-raised/30 px-4 py-5 sm:px-5">
+            <dl className="ml-auto max-w-sm space-y-3">
+              <TotalRow
+                label="Стоимость товаров"
+                value={formatPrice(itemsTotal, order.currency)}
+              />
+              <TotalRow
+                label="Доставка"
+                value={
+                  deliveryCost === null
+                    ? "Уточняется менеджером"
+                    : deliveryCost === 0
+                      ? "Бесплатно"
+                      : formatPrice(deliveryCost, order.currency)
+                }
+              />
+              {isB2B && (
+                <div className="space-y-2 rounded-md bg-raised px-3 py-2.5">
+                  <TotalRow
+                    label="Сумма без НДС"
+                    value={formatPrice(Number(order.amount_without_vat) || 0, order.currency)}
+                  />
+                  <TotalRow
+                    label={`В т.ч. НДС ${order.vat_rate}%`}
+                    value={formatPrice(Number(order.vat_amount) || 0, order.currency)}
+                  />
+                </div>
+              )}
+              <div className="border-t border-line pt-3">
+                <TotalRow
+                  label={deliveryCost === null ? "Предварительный итог" : "Итого"}
+                  value={formatPrice(Number(order.total) || 0, order.currency)}
+                  total
+                />
+              </div>
+            </dl>
+          </div>
+        </section>
+
+        {/* Возврат денег: блок сам спрашивает сервер, можно ли подать заявку, и
+            не рисуется у заказов, которые оплачиваются при получении. После
+            заявки перечитываем заказ — могла измениться его оплата. */}
+        <RefundRequestBlock
+          orderNumber={order.order_number}
+          currency={order.currency}
+          onChanged={() => {
+            getOrder(order.order_number)
+              .then(setOrder)
+              .catch(() => undefined);
+          }}
+        />
+
+        {/* #574: id — цель ссылки «Оставить отзыв» из списка заказов.
+            #573 B2B: в B2B-flow нет доставки (одна из оценок), поэтому отзывы
+            по заказам юрлиц в Wave 1 не принимаются — раздел скрыт. */}
+        {!isB2B && isDelivered(order) && review !== "disabled" && review !== undefined && (
+          <section id="review" className="scroll-mt-24 rounded-lg border border-line bg-surface p-5">
+            <h2 className="text-sm font-semibold text-ink">Отзыв о заказе</h2>
+            {review === null ? (
+              <div className="mt-3">
+                <p className="text-sm text-ink-2">
+                  Заказ получен — поделитесь впечатлением о товарах, доставке и магазине.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setReviewOpen(true)}
+                  className="mt-3 inline-flex h-11 items-center rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink sm:h-10"
+                >
+                  Оставить отзыв
+                </button>
+              </div>
+            ) : (
+              <div className="mt-3 space-y-2 text-sm">
+                <StarDisplay value={review.product_rating} />
+                {/* #574: формулировки — из lib/reviews, чтобы страница заказа и
+                    раздел «Мои отзывы» говорили о статусе одинаково. */}
+                <p
+                  className={
+                    review.status === "approved"
+                      ? "text-accent"
+                      : review.status === "rejected"
+                        ? "text-danger"
+                        : "text-ink-2"
+                  }
+                >
+                  {reviewStatusText(review.status, review.rejection_reason)}
+                </p>
+              </div>
+            )}
+          </section>
+        )}
+
+        <AccountDialog
+          title="Отменить заказ?"
+          description="Заказ будет отменён, а зарезервированный товар вернётся в продажу. Восстановить отменённый заказ нельзя — придётся оформить новый."
+          open={cancelOpen}
+          onClose={() => setCancelOpen(false)}
+          danger
+        >
+          <div className="space-y-4">
+            {cancelError && (
+              <p role="alert" className="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">
+                {cancelError}
+              </p>
+            )}
+            <div className="flex flex-col gap-2 sm:flex-row-reverse">
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={cancelling}
+                className="inline-flex h-11 items-center justify-center rounded-md bg-danger px-5 text-sm font-semibold text-white transition disabled:opacity-60"
+              >
+                {cancelling ? "Отменяем…" : "Да, отменить заказ"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCancelOpen(false)}
+                disabled={cancelling}
+                className="inline-flex h-11 items-center justify-center rounded-md border border-line px-5 text-sm font-medium text-ink transition hover:bg-raised disabled:opacity-60"
+              >
+                Оставить заказ
+              </button>
+            </div>
+          </div>
+        </AccountDialog>
+
+        <AccountDialog
+          title="Отзыв о заказе"
+          description="Оценки обязательны, текст — по желанию. Отзыв появится после модерации."
+          open={reviewOpen}
+          onClose={() => setReviewOpen(false)}
+        >
+          <ReviewForm
+            orderNumber={order.order_number}
+            onCancel={() => setReviewOpen(false)}
+            onDone={(created) => {
+              setReview(created);
+              setReviewOpen(false);
+            }}
+          />
+        </AccountDialog>
+
+        {order.comment && (
+          <section className="rounded-lg border border-line bg-surface p-5">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <Package className="h-4 w-4 text-accent" aria-hidden />
+              Комментарий к заказу
+            </h2>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-ink-2">
+              {order.comment}
+            </p>
+          </section>
+        )}
+      </div>
+    </AccountShell>
+  );
+}
+
+function InfoCard({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: typeof Truck;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-lg border border-line bg-surface p-5">
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <Icon className="h-5 w-5 text-accent" aria-hidden />
+        {title}
+      </h2>
+      <dl className="mt-4 space-y-3">{children}</dl>
+    </section>
+  );
+}
+
+function InfoRow({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon?: typeof MapPin;
+}) {
+  return (
+    <div>
+      <dt className="text-xs text-ink-3">{label}</dt>
+      <dd className="mt-1 flex items-start gap-1.5 break-words text-sm font-medium text-ink">
+        {Icon && <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-3" aria-hidden />}
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function OrderLine({ item, orderCurrency }: { item: OrderItem; orderCurrency: string }) {
+  const currency = item.currency || orderCurrency;
+  const lineTotal = Number(item.line_total) || itemPrice(item) * item.quantity;
+  return (
+    <div className="grid gap-3 border-b border-line px-4 py-4 last:border-b-0 md:grid-cols-[minmax(0,1fr)_110px_90px_130px] md:items-center md:gap-4 md:px-5">
+      <div className="flex min-w-0 items-center gap-3">
+        <ProductImage
+          src={item.image ?? undefined}
+          alt=""
+          sizes="64px"
+          className="h-16 w-16 shrink-0"
+        />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold leading-5 text-ink">{item.name}</p>
+          <p className="mt-1 text-xs text-ink-3">
+            {item.article ? `Арт. ${item.article}` : item.code_1c ? `Код ${item.code_1c}` : ""}
+          </p>
+        </div>
+      </div>
+      <div className="flex justify-between text-sm md:block md:text-right">
+        <span className="text-xs text-ink-3 md:hidden">Цена</span>
+        <span className="font-medium text-ink">{formatPrice(itemPrice(item), currency)}</span>
+      </div>
+      <div className="flex justify-between text-sm md:block md:text-center">
+        <span className="text-xs text-ink-3 md:hidden">Количество</span>
+        <span className="font-medium text-ink">
+          {item.quantity} {item.unit || "шт."}
+        </span>
+      </div>
+      <div className="flex justify-between text-sm md:block md:text-right">
+        <span className="text-xs text-ink-3 md:hidden">Сумма</span>
+        <span className="font-semibold text-ink">{formatPrice(lineTotal, currency)}</span>
+      </div>
+    </div>
+  );
+}
+
+function TotalRow({
+  label,
+  value,
+  total = false,
+}: {
+  label: string;
+  value: string;
+  total?: boolean;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <dt className={total ? "text-base font-semibold text-ink" : "text-sm text-ink-3"}>
+        {label}
+      </dt>
+      <dd className={total ? "text-lg font-bold text-ink" : "text-sm font-semibold text-ink"}>
+        {value}
+      </dd>
+    </div>
+  );
+}

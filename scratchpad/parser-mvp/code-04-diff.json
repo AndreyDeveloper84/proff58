@@ -1,0 +1,195 @@
+{
+  "perforatory": {
+    "gained": [
+      {
+        "source": "vihr",
+        "card": "Перфоратор Вихрь П-1000К",
+        "product": "Перфоратор П-1000К Вихрь",
+        "matched_by": "sku",
+        "article": "confirmed"
+      },
+      {
+        "source": "zubr",
+        "card": "Перфоратор SDS-plus с металлическим редуктором ЗП-2890 м",
+        "product": "Перф.ЗУБР ЗП-2890, SDS+, реверс, 900Вт, 3,2Дж, 3режима ПРОФЕССИОНАЛ",
+        "matched_by": "sku",
+        "article": "confirmed"
+      },
+      {
+        "source": "zubr",
+        "card": "Перфоратор SDS-plus ЗП-22-650 К",
+        "product": "Перф.ЗУБР ЗП-22-650, SDS+, реверс, 650Вт ПРОФЕССИОНАЛ",
+        "matched_by": "sku",
+        "article": "confirmed"
+      },
+      {
+        "source": "zubr",
+        "card": "Перфоратор SDS-plus ЗП-24-750 К",
+        "product": "Перф.ЗУБР ЗП-24-750, SDS+, реверс, 750Вт, 2.6Дж, ПРОФЕССИОНАЛ",
+        "matched_by": "sku",
+        "article": "confirmed"
+      },
+      {
+        "source": "zubr",
+        "card": "Перфоратор SDS-plus ЗП-26-800 К",
+        "product": "Перф.ЗУБР ЗП-26-800 SDS+,800Вт, 3,2Дж, 0-1200об/мин, 0-4800у уд/мин ЗУБР Профессионал",
+        "matched_by": "sku",
+        "article": "confirmed"
+      },
+      {
+        "source": "zubr",
+        "card": "Перфоратор SDS-plus ЗП-26-750 ЭК",
+        "product": "Перф.ЗУБР 750 Вт, 26 мм,  SDS Plus",
+        "matched_by": "sku",
+        "article": "confirmed"
+      }
+    ],
+    "lost": [],
+    "from_not_found": [
+      {
+        "source": "zubr",
+        "card": "Перфоратор SDS-plus ЗП-22-650 К",
+        "new_status": "matched"
+      },
+      {
+        "source": "zubr",
+        "card": "Перфоратор SDS-plus ЗП-26-800 К",
+        "new_status": "matched"
+      },
+      {
+        "source": "zubr",
+        "card": "Перфоратор SDS-plus ЗП-24-750 К",
+        "new_status": "matched"
+      },
+      {
+        "source": "zubr",
+        "card": "Перфоратор SDS-plus ЗП-26-750 ЭК",
+        "new_status": "matched"
+      },
+      {
+        "source": "zubr",
+        "card": "Перфоратор SDS-plus с металлическим редуктором ЗП-2890 м",
+        "new_status": "matched"
+      }
+    ],
+    "old_stats": {
+      "cards": 61,
+      "not_found": 34,
+      "dropped": 26,
+      "ambiguous": 6,
+      "matched": 21,
+      "confirm": 106,
+      "skipped_voltage": 20
+    },
+    "new_stats": {
+      "cards": 61,
+      "not_found": 29,
+      "dropped": 26,
+      "ambiguous": 5,
+      "matched": 27,
+      "confirm": 124,
+      "skipped_voltage": 26,
+      "create": 10,
+      "conflict": 1
+    }
+  },
+  "dreli": {
+    "gained": [
+      {
+        "source": "resanta",
+        "card": "Дрель ударная Ресанта ДУ-15/950М",
+        "product": "Дрель удар.РЕСАНТА ДУ-15/950",
+        "matched_by": "sku",
+        "article": "confirmed"
+      },
+      {
+        "source": "resanta",
+        "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-14-2ЛК",
+        "product": "Шуруп. аккум. РЕСАНТА ДА-14,4-2ЛК (Li-ion)",
+        "matched_by": "sku",
+        "article": "confirmed"
+      },
+      {
+        "source": "vihr",
+        "card": "Дрель-шуруповерт Вихрь ДА-24Л-2К",
+        "product": "Шуруп. аккум. ДА-24Л-2к ВИХРЬ",
+        "matched_by": "sku",
+        "article": "confirmed"
+      },
+      {
+        "source": "interskol",
+        "card": "ДА-13/18ВК 45",
+        "product": "Дрель-шуруповерт аккум. бесщеточ.  ДА-13/18ВК Li-ion АПИ (кейс, 2 аккум. 2Ач, ЗУ) ИНТЕРСКОЛ",
+        "matched_by": "sku",
+        "article": "mismatch"
+      },
+      {
+        "source": "zubr",
+        "card": "Бесщеточная дрель-шуруповерт КОМПАКТ Комби #2, 2 АКБ LMS (2 Ач), в кейсе DB-50-22-H3",
+        "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ КОМБИ модульная 20В 50Нм бесщеточная 2АКБ LMS 2Ач ПРОФ кейс",
+        "matched_by": "sku",
+        "article": "confirmed"
+      },
+      {
+        "source": "zubr",
+        "card": "Бесщеточная дрель-шуруповерт КОМПАКТ #2, 2 АКБ LMS (2 Ач), в кейсе DB-50-22",
+        "product": "Шуруп. аккум. ЗУБР DB-50-22 КОМПАКТ 20В 50Нм бесщеточная 2АКБ LMS 2Ач  и ЗУ ПРОФ кейс",
+        "matched_by": "sku",
+        "article": "confirmed"
+      }
+    ],
+    "lost": [],
+    "from_not_found": [
+      {
+        "source": "resanta",
+        "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-14-2ЛК",
+        "new_status": "matched"
+      },
+      {
+        "source": "resanta",
+        "card": "Дрель-шуруповерт аккумуляторная Ресанта ДА-24-2ЛК-У",
+        "new_status": "ambiguous"
+      },
+      {
+        "source": "zubr",
+        "card": "Дрель-шуруповерт сетевая ДШ-М3-500-2 К",
+        "new_status": "ambiguous"
+      },
+      {
+        "source": "zubr",
+        "card": "Дрель-шуруповерт сетевая ДШ-М1-400-2 К",
+        "new_status": "ambiguous"
+      },
+      {
+        "source": "zubr",
+        "card": "Бесщеточная дрель-шуруповерт КОМПАКТ Комби #2, 2 АКБ LMS (2 Ач), в кейсе DB-50-22-H3",
+        "new_status": "matched"
+      },
+      {
+        "source": "resanta",
+        "card": "Дрель ударная Ресанта ДУ-15/950М",
+        "new_status": "matched"
+      }
+    ],
+    "old_stats": {
+      "cards": 60,
+      "not_found": 30,
+      "ambiguous": 4,
+      "matched": 26,
+      "create": 85,
+      "skipped_voltage": 14,
+      "confirm": 2,
+      "overwrite": 1
+    },
+    "new_stats": {
+      "cards": 60,
+      "not_found": 24,
+      "ambiguous": 4,
+      "matched": 32,
+      "create": 99,
+      "skipped_voltage": 15,
+      "confirm": 10,
+      "conflict": 1
+    }
+  }
+}

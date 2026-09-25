@@ -1,0 +1,86 @@
+BEGIN
+            slug            | count 
+----------------------------+-------
+ bp-kompressory             |   127
+ bp-podgotovka-vozduha      |     4
+ fonari                     |   258
+ izm-ruletki                |   218
+ kobury-dlya-instrumenta    |     3
+ obor-nasosy                |    64
+ obor-pena                  |    26
+ payalniki                  |     3
+ payalniki-stancii          |    56
+ prochaya-osnastka          |  2041
+ rukoyatki-dlya-instrumenta |     3
+ siz-izveshchateli          |    58
+ siz-vysota                 |    57
+ sumki-poyasnye             |     9
+ vibratory-betona           |    15
+ zap-korpusa-kryshki        |   159
+(16 rows)
+
+      slug      |  id   |                          left                           
+----------------+-------+---------------------------------------------------------
+ bp-kompressory | 28342 | Головка компрессорная С416М
+ bp-kompressory | 28362 | Компрессор Abac Pole Position L30P 310л/мин_24л_10бар_2
+ bp-kompressory | 28363 | Компрессор AET 100л 240л/мин 380В ТК-100-2
+ bp-kompressory | 28364 | Компрессор Airline 220В в сумке 35 л/мин., 6 АТМ, от се
+ bp-kompressory | 28365 | Компрессор DAEWOO безмасляный высокой производительност
+ bp-kompressory | 28366 | Компрессор Denzel BCV2200/100, ременный привод, 2.2 кВт
+ bp-kompressory | 28367 | Компрессор DС 320/24 CM2.5 (320л/мин_24л_8бар_1.8кВт)
+ bp-kompressory | 28368 | Компрессор EURO 24/240 PATRIOT
+ bp-kompressory | 28369 | Компрессор FINI TIGER 265M, 10 бар, 24 л, 1,5 квт,
+ bp-kompressory | 28370 | Компрессор Hyundai HYC 30250LMS,50 л 300 л/мин, 2кВт
+ bp-kompressory | 28371 | Компрессор Inforce V2200/100 ресивер 100л, 400л/ми
+ bp-kompressory | 28372 | Компрессор PRO A39B 150 СТ3 (393л/мин, 150л, 10бар, 2,2
+ bp-kompressory | 28373 | Компрессор QUATTRO ELEMENTI В400-50, поршневой масляный
+ bp-kompressory | 28374 | Компрессор Remeza СБ 4/С-100.J2047 В
+ bp-kompressory | 28375 | Компрессор Remeza СБ 4/Ф-270 LB 50, 380В, 270л рес
+ bp-kompressory | 28376 | Компрессор Remeza СБ 4/Ф-270 LB 75, 380В
+ bp-kompressory | 28377 | Компрессор Remeza СБ 4/Ф-500 LB 75, 380В
+ bp-kompressory | 28378 | Компрессор Remeza СБ4-24.OLD20СКМ
+ bp-kompressory | 28379 | Компрессор Remeza СБ4/С-100.LB30
+ bp-kompressory | 28380 | Компрессор Remeza СБ4/С-100.LB30A
+ bp-kompressory | 28381 | Компрессор Remeza СБ4/С-200.LB30A
+ bp-kompressory | 28382 | Компрессор Remeza СБ4/С-50.LB30
+ bp-kompressory | 28383 | Компрессор безмасл. КБ-1100М Калибр
+ bp-kompressory | 28384 | Компрессор безмасляный Fubag FC 230/24CM2; 220 В,
+ bp-kompressory | 28385 | Компрессор безмасляный Fubag HANDY MASTER KIT; 220 В, 1
+ bp-kompressory | 28386 | Компрессор безмасляный Fubag HOUSE MASTER 220В 1,1
+ bp-kompressory | 28387 | Компрессор безмасляный Fubag OL 195/24 CM1,5; 220
+ bp-kompressory | 28388 | Компрессор безмасляный Fubag OL 231/24 CM2, 220В 1
+ bp-kompressory | 28389 | Компрессор безмасляный Fubag Smart Air; 220 В, 1,1 кВт,
+ bp-kompressory | 28390 | Компрессор безмасляный Metabo 1.5кВт,24л Basic 250
+ bp-kompressory | 28391 | Компрессор безмасляный Patriot WO 50-300,300 л/мин, 8 б
+ bp-kompressory | 28392 | Компрессор безмасляный ЗУБР 200 л/мин, 24 л, 1500 Вт
+ bp-kompressory | 28393 | Компрессор безмасляный ЗУБР 200 л/мин, 6 л, 1500 Вт, 6 
+ bp-kompressory | 28394 | Компрессор безмасляный малошумный Сибртех 170 л/мин, 24
+ bp-kompressory | 28395 | Компрессор бензиновый Abac Enginair 5/100 5HP; 4 к
+ bp-kompressory | 28396 | Компрессор бензиновый FUBAG bp 3600/60/6. 360л/мин, 50л
+ bp-kompressory | 28397 | Компрессор бензиновый FUBAG bp 4500/100/7 450л/мин, 100
+ bp-kompressory | 28398 | Компрессор ВИХРЬ КМП-210/10
+ bp-kompressory | 28399 | Компрессор ВИХРЬ КМП-230/24
+ bp-kompressory | 28400 | Компрессор ВИХРЬ КМП-240/50
+ bp-kompressory | 28401 | Компрессор ВИХРЬ КМП-260/24
+ bp-kompressory | 28402 | Компрессор ВИХРЬ КМП-300/50
+ bp-kompressory | 28403 | Компрессор ВИХРЬ КМП-400/100Р
+ bp-kompressory | 28404 | Компрессор ВИХРЬ КМП-400/50
+ bp-kompressory | 28405 | Компрессор ВИХРЬ КМП-400/50Р
+ bp-kompressory | 28406 | Компрессор ДИОЛД КМП-2000/50, 2000Вт, 50л
+ bp-kompressory | 28407 | Компрессор ЗУБР, 220 л/мин, 24 л поршневой, маслян
+ bp-kompressory | 28408 | Компрессор ЗУБР, 240 л/мин, 24 л 1500Вт поршневой, масл
+ bp-kompressory | 28409 | Компрессор ЗУБР, 310 л/мин, 24 л.,
+ bp-kompressory | 28410 | Компрессор ЗУБР, 320 л/мин, 50 л., 10атм , 220В маслян.
+ bp-kompressory | 28411 | Компрессор ЗУБР, 320 л/мин, 50 л., 2200 Вт
+ bp-kompressory | 28412 | Компрессор ЗУБР, 360 л/мин, 50 л. поршневой, масля
+ bp-kompressory | 28413 | Компрессор ЗУБР, 360 л/мин, 50 л.,
+ bp-kompressory | 28414 | Компрессор ЗУБР, 400 л/мин, 100 л., 10атм , 220В маслян
+ bp-kompressory | 28415 | Компрессор ЗУБР, 400 л/мин, 100 л., 10атм поршневой, ма
+ bp-kompressory | 28416 | Компрессор ЗУБР, 400 л/мин, 50 л., 10атм поршневой, мас
+ bp-kompressory | 28417 | Компрессор ЗУБР, 530 л/мин, 100 л., 10атм, 380В поршнев
+ bp-kompressory | 28418 | Компрессор КМК-1600/24У Калибр
+ bp-kompressory | 28419 | Компрессор КМП-210/10 Вихрь
+ bp-kompressory | 28420 | Компрессор масляный Abac MONTECARLO L30P; 220 В; 2
+(60 rows)
+
+ROLLBACK

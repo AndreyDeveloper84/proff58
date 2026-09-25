@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "applied tool_type corpus v1 (current-state, P0.1)",
+  "type": "object",
+  "required": ["version", "corpus_id", "counters", "items"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {"type": "integer", "const": 1},
+    "corpus_id": {"type": "string", "minLength": 1},
+    "extracted_at": {"type": "string"},
+    "source": {"type": "string"},
+    "expected_recall": {"type": "number", "minimum": 0, "maximum": 1},
+    "counters": {
+      "type": "object",
+      "required": ["raw_applied_changes", "distinct_products", "current_label_corpus", "historical_label_collisions"],
+      "additionalProperties": false,
+      "properties": {
+        "raw_applied_changes": {"type": "integer", "minimum": 0},
+        "distinct_products": {"type": "integer", "minimum": 0},
+        "current_label_corpus": {"type": "integer", "minimum": 0},
+        "historical_label_collisions": {"type": "integer", "minimum": 0}
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["product_id", "change_id", "pav_id", "applied_option_slug", "facts_hash"],
+        "additionalProperties": false,
+        "properties": {
+          "product_id": {"type": "integer", "exclusiveMinimum": 0},
+          "change_id": {"type": "string", "minLength": 1},
+          "pav_id": {"type": "integer", "exclusiveMinimum": 0},
+          "source": {"type": "string"},
+          "confidence": {"type": "integer", "minimum": 0, "maximum": 100},
+          "applied_at": {"type": "string"},
+          "applied_option_slug": {"type": "string", "minLength": 1},
+          "name": {"type": "string", "default": ""},
+          "original_name": {"type": "string", "default": ""},
+          "brand": {"type": "string", "default": ""},
+          "source_group": {"type": "string", "default": ""},
+          "article": {"type": "string", "default": ""},
+          "facts_hash": {"type": "string", "minLength": 64, "maxLength": 64}
+        }
+      }
+    }
+  }
+}

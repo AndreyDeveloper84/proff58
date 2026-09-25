@@ -1,0 +1,146 @@
+{
+  "manifest": "package-2-krepezh",
+  "status": "FROZEN",
+  "frozen_at": "2026-08-16",
+  "authorized_by": "owner",
+  "_note": "Неизменяемый состав пакета 2. Состав закрыт: добавление групп после заморозки запрещено — ценность пакета в том, что проверен именно этот состав целиком. Любое изменение состава = новый манифест и новый полный dry-run.",
+  "base_commit": "6a8b25e6f2a01fad652a147f37b6de3a9f39c70c",
+  "branch": "feature/catalog-package2-krepezh",
+  "rules_file": {
+    "path": "data/attribute_rules.json",
+    "sha256_lf": "05867647f9a205c7d6321ca10deb262d09e6df49bceca71fe92da41118493aa3",
+    "git_blob": "31680cb76fc5587205f6790c519699b7c2a1c548",
+    "blocks_total": 56,
+    "blocks_added": 8,
+    "_note": "Сверка после доставки на стенд — по LF-нормализованному хэшу либо git-блобу: локальная копия под Windows хранится с CRLF, побайтовое сравнение с контейнером даст ложное расхождение."
+  },
+  "quarantine": {
+    "required": true,
+    "path_contract": "Реестр обязан загрузиться ЯВНО. Ожидание: active=2 (product_id 18455 sharoshki, 18578 korshchetki).",
+    "expected_active": 2,
+    "no_go_rule": "Пустой реестр при --path — NO-GO. --path уводит команду и от attribute_quarantine.json; отсутствие ошибки в dry-run при этом даёт ложное ощущение безопасности. Продолжать только если оператор явно передал --quarantine.",
+    "expected_hits_in_scope": 0,
+    "_note": "Ни один из 8 типов пакета не пересекается с реестром, поэтому ожидание — ноль срабатываний. Ноль срабатываний при ЗАГРУЖЕННОМ реестре и ноль при НЕзагруженном выглядят одинаково — отсюда требование явной проверки active=2."
+  },
+  "expected": {
+    "attribute_create": 0,
+    "attribute_option_create": 0,
+    "category_attribute_create": 13,
+    "pav_create": 366,
+    "changed": 0,
+    "pruned": 0,
+    "skipped_priority": 0,
+    "quarantined_unexpected": 0,
+    "products_touched": 195,
+    "cards_zero_to_one": 186,
+    "stop_rule": "changed > 0 ИЛИ pruned > 0 — немедленная остановка цикла без записи."
+  },
+  "scope": {
+    "flags": ["--in-stock-only", "--active-only"],
+    "tool_types": [
+      "krep-samorezy", "krep-dyubeli", "krep-zaklepki", "krep-shpilki",
+      "krep-gvozdi", "sterzhni-kleevye", "krep-shaiby", "zaklepochniki"
+    ]
+  },
+  "groups": [
+    {
+      "tool_type": "krep-samorezy",
+      "binding_category": "Саморезы",
+      "category_id": 356,
+      "axes": ["diameter", "length"],
+      "pav_create": 154,
+      "products": 77,
+      "cards_zero_to_one": 77,
+      "taxonomy_debt": "14 товаров типа стоят в кат. 81 «Свёрла» — привязка их не накроет"
+    },
+    {
+      "tool_type": "krep-dyubeli",
+      "binding_category": "Дюбели",
+      "category_id": 361,
+      "axes": ["diameter", "length"],
+      "pav_create": 86,
+      "products": 43,
+      "cards_zero_to_one": 43,
+      "taxonomy_debt": "22 товара вне 361: 14 в кат. 358 «Болты», 8 в кат. 357 «Шурупы и глухари»"
+    },
+    {
+      "tool_type": "krep-zaklepki",
+      "binding_category": "Заклёпки",
+      "category_id": 363,
+      "axes": ["diameter", "length"],
+      "pav_create": 48,
+      "products": 24,
+      "cards_zero_to_one": 24,
+      "taxonomy_debt": null
+    },
+    {
+      "tool_type": "krep-shpilki",
+      "binding_category": "Шпильки и резьбовые штанги",
+      "category_id": 366,
+      "axes": ["diameter", "length"],
+      "pav_create": 18,
+      "products": 9,
+      "cards_zero_to_one": 9,
+      "taxonomy_debt": null
+    },
+    {
+      "tool_type": "krep-gvozdi",
+      "binding_category": "Гвозди",
+      "category_id": 364,
+      "axes": ["length", "diameter"],
+      "pav_create": 18,
+      "products": 9,
+      "cards_zero_to_one": 9,
+      "taxonomy_debt": null,
+      "_note": "Порядок обратный остальному крепежу: «40х2,1» — длина × диаметр. Второе число обязано быть дробным, иначе правило молчит."
+    },
+    {
+      "tool_type": "sterzhni-kleevye",
+      "binding_category": "Скобы и стержни клеевые",
+      "category_id": 108,
+      "axes": ["diameter", "length"],
+      "pav_create": 18,
+      "products": 9,
+      "cards_zero_to_one": 9,
+      "taxonomy_debt": null,
+      "_note": "length на кат. 108 уже привязан блоком str-skoby — action=keep, новой будет только diameter."
+    },
+    {
+      "tool_type": "krep-shaiby",
+      "binding_category": "Шайбы",
+      "category_id": 360,
+      "axes": ["thread_diameter"],
+      "pav_create": 20,
+      "products": 20,
+      "cards_zero_to_one": 20,
+      "taxonomy_debt": null
+    },
+    {
+      "tool_type": "zaklepochniki",
+      "binding_category": "Степлеры и заклёпочники",
+      "category_id": 352,
+      "axes": ["thread_diameter"],
+      "pav_create": 4,
+      "products": 4,
+      "cards_zero_to_one": 4,
+      "taxonomy_debt": "5 из 14 товаров типа стоят в кат. 216 «Органайзеры и кейсы»"
+    }
+  ],
+  "excluded_from_package": [
+    {"tool_type": "perehodnye-koltsa", "reason": "все 10 товаров в мёртвой кат. 109 «На модерацию» — значения были бы невидимы"},
+    {"tool_type": "razvertki-frezy", "reason": "пара 12,7х25 в «Бор-фреза 6мм C12,7х25/70» — не диаметр инструмента; диаметр хвостовика 6"},
+    {"tool_type": "str-valiki", "reason": "блок уже существует и разбирает пару условно (при первом числе 10-20 длиной является второе); наивная ось diameter инвертировала бы значения"}
+  ],
+  "gate_sequence": [
+    "preflight: хэш файла правил + реестр карантина active=2 + состав манифеста",
+    "dry-run по манифесту — сверка с expected",
+    "sandbox на свежей копии staging",
+    "build_facets на копии без HTTP",
+    "проверка видимости 13 новых CategoryAttribute",
+    "pg_dump",
+    "apply",
+    "post-audit",
+    "rollback artifact по product_id + attribute",
+    "повторный dry-run = полный no-op"
+  ]
+}

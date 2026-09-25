@@ -1,0 +1,109 @@
+выборка: каждый 9-й из 188 по возрастанию id
+
+[559] Перф. аккум Einhell PXC TC-HD 18/12 LI, 18В, 1,3Дж без АККУМ и ЗУ
+      power_source       = Аккумулятор (src=keyword, matched='аккум')
+      voltage            = 18         (src=regex, matched='18в')
+      energy_impact      = 1.3        (src=regex, matched='1,3дж')
+      battery_included   = 0          (src=keyword, matched='без акк')
+
+[568] Перф. аккум. Hanskommer HRH2024BL 18В, 2,2Дж, 3реж б/щ 1х4,0Ач+ЗУ кейс
+      power_source       = Аккумулятор (src=keyword, matched='аккум')
+      voltage            = 18         (src=regex, matched='18в')
+      energy_impact      = 2.2        (src=regex, matched='2,2дж')
+      motor_type         = Бесщёточный (src=keyword, matched='б/щ')
+      battery_capacity   = 4.0        (src=regex, matched='4,0ач')
+
+[577] Перф. аккум. Sturm CRH1832BLC б/щ, 18В, 1BatterySystem,3,2Дж, 3+1реж, 1х4.0Ач,ЗУ, кейс
+      power_source       = Аккумулятор (src=keyword, matched='аккум')
+      voltage            = 18         (src=regex, matched='18в')
+      energy_impact      = 3.2        (src=regex, matched='3,2дж')
+      motor_type         = Бесщёточный (src=keyword, matched='б/щ')
+      battery_capacity   = 4.0        (src=regex, matched='4.0ач')
+
+[44406] Перф. Bosch GBH 240 F; 790Вт, SDS+, 2,7Дж, 3реж, 0
+      power              = 790        (src=regex, matched='790вт')
+      energy_impact      = 2.7        (src=regex, matched='2,7дж')
+      chuck              = SDS-plus   (src=keyword, matched='sds+')
+      power_source       = Сеть       (src=inferred, matched='(inferred)')
+
+[44415] Перф. DeWalt D 25134 K
+      (ничего)
+
+[44424] Перф. DH24PH2; 730Вт, SDS plus, 2,7Дж, 3реж, 0-1050об/мин, 0-3950уд/мин, 2,8 кг  HiKoki
+      power              = 730        (src=regex, matched='730вт')
+      energy_impact      = 2.7        (src=regex, matched='2,7дж')
+      chuck              = SDS-plus   (src=keyword, matched='sds plus')
+      power_source       = Сеть       (src=inferred, matched='(inferred)')
+
+[44433] Перф. DH28PEC; 900Вт, SDS plus, 3,2 Дж,3 реж бесщеточный
+      power              = 900        (src=regex, matched='900вт')
+      energy_impact      = 3.2        (src=regex, matched='3,2 дж')
+      chuck              = SDS-plus   (src=keyword, matched='sds plus')
+      motor_type         = Бесщёточный (src=keyword, matched='бесщеточн')
+      power_source       = Сеть       (src=inferred, matched='(inferred)')
+
+[44442] Перф. DH45MEY; бесщ., 1500Вт, SDS-max, 120-310об/мин, 1200-2950уд/мин, 9,5кг
+      power              = 1500       (src=regex, matched='1500вт')
+      chuck              = SDS-max    (src=keyword, matched='sds-max')
+      power_source       = Сеть       (src=inferred, matched='(inferred)')
+
+[44451] Перф. Einhell TC-RH 800 4F, SDS-Plus, 800Вт, 2,6Дж,3,12кг
+      power              = 800        (src=regex, matched='800вт')
+      energy_impact      = 2.6        (src=regex, matched='2,6дж')
+      chuck              = SDS-plus   (src=keyword, matched='sds-plus')
+      power_source       = Сеть       (src=inferred, matched='(inferred)')
+
+[44460] Перф. Hanskonner HRH0828RE 850Вт, 3реж 3,2Дж, 28мм SDS+
+      power              = 850        (src=regex, matched='850вт')
+      energy_impact      = 3.2        (src=regex, matched='3,2дж')
+      chuck              = SDS-plus   (src=keyword, matched='sds+')
+      power_source       = Сеть       (src=inferred, matched='(inferred)')
+
+[44469] Перф. Hanskonner HRH1652M SDS-MAX 1600Вт, 52мм, 2-15Дж, 150-305об/мин
+      power              = 1600       (src=regex, matched='1600вт')
+      energy_impact      = 15         (src=regex, matched='15дж')
+      chuck              = SDS-max    (src=keyword, matched='sds-max')
+      power_source       = Сеть       (src=inferred, matched='(inferred)')
+
+[44478] Перф. Makita HR2610(X5); 800Вт, SDS plus, 2,9Дж, 3
+      power              = 800        (src=regex, matched='800вт')
+      energy_impact      = 2.9        (src=regex, matched='2,9дж')
+      chuck              = SDS-plus   (src=keyword, matched='sds plus')
+      power_source       = Сеть       (src=inferred, matched='(inferred)')
+
+[44487] Перф. Makita HR4003C; 1100 Вт, SDS max, 11,4Дж, 250-500об/мин, 1450-2900уд/мин, 6,2кг
+      power              = 1100       (src=regex, matched='1100 вт')
+      energy_impact      = 11.4       (src=regex, matched='11,4дж')
+      chuck              = SDS-max    (src=keyword, matched='sds max')
+      power_source       = Сеть       (src=inferred, matched='(inferred)')
+
+[44496] Перф. Metabo KHE 3250 SDS+ 800Вт, 3,1Дж вертикал
+      power              = 800        (src=regex, matched='800вт')
+      energy_impact      = 3.1        (src=regex, matched='3,1дж')
+      chuck              = SDS-plus   (src=keyword, matched='sds+')
+      power_source       = Сеть       (src=inferred, matched='(inferred)')
+
+[44505] Перф. ВИХРЬ П-900к
+      (ничего)
+
+[44514] Перф. П-800к 72/3/6 ВИХРЬ
+      (ничего)
+
+[44523] Перф.ЗУБР ЗП-26-800 SDS+,800Вт, 3,2Дж, 0-1200об/мин, 0-4800у уд/мин ЗУБР Профессионал
+      power              = 800        (src=regex, matched='800вт')
+      energy_impact      = 3.2        (src=regex, matched='3,2дж')
+      chuck              = SDS-plus   (src=keyword, matched='sds+')
+      power_source       = Сеть       (src=inferred, matched='(inferred)')
+
+[44532] Перф.ЗУБР ЗПВ-32-1250 ЭВК SDS+, вертикальный, 3,5Д
+      chuck              = SDS-plus   (src=keyword, matched='sds+')
+
+[44541] Перф.ЗУБР ПВ-32-1500 ЭВ SDS+, вертикальный, 5Дж, 1500Вт
+      power              = 1500       (src=regex, matched='1500вт')
+      energy_impact      = 5          (src=regex, matched='5дж')
+      chuck              = SDS-plus   (src=keyword, matched='sds+')
+      power_source       = Сеть       (src=inferred, matched='(inferred)')
+
+[44550] Перфоратор П-1000К Вихрь
+      (ничего)
+

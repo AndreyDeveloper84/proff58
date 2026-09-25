@@ -1,0 +1,307 @@
+"use client";
+
+import { Clock, Heart } from "lucide-react";
+import { useQuickView } from "@/components/quickview/QuickViewProvider";
+import { useWishlist } from "@/components/wishlist/WishlistProvider";
+import { cn } from "@/lib/utils";
+import type { Product } from "@/lib/types";
+import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
+import { CompareButton } from "./CompareButton";
+import { ProductImage } from "./ProductImage";
+import { ProductPrice } from "./ProductPrice";
+import { ProductSpecs } from "./ProductSpecs";
+import { AddToCartButton } from "./AddToCartButton";
+
+// Статус-лейбл карточки по макету: цветной текст сверху-слева. Комбинирует наличие и
+// наличие цены (нет цены → «Цена уточняется» вне зависимости от остатка).
+function statusInfo(product: Product): { label: string; cls: string; clock?: boolean } {
+  if (product.price.final == null) return { label: "Цена уточняется", cls: "text-ink-3" };
+  if (product.stock === "out") return { label: "Нет в наличии", cls: "text-danger" };
+  if (product.stock === "order") return { label: "Под заказ", cls: "text-st-confirm", clock: true };
+  if (
+    product.stock === "in" &&
+    product.stockQty != null &&
+    product.stockQty > 0 &&
+    product.stockQty <= LOW_STOCK_THRESHOLD
+  )
+    return { label: "Мало осталось", cls: "text-rating" };
+  return { label: "В наличии", cls: "text-brand" };
+}
+
+function StatusLabel({ product, compact = false }: { product: Product; compact?: boolean }) {
+  const s = statusInfo(product);
+  return (
+    <span
+      className={cn(
+        // whitespace-nowrap: рядом может стоять бейдж «Хит», и «В наличии»
+        // ломалось на две строки, задирая высоту шапки карточки.
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-semibold",
+        // UX-04: статус — данные о наличии, мельче 12 px не оформляем даже в плитке главной.
+        "text-xs",
+        s.cls,
+      )}
+    >
+      {s.clock ? (
+        <Clock className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} aria-hidden />
+      ) : (
+        <span
+          className={cn("rounded-full bg-current", compact ? "h-1 w-1" : "h-1.5 w-1.5")}
+          aria-hidden
+        />
+      )}
+      {s.label}
+    </span>
+  );
+}
+
+export function ProductCard({
+  product,
+  view = "grid",
+  showFavorite = true,
+  variant = "default",
+  className,
+  quickView = true,
+}: {
+  product: Product;
+  view?: "grid" | "list";
+  // Ширина/растяжение задаются местом использования: в карусели главной
+  // карточка тянется на всю ячейку дорожки, чтобы ряд был ровным.
+  className?: string;
+  showFavorite?: boolean;
+  variant?: "default" | "home";
+  // Быстрый просмотр по клику на фото/название (UX-05). Выключается там, где
+  // карточка — уже часть подробного экрана и всплывающее окно лишнее.
+  quickView?: boolean;
+}) {
+  // Избранное общее на всю страницу (WishlistProvider): одна и та же позиция
+  // встречается в выдаче и в каруселях, и сердечки обязаны показывать одно
+  // состояние. Вход не нужен — гостю список сохраняется в браузере.
+  const { has, toggle, isPending } = useWishlist();
+  const fav = has(product.id);
+  const href = `/product/${product.slug}`;
+  // Короткая форма из 1С; пока товар не прошёл нормализацию — витринное имя.
+  const title = product.cardName || product.name;
+  // UX-05: обычный левый клик по фото или названию открывает быстрый просмотр поверх
+  // списка. href остаётся настоящим: Ctrl/Cmd/Shift/Alt-клик, средняя кнопка, «открыть
+  // в новой вкладке» и переход без JS ведут на страницу товара. Вне провайдера (тесты,
+  // демо) preview === null — и клик остаётся обычным переходом.
+  const preview = useQuickView();
+  const openPreview = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!quickView || !preview || event.defaultPrevented) return;
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    preview.open(product, event.currentTarget);
+  };
+  const dimmed = product.stock === "out";
+  const buyable = product.price.final != null && product.stock !== "out";
+
+  const heart = (
+    <button
+      type="button"
+      onClick={() => toggle(product.id)}
+      disabled={isPending(product.id)}
+      aria-label={fav ? "Убрать из избранного" : "В избранное"}
+      aria-pressed={fav}
+      data-event="favorite_toggle"
+      data-product-id={product.id}
+      className={cn(
+        // #478: touch hit-area ≥44px на мобиле.
+        "grid h-11 w-11 shrink-0 place-items-center rounded-full transition disabled:opacity-60 sm:h-9 sm:w-9",
+        // Сохранённое состояние отличается не только заливкой иконки: при
+        // наведении сердечко и так зеленеет, и клик по нему читался как «ничего
+        // не произошло». Подложка делает разницу однозначной.
+        fav ? "bg-accent/10 text-accent" : "text-ink-3 hover:bg-accent/5 hover:text-accent",
+      )}
+    >
+      <Heart className="h-[18px] w-[18px]" fill={fav ? "currentColor" : "none"} />
+    </button>
+  );
+
+  const media = (
+    <a href={href} onClick={openPreview} aria-label={title} className="relative block">
+      {product.price.discountPct != null && (
+        <span className="absolute left-2 top-2 z-10 rounded-md bg-danger px-1.5 py-0.5 text-xs font-bold text-white">
+          −{product.price.discountPct}%
+        </span>
+      )}
+      <ProductImage src={product.image} alt={title} />
+    </a>
+  );
+
+  const priceCta = buyable ? (
+    <div className="mt-auto flex items-end justify-between gap-2 pt-2">
+      <ProductPrice price={product.price} compact />
+      <AddToCartButton
+        productId={product.id}
+        productSlug={product.slug}
+        stock={product.stock}
+        hasPrice={product.price.final != null}
+      />
+    </div>
+  ) : (
+    <div className="mt-auto pt-2">
+      <AddToCartButton
+        productId={product.id}
+        productSlug={product.slug}
+        stock={product.stock}
+        hasPrice={product.price.final != null}
+        fullWidth
+      />
+    </div>
+  );
+
+  if (variant === "home") {
+    return (
+      <article
+        data-event="product_card_click"
+        data-product-id={product.id}
+        className={cn(
+          // min-h, а не жёсткая высота: при h-[192px] строка характеристик
+          // срезалась ровно посередине букв, а кнопка «Сообщить о поступлении»
+          // вылезала за нижнюю границу. Ряд выравнивается растяжением карточек
+          // (items-stretch у дорожки карусели), поэтому разной высоты не будет.
+          "relative flex min-h-[300px] flex-col overflow-hidden rounded-sm border border-line bg-card shadow-card transition hover:border-accent/60 hover:shadow-md focus-within:border-accent/60",
+          dimmed && "opacity-70",
+          className,
+        )}
+      >
+        <div className="absolute left-2 top-2 z-10 flex gap-1">
+          {product.price.discountPct != null && (
+            <span className="rounded-full bg-danger px-2 py-0.5 text-xs font-bold text-white">
+              −{product.price.discountPct}%
+            </span>
+          )}
+          {product.badges.includes("hit") && (
+            <span className="rounded-full bg-hit px-2 py-0.5 text-xs font-bold text-white">
+              Хит
+            </span>
+          )}
+        </div>
+
+        {showFavorite && (
+          <div className="absolute right-1 top-1 z-10">{heart}</div>
+        )}
+
+        <div className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2">
+          <a href={href} onClick={openPreview} aria-label={title} className="block">
+            <ProductImage
+              src={product.image}
+              alt={title}
+              sizes="220px"
+              className="h-[140px] w-full aspect-auto rounded-none bg-card"
+            />
+          </a>
+          <a
+            href={href}
+            onClick={openPreview}
+            className="mt-2 line-clamp-2 min-h-[38px] text-sm font-semibold leading-[1.35] text-ink hover:text-accent"
+          >
+            {product.brand ? `${product.brand} ` : ""}
+            {title}
+          </a>
+          {/* DATA-01: две пары «Название: значение» вместо безымянной строки значений. */}
+          <ProductSpecs specs={product.specs} limit={2} className="mt-1" />
+          <div className="mt-auto flex items-end justify-between gap-2 pt-2">
+            <div>
+              <StatusLabel product={product} compact />
+              <ProductPrice price={product.price} micro />
+            </div>
+            <AddToCartButton
+              productId={product.id}
+              productSlug={product.slug}
+              stock={product.stock}
+              hasPrice={product.price.final != null}
+              compact
+            />
+          </div>
+        </div>
+
+      </article>
+    );
+  }
+
+  // Бейдж «Хит» — из product.badges, куда его кладёт adapters по признаку
+  // is_hit backend (рейтинг продаж). Ручных пометок здесь нет и быть не должно.
+  const hitBadge = product.badges.includes("hit") ? (
+    <span className="shrink-0 rounded-full bg-hit px-2 py-0.5 text-xs font-bold text-white">
+      Хит
+    </span>
+  ) : null;
+
+  if (view === "list") {
+    return (
+      <article
+        data-event="product_card_click"
+        data-product-id={product.id}
+        className={cn(
+          "flex gap-4 rounded-lg border border-line bg-card p-3 shadow-card transition hover:border-accent/60 hover:shadow-md focus-within:border-accent/60",
+          dimmed && "opacity-70",
+        )}
+      >
+        <div className="w-40 shrink-0">{media}</div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <StatusLabel product={product} />
+              {hitBadge}
+            </div>
+            <div className="-my-1.5 flex items-center">
+              <CompareButton slug={product.slug} />
+              {heart}
+            </div>
+          </div>
+          <p className="text-xs text-ink-3">{product.brand}</p>
+          <a
+            href={href}
+            onClick={openPreview}
+            className="mt-0.5 line-clamp-2 text-base font-medium text-ink hover:text-accent"
+          >
+            {title}
+          </a>
+          <ProductSpecs specs={product.specs} limit={4} className="mt-1.5" />
+          {priceCta}
+        </div>
+      </article>
+    );
+  }
+
+  return (
+    <article
+      data-event="product_card_click"
+      data-product-id={product.id}
+      className={cn(
+        "group flex flex-col rounded-lg border border-line bg-card p-3 shadow-card transition duration-150 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md focus-within:border-accent/60 motion-reduce:transform-none motion-reduce:transition-none",
+        dimmed && "opacity-70",
+      )}
+    >
+      {/* В шапке — только статус и бейдж. Кнопки отсюда убраны: в плитке
+          шириной ~165px «Нет в наличии» плюс две круглые кнопки в строку не
+          помещаются, и сравнение наезжало на текст статуса. */}
+      <div className="mb-2 flex min-w-0 items-center gap-1.5">
+        <StatusLabel product={product} />
+        {hitBadge}
+      </div>
+      {/* Избранное и сравнение — поверх фото, в правом верхнем углу: там место
+          есть при любой ширине плитки, а скидочный бейдж живёт в левом. */}
+      <div className="relative mb-3">
+        {media}
+        <div className="absolute right-0 top-0 z-10 flex flex-col items-center rounded-full bg-card/85 backdrop-blur-sm">
+          {showFavorite ? heart : null}
+          <CompareButton slug={product.slug} />
+        </div>
+      </div>
+      <p className="text-xs text-ink-3">{product.brand}</p>
+      <a
+        href={href}
+        onClick={openPreview}
+        className="mt-0.5 line-clamp-2 text-sm font-medium leading-snug text-ink hover:text-accent sm:text-[15px]"
+      >
+        {title}
+      </a>
+      <ProductSpecs specs={product.specs} limit={3} className="mt-1.5" />
+      {priceCta}
+    </article>
+  );
+}

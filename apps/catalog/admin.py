@@ -1,58 +1,398 @@
-from django.contrib import admin
+from django import forms
+from django.conf import settings
+from django.contrib import admin, messages
+from django.contrib.admin.helpers import ActionForm
+from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Count, IntegerField, OuterRef, Q, Subquery, Value
+from django.db.models.functions import Coalesce
+from django.shortcuts import get_object_or_404, redirect
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
+from django.utils.html import format_html, format_html_join
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from treebeard.admin import TreeAdmin
 from treebeard.forms import movenodeform_factory
 
+from apps.core.events import EventSource, product_created, product_updated
+from apps.core.features import is_enabled
+from apps.pricing.models import PriceRecord
+from apps.pricing.services import WHOLESALE, price_for
+
+from . import image_autoprocess, moderation, processing, queues
+from . import links as links_service
+from .availability_subscriptions import ProductAvailabilitySubscription
 from .models import (
     Attribute,
     AttributeOption,
+    AttributeType,
+    CatalogChange,
+    CatalogProcessingItem,
+    CatalogProcessingRun,
     Category,
     CategoryAttribute,
     CategoryMappingRule,
+    CompatibilityKind,
+    EnrichmentLog,
+    GroupCategoryMapping,
+    ImageProcessingStatus,
+    ImportRun,
+    OneCGroup,
     Product,
     ProductAttributeValue,
+    ProductCompatibility,
     ProductImage,
+    ProductSalesStat,
     ProductStatus,
+    SiteCategory,
+    Source,
 )
+from .read_models import rebuild_attrs_cache
+from .readiness import product_checks, readiness_percent
 
 
 class AttributeOptionInline(admin.TabularInline):
     model = AttributeOption
     extra = 2
+    prepopulated_fields = {"slug": ("value",)}
 
 
 class CategoryAttributeInline(admin.TabularInline):
     model = CategoryAttribute
     extra = 1
     autocomplete_fields = ["attribute"]
+    fields = (
+        "attribute",
+        "display_name",
+        "is_filter",
+        "group",
+        "is_seo_facet",
+        "is_required",
+        "sort_order",
+    )
+
+
+class CategoryAdminForm(movenodeform_factory(Category)):
+    """Форма дерева категорий с подсказкой о независимости от 1С.
+
+    Дерево категорий — мастер структуры сайта (ведётся ЗДЕСЬ). Связь с 1С
+    (`external_id_1c`) — справочная: переразбор/импорт 1С не меняет дерево и не
+    перетирает ручные категории товаров (`category_is_manual`).
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "external_id_1c" in self.fields:
+            self.fields["external_id_1c"].help_text = _(
+                "Справочный код группы 1С. Дерево категорий ведётся здесь, в админке "
+                "(сайт — мастер структуры). Импорт/переразбор 1С НЕ меняет это дерево и "
+                "не перетирает ручные категории товаров."
+            )
 
 
 @admin.register(Category)
 class CategoryAdmin(TreeAdmin):
-    form = movenodeform_factory(Category)
-    list_display = ("name", "slug", "is_active", "sort_order")
+    form = CategoryAdminForm
+    save_on_top = True
+    # Крупный заголовок с именем редактируемой категории (вместо общего «Категории»).
+    change_form_template = "admin/catalog/category/change_form.html"
+    list_display = (
+        "name",
+        "slug",
+        "external_id_1c",
+        "products_count",
+        "published_count",
+        "package_display",
+        "on_site",
+        "is_active",
+        "sort_order",
+    )
+    list_filter = ("on_site", "is_active")
     prepopulated_fields = {"slug": ("name",)}
-    search_fields = ("name", "slug")
+    search_fields = ("name", "slug", "external_id_1c")
     inlines = [CategoryAttributeInline]
+    readonly_fields = ("products_total",)
+    actions = [
+        "action_show_on_site",
+        "action_hide_from_site",
+        "action_activate",
+        "action_deactivate",
+    ]
+
+    @admin.display(description="Упаковка СДЭК")
+    def package_display(self, obj):
+        """Типовая коробка раздела (DRF-2299): «—» — не задана здесь (наследуется сверху)."""
+        dims = (obj.package_length_cm, obj.package_width_cm, obj.package_height_cm)
+        parts = []
+        if obj.package_weight_g:
+            parts.append(f"{obj.package_weight_g / 1000:g} кг")
+        if all(dims):
+            parts.append("×".join(str(d) for d in dims) + " см")
+        return ", ".join(parts) or "—"
+
+    @staticmethod
+    def _subtree_count_sq(*, published=False):
+        """Подзапрос: число товаров во ВСЁМ поддереве категории (узел + потомки).
+
+        Дерево treebeard MP_Node: потомки имеют path с префиксом path узла, поэтому
+        ``category__path__startswith=path`` накрывает узел и всех потомков. Скаляр-агрегат
+        по КОНСТАНТНОЙ строковой группе (Value("x")) — одна строка-счётчик; строку (не int)
+        берём нарочно, чтобы PostgreSQL не принял ``GROUP BY <int>`` за номер колонки. На
+        PostgreSQL лукап startswith по выражению (OuterRef) даёт ``LIKE outer.path || '%'`` —
+        корректный префикс (пути treebeard без LIKE-метасимволов)."""
+        qs = Product.objects.filter(category__path__startswith=OuterRef("path"))
+        if published:
+            qs = qs.filter(status=ProductStatus.PUBLISHED)
+        return Coalesce(
+            Subquery(
+                qs.order_by()
+                .annotate(_g=Value("x"))
+                .values("_g")
+                .annotate(c=Count("pk"))
+                .values("c"),
+                output_field=IntegerField(),
+            ),
+            0,
+        )
+
+    def get_queryset(self, request):
+        # «Товаров»/«Опубл.» считаем по ВСЕМУ поддереву (включая родительские узлы, у
+        # которых нет прямых товаров — они лежат в листьях). Подзапросом на узел, без N+1.
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                _products=self._subtree_count_sq(),
+                _published=self._subtree_count_sq(published=True),
+            )
+        )
+
+    @staticmethod
+    def _product_count_link(path, count, *, status=None):
+        """Счётчик-ссылка в список товаров админки по ВСЕМУ поддереву категории
+        (``category__path__startswith=<path>`` — узел + потомки, число и страница
+        совпадают). 0 — без ссылки."""
+        if not count:
+            return count
+        url = f"{reverse('admin:catalog_product_changelist')}?category__path__startswith={path}"
+        if status:
+            url += f"&status={status}"
+        return format_html('<a href="{}">{}</a>', url, count)
+
+    @admin.display(description=_("Товаров"), ordering="_products")
+    def products_count(self, obj):
+        return self._product_count_link(obj.path, getattr(obj, "_products", 0))
+
+    @admin.display(description=_("Опубл."), ordering="_published")
+    def published_count(self, obj):
+        return self._product_count_link(
+            obj.path, getattr(obj, "_published", 0), status=ProductStatus.PUBLISHED.value
+        )
+
+    @admin.display(description=_("Товаров в категории"))
+    def products_total(self, obj):
+        """Счётчик товаров на странице правки категории (со ссылкой-drill-down в список
+        товаров) — по всему поддереву. Аннотация _products доступна и на форме
+        (admin.get_object → get_queryset); fallback на запрос — на случай отсутствия
+        аннотации. На добавлении — прочерк."""
+        if obj is None or not obj.pk:
+            return "—"
+        count = getattr(obj, "_products", None)
+        if count is None:
+            count = Product.objects.filter(category__path__startswith=obj.path).count()
+        return self._product_count_link(obj.path, count)
+
+    @admin.action(description=_("Показать на сайте"))
+    def action_show_on_site(self, request, queryset):
+        n = queryset.update(on_site=True)
+        self.message_user(request, _("Показано на сайте: %d") % n)
+
+    @admin.action(description=_("Скрыть с сайта"))
+    def action_hide_from_site(self, request, queryset):
+        n = queryset.update(on_site=False)
+        self.message_user(request, _("Скрыто с сайта: %d") % n)
+
+    @admin.action(description=_("Активировать"))
+    def action_activate(self, request, queryset):
+        n = queryset.update(is_active=True)
+        self.message_user(request, _("Активировано: %d") % n)
+
+    @admin.action(description=_("Деактивировать"))
+    def action_deactivate(self, request, queryset):
+        n = queryset.update(is_active=False)
+        self.message_user(request, _("Деактивировано: %d") % n)
 
 
 @admin.register(Attribute)
 class AttributeAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "attribute_type", "unit", "is_filterable")
-    list_filter = ("attribute_type", "is_filterable")
+    list_display = (
+        "name",
+        "slug",
+        "attribute_type",
+        "unit",
+        "is_filterable",
+        "is_ai_feature",
+        "values_count",
+        "options_count",
+        "used_in_categories",
+    )
+    list_filter = ("attribute_type", "is_filterable", "is_ai_feature")
     search_fields = ("name", "slug")
     prepopulated_fields = {"slug": ("name",)}
     inlines = [AttributeOptionInline]
 
+    def get_queryset(self, request):
+        # Счётчики — коррелированными подзапросами, а НЕ двумя Count(distinct=True) в одном
+        # annotate: две агрегатные JOIN-связи (PAV и options) в одном запросе дают декартово
+        # произведение, и COUNT(DISTINCT) считается по миллионам строк — страница висела секунды.
+        # Подзапрос на каждую связь убирает фан-аут (FK attribute_id проиндексирован).
+        # related_name: PAV.attribute не задан → "productattributevalue"; варианты → "options".
+        pav_count = (
+            ProductAttributeValue.objects.filter(attribute=OuterRef("pk"))
+            .values("attribute")
+            .annotate(c=Count("id"))
+            .values("c")
+        )
+        opt_count = (
+            AttributeOption.objects.filter(attribute=OuterRef("pk"))
+            .values("attribute")
+            .annotate(c=Count("id"))
+            .values("c")
+        )
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                _values_count=Coalesce(Subquery(pav_count, output_field=IntegerField()), 0),
+                _options_count=Coalesce(Subquery(opt_count, output_field=IntegerField()), 0),
+            )
+            .prefetch_related("category_attributes__category")
+        )
+
+    @admin.display(description=_("Значений"), ordering="_values_count")
+    def values_count(self, obj):
+        return obj._values_count
+
+    @admin.display(description=_("Вариантов"), ordering="_options_count")
+    def options_count(self, obj):
+        return obj._options_count
+
+    @admin.display(description=_("Категории"))
+    def used_in_categories(self, obj):
+        names = [ca.category.name for ca in obj.category_attributes.all()]
+        if not names:
+            return "—"
+        head = ", ".join(names[:5])
+        return head if len(names) <= 5 else f"{head} … (+{len(names) - 5})"
+
+
+class ConfidenceFilter(admin.SimpleListFilter):
+    """Быстрый фильтр уверенности значения — найти ненадёжное извлечение."""
+
+    title = _("Уверенность")
+    parameter_name = "confidence_band"
+
+    def lookups(self, request, model_admin):
+        return [("high", _("100 (точно)")), ("mid", _("90–99")), ("low", _("ниже 90"))]
+
+    def queryset(self, request, queryset):
+        if self.value() == "high":
+            return queryset.filter(confidence=100)
+        if self.value() == "mid":
+            return queryset.filter(confidence__gte=90, confidence__lt=100)
+        if self.value() == "low":
+            return queryset.filter(confidence__lt=90)
+        return queryset
+
+
+@admin.register(ProductAttributeValue)
+class ProductAttributeValueAdmin(admin.ModelAdmin):
+    """Все извлечённые значения характеристик — ревью результатов enrich.
+
+    Бизнес-правило: ручная правка значения здесь = подтверждение человеком →
+    source=manual, confidence=100 (защита от перезаписи enrich_attributes).
+    """
+
+    # Поля значения PAV: их ручная правка переводит запись в source=manual.
+    VALUE_FIELDS = ("value_text", "value_integer", "value_decimal", "value_boolean", "value_option")
+
+    list_display = ("product", "attribute", "display_value", "source", "confidence")
+    list_filter = ("attribute", "source", "attribute__attribute_type", ConfidenceFilter)
+    search_fields = ("product__name", "product__article", "product__code_1c", "value_text")
+    list_select_related = ("product", "attribute", "value_option")
+    autocomplete_fields = ("product", "attribute")
+    raw_id_fields = ("value_option",)
+    # source/confidence меняются только автоматически (см. save_model), руками — нельзя.
+    readonly_fields = ("source", "confidence")
+
+    @admin.display(description=_("Значение"))
+    def display_value(self, obj):
+        t = obj.attribute.attribute_type
+        if t in (AttributeType.SELECT, AttributeType.MULTISELECT):
+            return obj.value_option.value if obj.value_option_id else "—"
+        if t == AttributeType.BOOLEAN:
+            if obj.value_boolean is None:
+                return "—"
+            return _("Да") if obj.value_boolean else _("Нет")
+        if t == AttributeType.DECIMAL:
+            if obj.value_decimal is None:
+                return "—"
+            return f"{obj.value_decimal} {obj.attribute.unit}".strip()
+        if t == AttributeType.INTEGER:
+            if obj.value_integer is None:
+                return "—"
+            return f"{obj.value_integer} {obj.attribute.unit}".strip()
+        return obj.value_text or "—"
+
+    def save_model(self, request, obj, form, change):
+        # Любое ручное изменение значения = подтверждение человеком (authoritative).
+        if any(f in form.changed_data for f in self.VALUE_FIELDS):
+            obj.source = Source.MANUAL
+            obj.confidence = 100
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(CategoryMappingRule)
 class CategoryMappingRuleAdmin(admin.ModelAdmin):
-    list_display = ("priority", "rule_type", "pattern", "brand", "target_category", "is_active")
+    list_display = (
+        "priority",
+        "rule_type",
+        "pattern",
+        "exclude_pattern",
+        "target_category",
+        "is_active",
+    )
     list_filter = ("rule_type", "is_active", "target_category")
-    search_fields = ("pattern", "brand", "note")
+    search_fields = ("pattern", "exclude_pattern", "brand", "note")
     list_editable = ("is_active",)
     autocomplete_fields = ["target_category"]
     ordering = ("priority", "id")
+    fieldsets = (
+        (
+            None,
+            {
+                "description": _(
+                    "Слой маршрутизации «группа/признак 1С → категория сайта». Правила "
+                    "влияют только на авторазбор НОВЫХ и ещё не размеченных вручную "
+                    "товаров: товар с ручной категорией (category_is_manual) правила НЕ "
+                    "трогают. Само дерево категорий правила не меняют — оно ведётся в "
+                    "разделе «Категории»."
+                ),
+                "fields": (
+                    "rule_type",
+                    "pattern",
+                    "exclude_pattern",
+                    "brand",
+                    "target_category",
+                    "priority",
+                    "is_active",
+                    "note",
+                ),
+            },
+        ),
+    )
 
 
 class UncategorizedFilter(admin.SimpleListFilter):
@@ -66,77 +406,753 @@ class UncategorizedFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() == "no":
-            return queryset.filter(category__isnull=True)
+            return queues.without_category(queryset)
         if self.value() == "yes":
             return queryset.filter(category__isnull=False)
         return queryset
 
 
+class ModerationQueueFilter(admin.SimpleListFilter):
+    """Очередь модерации каталога (#51).
+
+    Все три значения — чистый SQL по полям (status/category), без вызова
+    publication_errors() построчно (иначе фильтрация тяжёлая на больших выборках).
+    Точную причину (нехватку обязательных характеристик) показывает колонка
+    `moderation_reason`, а не этот фильтр.
+    """
+
+    title = _("Очередь модерации")
+    parameter_name = "moderation"
+
+    def lookups(self, request, model_admin):
+        return [
+            ("attention", _("Требуют внимания")),
+            ("needs_review", _("Требуют проверки")),
+            ("imported", _("Импортированы (не разобраны)")),
+        ]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == "needs_review":
+            return queryset.filter(status=ProductStatus.NEEDS_REVIEW)
+        if value == "imported":
+            return queryset.filter(status=ProductStatus.IMPORTED)
+        if value == "attention":
+            return queues.needs_attention(queryset)
+        return queryset
+
+
+class ContentGapFilter(admin.SimpleListFilter):
+    """Чего товару не хватает для витрины — фото, описания, цены.
+
+    Это «полки»: человек не собирает фильтр, а открывает готовую выборку и
+    работает, пока она не опустеет. Ссылки на них лежат в меню (custom_links).
+    """
+
+    title = _("Чего не хватает")
+    parameter_name = "content"
+
+    def lookups(self, request, model_admin):
+        return [
+            ("no_image", _("Нет фото")),
+            ("no_description", _("Нет описания")),
+            ("no_price", _("Нет цены")),
+        ]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == "no_image":
+            return queues.without_image(queryset)
+        if value == "no_description":
+            return queues.without_description(queryset)
+        if value == "no_price":
+            return queues.without_price(queryset)
+        return queryset
+
+
+class BrandFilter(admin.SimpleListFilter):
+    """Топ-брендов вместо полного списка.
+
+    ``brand`` — CharField, поэтому штатный фильтр по полю рендерил бы в сайдбаре
+    ВСЕ различающиеся бренды каталога. Показываем только самые массовые; редкий
+    бренд ищется поиском (он есть в search_fields).
+    """
+
+    title = _("Бренд")
+    parameter_name = "brand"
+    TOP_N = 20
+
+    def lookups(self, request, model_admin):
+        top = (
+            Product.objects.exclude(brand="")
+            .values_list("brand")
+            .annotate(c=Count("pk"))
+            .order_by("-c")[: self.TOP_N]
+        )
+        return [(brand, f"{brand} ({count})") for brand, count in top]
+
+    def queryset(self, request, queryset):
+        return queryset.filter(brand=self.value()) if self.value() else queryset
+
+
+def _photo_thumb(url: str, *, height: int = 70, width: int = 110):
+    return format_html(
+        '<img src="{}" alt="" style="max-height:{}px;max-width:{}px;'
+        'border-radius:4px;object-fit:contain;background:#f4f4f4;">',
+        url,
+        height,
+        width,
+    )
+
+
+def _review_note(obj: ProductImage):
+    """Почему фото ждёт проверки; у дубля — ссылка на первый такой же кадр."""
+    if obj.processing_status != ImageProcessingStatus.NEEDS_REVIEW or not obj.review_reason:
+        return ""
+    reason = obj.get_review_reason_display()
+    if obj.duplicate_of_id:
+        url = reverse("admin:catalog_productimage_change", args=[obj.duplicate_of_id])
+        return format_html(
+            '<br><small>{}: <a href="{}">фото #{}</a></small>', reason, url, obj.duplicate_of_id
+        )
+    return format_html("<br><small>{}</small>", reason)
+
+
+def _processed_cell(obj: ProductImage):
+    """«Стало»: копия после автообработки и её статус (ADR-0014)."""
+    status = obj.get_processing_status_display()
+    if obj.display:
+        return format_html(
+            "{}<br><small>{}</small>{}", _photo_thumb(obj.display.url), status, _review_note(obj)
+        )
+    return format_html("<small>{}</small>{}", status, _review_note(obj))
+
+
 class ProductImageInline(admin.TabularInline):
+    """Фото товара: «было» и «стало» рядом — видно, что сделала автообработка."""
+
     model = ProductImage
     extra = 1
+    fields = ("preview", "processed", "image", "alt", "is_main", "sort_order")
+    readonly_fields = ("preview", "processed")
+
+    @admin.display(description=_("Было"))
+    def preview(self, obj):
+        if not obj or not obj.image:
+            return "—"
+        return _photo_thumb(obj.image.url)
+
+    @admin.display(description=_("Стало"))
+    def processed(self, obj):
+        if not obj or not obj.pk:
+            return "—"
+        url = reverse("admin:catalog_productimage_change", args=[obj.pk])
+        return format_html('{}<br><a href="{}">решение по фото</a>', _processed_cell(obj), url)
+
+
+@admin.register(ProductImage)
+class ProductImageAdmin(admin.ModelAdmin):
+    """«Фото товаров»: результат автообработки и решения по нему (ADR-0014).
+
+    Очередь проверки — фильтр «Обработка: Ждёт проверки». Добавлять фото отсюда
+    нельзя: фото добавляется в карточке товара.
+    """
+
+    list_display = (
+        "before",
+        "after",
+        "product_link",
+        "processing_status",
+        "processing_mode",
+        "source",
+        "processed_at",
+    )
+    list_filter = ("processing_status", "review_reason", "processing_mode", "source")
+    search_fields = ("product__name", "product__code_1c", "product__article")
+    list_select_related = ("product",)
+    raw_id_fields = ("product",)  # 47 тысяч товаров в выпадающем списке не открыть
+    list_per_page = 50
+    actions = ["action_reprocess", "action_revert_to_original", "action_accept"]
+    fields = (
+        "product",
+        "before",
+        "after",
+        "image",
+        "alt",
+        "is_main",
+        "sort_order",
+        "source",
+        "source_url",
+        "processing_status",
+        "review_reason",
+        "duplicate_of",
+        "processing_mode",
+        "processing_version",
+        "processed_at",
+    )
+    readonly_fields = (
+        "before",
+        "after",
+        "source",
+        "source_url",
+        "processing_status",
+        "review_reason",
+        "duplicate_of",
+        "processing_mode",
+        "processing_version",
+        "processed_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    @admin.display(description=_("Было"))
+    def before(self, obj):
+        return _photo_thumb(obj.image.url, height=90, width=120) if obj.image else "—"
+
+    @admin.display(description=_("Стало"))
+    def after(self, obj):
+        return _processed_cell(obj)
+
+    @admin.display(description=_("Товар"), ordering="product__name")
+    def product_link(self, obj):
+        url = reverse("admin:catalog_product_change", args=[obj.product_id])
+        return format_html('<a href="{}">{}</a>', url, obj.product.name[:80])
+
+    @admin.action(description=_("Обработать заново"))
+    def action_reprocess(self, request, queryset):
+        if not is_enabled(image_autoprocess.FLAG):
+            self.message_user(
+                request,
+                "Автообработка выключена (FEATURE_PRODUCT_IMAGE_AUTOPROCESS) — "
+                "ничего не поставлено.",
+                level=messages.WARNING,
+            )
+            return
+        ids = list(queryset.values_list("pk", flat=True))
+        queued = sum(image_autoprocess.reprocess(pk) for pk in ids)
+        self.message_user(
+            request,
+            f"Поставлено на обработку: {queued} из {len(ids)}",
+            level=messages.SUCCESS if queued == len(ids) else messages.WARNING,
+        )
+
+    @admin.action(description=_("Вернуть оригинал"))
+    def action_revert_to_original(self, request, queryset):
+        ids = list(queryset.values_list("pk", flat=True))
+        reverted = sum(image_autoprocess.revert_to_original(pk) for pk in ids)
+        self.message_user(
+            request,
+            f"Оставлен оригинал: {reverted}. Автообработка эти фото больше не трогает.",
+            level=messages.SUCCESS,
+        )
+
+    @admin.action(description=_("Принять копию"))
+    def action_accept(self, request, queryset):
+        ids = list(queryset.values_list("pk", flat=True))
+        accepted = sum(image_autoprocess.accept_review(pk) for pk in ids)
+        self.message_user(request, f"Принято копий: {accepted}", level=messages.SUCCESS)
+        if accepted < len(ids):
+            self.message_user(
+                request,
+                f"Не принято: {len(ids) - accepted} — принять можно только фото "
+                "«Ждёт проверки» с готовой копией.",
+                level=messages.WARNING,
+            )
 
 
 class ProductAttributeValueInline(admin.TabularInline):
+    """Характеристики товара.
+
+    Список характеристик сужен до тех, что назначены категории товара: иначе
+    человек выбирает из всего справочника каталога и заполняет «Диаметр диска»
+    у перфоратора. Если категория не задана — показываем весь справочник, иначе
+    у неразобранного товара выбор был бы пустым.
+    """
+
     model = ProductAttributeValue
     extra = 0
-    autocomplete_fields = ["attribute"]
+    # attribute НЕ в autocomplete_fields сознательно: автокомплит тянет варианты
+    # через AJAX у AttributeAdmin и сужённый queryset формы игнорирует. Обычный
+    # select это уважает, а после сужения по категории в нём десяток пунктов.
+    # value_option — raw_id, как и в ProductAttributeValueAdmin: обычный селект
+    # рендерил бы ВСЕ варианты характеристик каталога в КАЖДОЙ строке инлайна,
+    # а это самая частая страница админки.
+    raw_id_fields = ("value_option",)
+    fields = (
+        "attribute",
+        "value_text",
+        "value_integer",
+        "value_decimal",
+        "value_boolean",
+        "value_option",
+        "source",
+        "confidence",
+    )
+
+    def get_formset(self, request, obj=None, **kwargs):
+        # Родительский товар в formfield_for_foreignkey не приходит — запоминаем его
+        # здесь (ModelAdmin живёт на процесс, поэтому кладём на request, не на self).
+        request._product_for_attrs = obj
+        return super().get_formset(request, obj, **kwargs)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "attribute":
+            product = getattr(request, "_product_for_attrs", None)
+            if product is not None and product.category_id:
+                kwargs["queryset"] = Attribute.objects.filter(
+                    category_attributes__category_id=product.category_id
+                ).distinct()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+class CurrentPriceInline(admin.TabularInline):
+    """Текущие цены товара из 1С по типам (retail/wholesale) — только просмотр.
+
+    Цены ведёт 1С (ADR-0006), поэтому инлайн read-only: менеджер видит обе цены
+    в карточке, но не редактирует их здесь.
+    """
+
+    model = PriceRecord
+    fk_name = "product"
+    extra = 0
+    can_delete = False
+    verbose_name = _("Цена 1С (текущая)")
+    verbose_name_plural = _("Цены 1С (текущие, по типам)")
+    fields = ("price_type", "value", "currency", "is_current", "valid_from")
+    readonly_fields = fields
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_current=True)
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+class ProductCompatibilityInline(admin.TabularInline):
+    """Исходящие связи совместимости (товар = source): аксессуары и «совместим с»."""
+
+    model = ProductCompatibility
+    fk_name = "source"
+    extra = 1
+    autocomplete_fields = ["target"]
+    fields = ("target", "kind", "note", "sort_order")
+    verbose_name = _("Связь совместимости (исходящая)")
+    verbose_name_plural = _("Связи совместимости (исходящие)")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("target")
+
+
+class ProductCompatibilityIncomingInline(admin.TabularInline):
+    """Входящие связи (товар = target) — только просмотр: «к чему подходит / с чем совместим»."""
+
+    model = ProductCompatibility
+    fk_name = "target"
+    extra = 0
+    fields = ("source", "kind", "note", "sort_order")
+    readonly_fields = ("source", "kind", "note", "sort_order")
+    verbose_name = _("Связь совместимости (входящая)")
+    verbose_name_plural = _("Связи совместимости (входящие, только просмотр)")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("source")
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class ProductActionForm(ActionForm):
+    """Action-форма списка товаров с выбором целевой категории для bulk-перепривязки."""
+
+    target_category = forms.ModelChoiceField(
+        queryset=Category.objects.filter(is_active=True),
+        required=False,
+        label=_("Категория для перепривязки"),
+        help_text=_("Используется действием «Перепривязать…»."),
+    )
 
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    action_form = ProductActionForm
+    # Карточка — 7 блоков и 5 инлайнов: без кнопок сверху до «Сохранить»
+    # приходится прокручивать всю страницу.
+    save_on_top = True
     list_display = (
+        "thumbnail",
         "name",
         "article",
         "brand",
         "category",
         "status",
+        "moderation_reason",
         "stock_status",
         "price",
+        "current_wholesale",
         "is_active",
     )
-    list_filter = ("status", UncategorizedFilter, "stock_status", "is_active", "brand")
+    list_filter = (
+        "status",
+        ModerationQueueFilter,
+        UncategorizedFilter,
+        ContentGapFilter,
+        "stock_status",
+        "is_active",
+        "is_hit_manual",
+        BrandFilter,
+    )
     search_fields = ("name", "original_name", "article", "code_1c", "slug")
     prepopulated_fields = {"slug": ("name",)}
     autocomplete_fields = ["category"]
     list_select_related = ("category",)
+
+    def has_delete_permission(self, request, obj=None):
+        """Товар из админки не удаляется никем, включая суперпользователя (DRF-2300).
+
+        Товар связан с 1С по `code_1c` и с историей заказов (`OrderItem.product`);
+        удаление обрывает эти связи и каскадом уносит фото, характеристики и записи
+        обмена. Снять с витрины — галочка «Показывать на сайте» или действие
+        «Вернуть на проверку». Возврат `False` убирает кнопку в карточке, вырезает
+        `delete_selected` из действий и даёт 403 на прямой POST по `…/delete/`.
+        Удаление через ORM (импорт, служебные очистки, тесты) остаётся как есть.
+        """
+        return False
+
+    def response_change(self, request, obj):
+        """Кнопка «Сохранить и следующий →»: правка потоком, без возврата в список."""
+        if "_save_and_next" in request.POST:
+            nxt = moderation.next_after(obj)
+            if nxt is None:
+                self.message_user(
+                    request,
+                    f"Сохранено: {obj.name}. Это был последний товар.",
+                    level=messages.INFO,
+                )
+                return redirect("admin:catalog_product_changelist")
+            self.message_user(request, f"Сохранено: {obj.name}", level=messages.SUCCESS)
+            return redirect("admin:catalog_product_change", nxt.pk)
+        return super().response_change(request, obj)
+
+    def get_urls(self):
+        return [
+            path(
+                "moderate/",
+                self.admin_site.admin_view(self.moderate_view),
+                name="catalog_product_moderate",
+            ),
+            path(
+                "<int:product_id>/links/",
+                self.admin_site.admin_view(self.links_view),
+                name="catalog_product_links",
+            ),
+            *super().get_urls(),
+        ]
+
+    def moderate_view(self, request):
+        """Конвейер модерации: один товар, нужные поля, три кнопки.
+
+        Разбор каталога в обычном списке — это навигация: открыть, проскроллить,
+        сохранить, вернуться, найти следующий. Здесь навигации нет.
+        """
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        product_id = request.POST.get("product_id") or request.GET.get("product")
+        product = Product.objects.filter(pk=product_id).first() if product_id else None
+        if product is None:
+            product = moderation.next_product()
+
+        if product is None:  # очередь пуста — показывать нечего
+            return TemplateResponse(
+                request,
+                "admin/catalog/product/moderate.html",
+                {
+                    **self.admin_site.each_context(request),
+                    "title": "Разбор каталога",
+                    "product": None,
+                    "left": 0,
+                    "opts": self.model._meta,
+                },
+            )
+
+        errors: list[str] = []
+        if request.method == "POST":
+            action = request.POST.get("action", "")
+            if action == "skip":
+                return redirect(self._moderate_next_url(product.pk))
+
+            form = moderation.ModerationForm(request.POST, product=product)
+            if form.is_valid():
+                product = form.apply()
+                if action == "publish":
+                    errors = moderation.publish(product, actor_id=request.user.pk)
+                    if not errors:
+                        self.message_user(
+                            request, f"Опубликован: {product.name}", level=messages.SUCCESS
+                        )
+                        return redirect(self._moderate_next_url(product.pk))
+                elif action == "review":
+                    moderation.send_to_review(product)
+                    self.message_user(request, "Отложен на доработку.", level=messages.INFO)
+                    return redirect(self._moderate_next_url(product.pk))
+                else:
+                    self.message_user(request, "Сохранено.", level=messages.SUCCESS)
+                    product.refresh_from_db()
+                    # Категория могла смениться — перестраиваем форму под новый
+                    # набор характеристик, иначе человек увидит поля прежней.
+                    form = moderation.ModerationForm(product=product)
+        else:
+            form = moderation.ModerationForm(product=product)
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Разбор каталога",
+            "product": product,
+            "form": form,
+            "publish_errors": errors,
+            "checks": product_checks(product),
+            "percent": readiness_percent(product_checks(product)),
+            "left": moderation.queue().count(),
+            "opts": self.model._meta,
+        }
+        return TemplateResponse(request, "admin/catalog/product/moderate.html", context)
+
+    @staticmethod
+    def _moderate_next_url(after_id: int) -> str:
+        nxt = moderation.next_product(after_id=after_id)
+        base = reverse("admin:catalog_product_moderate")
+        return f"{base}?product={nxt.pk}" if nxt else base
+
+    # --- Связи товара: «покупают вместе» и «аналоги» галочками ---
+    #
+    # Построчная форма внизу карточки годится для двух-трёх аксессуаров. Здесь
+    # работа другая: пройти подгруппу целиком и отметить, что с чем берут. Поэтому
+    # отдельный экран — список кандидатов того же типа инструмента с галочками.
+
+    LINK_KINDS = (
+        (CompatibilityKind.CROSS_SELL, "Покупают вместе"),
+        (CompatibilityKind.ANALOG, "Аналог"),
+    )
+
+    @admin.display(description=_("Связи товара"))
+    def related_links(self, obj):
+        if obj is None or obj.pk is None:
+            return _("Появятся после сохранения товара.")
+        counts = {
+            kind: len(links_service.linked_ids(obj, kind)) for kind, _label in self.LINK_KINDS
+        }
+        return format_html(
+            '<a class="button" href="{}">Подобрать связи</a>'
+            '<span style="margin-left:.7rem;opacity:.7;">покупают вместе: {} · аналоги: {}</span>',
+            reverse("admin:catalog_product_links", args=[obj.pk]),
+            counts[CompatibilityKind.CROSS_SELL],
+            counts[CompatibilityKind.ANALOG],
+        )
+
+    def links_view(self, request, product_id):
+        """Экран подбора связей: кандидаты списком, две колонки галочек."""
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        product = get_object_or_404(Product, pk=product_id)
+        tool_type = (product.attrs_cache or {}).get("tool_type")
+        scope = request.GET.get("scope") or ("tool_type" if tool_type else "category")
+        query = (request.GET.get("q") or "").strip()
+
+        current = {
+            kind: links_service.linked_ids(product, kind) for kind, _label in self.LINK_KINDS
+        }
+
+        if request.method == "POST":
+            # Снимаем только то, что человек видел на экране: страница показывает
+            # не весь каталог, и молча стереть связь, которой в списке не было,
+            # нельзя.
+            shown = {int(x) for x in request.POST.getlist("shown") if x.isdigit()}
+            report = []
+            for kind, label in self.LINK_KINDS:
+                chosen = {int(x) for x in request.POST.getlist(f"link_{kind}") if x.isdigit()}
+                wanted = (current[kind] - shown) | chosen
+                added, removed = links_service.set_links(product, kind, wanted, scope_ids=shown)
+                if added or removed:
+                    report.append(f"{label}: +{added} / −{removed}")
+            self.message_user(
+                request,
+                "Связи сохранены. " + (" · ".join(report) if report else "Изменений нет."),
+                level=messages.SUCCESS,
+            )
+            return redirect(request.get_full_path())
+
+        candidates = Product.objects.exclude(pk=product.pk)
+        if scope == "tool_type" and tool_type:
+            candidates = candidates.filter(attrs_cache__tool_type=tool_type)
+        elif scope == "category" and product.category_id:
+            candidates = candidates.filter(category_id=product.category_id)
+        if query:
+            candidates = candidates.filter(Q(name__icontains=query) | Q(article__icontains=query))
+        candidates = candidates.select_related("category").order_by("name")
+
+        page = Paginator(candidates, 60).get_page(request.GET.get("page"))
+
+        # Уже связанные товары держим наверху, даже если выборка их не содержит —
+        # иначе снять отметку можно было бы только угадав нужный фильтр.
+        linked_all = current[CompatibilityKind.CROSS_SELL] | current[CompatibilityKind.ANALOG]
+        pinned = list(
+            Product.objects.filter(pk__in=linked_all).select_related("category").order_by("name")
+        )
+        rows = pinned + [p for p in page.object_list if p.pk not in linked_all]
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": f"Связи товара: {product.name}",
+            "product": product,
+            "tool_type": tool_type,
+            "scope": scope,
+            "query": query,
+            "page_obj": page,
+            "kinds": self.LINK_KINDS,
+            "rows": [
+                {
+                    "product": p,
+                    # Ячейки готовим здесь: в шаблоне Django нет доступа к словарю
+                    # по переменному ключу.
+                    "cells": [
+                        {"kind": kind, "label": label, "checked": p.pk in current[kind]}
+                        for kind, label in self.LINK_KINDS
+                    ],
+                    "pinned": p.pk in linked_all,
+                }
+                for p in rows
+            ],
+            "opts": self.model._meta,
+        }
+        return TemplateResponse(request, "admin/catalog/product/links.html", context)
+
+    @admin.action(description=_("Отметить как «Хит продаж»"))
+    def action_mark_hit(self, request, queryset):
+        # Галочка на скрытом товаре молча ничего не даёт: блок витрины строится по
+        # видимым позициям. Менеджер отмечал первую страницу списка (а там сверху
+        # технический мусор из 1С — всё отключённое) и не понимал, почему на главной
+        # пусто. Поэтому считаем скрытых и говорим об этом прямо.
+        hidden = list(
+            queryset.exclude(is_active=True, status=ProductStatus.PUBLISHED).values_list(
+                "name", flat=True
+            )[:5]
+        )
+        hidden_total = queryset.exclude(is_active=True, status=ProductStatus.PUBLISHED).count()
+        updated = queryset.update(is_hit_manual=True)
+        self.message_user(request, f"Отмечено хитами: {updated}", level=messages.SUCCESS)
+        if hidden_total:
+            names = ", ".join(f"«{n[:40]}»" for n in hidden)
+            tail = " и др." if hidden_total > len(hidden) else ""
+            self.message_user(
+                request,
+                f"Из них скрыты и на витрину не попадут: {hidden_total} "
+                f"({names}{tail}). Такой товар отключён или не опубликован — "
+                f"сначала включите его, иначе «Хит» останется только в админке.",
+                level=messages.WARNING,
+            )
+
+    @admin.action(description=_("Снять отметку «Хит продаж»"))
+    def action_unmark_hit(self, request, queryset):
+        updated = queryset.update(is_hit_manual=False)
+        self.message_user(request, f"Снята отметка хита: {updated}", level=messages.INFO)
+
+    def lookup_allowed(self, lookup, value, request=None):
+        # Drill-down из списка категорий: ссылка по поддереву (?category__path__startswith=<path>)
+        # или по точному узлу (?category__id__exact=<id>). Категорию НЕ кладём в list_filter
+        # (дропдаун всех узлов дерева был бы тяжёлым) — точечно разрешаем эти лукапы.
+        if lookup in ("category__id__exact", "category__path__startswith"):
+            return True
+        return super().lookup_allowed(lookup, value, request)
+
+    # Всё, что ведёт 1С, — только для чтения. Не «не трогай», а «нельзя»: раньше
+    # цену и остаток можно было исправить руками, правка молча терялась при
+    # следующей синхронизации, и человек считал, что админка врёт.
     readonly_fields = (
+        "readiness",
+        "moderation_reason_detail",
+        "related_links",
         "code_1c",
         "original_name",
         "source_group",
         "matched_rule",
+        "pricing_summary",
+        "price",
+        "old_price",
+        "currency",
+        "unit",
+        "is_active_1c",
+        "stock_quantity",
+        "reserved_quantity",
+        "available_quantity",
+        "stock_status",
         "price_updated_at",
         "stock_updated_at",
         "attrs_cache",
         "created_at",
         "updated_at",
     )
-    actions = ["action_publish", "action_needs_review"]
+    actions = [
+        "action_set_category",
+        "action_publish",
+        "action_needs_review",
+        "action_rebuild_attrs_cache",
+        "action_mark_hit",
+        "action_unmark_hit",
+    ]
     fieldsets = (
-        (None, {"fields": ("name", "slug", "status", "is_active")}),
         (
-            _("Категория сайта"),
-            {"fields": ("category", "category_is_manual", "matched_rule")},
-        ),
-        (
-            _("Данные из 1С"),
+            None,
             {
+                "description": _(
+                    "«Название (карточка)» — короткая форма для плитки каталога; пусто — "
+                    "показывается витринное название. Заполняет normalize_product_names, "
+                    "руками правится здесь."
+                ),
                 "fields": (
-                    "code_1c",
-                    "article",
-                    "barcode",
-                    "original_name",
-                    "source_group",
-                    "unit",
-                    "is_active_1c",
-                )
+                    "readiness",
+                    "moderation_reason_detail",
+                    "name",
+                    "card_name",
+                    "slug",
+                    "status",
+                    "is_active",
+                    "is_hit_manual",
+                    "related_links",
+                ),
             },
         ),
-        (_("Бренд и контент"), {"fields": ("brand", "short_description", "description")}),
         (
-            _("Цена и наличие"),
+            _("Категория сайта"),
             {
+                "description": _(
+                    "Категория ведётся на сайте (1С её не диктует). Ручное назначение "
+                    "включает «Категория задана вручную» — после этого импорт/авторазбор "
+                    "1С её НЕ меняет. Массовая перепривязка — действием «Перепривязать "
+                    "выбранные товары…» в списке товаров."
+                ),
+                "fields": ("category", "category_is_manual", "matched_rule"),
+            },
+        ),
+        (_("Бренд и описание"), {"fields": ("brand", "short_description", "description")}),
+        (
+            _("Цена и наличие — ведёт 1С"),
+            {
+                "description": _(
+                    "Эти поля приходят из 1С и здесь не редактируются: правка всё равно "
+                    "перезапишется при следующей синхронизации. Менять цену и остаток нужно "
+                    "в 1С. «Расчёт цены» показывает, что увидит покупатель; опт — в блоке "
+                    "«Цены 1С (текущие)» ниже."
+                ),
                 "fields": (
+                    "pricing_summary",
                     "price",
                     "old_price",
                     "currency",
@@ -146,7 +1162,37 @@ class ProductAdmin(admin.ModelAdmin):
                     "stock_status",
                     "price_updated_at",
                     "stock_updated_at",
-                )
+                ),
+            },
+        ),
+        (
+            _("Упаковка для доставки СДЭК"),
+            {
+                "classes": ("collapse",),
+                "description": _(
+                    "Обычно пусто: берётся типовая коробка раздела каталога. Заполняйте, "
+                    "только если товар заметно отличается — например, указать один вес, "
+                    "а габариты оставить от раздела."
+                ),
+                "fields": (
+                    "package_weight_g",
+                    ("package_length_cm", "package_width_cm", "package_height_cm"),
+                ),
+            },
+        ),
+        (
+            _("Данные из 1С (справочно)"),
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "code_1c",
+                    "article",
+                    "barcode",
+                    "original_name",
+                    "source_group",
+                    "unit",
+                    "is_active_1c",
+                ),
             },
         ),
         (_("SEO"), {"fields": ("meta_title", "meta_description"), "classes": ("collapse",)}),
@@ -155,7 +1201,185 @@ class ProductAdmin(admin.ModelAdmin):
             {"fields": ("attrs_cache", "created_at", "updated_at"), "classes": ("collapse",)},
         ),
     )
-    inlines = [ProductImageInline, ProductAttributeValueInline]
+    inlines = [
+        ProductImageInline,
+        ProductAttributeValueInline,
+        CurrentPriceInline,
+        ProductCompatibilityInline,
+        ProductCompatibilityIncomingInline,
+    ]
+
+    def get_queryset(self, request):
+        # Сброс кэша required-атрибутов на КАЖДЫЙ рендер списка: ProductAdmin —
+        # синглтон на процесс, без сброса карта category_id -> [CategoryAttribute]
+        # пережила бы запрос и колонка moderation_reason показывала бы устаревшую
+        # причину после правки обязательных атрибутов категории. get_queryset
+        # вызывается раз на отрисовку changelist → кэш становится request-scoped.
+        self._req_attrs_cache = {}
+        # Текущая оптовая цена — подзапросом, чтобы колонка списка не делала N+1.
+        wholesale = PriceRecord.objects.filter(
+            product=OuterRef("pk"), price_type=WHOLESALE, is_current=True
+        ).values("value")[:1]
+        # select_related("category") + prefetch значений характеристик: чтобы
+        # колонка moderation_reason (publication_errors / missing_required_attributes)
+        # не плодила N+1 на категории и на attribute_values. "images" — для колонки
+        # с миниатюрой: без префетча она делала бы запрос на каждую строку списка.
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(_wholesale_price=Subquery(wholesale))
+            .select_related("category")
+            .prefetch_related("attribute_values__attribute", "images")
+        )
+
+    # Решение по N+1 в колонке moderation_reason:
+    # missing_required_attributes() на каждый товар делает запрос к
+    # CategoryAttribute. Чтобы это не давало N+1 по числу ТОВАРОВ, держим на
+    # инстансе admin (живёт в рамках одного рендера changelist) карту
+    # category_id -> [required CategoryAttribute] с ленивой дозагрузкой по
+    # КАТЕГОРИЯМ: первая встреча незнакомой категории добирает её required-атрибуты
+    # одним запросом и кэширует. Итог: число запросов = число УНИКАЛЬНЫХ категорий
+    # на странице (десятки в худшем случае), а не число товаров. attribute_values
+    # берутся из prefetch (см. get_queryset), категория — из select_related.
+    def _required_attrs_for_category(self, category_id):
+        cache = getattr(self, "_req_attrs_cache", None)
+        if cache is None:
+            cache = {}
+            self._req_attrs_cache = cache
+        if category_id not in cache:
+            cache[category_id] = list(
+                CategoryAttribute.objects.filter(
+                    category_id=category_id, is_required=True
+                ).select_related("attribute")
+            )
+        return cache[category_id]
+
+    @admin.display(description=_("Готовность"))
+    def readiness(self, obj):
+        """Чек-лист «что осталось сделать» вверху карточки.
+
+        Человеку без опыта нужен не список ошибок, а понятный прогресс и
+        конкретные шаги. Логика — в apps.catalog.readiness, здесь только вывод.
+        """
+        if obj is None or obj.pk is None:
+            return _("Появится после сохранения товара")
+
+        checks = product_checks(obj)
+        percent = readiness_percent(checks)
+        colour = "#28a745" if percent == 100 else "#f0ad4e" if percent >= 60 else "#dc3545"
+
+        rows = format_html_join(
+            "",
+            '<li style="margin:.15rem 0;list-style:none;">'
+            '<span style="color:{};font-weight:700;">{}</span> {}{}</li>',
+            (
+                (
+                    "#28a745" if c.ok else "#dc3545",
+                    "✓" if c.ok else "✕",
+                    c.label,
+                    (
+                        format_html('<span style="opacity:.6;"> — {}</span>', c.hint)
+                        if c.hint and not c.ok
+                        else ""
+                    ),
+                )
+                for c in checks
+            ),
+        )
+        return format_html(
+            '<div style="max-width:44rem;">'
+            '<div style="font-weight:700;margin-bottom:.35rem;">Готовность товара: '
+            '<span style="color:{};">{}%</span></div>'
+            '<div style="height:6px;border-radius:3px;background:rgba(128,128,128,.2);'
+            'margin-bottom:.5rem;"><div style="height:6px;border-radius:3px;width:{}%;'
+            'background:{};"></div></div>'
+            '<ul style="margin:0;padding:0;">{}</ul></div>',
+            colour,
+            percent,
+            percent,
+            colour,
+            rows,
+        )
+
+    @admin.display(description=_("Фото"))
+    def thumbnail(self, obj):
+        """Миниатюра в списке: без неё не видно, у какого товара нет фото."""
+        image = next((i for i in obj.images.all() if i.is_main), None) or next(
+            iter(obj.images.all()), None
+        )
+        if image is None or not image.image:
+            # mark_safe, а не format_html: строка константная, а format_html без
+            # аргументов в Django 6 удаляют.
+            return mark_safe('<span style="opacity:.35;">нет фото</span>')  # noqa: S308
+        return format_html(
+            '<img src="{}" alt="" style="height:38px;width:52px;object-fit:contain;'
+            'border-radius:3px;background:#f4f4f4;">',
+            image.storefront_image.url,
+        )
+
+    @admin.display(description=_("Причина в очереди"))
+    def moderation_reason(self, obj):
+        """Краткая причина, почему товар не публикуется (вычисляется на лету).
+
+        Опубликованный товар → «—». Иначе — короткий текст: «Нет категории»
+        и/или «Не хватает: …». Без N+1: категория из select_related, значения из
+        prefetch (get_queryset), required-атрибуты — из кэша по категориям.
+        """
+        if obj.status == ProductStatus.PUBLISHED:
+            return "—"
+
+        parts: list[str] = []
+        if not obj.category_id:
+            parts.append("Нет категории")
+        else:
+            required = self._required_attrs_for_category(obj.category_id)
+            if required:
+                from .read_models import attr_value_to_json
+
+                filled = set()
+                for pav in obj.attribute_values.all():
+                    value = attr_value_to_json(pav)
+                    if value is not None and value != "":
+                        filled.add(pav.attribute_id)
+                missing = [ca.attribute.name for ca in required if ca.attribute_id not in filled]
+                if missing:
+                    parts.append("Не хватает: " + ", ".join(missing))
+        return "; ".join(parts) if parts else "—"
+
+    @admin.display(description=_("Причина непубликации"))
+    def moderation_reason_detail(self, obj):
+        """Полный список ошибок публикации построчно — для карточки товара.
+
+        Использует единый источник правил publication_errors(). На форме одного
+        товара N+1 неважен (одна запись).
+        """
+        if obj is None or obj.pk is None:
+            return "—"
+        errors = obj.publication_errors()
+        if not errors:
+            return "—" if obj.status == ProductStatus.PUBLISHED else "Готов к публикации"
+        # Построчно через <br>; каждая строка экранируется (format_html).
+        return format_html_join(mark_safe("<br>"), "• {}", ((e,) for e in errors))
+
+    @admin.display(description=_("Опт"))
+    def current_wholesale(self, obj):
+        value = getattr(obj, "_wholesale_price", None)
+        return value if value is not None else "—"
+
+    @admin.display(description=_("Расчёт цены (price_for)"))
+    def pricing_summary(self, obj):
+        """Что увидит покупатель: розница (аноним) и опт (B2B). Через единый price_for."""
+        if obj.pk is None:
+            return "—"
+        retail = price_for(obj)  # без user → розница
+        retail_str = f"{retail.final} {retail.currency}" if retail.has_price else "—"
+        wholesale = (
+            obj.price_records.filter(price_type=WHOLESALE, is_current=True)
+            .values_list("value", flat=True)
+            .first()
+        )
+        wholesale_str = f"{wholesale} {obj.currency or 'RUB'}" if wholesale is not None else "—"
+        return f"розница: {retail_str}  ·  опт (B2B): {wholesale_str}"
 
     def save_model(self, request, obj, form, change):
         # Менеджер вручную задал категорию → фиксируем, чтобы авторазбор её не трогал.
@@ -163,12 +1387,541 @@ class ProductAdmin(admin.ModelAdmin):
             obj.category_is_manual = True
         super().save_model(request, obj, form, change)
 
+        # То же, что в групповом действии: отметка хитом на скрытом товаре не даёт
+        # ничего, и об этом надо сказать здесь же, а не оставлять человека гадать.
+        if obj.is_hit_manual and not (obj.is_active and obj.status == ProductStatus.PUBLISHED):
+            self.message_user(
+                request,
+                "Товар отмечен хитом, но скрыт с витрины (отключён или не опубликован) — "
+                "в блоке «Хиты продаж» он не появится, пока вы его не включите.",
+                level=messages.WARNING,
+            )
+
+        # Доменное событие — из admin-flow, после коммита; в payload только id.
+        if change:
+            changed_fields = list(form.changed_data)
+            if changed_fields:
+                transaction.on_commit(
+                    lambda pid=obj.pk, c=changed_fields: product_updated.send(
+                        sender=Product, product_id=pid, source=EventSource.ADMIN, changed_fields=c
+                    )
+                )
+        else:
+            transaction.on_commit(
+                lambda pid=obj.pk: product_created.send(
+                    sender=Product, product_id=pid, source=EventSource.ADMIN
+                )
+            )
+
+    def save_related(self, request, form, formsets, change):
+        # Инлайны (в т.ч. значения характеристик) сохраняются здесь — проверку
+        # публикации делаем ПОСЛЕ них, когда PAV уже в БД. clean() на форме ловит
+        # существующий товар до сохранения, но для нового товара порядок сохранения
+        # инлайнов не позволяет валидировать в clean — поэтому здесь safe-fallback:
+        # не публикуем, а откатываем в «Требует проверки» (без исключения).
+        super().save_related(request, form, formsets, change)
+        obj = form.instance
+        if obj.status == ProductStatus.PUBLISHED and obj.publication_errors():
+            obj.status = ProductStatus.NEEDS_REVIEW
+            obj.is_active = False
+            obj.save(update_fields=["status", "is_active", "updated_at"])
+            self.message_user(
+                request,
+                "Не опубликовано: " + "; ".join(obj.publication_errors()),
+                level=messages.ERROR,
+            )
+
+    @staticmethod
+    def _emit_bulk_updated(ids: list[int], changed_fields: list[str]) -> None:
+        """Эмит product_updated по каждому реально изменённому товару (после коммита)."""
+
+        def _send():
+            for pid in ids:
+                product_updated.send(
+                    sender=Product,
+                    product_id=pid,
+                    source=EventSource.ADMIN,
+                    changed_fields=changed_fields,
+                )
+
+        transaction.on_commit(_send)
+
+    @admin.action(description=_("Перепривязать выбранные товары в категорию (поле справа)"))
+    def action_set_category(self, request, queryset):
+        # Bulk-перепривязка в категорию из поля action-формы. Фиксируем
+        # category_is_manual=True — это и есть защита: дальнейший авторазбор/импорт
+        # 1С эти товары не перевесит. Категория не влияет на attrs_cache, поэтому
+        # update() безопасен; событие эмитим по реально затронутым.
+        cat_id = request.POST.get("target_category")
+        if not cat_id:
+            self.message_user(
+                request,
+                _("Выберите категорию в поле «Категория для перепривязки» рядом с действием."),
+                level=messages.WARNING,
+            )
+            return
+        category = Category.objects.filter(is_active=True, pk=cat_id).first()
+        if category is None:
+            self.message_user(
+                request,
+                _("Категория не найдена или неактивна."),
+                level=messages.ERROR,
+            )
+            return
+        # Меняем ТОЛЬКО товары с другой категорией (паттерн action_publish): чтобы
+        # не слать ложные product_updated и не переводить в «ручной» режим товары,
+        # которые и так уже в этой категории. Категория не влияет на attrs_cache —
+        # update() безопасен.
+        changed = queryset.exclude(category=category)
+        ids = list(changed.values_list("id", flat=True))
+        updated = changed.update(category=category, category_is_manual=True)
+        skipped = queryset.count() - updated
+        if ids:
+            self._emit_bulk_updated(ids, ["category"])
+        self.message_user(
+            request,
+            _(
+                "Перепривязано в «%(cat)s»: %(n)d (уже были в категории: %(s)d). "
+                "Зафиксировано как ручное — переразбор/импорт 1С эти товары не изменит."
+            )
+            % {"cat": category.name, "n": updated, "s": skipped},
+        )
+
     @admin.action(description=_("Опубликовать выбранные товары"))
     def action_publish(self, request, queryset):
-        updated = queryset.update(status=ProductStatus.PUBLISHED, is_active=True)
-        self.message_user(request, _("Опубликовано: %d") % updated)
+        # НЕ обходим валидацию через queryset.update(): для каждого товара
+        # проверяем publication_errors() (категория + обязательные характеристики).
+        # Невалидные пропускаем; событие эмитим только по реально опубликованным.
+        # Уже опубликованные и активные — no-op: не трогаем (без лишних событий).
+        qs = (
+            queryset.exclude(status=ProductStatus.PUBLISHED, is_active=True)
+            .select_related("category")
+            .prefetch_related("attribute_values__attribute", "attribute_values__value_option")
+        )
+        ok_ids: list[int] = []
+        skipped = 0
+        for p in qs:
+            if p.publication_errors():
+                skipped += 1
+            else:
+                ok_ids.append(p.id)
+        Product.objects.filter(id__in=ok_ids).update(status=ProductStatus.PUBLISHED, is_active=True)
+        if ok_ids:
+            self._emit_bulk_updated(ok_ids, ["status", "is_active"])
+        self.message_user(
+            request,
+            f"Опубликовано: {len(ok_ids)}, пропущено: {skipped} — "
+            "не хватает обязательных характеристик/категории",
+        )
+
+    @admin.action(description=_("Пересобрать attrs_cache"))
+    def action_rebuild_attrs_cache(self, request, queryset):
+        # Пересборка денормализованного кэша характеристик из EAV — без
+        # save_model и доменных событий (это служебная операция, не правка контента).
+        for product in queryset:
+            rebuild_attrs_cache(product)
+        self.message_user(request, f"Пересобрано: {queryset.count()}")
 
     @admin.action(description=_("Вернуть на проверку"))
     def action_needs_review(self, request, queryset):
-        updated = queryset.update(status=ProductStatus.NEEDS_REVIEW)
+        qs = queryset.exclude(status=ProductStatus.NEEDS_REVIEW)
+        ids = list(qs.values_list("id", flat=True))
+        updated = qs.update(status=ProductStatus.NEEDS_REVIEW)
+        if ids:
+            self._emit_bulk_updated(ids, ["status"])
         self.message_user(request, _("Отправлено на проверку: %d") % updated)
+
+
+# ---------------------------------------------------------------------------
+# Журналы загрузки и обогащения каталога
+# ---------------------------------------------------------------------------
+
+
+def _stat(key, short):
+    """Колонка list_display, читающая счётчик из ImportRun.stats (JSONB)."""
+
+    @admin.display(description=short)
+    def getter(self, obj):
+        return (obj.stats or {}).get(key, "—")
+
+    getter.__name__ = f"stat_{key}"
+    return getter
+
+
+@admin.register(ImportRun)
+class ImportRunAdmin(admin.ModelAdmin):
+    list_display = (
+        "source",
+        "status",
+        "started_at",
+        "finished_at",
+        "stat_categories_created",
+        "stat_products_imported",
+        "stat_tool_type_assigned",
+        "stat_moderation",
+        "stat_recategorize_flagged",
+        "stat_excluded",
+    )
+    list_filter = ("status", "source")
+    ordering = ("-started_at",)
+    readonly_fields = ("started_at", "finished_at", "source", "status", "stats")
+
+    stat_categories_created = _stat("categories_created", _("Категорий"))
+    stat_products_imported = _stat("products_imported", _("Товаров"))
+    stat_tool_type_assigned = _stat("tool_type_assigned", _("tool_type"))
+    stat_moderation = _stat("moderation", _("Модерация"))
+    stat_recategorize_flagged = _stat("recategorize_flagged", _("Recategorize"))
+    stat_excluded = _stat("excluded", _("Исключено"))
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(EnrichmentLog)
+class EnrichmentLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "product_external_id",
+        "raw_name",
+        "category_path",
+        "result",
+        "tool_type",
+        "matched_keyword",
+    )
+    list_filter = ("result", "tool_type", "run")
+    search_fields = ("raw_name", "product_external_id")
+    list_select_related = ("run",)
+    readonly_fields = (
+        "run",
+        "product_external_id",
+        "raw_name",
+        "category_path",
+        "result",
+        "tool_type",
+        "matched_keyword",
+        "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(OneCGroup)
+class OneCGroupAdmin(admin.ModelAdmin):
+    """Реестр групп номенклатуры 1С (синкается catalog_sync_1c_groups; правится обменом).
+
+    Иерархия 1С: колонка «Родитель» + отступ в имени по глубине вложенности.
+    """
+
+    list_display = (
+        "indented_name",
+        "code",
+        "status",
+        "product_count",
+        "mapped_category",
+    )
+    list_filter = ("status",)
+    search_fields = ("name", "code")
+    autocomplete_fields = ["mapped_category", "parent"]
+    readonly_fields = ("product_count", "updated_at")
+    # Сортировка по материализованному пути → дети идут сразу под родителем (pre-order,
+    # как дерево «Категории»). Заполняется синком (tree_path).
+    ordering = ("tree_path", "name")
+    list_select_related = ("parent", "mapped_category")
+
+    def has_add_permission(self, request):
+        # Группы заводятся синком из 1С/маппинга, не вручную.
+        return False
+
+    @admin.display(description=_("Группа 1С (дерево)"), ordering="tree_path")
+    def indented_name(self, obj):
+        # Глубина = число разделителей в материализованном пути (быстро, без запросов).
+        from apps.catalog.models import ONEC_TREE_SEP
+
+        depth = (obj.tree_path or "").count(ONEC_TREE_SEP)
+        # mark_safe вместо format_html: аргументов нет, а такой вызов в Django 6 убирают.
+        prefix = mark_safe("&nbsp;&nbsp;&nbsp;&nbsp;" * depth)  # noqa: S308
+        return format_html("{}{}{}", prefix, "└ " if depth else "", obj.name)
+
+
+@admin.register(GroupCategoryMapping)
+class GroupCategoryMappingAdmin(admin.ModelAdmin):
+    """Сопоставление «группа 1С → категория сайта» + действие «применить к товарам»."""
+
+    list_display = ("name", "code", "status", "product_count", "mapped_category")
+    list_filter = ("status",)
+    search_fields = ("name", "code")
+    autocomplete_fields = ["mapped_category"]
+    readonly_fields = ("name", "code", "site_path", "product_count", "status", "updated_at")
+    ordering = ("-product_count", "name")
+    actions = ["action_apply"]
+
+    def has_add_permission(self, request):
+        return False
+
+    @admin.action(description=_("Применить: расставить товары групп в их категории"))
+    def action_apply(self, request, queryset):
+        from .onec_groups import apply_group_mapping
+
+        moved = skipped = 0
+        for group in queryset:
+            if not group.mapped_category_id:
+                skipped += 1
+                continue
+            moved += apply_group_mapping(group)
+        self.message_user(
+            request,
+            _("Перенесено товаров: %(m)d. Групп без категории пропущено: %(s)d.")
+            % {"m": moved, "s": skipped},
+            level=messages.SUCCESS if moved else messages.WARNING,
+        )
+
+
+@admin.register(SiteCategory)
+class SiteCategoryAdmin(CategoryAdmin):
+    """«Категории (сайт)» — только курируемое v2-дерево (узлы is_site_v2=True).
+
+    Признак is_site_v2 ставят build_skeleton/build_section; легаси-зеркала групп 1С
+    его не имеют, поэтому не попадают сюда (даже при совпадении slug).
+    """
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_site_v2=True)
+
+
+@admin.register(ProductAvailabilitySubscription)
+class ProductAvailabilitySubscriptionAdmin(admin.ModelAdmin):
+    """Read-only — жизненный цикл ведёт apps.catalog.availability_subscriptions,
+    не ручное редактирование (как NotificationLog/Notification, #514/#515)."""
+
+    list_display = ("user", "product", "channel", "status", "subscribed_at", "notified_at")
+    list_filter = ("channel", "status")
+    search_fields = ("user__phone", "product__name", "product__article")
+    readonly_fields = (
+        "user",
+        "product",
+        "channel",
+        "status",
+        "subscribed_at",
+        "queued_at",
+        "notified_at",
+        "cancelled_at",
+    )
+    date_hierarchy = "subscribed_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Catalog processing audit admin
+# ---------------------------------------------------------------------------
+
+
+class CatalogProcessingItemInline(admin.TabularInline):
+    model = CatalogProcessingItem
+    extra = 0
+    readonly_fields = (
+        "product",
+        "product_ref",
+        "status",
+        "input_hash",
+        "baseline_hashes",
+        "needed_targets",
+        "error_code",
+        "error_detail",
+        "created_at",
+        "finished_at",
+    )
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CatalogProcessingRun)
+class CatalogProcessingRunAdmin(admin.ModelAdmin):
+    list_display = ("id", "kind", "mode", "status", "idempotency_key", "created_at", "finished_at")
+    list_filter = ("kind", "mode", "status")
+    search_fields = ("idempotency_key",)
+    readonly_fields = (
+        "id",
+        "kind",
+        "mode",
+        "status",
+        "idempotency_key",
+        "scope",
+        "ruleset_version",
+        "ruleset_hash",
+        "taxonomy_hash",
+        "stats",
+        "created_by",
+        "created_at",
+        "finished_at",
+    )
+    inlines = [CatalogProcessingItemInline]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CatalogProcessingItem)
+class CatalogProcessingItemAdmin(admin.ModelAdmin):
+    list_display = ("run", "product_ref", "status", "input_hash", "created_at", "finished_at")
+    list_filter = ("status", "run__kind", "run__mode")
+    search_fields = ("product_ref", "run__idempotency_key")
+    readonly_fields = (
+        "run",
+        "product",
+        "product_ref",
+        "status",
+        "input_snapshot",
+        "input_hash",
+        "baseline_hashes",
+        "needed_targets",
+        "error_code",
+        "error_detail",
+        "created_at",
+        "finished_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CatalogChange)
+class CatalogChangeAdmin(admin.ModelAdmin):
+    list_display = (
+        "item",
+        "target_kind",
+        "status",
+        "source",
+        "confidence",
+        "reason_code",
+        "created_at",
+        "applied_at",
+    )
+    list_filter = ("status", "source", "target_kind")
+    search_fields = ("idempotency_key", "product_ref")
+    readonly_fields = (
+        "id",
+        "item",
+        "product_ref",
+        "target_kind",
+        "target_key",
+        "status",
+        "idempotency_key",
+        "before_value",
+        "proposed_value",
+        "after_value",
+        "baseline_hash",
+        "source",
+        "confidence",
+        "rule_ref",
+        "ruleset_hash",
+        "reason_code",
+        "reason_detail",
+        "evidence",
+        "reviewed_by",
+        "reviewed_at",
+        "applied_at",
+        "reversal_of",
+        "created_at",
+    )
+    actions = ["approve_changes", "reject_changes", "apply_changes"]
+
+    @admin.action(description=_("Одобрить выбранные предложения"))
+    def approve_changes(self, request, queryset):
+        if not settings.FEATURES.get("catalog_processing", False):
+            self.message_user(request, "Feature catalog_processing выключен", messages.ERROR)
+            return
+        reviewer_id = request.user.pk if request.user.is_authenticated else None
+        if not reviewer_id:
+            self.message_user(request, "Не удалось определить модератора", messages.ERROR)
+            return
+        count = 0
+        for change in queryset.filter(status="proposed"):
+            result = processing.review_catalog_change(change.pk, "approved", reviewer_id)
+            if result.status == "approved":
+                count += 1
+        self.message_user(request, f"Одобрено: {count}", messages.SUCCESS)
+
+    @admin.action(description=_("Отклонить выбранные предложения"))
+    def reject_changes(self, request, queryset):
+        if not settings.FEATURES.get("catalog_processing", False):
+            self.message_user(request, "Feature catalog_processing выключен", messages.ERROR)
+            return
+        reviewer_id = request.user.pk if request.user.is_authenticated else None
+        if not reviewer_id:
+            self.message_user(request, "Не удалось определить модератора", messages.ERROR)
+            return
+        count = 0
+        for change in queryset.filter(status="proposed"):
+            result = processing.review_catalog_change(change.pk, "rejected", reviewer_id)
+            if result.status == "rejected":
+                count += 1
+        self.message_user(request, f"Отклонено: {count}", messages.SUCCESS)
+
+    @admin.action(description=_("Применить одобренные изменения"))
+    def apply_changes(self, request, queryset):
+        if not settings.FEATURES.get("catalog_processing", False):
+            self.message_user(request, "Feature catalog_processing выключен", messages.ERROR)
+            return
+        actor_id = request.user.pk if request.user.is_authenticated else None
+        count = 0
+        for change in queryset.filter(status="approved"):
+            result = processing.apply_catalog_change(change.pk, actor_id=actor_id)
+            if result.status == "applied":
+                count += 1
+        self.message_user(request, f"Применено: {count}", messages.SUCCESS)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ProductSalesStat)
+class ProductSalesStatAdmin(admin.ModelAdmin):
+    """Рейтинг продаж — только чтение.
+
+    Нужен, чтобы бейдж «Хит» на витрине можно было объяснить: сколько продано, за
+    какое окно и когда была последняя продажа. Руками рейтинг не правится — он
+    пересобирается задачей из фактов продаж (apps.catalog.sales).
+    """
+
+    list_display = ("rank", "product", "quantity", "days_with_sales", "last_sold_on", "is_hit")
+    list_filter = ("is_hit", "window_days")
+    search_fields = ("product__name", "product__article", "product__code_1c")
+    ordering = ("rank",)
+    list_select_related = ("product",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

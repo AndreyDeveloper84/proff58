@@ -1,3 +1,6 @@
+# TDD Guard — транзиентное состояние (результаты тестов, журнал правок)
+.claude/tdd-guard/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -19,6 +22,8 @@ ENV/
 
 # Django
 *.log
+logs/*
+!logs/.gitkeep
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -53,5 +58,28 @@ coverage.xml
 *.swp
 .DS_Store
 
+# Node (только для сборки CSS витрины через Tailwind)
+node_modules/
+npm-debug.log*
+
 # Docker
 *.pid
+
+# Артефакты рантайма перестройки каталога (снимки отката)
+var/
+
+# Сгенерированные CSV-отчёты классификации (регенерируются командой)
+docs/reports/*.csv
+
+.claude/worktrees/
+
+# local test settings / artifacts
+config/settings/test.py
+celerybeat-schedule
+test.db
+
+# Дампы cookie от curl/httpie: содержат живые sessionid стенда (см. e.txt в 5a5466b)
+cookies.txt
+cookies*.txt
+*.cookies
+/e.txt

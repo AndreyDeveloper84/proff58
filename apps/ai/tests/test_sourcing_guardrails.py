@@ -1,0 +1,76 @@
+from apps.ai.sourcing.guardrails import validate
+from apps.ai.sourcing.ports import Finding, SourceQuery
+from apps.ai.sourcing.sources.dummy import DummySource
+
+
+def _f(**kw):
+    base = dict(
+        target_kind="description",
+        attribute_slug="",
+        value={"type": "text", "value": "Перфоратор для бетона"},
+        canonical_url="https://makita.ru/x",
+        confidence=0.8,
+        source_name="web",
+    )
+    base.update(kw)
+    return Finding(**base)
+
+
+def test_web_without_url_rejected():
+    assert validate(_f(canonical_url="")) is None
+
+
+def test_forbidden_target_rejected():
+    assert validate(_f(target_kind="price")) is None
+    assert validate(_f(target_kind="attribute", attribute_slug="stock_quantity")) is None
+
+
+def test_confidence_clamped():
+    assert validate(_f(confidence=5.0)).confidence == 1.0
+    assert validate(_f(confidence=-1.0)).confidence == 0.0
+
+
+def test_marketplace_without_url_allowed():
+    assert validate(_f(source_name="marketplace", canonical_url="")) is not None
+
+
+def test_dummy_source_returns_reply():
+    reply = DummySource().find(
+        SourceQuery(
+            article="HR2470",
+            name="Перфоратор Makita HR2470",
+            brand="Makita",
+            category="perf",
+            needed_targets=["description"],
+        ),
+        idempotency_key="k",
+    )
+    assert reply.provider == "dummy" and reply.findings
+    assert all(f.canonical_url for f in reply.findings)
+
+
+def test_all_forbidden_attribute_slugs_rejected():
+    # #369: цена/остаток/статус недостижимы для источника — покрываем ВСЕ слоты.
+    for slug in ("price", "stock_quantity", "available_quantity", "sync_1c_status"):
+        assert validate(_f(target_kind="attribute", attribute_slug=slug)) is None, slug
+
+
+def test_value_without_type_rejected():
+    assert validate(_f(value={"value": "нет ключа type"})) is None
+    assert validate(_f(value={})) is None
+
+
+def test_overlong_text_rejected():
+    assert validate(_f(value={"type": "text", "value": "a" * 8001})) is None
+    # граница MAX_TEXT=8000 включительно — проходит
+    assert validate(_f(value={"type": "text", "value": "a" * 8000})) is not None
+
+
+def test_untrusted_source_name_rejected():
+    # #9: находка не может объявить доверенный источник (manual/import_1c) и получить
+    # завышенный приоритет — source_name ограничен множеством адаптеров.
+    assert validate(_f(source_name="manual")) is None
+    assert validate(_f(source_name="import_1c")) is None
+    assert validate(_f(source_name="regex")) is None
+    assert validate(_f(source_name="web")) is not None
+    assert validate(_f(source_name="marketplace", canonical_url="")) is not None

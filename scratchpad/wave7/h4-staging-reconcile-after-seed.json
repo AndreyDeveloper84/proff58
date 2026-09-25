@@ -1,0 +1,48 @@
+{
+  "advisory": {
+    "display_metadata_mismatch": [],
+    "manifest_unused_option": [
+      "hoz-schetchiki",
+      "metchiki",
+      "osnastka-rezbonarez",
+      "plashki"
+    ],
+    "pending_business_review": [
+      "aksessuary-dlya-klyuchey",
+      "armiruyushchie-lenty-binty",
+      "bp-nabory-pnevmoinstrumenta",
+      "bp-osnastka-pnevmomolotkov",
+      "fiksatory-germetiki-rezby",
+      "hoz-schetchiki",
+      "kovshi-shtukaturnye",
+      "kukhonnye-razdelochnye-nozhi",
+      "metchiki",
+      "osnastka-rezbonarez",
+      "plashki",
+      "rukoyatki-dlya-instrumenta",
+      "skruchevateli-provoloki",
+      "spetsialnye-nozhi",
+      "stroitelnye-lesa-vyshki"
+    ],
+    "semantic_duplicate": {}
+  },
+  "blocking": {
+    "missing_in_live": [],
+    "ruleset_unknown_slug": [],
+    "slug_value_mismatch": [],
+    "unexpected_in_live": [],
+    "used_outside_manifest": []
+  },
+  "identity_equal": true,
+  "live": {
+    "options": 328,
+    "taxonomy_identity_hash": "fc13be7804b06713dccde5cd2888a437a1a7521772d5911acc7d9d93636714d8"
+  },
+  "manifest": {
+    "manifest_semantic_hash": "91b3ed0c1f7b2bd08c63fe9460b43c20cdf04fa748921465589d1c90b7058b16",
+    "manifest_version": 1,
+    "options": 328,
+    "path": "/app/data/catalog_processing_rules/tool_type_taxonomy.v1.json",
+    "taxonomy_identity_hash": "fc13be7804b06713dccde5cd2888a437a1a7521772d5911acc7d9d93636714d8"
+  }
+}

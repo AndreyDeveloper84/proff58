@@ -1,6 +1,8 @@
 from django.contrib import admin
 
-from .models import NomenclatureStaging, PriceRecord, StockRecord, SyncLog
+from apps.pricing.models import PriceRecord
+
+from .models import NomenclatureStaging, StockRecord, SyncLog
 
 
 @admin.register(NomenclatureStaging)

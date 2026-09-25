@@ -1,0 +1,614 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Бренд-токены «Профессионал» (#39/#474/#477). Стратегия темы (утверждено, #477):
+  СВЕТЛАЯ тема — основная для товарных поверхностей (каталог/PDP/checkout/ЛК);
+  тёмные — шапка и подвал (брендовая рамка) и допустимые тёмные акцент-зоны.
+
+  Дефолт токенов — СВЕТЛАЯ (:root / [data-theme="light"]). Тёмная — под классом
+  `.dark` (совместимо с @custom-variant dark) ИЛИ [data-theme="dark"] (переключатель
+  темы, #586). Ближайший предок с темой выигрывает при резолве var.
+
+  #586/#591: шапка (--header-…/--topbar-…) СЛЕДУЕТ за темой — светлая в светлой
+  теме, тёмная в тёмной (утверждённый макет — светлый e-commerce). Подвал использует
+  обычные семантические токены (bg-surface/border-line) и тоже следует за темой.
+
+  Компоненты используют ТОЛЬКО семантические токены (никакого raw-hex) — смена темы
+  их не трогает. --accent / --primary приходят из SiteSettings (inline style на <html>).
+*/
+
+/* Общие (не зависят от темы): радиусы. */
+:root {
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* Signature-панель экспертной помощи на PDP остаётся графитовой в обеих темах:
+     это акцентный блок, который должен читаться как «врезка от магазина», а не
+     как ещё одна карточка. */
+  --expert-bg: #1a2024;
+  --expert-ink: #f7f8f9;
+}
+
+/* Светлая тема — ДЕФОЛТ для товарных поверхностей (#477). */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* UX-02: фон страницы чуть серее, чтобы белая карточка товара отделялась от него
+     уже без наведения (раньше главная была залита тем же --surface, что и карточки).
+     --surface-raised сдвинут следом: скелетоны и hover-подложки лежат и на фоне
+     страницы, и при прежнем значении сливались бы с ним. */
+  --bg: #f2f4f6;
+  --surface: #ffffff;
+  --surface-raised: #e9ecef;
+  --border: #dde1e5;
+  /* Карточка товара/плитка: отдельный токен, а не --surface — тот занят родительскими
+     поверхностями (панели, подвал, корзина), и менять его глобально нельзя. */
+  --card: #ffffff;
+  --card-shadow: 0 1px 2px rgb(20 24 27 / 0.06), 0 1px 1px rgb(20 24 27 / 0.04);
+  /* Поля форм сохраняют прежнюю заливку: смена --bg их задевать не должна. */
+  --field: #f7f8f9;
+
+  /* #586: светлый header — белая основная строка, светло-серый topbar. */
+  --header-bg: #ffffff;
+  --header-ink: #14181b;
+  --header-line: #e5e8ec;
+  --topbar-bg: #f3f4f6;
+  --topbar-ink: #4b5560;
+
+  --text: #14181b;
+  --text-secondary: #495057;
+  --text-muted: #616a72; /* AA-контраст на белом (~4.6:1) */
+
+  /* Акцент/CTA — фирменный зелёный, снят пипеткой с утверждённого макета главной
+     (кнопки «Каталог товаров»/«Подобрать инструмент» ≈ #6ca408/#6aa207). Белый текст
+     поверх. Значение фиксировано в дизайн-системе и НЕ берётся из SiteSettings
+     (см. layout.tsx). */
+  /* Два зелёных не взаимозаменяемы, правило одно на весь проект:
+     --accent — то, что человек нажимает и выбирает (кнопки, чекбоксы, активные
+     фильтры, сердечко, тумблеры);
+     --primary (утилита brand) — состояние товара, которое НЕ трогают руками:
+     «в наличии», «новинка», ссылки в тексте.
+     Смешивать нельзя: две кнопки рядом в разной зелени читаются как ошибка. */
+  --accent: #6ba306;
+  --accent-ink: #ffffff;
+  --primary: #0a8043;
+
+  /* Переключатель темы: солнце и луна одного цвета в обеих темах — значок
+     показывает текущую тему, а не подстраивается под неё. */
+  --theme-toggle-sun-stroke: #cf8500;
+  --theme-toggle-sun-fill: #ffc83d;
+  --theme-toggle-moon-stroke: #a99cff;
+  --theme-toggle-moon-fill: #8575dc;
+
+  --danger: #cf2e2e;
+  --rating: #b7791f;
+  /* Оранжевый «Хита» и лиловый MAX — фирменные, не выводятся из зелёного. */
+  --hit: #ff8700;
+  --max-brand: #6156f5;
+  /* Спокойная синяя рамка справок «к сведению» (резерв, сроки счёта). */
+  --info: #2f6fb0;
+  --info-bg: #eef4fb;
+  --info-line: #d3e2f2;
+
+  --photo: #eef1f3;
+  --photo-ink: #6b747c;
+
+  /* Лиловая подложка блоков MAX. Токен, а не хардкод #f7f6ff: карточки
+     переживают смену темы, иначе текст в тёмной ложился на белый градиент. */
+  --max-tint: #f7f6ff;
+
+  --st-wait: #b7791f;
+  --st-confirm: #2f6fb0;
+  --st-assemble: #7a5fc0;
+  --st-ship: #2f6fb0;
+  --st-done: #157a5b;
+  --st-cancel: #c0453f;
+}
+
+/* Тёмная тема — secondary/dark-mode: класс .dark или [data-theme="dark"]. */
+.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0e1113;
+  --surface: #16191c;
+  --surface-raised: #1e2226;
+  --border: #2a2f34;
+  /* UX-02: в тёмной теме карточка СВЕТЛЕЕ страницы и панелей; тень на тёмном не видна,
+     отделение держится на заливке и границе. */
+  --card: #1d2125;
+  --card-shadow: 0 0 0 transparent;
+  --field: #0e1113;
+
+  /* #586: тёмный header — прежняя брендовая рамка. */
+  --header-bg: #12161a;
+  --header-ink: #eef1f3;
+  --header-line: #2a2f34;
+  --topbar-bg: #0e1113;
+  --topbar-ink: #aeb6bc;
+
+  --text: #f2f4f5;
+  --text-secondary: #aeb6bc;
+  --text-muted: #6e767c;
+
+  /* Тот же макетный зелёный: .dark теперь только локальная фото-зона hero,
+     кнопки в ней должны совпадать с остальными CTA. */
+  --accent: #6ba306;
+  --accent-ink: #ffffff;
+  --primary: #00a14b;
+
+  --danger: #e5484d;
+  --rating: #e6b45a;
+  --hit: #ff9a2e;
+  --max-brand: #8b83f8;
+  --info: #74b6ee;
+  --info-bg: #17202b;
+  --info-line: #24384d;
+
+  --photo: #eef1f3;
+  --photo-ink: #8b939a;
+
+  --max-tint: #1d1b2e;
+
+  --st-wait: #e6b45a;
+  --st-confirm: #74b6ee;
+  --st-assemble: #c2acf2;
+  --st-ship: #74b6ee;
+  --st-done: #7fd9bc;
+  --st-cancel: #ec8c88;
+}
+
+/*
+  Маппинг бренд-токенов в Tailwind v4 утилиты (имена без коллизий с shadcn-семантикой).
+  Утилиты: bg-canvas, bg-surface, bg-raised, border-line, text-ink, text-ink-2,
+  text-ink-3, text/bg-accent, text-accent-ink, text/bg-brand, text/bg-danger, text-rating,
+  font-display, шкала радиусов.
+*/
+@theme inline {
+  --color-canvas: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--surface-raised);
+  --color-line: var(--border);
+  --color-card: var(--card);
+  --color-field: var(--field);
+  --shadow-card: var(--card-shadow);
+
+  --color-ink: var(--text);
+  --color-ink-2: var(--text-secondary);
+  --color-ink-3: var(--text-muted);
+
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-brand: var(--primary);
+
+  --color-danger: var(--danger);
+  --color-rating: var(--rating);
+  --color-hit: var(--hit);
+  --color-max: var(--max-brand);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-info-line: var(--info-line);
+
+  --color-photo: var(--photo);
+  --color-photo-ink: var(--photo-ink);
+
+  --color-expert: var(--expert-bg);
+  --color-expert-ink: var(--expert-ink);
+
+  --color-st-wait: var(--st-wait);
+  --color-st-confirm: var(--st-confirm);
+  --color-st-assemble: var(--st-assemble);
+  --color-st-ship: var(--st-ship);
+  --color-st-done: var(--st-done);
+  --color-st-cancel: var(--st-cancel);
+
+  /* Шапка (#586): bg-header, text-header-ink, border-header-line, bg-topbar, … */
+  --color-header: var(--header-bg);
+  --color-header-ink: var(--header-ink);
+  --color-header-line: var(--header-line);
+  --color-topbar: var(--topbar-bg);
+  --color-topbar-ink: var(--topbar-ink);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-oswald);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}
+
+/*
+  Dual-thumb диапазон (две input[type=range] на ОДНОЙ дорожке) для фильтров PLP.
+  Намеренно обычный CSS, а не Tailwind arbitrary-варианты псевдоэлементов: именно их
+  ненадёжная компиляция ломала кликабельность бегунка ранее. pointer-events:none на самом
+  инпуте + pointer-events:auto на бегунке → событие ловит только бегунок, поэтому два
+  наложенных инпута не перехватывают drag друг у друга.
+*/
+.range-dual {
+  position: relative;
+  height: 20px;
+}
+.range-dual .range-track,
+.range-dual .range-fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+}
+.range-dual .range-track {
+  left: 0;
+  right: 0;
+  background: var(--border);
+}
+.range-dual .range-fill {
+  background: var(--accent);
+}
+.range-dual input[type="range"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: none;
+}
+.range-dual input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.range-dual input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.range-dual input[type="range"]::-moz-range-track {
+  background: transparent;
+}
+.range-dual input[type="range"]:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-inter), system-ui, sans-serif;
+    text-rendering: optimizeLegibility;
+  }
+  /* Видимый фокус с клавиатуры (a11y). */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Курсор-указатель на всём, что нажимается.
+   *
+   * Tailwind v4 убрал `cursor: pointer` для кнопок из своего сброса стилей, и
+   * кнопки стали неотличимы от текста: «Нет аккаунта? Зарегистрируйтесь» на
+   * форме входа — кнопка, а курсор над ней оставался стрелкой.
+   *
+   * Правилом, а не классом в каждом файле: кнопок под сорок мест, и новая
+   * появится без указателя ровно так же. Ссылки (`a[href]`) указатель имеют по
+   * умолчанию, поэтому здесь их нет.
+   */
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  /* Подписи, оборачивающие переключатель: кликается вся карточка фильтра. */
+  label:has(input[type="checkbox"]:not(:disabled)),
+  label:has(input[type="radio"]:not(:disabled)) {
+    cursor: pointer;
+  }
+
+  /* Недоступное сейчас — не «нажимаемое», но и не текст: видно, что элемент
+     интерактивный и просто выключен. */
+  button:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/*
+  Микроанимации иконок шапки (components/layout/HeaderActionIcons.tsx).
+
+  Два уровня на разных элементах, чтобы transform не спорили:
+    .hdr-action:hover/.focus-visible → .hdr-icon (внешняя обёртка) — подъём на 3px,
+      один цикл при входе курсора; подпись и область нажатия (сама ссылка) не двигаются;
+    [data-acting] → .hdr-icon-inner и её части — анимация успешного действия.
+  Пока идёт действие, внешняя обёртка тоже помечена data-acting, и подъём отключён:
+  действие приоритетнее наведения. Hover — только там, где он настоящий
+  (hover: hover): на сенсорных экранах не бывает «зависшей» приподнятой иконки.
+  При prefers-reduced-motion: reduce всего движения нет, декор остаётся невидимым,
+  а состояние (счётчик, заливка) обновляется как обычно.
+*/
+@layer components {
+  .hdr-icon,
+  .hdr-icon-inner {
+    position: relative;
+    display: grid;
+    place-items: center;
+  }
+  /* Декор невидим в покое и без анимации; клики не ловит и места не занимает. */
+  .hdr-ring,
+  .hdr-drop {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .hdr-ring {
+    inset: 0;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent);
+  }
+  .hdr-drop {
+    left: 44%;
+    top: 36%;
+    width: 20%;
+    height: 20%;
+    border-radius: 1px;
+    background: var(--accent);
+  }
+}
+
+@keyframes hdr-lift {
+  0% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(-3px);
+  }
+  75% {
+    transform: translateY(0.7px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes hdr-heart-pulse {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.2);
+  }
+  55% {
+    transform: scale(0.95);
+  }
+  78% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes hdr-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+/* Столбик сжимается к своему нижнему краю (y=17 в viewBox lucide chart-column):
+   translateY(17px) scaleY() translateY(-17px) держит низ на месте без
+   transform-origin/transform-box — те для линий нулевой ширины ненадёжны. */
+@keyframes hdr-bar {
+  0% {
+    transform: translateY(17px) scaleY(1) translateY(-17px);
+  }
+  35% {
+    transform: translateY(17px) scaleY(0.15) translateY(-17px);
+  }
+  70% {
+    transform: translateY(17px) scaleY(1.12) translateY(-17px);
+  }
+  85% {
+    transform: translateY(17px) scaleY(0.96) translateY(-17px);
+  }
+  100% {
+    transform: translateY(17px) scaleY(1) translateY(-17px);
+  }
+}
+@keyframes hdr-cart-settle {
+  0%,
+  30% {
+    transform: translateY(0);
+  }
+  52% {
+    transform: translateY(2px);
+  }
+  78% {
+    transform: translateY(-0.6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes hdr-drop {
+  0% {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  45% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  62%,
+  100% {
+    transform: translateY(1px);
+    opacity: 0;
+  }
+}
+@keyframes hdr-badge-pop {
+  0% {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes hdr-wave {
+  0% {
+    transform: rotate(0deg);
+  }
+  35% {
+    transform: rotate(-10deg);
+  }
+  70% {
+    transform: rotate(6deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Уровень 1 — наведение и фокус с клавиатуры. */
+  @media (hover: hover) {
+    .hdr-action:hover .hdr-icon:not([data-acting]) {
+      animation: hdr-lift 360ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
+  .hdr-action:focus-visible .hdr-icon:not([data-acting]) {
+    animation: hdr-lift 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Уровень 2 — успешное действие. Длительности продублированы в
+     ACTION_DURATION_MS (HeaderActionIcons.tsx). */
+  .hdr-icon--wishlist[data-acting] .hdr-heart {
+    transform-origin: 50% 55%;
+    animation: hdr-heart-pulse 650ms ease-in-out;
+  }
+  .hdr-icon--wishlist[data-acting] .hdr-ring {
+    animation: hdr-ring 650ms ease-out;
+  }
+
+  .hdr-icon--compare[data-acting] .hdr-bar {
+    animation: hdr-bar 470ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  /* Слева направо: короткий (x=8), средний (x=13), высокий (x=18); шаг 80 мс. */
+  .hdr-icon--compare[data-acting] .hdr-bar:nth-of-type(3) {
+    animation-delay: 80ms;
+  }
+  .hdr-icon--compare[data-acting] .hdr-bar:nth-of-type(2) {
+    animation-delay: 160ms;
+  }
+
+  .hdr-icon--cart[data-acting] .hdr-cart {
+    animation: hdr-cart-settle 700ms ease-out;
+  }
+  .hdr-icon--cart[data-acting] .hdr-drop {
+    animation: hdr-drop 700ms cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  .hdr-icon--account[data-acting] .hdr-wave {
+    transform-origin: 50% 85%;
+    animation: hdr-wave 500ms ease-in-out;
+  }
+
+  /* Счётчик после успешного добавления: pop; впервые появившийся — с задержкой,
+     пока идёт анимация иконки (backwards-заполнение держит его в scale(0)). */
+  .hdr-badge[data-pop] {
+    transform-origin: 50% 50%;
+    animation: hdr-badge-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .hdr-badge[data-pop="delayed"] {
+    animation-delay: 480ms;
+  }
+}
+
+/*
+  Переключатель темы (components/layout/ThemeToggle.tsx).
+
+  Обе иконки лежат в одной grid-ячейке обёртки .theme-icon, размер обёртки —
+  размер svg, поэтому кнопка и соседи не двигаются. Какая иконка видна, задаёт
+  html[data-theme]: его ставит THEME_INIT_SCRIPT до первого кадра, и на загрузке /
+  восстановлении сохранённой темы computed-значения не меняются — перехода нет.
+  Клик меняет data-theme, и transition проигрывает смену: уходящая иконка
+  сжимается до 0.35 с поворотом и гаснет, входящая растёт из 0.35 в исходное
+  положение. К тёмной: солнце 0→90°, луна −80°→0; обратно — те же дороги назад
+  (transition перенацеливается с текущего значения, очереди при быстрых кликах нет).
+*/
+@layer components {
+  .theme-icon {
+    display: grid;
+    place-items: center;
+  }
+  .theme-icon > svg {
+    grid-area: 1 / 1;
+    transform-origin: 50% 50%;
+    transition:
+      transform 550ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 350ms ease;
+  }
+  .theme-icon-sun {
+    color: var(--theme-toggle-sun-stroke);
+  }
+  /* Заливка только у центрального круга: лучи — отрезки, между ними прозрачно. */
+  .theme-icon-sun circle {
+    fill: var(--theme-toggle-sun-fill);
+  }
+  .theme-icon-moon {
+    color: var(--theme-toggle-moon-stroke);
+    fill: var(--theme-toggle-moon-fill);
+    opacity: 0;
+    transform: rotate(-80deg) scale(0.35);
+  }
+  :root[data-theme="dark"] .theme-icon-sun {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.35);
+  }
+  :root[data-theme="dark"] .theme-icon-moon {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Без движения: иконка просто сменяется, без вращения, масштаба и плавности.
+     Селекторы повторяют полные, чтобы перебить состояние тёмной темы. */
+  @media (prefers-reduced-motion: reduce) {
+    .theme-icon > svg {
+      transition: none;
+    }
+    .theme-icon-moon,
+    :root[data-theme="dark"] .theme-icon-sun {
+      transform: none;
+    }
+  }
+}

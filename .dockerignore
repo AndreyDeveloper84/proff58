@@ -15,3 +15,41 @@ htmlcov
 staticfiles
 media
 *.sqlite3
+
+# --- Непродуктовое из образа web (#442/TD-05) ---
+# Образ web (context: .) — headless Django API. COPY . . тянул сюда сотни МБ
+# балласта. dev это не ломает: docker-compose.yml монтирует исходники томом .:/app;
+# CI гоняет тесты из checkout; прод-команды каталога используют apps/scripts/docker/data.
+
+# Фронт — отдельный образ (context ./frontend). В образе web не нужен; node_modules
+# (~700 МБ) и .next (~350 МБ) — чистый мусор в build context.
+frontend
+
+# Vendored agent-тулинг (~140 МБ, 900+ файлов) — только для разработки, не для рантайма.
+.claude
+
+# Доки, CI-конфиги, кросс-модульные тесты — прод-образу не нужны.
+docs
+.github
+tests
+
+# Node/сборочные артефакты (на случай появления вне frontend/).
+node_modules
+**/node_modules
+.next
+
+# Рантайм-тома (в проде — bind-mount ./logs, ./var), IDE/OS-артефакты.
+logs
+var
+.vscode
+.idea
+.DS_Store
+
+# Дампы БД и рабочие артефакты окон. На staging в ./backups рядом с кодом лежат
+# ручные дампы (~800 МБ): в build context они попадали целиком и копировались в
+# COPY . . четырёх образов (web, celery, celery-beat, celery-onec). Деплой
+# 33947113373 из-за этого упёрся в command_timeout 30m прямо на COPY.
+# Рантайму не нужны: release.sh пишет в /home/taximeter/backups/proff58 (вне
+# репозитория), а каталоги scratchpad/ парсер создаёт сам (mkdir parents=True).
+backups
+scratchpad

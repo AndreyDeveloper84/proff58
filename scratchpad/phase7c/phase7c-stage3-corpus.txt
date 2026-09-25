@@ -1,0 +1,6 @@
+correct=37/54 collisions=0 wrong_slug=0
+same-slug multi-match (rule_refs>1): 3
+  36300 -> ['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye'] [siz-ochki]
+  36302 -> ['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye'] [siz-ochki]
+  36304 -> ['tt-siz-ochki-shitok', 'tt-siz-ochki-zashchitnye'] [siz-ochki]
+PASS: collisions=0 wrong_slug=[] correct>=32 baseline

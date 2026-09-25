@@ -1,0 +1,5573 @@
+{
+ "track": "PF-SH-RELEASE-GATE-01",
+ "generated": "2026-09-21",
+ "scope": "commercial live DB (perforatory, shlifmashiny)",
+ "rules": {
+  "media": ">=1 image served by storefront (JSON-LD image[0] HEAD 200 image/*)",
+  "release_required": "energy param by power kind (mains→power, battery→voltage, unknown→power|voltage); perforatory + energy_impact + chuck",
+  "quality_desirable": "power_source (if derivable), no_load_speed, motor_type, weight_kg, battery_included/capacity (battery)",
+  "taxonomy": "stanok in shlifmashiny → BLOCKED_TAXONOMY; ushm/polirovalnaya in shlifmashiny → known gap",
+  "seo": "global robots Disallow → SEO_SWITCH_PENDING, не product failure"
+ },
+ "skus": [
+  {
+   "product_id": 568,
+   "article": "HRH2024BL",
+   "brand": "HANSKONNER",
+   "name": "Перфоратор аккумуляторный Hanskonner HRH2024BL 18В, 2,2Дж, 3реж б/щ 1х4,0Ач+ЗУ кейс",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 18100.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Аккумуляторный перфоратор Hanskonner 1BatterySystem HRH2024BL",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/568/1139-1d318fb3-v2.webp",
+   "core_required": [
+    "voltage",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "voltage",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "battery_capacity",
+    "battery_included",
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "no_load_speed",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00046021",
+   "card_price": 18100,
+   "card_availability": "InStock",
+   "card_char_labels": "8/8",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 578,
+   "article": "PB-260",
+   "brand": "ЗУБР",
+   "name": "Перфоратор аккумуляторный ЗУБР PB-260 20В бесщеточный без АКБ и ЗУ Профессионал в коробке",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 9600.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Бесщеточный перфоратор ЗУБР Профессионал 20В PB-260",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/578/1010-0b591692-v2.webp",
+   "core_required": [
+    "voltage",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "voltage",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg",
+    "battery_capacity"
+   ],
+   "pav_filled": [
+    "battery_included",
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "no_load_speed",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00034233",
+   "card_price": 9600,
+   "card_availability": "InStock",
+   "card_char_labels": "7/7",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:weight_kg",
+    "QUALITY:battery_capacity"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 579,
+   "article": "PB-260-42",
+   "brand": "ЗУБР",
+   "name": "Перфоратор аккумуляторный ЗУБР PB-260-42 20В бесщеточный SDS+, 3Дж, 0-4800 уд/мин, аккум 4 а/ч",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 2.0,
+    "price": 23100.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Бесщеточный перфоратор ЗУБР Профессионал 20В PB-260-42",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/579/1013-4e57e3d0-v2.webp",
+   "core_required": [
+    "voltage",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "voltage",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "battery_capacity",
+    "battery_included",
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "no_load_speed",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00033577",
+   "card_price": 23100,
+   "card_availability": "InStock",
+   "card_char_labels": "8/8",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44422,
+   "article": "HTC-DH24PG",
+   "brand": "HIKOKI",
+   "name": "Перфоратор DH24PG; 730Вт, SDS plus, 2,7Дж, 2реж, 0-1050",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 4.0,
+    "price": 12000.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор Hitachi DH24PG",
+    "note": "префикс HTC- = код бренда в 1С; base «DH24PG»; ручная сверка"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44422/1142-fda1ea56-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00002540",
+   "card_price": 12000,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "IDENTITY_BY_BASE_ARTICLE_MANUAL_CHECK",
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44458,
+   "article": "HRH0822RE",
+   "brand": "HANSKONNER",
+   "name": "Перфоратор Hanskonner HRH0822RE 600Вт, 3реж 2,2Дж, 22мм SDS+",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 2.0,
+    "price": 7700.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор Hanskonner SDS Plus HRH0822RE",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44458/1145-995def4c-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00042754",
+   "card_price": 7700,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44459,
+   "article": "HRH0824RE",
+   "brand": "HANSKONNER",
+   "name": "Перфоратор Hanskonner HRH0824RE 790Вт, 3реж 2,8Дж, 24мм SDS+",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 10400.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор Hanskonner SDS Plus HRH0824RE",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44459/1022-fdbdce00-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00039503",
+   "card_price": 10400,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44460,
+   "article": "HRH0828RE",
+   "brand": "HANSKONNER",
+   "name": "Перфоратор Hanskonner HRH0828RE 850Вт, 3реж 3,2Дж, 28мм SDS+",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 2.0,
+    "price": 9900.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор Hanskonner HRH0828RE",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44460/1025-464dfe97-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00043198",
+   "card_price": 9900,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44461,
+   "article": "HRH0828REC",
+   "brand": "HANSKONNER",
+   "name": "Перфоратор Hanskonner HRH0828REC 850Вт, 3реж 3,2Дж, 28мм SDS+",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 10500.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор Hanskonner HRH0828REC",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44461/1028-57186462-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00042755",
+   "card_price": 10500,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44462,
+   "article": "HRH0926AVS",
+   "brand": "HANSKONNER",
+   "name": "Перфоратор Hanskonner HRH0926AVS 800Вт, 3,0Дж, 26мм SDS+ 3реж",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 2.0,
+    "price": 8200.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор Hanskonner SDS Plus HRH0926AVS",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44462/1031-5ceb1136-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/0110000435",
+   "card_price": 8200,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44464,
+   "article": "HRH0928H",
+   "brand": "HANSKONNER",
+   "name": "Перфоратор Hanskonner HRH0928H 950Вт, 3,2Дж, 28мм SDS+",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 3.0,
+    "price": 13100.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор Hanskonner SDS Plus  PLATINUM HRH0928H",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44464/1034-bc0f3299-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/0110000614",
+   "card_price": 13100,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44466,
+   "article": "HRH0928MLRE",
+   "brand": "HANSKONNER",
+   "name": "Перфоратор Hanskonner HRH0928MLRE 850Вт, 3,2Дж, 28мм метал редуктор",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 11000.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор Hanskonner SDS Plus HRH0928MLRE",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44466/1037-8690c4ab-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00039502",
+   "card_price": 11000,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44469,
+   "article": "HRH1652M",
+   "brand": "HANSKONNER",
+   "name": "Перфоратор Hanskonner HRH1652M SDS-MAX 1600Вт, 52мм, 2-15Дж, 150-305об/мин",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 2.0,
+    "price": 41000.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор Hanskonner SDS MAX HRH1652M",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44469/1067-672d8b41-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044429",
+   "card_price": 41000,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44470,
+   "article": "HRH1836RE",
+   "brand": "HANSKONNER",
+   "name": "Перфоратор Hanskonner HRH1836RE 1800Вт, 3реж 7Дж, 36мм SDS+ вертикальный",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 16500.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор Hanskonner SDS Plus HRH1836RE",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44470/1070-dd6584fe-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044075",
+   "card_price": 16500,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44471,
+   "article": "HRH1855M",
+   "brand": "HANSKONNER",
+   "name": "Перфоратор Hanskonner HRH1855M SDS-MAX 1800Вт, 55мм, 5-19Дж, 100-220об/мин",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 2.0,
+    "price": 59500.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор Hanskonner SDS MAX HRH1855M",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44471/1073-b43b8704-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044428",
+   "card_price": 59500,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44472,
+   "article": "HRH2145MVE",
+   "brand": "HANSKONNER",
+   "name": "Перфоратор Hanskonner HRH2145MVE SDS-MAX 2100Вт, 52мм, 20Дж, 320-550об/мин",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 2.0,
+    "price": 29000.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор Hanskonner HRH2145MVE",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44472/1076-d0199686-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00040309",
+   "card_price": 29000,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44522,
+   "article": "ЗП-2470",
+   "brand": "ЗУБР",
+   "name": "Перфоратор ЗУБР ЗП-2470, SDS+, реверс, 780Вт, 2.7Дж, 3режима ПРОФЕССИОНАЛ",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 8500.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор ЗУБР Профессионал SDS Plus 24 мм, 780 Вт ЗП-2470",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44522/1016-ff12fcf0-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044595",
+   "card_price": 8500,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44524,
+   "article": "ЗП-2680",
+   "brand": "ЗУБР",
+   "name": "Перфоратор ЗУБР ЗП-2680, SDS+, реверс, 850Вт, 2.9Дж, 3режима ПРОФЕССИОНАЛ",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 8800.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор ЗУБР Профессионал SDS Plus 26 мм, 850 Вт ЗП-2680",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44524/1019-970ec0a3-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044596",
+   "card_price": 8800,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44527,
+   "article": "ЗП-2890 м",
+   "brand": "ЗУБР",
+   "name": "Перфоратор ЗУБР ЗП-2890, SDS+, реверс, 900Вт, 3,2Дж, 3режима ПРОФЕССИОНАЛ",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 9600.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор ЗУБР Профессионал SDS Plus + БЗП 28 мм, 900 Вт ЗП-2890 мс",
+    "note": "OWNER-GO-2: base article без суффикса 1С «ЗП-2890 м»; identity требует ручной сверки карточки"
+   },
+   "media_count": 0,
+   "media_sources": [],
+   "main_image_ok": false,
+   "main_image": null,
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044597",
+   "card_price": 9600,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "BLOCKED_MEDIA",
+   "primary_blocker": "BLOCKED_MEDIA",
+   "secondary_gaps": [
+    "IDENTITY_BY_BASE_ARTICLE_MANUAL_CHECK",
+    "VARIANT_IDENTITY_MISMATCH: у ВИ только «ЗП-2890 мс» (=44528), «м»-версии нет",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": false,
+   "recommended_fix": "MEDIA: получить 1 корректное фото (источник вне ВИ / ручная загрузка через ImagePipeline)"
+  },
+  {
+   "product_id": 44528,
+   "article": "ЗП-2890 мс",
+   "brand": "ЗУБР",
+   "name": "Перфоратор ЗУБР ЗП-2890мс, SDS+, реверс, 900Вт, 3,2Дж, 3режима + патрон БЗП ПРОФЕССИОНАЛ",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 10450.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор ЗУБР Профессионал SDS Plus + БЗП 28 мм, 900 Вт ЗП-2890 мс",
+    "note": "OWNER-GO-2: base article без суффикса 1С «ЗП-2890 мс»; identity требует ручной сверки карточки"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44528/1148-e96e2d4f-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044598",
+   "card_price": 10450,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "IDENTITY_BY_BASE_ARTICLE_MANUAL_CHECK",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44529,
+   "article": "ЗП-30-900 К",
+   "brand": "ЗУБР",
+   "name": "Перфоратор ЗУБР ЗП-30-900 К, SDS+, реверс, 900Вт, ПРОФЕССИОНАЛ",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 9100.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор ЗУБР Профессионал 900 Вт ЗП-30-900 К",
+    "note": "OWNER-GO-2: base article без суффикса 1С «ЗП-30-900 К»; identity требует ручной сверки карточки"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44529/1151-d8b392e8-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00034244",
+   "card_price": 9100,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "IDENTITY_BY_BASE_ARTICLE_MANUAL_CHECK",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44530,
+   "article": "ЗП-32-1100 К",
+   "brand": "ЗУБР",
+   "name": "Перфоратор ЗУБР ЗП-32-1100 К, SDS+, реверс, 1100Вт, ПРОФЕССИОНАЛ",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 10200.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор ЗУБР Профессионал, 1100 Вт ЗП-32-1100 К",
+    "note": "OWNER-GO-2: base article без суффикса 1С «ЗП-32-1100 К»; identity требует ручной сверки карточки"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44530/1154-fc918542-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00034245",
+   "card_price": 10200,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "IDENTITY_BY_BASE_ARTICLE_MANUAL_CHECK",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44534,
+   "article": "ЗПМ-40-1250 ЭВК",
+   "brand": "ЗУБР",
+   "name": "Перфоратор ЗУБР ЗПМ-40-1250 \"ПРОФЕССИОНАЛ\" SDS-Max, 10Дж, 6,8 кг, 1250Вт, кейс",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 15300.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор SDS-Max ЗУБР Профессионал ЗПМ-40-1250 ЭВК",
+    "note": "OWNER-GO-2: base article без суффикса 1С «ЗПМ-40-1250 ЭВК»; identity требует ручной сверки карточки"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44534/1157-e285e945-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "power",
+    "power_source",
+    "weight_kg"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00011894",
+   "card_price": 15300,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "IDENTITY_BY_BASE_ARTICLE_MANUAL_CHECK",
+    "QUALITY:no_load_speed"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44535,
+   "article": "ЗПМ-45-1350 ЭВ",
+   "brand": "ЗУБР",
+   "name": "Перфоратор ЗУБР ЗПМ-45-1350 \"ПРОФЕССИОНАЛ\" SDS-Max, 12,5Дж, 7,6 кг, 1350Вт, кейс",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 19600.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор ЗУБР Профессионал SDS Max 1350 Вт, 45 мм ЗПМ-45-1350 ЭВ",
+    "note": "OWNER-GO-2: base article без суффикса 1С «ЗПМ-45-1350 ЭВ»; identity требует ручной сверки карточки"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44535/1160-ddf7f84d-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "power",
+    "power_source",
+    "weight_kg"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00038122",
+   "card_price": 19600,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "IDENTITY_BY_BASE_ARTICLE_MANUAL_CHECK",
+    "QUALITY:no_load_speed"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44536,
+   "article": "ЗПМ-50-1700-Э",
+   "brand": "ЗУБР",
+   "name": "Перфоратор ЗУБР ЗПМ-50-1700 \"ПРОФЕССИОНАЛ\" SDS-Max, 27Дж, 10,3 кг, 1700Вт, кейс",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 37200.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор ЗУБР Профессионал 50мм, 1700Вт, SDS-Max ЗПМ-50-1700 Э",
+    "note": "OWNER-GO-2: base article без суффикса 1С «ЗПМ-50-1700-Э»; identity требует ручной сверки карточки"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44536/1163-ad79f3db-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "power",
+    "power_source",
+    "weight_kg"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/0110000197",
+   "card_price": 37200,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "IDENTITY_BY_BASE_ARTICLE_MANUAL_CHECK",
+    "QUALITY:no_load_speed"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44537,
+   "article": "ЗПМ-52-1500-ЭК",
+   "brand": "ЗУБР",
+   "name": "Перфоратор ЗУБР ЗПМ-52-1500 \"ПРОФЕССИОНАЛ\" SDS-Max, 18Дж, 12 кг, 1500Вт, кейс",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 31510.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Перфоратор ЗУБР Профессионал SDS-Max, 18Дж, 1500Вт, кейс ЗПМ-52-1500 ЭК",
+    "note": "OWNER-GO-2: base article без суффикса 1С «ЗПМ-52-1500-ЭК»; identity требует ручной сверки карточки"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44537/1166-b87d5739-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "motor_type",
+    "power",
+    "power_source",
+    "weight_kg"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00033575",
+   "card_price": 31510,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "IDENTITY_BY_BASE_ARTICLE_MANUAL_CHECK",
+    "QUALITY:no_load_speed"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44542,
+   "article": "75/3/1",
+   "brand": "РЕСАНТА",
+   "name": "Перфоратор РЕСАНТА П-28-800К",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 7680.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "resanta"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44542/221-6ae3c4d8-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00031858",
+   "card_price": 7680,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44545,
+   "article": "75/3/6",
+   "brand": "РЕСАНТА",
+   "name": "Перфоратор РЕСАНТА П-32-1400КВ",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 8100.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "resanta"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44545/488-c51090a7-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00034539",
+   "card_price": 8100,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44546,
+   "article": "75/3/7",
+   "brand": "РЕСАНТА",
+   "name": "Перфоратор РЕСАНТА П-40-1600КМ SDS-MAX",
+   "tool_type": "perforatory",
+   "subtype": "perforator",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 11600.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "resanta"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44546/491-ebce6091-v2.webp",
+   "core_required": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_present": [
+    "power",
+    "energy_impact",
+    "chuck"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "chuck",
+    "energy_impact",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00042138",
+   "card_price": 11600,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 513,
+   "article": "28471",
+   "brand": "DENZEL",
+   "name": "Машина шлифм эксцентрик аккум DENZEL COS-125-0, Li-ion 18В БЕЗ аккум",
+   "tool_type": "shlifmashiny",
+   "subtype": "ekscentrikovaya",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 5120.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 9,
+   "media_sources": [
+    "manual"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/513/25-300a3799-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "motor_type",
+    "weight_kg",
+    "battery_capacity"
+   ],
+   "pav_filled": [
+    "battery_included",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00037768",
+   "card_price": 5120,
+   "card_availability": "InStock",
+   "card_char_labels": "3/3",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg",
+    "QUALITY:battery_capacity"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 514,
+   "article": "28470",
+   "brand": "DENZEL",
+   "name": "Машина шлифм эксцентрик аккум DENZEL COS-125, Li-ion 18В 1 аккум 2Ач",
+   "tool_type": "shlifmashiny",
+   "subtype": "ekscentrikovaya",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 7130.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 9,
+   "media_sources": [
+    "manual"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/514/50-dbedc7a9-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "motor_type",
+    "weight_kg",
+    "battery_included"
+   ],
+   "pav_filled": [
+    "battery_capacity",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00037767",
+   "card_price": 7130,
+   "card_availability": "InStock",
+   "card_char_labels": "3/3",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg",
+    "QUALITY:battery_included"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45130,
+   "article": "ЗОШМ-450-125",
+   "brand": "ЗУБР",
+   "name": "Шлифмашина орбит. ЗУБР орбитально-шлифовальная 125мм, 450Вт",
+   "tool_type": "shlifmashiny",
+   "subtype": "ekscentrikovaya",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 4100.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Орбитально-шлифовальная машина ЗУБР ЗОШМ-450-125",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45130/1079-a42bfa3c-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00012254",
+   "card_price": 4100,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45439,
+   "article": "HOS8135RC",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина эксцентриковая HANSKONNER HOS8135RC 125мм, 350Вт, 4000-12000 об/мин",
+   "tool_type": "shlifmashiny",
+   "subtype": "ekscentrikovaya",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 5900.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Эксцентриковая шлифовальная машина Hanskonner HOS8135RC",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45439/1205-dcc33eaa-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00041734",
+   "card_price": 5900,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45441,
+   "article": "HOS8140BL",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина эксцентриковая HANSKONNER HOS8140BL ф150мм 400Вт, 4000-10000об/мин БЕСЩЕТОЧНАЯ",
+   "tool_type": "shlifmashiny",
+   "subtype": "ekscentrikovaya",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 23450.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 0,
+   "media_sources": [],
+   "main_image_ok": false,
+   "main_image": null,
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044430",
+   "card_price": 23450,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "BLOCKED_MEDIA",
+   "primary_blocker": "BLOCKED_MEDIA",
+   "secondary_gaps": [
+    "SOURCE_CODE_NOT_FOUND: HOS8140BL нет у ВИ (артикул уже исправлен с HOS814OBL)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": false,
+   "recommended_fix": "MEDIA: получить 1 корректное фото (источник вне ВИ / ручная загрузка через ImagePipeline)"
+  },
+  {
+   "product_id": 45450,
+   "article": "75/6/3",
+   "brand": "РЕСАНТА",
+   "name": "Шлифмашина эксцентриковая РЕСАНТА ЭШМ-125/5Э",
+   "tool_type": "shlifmashiny",
+   "subtype": "ekscentrikovaya",
+   "kind": "unknown",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 4900.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "resanta"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45450/518-87eb6a06-v2.webp",
+   "core_required": [
+    "power|voltage"
+   ],
+   "core_present": [],
+   "core_missing_required": [
+    "power|voltage"
+   ],
+   "quality_gaps": [
+    "power_source",
+    "no_load_speed",
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00034534",
+   "card_price": 4900,
+   "card_availability": "InStock",
+   "card_char_labels": "0/0",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "BLOCKED_CHARACTERISTICS",
+   "primary_blocker": "BLOCKED_CHARACTERISTICS",
+   "secondary_gaps": [
+    "ZERO_CHARACTERISTICS",
+    "QUALITY:power_source",
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": false,
+   "recommended_fix": "DATA: заполнить энергопараметр (power/voltage) из источника производителя"
+  },
+  {
+   "product_id": 45451,
+   "article": "75/6/4",
+   "brand": "РЕСАНТА",
+   "name": "Шлифмашина эксцентриковая РЕСАНТА ЭШМ-125К",
+   "tool_type": "shlifmashiny",
+   "subtype": "ekscentrikovaya",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 3400.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Эксцентриковая шлифовальная машина Ресанта ЭШМ-125К 75/6/4",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45451/1190-8747dbb8-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/0110000421",
+   "card_price": 3400,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45452,
+   "article": "75/6/2",
+   "brand": "РЕСАНТА",
+   "name": "Шлифмашина эксцентриковая РЕСАНТА ЭШМ-125Э",
+   "tool_type": "shlifmashiny",
+   "subtype": "ekscentrikovaya",
+   "kind": "unknown",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 3800.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "resanta"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45452/332-918f10e5-v2.webp",
+   "core_required": [
+    "power|voltage"
+   ],
+   "core_present": [],
+   "core_missing_required": [
+    "power|voltage"
+   ],
+   "quality_gaps": [
+    "power_source",
+    "no_load_speed",
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00024290",
+   "card_price": 3800,
+   "card_availability": "InStock",
+   "card_char_labels": "0/0",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "BLOCKED_CHARACTERISTICS",
+   "primary_blocker": "BLOCKED_CHARACTERISTICS",
+   "secondary_gaps": [
+    "ZERO_CHARACTERISTICS",
+    "QUALITY:power_source",
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": false,
+   "recommended_fix": "DATA: заполнить энергопараметр (power/voltage) из источника производителя"
+  },
+  {
+   "product_id": 45117,
+   "article": "4466260",
+   "brand": "EINHELL",
+   "name": "Шлифмашина лент Einhell TC-BS 8038, 800Вт, 76х533мм",
+   "tool_type": "shlifmashiny",
+   "subtype": "lentochnaya",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 5830.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 0,
+   "media_sources": [],
+   "main_image_ok": false,
+   "main_image": null,
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00038460",
+   "card_price": 5830,
+   "card_availability": "InStock",
+   "card_char_labels": "2/2",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "BLOCKED_MEDIA",
+   "primary_blocker": "BLOCKED_MEDIA",
+   "secondary_gaps": [
+    "SOURCE_CODE_NOT_FOUND: Einhell 4466260 нет в выдаче ВИ",
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": false,
+   "recommended_fix": "MEDIA: получить 1 корректное фото (источник вне ВИ / ручная загрузка через ImagePipeline)"
+  },
+  {
+   "product_id": 45125,
+   "article": "SB8V2NSZ",
+   "brand": "HIKOKI",
+   "name": "Шлифмашина лент SB8V2; 1020Вт, лента 76х533мм, 250-450м/мин, пылесборник, 4,3кг",
+   "tool_type": "shlifmashiny",
+   "subtype": "lentochnaya",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 22900.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Ленточная шлифмашина Hikoki SB8V2 SB8V2NSZ",
+    "note": null
+   },
+   "media_count": 1,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45125/1204-f6d0129f-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "power_source",
+    "no_load_speed",
+    "motor_type"
+   ],
+   "pav_filled": [
+    "power",
+    "voltage",
+    "weight_kg"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00000534",
+   "card_price": 22900,
+   "card_availability": "InStock",
+   "card_char_labels": "3/3",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "BLOCKED_CHARACTERISTICS",
+   "primary_blocker": "BLOCKED_CHARACTERISTICS",
+   "secondary_gaps": [
+    "WRONG_VALUE: voltage=8 В (source=regex, «8» из модели SB8V2) у сетевой 1020 Вт",
+    "QUALITY:power_source",
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": false,
+   "recommended_fix": "DATA: удалить ошибочный regex-PAV voltage=8"
+  },
+  {
+   "product_id": 682,
+   "article": "2093301",
+   "brand": "EINHELL",
+   "name": "Шлифмашина полировальная аккумуляторная Einhell PXC CE-CB 18/254 Li, 18В, ф254мм, без АККМ и ЗУ",
+   "tool_type": "shlifmashiny",
+   "subtype": "polirovalnaya",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 4400.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Полировальная машина Einhell PXC CE-CB 18/254 Li-Solo 2093301",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/682/1172-4293ec49-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg",
+    "battery_capacity"
+   ],
+   "pav_filled": [
+    "battery_included",
+    "motor_type",
+    "no_load_speed",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00038532",
+   "card_price": 4400,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: полировальная в shlifmashiny, есть polirovalnye (1)",
+    "QUALITY:weight_kg",
+    "QUALITY:battery_capacity"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45131,
+   "article": "2093275",
+   "brand": "EINHELL",
+   "name": "Шлифмашина полировальная Einhell CC-PO 1100/150 E, 1100Вт, 150мм",
+   "tool_type": "shlifmashiny",
+   "subtype": "polirovalnaya",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 6690.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Полировальная машина Einhell CC-PO 1100/150 E 2093275",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45131/1175-13602309-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00038529",
+   "card_price": 6690,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: полировальная в shlifmashiny, есть polirovalnye (1)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45132,
+   "article": "2093264",
+   "brand": "EINHELL",
+   "name": "Шлифмашина полировальная Einhell CC-PO 1100/1E, 1100Вт, 180мм",
+   "tool_type": "shlifmashiny",
+   "subtype": "polirovalnaya",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 6750.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Полировальная машина Einhell 1100/1 E 2093264",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45132/1169-844ffdef-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00038528",
+   "card_price": 6750,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: полировальная в shlifmashiny, есть polirovalnye (1)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45139,
+   "article": "ЗПМ-240",
+   "brand": "ЗУБР",
+   "name": "Шлифмашина полировальная ЗУБР ЗПМ-240, 240мм, 3000об/мин, 140Вт",
+   "tool_type": "shlifmashiny",
+   "subtype": "polirovalnaya",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 2790.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Полировальная машина ЗУБР ЗПМ-240",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45139/1082-88b12ecd-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00010236",
+   "card_price": 2790,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: полировальная в shlifmashiny, есть polirovalnye (1)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45142,
+   "article": "",
+   "brand": "ИНТЕРСКОЛ",
+   "name": "Шлифмашина полировальная ИНТЕРСКОЛ УПМ-200/1010ЭШ со штангой",
+   "tool_type": "shlifmashiny",
+   "subtype": "polirovalnaya",
+   "kind": "unknown",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 20940.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 0,
+   "media_sources": [],
+   "main_image_ok": false,
+   "main_image": null,
+   "core_required": [
+    "power|voltage"
+   ],
+   "core_present": [],
+   "core_missing_required": [
+    "power|voltage"
+   ],
+   "quality_gaps": [
+    "power_source",
+    "no_load_speed",
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00035063",
+   "card_price": 20940,
+   "card_availability": "InStock",
+   "card_char_labels": "0/0",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "BLOCKED_MEDIA",
+   "primary_blocker": "BLOCKED_MEDIA",
+   "secondary_gaps": [
+    "BLOCKED_CHARACTERISTICS",
+    "MISSING_ARTICLE (identity по модели в названии)",
+    "TAXONOMY_PARALLEL_TYPE: полировальная в shlifmashiny, есть polirovalnye (1)",
+    "MISSING_ARTICLE: артикула в 1С нет, strict-поиск невозможен",
+    "ZERO_CHARACTERISTICS",
+    "QUALITY:power_source",
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": false,
+   "recommended_fix": "MEDIA: получить 1 корректное фото (источник вне ВИ / ручная загрузка через ImagePipeline)"
+  },
+  {
+   "product_id": 685,
+   "article": "HSG1868",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина прямая аккум Hanskonner HSG1868 цанга 6мм 1АКБ 4 А/ч + ЗУ",
+   "tool_type": "shlifmashiny",
+   "subtype": "pryamaya",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 16400.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Машина шлифовальная прямая аккумуляторная Hanskonner цанга 6мм,подсветка, АКБ 4,0Ач,ЗУ HSG1868",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/685/1040-e3d13604-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "battery_capacity",
+    "battery_included",
+    "motor_type",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/375127",
+   "card_price": 16400,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45150,
+   "article": "HGD0665",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина прямая Hanskonner 650Вт, цанга 6/8мм 10000-30000об/мин",
+   "tool_type": "shlifmashiny",
+   "subtype": "pryamaya",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 6400.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Прямошлифовальная машина Hanskonner HGD0665",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45150/1085-26a3074f-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00039518",
+   "card_price": 6400,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": true,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 44955,
+   "article": "ЗШС-330",
+   "brand": "ЗУБР",
+   "name": "Станок шлифовальный ЗУБР ЗШС-330,330Вт, лента 762х25мм, диск 125мм",
+   "tool_type": "shlifmashiny",
+   "subtype": "stanok",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 9120.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 6,
+   "media_sources": [
+    "manual"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/44955/59-8b4c7ee6-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": false,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00035274",
+   "card_price": 9120,
+   "card_availability": "InStock",
+   "card_char_labels": "2/2",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "BLOCKED_TAXONOMY",
+   "primary_blocker": "BLOCKED_TAXONOMY",
+   "secondary_gaps": [
+    "TAXONOMY_WRONG_TYPE: станок в «Шлифовальные машины», есть stanki-zatochnye/tochila-nazhdaki",
+    "NO_IS_MAIN_FLAG (витрина берёт первое фото)",
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": false,
+   "recommended_fix": "TAXONOMY: перетипизировать в тип станков (решение владельца)"
+  },
+  {
+   "product_id": 698,
+   "article": "G3623DARAZ",
+   "brand": "HIKOKI",
+   "name": "Шлифмашина угловая аккумуляторная G3623DA 230мм, 36V,Li-ion, 1х4А/ч + з/у",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 60000.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Угловая шлифовальная машина HiKOKI G3623DA G3623DARAZ",
+    "note": null
+   },
+   "media_count": 1,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/698/1193-7268db46-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "motor_type",
+    "weight_kg",
+    "battery_included"
+   ],
+   "pav_filled": [
+    "battery_capacity",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00032649",
+   "card_price": 60000,
+   "card_availability": "InStock",
+   "card_char_labels": "3/3",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg",
+    "QUALITY:battery_included"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 699,
+   "article": "G3623DAR2Z",
+   "brand": "HIKOKI",
+   "name": "Шлифмашина угловая аккумуляторная G3623DA 230мм, 36V,Li-ion, без аккум и ЗУ",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 24500.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Угловая шлифмашина Hikoki G3623DA G3623DAR2Z",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/699/1194-d52108a8-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "motor_type",
+    "weight_kg",
+    "battery_capacity"
+   ],
+   "pav_filled": [
+    "battery_included",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00033150",
+   "card_price": 24500,
+   "card_availability": "InStock",
+   "card_char_labels": "3/3",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg",
+    "QUALITY:battery_capacity"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 700,
+   "article": "HAG18125BL",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая аккумуляторная Hanskonner HAG18125BL 125мм 18В, пл. пуск 2аккх4,0А/ч",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 15000.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Аккумуляторная углошлифовальная машина Hanskonner HAG18125BL",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/700/1043-08181e8c-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "battery_capacity",
+    "battery_included",
+    "motor_type",
+    "no_load_speed",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00039482",
+   "card_price": 15000,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 711,
+   "article": "CAG18125BLE",
+   "brand": "STURM",
+   "name": "Шлифмашина угловая аккумуляторная STURM CAG18125BLE 18В, 125мм 1х4А/ч, ЗУ кейс бесщеточная",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 10900.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Аккумуляторная бесщеточная угловая шлифмашина Sturm, 18В, 1BatterySystem, 125мм, плавный пуск, 1x4Ач, кейс CAG18125BLE",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/711/1197-f4316f73-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "battery_capacity",
+    "battery_included",
+    "motor_type",
+    "no_load_speed",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00045923",
+   "card_price": 10900,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 717,
+   "article": "AB-125",
+   "brand": "ЗУБР",
+   "name": "Шлифмашина угловая аккумуляторная ЗУБР AB-125- 20В бесщеточная без АКБ и ЗУ Профессионал. в коробке",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 10800.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Бесщеточная угловая шлифмашина ЗУБР Профессионал, без АКБ, в коробке, 20 В AB-125",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/717/1046-131f1ad2-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "weight_kg",
+    "battery_capacity"
+   ],
+   "pav_filled": [
+    "battery_included",
+    "motor_type",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00034216",
+   "card_price": 10800,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:no_load_speed",
+    "QUALITY:weight_kg",
+    "QUALITY:battery_capacity"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 718,
+   "article": "AB-125-41",
+   "brand": "ЗУБР",
+   "name": "Шлифмашина угловая аккумуляторная ЗУБР AB-125-41- 20В бесщеточная 1 АКБ 4Ач Профессионал. в сумке",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 15300.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Бесщеточная угловая шлифмашина ЗУБР Профессионал 1 АКБ, 4 Ач, в сумке, 20В AB-125-41",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/718/1049-0a294eee-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "battery_capacity",
+    "battery_included",
+    "motor_type",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00034217",
+   "card_price": 15300,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:no_load_speed",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 719,
+   "article": "AB-125-42",
+   "brand": "ЗУБР",
+   "name": "Шлифмашина угловая аккумуляторная ЗУБР AB-125-42 20В бесщеточная 2 АКБ (4Ач), в сумке, Профессионал",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 20600.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Бесщеточная угловая аккумуляторная шлифмашина ЗУБР Профессионал 2 АКБ, 4 Ач, 20 В AB-125-42",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/719/1052-bded7178-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "battery_capacity",
+    "battery_included",
+    "motor_type",
+    "no_load_speed",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00029425",
+   "card_price": 20600,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 720,
+   "article": "AB-76-22",
+   "brand": "ЗУБР",
+   "name": "Шлифмашина угловая аккумуляторная ЗУБР AB-76-22 12В, бесщеточная 2 АКБ 2А/ч и ЗУ Профессионал. в сумке",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 11300.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Бесщеточная угловая шлифмашина ЗУБР Профессионал 12 В, 2 АКБ, в сумке AB-76-22",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/720/1055-1e3cabb0-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "battery_capacity",
+    "battery_included",
+    "motor_type",
+    "no_load_speed",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00035892",
+   "card_price": 11300,
+   "card_availability": "InStock",
+   "card_char_labels": "6/6",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 721,
+   "article": "AB-76",
+   "brand": "ЗУБР",
+   "name": "Шлифмашина угловая аккумуляторная ЗУБР AB-76-22 12В, бесщеточная без АКБ и ЗУ Профессионал. коробка",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 6620.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Бесщеточная угловая шлифмашина ЗУБР Профессионал 12 В, без АКБ, в коробке AB-76",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/721/1058-ed9125a3-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg",
+    "battery_capacity"
+   ],
+   "pav_filled": [
+    "battery_included",
+    "motor_type",
+    "no_load_speed",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00036300",
+   "card_price": 6620,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg",
+    "QUALITY:battery_capacity"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 722,
+   "article": "AB-80-700",
+   "brand": "ЗУБР",
+   "name": "Шлифмашина угловая аккумуляторная ЗУБР AB-80 20В ф82мм LMS редукторная бесщеточная без АКБ и ЗУ в коробке",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 5200.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Профессионал 20 В, d82 мм, без АКБ (LMS), редукторная мини-УШМ ЗУБР AB-80-700",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/722/1061-991ce4d4-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg",
+    "battery_capacity"
+   ],
+   "pav_filled": [
+    "battery_included",
+    "motor_type",
+    "no_load_speed",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/375428",
+   "card_price": 5200,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg",
+    "QUALITY:battery_capacity"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 723,
+   "article": "AB-80-700R",
+   "brand": "ЗУБР",
+   "name": "Шлифмашина угловая аккумуляторная ЗУБР AB-80 20В ф82мм LMS с доп основанием редукторная бесщеточная без АКБ и ЗУ",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 5820.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Редукторная мини-УШМ с дополнительным основанием ЗУБР 20 В, d82 мм, без АКБ (LMS), Профессионал AB-80-700R",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/723/1064-ab85f2d5-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg",
+    "battery_capacity"
+   ],
+   "pav_filled": [
+    "battery_included",
+    "motor_type",
+    "no_load_speed",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/375429",
+   "card_price": 5820,
+   "card_availability": "InStock",
+   "card_char_labels": "5/5",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg",
+    "QUALITY:battery_capacity"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45189,
+   "article": "26907",
+   "brand": "DENZEL",
+   "name": "Шлифмашина угловая DENZEL AG125-1500. 125мм, 1500Вт, 3000-11000 об/мин",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 8100.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Угловая шлифовальная машина Denzel AG125-1500, 1500 Вт, 125 мм, 3000-11000 об/мин 26907",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45189/1178-237a361b-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044559",
+   "card_price": 8100,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45198,
+   "article": "4430619",
+   "brand": "EINHELL",
+   "name": "Шлифмашина угловая Einhell TC-AG 125, 850Вт, 125мм",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 3290.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Угловая шлифмашина Einhell TC-AG 125 4430619",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45198/1181-d029ada8-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00038463",
+   "card_price": 3290,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45200,
+   "article": "4430860",
+   "brand": "EINHELL",
+   "name": "Шлифмашина угловая Einhell TE-AG 125 CE, 1100Вт, 125мм",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 4.0,
+    "price": 6060.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 0,
+   "media_sources": [],
+   "main_image_ok": false,
+   "main_image": null,
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00038464",
+   "card_price": 6060,
+   "card_availability": "InStock",
+   "card_char_labels": "2/2",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "BLOCKED_MEDIA",
+   "primary_blocker": "BLOCKED_MEDIA",
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "SOURCE_CODE_NOT_FOUND: Einhell 4430860 нет в выдаче ВИ",
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": false,
+   "recommended_fix": "MEDIA: получить 1 корректное фото (источник вне ВИ / ручная загрузка через ImagePipeline)"
+  },
+  {
+   "product_id": 45201,
+   "article": "4430890",
+   "brand": "EINHELL",
+   "name": "Шлифмашина угловая Einhell TE-AG 125/1010 CE Q, 1010Вт, 125мм",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 2.0,
+    "price": 5880.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Угловая шлифмашина Einhell TE-AG 125/1010 CE Q 4430890",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45201/1184-b70b9afe-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00038465",
+   "card_price": 5880,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45205,
+   "article": "4430840",
+   "brand": "EINHELL",
+   "name": "Шлифмашина угловая Einhell TE-AG 230/2000, 2000Вт, 230мм",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 7350.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Болгарка (УШМ) Einhell TE-AG 230/2000 4430840",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45205/1187-2205bad4-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00038469",
+   "card_price": 7350,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45251,
+   "article": "HAG1012",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 125мм 800Вт HAG1012 11000 об/мин",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 5.0,
+    "price": 4200.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Болгарка (УШМ) Hanskonner HAG1012",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45251/1088-d2262041-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00042317",
+   "card_price": 4200,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45252,
+   "article": "HAG11125",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 125мм 1100Вт",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 6.0,
+    "price": 7100.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Углошлифовальная машина Hanskonner HAG11125",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45252/1091-01f989f7-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00040205",
+   "card_price": 7100,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45253,
+   "article": "HWS900E",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 125мм, 900Вт HWS900E плавн пуск",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 6.0,
+    "price": 8600.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "УШМ Hanskonner PLATINUM, 125мм, 900Вт, плавн пуск HWS900E",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45253/1094-8f244a45-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/375062",
+   "card_price": 8600,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45255,
+   "article": "HAG9012TES",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 125мм, 1100Вт HAG9012TES 4000-10000об/мин КЕЙС",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 3.0,
+    "price": 6400.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Углошлифовальная машина Hanskonner HAG9012TES",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45255/1097-84f7cd0a-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044214",
+   "card_price": 6400,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45257,
+   "article": "HAG12125EC",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 125мм, 1200Вт HAG12125EC 2500-8100 об/мин удлин",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 4.0,
+    "price": 7000.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Угловая шлифмашина Hanskonner HAG12125EC",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45257/1100-c5452305-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00039478",
+   "card_price": 7000,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45259,
+   "article": "HAG13125TJE",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 125мм, 1300Вт HAG13125TJE 11000 об/мин КАМНЕРЕЗ",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 9.0,
+    "price": 7700.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Болгарка Hanskonner HAG13125TJE",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45259/1103-e884f400-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00039481",
+   "card_price": 7700,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45260,
+   "article": "HAG13125TE",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 125мм, 1350Вт HAG13125TE 4000-10000 об/мин",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 3.0,
+    "price": 6200.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Углошлифовальная машина Hanskonner HAG13125TE",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45260/1106-7295e9b1-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00039479",
+   "card_price": 6200,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45261,
+   "article": "HAG13125TES",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 125мм, 1350Вт HAG13125TES 4000-10000, кейс",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 9.0,
+    "price": 8700.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Болгарка (УШМ) Hanskonner HAG13125TES",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45261/1109-b32985d1-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00039477",
+   "card_price": 8700,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45262,
+   "article": "HWS1400E",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 125мм, 1400Вт HWS1400E плавн пуск",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 3.0,
+    "price": 12300.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Болгарка (УШМ) Hanskonner PLATINUM HWS1400E",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45262/1112-93321c19-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/0110000895",
+   "card_price": 12300,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "CARD_TRANSIENT_500_ON_429 (SSR→API throttle)",
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45263,
+   "article": "HAG15125E",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 125мм, 1500Вт HAG15125E 3000-11000 об/мин",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 3.0,
+    "price": 7900.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Болгарка (УШМ) Hanskonner HAG15125E",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45263/1200-576c3399-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00039826",
+   "card_price": 7900,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45264,
+   "article": "HAG16125BE",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 125мм, 1600Вт HAG16125BE 3000-10000 об/мин БЕСЩЕТОЧНАЯ",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 12600.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Болгарка (УШМ) Hanskonner HAG16125BE",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45264/1115-3ac12e5b-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044071",
+   "card_price": 12600,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45265,
+   "article": "HAG9125SB",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 125мм, 1600Вт HAG9125SB 11000об/мин БЕСЩЕТОЧНАЯ",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 3.0,
+    "price": 12700.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Болгарка Hanskonner УШМ HAG9125SB",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45265/1118-f6b60dbd-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00041735",
+   "card_price": 12700,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45268,
+   "article": "HAG16180EC",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 180мм 2000Вт HAG16180EC 3000-8000 об/мин",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 9200.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Болгарка Hanskonner HAG16180EC",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45268/1121-c94d04bc-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00042255",
+   "card_price": 9200,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45269,
+   "article": "HAG22230B",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 230мм 2200Вт HAG22230B 6500 об/мин плав пуск",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 2.0,
+    "price": 14700.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Болгарка (УШМ) Hanskonner HAG22230B",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45269/1124-232b434f-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044573",
+   "card_price": 14700,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45270,
+   "article": "HAG24230ECH",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 230мм 2400Вт HAG24230ECH 6500 об/мин плавный пуск",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 3.0,
+    "price": 15950.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Угловая шлифмашина Hanskonner HAG24230ECH",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45270/1127-2d92b2a4-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00039729",
+   "card_price": 15950,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45271,
+   "article": "HAG26230EC",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 230мм 2600Вт HAG26230EC плав пуск",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 2.0,
+    "price": 14600.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Угловая шлифовальная машина Hanskonner PLATINUM 230мм, 2600Вт, плавн пуск HAG26230EC",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45271/1130-6f8eb43c-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/375126",
+   "card_price": 14600,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45272,
+   "article": "HAG28230B",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 230мм 2850Вт HAG28230B 6000 об/мин БЕСЩЕТОЧНАЯ плавный пуск",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 2.0,
+    "price": 25500.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Болгарка|УШМ Hanskonner HAG28230B",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45272/1133-4f98d2a4-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00044073",
+   "card_price": 25500,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45273,
+   "article": "HWS26230B",
+   "brand": "HANSKONNER",
+   "name": "Шлифмашина угловая Hanskonner 230мм, 2600Вт HWS26230B плавн пуск",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 3.0,
+    "price": 17200.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Болгарка (УШМ) Hanskonner PLATINUM HWS26230B",
+    "note": null
+   },
+   "media_count": 3,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45273/1136-ee05e361-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "motor_type",
+    "no_load_speed",
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/374995",
+   "card_price": 17200,
+   "card_availability": "InStock",
+   "card_char_labels": "4/4",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45339,
+   "article": "AG1210100013",
+   "brand": "WORTEX",
+   "name": "Шлифмашина угловая WORTEX AG 1210-1 125мм, 1000Вт",
+   "tool_type": "shlifmashiny",
+   "subtype": "ushm",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 3880.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 0,
+   "media_sources": [],
+   "main_image_ok": false,
+   "main_image": null,
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00034863",
+   "card_price": 3880,
+   "card_availability": "InStock",
+   "card_char_labels": "2/2",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "BLOCKED_MEDIA",
+   "primary_blocker": "BLOCKED_MEDIA",
+   "secondary_gaps": [
+    "TAXONOMY_PARALLEL_TYPE: УШМ в shlifmashiny, есть bolgarki-ushm (76)",
+    "PRODUCT_IDENTITY_DATA_FIX: в article внутренний код 1С AG1210100013, модель AG 1210-1 однозначна по названию",
+    "PRODUCT_IDENTITY_DATA_FIX",
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": false,
+   "recommended_fix": "MEDIA: получить 1 корректное фото (источник вне ВИ / ручная загрузка через ImagePipeline)"
+  },
+  {
+   "product_id": 680,
+   "article": "4460725",
+   "brand": "EINHELL",
+   "name": "Шлифмашина вибрационная аккумуляторная Einhell PXC TC-OS 18/187 Li, 18В без АККУМ и ЗУ",
+   "tool_type": "shlifmashiny",
+   "subtype": "vibracionnaya",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 4860.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 5,
+   "media_sources": [
+    "manual"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/680/65-ff9938e4-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "motor_type",
+    "weight_kg",
+    "battery_capacity"
+   ],
+   "pav_filled": [
+    "battery_included",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00038557",
+   "card_price": 4860,
+   "card_availability": "InStock",
+   "card_char_labels": "3/3",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg",
+    "QUALITY:battery_capacity"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 681,
+   "article": "4460720",
+   "brand": "EINHELL",
+   "name": "Шлифмашина вибрационная аккумуляторная Einhell PXC TE-OS 18/230 Li, 18В без АККУМ и ЗУ",
+   "tool_type": "shlifmashiny",
+   "subtype": "vibracionnaya",
+   "kind": "battery",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 5850.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 3,
+   "media_sources": [
+    "manual"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/681/70-5be9beb6-v2.webp",
+   "core_required": [
+    "voltage"
+   ],
+   "core_present": [
+    "voltage"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "motor_type",
+    "weight_kg",
+    "battery_capacity"
+   ],
+   "pav_filled": [
+    "battery_included",
+    "power_source",
+    "voltage"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00038558",
+   "card_price": 5850,
+   "card_availability": "InStock",
+   "card_char_labels": "3/3",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg",
+    "QUALITY:battery_capacity"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45109,
+   "article": "SV12SHNSZ",
+   "brand": "HIKOKI",
+   "name": "Шлифмашина вибрационная SV12SH; 200Вт, 110х190мм, 28000 кол/мин",
+   "tool_type": "shlifmashiny",
+   "subtype": "vibracionnaya",
+   "kind": "mains",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 2.0,
+    "price": 6300.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "VI article_exact+brand_exact",
+    "source_title": "Плоская шлифмашина Hikoki SV12SH SV12SHNSZ",
+    "note": null
+   },
+   "media_count": 1,
+   "media_sources": [
+    "vseinstrumenti"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45109/1203-857aba6a-v2.webp",
+   "core_required": [
+    "power"
+   ],
+   "core_present": [
+    "power"
+   ],
+   "core_missing_required": [],
+   "quality_gaps": [
+    "no_load_speed",
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [
+    "power",
+    "power_source"
+   ],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00001228",
+   "card_price": 6300,
+   "card_availability": "InStock",
+   "card_char_labels": "2/2",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "RELEASE_WITH_KNOWN_GAPS",
+   "primary_blocker": null,
+   "secondary_gaps": [
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": true,
+   "recommended_fix": null
+  },
+  {
+   "product_id": 45113,
+   "article": "",
+   "brand": "ИНТЕРСКОЛ",
+   "name": "Шлифмашина вибрационная ПШВ-115/300ЭМ \"Интерскол\"",
+   "tool_type": "shlifmashiny",
+   "subtype": "vibracionnaya",
+   "kind": "unknown",
+   "commercial_state": {
+    "commercial": true,
+    "is_active": true,
+    "status": "published",
+    "available_quantity": 1.0,
+    "price": 4235.0,
+    "visible": true
+   },
+   "identity_gate": "PASS",
+   "identity_evidence": {
+    "method": "1С article+name"
+   },
+   "media_count": 1,
+   "media_sources": [
+    "manual"
+   ],
+   "main_image_ok": true,
+   "main_image": "https://proff58.ru/media/products/display/45113/73-d77ca2db-v2.webp",
+   "core_required": [
+    "power|voltage"
+   ],
+   "core_present": [],
+   "core_missing_required": [
+    "power|voltage"
+   ],
+   "quality_gaps": [
+    "power_source",
+    "no_load_speed",
+    "motor_type",
+    "weight_kg"
+   ],
+   "pav_filled": [],
+   "attrs_cache_ok": true,
+   "taxonomy_ok": true,
+   "category": "Электроинструмент",
+   "card_http": 200,
+   "card_url": "https://proff58.ru/product/00005321",
+   "card_price": 4235,
+   "card_availability": "InStock",
+   "card_char_labels": "0/0",
+   "seo_current_state": "SEO_SWITCH_PENDING: robots.txt User-agent:* Disallow:/ (глобально, apps/core/static/robots.txt); meta robots/X-Robots-Tag нет; canonical нет; sitemap.xml 404",
+   "release_status": "BLOCKED_CHARACTERISTICS",
+   "primary_blocker": "BLOCKED_CHARACTERISTICS",
+   "secondary_gaps": [
+    "MISSING_ARTICLE (identity по модели в названии)",
+    "ZERO_CHARACTERISTICS",
+    "QUALITY:power_source",
+    "QUALITY:no_load_speed",
+    "QUALITY:motor_type",
+    "QUALITY:weight_kg"
+   ],
+   "strict_ready_excl_weight": false,
+   "indexable_candidate": false,
+   "recommended_fix": "DATA: заполнить энергопараметр (power/voltage) из источника производителя"
+  }
+ ]
+}

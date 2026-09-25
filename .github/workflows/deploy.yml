@@ -36,6 +36,52 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Витрина собирается ЗДЕСЬ, на машине GitHub, а не на VPS. На сервере next build
+      # упирался в диск: 17.09 четыре выкладки подряд упали на старте сборки фронта
+      # («frontend grpc server closed unexpectedly» — BuildKit не дождался своего
+      # сборщика на диске с задержкой чтения 50–500 мс), а пока сборка шла, сайт
+      # отвечал по 6–9 с. Готовый образ уезжает на сервер архивом, там — docker load.
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.enabled == 'true'
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.gate.outputs.enabled == 'true'
+
+      - name: Сборка образа витрины
+        if: steps.gate.outputs.enabled == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          # Имя фиксировано и совпадает с image: в docker-compose.prod.yml. Один тег:
+          # после docker load старый образ теряет его и уходит под prune в конце выкладки.
+          tags: proff58-frontend:latest
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+          outputs: type=docker,dest=${{ github.workspace }}/proff58-frontend.tar
+          # Слойный кэш между выкладками (npm ci при неизменном lockfile) — в GitHub.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Сжать образ
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          gzip -1 "${{ github.workspace }}/proff58-frontend.tar"
+          ls -lh "${{ github.workspace }}/proff58-frontend.tar.gz"
+
+      - name: Отправить образ на VPS
+        if: steps.gate.outputs.enabled == 'true'
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: proff58-frontend.tar.gz
+          target: ${{ secrets.DEPLOY_PATH }}
+          # Архив от сорвавшейся выкладки мог остаться в DEPLOY_PATH — перезаписываем.
+          overwrite: true
+          command_timeout: 20m
+
       - name: Деплой на VPS по SSH
         if: steps.gate.outputs.enabled == 'true'
         uses: appleboy/ssh-action@v1.2.0
@@ -44,11 +90,110 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
+          # Сборка образа web (pip install) на VPS дольше дефолтных 10m → SSH-команда
+          # падала по таймауту («Run Command Timeout»). 30m тоже не хватало, пока фронт
+          # собирался здесь же (05.09: 33947113373, 33950959287; ДРФ-1518) — теперь
+          # фронт приезжает готовым, но диск коробки медленный, запас оставляем.
+          # Обрыв на сборке безопасен, но release.sh (pg_dump + migrate) идёт сразу
+          # за ней и вынесен из-под retry — сдвиг пришёлся бы уже на миграции.
+          command_timeout: 60m
           script: |
             set -euo pipefail
             cd "${{ secrets.DEPLOY_PATH }}"
             git fetch origin ${{ github.ref_name }}
             git checkout ${{ github.ref_name }}
             git reset --hard origin/${{ github.ref_name }}
-            docker compose -f docker-compose.prod.yml up -d --build
+
+            # Витрина собрана в GitHub Actions и приехала архивом (шаги выше) — здесь
+            # её только загружаем. Проверка тега — чтобы up -d не упал позже с невнятным
+            # «image not found», если архив приехал битым.
+            docker load -i proff58-frontend.tar.gz
+            rm -f proff58-frontend.tar.gz
+            docker image inspect proff58-frontend:latest >/dev/null
+
+            # BuildKit: слойный кэш между деплоями для образа web (pip install).
+            export DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1
+            compose="docker compose -f docker-compose.prod.yml"
+
+            # Сетевые икоты Docker Hub (напр. «load metadata for node:22-slim → TLS handshake
+            # timeout») роняли деплой на ровном месте. Оборачиваем тягу и сборку в ретрай с
+            # экспоненциальным backoff, чтобы транзиентный сбой реестра не валил весь выкат.
+            retry() {
+              local n=1 max=3 delay=15
+              until "$@"; do
+                [ "$n" -ge "$max" ] && { echo "::error::Не удалось после $max попыток: $*"; return 1; }
+                echo "::warning::Попытка $n/$max не удалась — повтор через ${delay}с…"
+                sleep "$delay"; n=$((n + 1)); delay=$((delay * 2))
+              done
+            }
+
+            # Сборка образов web/celery (с BuildKit-кэшем) + тяга под ретраем — транзиентные
+            # сбои реестра не валят выкат. Повтор идемпотентен: неизменные слои — из кэша.
+            retry $compose build
+
+            # Release-шаг (#441/m-07): бэкап БД + миграции ДО подъёма web. web на старте
+            # миграции больше не применяет (только migrate --check), поэтому DDL идёт
+            # один раз здесь, а не на каждом рестарте контейнера. НЕ под retry — провал
+            # миграции должен ОСТАНОВИТЬ деплой (бэкап уже снят, откат по docs/DEPLOY.md).
+            bash docker/release.sh
+
+            # Подъём/обновление сервисов новым образом (web стартует на мигрированной БД).
+            # Повтор идемпотентен: уже поднятые контейнеры не трогаются.
+            retry $compose up -d --build
+
+            # Привязки фасетов (ДРФ-1524, п.4) — ФАТАЛЬНАЯ проверка на живом дереве.
+            # Каждый блок data/attribute_rules.json обязан целиться в существующую
+            # категорию. Без --strict-bindings команда молча пропускает выдуманное
+            # имя строкой отчёта (action: skip, status: not_found) — так дефект и
+            # прожил месяцами: блоки ДРФ-1450 ссылались на узлы, которых в дереве
+            # нет, значения писались, а фасетов на витрине не появлялось.
+            #
+            # ВАЛИТ выкат:
+            #   not_found — имени категории нет в дереве (даёт --strict-bindings);
+            #   ambiguous — имя резолвится в несколько узлов (фатально по умолчанию,
+            #               --allow-ambiguous сознательно НЕ передаём).
+            # НЕ валит выкат:
+            #   dead_category — привязка легла на неживой узел. Это дефект ДАННЫХ
+            #   (узел деактивировали в каталоге), а не словаря в катящемся коммите:
+            #   чинится гейт-циклом каталога, а не выкатом. С --strict-live-categories
+            #   деактивация одной категории заблокировала бы выкат любого
+            #   несвязанного кода — заложник вместо сигнала. Замер на стенде
+            #   2026-09-08: dead_category 0, включать нечего. Остаётся ::warning::.
+            #
+            # Почему это НЕЛЬЗЯ перенести в CI: тамошняя БД — пустой postgres-сервис
+            # плюс один `migrate --noinput` (tests.yml), дерева категорий в ней нет,
+            # каталог никто не сеет. Все имена рапортовались бы not_found — сигнал
+            # стопроцентно ложный. Живое дерево есть только здесь, после `up -d`.
+            #
+            # Диагностика: команда падает ДО печати плана, поэтому весь разбор
+            # (`[not_found] «Имя» → ось: …`, `[ambiguous:tree] …` и текст
+            # CommandError со списком имён) уходит в stderr — его и печатаем
+            # целиком. Объёмный JSON-план идёт в stdout и лог шага не засоряет.
+            la_rc=0
+            $compose exec -T web python manage.py load_attributes --dry-run --strict-bindings >/tmp/la-bindings.out 2>/tmp/la-bindings.err || la_rc=$?
+            if [ "$la_rc" -ne 0 ]; then
+              echo "::error::Привязки фасетов (ДРФ-1524): блоки attribute_rules.json не легли на дерево категорий — выкат остановлен"
+              echo "----- load_attributes --dry-run --strict-bindings (stderr) -----"
+              cat /tmp/la-bindings.err
+              echo "---------------------------------------------------------------"
+              exit "$la_rc"
+            fi
+            # Успех: короткая сводка по привязкам + строки про мёртвые узлы.
+            grep -aE "^ПЛАН|^  привязки:|^  из них в мёртвые узлы:|^  ! " /tmp/la-bindings.err || true
+            dead=$(grep -ac '"status": "dead_category"' /tmp/la-bindings.out || true)
+            if [ "${dead:-0}" -gt 0 ]; then
+              echo "::warning::Привязки фасетов: $dead привязок легли на мёртвые узлы (dead_category) — фасета на витрине не будет (ДРФ-1524)"
+            fi
+
+            # nginx подключает default.conf через bind-mount: смена содержимого файла НЕ
+            # пересоздаёт контейнер автоматически (compose смотрит на спеку, не на содержимое
+            # mount) → принудительно проверяем и перечитываем конфиг, иначе изменения маршрутов
+            # (напр. headless: / → Next) не применяются и staging выглядит «без изменений».
+            $compose exec -T nginx nginx -t && $compose restart nginx
+
+            # Smoke развёрнутого nginx (#424/B-04): строгий default-src 'none' — только для
+            # /api|/healthz, витрина/_next/* — рабочая storefront-политика. Гоняем из контейнера
+            # web против сервиса nginx внутри compose-сети (curl не нужен, скрипт на stdlib).
+            # Проваленная проверка (витрина под 'none' → сломанный рендер) валит деплой.
+            retry $compose exec -T web python scripts/smoke_csp.py --base http://nginx
             docker image prune -f

@@ -1,0 +1,29 @@
+User-agent: Yandex
+Clean-param: ID /*/
+Clean-param: sphrase_id /*/
+Disallow: /bitrix/
+Disallow: /upload/
+Disallow: /search/
+Disallow: /guarantee/
+Disallow: /old.guarantee/
+Disallow: /5yg/
+Disallow: /guarantee.old/
+Disallow: /expanded_guarantee/
+
+Allow: /search/map.php
+
+User-Agent: *
+Disallow: /bitrix/
+Disallow: /upload/
+Disallow: /search/
+Disallow: /guarantee/
+Disallow: /old.guarantee/
+Disallow: /5yg/
+Disallow: /guarantee.old/
+Disallow: /expanded_guarantee/
+Disallow: *?bx_sender_conversion_id=
+Disallow: *utm*=
+Disallow: *openstat=
+Disallow: *from=
+
+Allow: /search/map.php

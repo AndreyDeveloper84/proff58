@@ -1,0 +1,3 @@
+Экспортировано: scratchpad\phase8\artifacts\11-export-r3-b.json
+items: 5, checksum: 9b027e1a40e81db97376ddf7c04187fc8c36cc27041b4e86de253f8d43c4bd84
+scratchpad\phase8\artifacts\11-export-r3-b.json
