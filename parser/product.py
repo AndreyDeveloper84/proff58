@@ -6,11 +6,14 @@
 
 - resanta.ru  — JSON-LD `Product` + HTML-таблицы характеристик (Webasyst);
 - vihr.su     — JSON-LD `Product` + блоки `dl--product__features--item`;
+- huter.su    — Webasyst как resanta, но характеристики в `.product__features--item`
+  и обязательный JSON-LD `Product` (отсев статических страниц из sitemap);
 - interskol.ru — RSC-payload Next.js (`self.__next_f.push`), отдельный разбор;
 - zubr.ru     — HTML-таблицы «параметр — значение» (Bitrix), мобильные дубли.
 
-Цены и фотографии не извлекаются. Значения атрибутов — сырые, как на сайте
-(нормализация единиц — Phase 3); ключ — исходная подпись поля.
+Цены не извлекаются. Фотографии — только АДРЕСА из JSON-LD `image`
+(`ProductCard.images`); файлы качает отдельный контур (ИЗО). Значения атрибутов —
+сырые, как на сайте (нормализация единиц — Phase 3); ключ — исходная подпись поля.
 """
 
 from __future__ import annotations
@@ -21,7 +24,7 @@ import re
 from bs4 import BeautifulSoup
 from pydantic import ValidationError
 
-from parser.schemas import ProductCard
+from parser.schemas import ImageRef, ProductCard
 
 # Подписи цены/наличия в attributes недопустимы (цены не извлекаем — ТЗ).
 # Паттерн узкий, по словам: «Наличие режима долбления» (фича Интерскола)
@@ -68,6 +71,10 @@ def parse_product(html: str, source: str, url: str) -> ProductCard:
     extractors = {
         "resanta": _parse_resanta,
         "vihr": _parse_vihr,
+        # huter.su — тот же Webasyst, что resanta, но со строгим отсевом
+        # статических страниц: его каталог берётся целиком, и в sitemap лежат
+        # оферта, «Компания», «Политика». Подробности — в _parse_huter.
+        "huter": _parse_huter,
         "interskol": _parse_interskol,
         "zubr": _parse_zubr,
     }
@@ -128,6 +135,45 @@ def _jsonld_product(soup: BeautifulSoup) -> dict | None:
     return None
 
 
+def _jsonld_images(soup: BeautifulSoup) -> list[ImageRef]:
+    """Изображения товара из JSON-LD ``image`` → ``ImageRef[]``.
+
+    ``image`` в schema.org допускает и строку, и список — у huter.su строка, у
+    других Webasyst-карточек встречается список. Обрабатываем оба.
+
+    Кривые адреса (относительные, не http(s)) отбрасываем молча: ронять карточку
+    из-за одной ссылки нельзя, характеристики с неё всё равно нужны. Дедупликацию
+    и «ровно один is_main» делает схема ``ProductCard`` — здесь не дублируем.
+
+    Файлы парсер по-прежнему НЕ качает: это только адреса. Скачивание, проверки
+    и запись в БД — отдельный контур (ИЗО).
+    """
+    product = _jsonld_product(soup) or {}
+    raw = product.get("image")
+    if isinstance(raw, str):
+        candidates = [raw]
+    elif isinstance(raw, list):
+        candidates = [item for item in raw if isinstance(item, str)]
+    else:
+        return []
+
+    refs: list[ImageRef] = []
+    for position, url in enumerate(candidates):
+        url = url.strip()
+        if not url:
+            continue
+        try:
+            refs.append(ImageRef(url=url, is_main=position == 0))
+        except ValidationError:
+            # относительный адрес или мусор — пропускаем этот ImageRef, но не
+            # всю карточку
+            continue
+    # Если первым оказался отброшенный адрес, главной не осталось — назначаем.
+    if refs and not any(ref.is_main for ref in refs):
+        refs[0] = ImageRef(url=refs[0].url, is_main=True, alt=refs[0].alt)
+    return refs
+
+
 def _strip_seo_tail(name: str) -> str:
     """Отрезать SEO-хвост названия Webasyst (см. _SEO_TAIL_RE)."""
     return _SEO_TAIL_RE.sub("", name).strip()
@@ -165,6 +211,9 @@ def _webasyst_fields(soup: BeautifulSoup) -> dict:
         "brand": brand_name,
         "manufacturer_sku": product.get("sku"),
         "description": product.get("description"),
+        # Адреса галереи из того же JSON-LD. Общая часть, а не свойство одного
+        # источника: resanta, vihr и huter отдают их одинаково.
+        "images": _jsonld_images(soup),
     }
 
 
@@ -180,6 +229,45 @@ def _parse_resanta(html: str) -> dict:
     summary = soup.select_one("div.product-page meta[itemprop='description']")
     fields["attributes"] = attributes
     fields["summary_raw"] = summary.get("content") if summary else None
+    return fields
+
+
+def _parse_huter(html: str) -> dict:
+    """huter.su — разметка карточки как у resanta, но со строгим отсевом статики.
+
+    Отличие от resanta не в вёрстке, а в способе сбора: у resanta sitemap
+    фильтруется маской категории, а у huter мы берём каталог целиком, и в тот же
+    ``sitemap-shop.xml`` попадают «Публичная оферта», «Компания HUTER»,
+    «Политика обработки», «Сервисные центры», «/catalog/». У всех есть ``<h1>``,
+    поэтому fallback Webasyst принимал их за товары: боевой прогон 02.09.2026
+    дал четыре таких «карточки» из пяти первых URL — с пустыми sku, брендом,
+    характеристиками и картинками.
+
+    Различитель проверен на настоящих страницах: у статики huter **нет ни одного
+    блока JSON-LD**, у карточки есть ``@type=Product``. Требуем его наличия;
+    страница без него — не товар, и это ``ProductParseError``, а не пустая
+    карточка в выгрузке.
+
+    Для resanta/vihr правило НЕ включаем: их fallback на ``<h1>`` заведён под
+    карточки с неполным JSON-LD и статику не встречает.
+    """
+    soup = _soup(html)
+    if _jsonld_product(soup) is None:
+        return {"name": ""}  # parse_product отклонит: карточка без названия
+
+    fields = _webasyst_fields(soup)
+    # Характеристики у huter лежат НЕ в таблице, как у resanta: селекторы
+    # `div.product-features table` на нём не находят ничего (боевой прогон дал
+    # шесть карточек и у всех ноль характеристик). Разметка ближе к vihr —
+    # пары «title / value» в блоках `.product__features--item`, 17 штук на
+    # карточке бензопилы.
+    attributes: dict[str, str] = {}
+    for item in soup.select("div.product__features--item"):
+        name_tag = item.select_one(".product__features--item--title")
+        value_tag = item.select_one(".product__features--item--value")
+        if name_tag and value_tag:
+            _add_pair(attributes, name_tag.get_text(), value_tag.get_text())
+    fields["attributes"] = attributes
     return fields
 
 
