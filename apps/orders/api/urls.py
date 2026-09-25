@@ -9,6 +9,11 @@ app_name = "orders_api"
 urlpatterns = [
     path("cart/", views.CartView.as_view(), name="cart"),
     path("cart/promo/", views.CartPromoView.as_view(), name="cart-promo"),
+    path(
+        "cart/delivery-quote/",
+        views.CartDeliveryQuoteView.as_view(),
+        name="cart-delivery-quote",
+    ),
     path("cart/items/", views.CartItemsView.as_view(), name="cart-items"),
     path("cart/items/<int:pk>/", views.CartItemDetailView.as_view(), name="cart-item-detail"),
     path(
