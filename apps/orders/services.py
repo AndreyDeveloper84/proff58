@@ -361,6 +361,21 @@ def _customer_snapshot(user, customer_type: str, customer_data: dict) -> dict:
     return snapshot
 
 
+# Способы получения с доставкой (у юрлиц их нет, #558): свой курьер и СДЭК.
+_DELIVERY_METHODS_WITH_SHIPPING = ("courier", "cdek_pvz", "cdek_courier")
+
+
+def _carrier_address(snapshot: dict) -> str:
+    """Адрес для заказа из расчёта СДЭК: «СДЭК, пункт выдачи <код>, город, адрес»."""
+    city = snapshot.get("city_name") or ""
+    address = snapshot.get("address") or ""
+    if snapshot.get("mode") == "pvz":
+        head = f"СДЭК, пункт выдачи {snapshot.get('pvz_code', '')}".strip()
+    else:
+        head = "СДЭК, курьер"
+    return ", ".join(part for part in (head, city, address) if part)[:512]
+
+
 @transaction.atomic
 def place_order(
     cart: Cart,
@@ -437,7 +452,7 @@ def place_order(
         payment_method = "invoice"
         # #558 (Wave 1): доставки для юрлиц нет — заказ оформляется самовывозом,
         # счёт формируется только на товары. Курьерскую доставку отклоняем явно.
-        if (delivery.get("delivery_method") or "") == "courier":
+        if (delivery.get("delivery_method") or "") in _DELIVERY_METHODS_WITH_SHIPPING:
             raise ValidationError("Доставка для юрлиц недоступна — только самовывоз.")
     elif payment_method == "invoice":
         raise ValidationError("Оплата по счёту доступна только для B2B-заказов.")
@@ -551,7 +566,12 @@ def place_order(
     # корзине (единый источник правды), включается в итог и облагается НДС вместе
     # с товарами. При manual_required (нет весогабаритов для СДЭК) стоимость
     # неизвестна → delivery_cost=null, итог предварительный (только товары).
-    from apps.delivery.services import NOT_REQUIRED, DeliveryQuote, quote_for_order
+    from apps.delivery.services import (
+        CARRIER_METHODS,
+        NOT_REQUIRED,
+        DeliveryQuote,
+        quote_for_order,
+    )
 
     if customer_type == CustomerType.B2B:
         # #558 (Wave 1): для юрлиц доставка не считается вовсе — независимо от
@@ -566,13 +586,25 @@ def place_order(
             snapshot={"reason": "b2b_delivery_not_supported"},
         )
     else:
+        # DRF-2299: для СДЭК здесь только чтение расчёта из quote_carrier (без HTTP
+        # под замками); устаревший расчёт — DeliveryQuoteError, вьюха отдаёт 409.
         quote = quote_for_order(
             zone_slug=delivery.get("delivery_zone", "") or "",
             # #571: порог free_from — от суммы товаров ПОСЛЕ скидок (контракт
             # quote_for_order): скидка может «отщёлкнуть» бесплатную доставку.
             goods_total=goods_after_discount,
             items=items,
+            method=delivery.get("delivery_method", "") or "",
+            carrier_quote_id=delivery.get("delivery_quote_id", "") or "",
         )
+        if (delivery.get("delivery_method") or "") in CARRIER_METHODS and not quote.is_external:
+            raise ValidationError("Доставка СДЭК не выбрана — выберите способ доставки заново.")
+        if (delivery.get("delivery_method") or "") in CARRIER_METHODS and quote.snapshot.get(
+            "city_code"
+        ):
+            # Адрес получателя — из серверного расчёта (город + пункт выдачи или адрес
+            # курьера), а не из свободного поля формы.
+            order.delivery_address = _carrier_address(quote.snapshot)
     order.delivery_zone = quote.zone_slug
     order.delivery_cost = quote.cost
     # Значения статусов delivery.services совпадают с Order.DeliveryCalcStatus.
@@ -587,11 +619,17 @@ def place_order(
     if promotions_enabled and (promo_inputs or cart.promo_code):
         from apps.promotions.services import compute_promotions
 
+        # DRF-2299: промокод «бесплатная доставка» на СДЭК не действует, пока
+        # владелец не включит PROMO_FREE_DELIVERY_EXTERNAL (доставку оплачивает
+        # перевозчику магазин — скидка шла бы из его кармана).
+        promo_delivery_cost = quote.cost
+        if quote.is_external and not getattr(settings, "PROMO_FREE_DELIVERY_EXTERNAL", False):
+            promo_delivery_cost = _ZERO
         breakdown = compute_promotions(
             promo_inputs,
             promo_code=cart.promo_code,
             customer_type=customer_type,
-            delivery_cost=quote.cost,
+            delivery_cost=promo_delivery_cost,
             delivery_status=quote.status,
         )
         if breakdown.code_error is not None and breakdown.code_error.code != "not_beneficial":
@@ -642,6 +680,9 @@ def place_order(
             raise ValidationError("Доставка для юрлиц недоступна — слот доставки не нужен.")
         if (delivery.get("delivery_method") or "") != "courier":
             raise ValidationError("Слот доставки доступен только для курьерской доставки.")
+        if quote.is_external:
+            # Слоты — расписание своего курьера; срок СДЭК задаёт перевозчик.
+            raise ValidationError("Для доставки СДЭК время доставки не выбирается.")
         from apps.delivery.slots import lock_slot_for_booking, slot_snapshot
         from apps.orders.slots import occupied_count
 
@@ -677,6 +718,7 @@ def place_order(
         update_fields=[
             "total",
             "currency",
+            "delivery_address",
             "delivery_zone",
             "delivery_cost",
             "delivery_calc_status",

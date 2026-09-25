@@ -299,6 +299,10 @@ class CreateOrderSerializer(serializers.Serializer):
     delivery_zone = serializers.CharField(required=False, allow_blank=True, default="")
     # #569: слот доставки (только B2C + курьер; авторитетная проверка — place_order).
     delivery_slot_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    # DRF-2299: расчёт доставки СДЭК из POST /api/cart/delivery-quote/.
+    delivery_quote_id = serializers.CharField(
+        required=False, allow_blank=True, default="", max_length=64
+    )
     comment = serializers.CharField(required=False, allow_blank=True, default="")
     payment_method = serializers.CharField(required=False, allow_blank=True, default="")
 
@@ -369,7 +373,7 @@ class CreateOrderSerializer(serializers.Serializer):
             # #558 (Wave 1): доставки для юрлиц нет. Курьер — явный отказ, зону
             # игнорируем уже на границе API, чтобы она не могла повлиять на сумму
             # (place_order держит тот же инвариант авторитетно).
-            if (attrs.get("delivery_method") or "") == "courier":
+            if (attrs.get("delivery_method") or "") in ("courier", "cdek_pvz", "cdek_courier"):
                 raise serializers.ValidationError(
                     {"delivery_method": "Доставка для юрлиц недоступна — только самовывоз."}
                 )

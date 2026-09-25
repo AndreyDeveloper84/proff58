@@ -106,6 +106,29 @@ if STAFF_NOTIFICATION_EMAILS:
             "STAFF_NOTIFICATION_EMAILS заданы, а SITE_URL пуст — ссылка в админку в письме "
             "будет неполной."
         )
+# DRF-2299: СДЭК в проде — только явные адрес API и ключи. Тестовый контур с
+# публичными ключами допустим лишь по CDEK_ALLOW_TEST (стенд), иначе покупатели
+# получали бы цены тестового договора, а отправления уходили в песочницу.
+from .base import (  # noqa: E402
+    CDEK_ACCOUNT,
+    CDEK_ALLOW_TEST,
+    CDEK_API_URL,
+    CDEK_SECURE,
+    FEATURES,
+    SHIP_PROVIDER,
+)
+
+if FEATURES.get("external_ship") and SHIP_PROVIDER == "cdek":
+    if not CDEK_API_URL:
+        raise ImproperlyConfigured("SHIP_PROVIDER=cdek, а CDEK_API_URL пуст — задайте адрес API.")
+    if "api.edu.cdek.ru" in CDEK_API_URL and not CDEK_ALLOW_TEST:
+        raise ImproperlyConfigured(
+            "CDEK_API_URL указывает на тестовый контур СДЭК — в проде это разрешает только "
+            "CDEK_ALLOW_TEST=True."
+        )
+    if "api.edu.cdek.ru" not in CDEK_API_URL and not (CDEK_ACCOUNT and CDEK_SECURE):
+        raise ImproperlyConfigured("SHIP_PROVIDER=cdek: задайте CDEK_ACCOUNT и CDEK_SECURE.")
+
 if EMAIL_USE_TLS and EMAIL_USE_SSL:
     raise ImproperlyConfigured("EMAIL_USE_TLS и EMAIL_USE_SSL взаимоисключающие — оставьте один.")
 
