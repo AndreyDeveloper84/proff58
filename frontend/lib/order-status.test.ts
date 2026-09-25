@@ -58,10 +58,10 @@ describe("order-status: семантика по машиночитаемым о�
       expect(statusBadgeClass(makeOrder(s)), `статус ${s}`).not.toBe(GRAY);
     }
     // «В доставке» — синий (в пути), НЕ зелёный как завершённый.
-    expect(statusBadgeClass(makeOrder("shipped"))).toBe("bg-blue-50 text-blue-700");
+    expect(statusBadgeClass(makeOrder("shipped"))).toBe("bg-blue-500/15 text-blue-700 dark:text-blue-300");
     // «Готов к выдаче» — выделен (требует действия покупателя).
     expect(statusBadgeClass(makeOrder("ready"))).toBe("bg-accent/10 text-accent");
     // «Ожидает оплаты» — предупреждающий.
-    expect(statusBadgeClass(makeOrder("new", "pending"))).toBe("bg-amber-50 text-amber-700");
+    expect(statusBadgeClass(makeOrder("new", "pending"))).toBe("bg-amber-500/15 text-amber-700 dark:text-amber-300");
   });
 });
