@@ -1,0 +1,803 @@
+{
+ "blocked": 2,
+ "blocked_reason": "1942 — нет паза цепи (chain_gauge); 45391 — мощность и питание не распознаны из обозначения «УШМ-125/ 900» (пробел в названии)",
+ "frozen_at": "2026-09-25T08:54:19+0300",
+ "indexable_candidates": 27,
+ "revision": "rev1",
+ "rules": {
+  "axes_rationale": "по каждому типу — то, без чего покупатель не выберет товар: у цепей и шин это шаг, паз и размер; у бензопил объём двигателя и длина шины; у УШМ питание, мощность и диаметр круга; у буров хвостовик и размеры",
+  "commercial": "is_active AND status=published AND available_quantity>0 AND price>0",
+  "http": "карточка 200, главное фото 200, JSON-LD Product; проверено 2026-09-25 с паузой 3 с",
+  "media": ">=1 файл изображения И есть main",
+  "release_required_axes": {
+   "bolgarki-ushm": [
+    "power_source",
+    "power",
+    "disc_diameter"
+   ],
+   "bp-benzopily": [
+    "engine_displacement",
+    "bar_length",
+    "chain_pitch"
+   ],
+   "bp-cepi": [
+    "chain_pitch",
+    "chain_links",
+    "chain_gauge"
+   ],
+   "bp-shiny": [
+    "bar_length",
+    "chain_pitch",
+    "chain_gauge"
+   ],
+   "bury": [
+    "shank_type",
+    "diameter",
+    "length"
+   ]
+  }
+ },
+ "scope_total": 29,
+ "skus": [
+  {
+   "article": "70/6/5",
+   "attributes_total": 7,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Бензопила HUTER BS-25",
+   "product_id": 1539,
+   "required_axes": [
+    "engine_displacement",
+    "bar_length",
+    "chain_pitch"
+   ],
+   "slug": "00004263",
+   "tool_type": "bp-benzopily"
+  },
+  {
+   "article": "70/6/2",
+   "attributes_total": 7,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Бензопила HUTER BS-45",
+   "product_id": 1541,
+   "required_axes": [
+    "engine_displacement",
+    "bar_length",
+    "chain_pitch"
+   ],
+   "slug": "00002967",
+   "tool_type": "bp-benzopily"
+  },
+  {
+   "article": "70/6/4",
+   "attributes_total": 7,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Бензопила HUTER BS-45 М",
+   "product_id": 1542,
+   "required_axes": [
+    "engine_displacement",
+    "bar_length",
+    "chain_pitch"
+   ],
+   "slug": "00002830",
+   "tool_type": "bp-benzopily"
+  },
+  {
+   "article": "70/6/3",
+   "attributes_total": 7,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Бензопила HUTER BS-52",
+   "product_id": 1543,
+   "required_axes": [
+    "engine_displacement",
+    "bar_length",
+    "chain_pitch"
+   ],
+   "slug": "00000788",
+   "tool_type": "bp-benzopily"
+  },
+  {
+   "article": "70/6/6",
+   "attributes_total": 7,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Бензопила HUTER BS-62",
+   "product_id": 1545,
+   "required_axes": [
+    "engine_displacement",
+    "bar_length",
+    "chain_pitch"
+   ],
+   "slug": "00032102",
+   "tool_type": "bp-benzopily"
+  },
+  {
+   "article": "71/4/36",
+   "attributes_total": 4,
+   "commercial": true,
+   "has_main": true,
+   "http": null,
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": false,
+   "missing_axes": [
+    "chain_gauge"
+   ],
+   "name": "Цепь 36 звеньев C9 1/4 для ELS-20LI HUTER",
+   "product_id": 1942,
+   "required_axes": [
+    "chain_pitch",
+    "chain_links",
+    "chain_gauge"
+   ],
+   "slug": "00044736",
+   "tool_type": "bp-cepi"
+  },
+  {
+   "article": "71/4/38",
+   "attributes_total": 4,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Цепь 45 звена C10 1/4 8\" HUTER для ELS-20/8",
+   "product_id": 1946,
+   "required_axes": [
+    "chain_pitch",
+    "chain_links",
+    "chain_gauge"
+   ],
+   "slug": "375036",
+   "tool_type": "bp-cepi"
+  },
+  {
+   "article": "71/4/25",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true,
+    "note": "первая проверка попала на перезапуск контейнеров при деплое (500); перепроверено 10 запросов подряд — все 200"
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Цепь 50 звена C7 3/8 1.3мм 14\" HUTER PROF",
+   "product_id": 1955,
+   "required_axes": [
+    "chain_pitch",
+    "chain_links",
+    "chain_gauge"
+   ],
+   "slug": "00039183",
+   "tool_type": "bp-cepi"
+  },
+  {
+   "article": "71/4/26",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Цепь 52 звена C8 3/8 1.3мм 14\" HUTER PROF",
+   "product_id": 1962,
+   "required_axes": [
+    "chain_pitch",
+    "chain_links",
+    "chain_gauge"
+   ],
+   "slug": "00039182",
+   "tool_type": "bp-cepi"
+  },
+  {
+   "article": "71/4/20",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Цепь 57 звена C1 3/8 1.3мм 16\" HUTER PROF",
+   "product_id": 1979,
+   "required_axes": [
+    "chain_pitch",
+    "chain_links",
+    "chain_gauge"
+   ],
+   "slug": "00039186",
+   "tool_type": "bp-cepi"
+  },
+  {
+   "article": "71/4/7",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Цепь 57 звеньев C1 3/8 1.3мм 16\" HUTER",
+   "product_id": 1980,
+   "required_axes": [
+    "chain_pitch",
+    "chain_links",
+    "chain_gauge"
+   ],
+   "slug": "00002279",
+   "tool_type": "bp-cepi"
+  },
+  {
+   "article": "71/4/3",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Цепь 63 звена C2 3/8 1.3мм 18\" HUTER",
+   "product_id": 1987,
+   "required_axes": [
+    "chain_pitch",
+    "chain_links",
+    "chain_gauge"
+   ],
+   "slug": "00002770",
+   "tool_type": "bp-cepi"
+  },
+  {
+   "article": "71/4/8",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Цепь 72 звена 1.5мм 0,325 18\"/45 см HUTER",
+   "product_id": 2011,
+   "required_axes": [
+    "chain_pitch",
+    "chain_links",
+    "chain_gauge"
+   ],
+   "slug": "00002933",
+   "tool_type": "bp-cepi"
+  },
+  {
+   "article": "71/4/21",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Цепь 72 звена C3 0,325 1.5мм 18\" HUTER PROF",
+   "product_id": 2012,
+   "required_axes": [
+    "chain_pitch",
+    "chain_links",
+    "chain_gauge"
+   ],
+   "slug": "00039185",
+   "tool_type": "bp-cepi"
+  },
+  {
+   "article": "71/4/22",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Цепь 76 звена C4 0,325 1.5мм 20\" HUTER PROF",
+   "product_id": 2015,
+   "required_axes": [
+    "chain_pitch",
+    "chain_links",
+    "chain_gauge"
+   ],
+   "slug": "00039184",
+   "tool_type": "bp-cepi"
+  },
+  {
+   "article": "71/4/9",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Цепь 76 звеньев 1.5мм 0,325 20\" HUTER",
+   "product_id": 2016,
+   "required_axes": [
+    "chain_pitch",
+    "chain_links",
+    "chain_gauge"
+   ],
+   "slug": "00002771",
+   "tool_type": "bp-cepi"
+  },
+  {
+   "article": "71/4/5",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шина 18\"-0,325-1,5-72 для BS-45, BS-52M HUTER",
+   "product_id": 2051,
+   "required_axes": [
+    "bar_length",
+    "chain_pitch",
+    "chain_gauge"
+   ],
+   "slug": "00003274",
+   "tool_type": "bp-shiny"
+  },
+  {
+   "article": "71/4/2",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шина 18\"-3/8 63зв CS-181E для электропилы Huter ELS-2400, ELS-2800",
+   "product_id": 2052,
+   "required_axes": [
+    "bar_length",
+    "chain_pitch",
+    "chain_gauge"
+   ],
+   "slug": "00040566",
+   "tool_type": "bp-shiny"
+  },
+  {
+   "article": "71/4/6",
+   "attributes_total": 5,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "huter"
+   ],
+   "images": 1,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шина 20\"-0,325-1,5-76 для BS-52/BS-62 HUTER",
+   "product_id": 2054,
+   "required_axes": [
+    "bar_length",
+    "chain_pitch",
+    "chain_gauge"
+   ],
+   "slug": "00021080",
+   "tool_type": "bp-shiny"
+  },
+  {
+   "article": "403BL-P16800",
+   "attributes_total": 4,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 2,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Бур 16х800х750 SDS+ СЕБ",
+   "product_id": 2806,
+   "required_axes": [
+    "shank_type",
+    "diameter",
+    "length"
+   ],
+   "slug": "00014716",
+   "tool_type": "bury"
+  },
+  {
+   "article": "403BL-M25800",
+   "attributes_total": 4,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 2,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Бур 25х 800 мм SDS-MAX СЕБ",
+   "product_id": 2867,
+   "required_axes": [
+    "shank_type",
+    "diameter",
+    "length"
+   ],
+   "slug": "00010511",
+   "tool_type": "bury"
+  },
+  {
+   "article": "403BL-P321000",
+   "attributes_total": 4,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "vseinstrumenti"
+   ],
+   "images": 2,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Бур 32х1000 мм SDS PLUS СЕБ",
+   "product_id": 2892,
+   "required_axes": [
+    "shank_type",
+    "diameter",
+    "length"
+   ],
+   "slug": "00039127",
+   "tool_type": "bury"
+  },
+  {
+   "article": "75/12/12",
+   "attributes_total": 4,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "manual"
+   ],
+   "images": 5,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шлифмашина полировальная РЕСАНТА УШМ-180/1500П",
+   "product_id": 45143,
+   "required_axes": [
+    "power_source",
+    "power",
+    "disc_diameter"
+   ],
+   "slug": "00034536",
+   "tool_type": "bolgarki-ushm"
+  },
+  {
+   "article": "75/12/2",
+   "attributes_total": 2,
+   "commercial": true,
+   "has_main": true,
+   "http": null,
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": false,
+   "missing_axes": [
+    "power_source",
+    "power"
+   ],
+   "name": "Шлифмашина угловая РЕСАНТА УШМ-125/ 900",
+   "product_id": 45391,
+   "required_axes": [
+    "power_source",
+    "power",
+    "disc_diameter"
+   ],
+   "slug": "00024119",
+   "tool_type": "bolgarki-ushm"
+  },
+  {
+   "article": "75/12/14",
+   "attributes_total": 4,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шлифмашина угловая РЕСАНТА УШМ-125/1400 ЭПП",
+   "product_id": 45395,
+   "required_axes": [
+    "power_source",
+    "power",
+    "disc_diameter"
+   ],
+   "slug": "0110000652",
+   "tool_type": "bolgarki-ushm"
+  },
+  {
+   "article": "75/12/5",
+   "attributes_total": 4,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шлифмашина угловая РЕСАНТА УШМ-125/1400Э",
+   "product_id": 45396,
+   "required_axes": [
+    "power_source",
+    "power",
+    "disc_diameter"
+   ],
+   "slug": "00031347",
+   "tool_type": "bolgarki-ushm"
+  },
+  {
+   "article": "75/12/6",
+   "attributes_total": 4,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шлифмашина угловая РЕСАНТА УШМ-150/1300",
+   "product_id": 45397,
+   "required_axes": [
+    "power_source",
+    "power",
+    "disc_diameter"
+   ],
+   "slug": "00025745",
+   "tool_type": "bolgarki-ushm"
+  },
+  {
+   "article": "75/12/7",
+   "attributes_total": 4,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шлифмашина угловая РЕСАНТА УШМ-150/1400Э",
+   "product_id": 45398,
+   "required_axes": [
+    "power_source",
+    "power",
+    "disc_diameter"
+   ],
+   "slug": "00024121",
+   "tool_type": "bolgarki-ushm"
+  },
+  {
+   "article": "75/12/8",
+   "attributes_total": 4,
+   "commercial": true,
+   "has_main": true,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true
+   },
+   "image_sources": [
+    "resanta"
+   ],
+   "images": 3,
+   "indexable_candidate": true,
+   "missing_axes": [],
+   "name": "Шлифмашина угловая РЕСАНТА УШМ-180/1800",
+   "product_id": 45399,
+   "required_axes": [
+    "power_source",
+    "power",
+    "disc_diameter"
+   ],
+   "slug": "00031145",
+   "tool_type": "bolgarki-ushm"
+  }
+ ],
+ "tool_types": [
+  "bp-cepi",
+  "bp-benzopily",
+  "bp-shiny",
+  "bolgarki-ushm",
+  "bury"
+ ],
+ "track": "SEO-BATCH-03"
+}
