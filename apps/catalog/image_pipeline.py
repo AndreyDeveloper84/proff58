@@ -110,6 +110,8 @@ class ImagePipeline:
     THUMB_SIZE = (400, 400)
     QUALITY = 85
     TIMEOUT = 10
+    #: Сколько адресов хоста пробовать, если узел CDN не отвечает (ИЗО/MFG-APPLY-01).
+    IP_ATTEMPTS = 3
     MIN_SIDE = 100
     MAX_BYTES = 10 * 1024 * 1024
     MAX_PIXELS = 40_000_000  # ~40 Мп — потолок против decompression bomb
@@ -183,9 +185,31 @@ class ImagePipeline:
         if waited:
             log.debug("throttle: пауза %.3fs перед запросом к %s", waited, parsed.hostname)
 
-        # Пиннимся к проверенному IP (без повторного DNS), TLS проверяем по имени хоста.
+        # Отдельный узел CDN может не отвечать: на einhell/CloudFront со стенда таймаутили
+        # 3.164.60.126 и 65.9.60.58, пока соседние адреса отдавали файл за доли секунды.
+        # Пробуем разные адреса хоста: сначала все уникальные из текущего резолва, дальше —
+        # новый резолв (DNS у CDN отдаёт узлы по кругу). Каждый новый список адресов проходит
+        # ту же проверку на публичность, поэтому защита от DNS-rebinding сохраняется.
+        tried: set[str] = set()
+        for attempt in range(self.IP_ATTEMPTS):
+            if attempt:
+                ips = self._resolve_public_ips(parsed.hostname)
+                if not ips:
+                    return None
+            for ip in ips:
+                if ip in tried:
+                    continue
+                tried.add(ip)
+                data = self._download_from_ip(ip, parsed)
+                if data is not None:
+                    return data
+                break  # этот адрес не ответил — берём следующий резолв
+        return None
+
+    def _download_from_ip(self, ip: str, parsed) -> bytes | None:
+        """Одна попытка скачивания с конкретного адреса хоста."""
         pool = urllib3.HTTPSConnectionPool(
-            ips[0],
+            ip,
             port=443,
             timeout=urllib3.Timeout(connect=self.TIMEOUT, read=self.TIMEOUT),
             retries=False,
@@ -224,7 +248,7 @@ class ImagePipeline:
             finally:
                 resp.release_conn()
         except (urllib3.exceptions.HTTPError, OSError) as exc:
-            log.warning("image download failed %s: %s", url, exc)
+            log.warning("image download failed %s (ip %s): %s", parsed.hostname, ip, exc)
             return None
         finally:
             pool.close()
