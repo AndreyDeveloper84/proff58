@@ -513,3 +513,35 @@ def test_secondary_images_order_stable_by_pk():
     for _ in range(3):  # порядок обязан быть одинаковым от запроса к запросу
         assert [i.pk for i in p.images.all()] == expected
     assert p.images.first().pk == main.pk, "единственный main — всегда первый"
+
+
+def test_download_tries_other_cdn_nodes_when_one_times_out(monkeypatch):
+    """Узел CDN может молчать: на einhell/CloudFront со стенда таймаутили отдельные адреса.
+
+    Один неотвечающий адрес не должен ронять загрузку — движок обязан взять следующий,
+    в том числе из нового резолва (DNS у CDN отдаёт узлы по кругу).
+    """
+    pipe = ImagePipeline()
+    resolves = [["3.164.60.126"], ["65.9.60.58"], ["3.164.60.115"]]
+    monkeypatch.setattr(
+        pipe, "_resolve_public_ips", lambda host: resolves.pop(0) if resolves else None
+    )
+    tried: list[str] = []
+
+    def fake_from_ip(ip, parsed):
+        tried.append(ip)
+        return b"ok" if ip == "3.164.60.115" else None
+
+    monkeypatch.setattr(pipe, "_download_from_ip", fake_from_ip)
+    assert pipe._download("https://cdn.example/image/x") == b"ok"
+    assert tried == ["3.164.60.126", "65.9.60.58", "3.164.60.115"]
+
+
+def test_download_gives_up_after_ip_attempts(monkeypatch):
+    """Перебор ограничен: молчащий хост не крутится бесконечно."""
+    pipe = ImagePipeline()
+    monkeypatch.setattr(pipe, "_resolve_public_ips", lambda host: ["8.8.8.8", "8.8.4.4"])
+    calls: list[str] = []
+    monkeypatch.setattr(pipe, "_download_from_ip", lambda ip, parsed: calls.append(ip) or None)
+    assert pipe._download("https://cdn.example/image/x") is None
+    assert len(calls) <= pipe.IP_ATTEMPTS
