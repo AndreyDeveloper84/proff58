@@ -1,9 +1,9 @@
 {
- "blocked": 2,
- "blocked_reason": "1942 — нет паза цепи (chain_gauge); 45391 — мощность и питание не распознаны из обозначения «УШМ-125/ 900» (пробел в названии)",
- "frozen_at": "2026-09-25T08:54:19+0300",
- "indexable_candidates": 27,
- "revision": "rev1",
+ "blocked": 1,
+ "blocked_reason": "1942 — нет паза цепи (chain_gauge); данных о пазе нет ни в названии, ни в картах производителя",
+ "frozen_at": "2026-09-25T09:38:04+0300",
+ "indexable_candidates": 28,
+ "revision": "rev2",
  "rules": {
   "axes_rationale": "по каждому типу — то, без чего покупатель не выберет товар: у цепей и шин это шаг, паз и размер; у бензопил объём двигателя и длина шины; у УШМ питание, мощность и диаметр круга; у буров хвостовик и размеры",
   "commercial": "is_active AND status=published AND available_quantity>0 AND price>0",
@@ -638,19 +638,21 @@
   },
   {
    "article": "75/12/2",
-   "attributes_total": 2,
+   "attributes_total": 4,
    "commercial": true,
    "has_main": true,
-   "http": null,
+   "http": {
+    "card_http": 200,
+    "image_http": "200",
+    "jsonld": true,
+    "note": "проверено 2026-09-25 после добора мощности"
+   },
    "image_sources": [
     "resanta"
    ],
    "images": 3,
-   "indexable_candidate": false,
-   "missing_axes": [
-    "power_source",
-    "power"
-   ],
+   "indexable_candidate": true,
+   "missing_axes": [],
    "name": "Шлифмашина угловая РЕСАНТА УШМ-125/ 900",
    "product_id": 45391,
    "required_axes": [
@@ -792,6 +794,7 @@
    "tool_type": "bolgarki-ushm"
   }
  ],
+ "supersedes": "rev1 (27 кандидатов): 45391 добран после правки правила мощности УШМ (PR #835)",
  "tool_types": [
   "bp-cepi",
   "bp-benzopily",

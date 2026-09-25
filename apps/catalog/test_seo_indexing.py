@@ -111,4 +111,4 @@ def test_allowlist_matches_frozen_release_manifests():
         assert candidates.isdisjoint(union), batch["id"]
         union |= candidates
     assert sorted(allow["product_ids"]) == sorted(union)
-    assert allow["count"] == len(union) == 146
+    assert allow["count"] == len(union) == 147

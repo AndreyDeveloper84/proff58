@@ -30,11 +30,11 @@
         "bury"
       ],
       "manifest": "docs/catalog/appendix/2026-09-25-seo-batch-03/seo-batch-03-gate.json",
-      "manifest_sha256": "cfc70063eb68adb7d88509c42f6d90048e7b6dda94a1c1bbdc28175075d388b2",
-      "count": 27
+      "manifest_sha256": "c584dcff029e77ea573720af2813d4f92e477e7ad9f78557d9541ebac8eb1b7e",
+      "count": 28
     }
   ],
-  "count": 146,
+  "count": 147,
   "product_ids": [
     417,
     418,
@@ -170,6 +170,7 @@
     45271,
     45272,
     45273,
+    45391,
     45395,
     45396,
     45397,
