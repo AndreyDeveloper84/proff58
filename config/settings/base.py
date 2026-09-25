@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "apps.leads",
     "apps.ai",
     "apps.integration_max",
+    "apps.integration_oauth",
     "apps.integration_ship",
     "apps.notifications",
     "apps.crm_clients",
@@ -423,6 +424,23 @@ MAX_BOT_USERNAME = env("MAX_BOT_USERNAME", default="")
 # TTL одноразовой попытки авторизации через MAX, минут (#492, §11.3).
 MAX_AUTH_ATTEMPT_TTL_MINUTES = env.int("MAX_AUTH_ATTEMPT_TTL_MINUTES", default=5)
 
+# Вход через VK ID и Яндекс ID (apps.integration_oauth). Провайдер включён, когда
+# заданы его ключи, SITE_URL (https, без пути — от него строится redirect_uri) и
+# FEATURE_OAUTH_LOGIN. Токены провайдеров сайт не хранит.
+# VK ID: id.vk.ru → приложение «Web»; service token нужен конфиденциальному приложению.
+VKID_CLIENT_ID = env("VKID_CLIENT_ID", default="")
+VKID_SERVICE_TOKEN = env("VKID_SERVICE_TOKEN", default="")
+# Яндекс ID: oauth.yandex.ru → веб-сервисы, права login:email + login:info.
+YANDEX_ID_CLIENT_ID = env("YANDEX_ID_CLIENT_ID", default="")
+YANDEX_ID_CLIENT_SECRET = env("YANDEX_ID_CLIENT_SECRET", default="")
+# Сколько живёт незавершённый вход (state + PKCE verifier в сессии), секунд.
+OAUTH_STATE_TTL_SECONDS = env.int("OAUTH_STATE_TTL_SECONDS", default=600)
+# Таймаут одного запроса к провайдеру и общий бюджет колбэка (обмен + профиль), секунд.
+# Бюджет заметно меньше таймаута gunicorn (120 с), чтобы пользователь получил 302,
+# а не обрыв соединения.
+OAUTH_HTTP_TIMEOUT = env.int("OAUTH_HTTP_TIMEOUT", default=5)
+OAUTH_HTTP_BUDGET = env.int("OAUTH_HTTP_BUDGET", default=15)
+
 # #521: retention policy — outbox (text/chat_id) короче, чем user-facing история.
 NOTIFICATION_LOG_RETENTION_DAYS = env.int("NOTIFICATION_LOG_RETENTION_DAYS", default=90)
 NOTIFICATION_RETENTION_DAYS = env.int("NOTIFICATION_RETENTION_DAYS", default=365)
@@ -551,6 +569,8 @@ FEATURES = {
     "catalog_processing": env.bool("FEATURE_CATALOG_PROCESSING", default=False),
     # Автообработка фото товаров (ADR-0014): витринные копии на белом фоне.
     "product_image_autoprocess": env.bool("FEATURE_PRODUCT_IMAGE_AUTOPROCESS", default=False),
+    # Вход через VK ID / Яндекс ID: общий рубильник поверх ключей провайдеров.
+    "oauth_login": env.bool("FEATURE_OAUTH_LOGIN", default=True),
 }
 
 # Внешние перевозчики (integration_ship). Stub-провайдер (0 ₽) — только с явным

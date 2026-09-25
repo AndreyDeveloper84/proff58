@@ -32,6 +32,11 @@ FRONTEND_PATHS = [
     "/api/account/max/link/",
     "/api/account/max/unlink/",
     "/api/account/max/status/",
+    # Кабинет входа через VK ID / Яндекс ID: мутации вошедшего — только через BFF.
+    "/api/account/oauth",
+    "/api/account/oauth/",
+    "/api/account/oauth/vkid/link",
+    "/api/account/oauth/yandex/unlink",
     "/api/auth/max/start/",
     "/api/auth/max/abc123/status/",
     "/api/auth/max/abc123/cancel/",
@@ -71,6 +76,12 @@ WEB_PATHS = [
     "/api/1c/prices/update",
     "/api/orders/",  # список заказов (GET, безопасный метод) → Django
     "/api/ai/products/drel/recommendations/",
+    # Вход через VK ID / Яндекс ID: браузер приходит навигацией, ответ — 302 из Django.
+    "/api/oauth/providers/",
+    "/api/oauth/vkid/start/",
+    "/api/oauth/vkid/callback/",
+    "/api/oauth/yandex/start/",
+    "/api/oauth/yandex/callback/",
     "/healthz/",
     "/admin/",
 ]

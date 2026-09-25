@@ -290,6 +290,7 @@ def sync_prices_stock() -> SyncReport:
 | Сигнал | Издатель | Когда | Полезная нагрузка | Кто слушает |
 |---|---|---|---|---|
 | `user_registered` | accounts | новый пользователь | user_id | crm_clients, notifications |
+| `user_deleted` | accounts | аккаунт обезличен (ADR-0015) | user_id | integration_oauth |
 | `b2b_verified` | accounts | юрлицо одобрено | user_id, organization_id | notifications, crm_sales |
 | `product_created` | catalog | создан товар | product_id, source | ai (обогащение), analytics |
 | `product_updated` | catalog | изменён товар | product_id, source, changed_fields | analytics, ai, поиск/индекс |
@@ -418,6 +419,7 @@ class SiteSettings(models.Model):
 - `ADR-0011-dinamometricheskie-klyuchi.md` — отдельный `tool_type` для динамометрических ключей
 - `ADR-0012-attributeoption-slug-uniqueness.md` — уникальность slug у `AttributeOption`
 - `ADR-0013-b2b-vat-delivery-contract.md` — единый ценник, НДС в цене и контракт доставки
+- `ADR-0015-user-deleted-event.md` — событие `user_deleted` и реестр условий сброса пароля
 
 ### 9.5 Что НЕ делаем сейчас (это путь «продукт на продажу»)
 

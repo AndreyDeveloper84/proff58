@@ -427,6 +427,23 @@ def unlink_max(user) -> bool:
     return True
 
 
+def can_login_via_max(user) -> bool:
+    """Может ли пользователь войти на сайт через MAX прямо сейчас.
+
+    Нужна модулям входа (VK ID / Яндекс ID), чтобы не дать отвязать последний
+    способ входа. Условия: активная привязка MAX И интеграция настроена
+    (MAX_BOT_TOKEN + MAX_BOT_USERNAME — без них QR/диплинк входа не собрать).
+    chat_id не требуется: для входа он не нужен, только для уведомлений.
+    """
+    if user is None or not getattr(user, "pk", None):
+        return False
+    try:
+        _max_bot_username()
+    except MaxIntegrationUnavailable:
+        return False
+    return MaxAccount.objects.filter(user=user, is_active=True).exists()
+
+
 def has_active_max_account(user) -> bool:
     """Есть ли у пользователя каноническая активная привязка MAX (#517).
 

@@ -24,6 +24,9 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@/components/account/MaxLinkCard", () => ({
   MaxLinkCard: () => <div>Настройки MAX</div>,
 }));
+vi.mock("@/components/account/OAuthLinksCard", () => ({
+  OAuthLinksCard: () => <div>Вход через VK ID и Яндекс ID</div>,
+}));
 vi.mock("@/components/account/NotificationPreferencesCard", () => ({
   NotificationPreferencesCard: () => <div>Настройки уведомлений</div>,
 }));

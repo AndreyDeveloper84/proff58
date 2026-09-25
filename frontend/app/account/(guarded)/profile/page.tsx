@@ -25,6 +25,7 @@ import {
 import { AccountDialog } from "@/components/account/AccountDialog";
 import { AccountShell } from "@/components/account/AccountShell";
 import { MaxLinkCard } from "@/components/account/MaxLinkCard";
+import { OAuthLinksCard } from "@/components/account/OAuthLinksCard";
 import { NotificationPreferencesCard } from "@/components/account/NotificationPreferencesCard";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -632,6 +633,7 @@ export default function ProfilePage() {
           )}
 
           <MaxLinkCard />
+          <OAuthLinksCard />
           <NotificationPreferencesCard />
         </section>
 
