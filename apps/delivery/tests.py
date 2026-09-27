@@ -143,8 +143,28 @@ def test_result_keys(zones):
         "type",
         "cost",
         "free_delivery",
+        "is_external",
+        "carrier_available",
         "pickup_points",
     }
+    assert city["is_external"] is False
+    assert city["carrier_available"] is False
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("enabled", [True, False])
+def test_external_zone_carrier_available(zones, monkeypatch, enabled):
+    """Способ СДЭК на витрине есть, только когда перевозчик настроен (DRF-2491)."""
+    from apps.integration_ship import services as ship
+
+    monkeypatch.setattr(ship, "cdek_enabled", lambda: enabled)
+    DeliveryZone.objects.create(
+        name="СДЭК по России", slug="test-cdek", price=Decimal("0"), is_external=True
+    )
+    options = {o["zone"]: o for o in calculate(cart_total=Decimal("0"))}
+    assert options["test-cdek"]["is_external"] is True
+    assert options["test-cdek"]["carrier_available"] is enabled
+    assert options["test-city"]["carrier_available"] is False
 
 
 @pytest.mark.django_db
@@ -365,3 +385,30 @@ class TestQuoteForOrder:
         assert q.status == CALCULATED
         assert q.cost == Decimal("450")
         assert q.snapshot["provider"] == "ok"
+
+
+@pytest.mark.django_db
+def test_rename_cdek_zone_migration_keeps_admin_edits():
+    """DRF-2491: зона СДЭК переименовывается, только если имя не правили в админке."""
+    from importlib import import_module
+
+    from django.apps import apps as django_apps
+
+    migration = import_module("apps.delivery.migrations.0006_rename_cdek_zone")
+    zone = DeliveryZone.objects.create(
+        name=migration.OLD_NAME, slug="penza-region", is_external=True
+    )
+
+    migration.rename(django_apps, None)
+    zone.refresh_from_db()
+    assert zone.name == migration.NEW_NAME
+
+    migration.unrename(django_apps, None)
+    zone.refresh_from_db()
+    assert zone.name == migration.OLD_NAME
+
+    DeliveryZone.objects.filter(pk=zone.pk).update(name="Своё имя")
+    migration.rename(django_apps, None)
+    migration.unrename(django_apps, None)
+    zone.refresh_from_db()
+    assert zone.name == "Своё имя"

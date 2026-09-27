@@ -31,8 +31,18 @@ const mockedGetSlots = getDeliverySlots as unknown as ReturnType<typeof vi.fn>;
 
 const ZONES = [
   { zone: "penza", name: "Пенза (город)", type: "courier", cost: "500.00", free_delivery: false },
-  // Внешний перевозчик: стоимость на витрине неизвестна (cost === null), не «0».
-  { zone: "oblast-cdek", name: "Область (СДЭК)", type: "courier", cost: null, free_delivery: false },
+  // Своя зона без цены: стоимость на витрине неизвестна (cost === null), не «0».
+  { zone: "oblast", name: "Область", type: "courier", cost: null, free_delivery: false },
+  // Внешний перевозчик — отдельный способ «СДЭК», не строка выпадающего списка (DRF-2491).
+  {
+    zone: "cdek",
+    name: "СДЭК по России",
+    type: "courier",
+    cost: null,
+    free_delivery: false,
+    is_external: true,
+    carrier_available: true,
+  },
   { zone: "pickup-main", name: "Самовывоз со склада", type: "pickup", cost: "0.00", free_delivery: true },
 ];
 
@@ -79,8 +89,9 @@ describe("CheckoutPage — зона доставки (аудит №5)", () => {
       delivery_method: "courier",
       delivery_zone: "penza",
     });
-    // pickup-зона не предлагается в селекте курьерки.
+    // pickup-зона и зона СДЭК не предлагаются в селекте курьерки.
     expect(screen.queryByRole("option", { name: /Самовывоз со склада/ })).toBeNull();
+    expect(screen.queryByRole("option", { name: /СДЭК/ })).toBeNull();
   });
 
   // DRF-2299: зона внешнего перевозчика не выглядит бесплатной, итог помечен
@@ -98,10 +109,10 @@ describe("CheckoutPage — зона доставки (аудит №5)", () => {
     render(<CheckoutPage />);
     const select = await screen.findByLabelText(/^Куда доставить/);
     fillBaseFields();
-    fireEvent.change(select, { target: { value: "oblast-cdek" } });
+    fireEvent.change(select, { target: { value: "oblast" } });
 
     expect(screen.getByRole("option", { name: /рассчитает менеджер/ })).toBeInTheDocument();
-    expect(screen.queryByRole("option", { name: /Область \(СДЭК\).*бесплатно/ })).toBeNull();
+    expect(screen.queryByRole("option", { name: /Область.*бесплатно/ })).toBeNull();
     expect(screen.getByText(/уточнит менеджер после оформления/)).toBeInTheDocument();
     expect(screen.getByText(/оплата станет доступна после расчёта/)).toBeInTheDocument();
 
@@ -127,12 +138,43 @@ describe("CheckoutPage — зона доставки (аудит №5)", () => {
   });
 
   it("справочник зон недоступен: заказ создаётся без зоны (как раньше)", async () => {
-    mockedGetZones.mockResolvedValue([]);
+    mockedGetZones.mockResolvedValue("error");
     render(<CheckoutPage />);
+    await screen.findByText(/Не удалось загрузить зоны доставки/);
     fillBaseFields();
     submit();
 
     await waitFor(() => expect(mockedPlaceOrder).toHaveBeenCalled());
-    expect(mockedPlaceOrder.mock.calls[0][0]).toMatchObject({ delivery_zone: "" });
+    expect(mockedPlaceOrder.mock.calls[0][0]).toMatchObject({
+      delivery_method: "courier",
+      delivery_zone: "",
+    });
+  });
+
+  // Своих курьерских зон нет (выключены в админке): курьера не предлагаем, иначе
+  // заказ ушёл бы без зоны с доставкой 0 ₽. Раньше это прикрывала зона СДЭК в списке.
+  it("нет своих курьерских зон: курьер скрыт, способ по умолчанию — самовывоз", async () => {
+    mockedGetZones.mockResolvedValue([ZONES[3]]);
+    render(<CheckoutPage />);
+    await waitFor(() =>
+      expect(screen.queryByRole("radio", { name: /Курьерская доставка/ })).toBeNull(),
+    );
+    expect(screen.getByRole("radio", { name: /Самовывоз/ })).toBeChecked();
+    fillBaseFields();
+    submit();
+
+    await waitFor(() => expect(mockedPlaceOrder).toHaveBeenCalled());
+    expect(mockedPlaceOrder.mock.calls[0][0]).toMatchObject({ delivery_method: "pickup" });
+  });
+
+  it("СДЭК без настроенного перевозчика не предлагается", async () => {
+    mockedGetZones.mockResolvedValue([
+      ZONES[0],
+      { ...ZONES[2], carrier_available: false },
+      ZONES[3],
+    ]);
+    render(<CheckoutPage />);
+    await screen.findByLabelText(/^Куда доставить/);
+    expect(screen.queryByRole("radio", { name: /СДЭК/ })).toBeNull();
   });
 });

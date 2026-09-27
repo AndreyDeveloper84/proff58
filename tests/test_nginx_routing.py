@@ -63,6 +63,10 @@ FRONTEND_PATHS = [
     # собственных локаций запрос уходил в Django за редиректом 301.
     "/api/delivery/zones",
     "/api/delivery/slots",
+    # СДЭК на чекауте: расчёт — мутация вошедшего, без BFF упал бы на CSRF.
+    "/api/delivery/cdek/cities",
+    "/api/delivery/cdek/points",
+    "/api/cart/delivery-quote",
     "/api/search/quick",
 ]
 
@@ -75,6 +79,10 @@ WEB_PATHS = [
     "/api/1c/products/import",  # интегратор 1С — только Django (X-Api-Key)
     "/api/1c/prices/update",
     "/api/orders/",  # список заказов (GET, безопасный метод) → Django
+    # Сами Django-эндпоинты СДЭК (их зовёт BFF): точные локации их не забирают.
+    "/api/delivery/cdek/cities/",
+    "/api/delivery/cdek/points/",
+    "/api/cart/delivery-quote/",
     "/api/ai/products/drel/recommendations/",
     # Вход через VK ID / Яндекс ID: браузер приходит навигацией, ответ — 302 из Django.
     "/api/oauth/providers/",
