@@ -22,7 +22,7 @@ PVZ = {
     "city_name": "Москва",
     "pvz_code": "MSK123",
 }
-POINT = cdek.DeliveryPoint(code="MSK123", name="На Тверской", address="Тверская, 1")
+POINT = cdek.DeliveryPoint(code="MSK123", name="На Тверской", address="Тверская, 1", city_code=44)
 
 
 @pytest.fixture(autouse=True)
@@ -38,7 +38,7 @@ def cdek_on(settings, monkeypatch, product):
             code=code, name="", delivery_mode=4, cost=Decimal("408.00"), period_min=2, period_max=3
         ),
     )
-    monkeypatch.setattr(cdek, "delivery_points", lambda city_code, **kw: [POINT])
+    monkeypatch.setattr(cdek, "delivery_point", lambda code: POINT if code == POINT.code else None)
     monkeypatch.setattr(cdek, "city_name", lambda code: "Москва")
     DeliveryZone.objects.create(
         slug="cdek-ru", name="СДЭК по России", is_external=True, price=Decimal("0")

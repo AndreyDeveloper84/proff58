@@ -15,6 +15,7 @@ HTTP-код и код ошибки СДЭК, без токена, адресов
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -89,7 +90,17 @@ class DeliveryPoint:
     work_time: str = ""
     latitude: float | None = None
     longitude: float | None = None
-    weight_max_kg: int | None = None
+    weight_max_kg: float | None = None
+    city_code: int | None = None
+    type: str = "PVZ"
+    # Пункт только принимает посылки — заказ в нём не выдадут.
+    handout: bool = True
+    # Ячейки (постаматы): стороны каждой ячейки по убыванию, см. Пусто — ограничений нет.
+    cells: tuple[tuple[int, int, int], ...] = ()
+
+
+# Код пункта СДЭК: латиница, цифры, «_» и «-» (MSK65, PNZ3_1). Прочее в запрос не пускаем.
+POINT_CODE_RE = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
 
 
 def _base_url() -> str:
@@ -263,29 +274,64 @@ def city_name(city_code: int) -> str:
     return ""
 
 
-def delivery_points(city_code: int, *, point_type: str = "PVZ") -> list[DeliveryPoint]:
-    data = _request("GET", "/deliverypoints", params={"city_code": city_code, "type": point_type})
-    points = []
-    for p in data if isinstance(data, list) else []:
-        if not isinstance(p, dict):
-            continue
-        location = p.get("location") or {}
+def _cells(raw) -> tuple[tuple[int, int, int], ...]:
+    cells = []
+    for cell in raw if isinstance(raw, list) else []:
         try:
-            weight_max = int(p["weight_max"]) if p.get("weight_max") else None
-        except (TypeError, ValueError):
-            weight_max = None
-        points.append(
-            DeliveryPoint(
-                code=str(p.get("code", "")),
-                name=str(p.get("name", "")),
-                address=str(location.get("address_full") or location.get("address") or ""),
-                work_time=str(p.get("work_time", "")),
-                latitude=location.get("latitude"),
-                longitude=location.get("longitude"),
-                weight_max_kg=weight_max,
+            sides = sorted(
+                (int(cell["width"]), int(cell["height"]), int(cell["depth"])), reverse=True
             )
-        )
-    return [p for p in points if p.code]
+        except (KeyError, TypeError, ValueError):
+            continue
+        if min(sides) > 0:
+            cells.append(tuple(sides))
+    return tuple(cells)
+
+
+def _point(p) -> DeliveryPoint | None:
+    if not isinstance(p, dict) or not p.get("code"):
+        return None
+    location = p.get("location") or {}
+    try:
+        weight_max = float(p["weight_max"]) if p.get("weight_max") else None
+    except (TypeError, ValueError):
+        weight_max = None
+    try:
+        city_code = int(location["city_code"])
+    except (KeyError, TypeError, ValueError):
+        city_code = None
+    return DeliveryPoint(
+        code=str(p["code"]),
+        name=str(p.get("name", "")),
+        address=str(location.get("address_full") or location.get("address") or ""),
+        work_time=str(p.get("work_time", "")),
+        latitude=location.get("latitude"),
+        longitude=location.get("longitude"),
+        weight_max_kg=weight_max,
+        city_code=city_code,
+        type=str(p.get("type") or ""),
+        handout=p.get("is_handout") is not False,
+        cells=_cells(p.get("dimensions")),
+    )
+
+
+def delivery_points(city_code: int, *, point_type: str = "PVZ") -> list[DeliveryPoint]:
+    """Пункты выдачи города. Пункты, которые заказы не выдают, в список не попадают."""
+    data = _request("GET", "/deliverypoints", params={"city_code": city_code, "type": point_type})
+    points = (_point(p) for p in (data if isinstance(data, list) else []))
+    return [p for p in points if p is not None and p.handout]
+
+
+def delivery_point(code: str) -> DeliveryPoint | None:
+    """Пункт по коду; ``None`` — такого нет. Код неверного формата в СДЭК не уходит."""
+    if not POINT_CODE_RE.match(code or ""):
+        return None
+    data = _request("GET", "/deliverypoints", params={"code": code})
+    for raw in data if isinstance(data, list) else []:
+        point = _point(raw)
+        if point is not None and point.code == code:
+            return point
+    return None
 
 
 # ── расчёт ────────────────────────────────────────────────────────────────

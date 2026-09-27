@@ -286,11 +286,12 @@ def _destination(method: str, destination: dict) -> tuple[dict, object | None]:
     """Проверить получателя и собрать его часть снимка.
 
     Название города берётся у СДЭК по коду, а не из браузера: цена считается по коду,
-    и в заказ должен попасть тот же город. Пункт выдачи сверяется со справочником
-    города. Возвращает снимок и точку (для пункта выдачи). СДЭК не ответил —
+    и в заказ должен попасть тот же город. Пункт выдачи проверяется по коду: он есть,
+    он в этом городе, это пункт выдачи, а не постамат, и он выдаёт заказы. Возвращает снимок и точку (для пункта выдачи). СДЭК не ответил —
     в снимке ``unavailable``: тариф тогда не запрашиваем, считает менеджер.
     """
     from apps.integration_ship import services as ship
+    from apps.integration_ship.providers import cdek
     from apps.integration_ship.providers.cdek import CdekError
 
     try:
@@ -320,25 +321,47 @@ def _destination(method: str, destination: dict) -> tuple[dict, object | None]:
             raise DeliveryInputError("pvz_code", "Выберите пункт выдачи.")
         snapshot["pvz_code"] = pvz_code
 
-    try:
-        city_name = ship.cdek_city_name(city_code)
-        points = ship.cdek_points(city_code) if method == "cdek_pvz" else []
-    except CdekError:
+    not_found = DeliveryInputError("pvz_code", "Пункт выдачи не найден в выбранном городе.")
+    if method == "cdek_pvz" and not cdek.POINT_CODE_RE.match(snapshot["pvz_code"]):
+        raise not_found
+
+    def unavailable():
         # Название из браузера — только чтобы менеджер видел, что выбрал покупатель.
         snapshot["city_name"] = str(destination.get("city_name") or "").strip()[:200]
         snapshot["unavailable"] = True
         return snapshot, None
+
+    try:
+        city_name = ship.cdek_city_name(city_code)
+    except CdekError:
+        return unavailable()
+    point = None
+    if method == "cdek_pvz":
+        try:
+            # Один пункт по коду, а не весь город: в Москве это тысячи точек.
+            point = ship.cdek_point(snapshot["pvz_code"])
+        except CdekError as exc:
+            if not (exc.retryable or exc.auth):
+                # СДЭК ответил, но отверг запрос: код пункта не тот, это не недоступность.
+                raise not_found from exc
+            return unavailable()
     if not city_name:
         raise DeliveryInputError("city_code", "Выберите город из списка.")
     snapshot["city_name"] = city_name
     if method == "cdek_courier":
         return snapshot, None
-    point = next((p for p in points if p.code == snapshot["pvz_code"]), None)
-    if point is None:
-        raise DeliveryInputError("pvz_code", "Пункт выдачи не найден в выбранном городе.")
+    # Постамат по коду тоже найдётся, но тариф «склад — пункт» его не обслуживает;
+    # пункт, который только принимает посылки, заказ не выдаст.
+    if point is None or point.city_code != city_code or point.type != "PVZ" or not point.handout:
+        raise not_found
     snapshot["pvz_name"] = point.name
     snapshot["address"] = point.address
     return snapshot, point
+
+
+def _kg(value: float) -> str:
+    """7.5 → «7,5», 30.0 → «30»."""
+    return f"{value:g}".replace(".", ",")
 
 
 def quote_carrier(
@@ -354,7 +377,7 @@ def quote_carrier(
     from apps.catalog.packaging import package_for
     from apps.integration_ship import services as ship
 
-    from .packaging import OVERWEIGHT, build_parcels
+    from .packaging import OVERSIZE_FOR_POINT, OVERWEIGHT, build_parcels
 
     if method not in CARRIER_METHODS:
         raise DeliveryInputError("method", "Неизвестный способ доставки СДЭК.")
@@ -371,19 +394,36 @@ def quote_carrier(
     else:
         snapshot, point = _destination(method, destination)
         packages = package_for([pid for pid, _ in lines])
-        max_weight_g = int(getattr(settings, "CDEK_MAX_PARCEL_WEIGHT_G", 30000))
-        point_limit_g = (point.weight_max_kg or 0) * 1000 if point is not None else 0
+        carrier_max_g = int(getattr(settings, "CDEK_MAX_PARCEL_WEIGHT_G", 29900))
+        # Предел объёма коробки — по объёмному весу (объём / делитель СДЭК) не больше
+        # предела веса перевозчика. Считается от общего предела, а не от лимита пункта.
+        divisor = int(getattr(settings, "CDEK_VOLUMETRIC_DIVISOR", 5000))
+        max_volume_cm3 = carrier_max_g * divisor // 1000
+        max_weight_g = carrier_max_g
+        point_limit_g = (
+            int(round(point.weight_max_kg * 1000)) if point and point.weight_max_kg else 0
+        )
         point_is_stricter = 0 < point_limit_g < max_weight_g
         if point_is_stricter:
             # Посылки не тяжелее того, что принимает выбранный пункт выдачи.
             max_weight_g = point_limit_g
+        cells = point.cells if point is not None else ()
         plan = build_parcels(
-            [(packages.get(pid), qty) for pid, qty in lines], max_weight_g=max_weight_g
+            [(packages.get(pid), qty) for pid, qty in lines],
+            max_weight_g=max_weight_g,
+            max_volume_cm3=max_volume_cm3,
+            cells=cells,
         )
         if plan.reason == OVERWEIGHT and point_is_stricter:
             raise DeliveryInputError(
                 "pvz_code",
-                f"Пункт выдачи принимает посылки до {point.weight_max_kg} кг — "
+                f"Пункт выдачи принимает посылки до {_kg(point.weight_max_kg)} кг — "
+                "выберите другой пункт или доставку курьером.",
+            )
+        if plan.reason == OVERSIZE_FOR_POINT:
+            raise DeliveryInputError(
+                "pvz_code",
+                "Посылка не помещается в ячейки этого пункта выдачи — "
                 "выберите другой пункт или доставку курьером.",
             )
         if snapshot.get("unavailable"):

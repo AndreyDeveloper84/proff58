@@ -23,6 +23,8 @@ from apps.integration_ship.ports import Parcel
 
 MISSING_PACKAGE = "missing_package"
 OVERWEIGHT = "overweight"
+# Штука не помещается ни в одну ячейку выбранного пункта (постамата).
+OVERSIZE_FOR_POINT = "oversize_for_point"
 
 
 @dataclass(frozen=True)
@@ -41,17 +43,59 @@ def _ceil_root(value: int, power: int) -> int:
     return r
 
 
-def _box(units) -> Parcel:
-    volume = sum(u.length_cm * u.width_cm * u.height_cm for u in units)
-    sides = [sorted((u.length_cm, u.width_cm, u.height_cm), reverse=True) for u in units]
-    a = max(_ceil_root(volume, 3), max(s[0] for s in sides))
-    b = max(_ceil_root(-(-volume // a), 2), max(s[1] for s in sides))
-    c = max(-(-volume // (a * b)), max(s[2] for s in sides))
-    return Parcel(weight_g=sum(u.weight_g for u in units), length_cm=a, width_cm=b, height_cm=c)
+def _box(weight_g: int, volume: int, sides) -> Parcel:
+    """Коробка посылки: объём не меньше суммы объёмов штук, каждая сторона не меньше
+    соответствующей стороны любой штуки, форма близкая к кубу."""
+    a = max(_ceil_root(volume, 3), sides[0])
+    b = max(_ceil_root(-(-volume // a), 2), sides[1])
+    c = max(-(-volume // (a * b)), sides[2])
+    return Parcel(weight_g=weight_g, length_cm=a, width_cm=b, height_cm=c)
 
 
-def build_parcels(lines, *, max_weight_g: int) -> ParcelPlan:
-    """``lines`` — пары (упаковка одной штуки или None, количество)."""
+class _Bin:
+    """Посылка в процессе раскладки: вес, объём и наибольшие стороны её штук."""
+
+    __slots__ = ("units", "weight_g", "volume", "sides")
+
+    def __init__(self):
+        self.units: list = []
+        self.weight_g = 0
+        self.volume = 0
+        self.sides = (0, 0, 0)
+
+    def box(self) -> Parcel:
+        return _box(self.weight_g, self.volume, self.sides)
+
+    def box_with(self, unit) -> Parcel:
+        """Коробка, если положить в посылку ещё ``unit``."""
+        u = sorted((unit.length_cm, unit.width_cm, unit.height_cm), reverse=True)
+        sides = tuple(max(x, y) for x, y in zip(self.sides, u, strict=True))
+        return _box(self.weight_g + unit.weight_g, self.volume + u[0] * u[1] * u[2], sides)
+
+    def add(self, unit) -> None:
+        u = sorted((unit.length_cm, unit.width_cm, unit.height_cm), reverse=True)
+        self.units.append(unit)
+        self.weight_g += unit.weight_g
+        self.volume += u[0] * u[1] * u[2]
+        self.sides = tuple(max(x, y) for x, y in zip(self.sides, u, strict=True))
+
+
+def _fits_cell(box: Parcel, cells) -> bool:
+    sides = sorted((box.length_cm, box.width_cm, box.height_cm), reverse=True)
+    return any(all(s <= c for s, c in zip(sides, cell, strict=True)) for cell in cells)
+
+
+def build_parcels(
+    lines, *, max_weight_g: int, max_volume_cm3: int | None = None, cells=()
+) -> ParcelPlan:
+    """``lines`` — пары (упаковка одной штуки или None, количество).
+
+    ``max_volume_cm3`` — предел объёма коробки: штуку не докладывают в посылку, если
+    коробка его превысит. Штука, которая сама больше предела, едет одна — её цену
+    даёт запасной тариф СДЭК. ``cells`` — ячейки пункта выдачи (стороны по убыванию):
+    каждая посылка должна поместиться хотя бы в одну; штука, которая не влезает ни в
+    одну ячейку, — ``oversize_for_point``.
+    """
     units = []
     for package, qty in lines:
         if package is None:
@@ -62,17 +106,23 @@ def build_parcels(lines, *, max_weight_g: int) -> ParcelPlan:
     if not units:
         return ParcelPlan(reason=MISSING_PACKAGE)
 
+    def accepts(bin_: _Bin, unit) -> bool:
+        box = bin_.box_with(unit)
+        if box.weight_g > max_weight_g:
+            return False
+        if max_volume_cm3 and box.length_cm * box.width_cm * box.height_cm > max_volume_cm3:
+            return False
+        return not cells or _fits_cell(box, cells)
+
     # Порядок детерминированный: от одинаковой корзины — одинаковые посылки.
     units.sort(key=lambda u: (u.weight_g, u.length_cm, u.width_cm, u.height_cm), reverse=True)
-    bins: list[list] = []
-    loads: list[int] = []
+    bins: list[_Bin] = []
     for unit in units:
-        for i, load in enumerate(loads):
-            if load + unit.weight_g <= max_weight_g:
-                bins[i].append(unit)
-                loads[i] += unit.weight_g
-                break
-        else:
-            bins.append([unit])
-            loads.append(unit.weight_g)
-    return ParcelPlan(parcels=tuple(_box(b) for b in bins))
+        target = next((b for b in bins if accepts(b, unit)), None)
+        if target is None:
+            target = _Bin()
+            if cells and not _fits_cell(target.box_with(unit), cells):
+                return ParcelPlan(reason=OVERSIZE_FOR_POINT)
+            bins.append(target)
+        target.add(unit)
+    return ParcelPlan(parcels=tuple(b.box() for b in bins))
