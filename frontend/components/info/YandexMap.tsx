@@ -1,4 +1,4 @@
-import { Route } from "lucide-react";
+import { MapPin, Route } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { resolveStorefront, yandexMapWidgetUrl, yandexRouteUrl } from "@/lib/site";
@@ -36,10 +36,21 @@ export function YandexMap({
           "aspect-[4/3] sm:aspect-[16/10]",
         )}
       >
+        {/* Подложка под фреймом: пока виджет грузится или если его режет блокировщик,
+            видна она, а не пустой чёрный прямоугольник. Загруженная карта
+            непрозрачна и закрывает её. Ссылки здесь нет — она под картой. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 p-6 text-center text-sm text-ink-3"
+        >
+          <MapPin className="size-6" />
+          <span>Карта загружается…</span>
+          <span className="text-xs">Если не появится — откройте маршрут кнопкой ниже.</span>
+        </div>
         <iframe
           src={yandexMapWidgetUrl()}
           title={`Карта: ${label}`}
-          className="absolute inset-0 h-full w-full border-0"
+          className="absolute inset-0 z-10 h-full w-full border-0"
           loading="lazy"
           // Виджету не нужны ни камера, ни микрофон; геолокацию он спросит сам,
           // если человек нажмёт «я здесь» — по умолчанию не разрешаем.
