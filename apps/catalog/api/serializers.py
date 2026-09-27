@@ -5,7 +5,7 @@ from rest_framework import serializers
 
 from apps.pricing.services import RETAIL, price_for
 
-from ..attribute_display import is_key_attribute, ordered_pavs
+from ..attribute_display import is_key_attribute, ordered_pavs, tool_type_option
 from ..models import Product, StockStatus
 from ..seo_index import is_indexable
 from ..services import attr_value_to_json
@@ -190,6 +190,7 @@ class ProductDetailSerializer(ProductListSerializer):
     images = serializers.SerializerMethodField()
     breadcrumb = serializers.SerializerMethodField()
     seo_indexable = serializers.SerializerMethodField()
+    tool_type = serializers.SerializerMethodField()
 
     class Meta(ProductListSerializer.Meta):
         # attributes уже в базовом списке; detail отдаёт ПОЛНЫЙ набор (override get_attributes ниже).
@@ -199,7 +200,19 @@ class ProductDetailSerializer(ProductListSerializer):
             "images",
             "breadcrumb",
             "seo_indexable",
+            "tool_type",
         )
+
+    def get_tool_type(self, obj):
+        """Вид инструмента со slug опции — для ссылок в каталог с ``?tool_type=``.
+
+        В ``attributes`` вид есть только подписью, а фильтру каталога нужен slug.
+        Опция без slug в фильтре не работает, поэтому отдаём ``None``.
+        """
+        option = tool_type_option(obj.attribute_values.all())
+        if option is None or not option.slug:
+            return None
+        return {"slug": option.slug, "name": option.value}
 
     def get_seo_indexable(self, obj):
         """Открыт ли товар для индексации (allowlist release-gate, apps/catalog/seo_index.py)."""

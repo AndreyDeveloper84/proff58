@@ -57,6 +57,8 @@ export type ProductDetail = Product & {
   compatible?: CompatibilitySections;
   // Открыт ли товар для индексации (allowlist release-gate, PF-SH-RELEASE-01). false → noindex.
   seoIndexable: boolean;
+  // Вид инструмента со slug для ссылок в каталог с ?tool_type=.
+  toolType?: { slug: string; name: string };
 };
 
 export type FacetOption = {

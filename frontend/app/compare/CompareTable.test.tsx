@@ -8,13 +8,21 @@ vi.mock("@/components/cart/CartProvider", () => ({
   useCart: () => ({ add: vi.fn(), cart: null, count: 0 }),
 }));
 
-import { CompareTable, buildGroups, buildRows, commonSection } from "./CompareTable";
+import {
+  CompareTable,
+  addTarget,
+  buildGroups,
+  buildRows,
+  commonSection,
+  commonToolType,
+} from "./CompareTable";
 
 function product(
   slug: string,
   name: string,
   specs: [string, string][],
   breadcrumb: { name: string; slug: string }[] = [],
+  toolType?: { name: string; slug: string },
 ): ProductDetail {
   return {
     id: slug.length,
@@ -29,6 +37,7 @@ function product(
     description: "",
     breadcrumb,
     seoIndexable: true,
+    ...(toolType ? { toolType } : {}),
   };
 }
 
@@ -111,6 +120,58 @@ describe("commonSection", () => {
     expect(commonSection([a, a])).toEqual(PERF[1]);
     expect(commonSection([a, b])).toEqual(PERF[0]);
     expect(commonSection([a, product("c", "C", [], [{ name: "Сад", slug: "sad" }])])).toBeNull();
+  });
+});
+
+const PERF_TYPE = { name: "Перфораторы", slug: "perforatory" };
+const DRILL_TYPE = { name: "Дрели", slug: "dreli" };
+
+describe("commonToolType", () => {
+  it("вид, общий для всех товаров", () => {
+    const a = product("a", "A", [], PERF, PERF_TYPE);
+    const b = product("b", "B", [], PERF, PERF_TYPE);
+
+    expect(commonToolType([a, b])).toEqual(PERF_TYPE);
+    expect(commonToolType([a])).toEqual(PERF_TYPE);
+  });
+
+  it("null, если виды разные или вид есть не у всех", () => {
+    const a = product("a", "A", [], PERF, PERF_TYPE);
+
+    expect(commonToolType([a, product("b", "B", [], PERF, DRILL_TYPE)])).toBeNull();
+    expect(commonToolType([a, product("c", "C", [], PERF)])).toBeNull();
+    expect(commonToolType([product("c", "C", [], PERF), a])).toBeNull();
+    expect(commonToolType([])).toBeNull();
+  });
+});
+
+describe("addTarget", () => {
+  const EI = PERF[0];
+
+  it("общий раздел и вид → раздел с фильтром, в подписи оба имени", () => {
+    expect(addTarget(EI, PERF_TYPE)).toEqual({
+      href: "/catalog/ei?tool_type=perforatory",
+      label: "Добавить товар из раздела «Электроинструмент»: Перфораторы",
+    });
+  });
+
+  it("вид совпадает по имени с разделом — имя не повторяется", () => {
+    expect(addTarget(PERF[1], PERF_TYPE)).toEqual({
+      href: "/catalog/perforatory?tool_type=perforatory",
+      label: "Добавить товар из раздела «Перфораторы»",
+    });
+  });
+
+  it("без общего вида — раздел без фильтра; без раздела — каталог", () => {
+    expect(addTarget(EI, null)).toEqual({
+      href: "/catalog/ei",
+      label: "Добавить товар из раздела «Электроинструмент»",
+    });
+    expect(addTarget(null, PERF_TYPE)).toEqual({ href: "/catalog", label: "Добавить товар" });
+  });
+
+  it("slug вида экранируется в адресе", () => {
+    expect(addTarget(EI, { name: "Вид", slug: "a&b" }).href).toBe("/catalog/ei?tool_type=a%26b");
   });
 });
 
@@ -378,6 +439,44 @@ describe("CompareTable", () => {
       name: "Добавить товар из раздела «Перфораторы»",
     });
     expect(link).toHaveAttribute("href", "/catalog/perforatory");
+  });
+
+  it("один вид в разных подразделах — раздел с фильтром по виду", async () => {
+    select("bosch", "makita");
+    const ei = PERF[0];
+    mockApi([
+      product("bosch", "Перфоратор Bosch", [["Мощность", "800 Вт"]], [ei, PERF[1]], PERF_TYPE),
+      product(
+        "makita",
+        "Перфоратор Makita",
+        [["Мощность", "780 Вт"]],
+        [ei, { name: "Аккумуляторный", slug: "akb" }],
+        PERF_TYPE,
+      ),
+    ]);
+
+    render(<CompareTable />);
+    await screen.findByRole("table");
+
+    const link = screen.getByRole("link", {
+      name: "Добавить товар из раздела «Электроинструмент»: Перфораторы",
+    });
+    expect(link).toHaveAttribute("href", "/catalog/ei?tool_type=perforatory");
+  });
+
+  it("разные виды — раздел без фильтра", async () => {
+    select("bosch", "makita");
+    mockApi([
+      product("bosch", "Перфоратор Bosch", [["Мощность", "800 Вт"]], PERF, PERF_TYPE),
+      product("makita", "Дрель Makita", [["Мощность", "780 Вт"]], PERF, DRILL_TYPE),
+    ]);
+
+    render(<CompareTable />);
+    await screen.findByRole("table");
+
+    expect(
+      screen.getByRole("link", { name: "Добавить товар из раздела «Перфораторы»" }),
+    ).toHaveAttribute("href", "/catalog/perforatory");
   });
 
   it("без общего раздела «Добавить товар» ведёт в каталог", async () => {

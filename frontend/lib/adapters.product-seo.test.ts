@@ -37,6 +37,20 @@ describe("fetchProductFromApi: seoIndexable", () => {
     expect((await fetchProductFromApi(BASE, "p"))?.seoIndexable).toBe(false);
   });
 
+  it("tool_type из API → toolType карточки; null и пустой slug → нет вида", async () => {
+    mockProduct({ ...PRODUCT, tool_type: { slug: "perforatory", name: "Перфораторы" } });
+    expect((await fetchProductFromApi(BASE, "p"))?.toolType).toEqual({
+      slug: "perforatory",
+      name: "Перфораторы",
+    });
+
+    mockProduct({ ...PRODUCT, tool_type: null });
+    expect((await fetchProductFromApi(BASE, "p"))?.toolType).toBeUndefined();
+
+    mockProduct({ ...PRODUCT, tool_type: { slug: "", name: "Без slug" } });
+    expect((await fetchProductFromApi(BASE, "p"))?.toolType).toBeUndefined();
+  });
+
   it("SSR-запрос карточки уходит с X-SSR-Token, если секрет задан", async () => {
     vi.stubEnv("SSR_INTERNAL_TOKEN", "s3cret");
     const seen: Headers[] = [];

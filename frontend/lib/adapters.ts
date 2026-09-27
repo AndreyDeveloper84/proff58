@@ -75,6 +75,7 @@ type ApiProductDetail = ApiProduct & {
   images?: ApiImage[];
   breadcrumb?: { name: string; slug: string }[];
   seo_indexable?: boolean;
+  tool_type?: { slug: string; name: string } | null;
 };
 // /products/{slug}/compatible/ — секции связанных товаров (ApiProduct + опц. note).
 type ApiCompatibleResponse = {
@@ -241,6 +242,9 @@ function apiProductToDetail(ap: ApiProductDetail): ProductDetail {
     breadcrumb: ap.breadcrumb ?? [],
     // fail-closed: нет поля (старый API) → не индексируем.
     seoIndexable: ap.seo_indexable === true,
+    toolType: ap.tool_type?.slug
+      ? { slug: ap.tool_type.slug, name: ap.tool_type.name }
+      : undefined,
   };
 }
 
