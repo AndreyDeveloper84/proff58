@@ -49,6 +49,8 @@ echo "==> Запуск gunicorn"
 # (Вернуть --preload можно только вместе с post_fork-хуком, закрывающим
 # унаследованные соединения: django.db.connections.close_all().)
 # access-logformat с %(D)s — время каждого запроса в микросекундах (видно тормоза).
+# logger-class прячет query колбэков входа и вебхуков оплаты: там одноразовый code
+# и токен АТОЛ Pay (DRF-2482).
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
     --workers "${GUNICORN_WORKERS:-3}" \
@@ -58,4 +60,5 @@ exec gunicorn config.wsgi:application \
     --graceful-timeout 30 \
     --access-logfile - \
     --error-logfile - \
+    --logger-class config.gunicorn_logging.ScrubbedLogger \
     --access-logformat '%(h)s %(t)s "%(r)s" %(s)s %(b)s %(D)susec'
