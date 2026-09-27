@@ -12,7 +12,12 @@ from apps.catalog.models import Category, Product, ProductStatus
 from apps.catalog.packaging import Package
 from apps.delivery import services as delivery
 from apps.delivery.models import DeliveryZone
-from apps.delivery.packaging import MISSING_PACKAGE, OVERWEIGHT, build_parcels
+from apps.delivery.packaging import (
+    MISSING_PACKAGE,
+    OVERSIZE_FOR_POINT,
+    OVERWEIGHT,
+    build_parcels,
+)
 from apps.integration_ship import services as ship
 from apps.integration_ship.ports import Parcel
 from apps.integration_ship.providers import cdek
@@ -57,7 +62,76 @@ def test_раскладка_не_зависит_от_порядка_строк()
 
 # ── расчёт для корзины ────────────────────────────────────────────────────
 
-POINT = cdek.DeliveryPoint(code="MSK123", name="На Тверской", address="Москва, Тверская, 1")
+# ── предел объёма и ячейки (DRF-2503) ───────────────────────────────────────
+
+LIMIT_CM3 = 149_500  # 29 900 г × 5000 / 1000
+
+
+def _volume(p: Parcel) -> int:
+    return p.length_cm * p.width_cm * p.height_cm
+
+
+def test_объёмный_заказ_делится_в_пределах_объёма():
+    """Лёгкие объёмные штуки: по весу влезли бы в одну посылку, по объёму — нет."""
+    plan = build_parcels(
+        [(Package(1000, 40, 40, 40), 10)], max_weight_g=29900, max_volume_cm3=LIMIT_CM3
+    )
+    assert not plan.reason
+    assert sum(p.weight_g for p in plan.parcels) == 10000
+    assert len(plan.parcels) > 1
+    assert all(_volume(p) <= LIMIT_CM3 for p in plan.parcels)
+
+
+def test_штука_больше_предела_объёма_едет_одна_без_ручного_расчёта():
+    """Коробку 60³ СДЭК везёт запасным тарифом (замер 27.09), в ручной расчёт не уходит."""
+    plan = build_parcels(
+        [(Package(5000, 60, 60, 60), 2), (Package(1000, 10, 10, 10), 1)],
+        max_weight_g=29900,
+        max_volume_cm3=LIMIT_CM3,
+    )
+    assert not plan.reason
+    big = [p for p in plan.parcels if _volume(p) > LIMIT_CM3]
+    assert [p.weight_g for p in big] == [5000, 5000]
+
+
+def test_без_предела_объёма_раскладка_как_раньше():
+    plan = build_parcels([(Package(1000, 40, 40, 40), 10)], max_weight_g=29900)
+    assert len(plan.parcels) == 1
+
+
+def test_раскладка_детерминирована():
+    lines = [(Package(1200, 35, 20, 15), 3), (Package(800, 50, 30, 30), 4)]
+    kw = dict(max_weight_g=29900, max_volume_cm3=LIMIT_CM3)
+    assert build_parcels(lines, **kw) == build_parcels(list(reversed(lines)), **kw)
+
+
+def test_ячейки_пункта_посылки_помещаются_каждая():
+    cells = ((60, 40, 30),)
+    plan = build_parcels(
+        [(Package(1000, 30, 20, 20), 6)], max_weight_g=29900, max_volume_cm3=LIMIT_CM3, cells=cells
+    )
+    assert not plan.reason
+    for p in plan.parcels:
+        sides = sorted((p.length_cm, p.width_cm, p.height_cm), reverse=True)
+        assert all(s <= c for s, c in zip(sides, cells[0], strict=True))
+
+
+def test_штука_не_влезает_в_ячейки_пункта():
+    plan = build_parcels(
+        [(Package(1000, 70, 10, 10), 1)], max_weight_g=29900, cells=((60, 40, 30),)
+    )
+    assert plan.reason == OVERSIZE_FOR_POINT
+
+
+POINT = cdek.DeliveryPoint(
+    code="MSK123", name="На Тверской", address="Москва, Тверская, 1", city_code=44
+)
+
+
+def _points(*points):
+    """Подмена поиска пункта по коду: ``delivery_point(code)`` из заданного набора."""
+    by_code = {p.code: p for p in points}
+    return lambda code: by_code.get(code)
 
 
 @pytest.fixture
@@ -75,6 +149,7 @@ def cdek_on(settings, monkeypatch):
         )
 
     monkeypatch.setattr(cdek, "tariff", fake_tariff)
+    monkeypatch.setattr(cdek, "delivery_point", _points(POINT))
     monkeypatch.setattr(cdek, "delivery_points", lambda city_code, **kw: [POINT])
     monkeypatch.setattr(cdek, "city_name", lambda code: {44: "Москва"}.get(code, ""))
     yield calls
@@ -166,10 +241,10 @@ def test_город_берётся_у_сдэк_по_коду_а_не_из_бра
 
 
 def test_сдэк_не_ответил_на_пункты_тариф_не_запрашиваем(cdek_on, zone, goods, monkeypatch):
-    def down(city_code, **kw):
+    def down(code):
         raise cdek.CdekError("down", retryable=True)
 
-    monkeypatch.setattr(cdek, "delivery_points", down)
+    monkeypatch.setattr(cdek, "delivery_point", down)
     boxed, _ = goods
     quote, _ = delivery.quote_carrier(
         zone_slug="cdek-ru",
@@ -184,8 +259,10 @@ def test_сдэк_не_ответил_на_пункты_тариф_не_запр
 
 
 def test_лимит_веса_пункта_выдачи(cdek_on, zone, goods, monkeypatch):
-    small = cdek.DeliveryPoint(code="MSK123", name="Малый", address="А", weight_max_kg=5)
-    monkeypatch.setattr(cdek, "delivery_points", lambda city_code, **kw: [small])
+    small = cdek.DeliveryPoint(
+        code="MSK123", name="Малый", address="А", weight_max_kg=5.0, city_code=44
+    )
+    monkeypatch.setattr(cdek, "delivery_point", _points(small))
     boxed, _ = goods  # 2,5 кг за штуку
     kw = dict(zone_slug="cdek-ru", method="cdek_pvz", goods_total=Decimal("1"), destination=PVZ)
     quote, _ = delivery.quote_carrier(lines=[(boxed.pk, 3)], **kw)
@@ -307,3 +384,105 @@ def test_сдэк_не_отвечает_503(cdek_on, monkeypatch, db):
 
     monkeypatch.setattr(cdek, "delivery_points", boom)
     assert APIClient().get("/api/delivery/cdek/points/?city_code=45").status_code == 503
+
+
+# ── пункт выдачи по коду (DRF-2503) ─────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "point",
+    [
+        cdek.DeliveryPoint(code="MSK123", name="", address="", city_code=504),
+        cdek.DeliveryPoint(code="MSK123", name="", address="", city_code=44, type="POSTAMAT"),
+        cdek.DeliveryPoint(code="MSK123", name="", address="", city_code=44, handout=False),
+    ],
+    ids=["другой-город", "постамат", "только-приём"],
+)
+def test_пункт_не_того_города_постамат_или_без_выдачи_не_принимаем(
+    cdek_on, zone, goods, monkeypatch, point
+):
+    monkeypatch.setattr(cdek, "delivery_point", _points(point))
+    boxed, _ = goods
+    with pytest.raises(delivery.DeliveryInputError) as err:
+        delivery.quote_carrier(
+            zone_slug="cdek-ru",
+            method="cdek_pvz",
+            lines=[(boxed.pk, 1)],
+            goods_total=Decimal("1"),
+            destination=PVZ,
+        )
+    assert err.value.field == "pvz_code"
+
+
+def test_код_пункта_неверного_формата_без_запроса_в_сдэк(cdek_on, zone, goods, monkeypatch):
+    asked = []
+    monkeypatch.setattr(cdek, "delivery_point", lambda code: asked.append(code))
+    boxed, _ = goods
+    with pytest.raises(delivery.DeliveryInputError) as err:
+        delivery.quote_carrier(
+            zone_slug="cdek-ru",
+            method="cdek_pvz",
+            lines=[(boxed.pk, 1)],
+            goods_total=Decimal("1"),
+            destination={**PVZ, "pvz_code": "MSK 1; x"},
+        )
+    assert err.value.field == "pvz_code"
+    assert asked == []
+
+
+def test_сдэк_отверг_код_пункта_это_ошибка_ввода_а_не_недоступность(
+    cdek_on, zone, goods, monkeypatch
+):
+    def rejected(code):
+        raise cdek.CdekError("СДЭК HTTP 400", retryable=False, status=400)
+
+    monkeypatch.setattr(cdek, "delivery_point", rejected)
+    boxed, _ = goods
+    with pytest.raises(delivery.DeliveryInputError) as err:
+        delivery.quote_carrier(
+            zone_slug="cdek-ru",
+            method="cdek_pvz",
+            lines=[(boxed.pk, 1)],
+            goods_total=Decimal("1"),
+            destination=PVZ,
+        )
+    assert err.value.field == "pvz_code"
+
+
+def test_посылка_не_помещается_в_ячейки_пункта(cdek_on, zone, goods, monkeypatch):
+    tiny = cdek.DeliveryPoint(
+        code="MSK123", name="", address="А", city_code=44, cells=((30, 20, 5),)
+    )
+    monkeypatch.setattr(cdek, "delivery_point", _points(tiny))
+    boxed, _ = goods  # 35×25×10 — в ячейку 30×20×5 не влезает
+    with pytest.raises(delivery.DeliveryInputError) as err:
+        delivery.quote_carrier(
+            zone_slug="cdek-ru",
+            method="cdek_pvz",
+            lines=[(boxed.pk, 1)],
+            goods_total=Decimal("1"),
+            destination=PVZ,
+        )
+    assert err.value.field == "pvz_code" and "не помещается" in err.value.message
+    assert cdek_on == []
+
+
+def test_предел_объёма_считается_от_предела_перевозчика_а_не_пункта(
+    cdek_on, zone, goods, monkeypatch, settings
+):
+    """Лимит пункта по весу 5 кг не должен урезать объём коробки до 25 000 см³."""
+    settings.CDEK_MAX_PARCEL_WEIGHT_G = 29900
+    small = cdek.DeliveryPoint(code="MSK123", name="", address="А", weight_max_kg=5.0, city_code=44)
+    monkeypatch.setattr(cdek, "delivery_point", _points(small))
+    boxed, _ = goods
+    boxed.package_weight_g = 1000
+    boxed.package_length_cm = boxed.package_width_cm = boxed.package_height_cm = 30
+    boxed.save()
+    quote, _ = delivery.quote_carrier(
+        zone_slug="cdek-ru",
+        method="cdek_pvz",
+        lines=[(boxed.pk, 2)],
+        goods_total=Decimal("1"),
+        destination=PVZ,
+    )
+    assert [p["weight_g"] for p in quote.snapshot["parcels"]] == [2000]

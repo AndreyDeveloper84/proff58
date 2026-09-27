@@ -55,7 +55,9 @@ def http(monkeypatch):
         return _Resp(200, {"access_token": f"tok{calls['token']}", "expires_in": 3600})
 
     def fake_request(method, url, params=None, json=None, headers=None, timeout=None):
-        calls["request"].append({"method": method, "url": url, "json": json, "headers": headers})
+        calls["request"].append(
+            {"method": method, "url": url, "params": params, "json": json, "headers": headers}
+        )
         reply = replies.pop(0)
         if isinstance(reply, Exception):
             raise reply
@@ -211,6 +213,52 @@ def test_пункт_выдачи_без_сырого_json_но_с_лимитом
     assert not hasattr(point, "raw")
 
 
+def test_пункт_город_ячейки_и_пункты_без_выдачи_отсеяны(http):
+    """DRF-2503: ячейки — стороны по убыванию; пункт «только приём» в список не попадает."""
+    _, replies = http
+    replies.append(
+        _Resp(
+            200,
+            [
+                {
+                    "code": "PNZ2",
+                    "type": "POSTAMAT",
+                    "weight_max": 7.5,
+                    "is_handout": True,
+                    "location": {"city_code": 504, "address": "Мира, 2"},
+                    "dimensions": [
+                        {"width": 40, "height": 10, "depth": 60},
+                        {"width": "x"},
+                    ],
+                },
+                {"code": "PNZ3", "is_handout": False, "location": {"city_code": 504}},
+            ],
+        )
+    )
+    (point,) = cdek.delivery_points(504, point_type="ALL")
+    assert (point.code, point.type, point.city_code) == ("PNZ2", "POSTAMAT", 504)
+    assert point.weight_max_kg == 7.5
+    assert point.cells == ((60, 40, 10),)
+
+
+def test_пункт_по_коду(http):
+    calls, replies = http
+    replies.append(_Resp(200, [{"code": "MSK65", "type": "PVZ", "location": {"city_code": 44}}]))
+    point = cdek.delivery_point("MSK65")
+    assert (point.code, point.city_code, point.handout) == ("MSK65", 44, True)
+    assert calls["request"][0]["params"] == {"code": "MSK65"}
+
+    replies.append(_Resp(200, []))
+    assert cdek.delivery_point("NOPE1") is None
+
+
+def test_код_пункта_неверного_формата_в_сдэк_не_уходит(http):
+    calls, _ = http
+    assert cdek.delivery_point("MSK 1; DROP") is None
+    assert cdek.delivery_point("") is None
+    assert calls["request"] == []
+
+
 # ── выбор тарифа ──────────────────────────────────────────────────────────
 
 
@@ -330,3 +378,18 @@ def test_цена_маршрута_кешируется(monkeypatch):
     _quote()
     _quote()
     assert calls == [136]
+
+
+def test_пункт_по_коду_кешируется_а_ненайденный_нет(monkeypatch):
+    calls = []
+    point = cdek.DeliveryPoint(code="MSK65", name="", address="", city_code=44)
+    monkeypatch.setattr(
+        cdek,
+        "delivery_point",
+        lambda code: calls.append(code) or (point if code == "MSK65" else None),
+    )
+    assert ship.cdek_point("MSK65") == point
+    assert ship.cdek_point("MSK65") == point
+    assert ship.cdek_point("NOPE1") is None
+    assert ship.cdek_point("NOPE1") is None
+    assert calls == ["MSK65", "NOPE1", "NOPE1"]

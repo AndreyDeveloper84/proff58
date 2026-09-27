@@ -211,6 +211,16 @@ def cdek_points(city_code: int):
     )
 
 
+def cdek_point(code: str):
+    """Пункт выдачи по коду (кеш — 30 минут); ``None`` — такого пункта нет.
+
+    Проверка одного пункта не тянет список всего города: в Москве это тысячи точек.
+    """
+    from .providers import cdek
+
+    return _cached(_cache_key("point", code), _POINTS_TTL, lambda: cdek.delivery_point(code))
+
+
 def cdek_quote(
     *, to_city_code: int, mode: str, parcels: list[Parcel], declared_value: Decimal
 ) -> CarrierQuote:

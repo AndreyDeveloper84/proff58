@@ -598,8 +598,13 @@ CDEK_SHIP_FROM = env("CDEK_SHIP_FROM", default="warehouse")
 # Тарифы можно задать явно; пусто — по CDEK_SHIP_FROM.
 CDEK_TARIFF_PVZ = env.int("CDEK_TARIFF_PVZ", default=0)
 CDEK_TARIFF_COURIER = env.int("CDEK_TARIFF_COURIER", default=0)
-# Предел веса одной посылки тарифа «Посылка», граммы.
-CDEK_MAX_PARCEL_WEIGHT_G = env.int("CDEK_MAX_PARCEL_WEIGHT_G", default=30000)
+# Предел веса одной посылки тарифа «Посылка», граммы. Замер на тестовом контуре
+# 27.09.2026: 29 900 г проходит, 29 901 г и 30 000 г СДЭК отвергает (ve_calc_weight).
+CDEK_MAX_PARCEL_WEIGHT_G = env.int("CDEK_MAX_PARCEL_WEIGHT_G", default=29900)
+# Делитель объёмного веса СДЭК: объёмный вес, кг = Д×Ш×В см / делитель. Коробку больше
+# предела веса по объёмному весу раскладка не собирает (замер: 148 877 см³ проходит,
+# 150 000 см³ — err_result_service_empty).
+CDEK_VOLUMETRIC_DIVISOR = env.int("CDEK_VOLUMETRIC_DIVISOR", default=5000)
 # Сколько живёт расчёт доставки для оформления заказа, секунды.
 CDEK_QUOTE_TTL = env.int("CDEK_QUOTE_TTL", default=1800)
 # Промокод «бесплатная доставка» на доставку СДЭК: по умолчанию не действует.
