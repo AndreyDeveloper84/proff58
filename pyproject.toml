@@ -35,3 +35,6 @@ django_debug_mode = "keep"
 # playwright) и собственным parser/pytest.ini. В корневой прогон не входит:
 # его тесты гоняются из каталога parser/.
 norecursedirs = ["parser", "node_modules", "frontend", ".*"]
+markers = [
+    "cdek_live: живые запросы к тестовому контуру СДЭК; запуск только с CDEK_LIVE=1",
+]

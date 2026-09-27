@@ -399,6 +399,9 @@ REST_FRAMEWORK = {
         "subscription": env("SUBSCRIPTION_THROTTLE_RATE", default="30/min"),
         # DRF-2298: сброс пароля — второй ключ по адресу поверх IP-лимита auth.
         "password_reset_email": env("PASSWORD_RESET_EMAIL_THROTTLE_RATE", default="3/hour"),
+        # DRF-2299: расчёт доставки СДЭК и справочники городов/пунктов выдачи.
+        "delivery_quote": env("DELIVERY_QUOTE_THROTTLE_RATE", default="30/min"),
+        "delivery_lookup": env("DELIVERY_LOOKUP_THROTTLE_RATE", default="120/min"),
     },
 }
 
@@ -578,6 +581,29 @@ FEATURES = {
 # внешняя зона уходит в ручной расчёт менеджером.
 SHIP_PROVIDER = env("SHIP_PROVIDER", default="stub")
 SHIP_ALLOW_STUB = env.bool("SHIP_ALLOW_STUB", default=False)
+
+# СДЭК (DRF-2299): SHIP_PROVIDER=cdek + FEATURE_EXTERNAL_SHIP. Пустой CDEK_API_URL —
+# тестовый контур api.edu.cdek.ru с публичными ключами (в проде запрещено, см. prod.py).
+CDEK_API_URL = env("CDEK_API_URL", default="")
+CDEK_ACCOUNT = env("CDEK_ACCOUNT", default="")
+CDEK_SECURE = env("CDEK_SECURE", default="")
+CDEK_ALLOW_TEST = env.bool("CDEK_ALLOW_TEST", default=False)
+# Таймауты соединения и чтения, секунды: зависший СДЭК не должен держать потоки сайта.
+CDEK_CONNECT_TIMEOUT = env.float("CDEK_CONNECT_TIMEOUT", default=3.0)
+CDEK_TIMEOUT = env.float("CDEK_TIMEOUT", default=7.0)
+# Откуда уходят посылки: код города СДЭК (504 — Пенза) и способ сдачи. "warehouse" —
+# магазин сам сдаёт в пункт СДЭК (тарифы 136/137), "door" — СДЭК забирает (138/139).
+CDEK_FROM_CITY_CODE = env.int("CDEK_FROM_CITY_CODE", default=504)
+CDEK_SHIP_FROM = env("CDEK_SHIP_FROM", default="warehouse")
+# Тарифы можно задать явно; пусто — по CDEK_SHIP_FROM.
+CDEK_TARIFF_PVZ = env.int("CDEK_TARIFF_PVZ", default=0)
+CDEK_TARIFF_COURIER = env.int("CDEK_TARIFF_COURIER", default=0)
+# Предел веса одной посылки тарифа «Посылка», граммы.
+CDEK_MAX_PARCEL_WEIGHT_G = env.int("CDEK_MAX_PARCEL_WEIGHT_G", default=30000)
+# Сколько живёт расчёт доставки для оформления заказа, секунды.
+CDEK_QUOTE_TTL = env.int("CDEK_QUOTE_TTL", default=1800)
+# Промокод «бесплатная доставка» на доставку СДЭК: по умолчанию не действует.
+PROMO_FREE_DELIVERY_EXTERNAL = env.bool("PROMO_FREE_DELIVERY_EXTERNAL", default=False)
 
 
 LOGGING = {

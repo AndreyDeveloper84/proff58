@@ -21,6 +21,16 @@ class RateRequest:
 
 
 @dataclass(frozen=True)
+class Parcel:
+    """Одна посылка для расчёта у перевозчика: вес в граммах, габариты в сантиметрах."""
+
+    weight_g: int
+    length_cm: int
+    width_cm: int
+    height_cm: int
+
+
+@dataclass(frozen=True)
 class RateResult:
     """Один вариант доставки с рассчитанной стоимостью."""
 

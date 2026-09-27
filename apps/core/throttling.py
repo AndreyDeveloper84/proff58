@@ -86,6 +86,19 @@ class ReviewsRateThrottle(_FixedScopeThrottle):
     scope = "reviews"
 
 
+class DeliveryQuoteRateThrottle(_FixedScopeThrottle):
+    """Лимит расчёта доставки СДЭК по IP (scope `delivery_quote`, DRF-2299):
+    каждый расчёт — платные для нас запросы к API перевозчика."""
+
+    scope = "delivery_quote"
+
+
+class DeliveryLookupRateThrottle(_FixedScopeThrottle):
+    """Лимит подсказок городов и пунктов выдачи СДЭК по IP (scope `delivery_lookup`)."""
+
+    scope = "delivery_lookup"
+
+
 class AnonRateThrottle(_FixedScopeThrottle):
     """Глобальный лимит анонимных запросов по IP (scope `anon`, #279).
 
