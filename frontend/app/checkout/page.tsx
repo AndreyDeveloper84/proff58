@@ -16,6 +16,7 @@ import {
   type DeliverySlotOption,
   type DeliveryZoneOption,
 } from "@/lib/delivery";
+import { DELIVERY_METHOD_LABELS } from "@/lib/delivery-methods";
 import { formatPrice, formatSlotDay } from "@/lib/format";
 import { placeOrder, startOrderPayment } from "@/lib/orders";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-methods";
@@ -28,9 +29,11 @@ import {
   normalizePhone,
 } from "@/lib/validation";
 import { stashOrder } from "@/lib/order-storage";
+import { CdekDelivery } from "./CdekDelivery";
+import { useCdekDelivery } from "./useCdekDelivery";
 
 type CustomerType = "b2c" | "b2b";
-type DeliveryMethod = "courier" | "pickup";
+type DeliveryMethod = "courier" | "pickup" | "cdek";
 // Способы оплаты и их названия — из lib/payment-methods (общий словарь витрины).
 // Доступность считает paymentOptions, авторитетно проверяет сервер.
 
@@ -90,9 +93,87 @@ export default function CheckoutPage() {
   const [kpp, setKpp] = useState("");
   const [legalAddress, setLegalAddress] = useState("");
   const [comment, setComment] = useState("");
-  const [delivery, setDelivery] = useState<DeliveryMethod>("courier");
+  const [deliveryChoice, setDelivery] = useState<DeliveryMethod>("courier");
 
   const isB2B = customerType === "b2b";
+
+  // #571: серверный промо-breakdown. Суммы здесь — только превью; авторитетный
+  // расчёт (включая free_delivery-код) делает place_order.
+  const promoDiscount = Number(cart?.items_discount_total ?? 0) || 0;
+  const goodsPayable = cart ? Number(cart.grand_total) || total : total;
+  const hasFreeDeliveryCode = Boolean(
+    cart?.applied_promotions?.some((a) => a.discount_type === "free_delivery"),
+  );
+  // #574: суммы форматируем в валюте корзины. Раньше formatPrice звался без
+  // второго аргумента и любой заказ подписывался «₽», хотя в кабинете валюта
+  // уже передавалась — один и тот же заказ выглядел по-разному.
+  const currency = cart?.currency || "RUB";
+
+  // Зоны доставки (аудит №5): без delivery_zone сервер не считает стоимость
+  // (заказ уходил с доставкой 0 ₽ и заниженным итогом). Слаг выбранной зоны
+  // уходит в POST /api/orders; стоимость из списка — только предпросмотр,
+  // сервер (quote_for_order) пересчитывает сам.
+  // #574: null — ещё грузим. Раньше стартовое [] было неотличимо от «зон нет»,
+  // и на первую отрисовку блок выбора зоны просто отсутствовал без объяснения.
+  const [zones, setZones] = useState<DeliveryZoneOption[] | null>(null);
+  const [zonesFailed, setZonesFailed] = useState(false);
+  const [zoneSlug, setZoneSlug] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    getDeliveryZones(goodsPayable).then((data) => {
+      if (!active) return;
+      if (data === "error") {
+        setZonesFailed(true);
+        setZones([]);
+      } else {
+        setZonesFailed(false);
+        setZones(data);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [goodsPayable]);
+
+  // Своя курьерская доставка — только не внешние зоны: СДЭК выбирается отдельным
+  // способом со своим расчётом (DRF-2491), а не строкой «уточнит менеджер».
+  const courierZones = useMemo(
+    () => (zones ?? []).filter((z) => z.type === "courier" && !z.is_external),
+    [zones],
+  );
+  const selectedZone = courierZones.find((z) => z.zone === zoneSlug) ?? null;
+  // Зона СДЭК, если перевозчик настроен. Без ключей справочники отвечают только
+  // 503 — такой способ покупателю не показываем.
+  const cdekZone = (zones ?? []).find((z) => z.is_external && z.carrier_available) ?? null;
+  // Курьера прячем, только когда зоны загрузились и своих курьерских среди них
+  // нет: иначе заказ ушёл бы без зоны с доставкой 0 ₽. Сбой справочника — как
+  // раньше, курьер остаётся, стоимость уточнит менеджер.
+  const courierAvailable = zones === null || zonesFailed || courierZones.length > 0;
+  // Действующий способ считаем при рендере (как способ оплаты ниже): выключенный
+  // в админке способ сам схлопывается к доступному.
+  const delivery: DeliveryMethod =
+    deliveryChoice === "cdek"
+      ? cdekZone
+        ? "cdek"
+        : courierAvailable
+          ? "courier"
+          : "pickup"
+      : deliveryChoice === "courier" && !courierAvailable
+        ? "pickup"
+        : deliveryChoice;
+
+  // Отпечаток корзины для расчёта СДЭК — как на сервере: пары (товар, количество).
+  const cartFingerprint = (cart?.lines ?? [])
+    .map((line) => `${line.product_id}:${line.quantity}`)
+    .sort()
+    .join(",");
+  const cdek = useCdekDelivery(cdekZone?.zone ?? "", cartFingerprint);
+  const cdekFreeByPromo = Boolean(
+    hasFreeDeliveryCode && cdek.quote?.free_delivery_promo_applies,
+  );
+  // 409 «расчёт устарел» подряд: после второго предлагаем ручной расчёт.
+  const quoteConflicts = useRef(0);
 
   // Способ оплаты выбирает человек, но не из всего подряд: набор зависит от того,
   // кто покупает и как забирает (DRF-948/951). Ту же таблицу авторитетно проверяет
@@ -141,62 +222,23 @@ export default function CheckoutPage() {
     ? paymentChoice
     : paymentOptions[0].value;
 
-  // #571: серверный промо-breakdown. Суммы здесь — только превью; авторитетный
-  // расчёт (включая free_delivery-код) делает place_order.
-  const promoDiscount = Number(cart?.items_discount_total ?? 0) || 0;
-  const goodsPayable = cart ? Number(cart.grand_total) || total : total;
-  const hasFreeDeliveryCode = Boolean(
-    cart?.applied_promotions?.some((a) => a.discount_type === "free_delivery"),
-  );
-  // #574: суммы форматируем в валюте корзины. Раньше formatPrice звался без
-  // второго аргумента и любой заказ подписывался «₽», хотя в кабинете валюта
-  // уже передавалась — один и тот же заказ выглядел по-разному.
-  const currency = cart?.currency || "RUB";
-
-  // Зоны доставки (аудит №5): без delivery_zone сервер не считает стоимость
-  // (заказ уходил с доставкой 0 ₽ и заниженным итогом). Слаг выбранной зоны
-  // уходит в POST /api/orders; стоимость из списка — только предпросмотр,
-  // сервер (quote_for_order) пересчитывает сам.
-  // #574: null — ещё грузим. Раньше стартовое [] было неотличимо от «зон нет»,
-  // и на первую отрисовку блок выбора зоны просто отсутствовал без объяснения.
-  const [zones, setZones] = useState<DeliveryZoneOption[] | null>(null);
-  const [zonesFailed, setZonesFailed] = useState(false);
-  const [zoneSlug, setZoneSlug] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    getDeliveryZones(goodsPayable).then((data) => {
-      if (!active) return;
-      if (data === "error") {
-        setZonesFailed(true);
-        setZones([]);
-      } else {
-        setZonesFailed(false);
-        setZones(data);
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [goodsPayable]);
-
-  const courierZones = useMemo(() => (zones ?? []).filter((z) => z.type === "courier"), [zones]);
-  const selectedZone = courierZones.find((z) => z.zone === zoneSlug) ?? null;
-
-  // Предпросмотр итога: товары после скидок + доставка выбранной зоны.
-  // Авторитетную сумму считает сервер при оформлении (см. подпись под итогом).
-  // Зона без стоимости (cost === null, внешний перевозчик): доставку посчитает
-  // менеджер после оформления, итог предварительный (DRF-2299).
-  const deliveryPending = !isB2B && delivery === "courier" && selectedZone?.cost === null;
-  const previewDeliveryCost =
+  // Предпросмотр итога: товары после скидок + доставка выбранной зоны или расчёт
+  // СДЭК. Авторитетную сумму считает сервер при оформлении (см. подпись под итогом).
+  // Стоимость неизвестна (зона без цены, ручной расчёт СДЭК или СДЭК недоступен):
+  // доставку посчитает менеджер после оформления, итог — без доставки (DRF-2299).
+  const cdekManual =
+    cdek.fallback || (cdek.quote !== null && cdek.quote.status === "manual_required");
+  const deliveryPending =
     !isB2B &&
-    delivery === "courier" &&
-    selectedZone &&
-    selectedZone.cost !== null &&
-    !selectedZone.free_delivery &&
-    !hasFreeDeliveryCode
-      ? Number(selectedZone.cost) || 0
-      : 0;
+    ((delivery === "courier" && selectedZone?.cost === null) ||
+      (delivery === "cdek" && cdekManual));
+  let previewDeliveryCost = 0;
+  if (!isB2B && delivery === "courier" && selectedZone && selectedZone.cost !== null) {
+    previewDeliveryCost =
+      selectedZone.free_delivery || hasFreeDeliveryCode ? 0 : Number(selectedZone.cost) || 0;
+  } else if (!isB2B && delivery === "cdek" && !cdekManual && cdek.quote?.cost) {
+    previewDeliveryCost = cdekFreeByPromo ? 0 : Number(cdek.quote.cost) || 0;
+  }
   const previewTotal = goodsPayable + previewDeliveryCost;
 
   // #569: слоты доставки — только B2C + курьер. Пустой список = пикер скрыт,
@@ -294,6 +336,11 @@ export default function CheckoutPage() {
     if (!isB2B && delivery === "courier" && (slots?.length ?? 0) > 0 && !slotId) {
       return setError("Выберите дату и время доставки.");
     }
+    if (!isB2B && delivery === "cdek") {
+      const blocker = cdek.blocker();
+      if (blocker) return setError(blocker);
+    }
+    const cdekFields = !isB2B && delivery === "cdek" ? cdek.orderFields() : null;
 
     inFlight.current = true;
     setSubmitting(true);
@@ -309,11 +356,14 @@ export default function CheckoutPage() {
         inn: isB2B ? inn.trim() : "",
         kpp: isB2B ? kpp.trim() : "",
         legal_address: isB2B ? legalAddress.trim() : "",
-        delivery_method: isB2B ? "pickup" : delivery,
-        // Пусто осознанно: адрес выясняет менеджер по телефону. Поле в заказе и в
-        // выгрузке 1С остаётся — туда его и впишут.
-        delivery_address: "",
-        delivery_zone: !isB2B && delivery === "courier" ? zoneSlug : "",
+        // Своя курьерская: адрес выясняет менеджер по телефону (поле в заказе и в
+        // выгрузке 1С остаётся — туда его и впишут). СДЭК: адрес сервер берёт из
+        // расчёта; без расчёта — то, что покупатель ввёл вручную.
+        ...(cdekFields ?? {
+          delivery_method: isB2B ? "pickup" : delivery,
+          delivery_address: "",
+          delivery_zone: !isB2B && delivery === "courier" ? zoneSlug : "",
+        }),
         delivery_slot_id: !isB2B && delivery === "courier" ? slotId : null,
         payment_method: payment,
         comment: comment.trim(),
@@ -350,6 +400,32 @@ export default function CheckoutPage() {
       setError(
         err instanceof ApiError ? err.message : "Не удалось оформить заказ. Попробуйте ещё раз.",
       );
+      // Расчёт СДЭК устарел или корзина изменилась: считаем заново и показываем
+      // новую цену — оформлять повторно человек решает сам. Второй 409 подряд
+      // (например, сервер не может сохранить расчёт) — переходим на ручной расчёт.
+      if (
+        err instanceof ApiError &&
+        err.status === 409 &&
+        (err.code === "delivery_quote_expired" || err.code === "delivery_quote_stale") &&
+        delivery === "cdek"
+      ) {
+        quoteConflicts.current += 1;
+        if (quoteConflicts.current >= 2) {
+          cdek.enterFallback(cdek.fallbackPrefill());
+          setError(
+            "Не удалось закрепить стоимость доставки СДЭК. Оформите заказ — стоимость " +
+              "рассчитает менеджер, оплата станет доступна после расчёта.",
+          );
+        } else {
+          const fresh = await cdek.requestQuote();
+          setError(
+            fresh && fresh.status === "calculated" && fresh.cost !== null
+              ? `Стоимость доставки пересчитана: ${formatPrice(Number(fresh.cost), currency)}. ` +
+                  "Проверьте итог и оформите заказ ещё раз."
+              : "Стоимость доставки пересчитана. Проверьте итог и оформите заказ ещё раз.",
+          );
+        }
+      }
       // #569: заказ со слотом не прошёл (чаще всего «время уже занято») —
       // обновляем справочник и сбрасываем выбор, текст ошибки уже от сервера.
       if (err instanceof ApiError && !isB2B && delivery === "courier" && slotId) {
@@ -578,24 +654,48 @@ export default function CheckoutPage() {
           <legend className="px-2 font-display text-lg font-semibold uppercase text-ink">
             Способ получения
           </legend>
-          <label className="flex cursor-pointer items-center gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent">
-            <input
-              type="radio"
-              name="delivery"
-              value="courier"
-              checked={delivery === "courier"}
-              onChange={() => {
-                setDelivery("courier");
-                // #569: возврат к курьеру начинается с чистого выбора слота.
-                setSlotId(null);
-              }}
-              className="accent-accent"
-            />
-            <span>
-              <span className="block text-sm text-ink">Курьерская доставка</span>
-              <span className="mt-0.5 block text-xs text-ink-3">По Пензе и области</span>
-            </span>
-          </label>
+          {courierAvailable && (
+            <label className="flex cursor-pointer items-center gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent">
+              <input
+                type="radio"
+                name="delivery"
+                value="courier"
+                checked={delivery === "courier"}
+                onChange={() => {
+                  setDelivery("courier");
+                  // #569: возврат к курьеру начинается с чистого выбора слота.
+                  setSlotId(null);
+                }}
+                className="accent-accent"
+              />
+              <span>
+                <span className="block text-sm text-ink">Курьерская доставка</span>
+                <span className="mt-0.5 block text-xs text-ink-3">По Пензе</span>
+              </span>
+            </label>
+          )}
+          {cdekZone && (
+            <label className="flex cursor-pointer items-center gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent">
+              <input
+                type="radio"
+                name="delivery"
+                value="cdek"
+                checked={delivery === "cdek"}
+                onChange={() => {
+                  setDelivery("cdek");
+                  // Слоты — только у своего курьера: старый выбор не должен уйти в заказ.
+                  setSlotId(null);
+                }}
+                className="accent-accent"
+              />
+              <span>
+                <span className="block text-sm text-ink">Доставка СДЭК по России</span>
+                <span className="mt-0.5 block text-xs text-ink-3">
+                  В пункт выдачи или курьером · оплата онлайн
+                </span>
+              </span>
+            </label>
+          )}
           <label className="flex cursor-pointer items-center gap-3 rounded-md border border-line bg-raised p-3 transition has-[:checked]:border-accent">
             <input
               type="radio"
@@ -629,6 +729,9 @@ export default function CheckoutPage() {
                 Сообщим, когда заказ будет готов к выдаче.
               </span>
             </div>
+          )}
+          {delivery === "cdek" && (
+            <CdekDelivery cdek={cdek} currency={currency} freeByPromo={cdekFreeByPromo} />
           )}
           {delivery === "courier" && (
             <>
@@ -814,13 +917,23 @@ export default function CheckoutPage() {
               <span className="min-w-0 flex-1 truncate text-ink-2">
                 {delivery === "pickup"
                   ? "Самовывоз со склада:"
-                  : selectedZone
-                    ? `Доставка (${selectedZone.name}):`
-                    : "Доставка:"}
+                  : delivery === "cdek"
+                    ? "Доставка СДЭК:"
+                    : selectedZone
+                      ? `Доставка (${selectedZone.name}):`
+                      : "Доставка:"}
               </span>
               <span className="shrink-0 font-display font-semibold text-ink">
                 {delivery === "pickup"
                   ? "бесплатно"
+                  : delivery === "cdek"
+                    ? cdekManual
+                      ? "уточнит менеджер после оформления"
+                      : cdek.quote?.cost
+                        ? cdekFreeByPromo
+                          ? "бесплатно (промокод)"
+                          : formatPrice(Number(cdek.quote.cost), currency)
+                        : "рассчитается после выбора адреса"
                   : !selectedZone
                     ? "рассчитается после выбора зоны"
                     : selectedZone.cost === null
@@ -865,7 +978,11 @@ export default function CheckoutPage() {
             <div className="flex justify-between gap-2">
               <dt>Получение</dt>
               <dd className="text-right text-ink-2">
-                {isB2B || delivery === "pickup" ? "Самовывоз" : "Курьерская доставка"}
+                {isB2B || delivery === "pickup"
+                  ? "Самовывоз"
+                  : delivery === "cdek"
+                    ? DELIVERY_METHOD_LABELS[cdek.mode]
+                    : "Курьерская доставка"}
               </dd>
             </div>
             <div className="flex justify-between gap-2">

@@ -12,15 +12,11 @@ import { useAuthState } from "@/components/auth/AuthStateProvider";
 import { accountLinkHref } from "@/lib/auth-state";
 import { formatDeliverySlot, formatPrice } from "@/lib/format";
 import { getGuestOrder } from "@/lib/orders";
+import { deliveryMethodLabel } from "@/lib/delivery-methods";
 import { paymentMethodLabel } from "@/lib/payment-methods";
 import { readStashedOrder, stashOrder } from "@/lib/order-storage";
 import { decodeRouteParam } from "@/lib/route-params";
 import type { Order } from "@/lib/types";
-
-const DELIVERY_LABELS: Record<string, string> = {
-  courier: "Курьер",
-  pickup: "Самовывоз",
-};
 
 const POLL_INTERVAL_MS = 3000;
 const POLL_ATTEMPTS = 20; // ≈ минута ожидания callback от кассы
@@ -222,7 +218,7 @@ export default function ThanksPage() {
             <section className="rounded-lg border border-line bg-surface p-5">
               <h2 className="text-lg font-semibold text-ink">Доставка</h2>
               <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-                <div><dt className="text-ink-3">Способ получения</dt><dd className="mt-1 text-ink">{DELIVERY_LABELS[order.delivery_method] ?? order.delivery_method}</dd></div>
+                <div><dt className="text-ink-3">Способ получения</dt><dd className="mt-1 text-ink">{deliveryMethodLabel(order.delivery_method)}</dd></div>
                 {order.delivery_slot && <div><dt className="text-ink-3">Дата и время</dt><dd className="mt-1 text-ink">{formatDeliverySlot(order.delivery_slot)}</dd></div>}
                 {order.delivery_address && <div className="sm:col-span-2"><dt className="text-ink-3">Адрес</dt><dd className="mt-1 text-ink">{order.delivery_address}</dd></div>}
               </dl>

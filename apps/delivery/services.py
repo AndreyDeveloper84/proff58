@@ -470,8 +470,13 @@ def calculate(
         qs = qs.filter(slug=zone_slug)
     zones = qs.order_by("sort_order", "name")
 
+    carrier_available: bool | None = None
     result: list[dict] = []
     for zone in zones:
+        if zone.is_external and carrier_available is None:
+            from apps.integration_ship import services as ship
+
+            carrier_available = ship.cdek_enabled()
         # Внешний перевозчик (СДЭК): на витрине стоимость неизвестна — её даёт API
         # перевозчика по весогабаритам при оформлении либо менеджер вручную.
         # Раньше сюда попадала price зоны (0) и чекаут показывал «бесплатно»
@@ -483,6 +488,10 @@ def calculate(
             "type": zone.delivery_type,
             "cost": cost,  # None ⇔ стоимость уточняется (как DeliveryQuote.cost)
             "free_delivery": cost == Decimal("0"),
+            "is_external": zone.is_external,
+            # Внешняя зона без настроенного перевозчика на витрине не предлагается:
+            # справочники городов и пунктов в этом состоянии отвечают только 503.
+            "carrier_available": bool(zone.is_external and carrier_available),
             "pickup_points": [],
         }
         if zone.delivery_type == DeliveryType.PICKUP:

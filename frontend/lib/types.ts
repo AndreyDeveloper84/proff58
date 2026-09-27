@@ -311,6 +311,9 @@ export type PlaceOrderData = {
   delivery_zone?: string;
   // Слот доставки (#569): только B2C + курьер; сервер перепроверит сам.
   delivery_slot_id?: number | null;
+  // Расчёт доставки СДЭК (POST /api/cart/delivery-quote): сервер берёт цену и адрес
+  // из него, сумму доставки браузер не присылает (DRF-2491).
+  delivery_quote_id?: string;
   comment?: string;
   payment_method: string;
 };

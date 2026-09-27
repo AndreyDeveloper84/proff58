@@ -9,11 +9,14 @@
 export class ApiError extends Error {
   readonly status: number;
   readonly code?: string;
-  constructor(message: string, status: number, code?: string) {
+  // Поле формы, к которому относится ошибка ввода: {"detail": "...", "field": "pvz_code"}.
+  readonly field?: string;
+  constructor(message: string, status: number, code?: string, field?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.field = field;
   }
 }
 
@@ -21,6 +24,14 @@ export class ApiError extends Error {
 export function extractErrorCode(body: unknown): string | undefined {
   if (body && typeof body === "object" && typeof (body as Record<string, unknown>).code === "string") {
     return (body as Record<string, unknown>).code as string;
+  }
+  return undefined;
+}
+
+/** Поле формы из тела ошибки ввода, если бэк его прислал (см. ApiError.field). */
+export function extractErrorField(body: unknown): string | undefined {
+  if (body && typeof body === "object" && typeof (body as Record<string, unknown>).field === "string") {
+    return (body as Record<string, unknown>).field as string;
   }
   return undefined;
 }
@@ -84,7 +95,12 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
   if (!res.ok) {
     const body: unknown = await res.json().catch(() => undefined);
-    throw new ApiError(extractErrorMessage(body, res.status), res.status, extractErrorCode(body));
+    throw new ApiError(
+      extractErrorMessage(body, res.status),
+      res.status,
+      extractErrorCode(body),
+      extractErrorField(body),
+    );
   }
 
   if (res.status === 204) return undefined as T;

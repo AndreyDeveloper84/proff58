@@ -35,6 +35,7 @@ import {
   humanizeToken,
   pluralize,
 } from "@/lib/format";
+import { DELIVERY_METHOD_LABELS } from "@/lib/delivery-methods";
 import { isDelivered, statusBadgeClass } from "@/lib/order-status";
 import { paymentMethodLabel } from "@/lib/payment-methods";
 import { getMyReviewForOrder, reviewStatusText } from "@/lib/reviews";
@@ -49,13 +50,6 @@ const PAYMENT_STATUS_LABELS: Record<Order["payment_status"], string> = {
   expired: "Срок оплаты истёк",
   partially_refunded: "Частичный возврат",
   refunded: "Возвращён",
-};
-
-const DELIVERY_METHOD_LABELS: Record<string, string> = {
-  courier: "Курьерская доставка",
-  delivery: "Доставка",
-  pickup: "Самовывоз",
-  transport_company: "Транспортная компания",
 };
 
 function displayToken(value: string, labels: Record<string, string>) {
