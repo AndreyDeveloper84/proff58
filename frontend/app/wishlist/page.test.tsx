@@ -146,4 +146,31 @@ describe("WishlistPage", () => {
     expect(screen.queryByRole("navigation", { name: "Разделы личного кабинета" })).toBeNull();
     expect(screen.getByRole("navigation", { name: "Хлебные крошки" })).toBeInTheDocument();
   });
+
+  // «unknown» — есть сессия без маркера входа. Так выглядит и гость с корзиной:
+  // раньше он получал меню кабинета, будто вошёл.
+  it("unknown и сервер отказал (гость с корзиной) — без кабинета", async () => {
+    wishlistState = { ids: new Set<number>(), loaded: true, isGuest: true };
+    renderAs("unknown");
+
+    expect(await screen.findByText("В избранном пока пусто")).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Разделы личного кабинета" })).toBeNull();
+  });
+
+  it("unknown, сервер ещё не ответил — только загрузка, без обвязки кабинета", () => {
+    wishlistState = { ids: new Set<number>(), loaded: false, isGuest: false };
+    renderAs("unknown");
+
+    expect(screen.getByText("Загружаем избранное…")).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Разделы личного кабинета" })).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Хлебные крошки" })).toBeNull();
+  });
+
+  it("unknown, сервер отдал избранное (вошедший без маркера) — в кабинете", async () => {
+    wishlistState = { ids: new Set<number>(), loaded: true, isGuest: false };
+    renderAs("unknown");
+
+    expect(await screen.findByText("В избранном пока пусто")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Разделы личного кабинета" })).toBeInTheDocument();
+  });
 });

@@ -75,11 +75,13 @@ describe("Индекс каталога: фото разделов в тёмно
 
   // Плитки не должны сливаться с фоном в тёмной теме: плитка — bg-card (как
   // карточки товаров), страница в тёмной теме — общий фон сайта (canvas).
-  it("плитка раздела отличается от фона страницы в тёмной теме", async () => {
+  it("плитка раздела отличается от фона страницы в обеих темах", async () => {
     const { container } = render(await CatalogIndexPage());
 
+    // Фон страницы — canvas (#f2f4f6 / почти чёрный), плитки — белые/серые bg-card.
     const main = container.querySelector("main")!;
-    expect(main.className.split(/\s+/)).toContain("dark:bg-canvas");
+    expect(main.className.split(/\s+/)).toContain("bg-canvas");
+    expect(main.className.split(/\s+/)).not.toContain("bg-surface");
     for (const image of container.querySelectorAll('img[src*="/catalog/categories/"]')) {
       const tile = image.closest("a")!;
       const tokens = tile.className.split(/\s+/);

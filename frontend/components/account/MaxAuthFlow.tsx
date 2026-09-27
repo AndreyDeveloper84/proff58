@@ -153,10 +153,16 @@ export function MaxAuthFlow({
         data-event="max_auth_started"
         className="inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink transition hover:brightness-95 disabled:opacity-50"
       >
-        {/* Логотип MAX в белом скруглённом квадрате — как на кнопках других сервисов. */}
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-white" aria-hidden>
-          <Image src="/brands/max-colored.png" alt="" width={20} height={20} className="h-5 w-5" />
-        </span>
+        {/* Логотип белым силуэтом, как текст кнопки: цветное кольцо MAX на зелёном
+            почти не контрастирует, а белая плашка под ним выглядела заплаткой. */}
+        <Image
+          src="/brands/max-colored.png"
+          alt=""
+          aria-hidden
+          width={24}
+          height={24}
+          className="h-6 w-6 shrink-0 brightness-0 invert"
+        />
         {phase === "starting" ? "Создаём ссылку…" : (ctaLabel ?? "Войти через MAX")}
       </button>
     );

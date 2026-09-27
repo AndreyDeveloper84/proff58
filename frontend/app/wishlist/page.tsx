@@ -27,7 +27,15 @@ export default function WishlistPage() {
   // в меню кабинета, и переход по нему выбрасывал человека на витрину — со
   // стороны это выглядело так, будто кабинет закрылся сам. Гостю кабинет
   // показывать нечего: у него нет ни заказов, ни счетов.
-  const inAccount = useAuthState() !== "anonymous";
+  //
+  // «unknown» (есть сессия, нет маркера входа) — это и гость с корзиной, поэтому
+  // кабинет показываем, только когда вход подтверждён: маркер или ответ сервера.
+  // Сервер отказал (401) — isGuest, обычная страница витрины.
+  const authState = useAuthState();
+  const inAccount =
+    authState !== "anonymous" && !isGuest && (authState === "authenticated" || loaded);
+  // Пока сервер не ответил, вида страницы ещё не знаем — только загрузка, без обвязки.
+  const undecided = authState === "unknown" && !isGuest && !loaded;
   const [products, setProducts] = useState<Product[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -122,6 +130,13 @@ export default function WishlistPage() {
     </div>
   );
 
+  if (undecided) {
+    return (
+      <main className="mx-auto w-full max-w-[1680px] px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-7">
+        <LoadingState label="Загружаем избранное…" />
+      </main>
+    );
+  }
   if (inAccount) return <AccountShell title="Избранное">{content}</AccountShell>;
 
   return (
