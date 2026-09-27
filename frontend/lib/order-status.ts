@@ -30,27 +30,28 @@ export function isInProgress(order: Order): boolean {
   return !isDelivered(order) && !isCancelled(order);
 }
 
-// Классы бейджа по оси обработки. Exhaustive switch: добавление нового значения
+// Классы бейджа по оси обработки. Фон — полупрозрачный оттенок (как bg-accent/10),
+// а не bg-*-50: сплошная светлая заливка в тёмной теме выглядит белым пятном. Exhaustive switch: добавление нового значения
 // FulfillmentStatus на бэке даст ошибку компиляции здесь, а не серый бейдж в проде.
 export function statusBadgeClass(order: Order): string {
-  if (isCancelled(order)) return "bg-red-50 text-danger";
+  if (isCancelled(order)) return "bg-danger/10 text-danger";
   if (order.payment_status === "pending" && order.fulfillment_status === "new") {
-    return "bg-amber-50 text-amber-700"; // ждём оплату — предупреждающий
+    return "bg-amber-500/15 text-amber-700 dark:text-amber-300"; // ждём оплату — предупреждающий
   }
   const status: FulfillmentStatus = order.fulfillment_status;
   switch (status) {
     case "new":
     case "confirmed":
     case "assembling":
-      return "bg-blue-50 text-blue-700";
+      return "bg-blue-500/15 text-blue-700 dark:text-blue-300";
     case "ready":
       return "bg-accent/10 text-accent"; // требует действия покупателя — выделяем
     case "shipped":
-      return "bg-blue-50 text-blue-700"; // ещё едет — НЕ зелёный «выполнен»
+      return "bg-blue-500/15 text-blue-700 dark:text-blue-300"; // ещё едет — НЕ зелёный «выполнен»
     case "completed":
       return "bg-accent/10 text-accent";
     case "cancelled":
-      return "bg-red-50 text-danger"; // недостижимо (isCancelled выше), для полноты switch
+      return "bg-danger/10 text-danger"; // недостижимо (isCancelled выше), для полноты switch
     default: {
       // Компилятор гарантирует полноту: сюда можно попасть только при рассинхроне с бэком.
       const _exhaustive: never = status;
