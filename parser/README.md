@@ -5,7 +5,14 @@
 JSON (схема `Export` / `ErrorsExport`). В БД ничего не пишет, кода Django
 не касается.
 
-Источники: `resanta`, `vihr`, `interskol`, `zubr` (+ `--source all`).
+Источники: `resanta`, `vihr`, `huter`, `interskol`, `zubr` (+ `--source all`).
+
+`huter` заведён треком ИЗО: у ЗУБР/KRAFTOOL/GRINDA в `robots.txt` закрыт
+`/upload` с картинками, а у huter.su запрета нет. Платформа та же (Webasyst),
+но карточки лежат плоско и в `sitemap-shop.xml` соседствуют со статическими
+страницами — они отсекаются по отсутствию JSON-LD `Product`, а разделы
+`/category/` по пути. Характеристики у huter в блоках
+`.product__features--item`, а не в таблице.
 
 ## Установка
 
