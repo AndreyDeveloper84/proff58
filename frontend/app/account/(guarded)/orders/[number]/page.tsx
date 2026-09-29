@@ -24,8 +24,6 @@ import { EmptyState, ErrorState } from "@/components/ui/states";
 import { RefundRequestBlock } from "@/components/order/RefundRequestBlock";
 import { PayOrderButton, canPayOnline } from "@/components/order/PayOrderButton";
 import { ReservationNotice, reservationState } from "@/components/order/ReservationNotice";
-import { ReviewForm } from "@/components/reviews/ReviewForm";
-import { StarDisplay } from "@/components/reviews/StarRating";
 import { ProductImage } from "@/components/product/ProductImage";
 import { cancelOrder, checkAuth, getOrder, loginHref } from "@/lib/auth";
 import {
@@ -36,11 +34,9 @@ import {
   pluralize,
 } from "@/lib/format";
 import { DELIVERY_METHOD_LABELS } from "@/lib/delivery-methods";
-import { isDelivered, statusBadgeClass } from "@/lib/order-status";
+import { statusBadgeClass } from "@/lib/order-status";
 import { paymentMethodLabel } from "@/lib/payment-methods";
-import { getMyReviewForOrder, reviewStatusText } from "@/lib/reviews";
 import { decodeRouteParam } from "@/lib/route-params";
-import type { MyReview } from "@/lib/types";
 import type { Order, OrderItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -86,9 +82,6 @@ export default function OrderDetailsPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  // #573: null — отзыва нет (показать CTA), "disabled" — фича выключена, undefined — не грузили.
-  const [review, setReview] = useState<MyReview | null | "disabled" | undefined>(undefined);
-  const [reviewOpen, setReviewOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
@@ -110,11 +103,6 @@ export default function OrderDetailsPage() {
       .then((data) => {
         if (!active || !data) return;
         setOrder(data);
-        if (isDelivered(data)) {
-          getMyReviewForOrder(data.order_number).then((r) => {
-            if (active) setReview(r);
-          });
-        }
       })
       .catch((caught) => {
         if (!active) return;
@@ -416,46 +404,6 @@ export default function OrderDetailsPage() {
           }}
         />
 
-        {/* #574: id — цель ссылки «Оставить отзыв» из списка заказов.
-            #573 B2B: в B2B-flow нет доставки (одна из оценок), поэтому отзывы
-            по заказам юрлиц в Wave 1 не принимаются — раздел скрыт. */}
-        {!isB2B && isDelivered(order) && review !== "disabled" && review !== undefined && (
-          <section id="review" className="scroll-mt-24 rounded-lg border border-line bg-surface p-5">
-            <h2 className="text-sm font-semibold text-ink">Отзыв о заказе</h2>
-            {review === null ? (
-              <div className="mt-3">
-                <p className="text-sm text-ink-2">
-                  Заказ получен — поделитесь впечатлением о товарах, доставке и магазине.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setReviewOpen(true)}
-                  className="mt-3 inline-flex h-11 items-center rounded-md bg-accent px-4 text-sm font-semibold text-accent-ink sm:h-10"
-                >
-                  Оставить отзыв
-                </button>
-              </div>
-            ) : (
-              <div className="mt-3 space-y-2 text-sm">
-                <StarDisplay value={review.product_rating} />
-                {/* #574: формулировки — из lib/reviews, чтобы страница заказа и
-                    раздел «Мои отзывы» говорили о статусе одинаково. */}
-                <p
-                  className={
-                    review.status === "approved"
-                      ? "text-accent"
-                      : review.status === "rejected"
-                        ? "text-danger"
-                        : "text-ink-2"
-                  }
-                >
-                  {reviewStatusText(review.status, review.rejection_reason)}
-                </p>
-              </div>
-            )}
-          </section>
-        )}
-
         <AccountDialog
           title="Отменить заказ?"
           description="Заказ будет отменён, а зарезервированный товар вернётся в продажу. Восстановить отменённый заказ нельзя — придётся оформить новый."
@@ -488,22 +436,6 @@ export default function OrderDetailsPage() {
               </button>
             </div>
           </div>
-        </AccountDialog>
-
-        <AccountDialog
-          title="Отзыв о заказе"
-          description="Оценки обязательны, текст — по желанию. Отзыв появится после модерации."
-          open={reviewOpen}
-          onClose={() => setReviewOpen(false)}
-        >
-          <ReviewForm
-            orderNumber={order.order_number}
-            onCancel={() => setReviewOpen(false)}
-            onDone={(created) => {
-              setReview(created);
-              setReviewOpen(false);
-            }}
-          />
         </AccountDialog>
 
         {order.comment && (

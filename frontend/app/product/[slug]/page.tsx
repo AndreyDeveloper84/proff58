@@ -1,14 +1,12 @@
 import { notFound } from "next/navigation";
-import { MessageSquareText, ShieldCheck, Star } from "lucide-react";
+import { MessageSquareText, ShieldCheck } from "lucide-react";
 import { getProduct } from "@/lib/catalog";
-import { pluralize } from "@/lib/format";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPrice } from "@/components/product/ProductPrice";
 import { ProductAvailability } from "@/components/product/ProductAvailability";
 import { ProductBadges } from "@/components/product/ProductBadges";
 import { OrderCta } from "@/components/product/OrderCta";
 import { CompatibilitySections } from "@/components/product/CompatibilitySections";
-import { ProductReviews } from "@/components/product/ProductReviews";
 import { StickyBuyBar } from "@/components/product/StickyBuyBar";
 import { ProductJsonLd } from "@/components/product/ProductJsonLd";
 import { CompareButton } from "@/components/product/CompareButton";
@@ -41,7 +39,7 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await getProduct(slug);
   if (!product) notFound();
-  const [reviews, theme] = await Promise.all([fetchProductReviewsSafe(slug), getSiteTheme()]);
+  const theme = await getSiteTheme();
   const storefront = resolveStorefront(theme);
 
   // Вкладка связанных товаров. Раньше она появлялась при любом непустом объекте
@@ -87,7 +85,7 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     // #574: нижний отступ под липкую панель покупки — иначе она перекрывала
-    // последнюю карточку отзывов.
+    // последний блок страницы.
     <main className="mx-auto w-full max-w-[1480px] px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pt-7">
       <ProductJsonLd product={product} crumbs={crumbs} />
       <nav
@@ -125,25 +123,6 @@ export default async function ProductPage({ params }: Props) {
           <h1 className="font-display text-2xl font-semibold leading-tight text-ink lg:text-[30px]">
             {product.name}
           </h1>
-          {/* #574: рейтинг рядом с названием — раньше отзывы были только внизу
-              страницы, и понять «есть ли оценки» до скролла было нельзя. Блок
-              скрыт при нулевом количестве (docs/design/pages/pdp.md: не рисуем
-              «0 отзывов» как тупик). */}
-          {reviews && reviews.summary.count > 0 && (
-            <a
-              href="#reviews"
-              className="flex w-fit items-center gap-2 text-sm text-ink-2 hover:text-accent"
-            >
-              <Star className="h-4 w-4 fill-current text-rating" aria-hidden />
-              <span className="font-semibold text-ink">
-                {(reviews.summary.product_rating_avg ?? 0).toFixed(1)}
-              </span>
-              <span className="underline-offset-2 hover:underline">
-                {reviews.summary.count}{" "}
-                {pluralize(reviews.summary.count, "отзыв", "отзыва", "отзывов")}
-              </span>
-            </a>
-          )}
           <div className="flex items-center justify-between gap-3">
             <ProductBadges badges={product.badges} discountPct={product.price.discountPct} />
             <div className="flex items-center gap-2">
@@ -195,24 +174,15 @@ export default async function ProductPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Совместимость и отзывы — отдельные секции ниже, а не вкладки: обычные
-          якоря справа от полосы вкладок, вне role=tablist. */}
+      {/* Совместимость — отдельная секция ниже, а не вкладка: обычный якорь
+          справа от полосы вкладок, вне role=tablist. */}
       <ProductTabs
         tabs={tabs}
         extraLinks={
-          (relatedTabLabel || reviews) && (
-            <>
-              {relatedTabLabel && (
-                <a href="#compatible" className="min-h-12 shrink-0 py-3.5 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
-                  {relatedTabLabel}
-                </a>
-              )}
-              {reviews && (
-                <a href="#reviews" className="min-h-12 shrink-0 py-3.5 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
-                  Отзывы {reviews.summary.count || ""}
-                </a>
-              )}
-            </>
+          relatedTabLabel && (
+            <a href="#compatible" className="min-h-12 shrink-0 py-3.5 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
+              {relatedTabLabel}
+            </a>
           )
         }
       />
@@ -228,20 +198,9 @@ export default async function ProductPage({ params }: Props) {
 
       <div id="compatible" className="mt-8 scroll-mt-28">
         <CompatibilitySections sections={product.compatible} />
-
-        {reviews && <ProductReviews slug={slug} initial={reviews} />}
       </div>
 
       <StickyBuyBar product={product} />
     </main>
   );
-}
-
-
-// #573: отзывы — best-effort SSR (флаг off/ошибка → null → секции нет).
-async function fetchProductReviewsSafe(slug: string) {
-  const base = process.env.INTERNAL_API_BASE_URL;
-  if (!base) return null;
-  const { fetchProductReviewsFromApi } = await import("@/lib/adapters");
-  return fetchProductReviewsFromApi(base.replace(/\/$/, ""), slug);
 }

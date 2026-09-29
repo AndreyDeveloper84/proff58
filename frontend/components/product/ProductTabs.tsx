@@ -14,7 +14,7 @@ export type ProductTab = {
 
 // Все id, которые считаются «хэшем вкладки», — даже если у товара такой вкладки нет.
 // Хэш отсутствующей вкладки (#description у товара без описания) открывает «О товаре»;
-// любой другой хэш (#reviews, #compatible) принадлежит странице, и вкладку он не трогает.
+// любой другой хэш (#compatible, #buybox-anchor) принадлежит странице, и вкладку он не трогает.
 const TAB_HASHES: readonly ProductTabId[] = ["overview", "characteristics", "description"];
 
 function readTabHash(): ProductTabId | null {

@@ -5,7 +5,7 @@
 со счётчиками, каждая ведёт в уже отфильтрованный список.
 
 Почему в `config/`, а не в `apps/core/`: карточки читают каталог, заказы, заявки
-и отзывы, а ядро по правилу зависимостей (CLAUDE.md §4) не зависит ни от кого.
+и журнал обмена с 1С, а ядро по правилу зависимостей (CLAUDE.md §4) не зависит ни от кого.
 `config` — слой сборки проекта, ему знать обо всех приложениях можно.
 
 Числа берутся из `apps.catalog.queues` — того же кода, что стоит за фильтрами
@@ -98,7 +98,6 @@ def _catalog_group():
 
 def _requests_group():
     from apps.leads.models import InquiryStatus, ProductInquiry
-    from apps.reviews.models import Review, ReviewStatus
     from apps.sync_1c.models import SyncLog
 
     return {
@@ -110,12 +109,6 @@ def _requests_group():
                 f"/admin/leads/productinquiry/?status__exact={InquiryStatus.NEW}",
                 tone="danger",
                 hint="Человек оставил телефон и ждёт звонка",
-            ),
-            _card(
-                "Отзывы на модерации",
-                Review.objects.filter(status=ReviewStatus.PENDING).count(),
-                f"/admin/reviews/review/?status__exact={ReviewStatus.PENDING}",
-                tone="warning",
             ),
             _card(
                 "Ошибки обмена с 1С",

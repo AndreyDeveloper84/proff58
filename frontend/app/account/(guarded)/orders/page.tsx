@@ -1,11 +1,10 @@
 "use client";
 
-import { useStorefront } from "@/components/site/StorefrontProvider";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronRight, ClipboardList, Clock3, RotateCcw, Star } from "lucide-react";
+import { ChevronRight, ClipboardList, Clock3, RotateCcw } from "lucide-react";
 import { AccountShell } from "@/components/account/AccountShell";
 import { canPayOnline } from "@/components/order/PayOrderButton";
 import { reservationState } from "@/components/order/ReservationNotice";
@@ -36,7 +35,6 @@ function orderMatchesTab(order: Order, tab: OrderTab) {
 }
 
 export default function OrdersPage() {
-  const { reviewsEnabled } = useStorefront();
   const router = useRouter();
   const pathname = usePathname();
   const [orders, setOrders] = useState<Order[] | null>(null);
@@ -225,19 +223,6 @@ export default function OrdersPage() {
                   >
                     <RotateCcw className="h-4 w-4" aria-hidden />
                     Повторить заказ
-                  </Link>
-                )}
-                {/* #574: «Оставить отзыв» была только внутри заказа — из списка
-                    доставленных заказов путь к отзыву не просматривался.
-                    Форма живёт на странице заказа, поэтому ведём туда якорем.
-                    #573 B2B: юрлицам отзывы в Wave 1 недоступны — путь скрыт. */}
-                {reviewsEnabled && isDelivered(order) && order.customer_type !== "b2b" && (
-                  <Link
-                    href={`/account/orders/${encodeURIComponent(order.order_number)}#review`}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-line px-4 text-sm font-semibold text-ink transition hover:bg-raised sm:h-10"
-                  >
-                    <Star className="h-4 w-4" aria-hidden />
-                    Оставить отзыв
                   </Link>
                 )}
                 <Link

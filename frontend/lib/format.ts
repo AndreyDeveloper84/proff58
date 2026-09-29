@@ -33,9 +33,9 @@ export function pluralize(n: number, one: string, few: string, many: string): st
 }
 
 // #574: единые форматы даты. Раньше каждая страница объявляла свой хелпер, и один
-// и тот же отзыв в кабинете и на карточке товара датировался по-разному.
+// и та же дата в кабинете и на карточке товара выглядела по-разному.
 
-/** Дата → «21.07.2026». Для списков, карточек, дат отзыва. */
+/** Дата → «21.07.2026». Для списков и карточек. */
 export function formatDate(value: string): string {
   return new Date(value).toLocaleDateString("ru-RU", {
     day: "2-digit",

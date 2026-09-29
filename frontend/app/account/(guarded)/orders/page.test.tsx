@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// #574: список заказов показывает резерв и путь к отзыву, а сбой загрузки
+// #574: список заказов показывает резерв, а сбой загрузки
 // не выдаётся за «заказов пока нет».
 const pushMock = vi.fn();
 const replaceMock = vi.fn();
@@ -15,14 +15,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 import { checkAuth, getOrders } from "@/lib/auth";
-import { StorefrontProvider } from "@/components/site/StorefrontProvider";
-import { resolveStorefront } from "@/lib/site";
 import OrdersPage from "./page";
-
-// T4: путь к отзыву есть только при включённом разделе отзывов.
-const withReviews = (ui: React.ReactElement) => (
-  <StorefrontProvider value={resolveStorefront({ features: { reviews: true } })}>{ui}</StorefrontProvider>
-);
 
 const mockedGetMe = checkAuth as unknown as ReturnType<typeof vi.fn>;
 const mockedGetOrders = getOrders as unknown as ReturnType<typeof vi.fn>;
@@ -87,30 +80,12 @@ describe("OrdersPage (#574)", () => {
     expect(await screen.findByText(/Время резерва истекло/)).toBeTruthy();
   });
 
-  it("у доставленного заказа есть путь к отзыву", async () => {
-    mockedGetOrders.mockResolvedValue([
-      order({ fulfillment_status: "completed", payment_status: "paid" }),
-    ]);
-    render(withReviews(<OrdersPage />));
-    const link = await screen.findByRole("link", { name: /Оставить отзыв/ });
-    expect(link.getAttribute("href")).toBe("/account/orders/%D0%9F-1#review");
-  });
-
-  it("T4: при выключенном разделе отзывов пути к отзыву нет", async () => {
+  // DRF-2635: раздел отзывов убран с сайта — пути к отзыву нет ни у одного заказа.
+  it("у доставленного заказа нет пути к отзыву", async () => {
     mockedGetOrders.mockResolvedValue([
       order({ fulfillment_status: "completed", payment_status: "paid" }),
     ]);
     render(<OrdersPage />);
-    await screen.findByRole("link", { name: /Открыть заказ/ });
-    expect(screen.queryByRole("link", { name: /Оставить отзыв/ })).toBeNull();
-  });
-
-  it("#573 B2B: у доставленного заказа юрлица пути к отзыву нет", async () => {
-    mockedGetOrders.mockResolvedValue([
-      order({ fulfillment_status: "completed", payment_status: "paid", customer_type: "b2b" }),
-    ]);
-    render(<OrdersPage />);
-    // «Открыть заказ» есть — значит карточка отрисовалась; «Оставить отзыв» — нет.
     await screen.findByRole("link", { name: /Открыть заказ/ });
     expect(screen.queryByRole("link", { name: /Оставить отзыв/ })).toBeNull();
   });

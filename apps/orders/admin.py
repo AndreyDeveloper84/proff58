@@ -493,7 +493,7 @@ class OrderAdmin(TimestampColumnsMixin, admin.ModelAdmin):
         """Заказ из админки не удаляется никем, включая суперпользователя (DRF-2300).
 
         Заказ — история продажи: от него каскадом уходят платежи и чеки
-        (`payments.Payment`, `RefundRequest`), отзыв, строки и счёт B2B, а по номеру
+        (`payments.Payment`, `RefundRequest`), строки и счёт B2B, а по номеру
         его знает 1С. Ненужный заказ отменяют через кнопку перехода
         (`advance_view` → `advance_fulfillment`), которая снимает резерв ровно один
         раз. Возврат `False` убирает кнопку в карточке, вырезает `delete_selected`

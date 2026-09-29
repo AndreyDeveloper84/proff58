@@ -64,7 +64,6 @@ class SiteSettings(TimeStampedModel):
     region = models.CharField(_("Регион"), max_length=100, default="Пенза")
 
     # --- Бизнес-feature-флаги (переключаются администратором) ---
-    reviews_enabled = models.BooleanField(_("Отзывы"), default=False)
     b2b_enabled = models.BooleanField(_("B2B-кабинет"), default=True)
     promotions_enabled = models.BooleanField(_("Акции"), default=False)
     articles_enabled = models.BooleanField(_("Статьи/новости"), default=False)
