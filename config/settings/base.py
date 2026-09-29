@@ -187,7 +187,6 @@ JAZZMIN_SETTINGS = {
         "payments",  # возвраты денег — часть работы с заказами, а не служебный журнал
         "catalog",
         "leads",
-        "reviews",
         "content",
         "promotions",
         "delivery",
@@ -237,7 +236,6 @@ JAZZMIN_SETTINGS = {
         "catalog.attribute": "fas fa-ruler-combined",
         "catalog.categorymappingrule": "fas fa-shuffle",
         "leads.productinquiry": "fas fa-comment-dots",
-        "reviews.review": "fas fa-star",
         "content.article": "fas fa-newspaper",
         "content.banner": "fas fa-image",
         "content.promotion": "fas fa-bullhorn",
@@ -393,8 +391,6 @@ REST_FRAMEWORK = {
         # #427 (M-03): чувствительные auth-эндпоинты (login/register/OTP/смена
         # телефона) — низкий лимит против брутфорса пароля и enumeration телефонов.
         "auth": env("AUTH_THROTTLE_RATE", default="10/min"),
-        # #573: создание отзывов (антиспам очереди модерации).
-        "reviews": env("REVIEWS_THROTTLE_RATE", default="10/hour"),
         # #517: подписка/отписка «Сообщить о поступлении» (только authenticated).
         "subscription": env("SUBSCRIPTION_THROTTLE_RATE", default="30/min"),
         # DRF-2298: сброс пароля — второй ключ по адресу поверх IP-лимита auth.
@@ -558,7 +554,7 @@ DELIVERY_SLOT_HORIZON_DAYS = env.int("DELIVERY_SLOT_HORIZON_DAYS", default=14)
 METRICS_TOKEN = env("METRICS_TOKEN", default="")
 
 # Feature-флаги. Инфраструктурные — здесь (через env, меняют разработчики).
-# Бизнес-флаги (reviews/b2b/...) живут в SiteSettings. Проверка — через
+# Бизнес-флаги (b2b/promotions/...) живут в SiteSettings. Проверка — через
 # apps.core.features.is_enabled(); механизм поддерживает override любого флага
 # через этот словарь.
 FEATURES = {

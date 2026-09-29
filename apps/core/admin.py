@@ -20,7 +20,6 @@ class SiteSettingsForm(forms.ModelForm):
             "accent_color",
             "requisites",
             "region",
-            "reviews_enabled",
             "b2b_enabled",
             "promotions_enabled",
             "articles_enabled",
@@ -83,7 +82,6 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             _("Бизнес-модули (feature-флаги)"),
             {
                 "fields": (
-                    "reviews_enabled",
                     "b2b_enabled",
                     "promotions_enabled",
                     "articles_enabled",

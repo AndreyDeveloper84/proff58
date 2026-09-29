@@ -30,18 +30,25 @@ def test_flag_name_normalized():
 
 @pytest.mark.django_db
 def test_business_flag_from_db():
-    assert is_enabled("reviews") is False  # дефолт SiteSettings
+    assert is_enabled("promotions") is False  # дефолт SiteSettings
     s = SiteSettings.get_solo()
-    s.reviews_enabled = True
+    s.promotions_enabled = True
     s.save()
-    assert is_enabled("reviews") is True
+    assert is_enabled("promotions") is True
 
 
-@override_settings(FEATURES={"reviews": True})
+@override_settings(FEATURES={"promotions": True})
 @pytest.mark.django_db
 def test_business_flag_env_override_beats_db():
     # В БД выключен, но env-override включает — подтверждает двухуровневость.
     s = SiteSettings.get_solo()
-    s.reviews_enabled = False
+    s.promotions_enabled = False
     s.save()
-    assert is_enabled("reviews") is True
+    assert is_enabled("promotions") is True
+
+
+@pytest.mark.django_db
+def test_флага_отзывов_больше_нет():
+    """DRF-2635: раздел отзывов убран с сайта целиком — флаг не существует."""
+    assert is_enabled("reviews") is False
+    assert not hasattr(SiteSettings.get_solo(), "reviews_enabled")

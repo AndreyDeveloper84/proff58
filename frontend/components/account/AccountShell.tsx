@@ -1,6 +1,5 @@
 "use client";
 
-import { useStorefront } from "@/components/site/StorefrontProvider";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -12,7 +11,6 @@ import {
   Heart,
   Home,
   MapPin,
-  Star,
   UserRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -41,15 +39,6 @@ const PRIMARY_NAV: NavItem[] = [
   // Избранное живёт на витрине (/wishlist) — оно доступно и без аккаунта.
   { label: "Избранное", href: "/wishlist", icon: Heart, match: "/wishlist" },
 ];
-
-// T4: пункт «Отзывы» есть только при включённом разделе (SiteSettings.reviews_enabled);
-// выключенный раздел не показываем вовсе — маршрут отдаёт 404.
-const REVIEWS_NAV: NavItem = {
-  label: "Отзывы",
-  href: "/account/reviews",
-  icon: Star,
-  match: "/account/reviews",
-};
 
 const SETTINGS_NAV: NavItem[] = [
   {
@@ -86,8 +75,7 @@ function SidebarLink({ item, active }: { item: NavItem; active: boolean }) {
 }
 
 function AccountSidebar({ pathname }: { pathname: string }) {
-  const { reviewsEnabled } = useStorefront();
-  const primaryNav = reviewsEnabled ? [...PRIMARY_NAV, REVIEWS_NAV] : PRIMARY_NAV;
+  const primaryNav = PRIMARY_NAV;
   const isActive = (item: NavItem) =>
     Boolean(item.match && (pathname === item.match || pathname.startsWith(`${item.match}/`)));
 

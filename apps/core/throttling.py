@@ -80,12 +80,6 @@ class SubscriptionRateThrottle(_FixedScopeThrottle):
     scope = "subscription"
 
 
-class ReviewsRateThrottle(_FixedScopeThrottle):
-    """Лимит создания отзывов по IP (scope `reviews`, #573) — антиспам модерации."""
-
-    scope = "reviews"
-
-
 class DeliveryQuoteRateThrottle(_FixedScopeThrottle):
     """Лимит расчёта доставки СДЭК по IP (scope `delivery_quote`, DRF-2299):
     каждый расчёт — платные для нас запросы к API перевозчика."""

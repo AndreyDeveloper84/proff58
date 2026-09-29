@@ -4,7 +4,7 @@
 - **Инфраструктурные** флаги (`crm`, `ai`, `eventbus`, `external_integrations`) —
   задаются через окружение (`settings.FEATURES`, см. config/settings/base.py).
   Меняют разработчики на деплое.
-- **Бизнес**-флаги (`reviews`, `b2b`, `promotions`, `articles`, `max_chat`,
+- **Бизнес**-флаги (`b2b`, `promotions`, `articles`, `max_chat`,
   `ai_assist`, `video_reviews`) — хранятся в `SiteSettings` и переключаются
   администратором в рантайме.
 
@@ -23,7 +23,6 @@ from django.conf import settings
 
 #: Бизнес-флаги хранятся в SiteSettings как поля `<flag>_enabled`.
 _BUSINESS = (
-    "reviews",
     "b2b",
     "promotions",
     "articles",

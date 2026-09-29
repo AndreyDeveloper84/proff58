@@ -30,7 +30,6 @@ def test_site_settings_defaults():
     # T3: контакты засеяны миграцией 0003 из прежних констант витрины.
     assert s.contacts["phone_display"] == "8 (8412) 20-20-87" and s.requisites == {}
     assert s.b2b_enabled is True
-    assert s.reviews_enabled is False
 
 
 @pytest.mark.django_db

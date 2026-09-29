@@ -60,8 +60,7 @@ def test_api_темы_отдаёт_контакты():
 
 
 @pytest.mark.django_db
-def test_api_темы_отдаёт_флаг_отзывов_и_он_выключен_миграцией():
-    s = SiteSettings.get_solo()
-    assert s.reviews_enabled is False
+def test_api_темы_без_флага_отзывов():
+    """DRF-2635: раздел отзывов убран — в теме больше нет ни флага, ни блока features."""
     data = APIClient().get("/api/core/theme/").json()
-    assert data["features"] == {"reviews": False}
+    assert "features" not in data

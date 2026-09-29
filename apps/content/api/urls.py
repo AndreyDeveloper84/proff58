@@ -4,7 +4,7 @@ from . import views
 
 app_name = "content_api"
 
-_SLUG = r"(?P<slug>[-\w]+)"  # как в catalog/reviews: кириллические slug допустимы
+_SLUG = r"(?P<slug>[-\w]+)"  # как в catalog: кириллические slug допустимы
 
 urlpatterns = [
     path("pages/", views.InfoPageListView.as_view(), name="info-pages"),

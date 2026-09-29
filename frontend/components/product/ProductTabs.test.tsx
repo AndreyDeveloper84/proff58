@@ -172,11 +172,11 @@ describe("ProductTabs", () => {
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
   });
 
-  it("чужой хэш (#reviews, #compatible) вкладку не сбрасывает", () => {
+  it("чужой хэш (#compatible) вкладку не сбрасывает", () => {
     renderTabs();
     fireEvent.click(tab("Характеристики"));
     act(() => {
-      setHash("#reviews");
+      setHash("#compatible");
       window.dispatchEvent(new HashChangeEvent("hashchange"));
       setHash("#compatible");
       window.dispatchEvent(new PopStateEvent("popstate"));
@@ -186,15 +186,15 @@ describe("ProductTabs", () => {
   });
 
   it("чужой хэш при загрузке оставляет «О товаре»", () => {
-    setHash("#reviews");
+    setHash("#compatible");
     renderTabs();
     expect(visiblePanels().map((p) => p.id)).toEqual(["overview"]);
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
-  it("ссылки «Совместимость»/«Отзывы» стоят вне tablist", () => {
-    renderTabs(<a href="#reviews">Отзывы 3</a>);
-    const link = screen.getByRole("link", { name: "Отзывы 3" });
+  it("ссылка «Смотрите также» стоит вне tablist", () => {
+    renderTabs(<a href="#compatible">Смотрите также</a>);
+    const link = screen.getByRole("link", { name: "Смотрите также" });
     expect(screen.getByRole("tablist")).not.toContainElement(link);
   });
 });
