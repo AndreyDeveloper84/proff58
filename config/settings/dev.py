@@ -13,6 +13,8 @@ REST_FRAMEWORK = {
         "orders": None,
         "anon": None,  # #279: отключено в dev/тестах
         "auth": None,
+        "account_delete": None,  # DRF-2497: ключ по пользователю переживал бы тесты
+        "reauth": None,
         "password_reset_email": None,  # DRF-2298: то же — кэш по адресу переживал бы тесты
     },
 }

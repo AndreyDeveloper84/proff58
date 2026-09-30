@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import unicodedata
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.contrib.auth import login
 from django.http import HttpResponseRedirect, JsonResponse
@@ -20,6 +20,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 from rest_framework.settings import api_settings
 
+from apps.accounts import reauth
 from apps.core.throttling import AuthRateThrottle
 
 from . import pending, providers, services
@@ -94,10 +95,18 @@ def _profile_redirect(**params) -> HttpResponseRedirect:
     return HttpResponseRedirect(f"{PROFILE_PAGE}?{urlencode(params)}")
 
 
+def with_query(url: str, **params) -> str:
+    """Добавить параметры к адресу, в котором уже может быть свой query."""
+    parts = urlsplit(url)
+    query = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True) if k not in params]
+    query += list(params.items())
+    return urlunsplit(parts._replace(query=urlencode(query)))
+
+
 def _fail(entry: dict, provider: str, code: str) -> HttpResponseRedirect:
-    """Ошибка колбэка: привязка возвращает в профиль, вход — на страницу входа."""
+    """Ошибка колбэка: привязка и подтверждение возвращают в профиль, вход — на страницу входа."""
     services.emit("oauth_login_failed", provider=provider, intent=entry.get("intent"), reason=code)
-    if entry.get("intent") == "link":
+    if entry.get("intent") in ("link", "reauth"):
         return _profile_redirect(oauth_error=code)
     return _login_error(code, provider=provider, next_url=entry.get("next") or "")
 
@@ -201,9 +210,13 @@ def callback(request, provider: str):
         return _fail(entry, provider, "unavailable")
 
     is_link = entry.get("intent") == "link"
-    if is_link and not (request.user.is_authenticated and request.user.pk == entry.get("user_id")):
+    is_reauth = entry.get("intent") == "reauth"
+    same_user = request.user.is_authenticated and request.user.pk == entry.get("user_id")
+    if is_link and not same_user:
         # Привязку начинал другой пользователь или сессия уже вышла — не обмениваем код.
         return _fail(entry, provider, "link_expired")
+    if is_reauth and not same_user:
+        return _fail(entry, provider, "reauth_expired")
 
     if not params["code"] or (provider == VKID and not params["device_id"]):
         return _fail(entry, provider, "failed")
@@ -219,6 +232,21 @@ def callback(request, provider: str):
     except OAuthProviderError as exc:
         logger.warning("OAuth %s: вход не удался (%s)", provider, exc.code)
         return _fail(entry, provider, "failed")
+
+    if is_reauth:
+        # DRF-2497: подтверждение личности из кабинета. Никого не впускаем и не
+        # создаём: засчитывается только аккаунт провайдера, уже привязанный к
+        # пользователю этой сессии. Выбрал в окне провайдера другой аккаунт — отказ.
+        if not services.confirm_identity(request.user, profile):
+            return _fail(entry, provider, "reauth_mismatch")
+        reauth.mark_verified(request, method=reauth.EXTERNAL)
+        services.emit("oauth_reauth_completed", user=request.user, provider=provider)
+        redirect_to = with_query(entry.get("next") or DEFAULT_NEXT, reauth="ok")
+        # Повторная загрузка колбэка (обновление страницы) — тот же адрес, без обмена.
+        pending.remember_done(
+            request.session, state=state, redirect_to=redirect_to, user_id=request.user.pk
+        )
+        return HttpResponseRedirect(redirect_to)
 
     if is_link:
         result = services.link_account(request.user, profile)

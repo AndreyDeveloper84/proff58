@@ -5,9 +5,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/api", async () => {
   class ApiError extends Error {
     status: number;
-    constructor(message: string, status: number) {
+    code?: string;
+    constructor(message: string, status: number, code?: string) {
       super(message);
       this.status = status;
+      this.code = code;
     }
   }
   return { ApiError, apiFetch: vi.fn() };
@@ -22,6 +24,8 @@ import {
   loginHref,
   getOrder,
   getOrders,
+  isReauthRequired,
+  isReauthValid,
   login,
   logout,
   removeWishlistItem,
@@ -162,5 +166,23 @@ describe("auth client (M-11)", () => {
       method: "POST",
       body: JSON.stringify({ password: "secret" }),
     });
+  });
+});
+
+// DRF-2497: признак «сначала подтвердите, что это вы» и срок подтверждения.
+describe("подтверждение личности", () => {
+  it("reauth_required распознаётся только по коду ответа", () => {
+    expect(isReauthRequired(new ApiError("x", 403, "reauth_required"))).toBe(true);
+    expect(isReauthRequired(new ApiError("x", 403))).toBe(false);
+    expect(isReauthRequired(new Error("reauth_required"))).toBe(false);
+  });
+
+  it("подтверждение действует до срока из ответа сервера", () => {
+    const soon = new Date(Date.now() + 60_000).toISOString();
+    const past = new Date(Date.now() - 1_000).toISOString();
+    expect(isReauthValid({ reauth_valid_until: soon })).toBe(true);
+    expect(isReauthValid({ reauth_valid_until: past })).toBe(false);
+    expect(isReauthValid({ reauth_valid_until: null })).toBe(false);
+    expect(isReauthValid(null)).toBe(false);
   });
 });

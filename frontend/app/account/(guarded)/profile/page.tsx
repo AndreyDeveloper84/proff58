@@ -26,6 +26,7 @@ import { AccountDialog } from "@/components/account/AccountDialog";
 import { AccountShell } from "@/components/account/AccountShell";
 import { MaxLinkCard } from "@/components/account/MaxLinkCard";
 import { OAuthLinksCard } from "@/components/account/OAuthLinksCard";
+import { ReauthPanel } from "@/components/account/ReauthPanel";
 import { NotificationPreferencesCard } from "@/components/account/NotificationPreferencesCard";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,8 @@ import {
   getMe,
   getOrders,
   getWishlist,
+  isReauthRequired,
+  isReauthValid,
   loginHref,
   logout,
   updateMe,
@@ -120,6 +123,33 @@ export default function ProfilePage() {
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteSaving, setDeleteSaving] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  // DRF-2497: сервер попросил подтвердить личность (reauth_required) — в диалоге
+  // появляется панель «Подтвердите, что это вы»; после подтверждения — подсказка
+  // нажать кнопку ещё раз (само действие без человека не повторяем).
+  const [deleteReauth, setDeleteReauth] = useState(false);
+  const [deleteNotice, setDeleteNotice] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+  const [editReauth, setEditReauth] = useState(false);
+  const [editNotice, setEditNotice] = useState("");
+
+  // Возврат от VK ID / Яндекс ID после подтверждения: ?resume=delete|edit&reauth=ok.
+  // «Подтверждено» показываем, только если так считает сервер (reauth_valid_until),
+  // а не потому, что в адресе написано reauth=ok (DRF-2497).
+  const applyResume = (loaded: AccountUser) => {
+    const params = new URLSearchParams(window.location.search);
+    const resume = params.get("resume");
+    if (!resume) return;
+    for (const key of ["resume", "reauth"]) params.delete(key);
+    const query = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+    if (!isReauthValid(loaded)) return;
+    if (resume === "delete") {
+      setDeleteNotice("Вход подтверждён. Теперь аккаунт можно удалить.");
+      setDeleteOpen(true);
+    } else if (resume === "edit") {
+      setNotice("Вход подтверждён. Теперь можно сменить e-mail в «Редактировать профиль».");
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -140,6 +170,7 @@ export default function ProfilePage() {
         const [orderData, wishlistData] = await Promise.all([getOrders(), getWishlist()]);
         if (!active) return;
         setUser(data);
+        applyResume(data);
         // #574: сбой загрузки не превращаем в «0 заказов» — счётчики врали бы.
         if (orderData === "error") setOrdersFailed(true);
         else setOrders(orderData);
@@ -168,6 +199,9 @@ export default function ProfilePage() {
       legal_address: user.profile?.legal_address ?? "",
     });
     setEditError("");
+    setEditPassword("");
+    setEditReauth(false);
+    setEditNotice("");
     setEditOpen(true);
   };
 
@@ -201,13 +235,23 @@ export default function ProfilePage() {
       setEditError("Для организации с ИНН из 10 цифр укажите КПП.");
       return;
     }
+    // DRF-2497: e-mail — это логин и адрес сброса пароля; сервер меняет его только
+    // после подтверждения личности (у кого пароль — текущим паролем).
+    const emailChanged = email.toLowerCase() !== (user.email ?? "").toLowerCase();
+    const askPassword = emailChanged && Boolean(user.has_password) && !isReauthValid(user);
+    if (askPassword && !editPassword) {
+      setEditError("Чтобы сменить e-mail, введите текущий пароль.");
+      return;
+    }
 
     setEditSaving(true);
     setEditError("");
+    setEditNotice("");
     try {
       const updated = await updateMe({
         full_name: profileForm.full_name.trim(),
         email,
+        ...(askPassword ? { current_password: editPassword } : {}),
         customer_type: profileForm.customer_type,
         ...(becomesCompany
           ? {
@@ -222,9 +266,14 @@ export default function ProfilePage() {
       });
       setUser(updated);
       setEditOpen(false);
+      setEditPassword("");
       setNotice("Данные профиля сохранены.");
     } catch (caught) {
-      setEditError(caught instanceof Error ? caught.message : "Не удалось сохранить профиль.");
+      if (isReauthRequired(caught) && !user.has_password) {
+        setEditReauth(true);
+      } else {
+        setEditError(caught instanceof Error ? caught.message : "Не удалось сохранить профиль.");
+      }
     } finally {
       setEditSaving(false);
     }
@@ -266,11 +315,16 @@ export default function ProfilePage() {
     if (user.has_password && !deletePassword) return;
     setDeleteSaving(true);
     setDeleteError("");
+    setDeleteNotice("");
     try {
       await deleteAccount(user.has_password ? deletePassword : undefined);
       router.push("/");
     } catch (caught) {
-      setDeleteError(caught instanceof Error ? caught.message : "Не удалось удалить аккаунт.");
+      if (isReauthRequired(caught) && !user.has_password) {
+        setDeleteReauth(true);
+      } else {
+        setDeleteError(caught instanceof Error ? caught.message : "Не удалось удалить аккаунт.");
+      }
       setDeleteSaving(false);
     }
   };
@@ -633,7 +687,7 @@ export default function ProfilePage() {
           )}
 
           <MaxLinkCard />
-          <OAuthLinksCard />
+          <OAuthLinksCard hasPassword={Boolean(user.has_password)} />
           <NotificationPreferencesCard />
         </section>
 
@@ -657,6 +711,8 @@ export default function ProfilePage() {
               onClick={() => {
                 setDeleteConfirmation("");
                 setDeleteError("");
+                setDeleteReauth(false);
+                setDeleteNotice("");
                 setDeleteOpen(true);
               }}
               className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-danger/40 px-4 text-sm font-semibold text-danger transition hover:bg-danger/10"
@@ -710,6 +766,36 @@ export default function ProfilePage() {
               )}
             </Field>
           </div>
+          {user.has_password &&
+            !isReauthValid(user) &&
+            profileForm.email.trim().toLowerCase() !== (user.email ?? "").toLowerCase() && (
+              <Field label="Текущий пароль — для смены e-mail" required>
+                {(control) => (
+                  <Input
+                    {...control}
+                    type="password"
+                    value={editPassword}
+                    onChange={(event) => setEditPassword(event.target.value)}
+                    autoComplete="current-password"
+                  />
+                )}
+              </Field>
+            )}
+          {editReauth && (
+            <ReauthPanel
+              hasPassword={false}
+              next="/account/profile?resume=edit"
+              onVerified={() => {
+                setEditReauth(false);
+                setEditNotice("Подтверждено. Нажмите «Сохранить» ещё раз.");
+              }}
+            />
+          )}
+          {editNotice && (
+            <p role="status" className="rounded-md bg-accent/10 px-3 py-2 text-sm text-ink">
+              {editNotice}
+            </p>
+          )}
 
           {/* Тип покупателя правится здесь: раньше он был неизменяем, и физлицо,
               начавшее покупать от компании, могло сменить его только через
@@ -952,6 +1038,21 @@ export default function ProfilePage() {
                 />
               )}
             </Field>
+          )}
+          {deleteReauth && (
+            <ReauthPanel
+              hasPassword={false}
+              next="/account/profile?resume=delete"
+              onVerified={() => {
+                setDeleteReauth(false);
+                setDeleteNotice("Подтверждено. Нажмите «Удалить навсегда» ещё раз.");
+              }}
+            />
+          )}
+          {deleteNotice && (
+            <p role="status" className="rounded-md bg-accent/10 px-3 py-2 text-sm text-ink">
+              {deleteNotice}
+            </p>
           )}
           {deleteError && (
             <p

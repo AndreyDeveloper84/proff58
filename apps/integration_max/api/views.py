@@ -11,7 +11,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.throttling import AuthRateThrottle
+from apps.accounts import reauth
+from apps.core.throttling import AuthRateThrottle, ReauthThrottle
 
 from .. import services
 from ..models import MaxAccount, MaxAuthAttempt
@@ -88,14 +89,29 @@ class MaxAuthStatusView(APIView):
         # attempt.user is None для завершённых track_order-попыток (#520, гость без
         # аккаунта) — раньше у любой COMPLETED попытки user был гарантирован, этот
         # инвариант больше не всегда верен, здесь его нельзя молча предполагать.
+        completed = attempt.status == MaxAuthAttempt.Status.COMPLETED
         if (
-            attempt.status == MaxAuthAttempt.Status.COMPLETED
+            completed
+            and attempt.operation_type == MaxAuthAttempt.Operation.LOGIN
             and not request.user.is_authenticated
             and attempt.user is not None
         ):
             user = attempt.user
             user.backend = _AUTH_BACKEND
             login(request, user)
+        elif (
+            completed
+            and attempt.operation_type == MaxAuthAttempt.Operation.CONFIRM_LOGIN
+            and request.user.is_authenticated
+            and attempt.user_id == request.user.pk
+        ):
+            # DRF-2497: личность подтверждена в MAX. Время — момент подтверждения, а не
+            # опроса: повторный опрос той же попытки окно не продлевает. Ключ сессии
+            # здесь не меняем — опрос идёт параллельно с другими запросами кабинета,
+            # и ротация разлогинила бы те, что ушли со старой кукой.
+            reauth.mark_verified(
+                request, method=reauth.EXTERNAL, at=attempt.completed_at, rotate=False
+            )
 
         return Response(
             {"status": attempt.status, "failure_reason": attempt.failure_reason or None}
@@ -131,6 +147,33 @@ class MaxLinkStartView(APIView):
         return _start_attempt(
             session_key=session_key,
             operation_type=MaxAuthAttempt.Operation.LINK,
+            user=request.user,
+        )
+
+
+class MaxReauthStartView(APIView):
+    """POST /api/account/max/reauth/ — подтвердить личность через привязанный MAX (DRF-2497).
+
+    Для вошедших без пароля: перед удалением аккаунта, сменой e-mail, привязкой
+    способа входа. Кто с паролем — подтверждает паролем.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AuthRateThrottle, ReauthThrottle]
+
+    def post(self, request):
+        if request.user.has_usable_password():
+            return Response(
+                {"detail": "Подтвердите действие паролем."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if not MaxAccount.objects.filter(user=request.user, is_active=True).exists():
+            return Response(
+                {"detail": "MAX не привязан к аккаунту."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        session_key = _ensure_session_key(request)
+        return _start_attempt(
+            session_key=session_key,
+            operation_type=MaxAuthAttempt.Operation.CONFIRM_LOGIN,
             user=request.user,
         )
 

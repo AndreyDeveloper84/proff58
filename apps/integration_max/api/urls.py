@@ -15,6 +15,7 @@ urlpatterns = [
         "auth/max/<uuid:public_id>/cancel/", views.MaxAuthCancelView.as_view(), name="auth-cancel"
     ),
     path("account/max/link/", views.MaxLinkStartView.as_view(), name="account-link"),
+    path("account/max/reauth/", views.MaxReauthStartView.as_view(), name="account-reauth"),
     path("account/max/unlink/", views.MaxUnlinkView.as_view(), name="account-unlink"),
     path("account/max/status/", views.MaxStatusMeView.as_view(), name="account-status"),
     path(

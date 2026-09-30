@@ -9,5 +9,6 @@ app_name = "integration_oauth_account"
 urlpatterns = [
     path("", views.OAuthAccountsView.as_view(), name="accounts"),
     path("<str:provider>/link/", views.OAuthLinkView.as_view(), name="link"),
+    path("<str:provider>/reauth/", views.OAuthReauthView.as_view(), name="reauth"),
     path("<str:provider>/unlink/", views.OAuthUnlinkView.as_view(), name="unlink"),
 ]

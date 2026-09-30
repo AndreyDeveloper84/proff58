@@ -275,7 +275,11 @@ pytest apps/catalog              # только каталог (~350 тесто�
   (`apps/integration_oauth`): `providers/`, `<provider>/start/`, `<provider>/callback/` —
   Django напрямую, start/callback всегда отвечают 302 (`oauth_error` при ошибке)
 - `/api/account/oauth/` — кабинет: список привязок, `<provider>/link/`,
-  `<provider>/unlink/` (снаружи — только через Next-BFF)
+  `<provider>/unlink/`, `<provider>/reauth/` (снаружи — только через Next-BFF)
+- «Подтвердите, что это вы» (DRF-2497, `apps/accounts/reauth.py`): удаление
+  аккаунта, смена e-mail и привязка входа требуют свежего подтверждения — у кого
+  пароль, только паролем; без пароля — `/api/account/max/reauth/` или
+  `/api/account/oauth/<provider>/reauth/`. Ответ отказа — 403 `reauth_required`.
 - `/healthz/` — health (БД + Redis)
 
 ## 11. Поток работы и стиль
