@@ -7,6 +7,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
+from apps.accounts import reauth
 from apps.accounts.models import Profile
 from apps.accounts.requisites import validate_company_requisites
 
@@ -102,14 +103,34 @@ class UserProfileSerializer(serializers.ModelSerializer):
     # Кабинету нужно знать, спрашивать ли пароль перед удалением аккаунта:
     # у пришедших из MAX пароля нет.
     has_password = serializers.SerializerMethodField()
+    # DRF-2497: до какого момента действует подтверждение личности в этой сессии.
+    # Кабинет верит серверу, а не параметру в адресе: «вход подтверждён» показываем
+    # только при непустом значении. Без request в контексте — null.
+    reauth_valid_until = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ("id", "phone", "email", "full_name", "customer_type", "profile", "has_password")
-        read_only_fields = ("id", "phone", "has_password")
+        fields = (
+            "id",
+            "phone",
+            "email",
+            "full_name",
+            "customer_type",
+            "profile",
+            "has_password",
+            "reauth_valid_until",
+        )
+        read_only_fields = ("id", "phone", "has_password", "reauth_valid_until")
 
     def get_has_password(self, obj) -> bool:
         return obj.has_usable_password()
+
+    def get_reauth_valid_until(self, obj) -> str | None:
+        request = self.context.get("request")
+        if request is None or getattr(request, "user", None) != obj:
+            return None
+        until = reauth.verified_until(request)
+        return until.isoformat() if until else None
 
     def validate_customer_type(self, value):
         if value not in {"b2c", "b2b"}:

@@ -11,10 +11,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.throttling import AuthRateThrottle
+from apps.accounts import reauth
+from apps.core.throttling import AuthRateThrottle, ReauthThrottle
 
 from .. import pending, providers, services
 from ..providers import LABELS, YANDEX
+from ..views import sanitize_next
 
 
 def _unavailable() -> Response:
@@ -50,6 +52,11 @@ class OAuthLinkView(APIView):
                 {"detail": f"{LABELS[provider]} уже привязан к аккаунту."},
                 status=status.HTTP_409_CONFLICT,
             )
+        # DRF-2497: новый способ входа — только после подтверждения личности. Иначе
+        # чужая сессия привязывает свой Яндекс/VK и «подтверждает» им что угодно.
+        denied = reauth.check(request)
+        if denied is not None:
+            return denied
         state, verifier = pending.create(
             request.session,
             provider=provider,
@@ -58,6 +65,42 @@ class OAuthLinkView(APIView):
             user_id=request.user.pk,
         )
         services.emit("oauth_login_started", user=request.user, provider=provider, intent="link")
+        url = providers.authorize_url(
+            provider, state=state, verifier=verifier, force_confirm=provider == YANDEX
+        )
+        return Response({"url": url})
+
+
+class OAuthReauthView(APIView):
+    """POST /api/account/oauth/<provider>/reauth/ — подтвердить личность через провайдера.
+
+    Для вошедших без пароля (DRF-2497). Провайдер должен быть уже привязан; колбэк
+    засчитает только этот же аккаунт провайдера и вернёт на ``next`` с ``reauth=ok``.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AuthRateThrottle, ReauthThrottle]
+
+    def post(self, request, provider):
+        if not providers.is_enabled(provider):
+            return _unavailable()
+        if request.user.has_usable_password():
+            return Response(
+                {"detail": "Подтвердите действие паролем."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if not services.has_linked(request.user, provider):
+            return Response(
+                {"detail": f"{LABELS[provider]} не привязан к аккаунту."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        state, verifier = pending.create(
+            request.session,
+            provider=provider,
+            intent="reauth",
+            next_url=sanitize_next(request.data.get("next")),
+            user_id=request.user.pk,
+        )
+        services.emit("oauth_login_started", user=request.user, provider=provider, intent="reauth")
         url = providers.authorize_url(
             provider, state=state, verifier=verifier, force_confirm=provider == YANDEX
         )

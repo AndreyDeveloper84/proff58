@@ -54,6 +54,32 @@ class AuthRateThrottle(_FixedScopeThrottle):
     scope = "auth"
 
 
+class AccountUserThrottle(_FixedScopeThrottle):
+    """Лимит по ПОЛЬЗОВАТЕЛЮ для опасных действий в кабинете (DRF-2497).
+
+    IP-лимит `auth` не мешает тому, у кого чужая сессия: он перебирает пароль при
+    удалении аккаунта или подтверждении с разных адресов. Ключ — id пользователя,
+    для анонима — IP. Scope задаёт подкласс.
+    """
+
+    def get_cache_key(self, request, view):
+        user = getattr(request, "user", None)
+        ident = f"user:{user.pk}" if user is not None and user.is_authenticated else None
+        return self.cache_format % {"scope": self.scope, "ident": ident or self.get_ident(request)}
+
+
+class AccountDeleteThrottle(AccountUserThrottle):
+    """Удаление аккаунта: попыток на пользователя (scope `account_delete`)."""
+
+    scope = "account_delete"
+
+
+class ReauthThrottle(AccountUserThrottle):
+    """Подтверждение личности паролем/MAX/OAuth из кабинета (scope `reauth`)."""
+
+    scope = "reauth"
+
+
 class PasswordResetEmailThrottle(_FixedScopeThrottle):
     """Лимит запросов сброса пароля ПО АДРЕСУ (scope `password_reset_email`, DRF-2298).
 

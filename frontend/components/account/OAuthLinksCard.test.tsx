@@ -11,6 +11,17 @@ vi.mock("@/lib/oauth", async (importOriginal) => {
   };
 });
 
+vi.mock("@/components/account/ReauthPanel", () => ({
+  ReauthPanel: ({ hasPassword, onVerified }: { hasPassword: boolean; onVerified: () => void }) => (
+    <div>
+      Панель подтверждения · пароль: {String(hasPassword)}
+      <button type="button" onClick={onVerified}>
+        Подтвердить (заглушка)
+      </button>
+    </div>
+  ),
+}));
+
 import { ApiError } from "@/lib/api";
 import { getOAuthAccounts, startOAuthLink, unlinkOAuth, type OAuthAccount } from "@/lib/oauth";
 import { OAuthLinksCard } from "./OAuthLinksCard";
@@ -95,6 +106,24 @@ describe("OAuthLinksCard", () => {
       "Яндекс ID уже привязан к этому аккаунту.",
     );
     expect(screen.getByRole("button", { name: "Привязать Яндекс ID" })).toBeEnabled();
+  });
+
+  it("DRF-2497: привязка без подтверждения — панель, после подтверждения повтор", async () => {
+    mockedLink.mockImplementationOnce(() =>
+      Promise.reject(new ApiError("Подтвердите, что это вы", 403, "reauth_required")),
+    );
+    render(<OAuthLinksCard hasPassword />);
+    fireEvent.click(await screen.findByRole("button", { name: "Привязать Яндекс ID" }));
+
+    expect(await screen.findByText(/Панель подтверждения · пароль: true/)).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    stubAssign();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Подтвердить (заглушка)" }));
+    });
+    expect(mockedLink).toHaveBeenCalledTimes(2);
+    expect(assignMock).toHaveBeenCalledWith("https://oauth.yandex.ru/authorize?x=1");
   });
 
   it("«Отвязать» зовёт unlink и перечитывает список", async () => {

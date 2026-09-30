@@ -29,6 +29,8 @@ export type AccountUser = {
   profile: AccountProfile | null;
   /** false — вход только через MAX, пароля нет (нечего спрашивать при удалении). */
   has_password?: boolean;
+  /** DRF-2497: до какого момента в этой сессии действует подтверждение личности; null — нет. */
+  reauth_valid_until?: string | null;
 };
 
 export type AccountUserPatch = {
@@ -39,6 +41,8 @@ export type AccountUserPatch = {
   // организацию сервер примет только вместе с реквизитами.
   customer_type?: "b2c" | "b2b";
   profile?: Partial<AccountProfile>;
+  /** Текущий пароль — сервер спрашивает его при смене e-mail (DRF-2497). */
+  current_password?: string;
 };
 
 export type WishlistItem = {
@@ -158,6 +162,25 @@ export async function deleteAccount(password?: string): Promise<void> {
   });
 }
 
+/** Ответ сервера «сначала подтвердите, что это вы» (DRF-2497). */
+export function isReauthRequired(error: unknown): boolean {
+  return error instanceof ApiError && error.code === "reauth_required";
+}
+
+/** Действует ли подтверждение личности, по данным сервера (а не адресной строки). */
+export function isReauthValid(user: Pick<AccountUser, "reauth_valid_until"> | null): boolean {
+  const until = user?.reauth_valid_until;
+  return Boolean(until) && new Date(until as string).getTime() > Date.now();
+}
+
+/** Подтвердить личность паролем — для действий без поля пароля в форме. */
+export async function reauthPassword(password: string): Promise<void> {
+  await apiFetch("/api/account/reauth/password", {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}
+
 // --- Авторизация через MAX (deeplink + one-time attempt, #492) ---
 
 export type MaxAttempt = {
@@ -177,6 +200,12 @@ export async function maxStart() {
 // Старт привязки MAX к текущему аккаунту (из ЛК).
 export async function maxLinkStart() {
   return apiFetch<MaxAttempt>("/api/account/max/link", { method: "POST" });
+}
+
+// Подтверждение личности привязанным MAX (DRF-2497): попытка без входа и без
+// привязки; статус — общий, после completed сервер отмечает сессию.
+export async function maxReauthStart() {
+  return apiFetch<MaxAttempt>("/api/account/max/reauth", { method: "POST" });
 }
 
 export async function maxStatus(attemptId: string) {

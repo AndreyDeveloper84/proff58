@@ -26,6 +26,7 @@ _FAIL_TEXT = {
     "phone_mismatch": "Номер MAX не совпадает с номером аккаунта.",
     "attempt_not_pending": "Ссылка недействительна или истекла. Начните вход заново.",
     "bad_phone": "Не удалось определить номер телефона.",
+    "reauth_mismatch": "Этот MAX не привязан к аккаунту, из которого вы подтверждаете действие.",
 }
 # #520: track_order — гость без аккаунта, общие тексты выше про «аккаунт» не подходят.
 _TRACK_ORDER_FAIL_TEXT = {
@@ -52,6 +53,18 @@ def handle_deeplink_start(chat_id: int, max_user_id: int | None, attempt) -> dic
     Если это повторный вход уже привязанного MAX (§5.3) — подтверждаем сразу,
     без запроса номера.
     """
+    if attempt.operation_type == services.Operation.CONFIRM_LOGIN:
+        # DRF-2497: подтверждение из кабинета — только привязанным MAX, контакт не
+        # просим и попытку за чатом не запоминаем (присланный следом номер не должен
+        # до неё дойти).
+        attempt = services.complete_reauth(attempt, max_user_id=max_user_id, chat_id=chat_id)
+        if attempt.status == services.Status.COMPLETED:
+            return {"chat_id": chat_id, "text": "Подтверждено. Вернитесь на сайт."}
+        return {
+            "chat_id": chat_id,
+            "text": _FAIL_TEXT.get(attempt.failure_reason, "Не удалось подтвердить."),
+        }
+
     cache.set(_chat_key(chat_id), attempt.public_id.hex, _CHAT_ATTEMPT_TTL)
     if attempt.chat_id != chat_id:
         attempt.chat_id = chat_id

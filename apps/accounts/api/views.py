@@ -14,8 +14,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts import reauth
 from apps.accounts.models import Profile
-from apps.core.throttling import AuthRateThrottle, PasswordResetEmailThrottle
+from apps.core.throttling import (
+    AccountDeleteThrottle,
+    AuthRateThrottle,
+    PasswordResetEmailThrottle,
+    ReauthThrottle,
+)
 
 from .serializers import (
     LoginSerializer,
@@ -103,7 +109,7 @@ class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response(UserProfileSerializer(request.user).data)
+        return Response(UserProfileSerializer(request.user, context={"request": request}).data)
 
     def patch(self, request):
         """Правка профиля, включая переход «частное лицо ↔ организация».
@@ -113,7 +119,16 @@ class MeView(APIView):
         напрямую, поэтому проверить их было негде.
         """
         user = request.user
-        ser = UserProfileSerializer(user, data=request.data, partial=True)
+        # DRF-2497: e-mail — это логин и адрес сброса пароля. Сменить его одной
+        # чужой сессией значило бы захватить аккаунт через «забыли пароль».
+        new_email = reauth.field(request, "email")
+        if new_email is not None and new_email.strip().lower() != (user.email or "").lower():
+            denied = reauth.check(request, password=reauth.field(request, "current_password"))
+            if denied is not None:
+                return denied
+        ser = UserProfileSerializer(
+            user, data=request.data, partial=True, context={"request": request}
+        )
         ser.is_valid(raise_exception=True)
         user = ser.save()
 
@@ -125,7 +140,7 @@ class MeView(APIView):
             profile_ser.is_valid(raise_exception=True)
             profile_ser.save()
 
-        return Response(UserProfileSerializer(user).data)
+        return Response(UserProfileSerializer(user, context={"request": request}).data)
 
 
 #: Потолок разового переноса избранного из браузера в аккаунт. Совпадает по
@@ -218,6 +233,9 @@ class DeleteAccountView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    # IP-лимит против флуда и лимит на пользователя: у того, кто держит чужую
+    # сессию, IP-адресов может быть сколько угодно (DRF-2497).
+    throttle_classes = [AuthRateThrottle, AccountDeleteThrottle]
 
     def post(self, request):
         from django.db import transaction
@@ -227,13 +245,12 @@ class DeleteAccountView(APIView):
         from apps.orders.models import Order
 
         user_obj = request.user
-        # Необратимое действие — подтверждаем паролем, как смену телефона: одной
-        # украденной сессии не должно хватать, чтобы стереть аккаунт. У пришедших
-        # из MAX пароля нет — им подтверждать нечем.
-        if user_obj.has_usable_password():
-            password = request.data.get("password", "")
-            if not password or not user_obj.check_password(password):
-                return Response({"detail": "Неверный пароль."}, status=status.HTTP_400_BAD_REQUEST)
+        # Необратимое действие: одной украденной или оставленной открытой сессии не
+        # должно хватать, чтобы стереть аккаунт. У кого пароль — подтверждает
+        # паролем, у кого нет (MAX, VK ID, Яндекс ID) — свежим входом (DRF-2497).
+        denied = reauth.check(request, password=reauth.field(request, "password"))
+        if denied is not None:
+            return denied
         logout(request)
 
         with transaction.atomic():
@@ -279,6 +296,29 @@ class DeleteAccountView(APIView):
         return Response({"ok": True, "detail": "Аккаунт удалён, данные обезличены."})
 
 
+class ReauthPasswordView(APIView):
+    """POST /api/account/reauth/password/ — подтвердить личность паролем (DRF-2497).
+
+    Для действий, где пароль не спрашивается прямо в форме (привязка способа входа):
+    верный пароль ставит в сессию отметку «подтверждено» на окно reauth.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AuthRateThrottle, ReauthThrottle]
+
+    def post(self, request):
+        if not request.user.has_usable_password():
+            return Response(
+                {"detail": "У аккаунта нет пароля — подтвердите вход своим способом."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        denied = reauth.verify_password(request, reauth.field(request, "password") or "")
+        if denied is not None:
+            return denied
+        until = reauth.verified_until(request)
+        return Response({"reauth_valid_until": until.isoformat() if until else None})
+
+
 class ChangePhoneView(APIView):
     """Смена телефона (#343, #427/M-03).
 
@@ -294,10 +334,11 @@ class ChangePhoneView(APIView):
     def post(self, request):
         from apps.accounts.phone import normalize_phone
 
-        # #427 (M-03): re-auth — подтверждение текущим паролем.
-        password = request.data.get("password", "")
-        if not password or not request.user.check_password(password):
-            return Response({"detail": "Неверный пароль."}, status=status.HTTP_400_BAD_REQUEST)
+        # #427 (M-03): re-auth — подтверждение текущим паролем. Счётчик неверных
+        # паролей общий с удалением аккаунта и сменой e-mail (DRF-2497).
+        denied = reauth.verify_password(request, reauth.field(request, "password") or "")
+        if denied is not None:
+            return denied
 
         new_phone = normalize_phone(request.data.get("new_phone", ""))
         if not new_phone:

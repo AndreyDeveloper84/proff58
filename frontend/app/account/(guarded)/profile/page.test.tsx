@@ -16,6 +16,10 @@ vi.mock("@/lib/auth", () => ({
   getMe: vi.fn(),
   getOrders: vi.fn(),
   getWishlist: vi.fn(),
+  isReauthRequired: (e: unknown) =>
+    Boolean(e && typeof e === "object" && (e as { code?: string }).code === "reauth_required"),
+  isReauthValid: (u: { reauth_valid_until?: string | null } | null) =>
+    Boolean(u?.reauth_valid_until) && new Date(u!.reauth_valid_until!).getTime() > Date.now(),
   loginHref: (next?: string) =>
     next ? `/account/login?next=${encodeURIComponent(next)}` : "/account/login",
   logout: vi.fn(),
@@ -26,6 +30,16 @@ vi.mock("@/components/account/MaxLinkCard", () => ({
 }));
 vi.mock("@/components/account/OAuthLinksCard", () => ({
   OAuthLinksCard: () => <div>Вход через VK ID и Яндекс ID</div>,
+}));
+vi.mock("@/components/account/ReauthPanel", () => ({
+  ReauthPanel: ({ next, onVerified }: { next: string; onVerified: () => void }) => (
+    <div>
+      Подтвердите, что это вы · {next}
+      <button type="button" onClick={onVerified}>
+        Подтвердить (заглушка)
+      </button>
+    </div>
+  ),
 }));
 vi.mock("@/components/account/NotificationPreferencesCard", () => ({
   NotificationPreferencesCard: () => <div>Настройки уведомлений</div>,
@@ -177,5 +191,104 @@ describe("ProfilePage dashboard", () => {
     fireEvent.click(deleteButton);
 
     await waitFor(() => expect(mockedDeleteAccount).toHaveBeenCalledWith("secret"));
+  });
+
+  // ═══════════ DRF-2497: подтверждение личности ═══════════
+
+  it("без пароля: сервер просит подтвердить — в диалоге удаления появляется панель", async () => {
+    mockedDeleteAccount.mockRejectedValueOnce(
+      Object.assign(new Error("Подтвердите, что это вы: войдите ещё раз."), {
+        code: "reauth_required",
+      }),
+    );
+    render(<ProfilePage />);
+
+    await screen.findByText("Добро пожаловать!");
+    fireEvent.click(screen.getByRole("button", { name: "Удалить аккаунт" }));
+    fireEvent.change(screen.getByLabelText(/Для подтверждения введите УДАЛИТЬ/), {
+      target: { value: "УДАЛИТЬ" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Удалить навсегда" }));
+
+    expect(
+      await screen.findByText(/Подтвердите, что это вы · \/account\/profile\?resume=delete/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(pushMock).not.toHaveBeenCalled();
+
+    // Подтвердили — действие само не повторяется, человек жмёт кнопку ещё раз.
+    mockedDeleteAccount.mockResolvedValueOnce(undefined);
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить (заглушка)" }));
+    expect(
+      await screen.findByText("Подтверждено. Нажмите «Удалить навсегда» ещё раз."),
+    ).toBeInTheDocument();
+    expect(mockedDeleteAccount).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Удалить навсегда" }));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/"));
+  });
+
+  it("возврат с resume=delete без подтверждения на сервере ничего не обещает", async () => {
+    window.history.replaceState(null, "", "/account/profile?resume=delete&reauth=ok");
+    mockedGetMe.mockResolvedValueOnce({ ...baseUser, reauth_valid_until: null });
+    render(<ProfilePage />);
+
+    await screen.findByText("Добро пожаловать!");
+    expect(screen.queryByText(/Вход подтверждён/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Удалить навсегда" })).toBeNull();
+    expect(window.location.search).toBe("");
+  });
+
+  it("возврат с resume=delete при подтверждении открывает диалог удаления", async () => {
+    window.history.replaceState(null, "", "/account/profile?resume=delete&reauth=ok");
+    mockedGetMe.mockResolvedValueOnce({
+      ...baseUser,
+      reauth_valid_until: new Date(Date.now() + 5 * 60_000).toISOString(),
+    });
+    render(<ProfilePage />);
+
+    expect(
+      await screen.findByText("Вход подтверждён. Теперь аккаунт можно удалить."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Удалить навсегда" })).toBeDisabled();
+  });
+
+  it("смена e-mail у аккаунта с паролем спрашивает текущий пароль", async () => {
+    mockedGetMe.mockResolvedValueOnce({ ...baseUser, has_password: true });
+    mockedUpdateMe.mockResolvedValueOnce({ ...baseUser, email: "new@example.com" });
+    render(<ProfilePage />);
+
+    await screen.findByText("Добро пожаловать!");
+    fireEvent.click(screen.getByRole("button", { name: "Редактировать профиль" }));
+    expect(screen.queryByLabelText(/Текущий пароль/)).toBeNull();
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Сохранить" }));
+    expect(
+      await screen.findByText("Чтобы сменить e-mail, введите текущий пароль."),
+    ).toBeInTheDocument();
+    expect(mockedUpdateMe).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText(/Текущий пароль/), { target: { value: "secret" } });
+    fireEvent.click(screen.getByRole("button", { name: "Сохранить" }));
+    await waitFor(() =>
+      expect(mockedUpdateMe).toHaveBeenCalledWith(
+        expect.objectContaining({ email: "new@example.com", current_password: "secret" }),
+      ),
+    );
+  });
+
+  it("смена e-mail без пароля: сервер просит подтвердить — панель в диалоге", async () => {
+    mockedUpdateMe.mockRejectedValueOnce(
+      Object.assign(new Error("Подтвердите"), { code: "reauth_required" }),
+    );
+    render(<ProfilePage />);
+
+    await screen.findByText("Добро пожаловать!");
+    fireEvent.click(screen.getByRole("button", { name: "Редактировать профиль" }));
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Сохранить" }));
+    expect(
+      await screen.findByText(/Подтвердите, что это вы · \/account\/profile\?resume=edit/),
+    ).toBeInTheDocument();
+    expect(mockedUpdateMe.mock.calls[0][0]).not.toHaveProperty("current_password");
   });
 });

@@ -172,6 +172,18 @@ def _link_once(user, profile: ProviderProfile) -> Result:
     return Result(user=user, created=True)
 
 
+def confirm_identity(user, profile: ProviderProfile) -> bool:
+    """Аккаунт провайдера из ``profile`` уже привязан именно к ``user`` (DRF-2497).
+
+    Для подтверждения личности: ничего не создаёт и не привязывает, только
+    отмечает время последнего входа через провайдера.
+    """
+    updated = OAuthAccount.objects.filter(
+        user=user, provider=profile.provider, provider_user_id=profile.provider_user_id
+    ).update(last_login_at=timezone.now())
+    return updated > 0
+
+
 def has_linked(user, provider: str) -> bool:
     return OAuthAccount.objects.filter(user=user, provider=provider).exists()
 

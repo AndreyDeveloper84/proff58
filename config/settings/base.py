@@ -391,6 +391,9 @@ REST_FRAMEWORK = {
         # #427 (M-03): чувствительные auth-эндпоинты (login/register/OTP/смена
         # телефона) — низкий лимит против брутфорса пароля и enumeration телефонов.
         "auth": env("AUTH_THROTTLE_RATE", default="10/min"),
+        # DRF-2497: опасные действия кабинета — лимит на пользователя, не на IP.
+        "account_delete": env("ACCOUNT_DELETE_THROTTLE_RATE", default="5/hour"),
+        "reauth": env("REAUTH_THROTTLE_RATE", default="10/hour"),
         # #517: подписка/отписка «Сообщить о поступлении» (только authenticated).
         "subscription": env("SUBSCRIPTION_THROTTLE_RATE", default="30/min"),
         # DRF-2298: сброс пароля — второй ключ по адресу поверх IP-лимита auth.
@@ -432,6 +435,9 @@ VKID_SERVICE_TOKEN = env("VKID_SERVICE_TOKEN", default="")
 # Яндекс ID: oauth.yandex.ru → веб-сервисы, права login:email + login:info.
 YANDEX_ID_CLIENT_ID = env("YANDEX_ID_CLIENT_ID", default="")
 YANDEX_ID_CLIENT_SECRET = env("YANDEX_ID_CLIENT_SECRET", default="")
+# DRF-2497: сколько секунд после входа (или повторного подтверждения) можно без
+# пароля удалить аккаунт, сменить e-mail, привязать способ входа (apps/accounts/reauth.py).
+ACCOUNT_REAUTH_WINDOW_SECONDS = env.int("ACCOUNT_REAUTH_WINDOW_SECONDS", default=600)
 # Сколько живёт незавершённый вход (state + PKCE verifier в сессии), секунд.
 OAUTH_STATE_TTL_SECONDS = env.int("OAUTH_STATE_TTL_SECONDS", default=600)
 # Таймаут одного запроса к провайдеру и общий бюджет колбэка (обмен + профиль), секунд.

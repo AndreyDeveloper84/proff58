@@ -313,6 +313,11 @@ def complete_from_contact(
     if attempt.status != Status.PENDING:
         return _fail(attempt, "attempt_not_pending")
 
+    # DRF-2497: подтверждение личности — только привязанным MAX, без контакта;
+    # по номеру никого не создаём и не привязываем.
+    if attempt.operation_type == Operation.CONFIRM_LOGIN:
+        return _fail(attempt, "reauth_mismatch")
+
     phone = normalize_phone(phone)
     if not phone:
         return _fail(attempt, "bad_phone")
@@ -402,6 +407,30 @@ def complete_confirm(attempt: MaxAuthAttempt, *, max_user_id: int, chat_id: int 
     if chat_id:
         MaxAccount.objects.filter(pk=acct.pk).update(chat_id=chat_id, last_login_at=timezone.now())
     return _complete(attempt, acct.user, max_user_id=max_user_id, chat_id=chat_id, is_new=False)
+
+
+def complete_reauth(attempt: MaxAuthAttempt, *, max_user_id: int | None, chat_id=None):
+    """Подтверждение личности из кабинета (CONFIRM_LOGIN, DRF-2497).
+
+    Засчитывается, только если «Начать» нажал MAX, привязанный именно к
+    пользователю попытки. Никого не создаёт, не привязывает и не впускает:
+    попытка лишь помечается завершённой, отметку в сессию ставит опрос статуса.
+    """
+    with transaction.atomic():
+        attempt = MaxAuthAttempt.objects.select_for_update().get(pk=attempt.pk)
+        if attempt.status == Status.COMPLETED:
+            return attempt
+        attempt = _refresh_expiry(attempt)
+        if attempt.status != Status.PENDING:
+            return _fail(attempt, "attempt_not_pending")
+        acct = (
+            MaxAccount.objects.filter(max_user_id=max_user_id, is_active=True).first()
+            if max_user_id
+            else None
+        )
+        if acct is None or acct.user_id != attempt.user_id:
+            return _fail(attempt, "reauth_mismatch")
+        return _complete(attempt, acct.user, max_user_id=max_user_id, chat_id=chat_id, is_new=False)
 
 
 def unlink_max(user) -> bool:

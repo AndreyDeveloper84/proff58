@@ -61,6 +61,12 @@ const ERROR_TEXTS: Record<string, (p: string | null) => string> = {
       ? `Этот ${p} уже привязан к другому аккаунту.`
       : "Этот способ входа уже привязан к другому аккаунту.",
   link_expired: () => "Привязка не завершена: войдите в аккаунт и попробуйте снова.",
+  // DRF-2497: подтверждение личности из кабинета.
+  reauth_mismatch: (p) =>
+    p
+      ? `Выбран другой аккаунт ${p}. Подтвердите тем, который привязан к этому профилю.`
+      : "Выбран другой аккаунт. Подтвердите тем, который привязан к этому профилю.",
+  reauth_expired: () => "Подтверждение не завершено. Попробуйте ещё раз.",
 };
 
 /**
@@ -139,6 +145,23 @@ export async function startOAuthLink(provider: OAuthProviderId): Promise<string>
   // javascript:/data: из-за чужой ошибки обошёлся бы слишком дорого.
   if (!/^https:\/\//i.test(url)) {
     throw new ApiError("Не удалось начать привязку. Попробуйте ещё раз.", 0);
+  }
+  return url;
+}
+
+/**
+ * Подтвердить личность через привязанного провайдера (DRF-2497): сервер кладёт
+ * state в сессию и отдаёт адрес провайдера; вернётся браузер на `next` с
+ * `reauth=ok` или в профиль с `oauth_error`.
+ */
+export async function startOAuthReauth(provider: OAuthProviderId, next: string): Promise<string> {
+  const data = await apiFetch<{ url?: unknown }>(`/api/account/oauth/${provider}/reauth`, {
+    method: "POST",
+    body: JSON.stringify({ next }),
+  });
+  const url = typeof data?.url === "string" ? data.url : "";
+  if (!/^https:\/\//i.test(url)) {
+    throw new ApiError("Не удалось начать подтверждение. Попробуйте ещё раз.", 0);
   }
   return url;
 }

@@ -171,11 +171,13 @@ def test_me_update(client, user):
     client.force_authenticate(user=user)
     resp = client.patch(
         "/api/account/me/",
-        {"full_name": "Новое Имя", "email": "new@test.ru"},
+        # Смена e-mail — с текущим паролем (DRF-2497, см. test_reauth.py).
+        {"full_name": "Новое Имя", "email": "new@test.ru", "current_password": "pass123"},
         format="json",
     )
     assert resp.status_code == 200
     assert resp.json()["full_name"] == "Новое Имя"
+    assert resp.json()["email"] == "new@test.ru"
 
 
 # ═══════════ #329 Избранное ═══════════
@@ -392,7 +394,9 @@ def test_delete_account_требует_пароль(client):
     """Необратимое действие — одной сессии мало (как при смене телефона)."""
     u = User.objects.create_user(phone="+79005550002", password="pass", full_name="Удаляемый")
     client.force_authenticate(user=u)
-    assert client.post("/api/account/delete/").status_code == 400
+    # Без пароля — просьба подтвердить (кабинет покажет поле пароля), с неверным — 400.
+    resp = client.post("/api/account/delete/")
+    assert resp.status_code == 403 and resp.json()["code"] == "reauth_required"
     assert (
         client.post("/api/account/delete/", {"password": "нет"}, format="json").status_code == 400
     )
@@ -402,8 +406,9 @@ def test_delete_account_требует_пароль(client):
 
 @pytest.mark.django_db
 def test_delete_account_без_пароля_у_пришедших_из_max(client):
+    """DRF-2497: одной сессии мало — нужен свежий вход (здесь — только что вошёл)."""
     u = User.objects.create_user(phone="+79005550003", password=None)
-    client.force_authenticate(user=u)
+    client.force_login(u, backend="django.contrib.auth.backends.ModelBackend")
     assert client.get("/api/account/me/").json()["has_password"] is False
     assert client.post("/api/account/delete/").status_code == 200
 

@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Check } from "lucide-react";
+import { ReauthPanel } from "@/components/account/ReauthPanel";
 import { ApiError } from "@/lib/api";
+import { isReauthRequired } from "@/lib/auth";
 import {
   OAUTH_PROVIDER_LABELS,
   getOAuthAccounts,
@@ -30,6 +32,9 @@ const PROFILE_ERROR_CODES = new Set([
   "unavailable",
   "cancelled",
   "expired",
+  // DRF-2497: неудачное подтверждение личности тоже возвращается в профиль.
+  "reauth_mismatch",
+  "reauth_expired",
 ]);
 
 function Logo({ id }: { id: OAuthProviderId }) {
@@ -58,9 +63,11 @@ function flashFromUrl(): Flash | null {
   return null;
 }
 
-export function OAuthLinksCard() {
+export function OAuthLinksCard({ hasPassword = false }: { hasPassword?: boolean }) {
   const [accounts, setAccounts] = useState<OAuthAccount[] | null>(null);
   const [busy, setBusy] = useState<OAuthProviderId | null>(null);
+  // DRF-2497: новый способ входа привязывается только после подтверждения личности.
+  const [reauthFor, setReauthFor] = useState<OAuthProviderId | null>(null);
   // Сообщение читаем из адреса один раз. Карточка рисуется только в браузере
   // (кабинет показывает её после загрузки профиля), проверка window — страховка.
   const [flash, setFlash] = useState<Flash | null>(() =>
@@ -95,10 +102,14 @@ export function OAuthLinksCard() {
       window.location.assign(url);
       // busy не снимаем: страница уходит к провайдеру.
     } catch (e) {
-      setFlash({
-        kind: "error",
-        text: e instanceof ApiError ? e.message : "Не удалось начать привязку. Попробуйте ещё раз.",
-      });
+      if (isReauthRequired(e)) {
+        setReauthFor(id);
+      } else {
+        setFlash({
+          kind: "error",
+          text: e instanceof ApiError ? e.message : "Не удалось начать привязку. Попробуйте ещё раз.",
+        });
+      }
       setBusy(null);
     }
   }, []);
@@ -191,6 +202,19 @@ export function OAuthLinksCard() {
             );
           })}
         </ul>
+      )}
+      {reauthFor && (
+        <div className="mt-3">
+          <ReauthPanel
+            hasPassword={hasPassword}
+            next="/account/profile"
+            onVerified={() => {
+              const id = reauthFor;
+              setReauthFor(null);
+              void link(id);
+            }}
+          />
+        </div>
       )}
       {hasAccounts && accounts.some((a) => a.id === "vkid") && (
         <p className="mt-2 text-xs text-ink-3">Вход через Mail — это тоже VK ID.</p>
