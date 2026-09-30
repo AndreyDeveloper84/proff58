@@ -51,6 +51,22 @@ def handle_bot_started(chat_id: int, user_info: dict) -> dict | None:
     }
 
 
+# Ответ на любой текст, который бот не понимает. Раньше бот молчал — человек после
+# «Вход подтверждён» писал «старт» и думал, что бот сломался. Живого консультанта
+# за ботом нет, поэтому обещать ответ нельзя — только объяснить, зачем бот.
+HELP_TEXT = (
+    "Это бот магазина «Профессионал». Сюда приходят уведомления о заказах "
+    "и о поступлении товара.\n\n"
+    "Чтобы войти на сайт, нажмите «Войти через MAX» на странице входа — "
+    "бот откроется сам и подтвердит вход. Писать сюда ничего не нужно: "
+    "сообщения бот не читает."
+)
+
+
+def handle_unknown_text(chat_id: int) -> dict:
+    return {"chat_id": chat_id, "text": HELP_TEXT}
+
+
 def handle_contact(chat_id: int, contact_payload: dict) -> dict | None:
     token = getattr(settings, "MAX_BOT_TOKEN", "")
     vcf_info = contact_payload.get("vcf_info", "")
