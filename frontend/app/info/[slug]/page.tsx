@@ -4,7 +4,10 @@ import { notFound } from "next/navigation";
 
 import { InfoSection } from "@/components/info/InfoSection";
 import { INFO_PAGES } from "@/lib/info-content";
+import { fillContacts } from "@/lib/info-contacts";
 import { getInfoPage, toParagraphs } from "@/lib/info-pages";
+import { resolveStorefront } from "@/lib/site";
+import { getSiteTheme } from "@/lib/theme";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -36,7 +39,10 @@ export default async function InfoPageView({ params }: Props) {
   // Четыре страницы из макета живут в коде (lib/info-content): текст едет вместе
   // с релизом, заводить и публиковать их на сервере не нужно. Всё остальное
   // по-прежнему берётся из админки — механизм жив и работает как раньше.
-  const fromCode = INFO_PAGES[slug];
+  // Контакты в них — метки, значения берутся из настроек сайта (DRF-2495).
+  const fromCode = INFO_PAGES[slug]
+    ? fillContacts(INFO_PAGES[slug], resolveStorefront(await getSiteTheme()))
+    : null;
   const fromAdmin = fromCode ? null : await getInfoPage(slug);
   const page = fromCode ?? fromAdmin;
   if (!page) notFound();
