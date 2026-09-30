@@ -229,11 +229,11 @@ pytest apps/catalog              # только каталог (~350 тесто�
 (`CELERY_TASK_ALWAYS_EAGER=True`), e-mail в консоль; `/healthz/` без Redis вернёт
 503 — для локалки норма.
 
-**Baseline полного прогона: `2 failed, 2615 passed, 1 skipped` (~17 мин), замер
-2026-08-05.** Перечисленные падения — окружение, не регрессия:
-`test_regression_mvp.py::test_healthcheck_returns_ok` (нет Redis) и
-`test_deploy_release.py::test_release_script_is_executable` (Windows exec bit).
-Любое падение сверх перечисленных — регрессия.
+**Baseline полного прогона: `5465 passed, 3 skipped` (~9 мин), замер 2026-09-29** —
+в docker (`proff58-web:latest` с weasyprint), Redis поднят. Без Redis падает
+`test_regression_mvp.py::test_healthcheck_returns_ok`, на Windows —
+`test_deploy_release.py::test_release_script_is_executable` (exec bit): это
+окружение, не регрессия. Любое другое падение — регрессия.
 
 Ключевые env (`.env.example`): `DATABASE_URL`, `CELERY_BROKER_URL`, `ONEC_API_KEY`,
 `ONEC_MAX_ITEMS`, `FEATURE_*`.
