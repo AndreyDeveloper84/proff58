@@ -33,6 +33,12 @@ export type Article = {
   tag: string;
   /** Обложка для карточек в ленте и индексе (предметное фото категории). */
   image: string;
+  /** Та же обложка, ужатая до 320 px, — для маленьких превью с увеличением при
+      наведении (карусель на главной, сетка /articles, «Читайте также»).
+      next.config держит images.unoptimized, и исходник 1254 px браузер ужимал в
+      ~12 раз прямо во время анимации — фото на пару секунд шло зерном. У статей
+      из админки миниатюры нет: там берётся image. */
+  thumb?: string;
   imagePosition?: string;
   /** Схема, которая открывает статью вместо фото: объясняет то, за чем пришли. */
   figure: ArticleFigure;
@@ -55,6 +61,7 @@ export const ARTICLES: Article[] = [
     tag: "Перфораторы",
     figure: "sds-shank",
     image: "/catalog/categories/electroinstrument.webp",
+    thumb: "/home/articles/electroinstrument.webp",
     catalog: { slug: "elektroinstrument", label: "Перфораторы и электроинструмент" },
     summary: [
       "SDS-plus — хвостовик Ø10 мм и посадка в патрон на 40 мм, SDS-max — Ø18 мм и 90 мм.",
@@ -125,6 +132,7 @@ export const ARTICLES: Article[] = [
     tag: "Аккумуляторы",
     figure: "battery-storage",
     image: "/catalog/categories/zapchasti.webp",
+    thumb: "/home/articles/zapchasti.webp",
     catalog: { slug: "zapchasti", label: "Аккумуляторы и зарядные устройства" },
     summary: [
       "Для длительного хранения оставляйте 40–60 % заряда — в этом диапазоне химия батареи нагружена меньше всего.",
@@ -188,6 +196,7 @@ export const ARTICLES: Article[] = [
     tag: "Шуруповёрты",
     figure: "torque-scale",
     image: "/catalog/categories/ruchnoy.webp",
+    thumb: "/home/articles/ruchnoy.webp",
     catalog: { slug: "elektroinstrument", label: "Дрели и шуруповёрты" },
     summary: [
       "До 20 Н·м хватает для мебели и лёгкого крепежа, 30–40 Н·м — универсальный бытовой уровень.",
@@ -254,6 +263,7 @@ export const ARTICLES: Article[] = [
     tag: "Оснастка",
     figure: "disc-marking",
     image: "/catalog/categories/stroitelnyy.webp",
+    thumb: "/home/articles/stroitelnyy.webp",
     catalog: { slug: "osnastka", label: "Круги и оснастка для УШМ" },
     summary: [
       "Первая буква — абразив: A под сталь, C под камень и бетон.",
@@ -314,6 +324,7 @@ export const ARTICLES: Article[] = [
     tag: "Сварка",
     figure: "duty-cycle",
     image: "/catalog/categories/svarochnaya.webp",
+    thumb: "/home/articles/svarochnaya.webp",
     catalog: { slug: "svarka", label: "Сварочное оборудование" },
     summary: [
       "ПВ 40 % означает 4 минуты работы и 6 минут охлаждения в десятиминутном цикле.",
@@ -377,6 +388,7 @@ export const ARTICLES: Article[] = [
     tag: "Оснастка",
     figure: "bur-wear",
     image: "/catalog/categories/osnastka.webp",
+    thumb: "/home/articles/osnastka.webp",
     catalog: { slug: "osnastka", label: "Буры и коронки" },
     summary: [
       "Бур проворачивается в патроне — скруглились грани пазов, менять сразу.",

@@ -17,7 +17,15 @@ const SSR_TIMEOUT_MS = 4000;
 /** Карточка ленты: то, что нужно списку и каруселям на главной. */
 export type ArticleCard = Pick<
   Article,
-  "slug" | "title" | "excerpt" | "tag" | "figure" | "image" | "date" | "readingMinutes"
+  | "slug"
+  | "title"
+  | "excerpt"
+  | "tag"
+  | "figure"
+  | "image"
+  | "thumb"
+  | "date"
+  | "readingMinutes"
 > & {
   dateLabel: string;
   /** Кадрирование обложки. Есть только у встроенных статей: у загруженных из
@@ -56,6 +64,7 @@ function toCard(article: Article): ArticleCard {
     tag: article.tag,
     figure: article.figure,
     image: article.image,
+    thumb: article.thumb,
     date: article.date,
     dateLabel: article.dateLabel,
     readingMinutes: article.readingMinutes,

@@ -220,7 +220,7 @@ export default async function ArticlePage({ params }: Props) {
                     <Link href={`/articles/${item.slug}`} className="group flex gap-2">
                       <span className="relative h-11 w-14 shrink-0 overflow-hidden rounded-sm bg-photo">
                         <Image
-                          src={item.image}
+                          src={item.thumb ?? item.image}
                           alt=""
                           fill
                           sizes="56px"
