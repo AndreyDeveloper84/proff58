@@ -148,5 +148,7 @@ def _dispatch(update_type: str, payload: dict) -> dict | None:
             return auth.handle_bot_started(chat_id, user_info)
         if text and text.isdigit() and len(text) == auth.OTP_LENGTH:
             return auth.handle_otp_confirm(chat_id, text)
+        if text:
+            return auth.handle_unknown_text(chat_id)
 
     return None

@@ -352,3 +352,51 @@ def test_e2e_auth_flow(mock_send, client, user):
     assert "успешно привязан" in confirm_reply["text"]
     user.refresh_from_db()
     assert user.max_chat_id == 500
+
+
+def _text_message(text: str, timestamp: int) -> str:
+    return json.dumps(
+        {
+            "update_type": "message_created",
+            "timestamp": timestamp,
+            "message": {
+                "sender": {"user_id": 99},
+                "recipient": {"chat_id": 500, "chat_type": "dialog"},
+                "body": {"mid": f"t{timestamp}", "text": text},
+            },
+        }
+    )
+
+
+@override_settings(MAX_BOT_TOKEN=TOKEN, MAX_WEBHOOK_SECRET="my-secret")
+@pytest.mark.django_db
+@mock.patch("apps.integration_max.webhook._send_reply")
+@pytest.mark.parametrize("text", ["старт", "Здравствуйте, есть перфоратор?"])
+def test_unknown_text_gets_help_reply(mock_send, client, text):
+    # Раньше бот молчал на любой непонятный текст — выглядело как поломка.
+    client.post(
+        "/api/max/webhook/",
+        data=_text_message(text, 6001),
+        content_type="application/json",
+        HTTP_X_MAX_BOT_API_SECRET="my-secret",
+    )
+
+    mock_send.assert_called_once()
+    reply = mock_send.call_args[0][0]
+    assert reply["chat_id"] == 500
+    assert reply["text"] == auth.HELP_TEXT
+
+
+@override_settings(MAX_BOT_TOKEN=TOKEN, MAX_WEBHOOK_SECRET="my-secret")
+@pytest.mark.django_db
+@mock.patch("apps.integration_max.webhook._send_reply")
+def test_start_command_still_starts_binding(mock_send, client):
+    client.post(
+        "/api/max/webhook/",
+        data=_text_message("/start", 6002),
+        content_type="application/json",
+        HTTP_X_MAX_BOT_API_SECRET="my-secret",
+    )
+
+    reply = mock_send.call_args[0][0]
+    assert "Отправить номер" in json.dumps(reply, ensure_ascii=False)
