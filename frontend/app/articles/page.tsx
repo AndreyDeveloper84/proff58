@@ -89,7 +89,7 @@ export default async function ArticlesIndexPage() {
                 >
                   <span className="relative block h-[104px] w-full bg-photo">
                     <Image
-                      src={article.image}
+                      src={article.thumb ?? article.image}
                       alt=""
                       fill
                       sizes="(max-width: 639px) 100vw, 340px"

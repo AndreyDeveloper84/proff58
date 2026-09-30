@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { ARTICLES, articleSlugs, getArticle } from "./articles";
@@ -25,6 +27,28 @@ describe("статьи каталога", () => {
   it("обложки ссылаются на локальные ассеты", () => {
     for (const article of ARTICLES) {
       expect(article.image, article.slug).toMatch(/^\/[\w/-]+\.(webp|png|jpg)$/);
+    }
+  });
+
+  // Ширина из заголовка webp: простой (VP8), без потерь (VP8L), расширенный (VP8X).
+  function webpWidth(path: string): number {
+    const buf = readFileSync(path);
+    const chunk = buf.toString("ascii", 12, 16);
+    if (chunk === "VP8 ") return buf.readUInt16LE(26) & 0x3fff;
+    if (chunk === "VP8L") return (buf.readUInt32LE(21) & 0x3fff) + 1;
+    if (chunk === "VP8X") return buf.readUIntLE(24, 3) + 1;
+    throw new Error(`${path}: не webp (${chunk})`);
+  }
+
+  // DRF-2493: превью с увеличением при наведении рисуются из миниатюры. Исходник
+  // 1254 px браузер ужимал в ~12 раз прямо во время анимации — фото шло зерном.
+  it("у каждой статьи есть миниатюра обложки не шире 400 px", () => {
+    for (const article of ARTICLES) {
+      expect(article.thumb, article.slug).toMatch(/^\/[\w/-]+\.webp$/);
+      expect(article.thumb, article.slug).not.toBe(article.image);
+      const file = join(process.cwd(), "public", article.thumb!);
+      expect(existsSync(file), article.slug).toBe(true);
+      expect(webpWidth(file), article.slug).toBeLessThanOrEqual(400);
     }
   });
 

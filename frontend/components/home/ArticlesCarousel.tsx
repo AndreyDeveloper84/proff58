@@ -113,7 +113,7 @@ export function ArticlesCarousel({ articles }: { articles: Article[] }) {
             >
               <span className="relative w-[104px] shrink-0 bg-photo">
                 <Image
-                  src={article.image}
+                  src={article.thumb ?? article.image}
                   alt=""
                   fill
                   sizes="86px"
