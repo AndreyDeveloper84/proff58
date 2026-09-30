@@ -15,6 +15,12 @@ import type { InfoSection } from "@/lib/info-pages";
 // (см. app/info/[slug]/page.tsx), а разметка описана в apps/content/page_markup.py.
 //
 // Структура секций та же, что отдавал API, — компоненты витрины не менялись.
+//
+// Контакты магазина здесь не пишем: вместо них метки {{address}}, {{schedule}},
+// {{phone}}, {{phone_href}}, {{email}}. Страница подставляет значения из
+// настроек сайта (админка → Настройки сайта → Контакты) — тот же источник, что у
+// шапки, подвала и чекаута, чтобы телефон и адрес менялись в одном месте
+// (DRF-2495). См. lib/info-contacts.ts.
 
 /** Страница, свёрстанная блоками, но написанная в коде. */
 export type InfoPageContent = {
@@ -51,7 +57,7 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
           },
           {
             "label": "Связаться с магазином",
-            "href": "tel:+78412202087",
+            "href": "{{phone_href}}",
             "style": "outline",
           },
         ],
@@ -67,10 +73,10 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
         "layout": "map",
         "heading": "Как к нам проехать",
         "meta": {
-          "address": "Пенза, 1-й Онежский проезд, 12",
-          "hours": "Пн–Сб 09:00–19:00, воскресенье 09:00–15:00",
-          "phone": "8 (8412) 20-20-87",
-          "email": "penzainstrument@yandex.ru",
+          "address": "{{address}}",
+          "hours": "{{schedule}}",
+          "phone": "{{phone}}",
+          "email": "{{email}}",
         },
         "buttons": [],
         "items": [],
@@ -119,7 +125,7 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
         "buttons": [
           {
             "label": "Задать вопрос",
-            "href": "tel:+78412202087",
+            "href": "{{phone_href}}",
             "style": "solid",
           },
         ],
@@ -190,7 +196,7 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
         "items": [
           {
             "title": "Самовывоз из магазина",
-            "text": "Пенза, 1-й Онежский проезд, 12. Пн–Сб с 9:00 до 19:00, Вс с 9:00 до 15:00. Заказ можно забрать в день заказа при наличии на складе.",
+            "text": "{{address}}. {{schedule}}. Заказ можно забрать в день заказа при наличии на складе.",
             "image": "/info/delivery/pickup.webp",
           },
           {
@@ -415,14 +421,14 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
         "heading": "Остались вопросы по оплате?",
         "meta": {
           "image": "/about/facade.webp",
-          "phone": "8 (8412) 20-20-87",
-          "email": "penzainstrument@yandex.ru",
-          "hours": "Пн–Сб с 09:00 до 19:00, Вс с 09:00 до 15:00",
+          "phone": "{{phone}}",
+          "email": "{{email}}",
+          "hours": "{{schedule}}",
         },
         "buttons": [
           {
             "label": "Связаться с нами",
-            "href": "tel:+78412202087",
+            "href": "{{phone_href}}",
             "style": "solid",
           },
           {
@@ -452,7 +458,7 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
         "buttons": [
           {
             "label": "Связаться с сервисом",
-            "href": "tel:+78412202087",
+            "href": "{{phone_href}}",
             "style": "solid",
           },
           {
@@ -568,14 +574,14 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
         "heading": "Возникла проблема с инструментом?",
         "meta": {
           "image": "/about/service.webp",
-          "phone": "8 (8412) 20-20-87",
-          "email": "penzainstrument@yandex.ru",
-          "hours": "Пн–Сб с 09:00 до 19:00, Вс с 09:00 до 15:00",
+          "phone": "{{phone}}",
+          "email": "{{email}}",
+          "hours": "{{schedule}}",
         },
         "buttons": [
           {
             "label": "Связаться с нами",
-            "href": "tel:+78412202087",
+            "href": "{{phone_href}}",
             "style": "solid",
           },
           {
