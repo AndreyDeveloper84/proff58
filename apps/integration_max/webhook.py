@@ -119,8 +119,13 @@ def _dispatch(update_type: str, payload: dict) -> dict | None:
         token = payload.get("payload") or payload.get("start_payload") or ""
         if token:
             attempt = services.load_valid_attempt(token)
-            if attempt is not None:
+            if attempt is not None and attempt.status == services.Status.PENDING:
                 return auth_flow.handle_deeplink_start(chat_id, user_info.get("user_id"), attempt)
+            # Попытки по токену нет (чужой или испорченный диплинк) либо она уже
+            # закрыта: завершена, отменена, истекла. Старую ссылку нельзя пускать
+            # дальше — она перебила бы в чате новую живую попытку и ответила бы
+            # «Вход подтверждён» по попытке, которая уже ничего не подтверждает.
+            return {"chat_id": chat_id, "text": auth.STALE_LINK_TEXT}
         return auth.handle_bot_started(chat_id, user_info)
 
     elif update_type == "message_created":
@@ -133,8 +138,9 @@ def _dispatch(update_type: str, payload: dict) -> dict | None:
         attachments = body.get("attachments", [])
         for att in attachments:
             if att.get("type") == "contact":
-                # #492: сначала пробуем завершить активную попытку авторизации;
-                # если её нет — старый поток привязки по коду.
+                # #492: контакт завершает активную попытку авторизации. Нет попытки
+                # (ссылка истекла или уже использована) — номер ни к чему не
+                # применяем: по нему никого не ищем (DRF-2735).
                 res = auth_flow.handle_attempt_contact(
                     chat_id, att.get("payload", {}), message.get("sender", {})
                 )
@@ -146,8 +152,6 @@ def _dispatch(update_type: str, payload: dict) -> dict | None:
         if text.lower() in ("/start", "start", "начать"):
             user_info = message.get("sender", {})
             return auth.handle_bot_started(chat_id, user_info)
-        if text and text.isdigit() and len(text) == auth.OTP_LENGTH:
-            return auth.handle_otp_confirm(chat_id, text)
         if text:
             return auth.handle_unknown_text(chat_id)
 

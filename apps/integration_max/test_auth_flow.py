@@ -66,16 +66,74 @@ def test_register_new_user_via_contact():
     assert acct.user_id == user.pk and acct.chat_id == 500
 
 
+def _mk_max_user(phone=PHONE, **kw):
+    """Аккаунт, каким его создаёт MAX: без пароля, номер подтверждён контактом."""
+    return User.objects.create_user(phone=phone, password=None, phone_verified=True, **kw)
+
+
 @pytest.mark.django_db
-def test_existing_user_linked_and_logged_in():
-    """Найден по телефону, MAX не привязан → привязать + вход."""
-    user = _mk_user(phone_verified=False)
+def test_max_created_user_relinks_after_unlink():
+    """Пришёл через MAX, отвязал, входит снова: по подтверждённому номеру привязываем."""
+    user = _mk_max_user()
     attempt = _attempt()
     res = services.complete_from_contact(attempt, max_user_id=1002, phone=PHONE)
     assert res.status == Status.COMPLETED and res.user_id == user.pk
-    user.refresh_from_db()
-    assert user.phone_verified is True
     assert MaxAccount.objects.filter(user=user, max_user_id=1002).exists()
+
+
+# DRF-2735: номер в профиле — ещё не основание впускать. В аккаунт с паролем его
+# вписывают без проверки, и раньше владелец номера попадал в такой аккаунт, а тот
+# получал phone_verified и гостевые заказы владельца номера.
+
+
+def _assert_refused(res, user, reason):
+    assert res.status == Status.FAILED and res.failure_reason == reason
+    # Отказ не оставляет следов: ни привязки, ни флага, ни пользователя у попытки.
+    assert res.user_id is None
+    assert not MaxAccount.objects.filter(user=user).exists()
+    user.refresh_from_db()
+    return user
+
+
+@pytest.mark.django_db
+def test_unverified_phone_gives_neither_login_nor_flag():
+    user = _mk_user(phone_verified=False)
+    res = services.complete_from_contact(_attempt(), max_user_id=1002, phone=PHONE, chat_id=7)
+    user = _assert_refused(res, user, "phone_unverified")
+    assert user.phone_verified is False
+    assert user.max_chat_id is None
+    assert User.objects.count() == 1  # второго аккаунта на этот номер не завели
+
+
+@pytest.mark.django_db
+def test_password_account_is_not_linked_by_phone_even_if_verified():
+    """Флаг мог встать раньше (старый поток, админка) — пароль всё равно решает."""
+    user = _mk_user(phone_verified=True)
+    res = services.complete_from_contact(_attempt(), max_user_id=1002, phone=PHONE)
+    _assert_refused(res, user, "password_account")
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("verified", "reason"), [(False, "phone_unverified"), (True, "password_account")]
+)
+def test_staff_account_is_never_linked_by_phone(verified, reason):
+    """Номер в аккаунте сотрудника не должен давать владельцу номера вход в админку."""
+    staff = User.objects.create_user(
+        phone=PHONE, password=None, phone_verified=verified, is_staff=True
+    )
+    res = services.complete_from_contact(_attempt(), max_user_id=1002, phone=PHONE)
+    _assert_refused(res, staff, reason)
+
+
+@pytest.mark.django_db
+@mock.patch("apps.analytics.services.track")
+def test_refusal_emits_failure_not_link_event(mock_track):
+    _mk_user(phone_verified=False)
+    services.complete_from_contact(_attempt(), max_user_id=1002, phone=PHONE)
+    events = [c.args[0] for c in mock_track.call_args_list]
+    assert "max_auth_failed" in events
+    assert "max_account_linked" not in events and "max_auth_completed" not in events
 
 
 @pytest.mark.django_db
@@ -96,6 +154,21 @@ def test_link_from_account_success():
     res = services.complete_from_contact(attempt, max_user_id=1004, phone=PHONE)
     assert res.status == Status.COMPLETED
     assert MaxAccount.objects.filter(user=user, max_user_id=1004).exists()
+    # DRF-2735: привязка из кабинета номер подтверждённым НЕ делает. Ссылку на бота
+    # можно переслать владельцу номера (DRF-2740) — флаг и гостевые заказы за это
+    # отдавать нельзя, пока подтверждение в боте не станет устойчивым к чужой ссылке.
+    user.refresh_from_db()
+    assert user.phone_verified is False
+
+
+@pytest.mark.django_db
+def test_link_without_phone_in_profile_explains_what_to_do():
+    """Регистрация по e-mail телефон не спрашивает: причина — «нет номера», не «не совпал»."""
+    user = User.objects.create_user(email="noph@test.ru", password="pass12345")
+    attempt = _attempt(op=Operation.LINK, user=user)
+    res = services.complete_from_contact(attempt, max_user_id=1014, phone=PHONE)
+    assert res.status == Status.FAILED and res.failure_reason == "no_phone"
+    assert not MaxAccount.objects.filter(user=user).exists()
 
 
 @pytest.mark.django_db
@@ -122,11 +195,21 @@ def test_link_phone_mismatch():
 @pytest.mark.django_db
 def test_conflict_user_has_other_max():
     """У найденного по телефону аккаунта уже есть другая привязка MAX → конфликт."""
-    user = _mk_user(phone=PHONE)
+    user = _mk_max_user(phone=PHONE)
     MaxAccount.objects.create(user=user, max_user_id=1007, phone=PHONE)
     attempt = _attempt()
     res = services.complete_from_contact(attempt, max_user_id=2007, phone=PHONE)
     assert res.status == Status.FAILED and res.failure_reason == "user_has_other_max"
+
+
+@pytest.mark.django_db
+def test_unverified_phone_is_checked_before_other_max():
+    """Держатель привязал свой MAX и вписал чужой номер: владельцу номера — честный
+    отказ про номер, а не «к вашему аккаунту привязан другой MAX»."""
+    holder = _mk_user(phone=PHONE, phone_verified=False)
+    MaxAccount.objects.create(user=holder, max_user_id=1007, phone="+79990001122")
+    res = services.complete_from_contact(_attempt(), max_user_id=2007, phone=PHONE)
+    assert res.status == Status.FAILED and res.failure_reason == "phone_unverified"
 
 
 @pytest.mark.django_db

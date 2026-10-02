@@ -13,6 +13,7 @@ from django.core.cache import cache
 from django.test import Client, override_settings
 
 from .handlers import auth
+from .models import MaxAccount
 from .verify import extract_phone_from_vcf, verify_contact_hash
 
 User = get_user_model()
@@ -150,7 +151,9 @@ def test_webhook_bot_started(mock_send, client):
     assert resp.status_code == 200
     reply = mock_send.call_args[0][0]
     assert reply["chat_id"] == 12345
-    assert "request_contact" in json.dumps(reply)
+    # «Старт» без ссылки с сайта: объясняем, как войти, номер не просим (DRF-2735).
+    assert reply["text"] == auth.HELP_TEXT
+    assert "request_contact" not in json.dumps(reply)
 
 
 @pytest.mark.django_db
@@ -210,148 +213,117 @@ def test_config_check_requires_username_when_max_active():
     assert any(e.id == "integration_max.E002" for e in errors)
 
 
-# ═══════════ AUTH FLOW ═══════════
+# ═══════════ БОТ ВНЕ ПОПЫТКИ (DRF-2735) ═══════════
+#
+# Старый поток привязки по коду удалён: бот по номеру из контакта находил аккаунт
+# и после «кода», который сам же показывал, писал max_chat_id и phone_verified.
+# Чужой номер, вписанный в профиль, так «подтверждался» первым же владельцем
+# номера, открывшим бота. Теперь без живой попытки с сайта бот по номеру никого
+# не ищет и ничего не пишет.
+
+HDR = {"HTTP_X_MAX_BOT_API_SECRET": "my-secret"}
 
 
-@override_settings(MAX_BOT_TOKEN=TOKEN)
-@pytest.mark.django_db
-def test_contact_sends_otp(user):
-    payload = _make_vcf_payload("+79001234567", TOKEN)
-    reply = auth.handle_contact(100, payload)
-    assert "clipboard" in json.dumps(reply)
-    assert cache.get("max_otp:100") is not None
+def _contact_message(phone: str, timestamp: int, chat_id: int = 500) -> str:
+    return json.dumps(
+        {
+            "update_type": "message_created",
+            "timestamp": timestamp,
+            "message": {
+                "sender": {"user_id": 99},
+                "recipient": {"chat_id": chat_id, "chat_type": "dialog"},
+                "body": {
+                    "mid": f"c{timestamp}",
+                    "attachments": [
+                        {"type": "contact", "payload": _make_vcf_payload(phone, TOKEN)}
+                    ],
+                },
+            },
+        }
+    )
 
 
-@override_settings(MAX_BOT_TOKEN=TOKEN)
-@pytest.mark.django_db
-def test_otp_confirm_links_user(user):
-    payload = _make_vcf_payload("+79001234567", TOKEN)
-    auth.handle_contact(200, payload)
-    otp = cache.get("max_otp:200")["otp"]
-
-    reply = auth.handle_otp_confirm(200, otp)
-    assert "успешно привязан" in reply["text"]
-    user.refresh_from_db()
-    assert user.max_chat_id == 200
-    assert cache.get("max_otp:200") is None
-
-
-@override_settings(MAX_BOT_TOKEN=TOKEN)
-@pytest.mark.django_db
-def test_otp_wrong_code(user):
-    payload = _make_vcf_payload("+79001234567", TOKEN)
-    auth.handle_contact(300, payload)
-    reply = auth.handle_otp_confirm(300, "0000")
-    assert "Неверный код" in reply["text"]
-    assert cache.get("max_otp:300")["attempts"] == 1
-
-
-@pytest.mark.django_db
-def test_otp_no_pending():
-    reply = auth.handle_otp_confirm(999, "1234")
-    assert "Нет ожидающей" in reply["text"]
-
-
-@override_settings(MAX_BOT_TOKEN=TOKEN)
-@pytest.mark.django_db
-def test_otp_max_attempts_blocks(user):
-    """После OTP_MAX_ATTEMPTS неверных попыток — блок и очистка из кэша."""
-    payload = _make_vcf_payload("+79001234567", TOKEN)
-    auth.handle_contact(400, payload)
-
-    for _ in range(auth.OTP_MAX_ATTEMPTS):
-        reply = auth.handle_otp_confirm(400, "0000")
-    # Последняя попытка превышает лимит
-    reply = auth.handle_otp_confirm(400, "0000")
-    assert "Превышено" in reply["text"]
-    assert cache.get("max_otp:400") is None  # кэш очищен
-
-
-@override_settings(MAX_BOT_TOKEN=TOKEN)
-@pytest.mark.django_db
-def test_otp_expired_shows_no_pending(user):
-    """Истёкший OTP (кэш удалён по TTL) — «Нет ожидающей привязки»."""
-    payload = _make_vcf_payload("+79001234567", TOKEN)
-    auth.handle_contact(500, payload)
-    # Симулируем истечение TTL — удаляем ключ вручную
-    cache.delete("max_otp:500")
-    reply = auth.handle_otp_confirm(500, "9999")
-    assert "Нет ожидающей" in reply["text"]
-
-
-@override_settings(MAX_BOT_TOKEN=TOKEN)
-@pytest.mark.django_db
-def test_contact_already_linked(user):
-    User.objects.filter(pk=user.pk).update(max_chat_id=100)
-    payload = _make_vcf_payload("+79001234567", TOKEN)
-    reply = auth.handle_contact(100, payload)
-    assert "уже привязан" in reply["text"]
-
-
-# ═══════════ E2E ═══════════
+def _post(client, data: str):
+    return client.post("/api/max/webhook/", data=data, content_type="application/json", **HDR)
 
 
 @override_settings(MAX_BOT_TOKEN=TOKEN, MAX_WEBHOOK_SECRET="my-secret")
 @pytest.mark.django_db
 @mock.patch("apps.integration_max.webhook._send_reply")
-def test_e2e_auth_flow(mock_send, client, user):
-    hdr = {"HTTP_X_MAX_BOT_API_SECRET": "my-secret"}
-    # 1. bot_started
-    client.post(
-        "/api/max/webhook/",
-        data=json.dumps(
-            {"update_type": "bot_started", "timestamp": 5001, "chat_id": 500, "user": {}}
-        ),
-        content_type="application/json",
-        **hdr,
+def test_contact_without_attempt_touches_nothing(mock_send, client, user):
+    """«Старт» без ссылки → номер → цифры: аккаунт с этим номером не тронут."""
+    _post(
+        client,
+        json.dumps({"update_type": "bot_started", "timestamp": 5001, "chat_id": 500, "user": {}}),
     )
+    assert mock_send.call_args[0][0]["text"] == auth.HELP_TEXT
 
-    # 2. contact
-    vcf_payload = _make_vcf_payload("+79001234567", TOKEN)
-    client.post(
-        "/api/max/webhook/",
-        data=json.dumps(
-            {
-                "update_type": "message_created",
-                "timestamp": 5002,
-                "message": {
-                    "sender": {"user_id": 99},
-                    "recipient": {"chat_id": 500, "chat_type": "dialog"},
-                    "body": {
-                        "mid": "m1",
-                        "attachments": [{"type": "contact", "payload": vcf_payload}],
-                    },
-                },
-            }
-        ),
-        content_type="application/json",
-        **hdr,
-    )
-    otp = cache.get("max_otp:500")["otp"]
+    _post(client, _contact_message("+79001234567", 5002))
+    assert mock_send.call_args[0][0]["text"] == auth.STALE_LINK_TEXT
 
-    # 3. OTP
-    client.post(
-        "/api/max/webhook/",
-        data=json.dumps(
-            {
-                "update_type": "message_created",
-                "timestamp": 5003,
-                "message": {
-                    "sender": {"user_id": 99},
-                    "recipient": {"chat_id": 500, "chat_type": "dialog"},
-                    "body": {"mid": "m2", "text": otp},
-                },
-            }
-        ),
-        content_type="application/json",
-        **hdr,
-    )
+    _post(client, _text_message("1234", 5003))
+    assert mock_send.call_args[0][0]["text"] == auth.HELP_TEXT
 
-    assert mock_send.call_count == 3
-    confirm_reply = mock_send.call_args[0][0]
-    assert "успешно привязан" in confirm_reply["text"]
     user.refresh_from_db()
-    assert user.max_chat_id == 500
+    assert user.max_chat_id is None
+    assert user.phone_verified is False
+    assert not MaxAccount.objects.exists()
+    assert cache.get("max_otp:500") is None
+
+
+@override_settings(MAX_BOT_TOKEN=TOKEN, MAX_WEBHOOK_SECRET="my-secret")
+@pytest.mark.django_db
+@mock.patch("apps.integration_max.webhook._send_reply")
+def test_bot_started_with_unknown_token_says_link_is_stale(mock_send, client):
+    _post(
+        client,
+        json.dumps(
+            {
+                "update_type": "bot_started",
+                "timestamp": 5004,
+                "chat_id": 501,
+                "user": {"user_id": 99},
+                "payload": "0" * 32 + ".not-a-secret",
+            }
+        ),
+    )
+    reply = mock_send.call_args[0][0]
+    assert reply["text"] == auth.STALE_LINK_TEXT
+    assert "request_contact" not in json.dumps(reply)
+
+
+@override_settings(MAX_BOT_TOKEN=TOKEN, MAX_WEBHOOK_SECRET="my-secret")
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "token", ["garbage.secret", "abc.def", "не-uuid.x", "...", "a" * 500 + ".b"]
+)
+@mock.patch("apps.integration_max.webhook._send_reply")
+def test_bot_started_with_malformed_token_does_not_crash(mock_send, client, token):
+    """Параметр ``start`` диплинка задаёт кто угодно. Не-UUID раньше ронял вебхук
+    (UUIDField бросает ValidationError, а ловился только ValueError) — бот молчал,
+    а MAX получал 500 и повторял доставку."""
+    resp = _post(
+        client,
+        json.dumps(
+            {
+                "update_type": "bot_started",
+                "timestamp": 5005,
+                "chat_id": 502,
+                "user": {"user_id": 99},
+                "payload": token,
+            }
+        ),
+    )
+    assert resp.status_code == 200
+    reply = mock_send.call_args[0][0]
+    assert reply["text"] in (auth.STALE_LINK_TEXT, auth.HELP_TEXT)
+    assert "request_contact" not in json.dumps(reply)
+
+
+def test_legacy_code_flow_is_gone():
+    """Точек входа старого потока больше нет — случайно вернуть их нельзя."""
+    for name in ("handle_otp_confirm", "generate_otp", "OTP_LENGTH"):
+        assert not hasattr(auth, name), name
 
 
 def _text_message(text: str, timestamp: int) -> str:
@@ -390,13 +362,11 @@ def test_unknown_text_gets_help_reply(mock_send, client, text):
 @override_settings(MAX_BOT_TOKEN=TOKEN, MAX_WEBHOOK_SECRET="my-secret")
 @pytest.mark.django_db
 @mock.patch("apps.integration_max.webhook._send_reply")
-def test_start_command_still_starts_binding(mock_send, client):
-    client.post(
-        "/api/max/webhook/",
-        data=_text_message("/start", 6002),
-        content_type="application/json",
-        HTTP_X_MAX_BOT_API_SECRET="my-secret",
-    )
+@pytest.mark.parametrize("text", ["/start", "start", "Начать"])
+def test_start_command_explains_how_to_login(mock_send, client, text):
+    """Команда «старт» текстом — та же подсказка, что и кнопка без ссылки."""
+    _post(client, _text_message(text, 6002))
 
     reply = mock_send.call_args[0][0]
-    assert "Отправить номер" in json.dumps(reply, ensure_ascii=False)
+    assert reply["text"] == auth.HELP_TEXT
+    assert "request_contact" not in json.dumps(reply)

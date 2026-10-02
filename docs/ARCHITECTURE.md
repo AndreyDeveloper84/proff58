@@ -144,7 +144,7 @@ proff58/
 │   ├── integration_max/
 │   │   ├── client.py            # обёртка MAX Bot API
 │   │   ├── webhook.py           # приём событий
-│   │   ├── handlers/            # auth.py (OTP), orders.py (статусы)
+│   │   ├── handlers/            # auth_flow.py (вход/привязка по диплинку), orders.py (статусы)
 │   │   └── services.py          # send_message, request_contact
 │   └── integration_ship/
 │       └── providers/           # cdek.py, boxberry.py, ...

@@ -20,8 +20,12 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ("customer_type", "is_staff", "is_active")
     search_fields = ("phone", "email", "full_name")
     actions = ["verify_b2b_action"]
+    # DRF-2735: «телефон подтверждён» — только для чтения. Флаг ставит MAX, когда
+    # владелец номера сам передал контакт; по нему аккаунту отдаются гостевые
+    # заказы с этим номером. Галочка вручную означала бы «верю на слово».
+    readonly_fields = ("phone_verified",)
     fieldsets = (
-        (None, {"fields": ("phone", "password")}),
+        (None, {"fields": ("phone", "phone_verified", "password")}),
         ("Личные данные", {"fields": ("full_name", "email", "customer_type")}),
         (
             "Права",
@@ -38,6 +42,15 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+    def save_model(self, request, obj, form, change):
+        # DRF-2735: подтверждение относится к номеру, а не к аккаунту. Сменили или
+        # очистили номер — прежнее «подтверждён» и чат уведомлений к новому
+        # значению не относятся (то же делает ChangePhoneView у покупателя).
+        if change and "phone" in form.changed_data:
+            obj.phone_verified = False
+            obj.max_chat_id = None
+        super().save_model(request, obj, form, change)
 
     @admin.action(description="Верифицировать B2B-организацию")
     def verify_b2b_action(self, request, queryset):

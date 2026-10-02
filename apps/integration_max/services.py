@@ -15,6 +15,7 @@ from dataclasses import dataclass
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -124,13 +125,19 @@ def _refresh_expiry(attempt: MaxAuthAttempt) -> MaxAuthAttempt:
 def get_attempt(public_id_hex: str) -> MaxAuthAttempt | None:
     try:
         attempt = MaxAuthAttempt.objects.get(public_id=public_id_hex)
-    except (MaxAuthAttempt.DoesNotExist, ValueError):
+    except (MaxAuthAttempt.DoesNotExist, ValueError, ValidationError):
+        # ValidationError — от UUIDField на строке, которая не UUID: параметр
+        # ``start`` диплинка задаёт кто угодно, и мусор в нём не должен ронять вебхук.
         return None
     return _refresh_expiry(attempt)
 
 
 def load_valid_attempt(token: str) -> MaxAuthAttempt | None:
-    """Загрузить активную (pending, не истёкшую) попытку по токену + проверить секрет."""
+    """Загрузить попытку по токену и проверить секрет.
+
+    Статус не проверяется: попытка может оказаться завершённой или истёкшей —
+    решает вызывающий (вебхук на такую отвечает «ссылка не действует»).
+    """
     parsed = parse_token(token)
     if not parsed:
         return None
@@ -303,7 +310,8 @@ def complete_from_contact(
       - MAX уже привязан (по max_user_id) → вход этого пользователя;
       - link: привязать к текущему пользователю, если телефон совпал и нет конфликта;
       - иначе поиск по телефону: не найден → создать (passwordless, verified);
-        найден без привязки → привязать + вход; найден с другой привязкой → конфликт.
+        найден → привязать + вход ТОЛЬКО если номер у аккаунта подтверждён и у
+        аккаунта нет пароля (см. ниже, DRF-2735); иначе отказ без изменений.
     """
     profile = profile or {}
     # Идемпотентность: повторная доставка того же контакта не пересоздаёт.
@@ -343,7 +351,13 @@ def complete_from_contact(
             return _fail(attempt, "max_linked_to_other")  # §10: MAX у другого аккаунта
         if MaxAccount.objects.filter(user=target).exclude(max_user_id=max_user_id).exists():
             return _fail(attempt, "user_has_other_max")
-        if normalize_phone(target.phone) != phone:
+        target_phone = normalize_phone(target.phone or "")
+        if not target_phone:
+            # Регистрация по e-mail телефон не спрашивает: привязывать MAX не к чему.
+            # Отдельная причина — чтобы подсказать «сначала укажите номер в профиле»,
+            # а не «номер не совпадает».
+            return _fail(attempt, "no_phone")
+        if target_phone != phone:
             return _fail(attempt, "phone_mismatch")
         self_link = existing.user_id == target.pk if existing else False
         _upsert_account(
@@ -379,12 +393,28 @@ def complete_from_contact(
         return _complete(attempt, user, max_user_id=max_user_id, chat_id=chat_id, is_new=True)
 
     # Пользователь найден по телефону.
+    #
+    # DRF-2735: номер в профиле — ещё не основание впускать. В аккаунт с паролем
+    # телефон вписывается без проверки (``ChangePhoneView``: любой свободный номер).
+    # Раньше владелец номера, нажав «Войти через MAX», попадал в такой аккаунт — тот,
+    # от которого пароль знает кто-то другой, — а сам аккаунт получал
+    # ``phone_verified`` и при следующем входе паролем забирал гостевые заказы
+    # владельца номера. Поэтому:
+    #   - неподтверждённый номер не даёт ни входа, ни привязки, ни флага;
+    #   - аккаунт с паролем (и любой сотрудник) по номеру не привязывается вовсе,
+    #     даже с подтверждённым: у него есть кабинет, MAX привязывают оттуда (LINK
+    #     доказывает и аккаунт, и номер). По номеру возвращается только тот, кто
+    #     пришёл через MAX, отвязал его и входит снова, — пароля у него нет.
+    # Проверка номера — раньше проверки «другой MAX»: иначе владельцу номера, чей
+    # номер вписал себе чужой аккаунт с привязанным MAX, бот ответил бы про
+    # «ваш аккаунт» вместо честного отказа.
+    if not user.phone_verified:
+        return _fail(attempt, "phone_unverified")
+    if user.has_usable_password() or user.is_staff:
+        return _fail(attempt, "password_account")
     if MaxAccount.objects.filter(user=user).exists():
         # У аккаунта уже есть другая привязка MAX (max_user_id иной) → конфликт (§10).
         return _fail(attempt, "user_has_other_max")
-    if not user.phone_verified:
-        user.phone_verified = True
-        user.save(update_fields=["phone_verified"])
     _upsert_account(user, max_user_id=max_user_id, phone=phone, chat_id=chat_id, profile=profile)
     return _complete(attempt, user, max_user_id=max_user_id, chat_id=chat_id, is_new=False)
 
@@ -490,9 +520,9 @@ def resolve_active_chat_id(user) -> int | None:
 
     Источник истины — `MaxAccount(is_active=True, chat_id задан)`: так его
     поддерживают link/login/confirm/unlink. Если привязки через новый flow нет,
-    временно падаем на legacy `User.max_chat_id` (старый OTP-бот-флоу,
-    `handlers/auth.py`, задепрекейчен) — только на чтение, новый код туда не
-    пишет (без двух независимых write-path).
+    падаем на legacy `User.max_chat_id` — его писал старый поток привязки по коду
+    (удалён в DRF-2735). Только на чтение, для привязавшихся раньше: новый код
+    туда не пишет.
     """
     if user is None or not getattr(user, "pk", None):
         return None
