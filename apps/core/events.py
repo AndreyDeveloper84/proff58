@@ -32,8 +32,11 @@ Payload каждого сигнала (kwargs у `.send()`) — стабильн
                         — product_id, old_available: str, new_available: str, source, transition_id
 
 `order_created` уже имеет издателя — `apps.orders.services.place_order` (#26).
-`order_status_changed` — издатель `apps.sync_1c.use_cases.confirm_orders` (#50):
-эмитится при реальной смене `fulfillment_status` по подтверждению из 1С.
+`order_status_changed` — издаётся при реальной смене `fulfillment_status`: менеджером
+и покупателем (`apps.orders.fulfillment.advance_fulfillment`), 1С
+(`apps.sync_1c.use_cases.confirm_orders`, #50), истечением счёта
+(`apps.orders.invoice_lifecycle`) и автоотменой неоплаченного онлайн-заказа
+(`apps.payments.expiry`, DRF-2736).
 `order_paid`/`payment_succeeded`/`payment_failed` — издатель ЮKassa-webhook
 (`apps.payments.services.handle_webhook`, #431/M-07). `payment_refunded` —
 издатель `apps.payments.services.refund()` (ADR-0009, #516). `price_changed`

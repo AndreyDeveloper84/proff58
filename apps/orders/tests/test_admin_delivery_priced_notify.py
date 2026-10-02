@@ -186,6 +186,12 @@ def test_товара_нет_письма_нет_предупреждение(
     order.refresh_from_db()
     assert order.reservation_status == ReservationStatus.RELEASED
     assert order.delivery_calc_status == DeliveryCalcStatus.CALCULATED  # стоимость сохранена
+    # DRF-2736: товар не удержан, но срок отодвинут на сутки. Иначе автоотмена через
+    # пять минут отменила бы заказ «за неоплату» — покупателю, которому платить не давали.
+    assert order.reserved_until > timezone.now() + timedelta(hours=23)
+    assert "отменится автоматически" in page
+    товар.refresh_from_db()
+    assert товар.available_quantity == Decimal("1")  # остаток не тронут
 
 
 @pytest.mark.django_db

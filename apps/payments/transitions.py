@@ -55,6 +55,28 @@ def is_allowed(current: str, target: str) -> bool:
     return target in WEBHOOK_TRANSITIONS.get(current, set())
 
 
+def order_status_after_refund(order_id: int, *, payment_id: int, full: bool) -> str:
+    """Статус оплаты заказа после возврата по одному платежу — с оглядкой на остальные.
+
+    Обычно оплаченный платёж у заказа один, и «платёж возвращён полностью» значит
+    «по заказу возвращено всё». Но оплатить могут и два платежа одного заказа
+    (двойное нажатие дало второй ``orderId``, обе страницы оплатили). Тогда полный
+    возврат одного — ещё не «возвращено»: раньше заказ становился ``refunded``, и
+    деньги второго платежа пропадали из виду (DRF-2736).
+    """
+    if not full:
+        return OrderPaymentStatus.PARTIALLY_REFUNDED
+    money_left = (
+        Payment.objects.filter(
+            order_id=order_id,
+            status__in=(PaymentStatus.SUCCEEDED, PaymentStatus.PARTIALLY_REFUNDED),
+        )
+        .exclude(pk=payment_id)
+        .exists()
+    )
+    return OrderPaymentStatus.PARTIALLY_REFUNDED if money_left else OrderPaymentStatus.REFUNDED
+
+
 def apply_succeeded(payment: Payment, *, reference: str, extra_fields: list[str] | None = None):
     """Платёж оплачен: пометить платёж и заказ, издать события после commit.
 
@@ -70,18 +92,7 @@ def apply_succeeded(payment: Payment, *, reference: str, extra_fields: list[str]
     order = Order.objects.select_for_update().get(pk=payment.order_id)
 
     if order.fulfillment_status == FulfillmentStatus.CANCELLED:
-        # Поздняя оплата: заказ уже отменён по таймауту, товар мог уйти другому
-        # покупателю. Молча воскрешать нельзя — денег это не вернёт, а обещание
-        # отгрузить создаст. Платёж помечен успешным, случай уходит в лог для
-        # ручного разбора (возврат или восстановление заказа).
-        logger.error(
-            "Поздняя оплата: заказ %s уже отменён, платёж %s на %s %s требует "
-            "ручного разбора (возврат или восстановление заказа)",
-            order.order_number,
-            reference,
-            payment.amount,
-            payment.currency,
-        )
+        _apply_late_payment(order, payment, reference=reference)
         return
 
     order.payment_status = OrderPaymentStatus.PAID
@@ -102,6 +113,64 @@ def apply_succeeded(payment: Payment, *, reference: str, extra_fields: list[str]
         lambda: events.order_paid.send(sender=Payment, order_id=order_id, payment_id=payment_id)
     )
     logger.info("Платёж %s оплачен, заказ %s", reference, order.order_number)
+
+
+def _apply_late_payment(order: Order, payment: Payment, *, reference: str) -> None:
+    """Деньги пришли за уже отменённый заказ (DRF-2736).
+
+    Отменить неоплаченный платёж у кассы нельзя: страница оплаты живёт и после
+    того, как заказ отменён — автоматикой по таймауту, покупателем или менеджером.
+    Оплатил — деньги у магазина, а заказа нет.
+
+    Воскрешать заказ нельзя: товар мог уйти другому покупателю, а «отменён» —
+    терминальный статус. Молчать тоже нельзя: раньше заказ оставался «отменён, не
+    оплачен», покупатель видел это в кабинете, а о деньгах знала одна строка лога.
+    Поэтому заказ честно становится «отменён, оплачен» и сразу получает заявку на
+    возврат — дальше работает обычный путь: очередь «Просят вернуть деньги» в
+    админке, письмо сотрудникам, кнопка «Вернуть деньги», заявка в кабинете
+    покупателя. У гостя своего способа подать заявку нет вовсе — за него её
+    подаёт этот код.
+
+    ``payment_succeeded`` / ``order_paid`` не издаём: списывать резерв не за что,
+    а «заказ оплачен, собираем» покупателю отменённого заказа — неправда.
+    """
+    # Локальный импорт: refund_requests → services → transitions.
+    from . import refund_requests
+
+    order.payment_status = OrderPaymentStatus.PAID
+    order.save(update_fields=["payment_status", "updated_at"])
+
+    request = None
+    try:
+        # Свой savepoint: ошибка БД внутри не должна «отравить» внешнюю транзакцию.
+        with transaction.atomic():
+            request = refund_requests.ensure_request_for_cancelled(
+                order.pk, comment=refund_requests.LATE_PAYMENT_COMMENT
+            )
+    except Exception:  # noqa: BLE001
+        # Факт оплаты важнее заявки: её сбой не должен откатить «платёж получен» —
+        # касса повторит уведомление несколько раз и бросит, а заказ отменён и в
+        # janitor не попадёт: «деньги списаны, следа нет». Заявку позже заведёт
+        # ``refund_requests.heal_missing_requests`` (janitor, каждые 5 минут).
+        logger.exception(
+            "Поздняя оплата заказа %s: заявку на возврат создать не удалось",
+            order.order_number,
+        )
+
+    # error, а не info: это деньги покупателя за заказ, которого не будет.
+    logger.error(
+        "Поздняя оплата: заказ %s уже отменён, платёж %s на %s %s — %s. "
+        "Верните деньги покупателю",
+        order.order_number,
+        reference,
+        payment.amount,
+        payment.currency,
+        (
+            f"заведена заявка на возврат #{request.pk}"
+            if request is not None
+            else "новая заявка на возврат не заведена (уже есть открытая или сбой)"
+        ),
+    )
 
 
 def apply_canceled(payment: Payment, *, reason: str, reference: str, extra_fields=None):
@@ -159,7 +228,7 @@ def apply_refunded(
     payment.status = PaymentStatus.REFUNDED if full else PaymentStatus.PARTIALLY_REFUNDED
     payment.save(update_fields=["status", *(extra_fields or []), "updated_at"])
 
-    order_status = OrderPaymentStatus.REFUNDED if full else OrderPaymentStatus.PARTIALLY_REFUNDED
+    order_status = order_status_after_refund(payment.order_id, payment_id=payment.pk, full=full)
     Order.objects.filter(pk=payment.order_id).update(payment_status=order_status)
 
     if not created:

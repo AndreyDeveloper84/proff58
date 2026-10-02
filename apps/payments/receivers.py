@@ -1,7 +1,9 @@
-"""Подписчики доменных событий платежей: письмо сотрудникам о заявке на возврат (T2).
+"""Подписчики доменных событий платежей.
 
-Заявка уже закоммичена (издатель — refund_requests.create_request через
-on_commit); сбой уведомления только логируется.
+* Письмо сотрудникам о заявке на возврат (T2). Заявка уже закоммичена (издатель —
+  refund_requests.create_request через on_commit); сбой уведомления только
+  логируется.
+* Заказ отменили уже оплаченным → заявка на возврат заводится сама (DRF-2736).
 """
 
 from __future__ import annotations
@@ -52,7 +54,33 @@ def _on_refund_requested(sender, *, request_id, order_id, **kwargs):
         logger.exception("Сбой уведомления сотрудников о заявке на возврат %s", request_id)
 
 
+def _on_order_status_changed(sender, *, order_id, new_status=None, **kwargs):
+    """Заказ отменён, а оплата онлайн по нему получена → заявка на возврат.
+
+    Отменить оплаченный заказ может менеджер (товара не оказалось, покупатель
+    передумал по телефону) или 1С. Раньше после этого заказ оставался «отменён,
+    оплачен» без единой заявки: вернуть деньги из админки можно только кнопкой
+    заявки, а гость подать её не может. Для отмены по неоплате (``expired``)
+    функция ничего не делает — денег нет.
+    """
+    if new_status != "cancelled":
+        return
+    try:
+        from . import refund_requests
+
+        refund_requests.ensure_request_for_cancelled(
+            order_id, comment=refund_requests.CANCELLED_PAID_COMMENT
+        )
+    except Exception:  # noqa: BLE001 — отмена заказа уже состоялась
+        logger.exception(
+            "Заказ %s отменён оплаченным: заявку на возврат создать не удалось", order_id
+        )
+
+
 def connect() -> None:
     events.refund_requested.connect(
         _on_refund_requested, dispatch_uid="payments_notify_staff_refund_requested"
+    )
+    events.order_status_changed.connect(
+        _on_order_status_changed, dispatch_uid="payments_refund_request_on_cancel"
     )

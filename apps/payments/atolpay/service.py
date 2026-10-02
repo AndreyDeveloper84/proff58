@@ -200,12 +200,31 @@ def create_payment(order: Order, return_url: str = "") -> Payment:
     )
 
 
-def provider_says_paid(payment: Payment) -> bool:
-    """Спросить кассу напрямую: деньги пришли? Ошибка запроса — «не знаем»."""
+def provider_status_code(payment: Payment) -> int:
+    """Числовой статус платежа у кассы (``/status``). −1 — ответ не разобран.
+
+    Сетевая ошибка и отказ кассы — исключение ``AtolPayError``: вызывающий решает,
+    что делать с «не знаем», сам.
+    """
     if not payment.provider_order_id:
-        return False
-    data = payment_status(payment.provider_order_id)
-    return PROVIDER_STATUS.get(_status_code(data)) == PaymentStatus.SUCCEEDED
+        return -1
+    return _status_code(payment_status(payment.provider_order_id))
+
+
+def apply_verified_status(payment: Payment, code: int, *, source: str) -> None:
+    """Применить статус, уже полученный от кассы, — тем же путём, что уведомление.
+
+    Нужен там, где мы сами спросили кассу и узнали новость раньше уведомления
+    (или вместо потерянного): janitor истечения увидел «оплачен» — заказ должен
+    стать оплаченным сразу, а не ждать вебхука, который мог не дойти (DRF-2736).
+
+    Сумма при этом не сверяется: в ответе ``/status`` её нет (сверка идёт только по
+    телу настоящего уведомления, ``_check_amount``). Тело настоящего уведомления,
+    если оно уже записано, служебной пометкой не затираем — это единственная его копия.
+    """
+    _apply_payment_callback(
+        payment.provider_order_id, {"source": source, "status": code}, code, synthetic=True
+    )
 
 
 def _status_code(data: dict) -> int:
@@ -331,13 +350,19 @@ def _handle_fiscal_callback(order_id: str, payload: dict) -> None:
 
 
 @transaction.atomic
-def _apply_payment_callback(order_id: str, payload: dict, code: int) -> None:
-    """Перевести платёж по уже проверенному статусу кассы. Строка — под блокировкой."""
+def _apply_payment_callback(
+    order_id: str, payload: dict, code: int, *, synthetic: bool = False
+) -> None:
+    """Перевести платёж по уже проверенному статусу кассы. Строка — под блокировкой.
+
+    ``synthetic`` — статус узнали сами (``apply_verified_status``), тела уведомления нет.
+    """
     payment = _locked_payment(order_id)
     if payment is None:
         return
 
-    payment.webhook_payload = payload
+    if not (synthetic and payment.webhook_payload):
+        payment.webhook_payload = payload
     target = _target_status(code, payment.status)
 
     if target is None:

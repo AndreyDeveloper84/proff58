@@ -215,6 +215,11 @@ class OrderAdmin(TimestampColumnsMixin, admin.ModelAdmin):
         "payment_method",
         "sync_1c_status",
         "customer_type",
+        # DRF-2736: «оплачен, а резерв возвращён» (товар под заказ не списан) и
+        # «ждёт расчёта доставки» (автоотмена такие заказы не трогает) иначе
+        # не найти — в общем списке они ничем не выделяются.
+        "reservation_status",
+        "delivery_calc_status",
     )
     search_fields = ("order_number", "customer_name", "customer_phone", "inn")
     # «Заказы за сегодня» без этого было нечем отфильтровать.
@@ -592,6 +597,15 @@ class OrderAdmin(TimestampColumnsMixin, admin.ModelAdmin):
             if target == FulfillmentStatus.CANCELLED:
                 consequences.insert(0, "Резерв товаров вернётся в свободный остаток.")
                 consequences.append("Отмена необратима — статус конечный.")
+                if order.payment_method == "online" and order.payment_status in (
+                    "paid",
+                    "partially_refunded",
+                ):
+                    # DRF-2736: деньги за отменённый заказ не должны зависнуть.
+                    consequences.append(
+                        "Заказ оплачен онлайн: после отмены появится заявка на возврат "
+                        "(«Оплата» → «Заявки на возврат») — деньги нужно вернуть покупателю."
+                    )
             context = {
                 **self.admin_site.each_context(request),
                 "title": f"Заказ {order.order_number}",
@@ -645,10 +659,18 @@ class OrderAdmin(TimestampColumnsMixin, admin.ModelAdmin):
 
         ok, reason = rehold_reservation(obj.pk, ttl=timedelta(hours=24))
         if not ok:
+            # Товар не удержан — оплатить заказ покупатель не сможет. Но срок
+            # отодвигаем: иначе автоотмена через пять минут отменит заказ «за
+            # неоплату» и напишет об этом покупателю, которому платить не давали
+            # (DRF-2736). Сутки — менеджеру, чтобы связаться и заменить позицию.
+            Order.objects.filter(pk=obj.pk).exclude(
+                fulfillment_status=FulfillmentStatus.CANCELLED
+            ).update(reserved_until=timezone.now() + timedelta(hours=24))
             self.message_user(
                 request,
                 f"Стоимость доставки сохранена, но {reason}. Свяжитесь с покупателем — "
-                "письмо со ссылкой на оплату не отправлено.",
+                "письмо со ссылкой на оплату не отправлено. Если за сутки заказ не "
+                "изменить, он отменится автоматически.",
                 level=messages.WARNING,
             )
             return

@@ -9,6 +9,17 @@
 * принимается до получения заказа и 14 дней после него;
 * одна открытая заявка на заказ;
 * товар на склад возвращает 1С, сайт остатки не трогает.
+
+Отдельный случай — отменённый заказ, за который получены деньги (DRF-2736):
+оплата пришла после отмены (страница оплаты у кассы живёт дольше резерва) либо
+заказ отменили уже оплаченным. Товара покупатель не получит, поэтому заявку за
+него подаёт сам сайт (``ensure_request_for_cancelled``). Решает её по-прежнему
+менеджер; отказ и частичная сумма не запрещены (деньги могли вернуть в кабинете
+кассы, доставку могли удержать по договорённости), но админка о них
+предупреждает: у гостя нет способа подать заявку заново.
+
+Заявки никто не удаляет (в админке удаление закрыто), а заказ «отменён, оплачен»
+вовсе без заявки находит и чинит ``heal_missing_requests``.
 """
 
 from __future__ import annotations
@@ -42,6 +53,14 @@ REFUND_WINDOW = timedelta(days=14)
 REFUNDABLE_ORDER = frozenset({OrderPaymentStatus.PAID, OrderPaymentStatus.PARTIALLY_REFUNDED})
 _REFUNDABLE_PAYMENT = (PaymentStatus.SUCCEEDED, PaymentStatus.PARTIALLY_REFUNDED)
 _OPEN = (RefundRequestStatus.PENDING, RefundRequestStatus.PROCESSING)
+
+#: Комментарии автоматических заявок — их видят и менеджер, и покупатель.
+LATE_PAYMENT_COMMENT = "Оплата поступила после отмены заказа. Заявка создана автоматически."
+CANCELLED_PAID_COMMENT = "Заказ отменён после оплаты. Заявка создана автоматически."
+SECOND_PAYMENT_COMMENT = (
+    "По отменённому заказу есть ещё один оплаченный платёж. Заявка создана автоматически."
+)
+HEALED_COMMENT = "Заказ отменён, оплата получена, заявки не было. Заявка создана автоматически."
 
 
 def refundable_payment(order: Order) -> Payment | None:
@@ -86,6 +105,74 @@ def block_reason(order: Order, *, now: datetime | None = None) -> str | None:
     return None
 
 
+def must_refund_in_full(order: Order) -> bool:
+    """Заказ отменён, а деньги за него ещё у магазина — вернуть нужно всё."""
+    return (
+        order.fulfillment_status == FulfillmentStatus.CANCELLED
+        and order.payment_status in REFUNDABLE_ORDER
+    )
+
+
+def ensure_request_for_cancelled(order_id: int, *, comment: str) -> RefundRequest | None:
+    """Завести заявку на возврат по отменённому заказу с полученной онлайн-оплатой.
+
+    Без заявки про такие деньги знала бы одна строка лога: в админке вернуть их
+    можно только кнопкой заявки, а гость подать её не может вовсе. None — заявка
+    не нужна (заказ не отменён, денег нет, оплата не через кассу) либо уже открыта.
+    """
+    order = Order.objects.filter(pk=order_id).first()
+    if order is None or not must_refund_in_full(order):
+        return None
+    if refundable_payment(order) is None:
+        # Оплата не через кассу (счёт организации): возвращать кнопкой нечего.
+        return None
+    try:
+        return create_request(
+            order_id, user_id=order.user_id, reason=RefundReason.OTHER, comment=comment
+        )
+    except ValidationError as exc:
+        logger.info(
+            "Заказ %s: автозаявка на возврат не создана — %s",
+            order.order_number,
+            "; ".join(exc.messages),
+        )
+        return None
+
+
+def heal_missing_requests(limit: int = 100) -> int:
+    """Завести заявку заказам «отменён, оплата получена», у которых её нет вовсе.
+
+    Автозаявка создаётся одной попыткой — в момент поздней оплаты или отмены. Если
+    попытка сорвалась (сбой БД, упавший подписчик) или заказ отменили оплаченным ещё
+    до появления этой автоматики, деньги остаются без единой заявки, а гость подать
+    её не может. Проход дешёвый, идёт вместе с janitor'ом истечения.
+
+    Только заказы без ЕДИНОЙ заявки: отклонённая или закрытая частичным возвратом —
+    решение менеджера, с ним не спорим.
+    """
+    ids = list(
+        Order.objects.filter(
+            fulfillment_status=FulfillmentStatus.CANCELLED,
+            payment_status__in=REFUNDABLE_ORDER,
+            payments__status__in=_REFUNDABLE_PAYMENT,
+            refund_requests__isnull=True,
+        )
+        .order_by("id")
+        .values_list("pk", flat=True)
+        .distinct()[:limit]
+    )
+    healed = 0
+    for order_id in ids:
+        try:
+            if ensure_request_for_cancelled(order_id, comment=HEALED_COMMENT) is not None:
+                healed += 1
+        except Exception:  # noqa: BLE001 — один заказ не должен остановить проход
+            logger.exception("Заказ %s: не удалось завести заявку на возврат", order_id)
+    if healed:
+        logger.warning("heal_missing_requests: заведено заявок на возврат — %s", healed)
+    return healed
+
+
 def create_request(
     order_id: int, *, user_id: int | None, reason: str, comment: str = ""
 ) -> RefundRequest:
@@ -118,7 +205,8 @@ def create_request(
 
 
 def approve(request_id: int, *, amount: Decimal | None, actor_id: int | None) -> RefundRequest:
-    """Вернуть деньги по заявке. amount=None — весь остаток платежа.
+    """Вернуть деньги по заявке. amount=None — весь остаток платежа (так его понимает
+    и ``services.refund``).
 
     Вызов кассы идёт вне транзакции (как в ``services.refund``), поэтому заявка
     сначала переводится в «Оформляется возврат»: повторное нажатие менеджера
@@ -152,6 +240,12 @@ def approve(request_id: int, *, amount: Decimal | None, actor_id: int | None) ->
     request.decided_at = timezone.now()
     request.save(update_fields=["status", "refund", "decided_by", "decided_at", "updated_at"])
     logger.info("Заявка на возврат #%s: возвращено %s", request.pk, refund.amount)
+
+    # У отменённого заказа мог быть второй оплаченный платёж (обе страницы оплаты
+    # сработали). Заявка закрыта возвратом одного — второй не должен пропасть из виду.
+    other = refundable_payment(request.order)
+    if other is not None and other.pk != payment.pk:
+        ensure_request_for_cancelled(request.order_id, comment=SECOND_PAYMENT_COMMENT)
     return request
 
 

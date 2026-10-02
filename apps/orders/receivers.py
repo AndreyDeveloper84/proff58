@@ -19,15 +19,52 @@ from django.db.models.signals import pre_delete
 from apps.core import events
 
 from .models import Order
-from .reservation import confirm_reservation, release_reservation
+from .reservation import confirm_or_take, release_reservation
 
 logger = logging.getLogger(__name__)
 _ZERO = Decimal("0.00")
 
 
 def _on_payment_succeeded(sender, *, order_id, payment_id=None, **kwargs):
-    # Оплата подтверждена → резерв списываем (товар уходит). Идемпотентно.
-    confirm_reservation(order_id)
+    """Оплата подтверждена → товар списываем. Идемпотентно.
+
+    Если резерв к этому моменту уже снят (оплата пришла после срока, а заказ ещё
+    жив), товар берётся заново; не хватило — заказ оплачен без товара, об этом
+    должны узнать люди (DRF-2736).
+
+    Исключение наружу не выпускаем: событие издаётся из on_commit оплаты, и
+    упавший подписчик оборвал бы цепочку — ``order_paid`` не ушёл бы вовсе, а
+    повтор уведомления кассой ничего не исправит (платёж уже в целевом статусе).
+    """
+    taken = False
+    for attempt in (1, 2):
+        try:
+            taken = confirm_or_take(order_id)
+            break
+        except Exception:  # noqa: BLE001 — см. докстринг
+            # Вторая попытка — на случай дедлока с пакетной заливкой остатков:
+            # проигравшая транзакция откатилась целиком, повтор безопасен.
+            if attempt == 2:
+                logger.exception(
+                    "Заказ %s оплачен, но списать товар не удалось — проверьте резерв вручную",
+                    order_id,
+                )
+    if taken:
+        return
+    logger.error("Заказ %s оплачен, а товар под него не списан — нужен человек", order_id)
+    try:
+        payload = staff_notify_snapshot(order_id)
+        if payload is None:
+            return
+        from apps.notifications.services import notify_staff
+
+        notify_staff(
+            event="staff_paid_without_stock",
+            payload=payload,
+            idempotency_key=f"staff-paid-without-stock-{order_id}",
+        )
+    except Exception:  # noqa: BLE001 — уведомление не критично
+        logger.exception("Сбой уведомления сотрудников об оплате без товара, заказ %s", order_id)
 
 
 def _on_payment_failed(sender, *, order_id, payment_id=None, reason="", **kwargs):
@@ -185,8 +222,16 @@ _STATUS_EMAIL = {
     "ready": ("заказ собран", "Заказ №{n} собран.{note}"),
     "shipped": ("заказ передан в доставку", "Заказ №{n} передан в доставку.{note}"),
     "completed": ("заказ доставлен", "Заказ №{n} доставлен. Спасибо за покупку!"),
-    "cancelled": ("заказ отменён", "Заказ №{n} отменён."),
+    "cancelled": ("заказ отменён", "Заказ №{n} отменён.{note}"),
 }
+
+# Автоотмена неоплаченного онлайн-заказа (DRF-2736). Страница оплаты у кассы живёт
+# дольше резерва — покупателя нужно прямо попросить по ней не платить.
+_EXPIRED_NOTE = (
+    " Оплата не поступила в срок, и товар вернулся в продажу. Если страница оплаты "
+    "этого заказа у вас ещё открыта — не оплачивайте по ней. Товар всё ещё нужен — "
+    "оформите новый заказ. Если вы уже оплатили — деньги мы вернём."
+)
 
 
 def _on_order_status_changed_notify_customer(sender, *, order_id, old_status, new_status, **kw):
@@ -212,6 +257,12 @@ def _on_order_status_changed_notify_customer(sender, *, order_id, old_status, ne
             )
         elif new_status == "shipped" and order.tracking_number:
             note = f" Трек-номер: {order.tracking_number}."
+        elif (
+            new_status == "cancelled"
+            and order.payment_status == "expired"
+            and order.payment_method == "online"
+        ):
+            note = _EXPIRED_NOTE
         from apps.notifications.services import notify_customer
 
         notify_customer(

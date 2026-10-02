@@ -137,6 +137,110 @@ describe("OrderOutcome", () => {
     expect(screen.getByRole("button", { name: "Переходим к оплате…" })).toBeDisabled();
   });
 
+  // DRF-2736: страница оплаты у кассы живёт дольше резерва. Покупатель возвращался
+  // к уже отменённому заказу и видел «ожидает оплаты» с кнопкой «Оплатить».
+  describe("отменённый заказ", () => {
+    it("автоотмена по неоплате: причина названа, платить не зовём", () => {
+      render(
+        <OrderOutcome
+          order={order({ fulfillment_status: "cancelled", payment_status: "expired" })}
+          orderNumber="О-100"
+        />,
+      );
+
+      expect(screen.getByRole("heading", { name: "Заказ отменён" })).toBeInTheDocument();
+      expect(screen.getByText(/Оплата не поступила в срок/)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Оплатить заказ" })).not.toBeInTheDocument();
+    });
+
+    it("отменён покупателем или менеджером: платить не зовём, причину не выдумываем", () => {
+      render(
+        <OrderOutcome
+          order={order({ fulfillment_status: "cancelled", payment_status: "pending" })}
+          orderNumber="О-100"
+        />,
+      );
+
+      expect(screen.getByRole("heading", { name: "Заказ отменён" })).toBeInTheDocument();
+      expect(screen.queryByText(/не поступила в срок/)).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Оплатить заказ" })).not.toBeInTheDocument();
+    });
+
+    it.each(["paid", "partially_refunded"] as const)(
+      "оплата после отмены (%s): деньги вернём, заявка уже есть",
+      (payment_status) => {
+        render(
+          <OrderOutcome
+            order={order({ fulfillment_status: "cancelled", payment_status })}
+            orderNumber="О-100"
+          />,
+        );
+
+        expect(
+          screen.getByRole("heading", { name: "Заказ отменён, оплата получена" }),
+        ).toBeInTheDocument();
+        expect(screen.getByText(/Заявка на возврат создана автоматически/)).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "контакты" })).toHaveAttribute(
+          "href",
+          "/info/about",
+        );
+        // «Заказ оплачен, начали собирать» по отменённому заказу — неправда.
+        expect(screen.queryByText("Заказ оплачен")).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "Оплатить заказ" })).not.toBeInTheDocument();
+      },
+    );
+
+    // Счёт организации оплачен переводом: автоматической заявки на возврат нет,
+    // обещать её нельзя.
+    it("оплата не через кассу: про автоматическую заявку не говорим", () => {
+      render(
+        <OrderOutcome
+          order={order({
+            fulfillment_status: "cancelled",
+            payment_status: "paid",
+            payment_method: "invoice",
+          })}
+          orderNumber="О-100"
+          invoiceHref="/account/invoices"
+        />,
+      );
+
+      expect(
+        screen.getByRole("heading", { name: "Заказ отменён, оплата получена" }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/Мы свяжемся с вами, чтобы вернуть деньги/)).toBeInTheDocument();
+      expect(screen.queryByText(/создана автоматически/)).not.toBeInTheDocument();
+    });
+
+    it("деньги уже возвращены — так и пишем", () => {
+      render(
+        <OrderOutcome
+          order={order({ fulfillment_status: "cancelled", payment_status: "refunded" })}
+          orderNumber="О-100"
+        />,
+      );
+
+      expect(
+        screen.getByRole("heading", { name: "Заказ отменён, деньги возвращены" }),
+      ).toBeInTheDocument();
+    });
+
+    // Отмена важнее способа оплаты: «Счёт сформирован» и «Заказ принят» по
+    // отменённому заказу так же неверны, как «ожидает оплаты».
+    it.each(["invoice", "cash"])("отмена важнее способа оплаты (%s)", (payment_method) => {
+      render(
+        <OrderOutcome
+          order={order({ fulfillment_status: "cancelled", payment_method })}
+          orderNumber="О-100"
+          invoiceHref="/account/invoices"
+        />,
+      );
+
+      expect(screen.getByRole("heading", { name: "Заказ отменён" })).toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "Открыть счёт" })).not.toBeInTheDocument();
+    });
+  });
+
   it("без снимка заказа показывает номер из адреса и не врёт про оплату", () => {
     render(<OrderOutcome order={null} orderNumber="О-777" />);
 

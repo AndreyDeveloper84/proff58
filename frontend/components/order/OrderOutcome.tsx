@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle, Clock, FileText } from "lucide-react";
+import { CheckCircle, Clock, FileText, RotateCcw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PayOrderButton } from "@/components/order/PayOrderButton";
 import { isPaidOnPickup } from "@/lib/payment-methods";
@@ -16,13 +16,36 @@ import type { Order } from "@/lib/types";
  * касса не подтвердила платёж, заказ оформлен, но не оплачен, и человеку нужно
  * не поздравление, а кнопка «Оплатить».
  *
- * Состояний четыре, и они читаются по двум полям заказа: способу оплаты и
- * статусу платежа. Ничего не додумываем — если сервер говорит «ожидает», так и
- * пишем.
+ * Состояния читаются по полям заказа: способу оплаты, статусу платежа и оси
+ * обработки. Ничего не додумываем — если сервер говорит «ожидает», так и пишем.
+ *
+ * Отмена проверяется первой (DRF-2736). Страница оплаты у кассы живёт дольше,
+ * чем резерв товара: заказ мог быть отменён, пока покупатель вводил данные карты.
+ * Раньше он возвращался сюда и видел «ожидает оплаты» с кнопкой «Оплатить» —
+ * по заказу, которого уже нет, — а если успевал оплатить, то не видел ничего о
+ * своих деньгах.
  */
-type Outcome = "paid" | "awaiting-payment" | "delivery-pending" | "invoice" | "on-delivery";
+type Outcome =
+  | "paid"
+  | "awaiting-payment"
+  | "delivery-pending"
+  | "invoice"
+  | "on-delivery"
+  | "cancelled"
+  | "cancelled-unpaid"
+  | "cancelled-paid"
+  | "cancelled-paid-offline"
+  | "cancelled-refunded";
 
 function outcomeOf(order: Order): Outcome {
+  if (order.fulfillment_status === "cancelled") {
+    if (order.payment_status === "paid" || order.payment_status === "partially_refunded") {
+      return order.payment_method === "online" ? "cancelled-paid" : "cancelled-paid-offline";
+    }
+    if (order.payment_status === "refunded") return "cancelled-refunded";
+    if (order.payment_status === "expired") return "cancelled-unpaid";
+    return "cancelled";
+  }
   if (order.payment_method === "invoice") return "invoice";
   // Наличные и карта на выдаче — оба про оплату в магазине. Проверять их по
   // одному коду значило бы звать в кассу того, кто собрался платить картой на месте.
@@ -68,6 +91,39 @@ const VIEWS: Record<
     title: "Заказ принят",
     text: "Оплата при получении. Мы свяжемся с вами и сообщим об изменении статуса.",
   },
+  cancelled: {
+    icon: XCircle,
+    tone: "text-ink-3",
+    title: "Заказ отменён",
+    text: "Оплачивать его не нужно. Если товар всё ещё нужен — оформите новый заказ.",
+  },
+  "cancelled-unpaid": {
+    icon: XCircle,
+    tone: "text-ink-3",
+    title: "Заказ отменён",
+    text: "Оплата не поступила в срок, и товар вернулся в продажу. Оплачивать этот заказ не нужно — если товар всё ещё нужен, оформите новый.",
+  },
+  // Оплата пришла после отмены либо заказ отменили уже оплаченным — покупателю
+  // важно одно: деньги вернут, и делать для этого ничего не нужно.
+  "cancelled-paid": {
+    icon: RotateCcw,
+    tone: "text-hit",
+    title: "Заказ отменён, оплата получена",
+    text: "Оплата по заказу получена, деньги мы вернём. Заявка на возврат создана автоматически — подавать её не нужно.",
+  },
+  // Оплата не через кассу (счёт организации): автоматической заявки нет.
+  "cancelled-paid-offline": {
+    icon: RotateCcw,
+    tone: "text-hit",
+    title: "Заказ отменён, оплата получена",
+    text: "Оплата по заказу получена. Мы свяжемся с вами, чтобы вернуть деньги.",
+  },
+  "cancelled-refunded": {
+    icon: XCircle,
+    tone: "text-ink-3",
+    title: "Заказ отменён, деньги возвращены",
+    text: "Возврат оформлен. Срок зачисления зависит от банка, выпустившего карту.",
+  },
 };
 
 export function OrderOutcome({
@@ -106,6 +162,16 @@ export function OrderOutcome({
               accessToken={order.access_token}
               className="mt-4"
             />
+          )}
+
+          {(outcome === "cancelled-paid" || outcome === "cancelled-paid-offline") && (
+            <p className="mt-2 text-sm text-ink-2">
+              Хотите получить товар или остались вопросы — свяжитесь с нами:{" "}
+              <Link href="/info/about" className="font-semibold text-accent hover:underline">
+                контакты
+              </Link>
+              .
+            </p>
           )}
 
           {outcome === "invoice" && invoiceHref && (

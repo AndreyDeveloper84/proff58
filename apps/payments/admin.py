@@ -33,6 +33,9 @@ class RefundAdmin(TimestampColumnsMixin, admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
 
+    def has_delete_permission(self, request, obj=None):
+        return False  # движение денег не удаляют
+
 
 @admin.register(Payment)
 class PaymentAdmin(TimestampColumnsMixin, admin.ModelAdmin):
@@ -103,7 +106,12 @@ class RefundRequestAdmin(TimestampColumnsMixin, admin.ModelAdmin):
     fields = readonly_fields
 
     def has_add_permission(self, request):
-        return False  # заявку подаёт только покупатель
+        return False  # заявку подаёт покупатель — либо сам сайт (отменён, а оплачен)
+
+    def has_delete_permission(self, request, obj=None):
+        # Заявка — след того, что магазин должен покупателю деньги. Ненужную закрывают
+        # отказом с пояснением: удалённую уже никто не восстановит.
+        return False
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("order", "refund")
@@ -160,6 +168,10 @@ class RefundRequestAdmin(TimestampColumnsMixin, admin.ModelAdmin):
         payment = refund_requests.refundable_payment(obj.order)
         remaining = refund_requests.remaining_amount(payment) if payment else Decimal("0")
         error = ""
+        # Заказ отменён, деньги у магазина: товара покупатель не получит. Отказ и
+        # частичная сумма возможны (вернули через кабинет кассы, удержали доставку по
+        # договорённости), но страница о последствиях предупреждает.
+        money_stays = refund_requests.must_refund_in_full(obj.order)
 
         if request.method == "POST":
             try:
@@ -192,6 +204,7 @@ class RefundRequestAdmin(TimestampColumnsMixin, admin.ModelAdmin):
             "remaining": remaining,
             "currency": payment.currency if payment else obj.order.currency,
             "has_payment": payment is not None,
+            "money_stays": money_stays,
             "error": error,
             "form_amount": request.POST.get("amount", ""),
             "form_comment": request.POST.get("comment", ""),

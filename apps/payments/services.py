@@ -28,7 +28,6 @@ from django.db.models import Sum
 
 from apps.core import events
 from apps.orders.models import Order
-from apps.orders.models import PaymentStatus as OrderPaymentStatus
 
 from . import transitions
 from .atolpay import service as atolpay
@@ -292,7 +291,9 @@ def refund(payment: Payment, amount: Decimal | None = None) -> Refund:
         raise ValueError("Возврат возможен только для оплаченного платежа")
 
     remaining = payment.amount - _refunded_total(payment.pk)
-    refund_amount = payment.amount if amount is None else Decimal(amount)
+    # None — «всё, что осталось». Раньше бралась вся сумма платежа: после частичного
+    # возврата кнопка «вернуть всё» упиралась в «сумма превышает остаток» (DRF-2736).
+    refund_amount = remaining if amount is None else Decimal(amount)
     if refund_amount <= 0:
         raise ValueError("Сумма возврата должна быть положительной")
     if refund_amount > remaining:
@@ -341,13 +342,11 @@ def refund(payment: Payment, amount: Decimal | None = None) -> Refund:
         locked = Payment.objects.select_for_update().get(pk=payment.pk)
         total_refunded = _refunded_total(locked.pk)
         is_full = total_refunded >= locked.amount
-        if is_full:
-            locked.status = PaymentStatus.REFUNDED
-            order_status = OrderPaymentStatus.REFUNDED
-        else:
-            locked.status = PaymentStatus.PARTIALLY_REFUNDED
-            order_status = OrderPaymentStatus.PARTIALLY_REFUNDED
+        locked.status = PaymentStatus.REFUNDED if is_full else PaymentStatus.PARTIALLY_REFUNDED
         locked.save(update_fields=["status", "updated_at"])
+        order_status = transitions.order_status_after_refund(
+            locked.order_id, payment_id=locked.pk, full=is_full
+        )
         Order.objects.filter(pk=locked.order_id).update(payment_status=order_status)
 
         # ADR-0009 (#516): раньше refund() не публиковал ничего — MAX/аналитика

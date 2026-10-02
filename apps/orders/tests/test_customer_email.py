@@ -142,6 +142,57 @@ def test_смена_статуса_одно_письмо_с_трек_номер�
 
 
 @pytest.mark.django_db
+def test_автоотмена_просит_не_платить_по_старой_странице(
+    cart, product, django_capture_on_commit_callbacks
+):
+    """DRF-2736: страница оплаты у кассы живёт дольше резерва — об отмене надо
+    сказать прямо, иначе покупатель оплатит уже отменённый заказ."""
+    add_to_cart(cart, product, 1)
+    with django_capture_on_commit_callbacks(execute=True):
+        order = place_order(cart, customer_data=ГОСТЬ)
+    mail.outbox.clear()
+    Order.objects.filter(pk=order.pk).update(
+        payment_method="online", payment_status="expired", fulfillment_status="cancelled"
+    )
+
+    events.order_status_changed.send(
+        sender=Order, order_id=order.pk, old_status="new", new_status="cancelled"
+    )
+
+    письма = _customer_mails()
+    assert len(письма) == 1
+    assert "Оплата не поступила в срок" in письма[0].body
+    assert "не оплачивайте" in письма[0].body
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "поля",
+    [
+        {"payment_method": "online", "payment_status": "pending"},  # отменил сам покупатель
+        {"payment_method": "invoice", "payment_status": "expired"},  # истёк счёт организации
+    ],
+)
+def test_обычная_отмена_про_страницу_оплаты_не_говорит(
+    cart, product, django_capture_on_commit_callbacks, поля
+):
+    add_to_cart(cart, product, 1)
+    with django_capture_on_commit_callbacks(execute=True):
+        order = place_order(cart, customer_data=ГОСТЬ)
+    mail.outbox.clear()
+    Order.objects.filter(pk=order.pk).update(fulfillment_status="cancelled", **поля)
+
+    events.order_status_changed.send(
+        sender=Order, order_id=order.pk, old_status="new", new_status="cancelled"
+    )
+
+    письма = _customer_mails()
+    assert len(письма) == 1
+    assert f"Заказ №{order.order_number} отменён." in письма[0].body
+    assert "не оплачивайте" not in письма[0].body
+
+
+@pytest.mark.django_db
 def test_статус_вне_списка_письма_не_даёт(cart, product, django_capture_on_commit_callbacks):
     add_to_cart(cart, product, 1)
     with django_capture_on_commit_callbacks(execute=True):
