@@ -676,7 +676,7 @@ class Product(PackageFields, TimeStampedModel):
             # Constraint ловит их все и превращает тихую порчу данных в ошибку.
             CheckConstraint(
                 name="catalog_product_available_qty_non_negative",
-                check=Q(available_quantity__gte=0),
+                condition=Q(available_quantity__gte=0),
             ),
         ]
 
@@ -875,7 +875,7 @@ class ProductCompatibility(TimeStampedModel):
                 name="catalog_productcompat_uniq",
             ),
             CheckConstraint(
-                check=~Q(source=F("target")),
+                condition=~Q(source=F("target")),
                 name="catalog_productcompat_no_self_link",
             ),
         ]
@@ -1570,21 +1570,21 @@ class CatalogChange(models.Model):
         constraints = [
             models.CheckConstraint(
                 name="catalog_change_confidence_range",
-                check=models.Q(confidence__gte=0, confidence__lte=100),
+                condition=models.Q(confidence__gte=0, confidence__lte=100),
             ),
             models.CheckConstraint(
                 name="catalog_change_approved_requires_review",
-                check=~models.Q(status=CatalogChangeStatus.APPROVED)
+                condition=~models.Q(status=CatalogChangeStatus.APPROVED)
                 | (models.Q(reviewed_by__isnull=False) & models.Q(reviewed_at__isnull=False)),
             ),
             models.CheckConstraint(
                 name="catalog_change_rejected_requires_review",
-                check=~models.Q(status=CatalogChangeStatus.REJECTED)
+                condition=~models.Q(status=CatalogChangeStatus.REJECTED)
                 | (models.Q(reviewed_by__isnull=False) & models.Q(reviewed_at__isnull=False)),
             ),
             models.CheckConstraint(
                 name="catalog_change_applied_requires_after_value",
-                check=~models.Q(status=CatalogChangeStatus.APPLIED)
+                condition=~models.Q(status=CatalogChangeStatus.APPLIED)
                 | (models.Q(after_value__isnull=False) & models.Q(applied_at__isnull=False)),
             ),
         ]
@@ -1635,7 +1635,7 @@ class ProductSalesFact(models.Model):
                 fields=["product", "source", "date"], name="catalog_salesfact_unique_day"
             ),
             models.CheckConstraint(
-                name="catalog_salesfact_quantity_positive", check=models.Q(quantity__gt=0)
+                name="catalog_salesfact_quantity_positive", condition=models.Q(quantity__gt=0)
             ),
         ]
         indexes = [

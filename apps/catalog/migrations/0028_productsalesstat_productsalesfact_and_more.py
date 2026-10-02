@@ -111,7 +111,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="productsalesfact",
             constraint=models.CheckConstraint(
-                check=models.Q(("quantity__gt", 0)), name="catalog_salesfact_quantity_positive"
+                condition=models.Q(("quantity__gt", 0)), name="catalog_salesfact_quantity_positive"
             ),
         ),
         migrations.AddIndex(

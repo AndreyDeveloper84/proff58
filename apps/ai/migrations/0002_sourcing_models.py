@@ -281,7 +281,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="contentfinding",
             constraint=models.CheckConstraint(
-                check=models.Q(
+                condition=models.Q(
                     models.Q(
                         ("target_kind", "attribute"),
                         models.Q(("attribute_slug", ""), _negated=True),

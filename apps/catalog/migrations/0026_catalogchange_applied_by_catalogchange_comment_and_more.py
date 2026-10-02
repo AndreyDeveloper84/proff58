@@ -100,7 +100,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="catalogchange",
             constraint=models.CheckConstraint(
-                check=models.Q(
+                condition=models.Q(
                     models.Q(("status", "approved"), _negated=True),
                     models.Q(("reviewed_by__isnull", False), ("reviewed_at__isnull", False)),
                     _connector="OR",
@@ -111,7 +111,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="catalogchange",
             constraint=models.CheckConstraint(
-                check=models.Q(
+                condition=models.Q(
                     models.Q(("status", "rejected"), _negated=True),
                     models.Q(("reviewed_by__isnull", False), ("reviewed_at__isnull", False)),
                     _connector="OR",
@@ -122,7 +122,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="catalogchange",
             constraint=models.CheckConstraint(
-                check=models.Q(
+                condition=models.Q(
                     models.Q(("status", "applied"), _negated=True),
                     models.Q(("after_value__isnull", False), ("applied_at__isnull", False)),
                     _connector="OR",

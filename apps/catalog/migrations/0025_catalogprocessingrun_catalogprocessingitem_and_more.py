@@ -360,7 +360,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="catalogchange",
             constraint=models.CheckConstraint(
-                check=models.Q(("confidence__gte", 0), ("confidence__lte", 100)),
+                condition=models.Q(("confidence__gte", 0), ("confidence__lte", 100)),
                 name="catalog_change_confidence_range",
             ),
         ),
