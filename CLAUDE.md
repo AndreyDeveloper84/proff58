@@ -88,6 +88,11 @@ docker-compose.yml · docker-compose.prod.yml
 - Идемпотентность: матчинг `external_id`/`code_1c`, затем `sku`/`article`.
 - `products/import|update` — асинхронно через очередь `onec` (worker `-c 1`,
   строго последовательно); `prices/update`, `stocks/update` — синхронно.
+- **Обмен пишет только свои поля товара** (`update_fields`, под замком строки для
+  остатка). `reserved_quantity` — счётчик удержаний сайта, обмен его не пишет
+  никогда; свободный остаток = данные 1С − удержано заказами сайта (DRF-2737,
+  `apps/sync_1c/stock.py`). Полный `Product.save()` из инстанса, прочитанного в
+  начале батча, запрещён: он затирает резерв чекаута и правки контента.
 - **Заказы реализованы** (`use_cases.py`), это не заглушки 501; `orders/new` не меняет
   `sync_1c_status` (at-least-once до подтверждения от 1С).
 - Проверка живого API: `python scripts/smoke_1c.py --base <url> --key <ключ>`

@@ -320,32 +320,44 @@ def run_rows(
 
     Пакетный путь (#125B): классификация в памяти → bulk_create/bulk_update. При
     неожиданном сбое bulk-транзакции — откат на построчный путь (`_run_rows_per_row`,
-    per-row savepoints), чтобы «одна плохая строка не валила батч».
+    per-row savepoints), чтобы «одна плохая строка не валила батч». Строки идут
+    пачками по ``bulk_import.BATCH``; у каждой пачки своя транзакция и свой откат.
     """
     lines = error_lines if error_lines is not None else []
     result = ImportResult()
-    ok = bulk_import.run_rows_bulk(
-        raw_items,
-        sync_log=sync_log,
-        source_file=source_file,
-        create_missing=create_missing,
-        allow_basic_fields=allow_basic_fields,
-        error_lines=lines,
-        result=result,
-        tally_error=_tally_error,
-    )
-    if ok:
-        return result
-    # bulk-транзакция упала — построчный fallback на свежих счётчиках.
-    lines.clear()
-    return _run_rows_per_row(
-        raw_items,
-        sync_log=sync_log,
-        source_file=source_file,
-        create_missing=create_missing,
-        allow_basic_fields=allow_basic_fields,
-        error_lines=lines,
-    )
+    # Пачками по BATCH строк (DRF-2737). API шлёт не больше ONEC_MAX_ITEMS, а
+    # файловый импорт отдавал сюда файл целиком: запись под замком строк товаров
+    # держала бы весь каталог заблокированным на всё время записи. Откат на
+    # построчный путь — тоже по пачке, а не по всему файлу.
+    for start in range(0, len(raw_items), bulk_import.BATCH):
+        part = raw_items[start : start + bulk_import.BATCH]
+        part_lines: list[str] = []
+        part_result = ImportResult()
+        ok = bulk_import.run_rows_bulk(
+            part,
+            sync_log=sync_log,
+            source_file=source_file,
+            create_missing=create_missing,
+            allow_basic_fields=allow_basic_fields,
+            error_lines=part_lines,
+            result=part_result,
+            tally_error=_tally_error,
+        )
+        if not ok:
+            # bulk-транзакция упала — построчный fallback на свежих счётчиках.
+            part_lines = []
+            part_result = _run_rows_per_row(
+                part,
+                sync_log=sync_log,
+                source_file=source_file,
+                create_missing=create_missing,
+                allow_basic_fields=allow_basic_fields,
+                error_lines=part_lines,
+            )
+        lines.extend(part_lines[: max(0, _MAX_ERROR_LINES - len(lines))])
+        for name in ("created", "updated", "skipped", "uncategorized", "errors"):
+            setattr(result, name, getattr(result, name) + getattr(part_result, name))
+    return result
 
 
 def _run_rows_per_row(
@@ -406,10 +418,29 @@ def _update_values(
     raw_items: list[dict],
     *,
     apply,
+    fields,
+    lock: bool,
     sync_type: str,
     source_file: str,
 ) -> tuple[SyncLog, ImportResult]:
-    """Конфликт-aware точечное обновление цены/остатка (без staging на каждую строку)."""
+    """Конфликт-aware точечное обновление цены/остатка (без staging на каждую строку).
+
+    Товары батча читаются один раз — для матчинга. Между этим чтением и записью
+    конкретной строки проходят секунды: батч в тысячу строк идёт построчно, а в это
+    время работают чекаут и менеджеры в админке. Поэтому (DRF-2737):
+
+    - пишутся только ``fields(item)`` — поля, которыми владеет операция и которые
+      строка меняет. Полный ``save()`` возвращал в БД весь устаревший инстанс: резерв
+      параллельного чекаута и правки контента (название, категория, статус — ADR-0007);
+    - ``lock=True`` — значение зависит от состояния сайта (свободный остаток — от
+      резерва): товар перечитывается под ``select_for_update`` и ``apply`` работает со
+      свежей строкой. Ценам замок не нужен: это поля 1С без производных, и лишний
+      ``SELECT … FOR UPDATE`` на каждую из тысяч строк прайса им ни к чему.
+
+    Каждая строка — своя транзакция с одним замком товара. Оборачивать весь батч во
+    внешнюю транзакцию нельзя: замки копились бы в порядке строк файла, а чекаут
+    берёт товары по возрастанию pk — получился бы цикл ожидания.
+    """
     sync_log = SyncLog.objects.create(
         sync_type=sync_type, source_file=source_file, result=SyncLog.SyncResult.OK
     )
@@ -438,9 +469,10 @@ def _update_values(
             continue
         try:
             with transaction.atomic():
-                applied = apply(match.product, item)
+                product = stock.locked(match.product.pk) if lock else match.product
+                applied = apply(product, item)
                 if applied:
-                    match.product.save()
+                    product.save(update_fields=[*fields(item), "updated_at"])
         except Exception:  # noqa: BLE001
             result.errors += 1
             _append_error_detail(error_lines, ident, _short_traceback())
@@ -480,6 +512,8 @@ def update_prices(raw_items: list[dict], *, source_file: str = "") -> tuple[Sync
     return _update_values(
         raw_items,
         apply=_apply_price,
+        fields=pricing.price_fields,
+        lock=False,
         sync_type=SyncLog.SyncType.PRICES,
         source_file=source_file,
     )
@@ -524,6 +558,8 @@ def update_stocks(raw_items: list[dict], *, source_file: str = "") -> tuple[Sync
     return _update_values(
         raw_items,
         apply=_apply_stock,
+        fields=lambda _item: stock._STOCK_FIELDS,
+        lock=True,
         sync_type=SyncLog.SyncType.STOCK,
         source_file=source_file,
     )
@@ -568,28 +604,40 @@ def update_stocks_bulk(
     try:
         for start in range(0, len(codes), chunk):
             part = codes[start : start + chunk]
-            products = list(Product.objects.filter(code_1c__in=part))
-            result.skipped += len(part) - len(products)  # не найдены по code_1c
-            plans, to_update = [], []
-            # #518 (ADR-0010): та же детекция 0→positive, что в _apply_stock
-            # (row-wise) — здесь отдельно, т.к. bulk-путь мутирует Product без
-            # save() per-row (см. докстринг функции про разницу путей).
-            became_available: list[tuple[int, Decimal, Decimal]] = []
-            for product in products:
-                old_available = product.available_quantity or Decimal("0")
-                plan = stock.plan_stock(product, by_code[product.code_1c])
-                if plan is None:
-                    result.skipped += 1  # нет полей остатка в строке
-                    continue
-                new_available = product.available_quantity or Decimal("0")
-                if old_available <= 0 and new_available > 0:
-                    became_available.append((product.pk, old_available, new_available))
-                plans.append(plan)
-                to_update.append(product)
-                result.updated += 1
+            # DRF-2737: чанк читается ВНУТРИ транзакции записи и под замком строк —
+            # свободный остаток считается от свежего резерва сайта. Раньше товары
+            # читались заранее, и удержание чекаута, сделанное между чтением и
+            # bulk_update, затиралось. Порядок pk — тот же, что у замков чекаута.
             with transaction.atomic():
+                products = list(
+                    Product.objects.select_for_update(no_key=True)
+                    .filter(code_1c__in=part)
+                    .order_by("pk")
+                )
+                result.skipped += len(part) - len(products)  # не найдены по code_1c
+                plans, to_update = [], []
+                # #518 (ADR-0010): та же детекция 0→positive, что в _apply_stock
+                # (row-wise) — здесь отдельно, т.к. bulk-путь мутирует Product без
+                # save() per-row (см. докстринг функции про разницу путей).
+                became_available: list[tuple[int, Decimal, Decimal]] = []
+                now = timezone.now()
+                for product in products:
+                    old_available = product.available_quantity or Decimal("0")
+                    plan = stock.plan_stock(product, by_code[product.code_1c])
+                    if plan is None:
+                        result.skipped += 1  # нет полей остатка в строке
+                        continue
+                    new_available = product.available_quantity or Decimal("0")
+                    if old_available <= 0 and new_available > 0:
+                        became_available.append((product.pk, old_available, new_available))
+                    product.updated_at = now  # auto_now при bulk_update не срабатывает
+                    plans.append(plan)
+                    to_update.append(product)
+                    result.updated += 1
                 if to_update:
-                    Product.objects.bulk_update(to_update, stock._STOCK_FIELDS, batch_size=1000)
+                    Product.objects.bulk_update(
+                        to_update, [*stock._STOCK_FIELDS, "updated_at"], batch_size=1000
+                    )
                 stock.apply_stock_bulk(plans)
                 for product_id, old_available, new_available in became_available:
                     _emit_stock_became_available(

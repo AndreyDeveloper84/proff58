@@ -33,12 +33,13 @@ _SLUG_SUFFIX_RESERVED = 60  # запас под детерминированны
 # Бизнес-поля для определения «было ли реальное изменение» при обновлении.
 # Денормализованные служебные timestamp'ы (*_updated_at) намеренно исключены —
 # они меняются каждый раз и не несут смысла для подписчиков.
+# ``reserved_quantity`` здесь нет намеренно (DRF-2737): это счётчик сайта, обмен его
+# не пишет — см. докстринг ``stock.py``.
 _TRACKED_FIELDS = [
     "price",
     "old_price",
     "currency",
     "stock_quantity",
-    "reserved_quantity",
     "available_quantity",
     "stock_status",
     "original_name",
@@ -48,6 +49,11 @@ _TRACKED_FIELDS = [
     "is_active_1c",
     "source_group",
 ]
+
+
+#: Что построчное обновление пишет в БД: поля 1С и служебные отметки времени. Контент
+#: сайта (витринное имя, категория, статус, описание, SEO, slug) сюда не входит.
+_UPDATE_FIELDS = [*_TRACKED_FIELDS, "price_updated_at", "stock_updated_at", "updated_at"]
 
 
 def _snapshot(product: Product) -> dict:
@@ -101,30 +107,30 @@ def create_product(
 
 
 def update_existing(product: Product, item: Item, *, allow_basic_fields: bool = True) -> None:
-    """Обновить существующий товар, не затрагивая ручной контент сайта."""
-    before = _snapshot(product)
+    """Обновить существующий товар, не затрагивая ручной контент сайта.
 
-    pricing.set_current_price(product, item)
-    stock.set_current_stock(product, item)
+    ``product`` приходит из карт батча и мог устареть: между их загрузкой и этой
+    строкой прошёл чекаут или правка в админке. Поэтому (DRF-2737) работаем со
+    свежей строкой под замком и пишем только поля 1С — полный ``save()`` устаревшего
+    инстанса возвращал в БД старый резерв и старый контент. Переданный инстанс в
+    конце получает записанные значения — вызывающий видит актуальное состояние.
+    """
+    with transaction.atomic():
+        fresh = stock.locked(product.pk)
+        before = _snapshot(fresh)
 
-    if allow_basic_fields:
-        if item.name:
-            product.original_name = item.name  # витринное name НЕ трогаем
-        if item.brand and not product.brand:
-            product.brand = item.brand
-        if item.barcode:
-            product.barcode = item.barcode
-        if item.unit:
-            product.unit = item.unit
-        if item.is_active is not None:
-            product.is_active_1c = item.is_active
-        if item.source_group:
-            product.source_group = item.source_group
+        pricing.set_current_price(fresh, item)
+        stock.set_current_stock(fresh, item)
 
-    # Категория, name(витрина), description, SEO, фото, slug — НЕ трогаем.
-    product.save()
+        apply_basic_fields(fresh, item, allow_basic_fields=allow_basic_fields)
 
-    changed_fields = [f for f in _TRACKED_FIELDS if before[f] != getattr(product, f)]
+        # Категория, name(витрина), description, SEO, фото, slug — НЕ трогаем.
+        fresh.save(update_fields=_UPDATE_FIELDS)
+
+    for field in ("reserved_quantity", *_UPDATE_FIELDS):
+        setattr(product, field, getattr(fresh, field))
+
+    changed_fields = [f for f in _TRACKED_FIELDS if before[f] != getattr(fresh, f)]
     if changed_fields:
         transaction.on_commit(
             lambda pid=product.pk, c=changed_fields: product_updated.send(
