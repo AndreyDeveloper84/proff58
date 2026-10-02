@@ -1,7 +1,7 @@
 import type React from "react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { Inter, Oswald } from "next/font/google";
+import localFont from "next/font/local";
 import { AuthStateProvider } from "@/components/auth/AuthStateProvider";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { WishlistProvider } from "@/components/wishlist/WishlistProvider";
@@ -19,15 +19,24 @@ import { StorefrontProvider } from "@/components/site/StorefrontProvider";
 import "./globals.css";
 
 // Body / UI — Inter; display (заголовки/цена/спек-статы) — узкий Oswald.
-const inter = Inter({
-  subsets: ["latin", "cyrillic"],
+//
+// Файлы шрифтов лежат в репозитории (app/fonts), а не тянутся через
+// next/font/google: тот на каждой сборке ходил на fonts.googleapis.com, и сбой
+// сети ронял выкат (DRF-2734). Что в файлах и как их пересобрать — app/fonts/README.md.
+const inter = localFont({
+  src: "./fonts/inter-var.woff2",
+  weight: "100 900",
+  style: "normal",
   variable: "--font-inter",
   display: "swap",
 });
 
-const oswald = Oswald({
-  subsets: ["latin", "cyrillic"],
-  weight: ["500", "600", "700"],
+// Диапазон начинается с 500, хотя ось файла — с 400: раньше сайту отдавались
+// начертания 500–700, и обычная жирность в Oswald рисовалась как 500.
+const oswald = localFont({
+  src: "./fonts/oswald-var.woff2",
+  weight: "500 700",
+  style: "normal",
   variable: "--font-oswald",
   display: "swap",
 });
