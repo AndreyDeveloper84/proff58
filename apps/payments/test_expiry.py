@@ -22,7 +22,7 @@ from apps.orders.models import (
 from apps.orders.models import PaymentStatus as OrderPaymentStatus
 
 from .expiry import expire_one, expire_unpaid_online_orders
-from .models import Payment, PaymentMethod, PaymentStatus
+from .models import Payment, PaymentMethod, PaymentStatus, RefundRequest
 
 pytestmark = pytest.mark.django_db
 
@@ -241,9 +241,14 @@ class TestПоздняяОплата:
         # Деньги пришли — платёж это фиксирует.
         assert payment.status == PaymentStatus.SUCCEEDED
         # Но заказ остаётся отменённым: товар мог уйти другому покупателю,
-        # и обещать отгрузку нельзя. Случай уходит в лог для ручного разбора.
+        # и обещать отгрузку нельзя.
         assert order.fulfillment_status == FulfillmentStatus.CANCELLED
-        assert order.payment_status == OrderPaymentStatus.EXPIRED
+        # DRF-2736: деньги не теряются из виду — заказ честно «оплачен», и по нему
+        # заведена заявка на возврат (раньше оставался «не оплачен» + строка в логе).
+        assert order.payment_status == OrderPaymentStatus.PAID
+        assert RefundRequest.objects.filter(order=order).count() == 1
+        product.refresh_from_db()
+        assert product.available_quantity == 4  # остаток не тронут
 
     @mock.patch("apps.payments.services.verify_webhook")
     def test_живой_заказ_оплата_проходит_как_обычно(self, verify):

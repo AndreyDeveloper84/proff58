@@ -497,7 +497,9 @@ class TestФискализация:
 class TestПоздняяОплата:
     @mock.patch("apps.payments.atolpay.service.payment_status", return_value={"status": 1})
     def test_отменённый_заказ_не_воскресает(self, _status, client, payment, paid_order):
-        """Заказ отменён по таймауту, товар мог уйти другому — деньги разбирает человек."""
+        """Заказ отменён, товар мог уйти другому: заказ не воскресает, но деньги на
+        виду — «отменён, оплачен» и заявка на возврат (DRF-2736; подробно —
+        test_late_payment.py)."""
         Order.objects.filter(pk=paid_order.pk).update(
             fulfillment_status=FulfillmentStatus.CANCELLED
         )
@@ -507,8 +509,9 @@ class TestПоздняяОплата:
         payment.refresh_from_db()
         paid_order.refresh_from_db()
         assert payment.status == PaymentStatus.SUCCEEDED  # деньги действительно пришли
-        assert paid_order.payment_status == OrderPaymentStatus.PENDING
+        assert paid_order.payment_status == OrderPaymentStatus.PAID
         assert paid_order.fulfillment_status == FulfillmentStatus.CANCELLED
+        assert paid_order.refund_requests.count() == 1
 
 
 # ═══════════════ КЛИЕНТ ═══════════════

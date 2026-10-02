@@ -33,6 +33,13 @@
     </div>
     <form method="post" style="margin-top:1rem;">
       {% csrf_token %}
+      {% if money_stays %}
+      <div class="callout callout-warning" style="border-left-width:4px;">
+        <b>Заказ отменён</b> — товара покупатель не получит. Оставьте поле суммы пустым, чтобы
+        вернуть всё. Часть суммы указывайте, только если удержание оговорено с покупателем:
+        остаток останется у магазина, а новую заявку гость подать не сможет.
+      </div>
+      {% endif %}
       <label for="amount">Сумма возврата, {{ currency }} (пусто — вся сумма {{ remaining }})</label><br>
       <input id="amount" name="amount" inputmode="decimal" value="{{ form_amount }}"
              placeholder="{{ remaining }}" style="margin:.3rem 0 .8rem;">
@@ -47,6 +54,14 @@
     <a href="{{ back_url }}" class="button">Назад</a>
     {% endif %}
   {% else %}
+  {% if money_stays %}
+  <div class="callout callout-danger" style="border-left-width:4px;">
+    <b>Заказ отменён, а оплата по нему получена.</b> После отказа деньги останутся у магазина, и
+    напомнить о них будет некому: гость подать заявку заново не может. Отклоняйте, только если
+    деньги уже возвращены другим способом (например, в личном кабинете кассы), и напишите об
+    этом в причине.
+  </div>
+  {% endif %}
   <form method="post" style="margin-top:1rem;">
     {% csrf_token %}
     <label for="comment">Причина отказа — покупатель увидит её в личном кабинете</label><br>

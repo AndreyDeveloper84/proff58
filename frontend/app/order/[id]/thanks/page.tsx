@@ -11,6 +11,7 @@ import { TrackOrderInMaxCta } from "@/components/order/TrackOrderInMaxCta";
 import { useAuthState } from "@/components/auth/AuthStateProvider";
 import { accountLinkHref } from "@/lib/auth-state";
 import { formatDeliverySlot, formatPrice } from "@/lib/format";
+import { getOrder } from "@/lib/auth";
 import { getGuestOrder } from "@/lib/orders";
 import { deliveryMethodLabel } from "@/lib/delivery-methods";
 import { paymentMethodLabel } from "@/lib/payment-methods";
@@ -21,9 +22,20 @@ import type { Order } from "@/lib/types";
 const POLL_INTERVAL_MS = 3000;
 const POLL_ATTEMPTS = 20; // ≈ минута ожидания callback от кассы
 
-/** Заказ с онлайн-оплатой, который ещё не оплачен, — единственный повод переспрашивать. */
+/**
+ * Заказ с онлайн-оплатой, по которому деньги ещё могут прийти, — единственный
+ * повод переспрашивать.
+ *
+ * «expired» — тоже такой: страница оплаты у кассы живёт дольше резерва, и
+ * покупатель может вернуться сюда, оплатив уже отменённый заказ. Уведомление
+ * кассы приходит через секунды после возврата — без опроса он так и смотрел бы
+ * на «оплата не поступила» с деньгами, списанными с карты (DRF-2736).
+ */
 export function shouldKeepPolling(order: Order): boolean {
-  return order.payment_method === "online" && order.payment_status === "pending";
+  return (
+    order.payment_method === "online" &&
+    (order.payment_status === "pending" || order.payment_status === "expired")
+  );
 }
 
 
@@ -53,7 +65,9 @@ export default function ThanksPage() {
 
   // Снимок из sessionStorage — состояние на момент оформления. После возврата из
   // кассы важно текущее: оплачен заказ или ещё ждёт подтверждения. Догружаем его
-  // с сервера по гостевому токену; сбой запроса не ломает страницу — остаётся
+  // с сервера: гостю — по токену заказа, вошедшему покупателю — по сессии (у его
+  // заказа токена нет, и раньше он после кассы видел снимок с оформления: «ожидает
+  // оплаты» по уже оплаченному заказу). Сбой запроса не ломает страницу — остаётся
   // снимок, а состояние оплаты человек увидит в кабинете.
   //
   // Одного запроса мало: покупатель возвращается из кассы на секунды раньше, чем
@@ -90,18 +104,22 @@ export default function ThanksPage() {
   }, [queryToken]);
   const linkLoading = Boolean(queryToken) && !stashed && !fresh;
 
+  const authState = useAuthState();
   useEffect(() => {
     const token = stashed?.access_token || queryToken;
-    if (!token) return;
+    // «unknown» (сессия есть, маркера входа нет) тоже пробуем: отказ сервера
+    // страницу не ломает, а вошедший без маркера иначе остался бы со снимком.
+    const bySession = !token && authState !== "anonymous";
+    if (!token && !bySession) return;
     let active = true;
     let attempts = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const load = () => {
-      getGuestOrder(orderNumber, token)
+      (token ? getGuestOrder(orderNumber, token) : getOrder(orderNumber))
         .then((data) => {
           if (!active) return;
-          if (!stashed) stashOrder({ ...data, access_token: token });
+          if (!stashed && token) stashOrder({ ...data, access_token: token });
           setFresh(data);
           attempts += 1;
           if (shouldKeepPolling(data) && attempts < POLL_ATTEMPTS) {
@@ -116,7 +134,7 @@ export default function ThanksPage() {
       active = false;
       if (timer) clearTimeout(timer);
     };
-  }, [stashed, queryToken, orderNumber]);
+  }, [stashed, queryToken, orderNumber, authState]);
 
   // Свежие данные накладываем НА снимок, а не заменяем им: гостевой ответ не
   // содержит access_token (и не должен — незачем светить его в каждом ответе),
@@ -130,7 +148,7 @@ export default function ThanksPage() {
     : stashed;
   // Заказ часто оформляют без входа, поэтому «в личном кабинете» для гостя ведёт
   // на форму входа — оттуда его вернут в заказы.
-  const ordersHref = accountLinkHref("/account/orders", useAuthState());
+  const ordersHref = accountLinkHref("/account/orders", authState);
 
   // Сумма товаров из снимка строк: order.total включает доставку, а отдельного
   // поля «товары» бэк не отдаёт.

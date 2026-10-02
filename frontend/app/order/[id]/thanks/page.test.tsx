@@ -10,13 +10,23 @@ vi.mock("@/components/order/TrackOrderInMaxCta", () => ({
   TrackOrderInMaxCta: () => <div data-testid="max-cta" />,
 }));
 vi.mock("@/lib/orders", () => ({ getGuestOrder: vi.fn(), startOrderPayment: vi.fn() }));
+vi.mock("@/lib/auth", () => ({ getOrder: vi.fn() }));
 
+import { AuthStateProvider } from "@/components/auth/AuthStateProvider";
+import { getOrder } from "@/lib/auth";
 import { readStashedOrder } from "@/lib/order-storage";
 import { getGuestOrder } from "@/lib/orders";
-import ThanksPage from "./page";
+import ThanksPage, { shouldKeepPolling } from "./page";
 
 const mockedRead = readStashedOrder as unknown as ReturnType<typeof vi.fn>;
 const mockedGuest = getGuestOrder as unknown as ReturnType<typeof vi.fn>;
+const mockedSession = getOrder as unknown as ReturnType<typeof vi.fn>;
+
+/** Запрос заказа по сессии от невошедшего: сервер отказывает, страница остаётся со снимком. */
+function sessionDenied() {
+  mockedSession.mockReset();
+  mockedSession.mockImplementation(() => Promise.reject(new Error("401")));
+}
 
 function order(overrides: Record<string, unknown> = {}) {
   return {
@@ -45,6 +55,7 @@ describe("ThanksPage (#574)", () => {
     // Без снимка с токеном догрузки не будет — по умолчанию тесты её и не ждут.
     mockedGuest.mockReset();
     mockedGuest.mockResolvedValue(order());
+    sessionDenied();
   });
 
   it("итог разложен на товары и доставку", () => {
@@ -145,10 +156,94 @@ describe("ThanksPage (#574)", () => {
   });
 });
 
+// DRF-2736: у заказа вошедшего покупателя гостевого токена нет. Раньше страница
+// догружала заказ только по токену, и после кассы он видел снимок с оформления —
+// «ожидает оплаты» по уже оплаченному заказу.
+describe("ThanksPage — заказ вошедшего покупателя", () => {
+  beforeEach(() => {
+    mockedRead.mockReset();
+    mockedGuest.mockReset();
+    mockedSession.mockReset();
+  });
+
+  it("без гостевого токена свежий заказ берётся по сессии", async () => {
+    mockedRead.mockReturnValue(order());
+    mockedSession.mockResolvedValue(order({ payment_status: "paid" }));
+
+    render(
+      <AuthStateProvider state="authenticated">
+        <ThanksPage />
+      </AuthStateProvider>,
+    );
+
+    expect(await screen.findByText("Заказ оплачен")).toBeTruthy();
+    expect(mockedSession).toHaveBeenCalledWith("П-1");
+    expect(mockedGuest).not.toHaveBeenCalled();
+  });
+
+  it("без снимка в браузере заказ всё равно показан — по сессии", async () => {
+    mockedRead.mockReturnValue(null);
+    mockedSession.mockResolvedValue(order({ payment_status: "paid" }));
+
+    render(
+      <AuthStateProvider state="authenticated">
+        <ThanksPage />
+      </AuthStateProvider>,
+    );
+
+    expect(await screen.findByText("Заказ оплачен")).toBeTruthy();
+    expect(screen.getByText("Состав заказа")).toBeTruthy();
+  });
+
+  it("гость без токена сервер не спрашивает вовсе", async () => {
+    mockedRead.mockReturnValue(order());
+
+    render(
+      <AuthStateProvider state="anonymous">
+        <ThanksPage />
+      </AuthStateProvider>,
+    );
+    await act(async () => {});
+
+    expect(mockedSession).not.toHaveBeenCalled();
+    expect(mockedGuest).not.toHaveBeenCalled();
+  });
+
+  it("гостевой токен важнее сессии: заказ гостя открыт по ссылке вошедшим", async () => {
+    mockedRead.mockReturnValue(order({ access_token: "t" }));
+    mockedGuest.mockResolvedValue(order({ payment_status: "paid" }));
+
+    render(
+      <AuthStateProvider state="authenticated">
+        <ThanksPage />
+      </AuthStateProvider>,
+    );
+
+    expect(await screen.findByText("Заказ оплачен")).toBeTruthy();
+    expect(mockedGuest).toHaveBeenCalledWith("П-1", "t");
+    expect(mockedSession).not.toHaveBeenCalled();
+  });
+});
+
+describe("shouldKeepPolling", () => {
+  it.each([
+    ["online", "pending", true],
+    // Автоотмена: оплата по живой странице кассы ещё может прийти.
+    ["online", "expired", true],
+    ["online", "paid", false],
+    ["online", "refunded", false],
+    ["invoice", "pending", false],
+    ["cash", "pending", false],
+  ])("%s / %s → %s", (payment_method, payment_status, expected) => {
+    expect(shouldKeepPolling(order({ payment_method, payment_status }) as never)).toBe(expected);
+  });
+});
+
 describe("ThanksPage — опрос статуса после возврата из кассы", () => {
   beforeEach(() => {
     mockedRead.mockReset();
     mockedGuest.mockReset();
+    sessionDenied();
     vi.useFakeTimers();
   });
 
@@ -178,6 +273,62 @@ describe("ThanksPage — опрос статуса после возврата �
       await vi.advanceTimersByTimeAsync(10000);
     });
     expect(mockedGuest).toHaveBeenCalledTimes(2); // оплачен — больше не спрашиваем
+  });
+
+  // DRF-2736: заказ отменён по таймауту, а покупатель оплатил по ещё живой
+  // странице кассы и вернулся сюда раньше уведомления.
+  it("после автоотмены продолжает спрашивать и показывает позднюю оплату", async () => {
+    const cancelled = { fulfillment_status: "cancelled", payment_status: "expired" };
+    mockedRead.mockReturnValue(order({ access_token: "t" }));
+    mockedGuest
+      .mockResolvedValueOnce(order(cancelled))
+      .mockResolvedValueOnce(order({ ...cancelled, payment_status: "paid" }));
+
+    render(<ThanksPage />);
+    await act(async () => {});
+    expect(screen.getByRole("heading", { name: "Заказ отменён" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Оплатить заказ" })).toBeNull();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(mockedGuest).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("heading", { name: "Заказ отменён, оплата получена" })).toBeTruthy();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10000);
+    });
+    expect(mockedGuest).toHaveBeenCalledTimes(2); // деньги дошли — больше не спрашиваем
+  });
+
+  it("отменённый неоплаченный заказ опрашивается не вечно", async () => {
+    const cancelled = { fulfillment_status: "cancelled", payment_status: "expired" };
+    mockedRead.mockReturnValue(order({ access_token: "t" }));
+    mockedGuest.mockResolvedValue(order(cancelled));
+
+    render(<ThanksPage />);
+    await act(async () => {});
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000 * 60);
+    });
+
+    expect(mockedGuest).toHaveBeenCalledTimes(20); // POLL_ATTEMPTS — и стоп
+  });
+
+  // Сессия истекла, пока покупатель был в кассе: сервер отказывает, страница
+  // остаётся со снимком с оформления, а не падает.
+  it("отказ сервера при догрузке по сессии страницу не ломает", async () => {
+    mockedRead.mockReturnValue(order());
+
+    render(<ThanksPage />);
+    await act(async () => {});
+
+    expect(mockedSession).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Заказ оформлен, ожидает оплаты")).toBeTruthy();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10000);
+    });
+    expect(mockedSession).toHaveBeenCalledTimes(1); // повторять отказ незачем
   });
 
   it("оплату по счёту не опрашивает", async () => {

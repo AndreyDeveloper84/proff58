@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -26,7 +27,7 @@ from apps.core.throttling import OrdersRateThrottle
 from apps.orders import services as order_services
 from apps.orders.models import DeliveryCalcStatus, FulfillmentStatus, Order, ReservationStatus
 from apps.orders.models import PaymentStatus as OrderPaymentStatus
-from apps.orders.reservation import rehold_reservation
+from apps.orders.reservation import PAY_WINDOW_CLOSED, rehold_reservation
 from apps.orders.services import _reservation_ttl
 
 from . import refund_requests
@@ -43,6 +44,11 @@ _UNPAYABLE_FULFILLMENT = {FulfillmentStatus.CANCELLED}
 # провайдера: онлайн-касса у заказа одна, и её название в поле не хранится.
 ONLINE_PAYMENT_METHOD = "online"
 
+# Сколько от оформления заказа кнопка «Оплатить» может продлевать удержание товара.
+# Без потолка товар можно держать без оплаты сколько угодно: одного запроса раз в
+# полчаса хватает, чтобы автоотмена никогда не наступила (DRF-2736).
+PAY_EXTENSION_LIMIT = timedelta(hours=2)
+
 
 def _resolve_order(request, number: str) -> Order | None:
     """Заказ, к которому у запросившего есть доступ: владелец или гость с токеном."""
@@ -58,8 +64,8 @@ class OrderPaymentView(APIView):
     """POST /api/payments/orders/{number}/ — получить ссылку на оплату заказа."""
 
     permission_classes = [AllowAny]
-    # Гость с токеном мог бы дёргать эндпоинт и бесконечно продлевать резерв
-    # (rehold ниже) — лимит по IP тот же, что у оформления.
+    # Лимит по IP тот же, что у оформления. От бесконечного продления резерва он не
+    # защищает (хватает запроса раз в полчаса) — для этого PAY_EXTENSION_LIMIT.
     throttle_classes = [OrdersRateThrottle]
 
     def post(self, request, number):
@@ -100,20 +106,52 @@ class OrderPaymentView(APIView):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        if order.reservation_status == ReservationStatus.RELEASED:
-            # Оплата позже 30-минутного окна (ручной расчёт доставки, вернулся к
-            # заказу через час): janitor уже вернул товар в остаток. Удерживаем
-            # заново под замком; товара нет — честный отказ, а не оплата воздуха.
-            ok, reason = rehold_reservation(order.pk, ttl=_reservation_ttl(order.customer_type))
+        if order.reservation_status in (ReservationStatus.HELD, ReservationStatus.RELEASED):
+            # Срок удержания и вердикт «можно ли платить» — под замком заказа, а не
+            # по снимку, прочитанному выше: между чтением и этой строкой janitor мог
+            # снять резерв или отменить заказ (DRF-2736). HELD — срок продлевается:
+            # нажал «Оплатить» — у покупателя снова полное окно, а не остаток прежнего
+            # (платёж в последнюю минуту не успевал пройти до автоотмены). RELEASED —
+            # оплата позже окна (ручной расчёт доставки, вернулся к заказу через
+            # час): удерживаем заново; товара нет — честный отказ, а не оплата воздуха.
+            # Регистрация платежа ниже идёт уже без замка: если заказ отменят в этом
+            # зазоре, оплату разберёт механизм поздней оплаты.
+            ok, reason = rehold_reservation(
+                order.pk,
+                ttl=_reservation_ttl(order.customer_type),
+                not_after=order.created_at + PAY_EXTENSION_LIMIT,
+            )
             if not ok:
-                return Response(
-                    {
-                        "detail": f"Пока заказ ждал оплаты, товар закончился ({reason}). "
-                        "Свяжитесь с нами — подберём замену или вернём заказ в работу.",
-                        "code": "reservation_expired",
-                    },
-                    status=status.HTTP_409_CONFLICT,
-                )
+                order.refresh_from_db()
+                if order.payment_status == OrderPaymentStatus.PAID:
+                    return Response(
+                        {"payment_status": order.payment_status, "confirmation_url": ""}
+                    )
+                if order.fulfillment_status in _UNPAYABLE_FULFILLMENT:
+                    return Response(
+                        {"detail": "Заказ отменён, оплатить его нельзя.", "code": "canceled"},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                if reason == PAY_WINDOW_CLOSED:
+                    return Response(
+                        {
+                            "detail": "Срок оплаты этого заказа истёк. Оформите заказ заново "
+                            "или свяжитесь с нами — поможем.",
+                            "code": "payment_window_closed",
+                        },
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                if order.reservation_status != ReservationStatus.CONFIRMED:
+                    return Response(
+                        {
+                            "detail": f"Пока заказ ждал оплаты, товар закончился ({reason}). "
+                            "Свяжитесь с нами — подберём замену или вернём заказ в работу.",
+                            "code": "reservation_expired",
+                        },
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                # CONFIRMED без оплаты (на практике — заказ после возврата денег):
+                # удерживать нечего, поведение прежнее — решает create_payment.
         try:
             payment = create_payment(order)
         except Exception:

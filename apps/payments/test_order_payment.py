@@ -295,3 +295,128 @@ class TestИстёкшийРезервПриОплате:
         from apps.payments.api import OrderPaymentView
 
         assert OrdersRateThrottle in OrderPaymentView.throttle_classes
+
+
+class TestОкноОплаты:
+    """DRF-2736: «Оплатить» даёт полное окно резерва, а вердикт «можно ли платить»
+    выносится под замком заказа, а не по снимку, прочитанному в начале запроса."""
+
+    @pytest.fixture(autouse=True)
+    def _on(self, payments_on):
+        pass
+
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
+    def test_оплата_в_последнюю_минуту_продлевает_резерв(self, _api, client):
+        """Раньше платёж, начатый за минуту до конца окна, не успевал пройти до
+        автоотмены: «деньги списаны, заказ отменён»."""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        order = make_order(
+            reservation_status="held", reserved_until=timezone.now() + timedelta(minutes=1)
+        )
+
+        resp = client.post(f"{url(order)}?t={order.access_token}")
+
+        assert resp.status_code == 200
+        order.refresh_from_db()
+        assert order.reserved_until > timezone.now() + timedelta(minutes=29)
+
+    def _racing(self, **changes):
+        """rehold, перед которым «кто-то другой» успел изменить заказ."""
+        from apps.orders.reservation import rehold_reservation
+
+        def racing(order_id, **kwargs):
+            Order.objects.filter(pk=order_id).update(**changes)
+            return rehold_reservation(order_id, **kwargs)
+
+        return mock.patch("apps.payments.api.rehold_reservation", side_effect=racing)
+
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
+    def test_заказ_отменили_пока_шёл_запрос_платёж_не_создаётся(self, api, client):
+        order = make_order(reservation_status="held")
+
+        with self._racing(fulfillment_status=FulfillmentStatus.CANCELLED):
+            resp = client.post(f"{url(order)}?t={order.access_token}")
+
+        assert resp.status_code == 409 and resp.json()["code"] == "canceled"
+        api.assert_not_called()
+        assert not Payment.objects.filter(order=order).exists()
+
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
+    def test_заказ_оплатили_пока_шёл_запрос_это_не_ошибка(self, api, client):
+        order = make_order(reservation_status="held")
+
+        with self._racing(payment_status=OrderPaymentStatus.PAID):
+            resp = client.post(f"{url(order)}?t={order.access_token}")
+
+        assert resp.status_code == 200
+        assert resp.json() == {"payment_status": "paid", "confirmation_url": ""}
+        api.assert_not_called()
+
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
+    def test_кнопка_оплатить_не_держит_товар_бесконечно(self, api, client):
+        """Продление — не дальше двух часов от оформления: иначе одного запроса раз в
+        полчаса хватало бы, чтобы автоотмена не наступила никогда."""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        order = make_order(
+            reservation_status="held", reserved_until=timezone.now() + timedelta(minutes=5)
+        )
+        Order.objects.filter(pk=order.pk).update(
+            created_at=timezone.now() - timedelta(hours=1, minutes=50)
+        )
+
+        resp = client.post(f"{url(order)}?t={order.access_token}")
+
+        assert resp.status_code == 200  # срок ещё не вышел — платить можно
+        order.refresh_from_db()
+        assert order.reserved_until <= order.created_at + timedelta(hours=2)
+
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
+    def test_окно_оплаты_закрыто_в_кассу_не_отправляем(self, api, client):
+        """Срок вышел и продлить его уже нельзя — заказ вот-вот отменит автоматика."""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        order = make_order(
+            reservation_status="held", reserved_until=timezone.now() - timedelta(minutes=1)
+        )
+        Order.objects.filter(pk=order.pk).update(created_at=timezone.now() - timedelta(hours=3))
+
+        resp = client.post(f"{url(order)}?t={order.access_token}")
+
+        assert resp.status_code == 409 and resp.json()["code"] == "payment_window_closed"
+        api.assert_not_called()
+
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
+    def test_долгое_удержание_после_расчёта_доставки_не_сжимается(self, api, client):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        deadline = timezone.now() + timedelta(hours=20)
+        order = make_order(reservation_status="held", reserved_until=deadline)
+        Order.objects.filter(pk=order.pk).update(created_at=timezone.now() - timedelta(hours=5))
+
+        resp = client.post(f"{url(order)}?t={order.access_token}")
+
+        assert resp.status_code == 200
+        order.refresh_from_db()
+        assert order.reserved_until == deadline
+
+    @mock.patch("apps.payments.atolpay.service.register_payment", return_value=ATOLPAY_REPLY)
+    def test_заказ_без_резерва_оплачивается_как_раньше(self, api, client):
+        """Старые заказы без резерва: удерживать нечего, остаток не трогаем."""
+        order = make_order()
+        assert order.reservation_status == "none"
+
+        resp = client.post(f"{url(order)}?t={order.access_token}")
+
+        assert resp.status_code == 200
+        order.refresh_from_db()
+        assert order.reservation_status == "none"

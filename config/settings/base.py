@@ -554,6 +554,11 @@ GUEST_ORDER_TOKEN_TTL_DAYS = env.int("GUEST_ORDER_TOKEN_TTL_DAYS", default=90)
 # резерв живёт 24 часа вместе со счётом (#559, invoice.valid_until == reserved_until).
 RESERVATION_TTL_B2C_MINUTES = env.int("RESERVATION_TTL_B2C_MINUTES", default=30)
 
+# Сколько после истечения резерва автоотмена ждёт покупателя, который уже проходит
+# оплату (касса отвечает «банк ещё не ответил» / «идёт 3-D Secure»), минут (DRF-2736).
+# Отменить такой заказ сразу — получить «деньги списаны, заказ отменён».
+PAYMENT_IN_FLIGHT_GRACE_MINUTES = env.int("PAYMENT_IN_FLIGHT_GRACE_MINUTES", default=15)
+
 # Горизонт показа слотов доставки в checkout, дней (#569).
 DELIVERY_SLOT_HORIZON_DAYS = env.int("DELIVERY_SLOT_HORIZON_DAYS", default=14)
 

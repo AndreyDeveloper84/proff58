@@ -61,8 +61,10 @@ class Sync1CStatus(models.TextChoices):
 class ReservationStatus(models.TextChoices):
     """Состояние резерва склада под заказ (#423, B-03).
 
-    Жизненный цикл: NONE → HELD → (RELEASED | CONFIRMED). RELEASED/CONFIRMED —
-    терминальные: переходы идемпотентны (повторный release/confirm — no-op).
+    Жизненный цикл: NONE → HELD → (RELEASED | CONFIRMED). Повторный release/confirm —
+    no-op. CONFIRMED — конечное. RELEASED у живого заказа может вернуться в HELD
+    (``rehold_reservation``: оплата позже срока, расчёт доставки) или сразу стать
+    CONFIRMED (``confirm_or_take``: оплата пришла после снятия резерва).
     """
 
     NONE = "none", _("Без резерва")
@@ -316,6 +318,11 @@ class Order(TimeStampedModel):
         if self.payment_status == PaymentStatus.EXPIRED:
             return "Заказ отменён (не оплачен вовремя)"
         if self.fulfillment_status == FulfillmentStatus.CANCELLED:
+            if self.payment_status in (PaymentStatus.PAID, PaymentStatus.PARTIALLY_REFUNDED):
+                # Оплата прошла после отмены (или оплаченный заказ отменили): деньги у
+                # магазина, заказ не едет. Молча писать «отменён» — оставить человека
+                # гадать, что с деньгами (DRF-2736).
+                return "Заказ отменён, оплата получена — вернём деньги"
             return "Заказ отменён"
         if self.payment_status == PaymentStatus.REFUNDED:
             return "Возврат оформлен"
