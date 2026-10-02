@@ -411,6 +411,22 @@ def test_orders_list_paginated(api, b2c_user, product):
 
 
 @pytest.mark.django_db
+def test_orders_list_limit_is_capped(api, b2c_user, monkeypatch):
+    """DRF-2733: limit сверх потолка усекается — история не отдаётся целиком за раз."""
+    from apps.core.pagination import BoundedLimitOffsetPagination
+    from apps.orders.models import Order
+
+    monkeypatch.setattr(BoundedLimitOffsetPagination, "max_limit", 2)
+    api.force_authenticate(user=b2c_user)
+    for i in range(3):
+        Order.objects.create(order_number=f"P-{i}", user=b2c_user, customer_phone="+79001112233")
+
+    body = api.get("/api/orders/?limit=100000").json()
+    assert body["count"] == 3
+    assert len(body["results"]) == 2
+
+
+@pytest.mark.django_db
 def test_order_detail_owner_only(api, b2c_user, b2b_user, product):
     api.force_authenticate(user=b2c_user)
     api.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")

@@ -70,6 +70,30 @@ def test_categories_only_active(client, tree):
 
 
 @pytest.mark.django_db
+def test_products_limit_is_capped(client, tree, monkeypatch):
+    """DRF-2733: ?limit=100000 не выгружает каталог целиком — limit усекается до потолка."""
+    from apps.core.pagination import BoundedLimitOffsetPagination
+
+    monkeypatch.setattr(BoundedLimitOffsetPagination, "max_limit", 2)
+    _, _, leaf = tree
+    for i in range(3):
+        make_product(leaf, f"Товар {i}", f"p{i}")
+
+    body = client.get("/api/catalog/products/?limit=100000").json()
+    assert body["count"] == 3
+    assert len(body["results"]) == 2
+    assert body["next"] is not None
+
+
+def test_ids_filter_fits_into_page_limit():
+    """Витрина просит товары по списку id одним запросом с limit=len(ids)."""
+    from apps.catalog.filters import MAX_IDS_FILTER
+    from apps.core.pagination import MAX_PAGE_LIMIT
+
+    assert MAX_IDS_FILTER <= MAX_PAGE_LIMIT
+
+
+@pytest.mark.django_db
 def test_products_only_visible(client, tree):
     _, _, leaf = tree
     make_product(leaf, "Видимый", "vis")

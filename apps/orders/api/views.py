@@ -23,12 +23,12 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.catalog.models import Product
+from apps.core.pagination import BoundedLimitOffsetPagination
 from apps.core.throttling import DeliveryQuoteRateThrottle, OrdersRateThrottle
 from apps.delivery.services import DeliveryInputError, DeliveryQuoteError, quote_carrier
 
@@ -383,7 +383,7 @@ class OrdersView(APIView):
             .prefetch_related("items")
             .order_by("-created_at")
         )
-        paginator = LimitOffsetPagination()
+        paginator = BoundedLimitOffsetPagination()
         page = paginator.paginate_queryset(qs, request, view=self)
         return paginator.get_paginated_response(OrderSerializer(page, many=True).data)
 
@@ -532,7 +532,7 @@ class AccountInvoicesView(APIView):
             .select_related("order")
             .order_by("-issued_at")
         )
-        paginator = LimitOffsetPagination()
+        paginator = BoundedLimitOffsetPagination()
         page = paginator.paginate_queryset(qs, request, view=self)
         return paginator.get_paginated_response(B2BInvoiceSerializer(page, many=True).data)
 
