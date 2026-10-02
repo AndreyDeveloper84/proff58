@@ -369,7 +369,9 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
+    # DRF-2733: свой класс с потолком limit — у DRF-ного его нет, и один запрос
+    # ?limit=100000 выгружал весь каталог в память воркера.
+    "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.BoundedLimitOffsetPagination",
     "PAGE_SIZE": 24,
     # #279: глобальный анонимный лимит — защита каталога/фасетов от DoS.
     # Вьюхи с явным throttle_classes (1С, корзина, заказы) его не наследуют.

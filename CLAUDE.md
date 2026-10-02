@@ -264,6 +264,10 @@ pytest apps/catalog              # только каталог (~350 тесто�
 
 ## 10. Публичный API
 
+Списки отдаются через `?limit=&offset=`; `limit` не больше 200
+(`apps/core/pagination.py`) — запрос сверх потолка молча усекается. Классы
+пагинации DRF напрямую не используем: у них потолка нет.
+
 - `/api/catalog/` — `categories/`, `categories/<slug>/facets/`, `products/`,
   `products/<slug>/`, `products/<slug>/compatible/`, `search/suggest/`,
   `search/quick/` (быстрый поиск в шапке: ≤6 товаров + ≤3 раздела/вида),
