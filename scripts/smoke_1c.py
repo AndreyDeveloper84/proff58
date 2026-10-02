@@ -350,15 +350,18 @@ def check_snapshot_reflects(
     if not row:
         r.check("snapshot: товар найден и значения сходятся", False, "товар не найден в снимке")
         return
+    # `reserved` в снимке — счётчик заказов САЙТА, а не эхо присланного 1С: резерв 1С
+    # сайт не хранит, а только вычитает из свободного остатка вместе со своим (DRF-2737).
+    site_reserved = _to_decimal(row.get("reserved")) or Decimal("0")
+    expected_available = max(Decimal("0"), stock - reserved - site_reserved)
     checks = {
         "price": _to_decimal(row.get("price")) == price,
         "stock": _to_decimal(row.get("stock")) == stock,
-        "reserved": _to_decimal(row.get("reserved")) == reserved,
-        "available": _to_decimal(row.get("available")) == (stock - reserved),
+        "available": _to_decimal(row.get("available")) == expected_available,
     }
     detail = ", ".join(f"{k}={'ok' if v else 'MISMATCH'}" for k, v in checks.items())
     r.check(
-        "snapshot: price/stock/reserved/available сходятся (Decimal)",
+        "snapshot: price/stock/available сходятся (Decimal; available = stock − резерв 1С − резерв сайта)",
         all(checks.values()),
         f"{detail}; row={row}",
     )

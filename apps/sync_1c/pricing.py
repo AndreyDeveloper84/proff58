@@ -25,6 +25,17 @@ from .normalizers import Item
 _PRICE_FIELDS = ["price", "old_price", "currency", "price_updated_at"]
 
 
+def price_fields(item: Item) -> list[str]:
+    """Поля цены, которые строка действительно меняет.
+
+    Зачёркнутая цена пишется, только если 1С её прислала: иначе в БД вернулось бы
+    значение из инстанса, прочитанного в начале батча (DRF-2737).
+    """
+    if item.old_price is None:
+        return [f for f in _PRICE_FIELDS if f != "old_price"]
+    return list(_PRICE_FIELDS)
+
+
 def _resolve_old_price(
     item_old_price: Decimal | None, current_old_price: Decimal | None
 ) -> Decimal | None:
@@ -95,13 +106,13 @@ def set_current_price(product: Product, item: Item) -> bool:
 
 
 def update_price(item: Item) -> bool:
-    """Точечно применить цену к найденному товару (find-first). Используется shim'ом."""
+    """Точечно применить цену к найденному товару (find-first). Вызывается только из тестов."""
     product = matching.find_product(item)
     if product is None:
         return False
     if not set_current_price(product, item):
         return False
-    product.save(update_fields=_PRICE_FIELDS)
+    product.save(update_fields=[*price_fields(item), "updated_at"])
     return True
 
 

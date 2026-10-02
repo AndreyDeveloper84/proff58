@@ -276,6 +276,22 @@ def test_stocks_update_zero_stock_is_valid(auth_client):
 
 @override_settings(ONEC_API_KEY=API_KEY)
 @pytest.mark.django_db
+def test_stocks_update_row_with_only_reserved_is_skipped(auth_client):
+    """Резерв 1С сайт не хранит: без `stock` в той же строке менять нечего (DRF-2737)."""
+    Product.objects.create(name="Т", code_1c="1c-303", slug="t-303", stock_quantity=5)
+    resp = auth_client.post(
+        "/api/1c/stocks/update",
+        {"items": [{"external_id": "1c-303", "reserved": "2"}]},
+        format="json",
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert (body["updated"], body["skipped"]) == (0, 1)
+    assert Product.objects.get(code_1c="1c-303").reserved_quantity == 0
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
 def test_stocks_update_reserved_over_stock_clamps_to_zero(auth_client):
     """Резерв больше остатка → available_quantity = 0, обмен не падает (DRF-1003)."""
     Product.objects.create(name="Т", code_1c="1c-302", slug="t-302")
@@ -287,7 +303,9 @@ def test_stocks_update_reserved_over_stock_clamps_to_zero(auth_client):
     assert resp.status_code == 200
     p = Product.objects.get(code_1c="1c-302")
     assert p.stock_quantity == 1
-    assert p.reserved_quantity == 4
+    # DRF-2737: резерв 1С в счётчик сайта не пишется (тот — про заказы сайта), но из
+    # свободного остатка вычитается.
+    assert p.reserved_quantity == 0
     assert p.available_quantity == 0  # 1 - 4 зажато, а не записано минусом
 
 

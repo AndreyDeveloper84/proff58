@@ -4,14 +4,18 @@
 
   Шаг 0 (отдельная транзакция): bulk_create NomenclatureStaging (raw + row_hash + PENDING) ДО
     записи товаров — инвариант #131: raw-данные выживают даже при сбое product-транзакции.
-  Фаза 1 (в памяти): по картам из #125A определяем new/update/conflict/skip, мутируем
-    Product/цены/остатки в памяти, обновляем staging-объекты (status, code_1c, product...).
-  Фаза 2 (БД): bulk_create товаров → bulk_update товаров → bulk цены/остатки →
-    bulk_update staging (уже сохранён, только обновляем поля).
+  Фаза 1 (в памяти): по картам из #125A определяем new/update/conflict/skip. Новые товары
+    собираются целиком (товар, цена, остаток); строки по существующим товарам только
+    учитываются — что в них меняется, решает фаза 2.
+  Фаза 2 (БД, одна транзакция): bulk_create товаров → замок строк существующих товаров и
+    планирование их обновлений по СВЕЖИМ данным (DRF-2737, `_plan_matched_under_lock`) →
+    bulk_update изменившихся → bulk цены/остатки → bulk_update staging.
 
 Инварианты сохранены (см. тесты apps/sync_1c): conflict, partial-failure, skip-unchanged-price,
 идемпотентность, ручной контент, счётчики. На неожиданный сбой bulk-транзакции — fallback на
-построчный путь (`use_cases.run_rows`), чтобы «одна плохая строка не валила батч».
+построчный путь (`use_cases._run_rows_per_row`), чтобы «одна плохая строка не валила батч».
+Сбой при планировании строки существующего товара тоже роняет пачку целиком на построчный
+путь: изоляции по строке в фазе 2 нет, её даёт fallback.
 
 bulk_create обходит Product.save()/сигналы, поэтому здесь явно: slug предзадаём
 (`product_writer.build_slug_for_import`), `updated_at` ставим вручную, кэш дерева категорий
@@ -20,6 +24,7 @@ bulk_create обходит Product.save()/сигналы, поэтому зде�
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 
 from django.db import transaction
@@ -34,6 +39,8 @@ from apps.core.events import EventSource, price_changed, product_created, produc
 from . import matching, normalizers, pricing, product_writer, stock
 from .matching import MatchStatus
 from .models import NomenclatureStaging, StagingStatus, SyncLog
+
+logger = logging.getLogger(__name__)
 
 BATCH = 1000
 
@@ -64,7 +71,7 @@ _STAGING_UPDATE_FIELDS = [
 
 @dataclass
 class _Plan:
-    """Накопитель фазы 1."""
+    """Накопитель плана записи: фаза 1 + планирование существующих товаров в фазе 2."""
 
     staging: list[NomenclatureStaging] = field(default_factory=list)
     new_products: list[Product] = field(default_factory=list)
@@ -72,6 +79,9 @@ class _Plan:
     price_changes: list[pricing.PriceChange] = field(default_factory=list)
     stock_plans: list[stock.StockPlan] = field(default_factory=list)
     new_items: list[tuple] = field(default_factory=list)  # (product, item) — для slug
+    # Строки по уже существующим товарам: (staging, строка 1С, товар из карт батча). Что
+    # именно в них меняется, решает фаза 2 — по свежей строке товара под замком (DRF-2737).
+    matched: list[tuple] = field(default_factory=list)
     created_pids: list = field(default_factory=list)  # product объекты (pk после bulk_create)
     updated_events: list[tuple] = field(default_factory=list)  # (product, changed_fields)
     price_events: list[pricing.PriceChange] = field(default_factory=list)
@@ -126,8 +136,9 @@ def run_rows_bulk(
 
     maps = matching.build_match_maps(items)
     rules = categorization.load_active_rules()
-    codes = {it.code_1c for it in items if it.code_1c}
-    price_map = pricing.prefetch_current_prices(codes)
+    # Карта текущих цен читается в фазе 2, под замком товаров. Новому товару она не
+    # нужна: «цена не изменилась» для него невозможна.
+    price_map: dict = {}
 
     for staging, item in parsed:
         staging.code_1c = item.code_1c
@@ -172,6 +183,15 @@ def run_rows_bulk(
             _assign_slugs(plan.new_items)
             if plan.new_products:
                 Product.objects.bulk_create(plan.new_products, batch_size=BATCH)
+            # После bulk_create: у нового товара появился pk, и его дубль в этом же
+            # батче (вторая строка с тем же кодом) планируется как обычное обновление.
+            plan.update_products, price_map = _plan_matched_under_lock(
+                plan,
+                allow_basic_fields=allow_basic_fields,
+                result=result,
+                error_lines=error_lines,
+                tally_error=tally_error,
+            )
             if plan.update_products:
                 Product.objects.bulk_update(
                     plan.update_products, _PRODUCT_UPDATE_FIELDS, batch_size=BATCH
@@ -183,6 +203,13 @@ def run_rows_bulk(
             transaction.on_commit(invalidate_category_tree_cache)
             transaction.on_commit(invalidate_facets_cache)
     except Exception:  # noqa: BLE001
+        # Раньше причина терялась: пакет молча уходил на построчный путь. С замками
+        # причин стало больше (дедлок, ожидание блокировки) — оставляем след.
+        logger.exception(
+            "1С: пакетная запись не удалась — откат на построчный путь (sync_log=%s, источник=%s)",
+            getattr(sync_log, "pk", None),
+            src,
+        )
         return False  # bulk упал — вызывающий откатится на построчный путь
     return True
 
@@ -243,27 +270,83 @@ def _classify_row(
             result.uncategorized += 1
         return
 
-    # MATCHED
-    product = match.product
-    before = product_writer.snapshot(product)
-    pc = pricing.plan_price(product, item, current=price_map)
-    sp = stock.plan_stock(product, item)
-    product_writer.apply_basic_fields(product, item, allow_basic_fields=allow_basic_fields)
-    changed = [f for f in product_writer._TRACKED_FIELDS if before[f] != getattr(product, f)]
-    product.updated_at = timezone.now()
-    if pc:
-        plan.price_changes.append(pc)
-        if pc.price_event:
-            plan.price_events.append(pc)
-    if sp:
-        plan.stock_plans.append(sp)
-    plan.update_products.append(product)
-    if changed:
-        plan.updated_events.append((product, changed))
-    staging.status = StagingStatus.MATCHED
-    staging.processed_at = timezone.now()
-    staging._product_obj = product
-    result.updated += 1
+    # MATCHED. Здесь строку только учитываем. Сами изменения считаются в фазе 2
+    # (`_plan_matched_under_lock`): товар из карт прочитан в начале батча и к моменту
+    # записи мог устареть — по нему нельзя решать ни про остаток, ни про цену, ни про
+    # «бренд, если пусто».
+    plan.matched.append((staging, item, match.product))
+
+
+def _plan_matched_under_lock(
+    plan: _Plan, *, allow_basic_fields: bool, result, error_lines: list[str], tally_error
+) -> tuple[list, dict]:
+    """Спланировать обновление существующих товаров по свежим строкам под замком.
+
+    Раньше изменения считались в фазе 1 по инстансам из карт батча, а фаза 2 писала
+    эти инстансы целиком (все поля ``_PRODUCT_UPDATE_FIELDS``). Всё, что случилось с
+    товаром между чтением карт и записью, откатывалось: удержание чекаута
+    (``available``), цена из параллельного ``prices/update``, бренд, проставленный
+    менеджером (DRF-2737). Теперь:
+
+    - строки товаров блокируются (порядок pk — как у чекаута; ``NO KEY UPDATE`` — не
+      мешаем вставкам со ссылкой на товар: корзина, избранное, PAV, цена);
+    - текущие цены перечитываются уже под замком — запись цены в другом потоке ждёт
+      тот же замок товара, поэтому карта точная;
+    - каждая строка 1С применяется к свежему объекту теми же функциями, что и раньше
+      (``plan_price`` / ``plan_stock`` / ``apply_basic_fields``), в порядке файла;
+    - в запись идут только товары, в которых строка что-то изменила.
+
+    Возвращает (товары для bulk_update, свежая карта цен для ``apply_prices_bulk``).
+    """
+    pks = sorted({product.pk for _, _, product in plan.matched if product.pk is not None})
+    fresh = {
+        p.pk: p
+        for p in Product.objects.select_for_update(no_key=True).filter(pk__in=pks).order_by("pk")
+    }
+    codes = {p.code_1c for p in fresh.values() if p.code_1c}
+    codes.update(p.code_1c for p in plan.new_products if p.code_1c)
+    price_map = pricing.prefetch_current_prices(codes)
+
+    now = timezone.now()
+    to_update: dict[int, Product] = {}
+    changed_by_pk: dict[int, set[str]] = {}
+    for staging, item, stale in plan.matched:
+        product = fresh.get(stale.pk)
+        if product is None:
+            # Товар удалили между чтением карт и записью. Строка — ошибка, а не
+            # «обновлено»: иначе staging сослался бы на несуществующий товар.
+            _row_error(staging, "Товар удалён во время импорта.")
+            tally_error(
+                result, error_lines, item.code_1c or item.article or "—", staging.error_message
+            )
+            continue
+        staging.status = StagingStatus.MATCHED
+        staging.processed_at = now
+        staging._product_obj = product
+        result.updated += 1
+        before = product_writer.snapshot(product)
+        stock_stamp = product.stock_updated_at
+        pc = pricing.plan_price(product, item, current=price_map)
+        sp = stock.plan_stock(product, item)
+        product_writer.apply_basic_fields(product, item, allow_basic_fields=allow_basic_fields)
+        changed = [f for f in product_writer._TRACKED_FIELDS if before[f] != getattr(product, f)]
+        if pc:
+            plan.price_changes.append(pc)
+            if pc.price_event:
+                plan.price_events.append(pc)
+        if sp:
+            plan.stock_plans.append(sp)
+        if changed or pc is not None or product.stock_updated_at != stock_stamp:
+            product.updated_at = now  # auto_now при bulk_update не срабатывает
+            to_update[product.pk] = product
+        if changed:
+            changed_by_pk.setdefault(product.pk, set()).update(changed)
+
+    plan.updated_events = [
+        (fresh[pk], [f for f in product_writer._TRACKED_FIELDS if f in fields])
+        for pk, fields in changed_by_pk.items()
+    ]
+    return list(to_update.values()), price_map
 
 
 def _row_error(staging: NomenclatureStaging, reason: str) -> None:

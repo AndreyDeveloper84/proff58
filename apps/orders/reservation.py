@@ -17,9 +17,13 @@
 - **confirm_or_take** (оплата пришла): HELD → CONFIRMED; RELEASED у живого заказа →
   товар берётся заново и сразу списывается (``available -= qty``) → CONFIRMED.
 
-Мастер ``available``/``reserved`` на сайте — сайт. Обмен 1С присылает абсолютный
-свободный остаток (``stocks/update``), перезаписывая ``available``; ``reserved``
-остаётся сайтовым счётчиком. Полная сверка reserved с 1С — вне объёма B-03.
+Счётчик ``reserved`` ведёт только сайт (заказы) — обмен с 1С его не пишет никогда.
+``available`` меняют обе стороны: сайт — удержанием и возвратом, обмен — пересчётом
+от данных 1С: «свободно по данным 1С минус ``reserved``», под замком строки товара и
+от свежего значения (``apps/sync_1c/stock.py``, DRF-2737). Резерв самой 1С сайт не
+хранит. После ``confirm`` резерв сайта списан, и следующая строка остатка от 1С
+(до отгрузки там) вернёт проданный товар в ``available`` — известный пробел, задача
+в эпике DRF-2731.
 
 Удаление заказа мимо ``release_reservation`` (админка, shell, каскад) закрыто
 сигналом ``pre_delete`` в ``receivers.py`` (DRF-1002). Удаление самого товара
@@ -52,7 +56,8 @@ def _adjust_stock(order: Order, *, available_delta_sign: int) -> None:
     ``available_delta_sign``: +1 (release, возврат в свободный остаток) или
     0 (confirm, свободный остаток не меняется). ``reserved`` всегда уменьшается.
     """
-    # По product_id — в том же порядке, что place_order/rehold берут замки товаров.
+    # По product_id — в том же порядке, что берут замки товаров place_order, rehold и
+    # обмен с 1С (sync_1c.stock.locked, пакетный импорт, update_stocks_bulk).
     items = (
         OrderItem.objects.filter(order=order)
         .order_by("product_id")
