@@ -47,7 +47,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="product",
             constraint=models.CheckConstraint(
-                check=models.Q(("available_quantity__gte", 0)),
+                condition=models.Q(("available_quantity__gte", 0)),
                 name="catalog_product_available_qty_non_negative",
             ),
         ),

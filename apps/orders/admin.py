@@ -399,7 +399,7 @@ class OrderAdmin(TimestampColumnsMixin, admin.ModelAdmin):
         """Кнопки следующего допустимого шага прямо в списке."""
         steps = next_steps(obj)
         if not steps:
-            return format_html("<span style='opacity:.5;'>—</span>")
+            return mark_safe("<span style='opacity:.5;'>—</span>")
         return format_html_join(
             " ",
             '<a class="button" style="padding:.15rem .5rem;font-size:.85em;{}" href="{}">{}</a>',

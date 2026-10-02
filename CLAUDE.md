@@ -31,7 +31,7 @@
 
 ## 2. Стек
 
-Django 5.0 · DRF 3.15 · **PostgreSQL 16** (JSONB-фасеты + GIN + pg_trgm — **SQLite не
+Django 5.2 LTS · DRF 3.17 · **PostgreSQL 16** (JSONB-фасеты + GIN + pg_trgm — **SQLite не
 подойдёт даже для тестов**) · Celery 5 + Redis (worker `celery` + worker `onec` +
 beat) · Next.js App Router/TS/Tailwind (`frontend/`) · ruff + black (line-length 100)
 + pre-commit · django-jazzmin, django-treebeard (MP_Node).
@@ -234,8 +234,9 @@ pytest apps/catalog              # только каталог (~350 тесто�
 (`CELERY_TASK_ALWAYS_EAGER=True`), e-mail в консоль; `/healthz/` без Redis вернёт
 503 — для локалки норма.
 
-**Baseline полного прогона: `5465 passed, 3 skipped` (~9 мин), замер 2026-09-29** —
-в docker (`proff58-web:latest` с weasyprint), Redis поднят. Без Redis падает
+**Baseline полного прогона: `5654 passed, 5 skipped` (~13 мин), замер 2026-10-02** —
+в docker (`proff58-web:latest` с weasyprint, Django 5.2), Redis поднят, тестовая БД
+создана заново (`--create-db`). Без Redis падает
 `test_regression_mvp.py::test_healthcheck_returns_ok`, на Windows —
 `test_deploy_release.py::test_release_script_is_executable` (exec bit): это
 окружение, не регрессия. Любое другое падение — регрессия.

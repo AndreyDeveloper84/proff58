@@ -73,7 +73,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="productcompatibility",
             constraint=models.CheckConstraint(
-                check=models.Q(("source", models.F("target")), _negated=True),
+                condition=models.Q(("source", models.F("target")), _negated=True),
                 name="catalog_productcompat_no_self_link",
             ),
         ),

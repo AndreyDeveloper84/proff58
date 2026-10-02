@@ -144,7 +144,7 @@ class ContentFinding(models.Model):
             ),
             models.CheckConstraint(
                 name="finding_attribute_slug_consistency",
-                check=(models.Q(target_kind="attribute") & ~models.Q(attribute_slug=""))
+                condition=(models.Q(target_kind="attribute") & ~models.Q(attribute_slug=""))
                 | (~models.Q(target_kind="attribute") & models.Q(attribute_slug="")),
             ),
         ]
