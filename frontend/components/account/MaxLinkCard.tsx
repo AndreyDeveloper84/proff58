@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { maxAccountStatus, maxUnlink } from "@/lib/auth";
 import { MaxAuthFlow } from "./MaxAuthFlow";
+import { MAX_LINK_FAILURES } from "@/lib/max-auth-messages";
 
 // Карточка «Способы входа» в ЛК (§5.4): статус привязки MAX + подключить/отключить.
 export function MaxLinkCard() {
@@ -61,7 +62,12 @@ export function MaxLinkCard() {
           <p className="mb-2 text-sm text-ink-2">
             Подключите MAX, чтобы входить без пароля и получать уведомления о заказах.
           </p>
-          <MaxAuthFlow mode="link" ctaLabel="Подключить MAX" onCompleted={refresh} />
+          <MaxAuthFlow
+            mode="link"
+            ctaLabel="Подключить MAX"
+            failureMessages={MAX_LINK_FAILURES}
+            onCompleted={refresh}
+          />
         </div>
       )}
     </div>

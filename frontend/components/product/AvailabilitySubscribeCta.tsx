@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Bell, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MaxAuthFlow } from "@/components/account/MaxAuthFlow";
+import { MAX_LINK_FAILURES } from "@/lib/max-auth-messages";
 import { ApiError } from "@/lib/api";
 import { getMe, maxAccountStatus } from "@/lib/auth";
 import {
@@ -101,7 +102,12 @@ export function AvailabilitySubscribeCta({ productSlug }: { productSlug: string 
     return (
       <div className="max-w-sm rounded-md border border-line bg-surface p-3">
         <p className="mb-2 text-sm text-ink-2">Чтобы получить уведомление, подключите MAX:</p>
-        <MaxAuthFlow mode="link" ctaLabel="Подключить MAX" onCompleted={doSubscribe} />
+        <MaxAuthFlow
+          mode="link"
+          ctaLabel="Подключить MAX"
+          failureMessages={MAX_LINK_FAILURES}
+          onCompleted={doSubscribe}
+        />
         {errorMsg && (
           <p role="alert" className="mt-2 text-xs text-danger">
             {errorMsg}

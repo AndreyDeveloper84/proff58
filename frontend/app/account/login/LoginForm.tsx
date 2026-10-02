@@ -8,6 +8,7 @@ import { login, register } from "@/lib/auth";
 import { safeNextPath } from "@/lib/auth-state";
 import { oauthErrorMessage, type OAuthProviderId } from "@/lib/oauth";
 import { MaxAuthFlow } from "@/components/account/MaxAuthFlow";
+import { MAX_LOGIN_FAILURES } from "@/lib/max-auth-messages";
 import { OAuthButtons } from "@/components/account/OAuthButtons";
 import { isValidInn, isValidKpp, isLegalEntityInn } from "@/lib/validation";
 
@@ -177,7 +178,11 @@ export function LoginForm({
 
       {maxEnabled && (
         <div className="mt-6">
-          <MaxAuthFlow mode="login" onCompleted={() => router.push(nextTarget())} />
+          <MaxAuthFlow
+            mode="login"
+            failureMessages={MAX_LOGIN_FAILURES}
+            onCompleted={() => router.push(nextTarget())}
+          />
           <p className="mt-2 text-center text-xs text-ink-3">
             Без пароля — подтвердите вход в приложении
           </p>

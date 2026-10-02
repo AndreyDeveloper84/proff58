@@ -80,4 +80,45 @@ describe("MaxAuthFlow: опрос статуса", () => {
     expect(mockedStatus).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Срок действия ссылки истёк.")).toBeInTheDocument();
   });
+
+  // DRF-2735: причина отказа объясняется словами — раньше любое «failed» давало
+  // «Не удалось подтвердить вход», и человек не понимал, что делать.
+  it("причина отказа показывается текстом, который передал вызывающий", async () => {
+    mockedStatus.mockResolvedValue({ status: "failed", failure_reason: "phone_unverified" });
+    render(
+      <MaxAuthFlow
+        onCompleted={vi.fn()}
+        failureMessages={{ phone_unverified: "Номер не подтверждён — войдите по паролю." }}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button"));
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2500 * 2);
+    });
+
+    expect(screen.getByText("Номер не подтверждён — войдите по паролю.")).toBeInTheDocument();
+    expect(mockedStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it("причина без текста — общее сообщение, а не чужое объяснение", async () => {
+    // Виджет общий: при отслеживании заказа phone_mismatch — про номер заказа, и
+    // текст «про аккаунт» из карты входа туда попасть не должен. Нет карты или
+    // нет в ней причины — общий текст. «constructor» из прототипа — тоже.
+    for (const reason of ["phone_mismatch", "constructor", null]) {
+      mockedStatus.mockReset().mockResolvedValue({ status: "failed", failure_reason: reason });
+      const { unmount } = render(
+        <MaxAuthFlow onCompleted={vi.fn()} failureMessages={{ no_phone: "Укажите номер." }} />,
+      );
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button"));
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2500 * 2);
+      });
+      expect(screen.getByText("Не удалось подтвердить вход.")).toBeInTheDocument();
+      unmount();
+    }
+  });
 });

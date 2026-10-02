@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { LoaderCircle, ShieldCheck } from "lucide-react";
 import { MaxAuthFlow } from "@/components/account/MaxAuthFlow";
+import { MAX_REAUTH_FAILURES } from "@/lib/max-auth-messages";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api";
@@ -135,6 +136,7 @@ export function ReauthPanel({
         <MaxAuthFlow
           start={maxReauthStart}
           ctaLabel="Подтвердить через MAX"
+          failureMessages={MAX_REAUTH_FAILURES}
           onCompleted={onVerified}
         />
       )}

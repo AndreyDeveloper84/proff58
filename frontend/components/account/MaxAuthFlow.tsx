@@ -20,6 +20,10 @@ import {
 // `start`/`pollStatus` (#520): опциональный override для сценариев за пределами
 // login/link — напр. отслеживание гостевого заказа (свои start/status-эндпоинты,
 // без побочного login()). Без override — обычное mode-based поведение как раньше.
+//
+// `failureMessages`: причина отказа (`failure_reason`) → текст. Виджет общий, а
+// причины по месту значат разное, поэтому карту передаёт тот, кто его вставляет
+// (lib/max-auth-messages.ts); причина без текста — общее «Не удалось подтвердить».
 
 type Phase = "idle" | "starting" | "waiting" | "completed" | "error";
 const TERMINAL_FAIL = ["expired", "cancelled", "failed"];
@@ -35,12 +39,14 @@ export function MaxAuthFlow({
   onCompleted,
   start: customStart,
   pollStatus = maxStatus,
+  failureMessages,
 }: {
   mode?: "login" | "link";
   ctaLabel?: string;
   onCompleted: () => void;
   start?: () => Promise<MaxAttempt>;
   pollStatus?: (attemptId: string) => Promise<MaxAttemptStatus>;
+  failureMessages?: Record<string, string>;
 }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [attempt, setAttempt] = useState<MaxAttempt | null>(null);
@@ -111,7 +117,13 @@ export function MaxAuthFlow({
                 ? "Срок действия ссылки истёк."
                 : s.status === "cancelled"
                   ? "Вход отменён."
-                  : "Не удалось подтвердить вход.",
+                  : // Object.hasOwn: причина приходит с сервера, «constructor» и
+                    // подобное не должны находить текст в прототипе.
+                    s.failure_reason &&
+                      failureMessages &&
+                      Object.hasOwn(failureMessages, s.failure_reason)
+                    ? failureMessages[s.failure_reason]
+                    : "Не удалось подтвердить вход.",
             );
           }
         } catch {
@@ -126,7 +138,7 @@ export function MaxAuthFlow({
       setPhase("error");
       setMessage(e instanceof Error ? e.message : "Не удалось начать вход через MAX.");
     }
-  }, [mode, onCompleted, stopPoll, customStart, pollStatus]);
+  }, [mode, onCompleted, stopPoll, customStart, pollStatus, failureMessages]);
 
   const cancel = useCallback(async () => {
     stopPoll();

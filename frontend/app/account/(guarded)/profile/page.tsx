@@ -302,7 +302,7 @@ export default function ProfilePage() {
       setPhoneOpen(false);
       setNewPhone("");
       setCurrentPassword("");
-      setNotice("Телефон изменён. Новый номер нужно подтвердить через MAX.");
+      setNotice("Телефон изменён.");
     } catch (caught) {
       setPhoneError(caught instanceof Error ? caught.message : "Не удалось изменить телефон.");
     } finally {
@@ -657,7 +657,8 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={() => {
-              setNewPhone(user.phone);
+              // У аккаунта, заведённого по e-mail, телефона нет вовсе.
+              setNewPhone(user.phone ?? "");
               setCurrentPassword("");
               setPhoneError("");
               setPhoneOpen(true);
@@ -945,7 +946,7 @@ export default function ProfilePage() {
           if (!phoneSaving) setPhoneOpen(false);
         }}
         title="Смена телефона"
-        description="Для безопасности подтвердите действие текущим паролем. Новый номер потребуется заново подтвердить через MAX."
+        description="Для безопасности подтвердите действие текущим паролем. Уже подключённый MAX останется прежним: чтобы входить через MAX с новым номером, отключите его и подключите заново в блоке «Вход через MAX»."
       >
         <form onSubmit={savePhone} className="space-y-4 p-5 sm:p-6" noValidate>
           <Field label="Новый телефон" required>
