@@ -119,7 +119,10 @@ def _dispatch(update_type: str, payload: dict) -> dict | None:
         token = payload.get("payload") or payload.get("start_payload") or ""
         if token:
             attempt = services.load_valid_attempt(token)
-            if attempt is not None and attempt.status == services.Status.PENDING:
+            if attempt is not None and attempt.status in (
+                services.Status.PENDING,
+                services.Status.CONFIRMATION_REQUIRED,  # повторное «Начать» → перевыпуск кода
+            ):
                 return auth_flow.handle_deeplink_start(chat_id, user_info.get("user_id"), attempt)
             # Попытки по токену нет (чужой или испорченный диплинк) либо она уже
             # закрыта: завершена, отменена, истекла. Старую ссылку нельзя пускать
@@ -152,6 +155,10 @@ def _dispatch(update_type: str, payload: dict) -> dict | None:
         if text.lower() in ("/start", "start", "начать"):
             user_info = message.get("sender", {})
             return auth.handle_bot_started(chat_id, user_info)
+        if text.isdigit() and len(text) == 6:
+            # Код набрали в чат: подсказать, где его вводить. Сам код не проверяем —
+            # бот попытку не завершает (DRF-2740).
+            return {"chat_id": chat_id, "text": auth_flow.CODE_GOES_TO_SITE_TEXT}
         if text:
             return auth.handle_unknown_text(chat_id)
 

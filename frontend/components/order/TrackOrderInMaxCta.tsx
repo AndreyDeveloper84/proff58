@@ -40,6 +40,8 @@ export function TrackOrderInMaxCta({
         start={() => startOrderTracking(orderNumber, accessToken)}
         pollStatus={getOrderTrackingStatus}
         onCompleted={() => setConnected(true)}
+        // Отслеживание завершает бот: кода нет (DRF-2740 касается входа и привязки).
+        codeEntry={false}
       />
     </div>
   );

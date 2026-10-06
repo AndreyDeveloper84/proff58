@@ -14,6 +14,11 @@ urlpatterns = [
     path(
         "auth/max/<uuid:public_id>/cancel/", views.MaxAuthCancelView.as_view(), name="auth-cancel"
     ),
+    path(
+        "auth/max/<uuid:public_id>/confirm/",
+        views.MaxAuthConfirmView.as_view(),
+        name="auth-confirm",
+    ),
     path("account/max/link/", views.MaxLinkStartView.as_view(), name="account-link"),
     path("account/max/reauth/", views.MaxReauthStartView.as_view(), name="account-reauth"),
     path("account/max/unlink/", views.MaxUnlinkView.as_view(), name="account-unlink"),

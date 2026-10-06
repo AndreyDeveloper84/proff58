@@ -86,6 +86,19 @@ def create_attempt(
     # Проверяем конфигурацию до INSERT, чтобы при выключенном/неполном MAX не
     # оставлять в БД заведомо бесполезные pending-попытки.
     _max_bot_username()
+    # DRF-2740: прежние незавершённые попытки той же сессии и операции гаснут —
+    # иначе после «Повторить» в чате два кода, и человек жжёт попытки старым.
+    if session_key:
+        from . import confirm as _confirm
+
+        stale = MaxAuthAttempt.objects.filter(
+            browser_session_key=session_key,
+            operation_type=operation_type,
+            status__in=(Status.PENDING, Status.CONFIRMATION_REQUIRED),
+        )
+        for old in stale:
+            _confirm.drop_pending(old)  # отложенный телефон старой попытки — вслед за ней
+        stale.update(status=Status.CANCELLED)
     attempt = MaxAuthAttempt.objects.create(
         secret_hash=_hash_secret(secret),
         browser_session_key=session_key or "",
@@ -153,22 +166,41 @@ def load_valid_attempt(token: str) -> MaxAuthAttempt | None:
 def cancel_attempt(public_id_hex: str, *, session_key: str) -> MaxAuthAttempt | None:
     """Отмена попытки пользователем (§13). Только из создавшей браузер-сессии (§11.2)."""
     attempt = get_attempt(public_id_hex)
-    if attempt is None or not secrets.compare_digest(
-        attempt.browser_session_key, session_key or ""
+    if (
+        attempt is None
+        or not session_key
+        or not secrets.compare_digest(attempt.browser_session_key, session_key)
     ):
         return None
     if attempt.status in (Status.PENDING, Status.CONFIRMATION_REQUIRED):
         attempt.status = Status.CANCELLED
         attempt.save(update_fields=["status"])
+        from . import confirm as _confirm
+
+        _confirm.drop_pending(attempt)  # отложенный телефон — вслед за попыткой
         _emit("max_auth_cancelled", attempt=str(attempt.public_id))
     return attempt
 
 
-def _fail(attempt: MaxAuthAttempt, reason: str) -> MaxAuthAttempt:
+def _fail(attempt: MaxAuthAttempt, reason: str, *, force: bool = False) -> MaxAuthAttempt:
+    """Закрыть попытку отказом.
+
+    Попытку, которая уже ждёт код или завершена, обычный отказ не понижает: два
+    события от MAX могут прийти одновременно, и второе не должно гасить попытку,
+    по которой первое уже выдало код. ``force`` — для отказов самого контура кода
+    (исчерпаны попытки, потерян кэш).
+    """
+    if attempt.status == Status.COMPLETED:
+        return attempt
+    if attempt.status == Status.CONFIRMATION_REQUIRED and not force:
+        return attempt
     attempt.status = Status.FAILED
     attempt.failure_reason = reason
     attempt.completed_at = timezone.now()
     attempt.save(update_fields=["status", "failure_reason", "completed_at"])
+    from . import confirm as _confirm
+
+    _confirm.drop_pending(attempt)  # отложенный телефон не переживает попытку
     _emit(
         "max_auth_failed",
         user=attempt.user,
@@ -225,6 +257,14 @@ def _notify_max_connected(user) -> None:
     from apps.notifications.services import create_notification
 
     create_notification(user=user, event="max_connected")
+
+
+def _notify_login(user, *, event: str) -> None:
+    """«Выполнен вход на сайт» в чат владельца после ввода кода (DRF-2740): если код
+    выманили, человек увидит чужой вход и успеет отключить MAX в кабинете."""
+    from apps.notifications.services import create_notification
+
+    transaction.on_commit(lambda: create_notification(user=user, event=event))
 
 
 def _complete_track_order(
@@ -295,91 +335,126 @@ def resolve_tracking_grant_chat_id(order) -> int | None:
     return OrderTrackingGrant.objects.filter(order=order).values_list("chat_id", flat=True).first()
 
 
-@transaction.atomic
-def complete_from_contact(
-    attempt: MaxAuthAttempt,
-    *,
-    max_user_id: int,
-    phone: str,
-    chat_id: int | None = None,
-    profile: dict | None = None,
-) -> MaxAuthAttempt:
-    """Завершить попытку по переданному из MAX контакту (§10). Идемпотентно (§11.4).
+@dataclass(frozen=True)
+class Decision:
+    """Что сделать с попыткой по данным из MAX — БЕЗ записи в БД (DRF-2740).
 
-    Правила:
-      - MAX уже привязан (по max_user_id) → вход этого пользователя;
-      - link: привязать к текущему пользователю, если телефон совпал и нет конфликта;
-      - иначе поиск по телефону: не найден → создать (passwordless, verified);
-        найден → привязать + вход ТОЛЬКО если номер у аккаунта подтверждён и у
-        аккаунта нет пароля (см. ниже, DRF-2735); иначе отказ без изменений.
+    Вызывается дважды: ботом как предпроверка (отказать сразу или выдать код) и
+    при вводе кода как исполнение под блокировкой — состояние могло измениться.
     """
-    profile = profile or {}
-    # Идемпотентность: повторная доставка того же контакта не пересоздаёт.
-    if attempt.status == Status.COMPLETED:
-        return attempt
-    attempt = _refresh_expiry(attempt)
-    if attempt.status != Status.PENDING:
-        return _fail(attempt, "attempt_not_pending")
 
-    # DRF-2497: подтверждение личности — только привязанным MAX, без контакта;
-    # по номеру никого не создаём и не привязываем.
-    if attempt.operation_type == Operation.CONFIRM_LOGIN:
-        return _fail(attempt, "reauth_mismatch")
+    ok: bool
+    reason: str = ""
+    #: login_linked | login_by_phone | register | link | reauth
+    action: str = ""
+    user_id: int | None = None
 
-    phone = normalize_phone(phone)
-    if not phone:
-        return _fail(attempt, "bad_phone")
+    @property
+    def needs_phone(self) -> bool:
+        return self.action in ("login_by_phone", "register", "link")
 
-    # --- Отслеживание гостевого заказа (#520) ---
-    # Полностью независимо от MaxAccount/User: гость не проходит регистрацию, грант
-    # не захватывает историю заказов и не связывается ни с каким аккаунтом сайта.
-    if attempt.operation_type == Operation.TRACK_ORDER:
-        return _complete_track_order(attempt, max_user_id=max_user_id, phone=phone, chat_id=chat_id)
 
+def decide(attempt: MaxAuthAttempt, *, max_user_id: int | None, phone: str | None) -> Decision:
+    """Решение по операции попытки. ``phone`` — None, если контакт ещё не передан."""
+    op = attempt.operation_type
     existing = (
-        MaxAccount.objects.select_related("user")
-        .filter(max_user_id=max_user_id, is_active=True)
-        .first()
+        MaxAccount.objects.filter(max_user_id=max_user_id, is_active=True).first()
+        if max_user_id
+        else None
     )
 
+    # --- Подтверждение личности из кабинета (DRF-2497) ---
+    if op == Operation.CONFIRM_LOGIN:
+        if existing is None or existing.user_id != attempt.user_id:
+            return Decision(False, "reauth_mismatch")
+        return Decision(True, action="reauth", user_id=existing.user_id)
+
     # --- Привязка из личного кабинета (§5.4) ---
-    if attempt.operation_type == Operation.LINK:
+    if op == Operation.LINK:
         target = attempt.user
         if target is None:
-            return _fail(attempt, "no_target_user")
+            return Decision(False, "no_target_user")
         if existing and existing.user_id != target.pk:
-            return _fail(attempt, "max_linked_to_other")  # §10: MAX у другого аккаунта
+            return Decision(False, "max_linked_to_other")  # §10: MAX у другого аккаунта
         if MaxAccount.objects.filter(user=target).exclude(max_user_id=max_user_id).exists():
-            return _fail(attempt, "user_has_other_max")
+            return Decision(False, "user_has_other_max")
         target_phone = normalize_phone(target.phone or "")
         if not target_phone:
             # Регистрация по e-mail телефон не спрашивает: привязывать MAX не к чему.
-            # Отдельная причина — чтобы подсказать «сначала укажите номер в профиле»,
-            # а не «номер не совпадает».
-            return _fail(attempt, "no_phone")
+            return Decision(False, "no_phone")
+        if phone is None:
+            return Decision(False, "need_contact")
         if target_phone != phone:
-            return _fail(attempt, "phone_mismatch")
-        self_link = existing.user_id == target.pk if existing else False
-        _upsert_account(
-            target, max_user_id=max_user_id, phone=phone, chat_id=chat_id, profile=profile
-        )
-        return _complete(
-            attempt, target, max_user_id=max_user_id, chat_id=chat_id, is_new=not self_link
-        )
+            return Decision(False, "phone_mismatch")
+        return Decision(True, action="link", user_id=target.pk)
+
+    # --- Отслеживание гостевого заказа (#520) ---
+    if op == Operation.TRACK_ORDER:
+        # Кода нет и входа нет: бот сверяет номер с заказом сам
+        # (``complete_track_order_from_contact``). Привязанный MAX ничего не меняет —
+        # иначе гость с привязкой получал бы код, который некуда ввести (ревью Б-2).
+        return Decision(False, "need_contact")
 
     # --- Вход/регистрация (§5.1, §10) ---
     if existing:
-        # MAX уже привязан → просто вход владельца привязки (повторный вход, §5.3).
-        if chat_id:
-            MaxAccount.objects.filter(pk=existing.pk).update(
-                chat_id=chat_id, last_login_at=timezone.now()
-            )
-        return _complete(
-            attempt, existing.user, max_user_id=max_user_id, chat_id=chat_id, is_new=False
-        )
-
+        # MAX уже привязан → вход владельца привязки (повторный вход, §5.3).
+        if not existing.user.is_active:
+            return Decision(False, "inactive_account")
+        return Decision(True, action="login_linked", user_id=existing.user_id)
+    if phone is None:
+        return Decision(False, "need_contact")
     user = User.objects.filter(phone=phone).first()
     if user is None:
+        return Decision(True, action="register")
+    if not user.is_active:
+        return Decision(False, "inactive_account")
+    # DRF-2735: номер в профиле — ещё не основание впускать. В аккаунт с паролем
+    # телефон вписывается без проверки (``ChangePhoneView``). Поэтому:
+    #   - неподтверждённый номер не даёт ни входа, ни привязки, ни флага;
+    #   - аккаунт с паролем (и любой сотрудник) по номеру не привязывается вовсе:
+    #     у него есть кабинет, MAX привязывают оттуда. Проверка номера — раньше
+    #     проверки «другой MAX», чтобы владелец номера получил честный отказ.
+    if not user.phone_verified:
+        return Decision(False, "phone_unverified")
+    if user.has_usable_password() or user.is_staff:
+        return Decision(False, "password_account")
+    if MaxAccount.objects.filter(user=user).exists():
+        return Decision(False, "user_has_other_max")
+    return Decision(True, action="login_by_phone", user_id=user.pk)
+
+
+def execute(
+    attempt: MaxAuthAttempt,
+    *,
+    max_user_id: int,
+    chat_id: int | None,
+    phone: str | None,
+    profile: dict | None,
+) -> MaxAuthAttempt:
+    """Исполнить решение по попытке — после ввода верного кода, под блокировкой.
+
+    Решение принимается заново по свежему состоянию: между выдачей кода и вводом
+    MAX могли отвязать, номер — сменить. ``_upsert_account`` без повторной
+    проверки молча перевесил бы чужую привязку.
+    """
+    profile = profile or {}
+    decision = decide(attempt, max_user_id=max_user_id, phone=phone)
+    if not decision.ok:
+        return _fail(attempt, decision.reason, force=True)
+
+    if decision.action == "reauth":
+        user = User.objects.get(pk=decision.user_id)
+        _notify_login(user, event="max_reauth")
+        return _complete(attempt, user, max_user_id=max_user_id, chat_id=chat_id, is_new=False)
+    if decision.action == "login_linked":
+        if chat_id is not None:
+            MaxAccount.objects.filter(max_user_id=max_user_id, is_active=True).update(
+                chat_id=chat_id, last_login_at=timezone.now()
+            )
+        user = User.objects.get(pk=decision.user_id)
+        _notify_login(user, event="max_login")
+        return _complete(attempt, user, max_user_id=max_user_id, chat_id=chat_id, is_new=False)
+    if decision.action == "register":
         # §10: пользователь не найден → создаём аккаунт (без пароля/e-mail), телефон подтверждён.
         user = User.objects.create_user(
             phone=phone,
@@ -392,75 +467,35 @@ def complete_from_contact(
         )
         return _complete(attempt, user, max_user_id=max_user_id, chat_id=chat_id, is_new=True)
 
-    # Пользователь найден по телефону.
-    #
-    # DRF-2735: номер в профиле — ещё не основание впускать. В аккаунт с паролем
-    # телефон вписывается без проверки (``ChangePhoneView``: любой свободный номер).
-    # Раньше владелец номера, нажав «Войти через MAX», попадал в такой аккаунт — тот,
-    # от которого пароль знает кто-то другой, — а сам аккаунт получал
-    # ``phone_verified`` и при следующем входе паролем забирал гостевые заказы
-    # владельца номера. Поэтому:
-    #   - неподтверждённый номер не даёт ни входа, ни привязки, ни флага;
-    #   - аккаунт с паролем (и любой сотрудник) по номеру не привязывается вовсе,
-    #     даже с подтверждённым: у него есть кабинет, MAX привязывают оттуда (LINK
-    #     доказывает и аккаунт, и номер). По номеру возвращается только тот, кто
-    #     пришёл через MAX, отвязал его и входит снова, — пароля у него нет.
-    # Проверка номера — раньше проверки «другой MAX»: иначе владельцу номера, чей
-    # номер вписал себе чужой аккаунт с привязанным MAX, бот ответил бы про
-    # «ваш аккаунт» вместо честного отказа.
-    if not user.phone_verified:
-        return _fail(attempt, "phone_unverified")
-    if user.has_usable_password() or user.is_staff:
-        return _fail(attempt, "password_account")
-    if MaxAccount.objects.filter(user=user).exists():
-        # У аккаунта уже есть другая привязка MAX (max_user_id иной) → конфликт (§10).
-        return _fail(attempt, "user_has_other_max")
+    user = User.objects.get(pk=decision.user_id)
+    self_link = MaxAccount.objects.filter(max_user_id=max_user_id, user=user).exists()
     _upsert_account(user, max_user_id=max_user_id, phone=phone, chat_id=chat_id, profile=profile)
-    return _complete(attempt, user, max_user_id=max_user_id, chat_id=chat_id, is_new=False)
+    if decision.action == "login_by_phone":
+        _notify_login(user, event="max_login")
+    return _complete(
+        attempt,
+        user,
+        max_user_id=max_user_id,
+        chat_id=chat_id,
+        is_new=(decision.action == "link" and not self_link),
+    )
 
 
 @transaction.atomic
-def complete_confirm(attempt: MaxAuthAttempt, *, max_user_id: int, chat_id: int | None = None):
-    """Повторный вход уже привязанного пользователя без передачи номера (§5.3)."""
+def complete_track_order_from_contact(
+    attempt: MaxAuthAttempt, *, max_user_id: int, phone: str, chat_id: int | None = None
+) -> MaxAuthAttempt:
+    """Отслеживание гостевого заказа (#520) — единственная операция, которую бот
+    завершает сам: гость не входит и ничего не привязывает, пересланная ссылка даёт
+    чужому только уведомления о чужом заказе при совпадении номера. Идемпотентно."""
     if attempt.status == Status.COMPLETED:
         return attempt
     attempt = _refresh_expiry(attempt)
     if attempt.status != Status.PENDING:
         return _fail(attempt, "attempt_not_pending")
-    acct = (
-        MaxAccount.objects.select_related("user")
-        .filter(max_user_id=max_user_id, is_active=True)
-        .first()
-    )
-    if not acct:
-        return _fail(attempt, "not_linked")
-    if chat_id:
-        MaxAccount.objects.filter(pk=acct.pk).update(chat_id=chat_id, last_login_at=timezone.now())
-    return _complete(attempt, acct.user, max_user_id=max_user_id, chat_id=chat_id, is_new=False)
-
-
-def complete_reauth(attempt: MaxAuthAttempt, *, max_user_id: int | None, chat_id=None):
-    """Подтверждение личности из кабинета (CONFIRM_LOGIN, DRF-2497).
-
-    Засчитывается, только если «Начать» нажал MAX, привязанный именно к
-    пользователю попытки. Никого не создаёт, не привязывает и не впускает:
-    попытка лишь помечается завершённой, отметку в сессию ставит опрос статуса.
-    """
-    with transaction.atomic():
-        attempt = MaxAuthAttempt.objects.select_for_update().get(pk=attempt.pk)
-        if attempt.status == Status.COMPLETED:
-            return attempt
-        attempt = _refresh_expiry(attempt)
-        if attempt.status != Status.PENDING:
-            return _fail(attempt, "attempt_not_pending")
-        acct = (
-            MaxAccount.objects.filter(max_user_id=max_user_id, is_active=True).first()
-            if max_user_id
-            else None
-        )
-        if acct is None or acct.user_id != attempt.user_id:
-            return _fail(attempt, "reauth_mismatch")
-        return _complete(attempt, acct.user, max_user_id=max_user_id, chat_id=chat_id, is_new=False)
+    if attempt.operation_type != Operation.TRACK_ORDER:
+        return _fail(attempt, "attempt_not_pending")
+    return _complete_track_order(attempt, max_user_id=max_user_id, phone=phone, chat_id=chat_id)
 
 
 def unlink_max(user) -> bool:

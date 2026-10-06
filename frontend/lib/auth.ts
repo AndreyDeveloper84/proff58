@@ -190,7 +190,13 @@ export type MaxAttempt = {
   status: string;
 };
 
-export type MaxAttemptStatus = { status: string; failure_reason: string | null };
+export type MaxAttemptStatus = {
+  status: string;
+  failure_reason: string | null;
+  expires_at?: string;
+  // Только в ответе на неверный код (DRF-2740).
+  attempts_left?: number;
+};
 
 // Старт попытки входа/регистрации через MAX.
 export async function maxStart() {
@@ -210,6 +216,14 @@ export async function maxReauthStart() {
 
 export async function maxStatus(attemptId: string) {
   return apiFetch<MaxAttemptStatus>(`/api/auth/max/${attemptId}/status`, { method: "GET" });
+}
+
+/** Ввод кода из бота (DRF-2740): единственное, что завершает вход/привязку/подтверждение. */
+export async function maxConfirm(attemptId: string, code: string) {
+  return apiFetch<MaxAttemptStatus>(`/api/auth/max/${attemptId}/confirm`, {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
 }
 
 export async function maxCancel(attemptId: string) {

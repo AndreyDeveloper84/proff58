@@ -19,6 +19,8 @@ export const MAX_LOGIN_FAILURES: Record<string, string> = {
     `через MAX нельзя. ${LINK_IN_PROFILE} Если аккаунт не ваш — свяжитесь с магазином.`,
   password_account: `У аккаунта с этим номером вход по паролю. ${LINK_IN_PROFILE}`,
   user_has_other_max: "К аккаунту с этим номером уже подключён другой MAX.",
+  // DRF-2740: до выдачи кода сайт причину не раскрывает — её видит человек в чате бота.
+  declined_in_max: "Бот в MAX не подтвердил вход. Причина — в сообщении бота.",
 };
 
 /** Привязка из кабинета («Подключить MAX»). */
@@ -38,5 +40,6 @@ export const MAX_LINK_FAILURES: Record<string, string> = {
 
 /** Подтверждение личности из кабинета («Подтвердить через MAX»). */
 export const MAX_REAUTH_FAILURES: Record<string, string> = {
-  reauth_mismatch: "Этот MAX не подключён к вашему аккаунту — подтвердить им нельзя.",
+  reauth_mismatch:
+    "Этот MAX не подключён к вашему аккаунту — подтвердить им нельзя.",
 };

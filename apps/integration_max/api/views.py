@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from apps.accounts import reauth
 from apps.core.throttling import AuthRateThrottle, ReauthThrottle
 
-from .. import services
+from .. import confirm, services
 from ..models import MaxAccount, MaxAuthAttempt
 
 # Единственный бэкенд аутентификации в проекте — ModelBackend; указываем явно,
@@ -68,54 +68,123 @@ class MaxAuthStartView(APIView):
         )
 
 
+def _own_attempt(request, public_id) -> MaxAuthAttempt | None:
+    """Попытка этой браузер-сессии (§11.2): чужая сессия не видит ни статуса, ни кода."""
+    attempt = services.get_attempt(str(public_id))
+    session_key = request.session.session_key or ""
+    if attempt is None or not session_key or attempt.browser_session_key != session_key:
+        return None
+    return attempt
+
+
+#: Причины отказа входа, которые до выдачи кода раскрывали бы чужому браузеру, есть
+#: ли у номера аккаунт и какой он (ревью В-5). Сам человек читает честную причину в
+#: чате бота; после ввода кода (попытка уже прошла через код) причина отдаётся как есть.
+_PRIVATE_LOGIN_REASONS = frozenset(
+    {"phone_unverified", "password_account", "user_has_other_max", "inactive_account"}
+)
+
+
+def _status_payload(attempt: MaxAuthAttempt) -> dict:
+    """Ответ опроса/подтверждения. Ничего об отложенной личности: пока код не введён,
+    эти ответы читает и браузер, создавший попытку, — возможно, чужой."""
+    reason = attempt.failure_reason or None
+    if (
+        reason in _PRIVATE_LOGIN_REASONS
+        and attempt.operation_type == MaxAuthAttempt.Operation.LOGIN
+        and attempt.code_issues == 0
+    ):
+        reason = "declined_in_max"
+    return {
+        "status": attempt.status,
+        "failure_reason": reason,
+        "expires_at": attempt.expires_at.isoformat(),
+    }
+
+
 class MaxAuthStatusView(APIView):
     """GET /api/auth/max/<public_id>/status/ — опрос статуса (§7.3).
 
-    Завершает вход ТОЛЬКО в браузере, создавшем попытку (§11.2): при completed и
-    совпадении сессии поднимает Django-сессию пользователя.
+    С DRF-2740 вход опрос НЕ выполняет: сессию поднимает ``MaxAuthConfirmView`` по
+    верному коду. Отслеживание заказа (#520) завершается ботом, и ``completed``
+    здесь по-прежнему приходит.
     """
 
     permission_classes = [AllowAny]
 
     def get(self, request, public_id):
-        attempt = services.get_attempt(str(public_id))
+        attempt = _own_attempt(request, public_id)
         if attempt is None:
             return Response({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(_status_payload(attempt))
 
-        # §11.2: чужая браузер-сессия не должна ни завершать вход, ни читать статус.
-        if attempt.browser_session_key != (request.session.session_key or ""):
+
+class MaxAuthConfirmView(APIView):
+    """POST /api/auth/max/<public_id>/confirm/ {code} — ввод кода из бота (DRF-2740).
+
+    Единственное место, где попытка входа/привязки/подтверждения завершается, — и
+    только из браузер-сессии, создавшей попытку. Перебор ограничен счётчиком на
+    самой попытке (5 неверных → отказ), лимит по IP — общий для входа.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
+
+    def post(self, request, public_id):
+        attempt = _own_attempt(request, public_id)
+        if attempt is None or attempt.operation_type == MaxAuthAttempt.Operation.TRACK_ORDER:
             return Response({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)
-
-        # attempt.user is None для завершённых track_order-попыток (#520, гость без
-        # аккаунта) — раньше у любой COMPLETED попытки user был гарантирован, этот
-        # инвариант больше не всегда верен, здесь его нельзя молча предполагать.
-        completed = attempt.status == MaxAuthAttempt.Status.COMPLETED
-        if (
-            completed
-            and attempt.operation_type == MaxAuthAttempt.Operation.LOGIN
-            and not request.user.is_authenticated
-            and attempt.user is not None
+        op = attempt.operation_type
+        if op == MaxAuthAttempt.Operation.LOGIN and request.user.is_authenticated:
+            return Response(
+                {"detail": "Вы уже вошли.", "code": "already_authenticated"},
+                status=status.HTTP_409_CONFLICT,
+            )
+        if op in (MaxAuthAttempt.Operation.LINK, MaxAuthAttempt.Operation.CONFIRM_LOGIN) and (
+            not request.user.is_authenticated or attempt.user_id != request.user.pk
         ):
-            user = attempt.user
+            return Response({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)
+        if attempt.status == MaxAuthAttempt.Status.PENDING:
+            return Response(
+                {
+                    "detail": "Код ещё не выдан: откройте MAX и нажмите «Начать».",
+                    "code": "code_not_issued",
+                    **_status_payload(attempt),
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        if attempt.status != MaxAuthAttempt.Status.CONFIRMATION_REQUIRED:
+            # Уже завершена или закрыта: повторный ввод ничего не подтверждает заново
+            # (и не продлевает окно reauth).
+            return Response(_status_payload(attempt), status=status.HTTP_409_CONFLICT)
+
+        data = request.data if isinstance(request.data, dict) else {}
+        result = confirm.confirm(attempt, code=str(data.get("code", "")))
+        attempt = result.attempt
+        if result.wrong_code:
+            return Response(
+                {
+                    "detail": "Неверный код.",
+                    "code": "wrong_code",
+                    "attempts_left": result.attempts_left,
+                    **_status_payload(attempt),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if attempt.status != MaxAuthAttempt.Status.COMPLETED:
+            return Response(_status_payload(attempt), status=status.HTTP_409_CONFLICT)
+
+        if op == MaxAuthAttempt.Operation.LOGIN and result.user is not None:
+            user = result.user
             user.backend = _AUTH_BACKEND
             login(request, user)
-        elif (
-            completed
-            and attempt.operation_type == MaxAuthAttempt.Operation.CONFIRM_LOGIN
-            and request.user.is_authenticated
-            and attempt.user_id == request.user.pk
-        ):
-            # DRF-2497: личность подтверждена в MAX. Время — момент подтверждения, а не
-            # опроса: повторный опрос той же попытки окно не продлевает. Ключ сессии
-            # здесь не меняем — опрос идёт параллельно с другими запросами кабинета,
-            # и ротация разлогинила бы те, что ушли со старой кукой.
+        elif op == MaxAuthAttempt.Operation.CONFIRM_LOGIN:
+            # DRF-2497: личность подтверждена в MAX. Время — момент подтверждения.
+            # Ключ сессии не меняем: кабинет шлёт параллельные запросы со старой кукой.
             reauth.mark_verified(
                 request, method=reauth.EXTERNAL, at=attempt.completed_at, rotate=False
             )
-
-        return Response(
-            {"status": attempt.status, "failure_reason": attempt.failure_reason or None}
-        )
+        return Response(_status_payload(attempt))
 
 
 class MaxAuthCancelView(APIView):
@@ -129,11 +198,7 @@ class MaxAuthCancelView(APIView):
         )
         if attempt is None:
             return Response({"detail": "Не найдено."}, status=status.HTTP_404_NOT_FOUND)
-        # failure_reason — как в status-эндпоинтах: клиент типизирует ответ единым
-        # MaxAttemptStatus {status, failure_reason}; без поля тип обещал больше, чем бэк отдавал.
-        return Response(
-            {"status": attempt.status, "failure_reason": attempt.failure_reason or None}
-        )
+        return Response(_status_payload(attempt))
 
 
 class MaxLinkStartView(APIView):

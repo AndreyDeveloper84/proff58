@@ -17,9 +17,9 @@ from django.test import override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from . import services
+from . import confirm, services
 from .models import MaxAccount, MaxAuthAttempt
-from .tests import TOKEN, _make_vcf_payload
+from .tests import TOKEN, _make_vcf_payload, code_from_reply, complete_via_code
 
 User = get_user_model()
 Status = MaxAuthAttempt.Status
@@ -56,7 +56,7 @@ def _attempt(op=Operation.LOGIN, user=None, session="sess-1"):
 def test_register_new_user_via_contact():
     """Пользователь не найден → создаётся аккаунт (passwordless, телефон подтверждён)."""
     attempt = _attempt()
-    res = services.complete_from_contact(attempt, max_user_id=1001, phone=PHONE, chat_id=500)
+    res = complete_via_code(attempt, max_user_id=1001, phone=PHONE, chat_id=500)
     assert res.status == Status.COMPLETED
     user = res.user
     assert user.phone == PHONE
@@ -76,7 +76,7 @@ def test_max_created_user_relinks_after_unlink():
     """Пришёл через MAX, отвязал, входит снова: по подтверждённому номеру привязываем."""
     user = _mk_max_user()
     attempt = _attempt()
-    res = services.complete_from_contact(attempt, max_user_id=1002, phone=PHONE)
+    res = complete_via_code(attempt, max_user_id=1002, phone=PHONE)
     assert res.status == Status.COMPLETED and res.user_id == user.pk
     assert MaxAccount.objects.filter(user=user, max_user_id=1002).exists()
 
@@ -98,7 +98,7 @@ def _assert_refused(res, user, reason):
 @pytest.mark.django_db
 def test_unverified_phone_gives_neither_login_nor_flag():
     user = _mk_user(phone_verified=False)
-    res = services.complete_from_contact(_attempt(), max_user_id=1002, phone=PHONE, chat_id=7)
+    res = complete_via_code(_attempt(), max_user_id=1002, phone=PHONE, chat_id=7)
     user = _assert_refused(res, user, "phone_unverified")
     assert user.phone_verified is False
     assert user.max_chat_id is None
@@ -109,7 +109,7 @@ def test_unverified_phone_gives_neither_login_nor_flag():
 def test_password_account_is_not_linked_by_phone_even_if_verified():
     """Флаг мог встать раньше (старый поток, админка) — пароль всё равно решает."""
     user = _mk_user(phone_verified=True)
-    res = services.complete_from_contact(_attempt(), max_user_id=1002, phone=PHONE)
+    res = complete_via_code(_attempt(), max_user_id=1002, phone=PHONE)
     _assert_refused(res, user, "password_account")
 
 
@@ -122,7 +122,7 @@ def test_staff_account_is_never_linked_by_phone(verified, reason):
     staff = User.objects.create_user(
         phone=PHONE, password=None, phone_verified=verified, is_staff=True
     )
-    res = services.complete_from_contact(_attempt(), max_user_id=1002, phone=PHONE)
+    res = complete_via_code(_attempt(), max_user_id=1002, phone=PHONE)
     _assert_refused(res, staff, reason)
 
 
@@ -130,7 +130,7 @@ def test_staff_account_is_never_linked_by_phone(verified, reason):
 @mock.patch("apps.analytics.services.track")
 def test_refusal_emits_failure_not_link_event(mock_track):
     _mk_user(phone_verified=False)
-    services.complete_from_contact(_attempt(), max_user_id=1002, phone=PHONE)
+    complete_via_code(_attempt(), max_user_id=1002, phone=PHONE)
     events = [c.args[0] for c in mock_track.call_args_list]
     assert "max_auth_failed" in events
     assert "max_account_linked" not in events and "max_auth_completed" not in events
@@ -142,7 +142,7 @@ def test_repeat_login_without_number():
     user = _mk_user()
     MaxAccount.objects.create(user=user, max_user_id=1003, phone=PHONE)
     attempt = _attempt()
-    res = services.complete_confirm(attempt, max_user_id=1003, chat_id=7)
+    res = complete_via_code(attempt, max_user_id=1003, chat_id=7)
     assert res.status == Status.COMPLETED and res.user_id == user.pk
 
 
@@ -151,7 +151,7 @@ def test_link_from_account_success():
     """Привязка из ЛК: телефон совпал, конфликта нет → привязано."""
     user = _mk_user()
     attempt = _attempt(op=Operation.LINK, user=user)
-    res = services.complete_from_contact(attempt, max_user_id=1004, phone=PHONE)
+    res = complete_via_code(attempt, max_user_id=1004, phone=PHONE)
     assert res.status == Status.COMPLETED
     assert MaxAccount.objects.filter(user=user, max_user_id=1004).exists()
     # DRF-2735: привязка из кабинета номер подтверждённым НЕ делает. Ссылку на бота
@@ -166,7 +166,7 @@ def test_link_without_phone_in_profile_explains_what_to_do():
     """Регистрация по e-mail телефон не спрашивает: причина — «нет номера», не «не совпал»."""
     user = User.objects.create_user(email="noph@test.ru", password="pass12345")
     attempt = _attempt(op=Operation.LINK, user=user)
-    res = services.complete_from_contact(attempt, max_user_id=1014, phone=PHONE)
+    res = complete_via_code(attempt, max_user_id=1014, phone=PHONE)
     assert res.status == Status.FAILED and res.failure_reason == "no_phone"
     assert not MaxAccount.objects.filter(user=user).exists()
 
@@ -178,7 +178,7 @@ def test_link_conflict_max_belongs_to_other():
     MaxAccount.objects.create(user=other, max_user_id=1005, phone=other.phone)
     user = _mk_user(phone=PHONE)
     attempt = _attempt(op=Operation.LINK, user=user)
-    res = services.complete_from_contact(attempt, max_user_id=1005, phone=PHONE)
+    res = complete_via_code(attempt, max_user_id=1005, phone=PHONE)
     assert res.status == Status.FAILED and res.failure_reason == "max_linked_to_other"
     assert not MaxAccount.objects.filter(user=user).exists()
 
@@ -188,7 +188,7 @@ def test_link_phone_mismatch():
     """Привязка из ЛК: номер MAX не совпал с номером аккаунта → отказ."""
     user = _mk_user(phone=PHONE)
     attempt = _attempt(op=Operation.LINK, user=user)
-    res = services.complete_from_contact(attempt, max_user_id=1006, phone="+79995550000")
+    res = complete_via_code(attempt, max_user_id=1006, phone="+79995550000")
     assert res.status == Status.FAILED and res.failure_reason == "phone_mismatch"
 
 
@@ -198,7 +198,7 @@ def test_conflict_user_has_other_max():
     user = _mk_max_user(phone=PHONE)
     MaxAccount.objects.create(user=user, max_user_id=1007, phone=PHONE)
     attempt = _attempt()
-    res = services.complete_from_contact(attempt, max_user_id=2007, phone=PHONE)
+    res = complete_via_code(attempt, max_user_id=2007, phone=PHONE)
     assert res.status == Status.FAILED and res.failure_reason == "user_has_other_max"
 
 
@@ -208,7 +208,7 @@ def test_unverified_phone_is_checked_before_other_max():
     отказ про номер, а не «к вашему аккаунту привязан другой MAX»."""
     holder = _mk_user(phone=PHONE, phone_verified=False)
     MaxAccount.objects.create(user=holder, max_user_id=1007, phone="+79990001122")
-    res = services.complete_from_contact(_attempt(), max_user_id=2007, phone=PHONE)
+    res = complete_via_code(_attempt(), max_user_id=2007, phone=PHONE)
     assert res.status == Status.FAILED and res.failure_reason == "phone_unverified"
 
 
@@ -220,7 +220,7 @@ def test_expired_attempt_cannot_complete():
         expires_at=timezone.now() - timezone.timedelta(minutes=1)
     )
     attempt.refresh_from_db()
-    res = services.complete_from_contact(attempt, max_user_id=1008, phone=PHONE)
+    res = complete_via_code(attempt, max_user_id=1008, phone=PHONE)
     assert res.status in (Status.EXPIRED, Status.FAILED)
     assert not User.objects.filter(phone=PHONE).exists()
 
@@ -229,9 +229,9 @@ def test_expired_attempt_cannot_complete():
 def test_complete_is_idempotent():
     """Повторная доставка того же контакта не создаёт дублей (§11.4)."""
     attempt = _attempt()
-    services.complete_from_contact(attempt, max_user_id=1009, phone=PHONE, chat_id=1)
+    complete_via_code(attempt, max_user_id=1009, phone=PHONE, chat_id=1)
     attempt.refresh_from_db()
-    services.complete_from_contact(attempt, max_user_id=1009, phone=PHONE, chat_id=1)
+    complete_via_code(attempt, max_user_id=1009, phone=PHONE, chat_id=1)
     assert MaxAccount.objects.filter(max_user_id=1009).count() == 1
     assert User.objects.filter(phone=PHONE).count() == 1
 
@@ -260,18 +260,31 @@ def test_start_rejects_missing_bot_username_without_creating_attempt(api):
 
 
 @pytest.mark.django_db
-def test_status_binds_to_creating_session(api):
-    """Статус/вход доступны только браузеру, создавшему попытку (§11.2)."""
+def test_status_and_confirm_bind_to_creating_session(api):
+    """Статус и ввод кода доступны только браузеру, создавшему попытку (§11.2).
+    Опрос статуса сессию не поднимает — впускает только верный код (DRF-2740)."""
     start = api.post("/api/auth/max/start/").json()
     attempt = MaxAuthAttempt.objects.get(public_id=start["attempt_id"])
-    services.complete_from_contact(attempt, max_user_id=3001, phone=PHONE)
+    issued = confirm.issue_code(
+        attempt, max_user_id=3001, chat_id=1, pending={"phone": PHONE, "profile": {}}
+    )
 
-    # Чужая сессия — 404 (не читает и не логинит).
     other = APIClient()
     assert other.get(f"/api/auth/max/{start['attempt_id']}/status/").status_code == 404
+    assert (
+        other.post(
+            f"/api/auth/max/{start['attempt_id']}/confirm/", {"code": issued.code}
+        ).status_code
+        == 404
+    )
+    assert not User.objects.filter(phone=PHONE).exists()
 
-    # Своя сессия — completed + поднятая Django-сессия (последующий /me/ авторизован).
     resp = api.get(f"/api/auth/max/{start['attempt_id']}/status/")
+    assert resp.status_code == 200 and resp.json()["status"] == "confirmation_required"
+    assert "phone" not in json.dumps(resp.json()) and PHONE not in json.dumps(resp.json())
+    assert api.get("/api/account/me/").status_code in (401, 403)
+
+    resp = api.post(f"/api/auth/max/{start['attempt_id']}/confirm/", {"code": issued.code})
     assert resp.status_code == 200 and resp.json()["status"] == "completed"
     me = api.get("/api/account/me/")
     assert me.status_code == 200 and me.json()["phone"] == PHONE
@@ -281,7 +294,7 @@ def test_status_binds_to_creating_session(api):
 @mock.patch("apps.integration_max.webhook._send_reply")
 @pytest.mark.django_db
 def test_e2e_registration_via_webhook(mock_send, api):
-    """Полный поток: старт на сайте → диплинк-старт в боте → контакт → вход на сайте."""
+    """Полный поток: старт на сайте → диплинк-старт в боте → контакт → код → ввод на сайте."""
     start = api.post("/api/auth/max/start/").json()
     token = None
     # token содержится в диплинке после start=
@@ -323,12 +336,23 @@ def test_e2e_registration_via_webhook(mock_send, api):
     )
 
     attempt = MaxAuthAttempt.objects.get(public_id=start["attempt_id"])
-    assert attempt.status == Status.COMPLETED
-    assert User.objects.filter(phone=PHONE).exists()
+    # Бот попытку не завершает и пользователя не создаёт: ждём код (DRF-2740).
+    assert attempt.status == Status.CONFIRMATION_REQUIRED
+    assert not User.objects.filter(phone=PHONE).exists()
+    reply = mock_send.call_args[0][0]
+    assert "Никому не сообщайте" in reply["text"]
+    assert reply["attachments"][0]["payload"]["buttons"][0][0]["type"] == "clipboard"
+    code = code_from_reply(reply)
 
-    # сайт опрашивает статус → входит
+    # сайт опрашивает статус — вход не происходит
     resp = api.get(f"/api/auth/max/{start['attempt_id']}/status/")
-    assert resp.json()["status"] == "completed"
+    assert resp.json()["status"] == "confirmation_required"
+    assert api.get("/api/account/me/").status_code in (401, 403)
+
+    # ввод кода на сайте → аккаунт создан, вход выполнен
+    resp = api.post(f"/api/auth/max/{start['attempt_id']}/confirm/", {"code": code})
+    assert resp.status_code == 200 and resp.json()["status"] == "completed"
+    assert User.objects.filter(phone=PHONE).exists()
     assert api.get("/api/account/me/").status_code == 200
 
 
@@ -350,7 +374,7 @@ def test_link_and_unlink_from_account(api):
     start = api.post("/api/account/max/link/").json()
     attempt = MaxAuthAttempt.objects.get(public_id=start["attempt_id"])
     assert attempt.operation_type == Operation.LINK and attempt.user_id == user.pk
-    services.complete_from_contact(attempt, max_user_id=5001, phone=PHONE)
+    complete_via_code(attempt, max_user_id=5001, phone=PHONE)
     assert api.get("/api/account/max/status/").json()["linked"] is True
     # отвязка
     assert api.post("/api/account/max/unlink/").json()["linked"] is False
@@ -362,7 +386,7 @@ def test_link_and_unlink_from_account(api):
 def test_analytics_events_emitted(mock_track):
     """§15: ключевые события авторизации пишутся в аналитику."""
     attempt = _attempt()
-    services.complete_from_contact(attempt, max_user_id=6001, phone=PHONE)
+    complete_via_code(attempt, max_user_id=6001, phone=PHONE)
     events = [c.args[0] for c in mock_track.call_args_list]
     assert "max_auth_completed" in events
     assert "max_account_linked" in events

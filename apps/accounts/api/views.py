@@ -327,7 +327,7 @@ class ChangePhoneView(APIView):
     приводится к канону (E.164) и помечается НЕподтверждённым. Владение им здесь
     не проверяется (вписать можно любой свободный номер), поэтому сам по себе он
     ничего не даёт: ни входа через MAX, ни гостевых заказов с этим номером
-    (DRF-2735, ``integration_max.services.complete_from_contact`` и
+    (DRF-2735, ``integration_max.services.decide`` и
     ``orders.services.claim_guest_orders``). Подключить MAX к аккаунту можно из
     кабинета — там сверяется и сессия аккаунта, и номер из MAX.
     """
