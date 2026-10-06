@@ -13,6 +13,8 @@ import {
 import { CookieConsent } from "./CookieConsent";
 import { CookieSettingsButton } from "./CookieSettingsButton";
 
+const region = () => screen.queryByRole("region", { name: "Используем cookie" });
+
 beforeEach(() => {
   document.cookie = `${CONSENT_COOKIE}=; Max-Age=0; Path=/`;
   pathnameMock.mockReturnValue("/");
@@ -22,102 +24,94 @@ afterEach(() => {
 });
 
 describe("CookieConsent", () => {
-  it("без записи показывает баннер, с записью — нет", () => {
+  it("без записи показывает карточку, с записью — нет", () => {
     const { unmount } = render(<CookieConsent initialConsent={null} />);
-    expect(screen.getByRole("region", { name: "Согласие на cookie" })).toBeInTheDocument();
+    expect(region()).toBeInTheDocument();
     unmount();
 
     const consent = writeConsent({ analytics: false });
     render(<CookieConsent initialConsent={consent} />);
-    expect(screen.queryByRole("region", { name: "Согласие на cookie" })).toBeNull();
+    expect(region()).toBeNull();
   });
 
-  it("«Принять все» включает аналитику и закрывает баннер", () => {
+  it("текст и ссылка по макету: заголовок, две строки, политика", () => {
+    render(<CookieConsent initialConsent={null} />);
+    expect(screen.getByRole("heading", { name: "Используем cookie" })).toBeInTheDocument();
+    expect(screen.getByText(/Для работы корзины и входа на сайт\./)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Аналитика помогает улучшать магазин — только с вашего согласия\./),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Политика конфиденциальности" })).toHaveAttribute(
+      "href",
+      "/info/privacy",
+    );
+    // Регион назван заголовком, не отдельной подписью.
+    const section = region()!;
+    expect(section.getAttribute("aria-labelledby")).toBe(
+      screen.getByRole("heading", { name: "Используем cookie" }).id,
+    );
+  });
+
+  it("ровно две кнопки, без «Настроить» и крестика", () => {
+    render(<CookieConsent initialConsent={null} />);
+    const buttons = screen.getAllByRole("button");
+    expect(buttons.map((b) => b.textContent)).toEqual(["Только необходимые", "Принять все"]);
+    expect(screen.queryByText(/Настроить/)).toBeNull();
+    expect(screen.queryByRole("switch")).toBeNull();
+  });
+
+  it("«Принять все» включает аналитику и закрывает карточку", () => {
     render(<CookieConsent initialConsent={null} />);
     fireEvent.click(screen.getByRole("button", { name: "Принять все" }));
     expect(readConsent()).toMatchObject({ analytics: true });
-    expect(screen.queryByRole("region", { name: "Согласие на cookie" })).toBeNull();
+    expect(region()).toBeNull();
   });
 
-  it("«Только необходимые» записывает отказ от аналитики", () => {
+  it("«Только необходимые» записывает отказ от аналитики и закрывает карточку", () => {
     render(<CookieConsent initialConsent={null} />);
     fireEvent.click(screen.getByRole("button", { name: "Только необходимые" }));
     expect(readConsent()).toMatchObject({ analytics: false });
+    expect(region()).toBeNull();
   });
 
-  it("кнопки согласия и отказа равнозначны: один стиль, один ряд", () => {
-    render(<CookieConsent initialConsent={null} />);
-    const accept = screen.getByRole("button", { name: "Принять все" });
-    const decline = screen.getByRole("button", { name: "Только необходимые" });
-    expect(accept.className).toBe(decline.className);
-    expect(accept.parentElement).toBe(decline.parentElement);
-  });
-
-  it("«Настроить»: необходимые без переключателя, аналитика — переключатель, выбор сохраняется", () => {
-    render(<CookieConsent initialConsent={null} />);
-    fireEvent.click(screen.getByRole("button", { name: "Настроить" }));
-    expect(screen.getByText("Всегда")).toBeInTheDocument();
-    const toggle = screen.getByRole("switch", { name: "Аналитические" });
-    expect(toggle).not.toBeChecked();
-    expect(toggle).toHaveAccessibleDescription(/Яндекс.Метрика/);
-    fireEvent.click(toggle);
-    fireEvent.click(screen.getByRole("button", { name: "Сохранить выбор" }));
-    expect(readConsent()).toMatchObject({ analytics: true });
-  });
-
-  it("повторное открытие показывает текущий выбор и даёт отозвать", () => {
+  it("повторное открытие из подвала даёт изменить выбор", () => {
     const consent = writeConsent({ analytics: true });
-    render(<CookieConsent initialConsent={consent} />);
-    act(() => openConsentSettings());
-    const toggle = screen.getByRole("switch");
-    expect(toggle).toBeChecked();
-    fireEvent.click(toggle);
-    fireEvent.click(screen.getByRole("button", { name: "Сохранить выбор" }));
-    expect(readConsent()).toMatchObject({ analytics: false });
-  });
-
-  it("кнопка «Настройки cookie» открывает баннер", () => {
-    const consent = writeConsent({ analytics: false });
     render(
       <>
         <CookieSettingsButton />
         <CookieConsent initialConsent={consent} />
       </>,
     );
-    expect(screen.queryByRole("region", { name: "Согласие на cookie" })).toBeNull();
+    expect(region()).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Настройки cookie" }));
-    expect(screen.getByRole("region", { name: "Согласие на cookie" })).toBeInTheDocument();
+    expect(region()).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Только необходимые" }));
+    expect(readConsent()).toMatchObject({ analytics: false });
+    expect(region()).toBeNull();
   });
 
-  it("запись старой версии — баннер показывается снова", () => {
+  it("событие открытия без кнопки тоже работает", () => {
+    const consent = writeConsent({ analytics: false });
+    render(<CookieConsent initialConsent={consent} />);
+    act(() => openConsentSettings());
+    expect(region()).toBeInTheDocument();
+  });
+
+  it("запись старой версии — карточка показывается снова", () => {
     document.cookie = `${CONSENT_COOKIE}=${encodeURIComponent(
       JSON.stringify({ v: 0, analytics: true, ts: 1 }),
     )}; Path=/`;
     render(<CookieConsent initialConsent={null} />);
-    expect(screen.getByRole("region", { name: "Согласие на cookie" })).toBeInTheDocument();
+    expect(region()).toBeInTheDocument();
   });
 
-  it("ссылка на политику и описание связаны с регионом", () => {
-    render(<CookieConsent initialConsent={null} />);
-    const region = screen.getByRole("region", { name: "Согласие на cookie" });
-    const link = screen.getByRole("link", {
-      name: "Политика конфиденциальности",
-    });
-    expect(link).toHaveAttribute("href", "/info/privacy");
-    expect(region.getAttribute("aria-describedby")).toBeTruthy();
-  });
-
-  it("не перекрывает нижние панели: отступ зависит от маршрута", () => {
+  it("не перекрывает нижние панели на мобильном: отступ зависит от маршрута", () => {
     pathnameMock.mockReturnValue("/cart");
     const { unmount } = render(<CookieConsent initialConsent={null} />);
-    expect(screen.getByRole("region", { name: "Согласие на cookie" }).className).toContain(
-      "bottom-[136px]",
-    );
+    expect(region()!.className).toContain("bottom-[calc(136px_+_12px)]");
     unmount();
     pathnameMock.mockReturnValue("/checkout");
     render(<CookieConsent initialConsent={null} />);
-    expect(screen.getByRole("region", { name: "Согласие на cookie" }).className).toContain(
-      "bottom-[72px]",
-    );
+    expect(region()!.className).toContain("bottom-[calc(72px_+_12px)]");
   });
 });
