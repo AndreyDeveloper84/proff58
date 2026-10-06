@@ -11,7 +11,7 @@
 | recategorize | `{product_id: old_category_id}` | `update(category_id=old)` по карте |
 | enrich | список созданных PAV + прежний `attrs_cache.tool_type` (обычно None) | удалить PAV + вернуть cache |
 | combined (cat+тип) | **двойной:** old_category **и** created-PAV **и** cache→prev | откатить оба в одной транзакции |
-| new option | `option_id` | удалить option (если usage=0) |
+| new option | `option_id` | удалить option (если usage=0); у `enrich_tool_type` опции, созданные по ходу прогона, перечислены в `ImportRun.stats.created_options` — они остаются и при прерванном прогоне |
 | понижение версии словаря (`N → N-1`) | план понижения + пара снимков по затронутым товарам | перенос через контур отката, затем `drop` опций (fail-closed по usage) |
 
 ## Принцип

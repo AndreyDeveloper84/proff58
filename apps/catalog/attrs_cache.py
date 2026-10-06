@@ -1,7 +1,7 @@
 """Безопасная запись Product.attrs_cache из пакетных enrich-команд (#5).
 
-Проблема: enrich читает attrs_cache в память (iterator) и в конце делает
-bulk_update(["attrs_cache"]) всем словарём. Параллельный 1С-импорт/админ/сигнал
+Проблема: enrich читает attrs_cache в память и пишет его bulk_update(["attrs_cache"])
+всем словарём (с DRF-2738 — по чанку, но окно между чтением и записью остаётся). Параллельный 1С-импорт/админ/сигнал
 rebuild_attrs_cache между чтением и записью меняет attrs_cache того же товара —
 и bulk_update молча откатывает чужие ключи (товар пропадает из фасета).
 
@@ -38,7 +38,14 @@ def flush_attrs_cache_merged(
     if not by_id:
         return 0
 
-    locked = Product.objects.select_for_update().filter(id__in=list(by_id)).order_by("id")
+    # NO KEY UPDATE: чужие вставки со ссылкой на товар (корзина, заказ, цена) не ждут
+    # на своём COMMIT; с чекаутом и обменом 1С взаимное исключение сохраняется.
+    locked = (
+        Product.objects.select_for_update(no_key=True)
+        .filter(id__in=list(by_id))
+        .order_by("id")
+        .only("id", "attrs_cache")
+    )
     to_write: list[Product] = []
     for row in locked:
         our = by_id[row.id].attrs_cache or {}
@@ -48,8 +55,11 @@ def flush_attrs_cache_merged(
                 fresh[slug] = our[slug]
             else:
                 fresh.pop(slug, None)
+        if fresh == (row.attrs_cache or {}):
+            continue  # не изменилось — не переписываем (и не держим лишний UPDATE)
         row.attrs_cache = fresh
         to_write.append(row)
 
-    Product.objects.bulk_update(to_write, ["attrs_cache"], batch_size=batch_size)
+    if to_write:
+        Product.objects.bulk_update(to_write, ["attrs_cache"], batch_size=batch_size)
     return len(to_write)
