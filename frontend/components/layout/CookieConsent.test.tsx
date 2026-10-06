@@ -105,13 +105,24 @@ describe("CookieConsent", () => {
     expect(region()).toBeInTheDocument();
   });
 
-  it("не перекрывает нижние панели на мобильном: отступ зависит от маршрута", () => {
-    pathnameMock.mockReturnValue("/cart");
+  it("отступ снизу считается по факту: навигация страницы + бар действий маршрута", () => {
+    const offset = () => screen.getByTestId("cookie-consent").style.getPropertyValue("--cc-offset");
     const { unmount } = render(<CookieConsent initialConsent={null} />);
-    expect(region()!.className).toContain("bottom-[calc(136px_+_12px)]");
+    expect(offset()).toBe("12px"); // главная: ни навигации, ни бара
     unmount();
+
     pathnameMock.mockReturnValue("/checkout");
+    const second = render(<CookieConsent initialConsent={null} />);
+    expect(offset()).toBe("84px"); // бар чекаута 72 + 12
+    second.unmount();
+
+    const nav = document.createElement("nav");
+    nav.setAttribute("aria-label", "Мобильная навигация");
+    Object.defineProperty(nav, "offsetHeight", { value: 64 });
+    document.body.appendChild(nav);
+    pathnameMock.mockReturnValue("/cart");
     render(<CookieConsent initialConsent={null} />);
-    expect(region()!.className).toContain("bottom-[calc(72px_+_12px)]");
+    expect(offset()).toBe("148px"); // навигация 64 + бар корзины 72 + 12
+    nav.remove();
   });
 });
