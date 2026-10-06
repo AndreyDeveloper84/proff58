@@ -16,8 +16,6 @@
 // поднимается, старая запись считается отсутствующей — баннер показывается снова,
 // аналитика выключена до нового ответа. Это правило, а не побочный эффект.
 
-import { useMemo, useSyncExternalStore } from "react";
-
 export const CONSENT_COOKIE = "cookie_consent";
 export const CONSENT_VERSION = 1;
 /** 365 дней: Chrome всё равно режет срок cookie до 400 дней. */
@@ -55,7 +53,7 @@ export function parseConsent(raw: string | null | undefined): Consent | null {
   }
 }
 
-function readRawCookie(name: string): string | null {
+export function readRawCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
   const prefix = `${name}=`;
   for (const part of document.cookie.split(";")) {
@@ -113,28 +111,4 @@ export function onConsentChange(callback: (consent: Consent | null) => void): ()
 export function openConsentSettings(): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(CONSENT_OPEN_EVENT));
-}
-
-// --- React: согласие как внешнее хранилище -----------------------------------
-//
-// useSyncExternalStore вместо «useState + useEffect(setState)»: источник правды —
-// cookie, события о её смене уже есть, а серверный снимок (initialConsent из layout)
-// совпадает с клиентским у согласившегося, поэтому гидрация без мигания и без
-// setState внутри эффекта (react-hooks/set-state-in-effect).
-
-function subscribe(callback: () => void): () => void {
-  window.addEventListener(CONSENT_CHANGE_EVENT, callback);
-  return () => window.removeEventListener(CONSENT_CHANGE_EVENT, callback);
-}
-
-function rawSnapshot(): string {
-  return readRawCookie(CONSENT_COOKIE) ?? "";
-}
-
-/** Текущее согласие в компоненте; `initial` — то, что прочитал сервер из cookie. */
-export function useConsent(initial: Consent | null): Consent | null {
-  const raw = useSyncExternalStore(subscribe, rawSnapshot, () =>
-    initial ? encodeURIComponent(JSON.stringify(initial)) : "",
-  );
-  return useMemo(() => parseConsent(raw), [raw]);
 }

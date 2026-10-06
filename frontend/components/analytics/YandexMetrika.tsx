@@ -4,7 +4,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { setAnalyticsCounter } from "@/lib/analytics";
-import { useConsent, type Consent } from "@/lib/cookie-consent";
+import { type Consent } from "@/lib/cookie-consent";
+import { useConsent } from "@/lib/use-consent";
 
 // Яндекс.Метрика за согласием (DRF-2795).
 //

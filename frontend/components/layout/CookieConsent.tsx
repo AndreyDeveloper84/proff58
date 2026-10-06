@@ -6,13 +6,8 @@ import { useCallback, useEffect, useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  CONSENT_OPEN_EVENT,
-  readConsent,
-  useConsent,
-  writeConsent,
-  type Consent,
-} from "@/lib/cookie-consent";
+import { CONSENT_OPEN_EVENT, readConsent, writeConsent, type Consent } from "@/lib/cookie-consent";
+import { useConsent } from "@/lib/use-consent";
 import { cn } from "@/lib/utils";
 
 // Баннер согласия на cookie (DRF-2796).
