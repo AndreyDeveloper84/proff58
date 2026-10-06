@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { CONSENT_OPEN_EVENT, writeConsent, type Consent } from "@/lib/cookie-consent";
 import { useConsent } from "@/lib/use-consent";
@@ -28,18 +28,17 @@ export const CONSENT_TEXT_LINES = [
   "Аналитика помогает улучшать магазин — только с вашего согласия.",
 ] as const;
 
-function bottomOffset(pathname: string): string {
-  // На мобильном внизу уже стоят панели: навигация (64px) везде, над ней — бар
-  // «В корзину»/«Оформить» на товаре и в корзине (72px); на чекауте своя панель
-  // (72px) без навигации. Карточка встаёт над ними, а не поверх кнопок. На товаре
-  // бар появляется после прокрутки за блок покупки — до этого под карточкой
-  // 72px пустоты; сознательный компромисс ради кнопок бара. С lg панелей нет.
-  if (pathname.startsWith("/checkout")) return "bottom-[calc(72px_+_12px)] lg:bottom-6";
-  if (pathname.startsWith("/cart") || pathname.startsWith("/product/")) {
-    return "bottom-[calc(136px_+_12px)] lg:bottom-6";
-  }
-  return "bottom-[calc(64px_+_12px_+_env(safe-area-inset-bottom))] lg:bottom-6";
+const NAV_SELECTOR = 'nav[aria-label="Мобильная навигация"]';
+/** Маршруты с собственным нижним баром действий (72px): корзина, товар, чекаут. */
+function hasActionBar(pathname: string): boolean {
+  return (
+    pathname.startsWith("/cart") ||
+    pathname.startsWith("/product/") ||
+    pathname.startsWith("/checkout")
+  );
 }
+const ACTION_BAR_PX = 72;
+const EDGE_PX = 12;
 
 export function CookieConsent({ initialConsent }: { initialConsent: Consent | null }) {
   const pathname = usePathname() ?? "/";
@@ -47,6 +46,21 @@ export function CookieConsent({ initialConsent }: { initialConsent: Consent | nu
   // Карточка открыта, пока выбора нет, либо пока её открыли кнопкой «Настройки cookie».
   const [reopened, setReopened] = useState(false);
   const titleId = useId();
+  const cardRef = useRef<HTMLElement | null>(null);
+
+  // Отступ снизу на мобильном считаем по факту, а не по маршруту: мобильная
+  // навигация (64px) есть не на всех страницах (на главной её нет), а бар
+  // «В корзину»/«Оформить» на товаре, в корзине и чекауте — 72px. Пишем в CSS-переменную
+  // прямо на элемент, без состояния: это измерение DOM, а не данные. На lg класс
+  // lg:bottom-6 перекрывает переменную — там панелей нет.
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const nav = document.querySelector<HTMLElement>(NAV_SELECTOR);
+    const navPx = nav && getComputedStyle(nav).display !== "none" ? nav.offsetHeight : 0;
+    const barPx = hasActionBar(pathname) ? ACTION_BAR_PX : 0;
+    el.style.setProperty("--cc-offset", `${navPx + barPx + EDGE_PX}px`);
+  });
 
   useEffect(() => {
     const onOpen = () => setReopened(true);
@@ -66,12 +80,13 @@ export function CookieConsent({ initialConsent }: { initialConsent: Consent | nu
       role="region"
       aria-labelledby={titleId}
       data-testid="cookie-consent"
+      ref={cardRef}
       className={cn(
         // z-[45]: над sticky-барами товара и корзины (z-40), под мобильной навигацией,
         // панелью чекаута (z-50) и модальными окнами.
         "fixed left-3 right-3 z-[45] max-w-[530px] rounded-xl bg-surface p-5 text-left",
+        "bottom-[calc(var(--cc-offset,12px)_+_env(safe-area-inset-bottom))] lg:bottom-6",
         "shadow-[0_12px_40px_rgba(20,24,27,0.16)] ring-1 ring-black/5 sm:left-6 sm:right-auto sm:w-[530px] sm:p-7",
-        bottomOffset(pathname),
       )}
     >
       <h2 id={titleId} className="text-xl font-bold leading-tight text-ink sm:text-[22px]">
@@ -89,7 +104,7 @@ export function CookieConsent({ initialConsent }: { initialConsent: Consent | nu
         Политика конфиденциальности
       </Link>
 
-      <div className="mt-5 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
+      <div className="mt-5 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
         <button
           type="button"
           onClick={() => decide(false)}
