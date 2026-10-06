@@ -8,8 +8,8 @@ import { INFO_PAGES, INFO_PAGE_SLUGS } from "./info-content";
 // потерянная секция ловятся только здесь — админка и API их больше не проверяют.
 
 describe("Страницы из кода", () => {
-  it("все четыре на месте и открываются шапкой", () => {
-    expect(INFO_PAGE_SLUGS).toEqual(["about", "delivery", "payment", "warranty"]);
+  it("все пять на месте и открываются шапкой", () => {
+    expect(INFO_PAGE_SLUGS).toEqual(["about", "delivery", "payment", "warranty", "privacy"]);
 
     for (const slug of INFO_PAGE_SLUGS) {
       const page = INFO_PAGES[slug];
@@ -32,6 +32,16 @@ describe("Страницы из кода", () => {
     for (const path of paths) {
       expect(existsSync(join(process.cwd(), "public", path)), path).toBe(true);
     }
+  });
+
+  it("политика помечена как проект, пока текст не утверждён юристом", () => {
+    // DRF-2797: сочинённого правового текста быть не должно — только пометка,
+    // структура разделов и техническая таблица cookie.
+    const page = INFO_PAGES.privacy;
+    expect(page.sections[0].meta.badge).toBe("ПРОЕКТ ДОКУМЕНТА");
+    expect(page.sections[0].blocks[0]).toMatchObject({ kind: "note" });
+    const cookieSection = page.sections.find((s) => s.heading.startsWith("6."));
+    expect(cookieSection?.blocks.some((b) => b.kind === "table")).toBe(true);
   });
 
   it("у страниц заполнены заголовок и описание для поисковика", () => {

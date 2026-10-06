@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { InfoSection } from "@/components/info/InfoSection";
+import { CookieSettingsButton } from "@/components/layout/CookieSettingsButton";
 import { INFO_PAGES } from "@/lib/info-content";
 import { fillContacts } from "@/lib/info-contacts";
 import { getInfoPage, toParagraphs } from "@/lib/info-pages";
@@ -78,6 +79,14 @@ export default async function InfoPageView({ params }: Props) {
           {sections.map((section, index) => (
             <InfoSection key={`${section.layout}-${section.heading}-${index}`} section={section} />
           ))}
+          {slug === "privacy" && (
+            // Изменить или отозвать согласие на cookie можно прямо со страницы политики
+            // (DRF-2796): секции описывают данные, а кнопка — клиентская.
+            <p className="text-base text-ink-2">
+              Изменить выбор по cookie:{" "}
+              <CookieSettingsButton className="text-accent" />
+            </p>
+          )}
         </div>
       ) : paragraphs.length > 0 ? (
         <div className="mt-6 max-w-3xl space-y-4 text-base leading-relaxed text-ink-2">

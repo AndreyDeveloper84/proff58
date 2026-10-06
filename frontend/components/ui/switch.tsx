@@ -13,6 +13,7 @@ export function Switch({
   label,
   id,
   className,
+  describedBy,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -26,6 +27,8 @@ export function Switch({
   label?: string;
   id?: string;
   className?: string;
+  /** id элемента с пояснением (не именем): screen reader прочитает его после имени. */
+  describedBy?: string;
 }) {
   return (
     <label
@@ -41,6 +44,7 @@ export function Switch({
         type="checkbox"
         role="switch"
         aria-checked={checked}
+        aria-describedby={describedBy}
         checked={checked}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}

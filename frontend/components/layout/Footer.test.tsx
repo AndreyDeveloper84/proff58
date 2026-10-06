@@ -37,6 +37,15 @@ describe("Footer (#591)", () => {
     }
   });
 
+  it("в нижней строке есть политика конфиденциальности и настройки cookie", () => {
+    render(<Footer />);
+    // Две ссылки: из колонки «Информация» (реестр страниц) и из нижней строки.
+    const links = screen.getAllByRole("link", { name: "Политика конфиденциальности" });
+    expect(links).toHaveLength(2);
+    for (const link of links) expect(link).toHaveAttribute("href", "/info/privacy");
+    expect(screen.getByRole("button", { name: "Настройки cookie" })).toBeInTheDocument();
+  });
+
   it("контакты совпадают с SITE", () => {
     render(<Footer />);
     expect(screen.getByText(SITE.phone.display)).toBeInTheDocument();
