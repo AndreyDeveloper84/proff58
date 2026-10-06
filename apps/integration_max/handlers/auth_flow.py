@@ -1,5 +1,10 @@
 """Обработчики бота для потока «одноразовая попытка» (#492): старт по диплинку и
-завершение попытки переданным контактом. Ответы бота вне попытки — в auth.py.
+контакт. Ответы бота вне попытки — в auth.py.
+
+С DRF-2740 бот попытку не завершает (кроме отслеживания заказа): он проверяет
+данные, выдаёт шестизначный код и просит ввести его на сайте. Завершает попытку
+``api.views.MaxAuthConfirmView`` — в том браузере, где код введён. Пересланная
+ссылка сама по себе больше ничего не даёт.
 
 Связь «какой контакт к какой попытке» держим в cache: при старте по диплинку
 запоминаем chat_id → public_id, при получении контакта достаём попытку по chat_id.
@@ -12,13 +17,12 @@ import logging
 from django.conf import settings
 from django.core.cache import cache
 
-from .. import services
-from ..models import MaxAccount
+from .. import confirm, services
 from ..verify import extract_phone_from_vcf, verify_contact_hash
 
 logger = logging.getLogger(__name__)
 
-_CHAT_ATTEMPT_TTL = 600  # чуть больше TTL попытки — на время диалога
+_CHAT_ATTEMPT_TTL = 15 * 60  # не меньше HARD_TTL попытки — на время диалога с кодом
 
 _LINK_IN_ACCOUNT = (
     "Войдите на сайте по e-mail и паролю и подключите MAX в личном кабинете: "
@@ -47,6 +51,13 @@ _FAIL_TEXT = {
     "attempt_not_pending": "Ссылка недействительна или истекла. Начните вход заново.",
     "bad_phone": "Не удалось определить номер телефона.",
     "reauth_mismatch": "Этот MAX не привязан к аккаунту, из которого вы подтверждаете действие.",
+    "code_reissue_limit": ("Код уже выдавался несколько раз. Вернитесь на сайт и начните заново."),
+    "inactive_account": "Аккаунт с этим номером заблокирован. Свяжитесь с магазином.",
+    "no_max_user": "Не удалось определить ваш аккаунт MAX. Вернитесь на сайт и начните заново.",
+    "foreign_contact": (
+        "Это контакт другого человека. Поделитесь своим номером кнопкой "
+        "«Поделиться номером» — и начните вход на сайте заново."
+    ),
 }
 # Привязка из кабинета: аккаунт известен заранее, и эта проверка идёт ДО сверки
 # номера — «аккаунт с этим номером» здесь было бы неправдой.
@@ -70,6 +81,21 @@ _SHARE_BUTTON = {
     "payload": {"buttons": [[{"type": "request_contact", "text": "Поделиться номером"}]]},
 }
 
+#: Ссылку открыл другой MAX, чем тот, кому уже выдан код.
+FOREIGN_MAX_TEXT = (
+    "Эта ссылка уже использована в другом аккаунте MAX. Если вход начинали вы — "
+    "вернитесь на сайт и нажмите кнопку ещё раз."
+)
+#: Контакт прислали, когда код уже выдан.
+CODE_ALREADY_SENT_TEXT = (
+    "Код уже отправлен выше — введите его на сайте. Нужен новый код — нажмите «Начать» " "ещё раз."
+)
+#: Код набрали в чат бота.
+CODE_GOES_TO_SITE_TEXT = (
+    "Код вводится не здесь, а на сайте — на той странице, с которой вы начали вход. "
+    "Никому его не сообщайте."
+)
+
 
 def _chat_key(chat_id: int) -> str:
     return f"max_attempt_chat:{chat_id}"
@@ -92,43 +118,103 @@ def account_label(user) -> str:
     return "без e-mail"
 
 
-def handle_deeplink_start(chat_id: int, max_user_id: int | None, attempt) -> dict:
-    """Старт бота по диплинку авторизации: запоминаем попытку, просим контакт.
+def _code_message(chat_id: int, attempt, code: str) -> dict:
+    """Сообщение с кодом. Предупреждение — первой строкой: превью пуша показывает начало."""
+    op = attempt.operation_type
+    if op == services.Operation.LINK and attempt.user is not None:
+        what = (
+            f"Код подключает этот MAX к аккаунту {account_label(attempt.user)} на proff58.ru — "
+            "его владелец сможет входить от вашего имени и видеть ваши заказы."
+        )
+    elif op == services.Operation.CONFIRM_LOGIN:
+        what = (
+            "Код подтверждает действие в личном кабинете на proff58.ru: удаление аккаунта, "
+            "смену e-mail или подключение способа входа."
+        )
+    else:
+        what = "Кто введёт этот код на proff58.ru, войдёт в ваш аккаунт."
+    text = (
+        f"Никому не сообщайте этот код — ни сотруднику магазина, ни доставке, ни по телефону. "
+        f"{what}\n\n"
+        f"Код: {code}\n\n"
+        "Введите его на сайте — на той странице, с которой начали. Если вы только что не "
+        "нажимали кнопку на сайте, вас обманывают: ничего не делайте.\n"
+        "Нет поля для кода — обновите страницу и начните заново."
+    )
+    return {
+        "chat_id": chat_id,
+        "text": text,
+        "attachments": [
+            {
+                "type": "inline_keyboard",
+                "payload": {
+                    "buttons": [[{"type": "clipboard", "text": "Скопировать код", "payload": code}]]
+                },
+            }
+        ],
+    }
 
-    Если это повторный вход уже привязанного MAX (§5.3) — подтверждаем сразу,
-    без запроса номера.
+
+def _issue_and_reply(chat_id: int, attempt, *, max_user_id, pending: dict | None) -> dict:
+    if not max_user_id:
+        # Без личности MAX код выдавать не на кого: ``issue_code`` зафиксировал бы None,
+        # и следующий стартовавший стал бы «тем же» MAX.
+        services._fail(attempt, "no_max_user")
+        return _fail_reply(chat_id, attempt, "no_max_user")
+    issued = confirm.issue_code(attempt, max_user_id=max_user_id, chat_id=chat_id, pending=pending)
+    if issued.code is not None:
+        return _code_message(chat_id, issued.attempt, issued.code)
+    if issued.reason == "foreign_max":
+        return {"chat_id": chat_id, "text": FOREIGN_MAX_TEXT}
+    return {
+        "chat_id": chat_id,
+        "text": _FAIL_TEXT.get(issued.reason, _FAIL_TEXT["attempt_not_pending"]),
+    }
+
+
+def _fail_reply(chat_id: int, attempt, reason: str) -> dict:
+    if attempt.operation_type == services.Operation.LINK:
+        text = _LINK_FAIL_TEXT.get(reason) or _FAIL_TEXT.get(reason, "Не удалось подключить MAX.")
+    else:
+        text = _FAIL_TEXT.get(reason, "Не удалось подтвердить вход.")
+    return {"chat_id": chat_id, "text": text}
+
+
+def handle_deeplink_start(chat_id: int, max_user_id: int | None, attempt) -> dict:
+    """Старт бота по диплинку: проверить, что можно сделать, и либо выдать код,
+    либо попросить контакт, либо отказать.
+
+    Попытка уже ждёт код (повторное «Начать»): тому же MAX — перевыпуск, другому —
+    отказ, попытка не трогается.
     """
-    if attempt.operation_type == services.Operation.CONFIRM_LOGIN:
-        # DRF-2497: подтверждение из кабинета — только привязанным MAX, контакт не
-        # просим и попытку за чатом не запоминаем (присланный следом номер не должен
-        # до неё дойти).
-        attempt = services.complete_reauth(attempt, max_user_id=max_user_id, chat_id=chat_id)
-        if attempt.status == services.Status.COMPLETED:
-            return {"chat_id": chat_id, "text": "Подтверждено. Вернитесь на сайт."}
-        return {
-            "chat_id": chat_id,
-            "text": _FAIL_TEXT.get(attempt.failure_reason, "Не удалось подтвердить."),
-        }
+    if attempt.status == services.Status.CONFIRMATION_REQUIRED:
+        return _issue_and_reply(chat_id, attempt, max_user_id=max_user_id, pending=None)
 
     cache.set(_chat_key(chat_id), attempt.public_id.hex, _CHAT_ATTEMPT_TTL)
     if attempt.chat_id != chat_id:
         attempt.chat_id = chat_id
         attempt.save(update_fields=["chat_id"])
 
-    if attempt.operation_type == services.Operation.LOGIN and max_user_id:
-        linked = MaxAccount.objects.filter(max_user_id=max_user_id, is_active=True).exists()
-        if linked:
-            services.complete_confirm(attempt, max_user_id=max_user_id, chat_id=chat_id)
-            cache.delete(_chat_key(chat_id))
-            return {"chat_id": chat_id, "text": "Вход подтверждён. Вернитесь на сайт."}
-
     if attempt.operation_type == services.Operation.TRACK_ORDER:
-        # #520: гость не регистрируется и не входит — только сверка номера с заказом.
+        # #520: гость не регистрируется и не входит — только сверка номера с заказом,
+        # кода нет даже у покупателя с привязанным MAX (иначе его некуда вводить).
         consent = (
             "Нажимая «Поделиться номером», вы разрешаете сверить его с номером заказа "
             "и присылать уведомления о статусе именно этого заказа."
         )
-    elif attempt.operation_type == services.Operation.LINK and attempt.user is not None:
+        return {"chat_id": chat_id, "text": consent, "attachments": [_SHARE_BUTTON]}
+
+    decision = services.decide(attempt, max_user_id=max_user_id, phone=None)
+    if decision.ok:
+        # Привязанный MAX или подтверждение из кабинета: контакт не нужен, сразу код.
+        cache.delete(_chat_key(chat_id))
+        return _issue_and_reply(chat_id, attempt, max_user_id=max_user_id, pending={})
+    if decision.reason != "need_contact":
+        services._fail(attempt, decision.reason)
+        cache.delete(_chat_key(chat_id))
+        return _fail_reply(chat_id, attempt, decision.reason)
+
+    if attempt.operation_type == services.Operation.LINK and attempt.user is not None:
         # DRF-2735: привязку начинают в кабинете, а ссылку на бота можно переслать
         # другому человеку. Называем аккаунт: поделившись номером, человек привяжет
         # СВОЙ MAX к нему и дальше будет входить через MAX именно туда.
@@ -139,12 +225,14 @@ def handle_deeplink_start(chat_id: int, max_user_id: int | None, attempt) -> dic
             "Если вы не нажимали «Подключить MAX» в своём личном кабинете — не делитесь "
             "номером: ссылку вам прислал кто-то другой.\n\n"
             "Нажимая «Поделиться номером», вы разрешаете использовать номер телефона "
-            "для входа, оформления заказов и отправки сервисных уведомлений."
+            "для входа, оформления заказов и отправки сервисных уведомлений. После этого "
+            "бот пришлёт код для ввода на сайте."
         )
     else:
         consent = (
             "Нажимая «Поделиться номером», вы разрешаете использовать номер телефона для "
-            "регистрации, входа, оформления заказов и отправки сервисных уведомлений."
+            "регистрации, входа, оформления заказов и отправки сервисных уведомлений. "
+            "После этого бот пришлёт код для ввода на сайте."
         )
     return {"chat_id": chat_id, "text": consent, "attachments": [_SHARE_BUTTON]}
 
@@ -155,7 +243,11 @@ def handle_attempt_contact(chat_id: int, contact_payload: dict, sender: dict | N
     if not public_hex:
         return None
     attempt = services.get_attempt(public_hex)
-    if attempt is None or attempt.status != services.Status.PENDING:
+    if attempt is None:
+        return None
+    if attempt.status == services.Status.CONFIRMATION_REQUIRED:
+        return {"chat_id": chat_id, "text": CODE_ALREADY_SENT_TEXT}
+    if attempt.status != services.Status.PENDING:
         return None
 
     token = getattr(settings, "MAX_BOT_TOKEN", "")
@@ -171,33 +263,37 @@ def handle_attempt_contact(chat_id: int, contact_payload: dict, sender: dict | N
         return {"chat_id": chat_id, "text": _FAIL_TEXT["bad_phone"]}
 
     max_info = contact_payload.get("max_info") or {}
-    max_user_id = max_info.get("user_id") or (sender or {}).get("user_id")
+    # Личность — тот, кто в чате (sender). ``max_info`` описывает владельца контакта:
+    # для своего номера он тот же человек, а чужой контакт из книжки — другой, и
+    # по нему код выдавать нельзя: номер подтверждал бы не его хозяин.
+    sender_id = (sender or {}).get("user_id")
+    max_user_id = sender_id or max_info.get("user_id")
+    if sender_id and max_info.get("user_id") and max_info["user_id"] != sender_id:
+        cache.delete(_chat_key(chat_id))
+        services._fail(attempt, "foreign_contact")
+        return _fail_reply(chat_id, attempt, "foreign_contact")
     profile = {
         "first_name": max_info.get("first_name") or (sender or {}).get("first_name"),
         "last_name": max_info.get("last_name") or (sender or {}).get("last_name"),
         "username": max_info.get("username") or (sender or {}).get("username"),
     }
 
-    attempt = services.complete_from_contact(
-        attempt, max_user_id=max_user_id, phone=phone, chat_id=chat_id, profile=profile
-    )
-    cache.delete(_chat_key(chat_id))
-    is_track_order = attempt.operation_type == services.Operation.TRACK_ORDER
-
-    if attempt.status == services.Status.COMPLETED:
-        if is_track_order:
-            text = "Отслеживание подключено. Вернитесь на сайт."
-        elif attempt.operation_type == services.Operation.LINK and attempt.user is not None:
-            text = f"MAX подключён к аккаунту {account_label(attempt.user)}. " "Вернитесь на сайт."
-        else:
-            text = "Вход подтверждён. Вернитесь на сайт."
-        return {"chat_id": chat_id, "text": text}
-    if is_track_order:
-        text = _TRACK_ORDER_FAIL_TEXT.get(attempt.failure_reason, _TRACK_ORDER_FAIL_FALLBACK)
-    elif attempt.operation_type == services.Operation.LINK:
-        text = _LINK_FAIL_TEXT.get(attempt.failure_reason) or _FAIL_TEXT.get(
-            attempt.failure_reason, "Не удалось подключить MAX."
+    if attempt.operation_type == services.Operation.TRACK_ORDER:
+        attempt = services.complete_track_order_from_contact(
+            attempt, max_user_id=max_user_id, phone=phone, chat_id=chat_id
         )
-    else:
-        text = _FAIL_TEXT.get(attempt.failure_reason, "Не удалось подтвердить вход.")
-    return {"chat_id": chat_id, "text": text}
+        cache.delete(_chat_key(chat_id))
+        if attempt.status == services.Status.COMPLETED:
+            return {"chat_id": chat_id, "text": "Отслеживание подключено. Вернитесь на сайт."}
+        text = _TRACK_ORDER_FAIL_TEXT.get(attempt.failure_reason, _TRACK_ORDER_FAIL_FALLBACK)
+        return {"chat_id": chat_id, "text": text}
+
+    decision = services.decide(attempt, max_user_id=max_user_id, phone=phone)
+    cache.delete(_chat_key(chat_id))
+    if not decision.ok:
+        services._fail(attempt, decision.reason)
+        return _fail_reply(chat_id, attempt, decision.reason)
+    # Телефон и профиль — в кэш до ввода кода: в БД до подтверждения они не попадают.
+    return _issue_and_reply(
+        chat_id, attempt, max_user_id=max_user_id, pending={"phone": phone, "profile": profile}
+    )

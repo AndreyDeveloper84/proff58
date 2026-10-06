@@ -1,7 +1,7 @@
 """DRF-2497: подтверждение личности через привязанный MAX (операция CONFIRM_LOGIN).
 
 Засчитывается только MAX, привязанный к тому же пользователю; никого не создаёт,
-не привязывает и не впускает. Отметку в сессию ставит опрос статуса.
+не привязывает и не впускает. Отметку в сессию ставит ввод кода из бота (DRF-2740).
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from apps.accounts import reauth
 
 from . import services
 from .models import MaxAccount, MaxAuthAttempt
-from .tests import TOKEN, _make_vcf_payload
+from .tests import TOKEN, _make_vcf_payload, code_from_reply
 
 User = get_user_model()
 Status = MaxAuthAttempt.Status
@@ -104,21 +104,49 @@ def test_старт_у_пользователя_с_паролем(db):
 @override_settings(MAX_WEBHOOK_SECRET="wh-secret")
 @mock.patch("apps.integration_max.webhook._send_reply")
 @pytest.mark.django_db
-def test_тот_же_max_подтверждает_и_опрос_ставит_отметку(mock_send, api, owner):
+def test_тот_же_max_получает_код_и_ввод_кода_ставит_отметку(mock_send, api, owner):
     data = _start(api)
     token = data["deeplink"].split("start=", 1)[1]
     _bot_started(api, token, 7001)
-    assert "Подтверждено" in mock_send.call_args[0][0]["text"]
+    reply = mock_send.call_args[0][0]
+    assert "удаление аккаунта" in reply["text"]  # что именно подтверждается
+    code = code_from_reply(reply)
 
+    # Опрос статуса отметку не ставит: попытка ждёт код.
     resp = api.get(f"/api/auth/max/{data['attempt_id']}/status/")
-    assert resp.json()["status"] == "completed"
+    assert resp.json()["status"] == "confirmation_required"
+    assert api.get("/api/account/me/").json()["reauth_valid_until"] is None
+
+    resp = api.post(f"/api/auth/max/{data['attempt_id']}/confirm/", {"code": code})
+    assert resp.status_code == 200 and resp.json()["status"] == "completed"
     me = api.get("/api/account/me/").json()
     assert me["id"] == owner.pk and me["reauth_valid_until"] is not None
-    # Повторный опрос той же попытки окно не продлевает: время — момент подтверждения.
+    # Повторный ввод/опрос окно не продлевает: время — момент подтверждения.
     first = api.session[reauth.SESSION_KEY]["at"]
     api.get(f"/api/auth/max/{data['attempt_id']}/status/")
     assert api.session[reauth.SESSION_KEY]["at"] == first
     assert api.post("/api/account/delete/").status_code == 200
+
+
+@override_settings(MAX_WEBHOOK_SECRET="wh-secret")
+@mock.patch("apps.integration_max.webhook._send_reply")
+@pytest.mark.django_db
+def test_код_подтверждения_из_чужой_сессии_не_принимается(mock_send, api, owner):
+    """Угнанная ссылка: даже с верным кодом чужой браузер отметку не получит."""
+    data = _start(api)
+    _bot_started(api, data["deeplink"].split("start=", 1)[1], 7001)
+    code = code_from_reply(mock_send.call_args[0][0])
+    stranger = APIClient()
+    assert (
+        stranger.post(f"/api/auth/max/{data['attempt_id']}/confirm/", {"code": code}).status_code
+        == 404
+    )
+    other_user = User.objects.create_user(phone="+79001230008", password=None)
+    stranger.force_login(other_user, backend=MODEL_BACKEND)
+    assert (
+        stranger.post(f"/api/auth/max/{data['attempt_id']}/confirm/", {"code": code}).status_code
+        == 404
+    )
 
 
 @override_settings(MAX_WEBHOOK_SECRET="wh-secret")
@@ -178,12 +206,12 @@ def test_контакт_после_подтверждения_никого_не_
 
 
 @pytest.mark.django_db
-def test_complete_from_contact_для_подтверждения_отказ(owner):
+def test_решение_по_подтверждению_с_чужим_max_отказ(owner):
     attempt = services.create_attempt(
         session_key="s", operation_type=Operation.CONFIRM_LOGIN, user=owner
     ).attempt
-    res = services.complete_from_contact(attempt, max_user_id=7777, phone="+79005554433")
-    assert res.status == Status.FAILED and res.failure_reason == "reauth_mismatch"
+    decision = services.decide(attempt, max_user_id=7777, phone="+79005554433")
+    assert not decision.ok and decision.reason == "reauth_mismatch"
     assert not User.objects.filter(phone="+79005554433").exists()
 
 

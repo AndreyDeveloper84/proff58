@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import re
 from unittest import mock
 
 import pytest
@@ -37,11 +38,16 @@ def user(db):
     return User.objects.create_user(phone="+79001234567", password="pass123")
 
 
-def _make_vcf_payload(phone: str, token: str) -> dict:
+def _make_vcf_payload(phone: str, token: str, *, max_user_id: int | None = None) -> dict:
+    """Контакт, как его присылает MAX. ``max_user_id`` — владелец контакта (``max_info``);
+    по умолчанию не указан: личность берётся из ``sender`` сообщения."""
     vcf = f"BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=cell:{phone.lstrip('+')}\r\nFN:Test\r\nEND:VCARD\r\n"
     vcf_escaped = vcf.replace("\r\n", "\\r\\n")
     h = hmac.new(token.encode(), vcf.encode(), hashlib.sha256).hexdigest()
-    return {"vcf_info": vcf_escaped, "hash": h, "max_info": {"user_id": 99}}
+    payload = {"vcf_info": vcf_escaped, "hash": h}
+    if max_user_id is not None:
+        payload["max_info"] = {"user_id": max_user_id}
+    return payload
 
 
 # ═══════════ VERIFY ═══════════
@@ -222,6 +228,38 @@ def test_config_check_requires_username_when_max_active():
 # не ищет и ничего не пишет.
 
 HDR = {"HTTP_X_MAX_BOT_API_SECRET": "my-secret"}
+
+CODE_RE = re.compile(r"Код: (\d{6})")
+
+
+def code_from_reply(reply: dict) -> str:
+    """Шестизначный код из сообщения бота (тесты видят его через mock _send_reply)."""
+    match = CODE_RE.search(reply["text"])
+    assert match, reply["text"]
+    return match.group(1)
+
+
+def complete_via_code(attempt, *, max_user_id, phone=None, chat_id=None, profile=None):
+    """Пройти попытку так, как это делают бот и сайт вместе (DRF-2740): решение →
+    код → ввод кода. Возвращает попытку в конечном состоянии (как раньше возвращал
+    ``complete_from_contact``), поэтому старые проверки на статус/причину живут."""
+    from . import confirm, services
+
+    attempt = services._refresh_expiry(attempt)
+    if attempt.status != services.Status.PENDING:
+        return services._fail(attempt, "attempt_not_pending")
+    decision = services.decide(attempt, max_user_id=max_user_id, phone=phone)
+    if not decision.ok:
+        return services._fail(attempt, decision.reason)
+    issued = confirm.issue_code(
+        attempt,
+        max_user_id=max_user_id,
+        chat_id=chat_id,
+        pending={"phone": phone, "profile": profile or {}},
+    )
+    if issued.code is None:
+        return issued.attempt
+    return confirm.confirm(issued.attempt, code=issued.code).attempt
 
 
 def _contact_message(phone: str, timestamp: int, chat_id: int = 500) -> str:

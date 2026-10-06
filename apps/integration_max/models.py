@@ -108,6 +108,13 @@ class MaxAuthAttempt(models.Model):
         _("Статус"), max_length=24, choices=Status.choices, default=Status.PENDING
     )
     failure_reason = models.CharField(_("Причина ошибки"), max_length=64, blank=True)
+    # DRF-2740: код подтверждения вводится на сайте. Бот сам попытку больше не
+    # завершает — иначе пересланная ссылка впускала чужой браузер. Сам код нигде не
+    # хранится, только HMAC-хэш; телефон и профиль MAX до ввода кода — в кэше.
+    confirm_code_hash = models.CharField(_("Хэш кода подтверждения"), max_length=64, blank=True)
+    confirm_failures = models.PositiveSmallIntegerField(_("Неверных кодов"), default=0)
+    code_issues = models.PositiveSmallIntegerField(_("Выдач кода"), default=0)
+    code_issued_at = models.DateTimeField(_("Код выдан"), null=True, blank=True)
     created_at = models.DateTimeField(_("Создана"), auto_now_add=True)
     expires_at = models.DateTimeField(_("Истекает"))
     completed_at = models.DateTimeField(_("Завершена в"), null=True, blank=True)

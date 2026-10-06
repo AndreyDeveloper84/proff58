@@ -240,7 +240,7 @@ def test_error_log_no_secrets(mock_max, user):
 
 def test_all_templates_have_placeholders():
     # max_connected — статическое приветствие без динамических данных, плейсхолдер не нужен.
-    static_events = {"max_connected"}
+    static_events = {"max_connected", "max_login", "max_reauth"}
     for event, meta in NOTIFICATION_EVENTS.items():
         if event in static_events:
             continue

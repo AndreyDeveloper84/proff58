@@ -184,7 +184,7 @@ export function LoginForm({
             onCompleted={() => router.push(nextTarget())}
           />
           <p className="mt-2 text-center text-xs text-ink-3">
-            Без пароля — подтвердите вход в приложении
+            Без пароля — бот в MAX пришлёт код, введите его здесь
           </p>
         </div>
       )}

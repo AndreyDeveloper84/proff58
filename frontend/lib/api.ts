@@ -11,18 +11,35 @@ export class ApiError extends Error {
   readonly code?: string;
   // Поле формы, к которому относится ошибка ввода: {"detail": "...", "field": "pvz_code"}.
   readonly field?: string;
-  constructor(message: string, status: number, code?: string, field?: string) {
+  // Сколько попыток ввода кода осталось: {"code": "wrong_code", "attempts_left": 3} (DRF-2740).
+  readonly attemptsLeft?: number;
+  // Причина отказа попытки MAX в теле 409: {"status": "failed", "failure_reason": "phone_mismatch"}.
+  readonly failureReason?: string;
+  constructor(
+    message: string,
+    status: number,
+    code?: string,
+    field?: string,
+    attemptsLeft?: number,
+    failureReason?: string,
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.field = field;
+    this.attemptsLeft = attemptsLeft;
+    this.failureReason = failureReason;
   }
 }
 
 /** Машиночитаемый code из тела ошибки, если бэк его прислал (см. ApiError.code). */
 export function extractErrorCode(body: unknown): string | undefined {
-  if (body && typeof body === "object" && typeof (body as Record<string, unknown>).code === "string") {
+  if (
+    body &&
+    typeof body === "object" &&
+    typeof (body as Record<string, unknown>).code === "string"
+  ) {
     return (body as Record<string, unknown>).code as string;
   }
   return undefined;
@@ -30,7 +47,11 @@ export function extractErrorCode(body: unknown): string | undefined {
 
 /** Поле формы из тела ошибки ввода, если бэк его прислал (см. ApiError.field). */
 export function extractErrorField(body: unknown): string | undefined {
-  if (body && typeof body === "object" && typeof (body as Record<string, unknown>).field === "string") {
+  if (
+    body &&
+    typeof body === "object" &&
+    typeof (body as Record<string, unknown>).field === "string"
+  ) {
     return (body as Record<string, unknown>).field as string;
   }
   return undefined;
@@ -42,10 +63,14 @@ export function extractErrorField(body: unknown): string | undefined {
  * checkout и кабинета, то есть пользователь видел HTTP-код вместо действия.
  */
 function fallbackErrorMessage(status: number): string {
-  if (status === 401 || status === 403) return "Сессия истекла. Войдите заново и повторите.";
-  if (status === 404) return "Данные не найдены — возможно, страница устарела. Обновите её.";
-  if (status === 429) return "Слишком много попыток. Подождите минуту и повторите.";
-  if (status >= 500) return "Сервис временно недоступен. Попробуйте повторить через минуту.";
+  if (status === 401 || status === 403)
+    return "Сессия истекла. Войдите заново и повторите.";
+  if (status === 404)
+    return "Данные не найдены — возможно, страница устарела. Обновите её.";
+  if (status === 429)
+    return "Слишком много попыток. Подождите минуту и повторите.";
+  if (status >= 500)
+    return "Сервис временно недоступен. Попробуйте повторить через минуту.";
   return "Не удалось выполнить действие. Попробуйте ещё раз.";
 }
 
@@ -74,9 +99,14 @@ export function extractErrorMessage(body: unknown, status: number): string {
  * Запрос в same-origin BFF. Возвращает разобранный JSON (или undefined для 204).
  * Бросает {@link ApiError} с сообщением из тела Django при не-2xx.
  */
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
   // Content-Type ставим только когда есть тело (GET/DELETE его не несут).
-  const headers: Record<string, string> = { ...(init?.headers as Record<string, string>) };
+  const headers: Record<string, string> = {
+    ...(init?.headers as Record<string, string>),
+  };
   if (init?.body != null && !("Content-Type" in headers)) {
     headers["Content-Type"] = "application/json";
   }
@@ -90,16 +120,33 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       headers,
     });
   } catch {
-    throw new ApiError("Нет связи с сервером. Проверьте интернет и повторите.", 0);
+    throw new ApiError(
+      "Нет связи с сервером. Проверьте интернет и повторите.",
+      0,
+    );
   }
 
   if (!res.ok) {
     const body: unknown = await res.json().catch(() => undefined);
+    const attemptsLeft =
+      body &&
+      typeof body === "object" &&
+      typeof (body as Record<string, unknown>).attempts_left === "number"
+        ? ((body as Record<string, unknown>).attempts_left as number)
+        : undefined;
+    const failureReason =
+      body &&
+      typeof body === "object" &&
+      typeof (body as Record<string, unknown>).failure_reason === "string"
+        ? ((body as Record<string, unknown>).failure_reason as string)
+        : undefined;
     throw new ApiError(
       extractErrorMessage(body, res.status),
       res.status,
       extractErrorCode(body),
       extractErrorField(body),
+      attemptsLeft,
+      failureReason,
     );
   }
 

@@ -107,6 +107,25 @@ NOTIFICATION_EVENTS: dict[str, dict] = {
         "title": "MAX подключён",
         "version": 1,
     },
+    # DRF-2740: после ввода кода на сайте. Если код выманили — владелец увидит чужой вход.
+    "max_login": {
+        "template": (
+            "Выполнен вход на сайт proff58.ru через MAX по коду из этого чата. "
+            "Если это не вы — отключите MAX в личном кабинете на сайте и смените пароль."
+        ),
+        "category": NotificationCategory.ACCOUNT,
+        "title": "Вход на сайт",
+        "version": 1,
+    },
+    "max_reauth": {
+        "template": (
+            "Подтверждено действие в личном кабинете proff58.ru кодом из этого чата. "
+            "Если это не вы — отключите MAX в личном кабинете и смените пароль."
+        ),
+        "category": NotificationCategory.ACCOUNT,
+        "title": "Подтверждение в кабинете",
+        "version": 1,
+    },
     "product_available": {
         "template": "«{product_name}» снова в наличии!{price_note}",
         "category": NotificationCategory.PRODUCT_AVAILABILITY,
