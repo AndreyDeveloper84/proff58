@@ -30,7 +30,12 @@
 1. `category_is_manual=True` **сохраняется** при переносах (сайт — мастер контента;
    исправляем конкретное ошибочное размещение, не отменяем ручное управление).
 2. **Только явно утверждённые `product_id`** — никаких широких правил на write.
-3. **Свежий pg_dump перед каждым write** + запись в одной `transaction.atomic`.
+3. **Свежий pg_dump перед каждым write** + запись короткими транзакциями: scoped-скрипты
+   (recategorize, new leaf/option, rollback) — одной `transaction.atomic`; команды
+   `enrich_attributes` / `enrich_tool_type` — **чанками по 500 товаров** (DRF-2738,
+   `apps/catalog/enrich_chunks.py`): PAV и `attrs_cache` одного товара коммитятся вместе,
+   сбой оставляет записанные чанки, повтор идемпотентен, откат — по снимку «до».
+   Одна транзакция на весь каталог держала замки десятки минут и блокировала обмен с 1С.
 4. **rollback-map** обязателен (product_id → old→new; для комбинированных — двойной).
 5. **slug и publish-status не меняются** recat'ом/enrich'ем.
 6. `tool_type`/`attrs_cache` меняются **только там, где это часть утверждённого плана**.
@@ -58,13 +63,17 @@
    с FOUNDATION-AXES-01 встроен в `enrich_attributes` (`apps/catalog/attribute_preflight.py`):
    считается только по блокам текущей выборки, стоит до `ImportRun.create`, отказ
    и в dry-run, и в write, **exit code 2**, обходного флага нет; на write path —
-   runtime-guard (исчезнувшая опция → abort транзакции, `ImportRun` → `failed`);
+   runtime-guard (исчезнувшая опция → прогон прерван, незаписанный чанк отброшен,
+   `ImportRun` → `failed` со счётчиком `committed`);
 4. `enrich_attributes --dry-run`, сверка значений против названий;
 5. immutable manifest (product scope + ожидаемые CREATE/CONFIRM/PROTECTED);
 6. backup (pg_dump PAV + CategoryAttribute + AttributeOption);
 7. drift gate (blob правил на стенде = `origin/dev`);
 8. `enrich_attributes`;
-9. post-audit (счётчики, покрытие фасетов, пустые привязки на живых узлах = 0);
+9. post-audit — **сначала статус `ImportRun`**: `done` — счётчики сверяются с планом;
+   `failed` — записана часть (`stats.committed`, `stats.last_product_id`), либо повтор
+   до `done`, либо откат по снимку «до»; затем счётчики, покрытие фасетов, пустые
+   привязки на живых узлах = 0;
 10. rerun no-op (`create 0, update 0, prune 0`).
 
 **Почему:** 2026-09-11 значения были записаны ДО `load_attributes` — 42 SELECT-значения

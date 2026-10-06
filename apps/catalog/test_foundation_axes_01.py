@@ -682,10 +682,12 @@ def test_A_load_attributes_then_enrich_is_the_supported_order(
     assert not [r for r in report["rows"] if r["action"] == "skip"]
 
 
-def test_E_option_vanishing_after_preflight_aborts_the_transaction(
+def test_E_option_vanishing_after_preflight_aborts_the_run(
     schema_without_tsanga, preflight_rules_path, monkeypatch
 ):
-    """Дрейф между preflight и записью: не skip+continue, а abort всего прогона."""
+    """Дрейф между preflight и записью: не skip+continue, а прерывание прогона. Три
+    товара — один чанк (DRF-2738), поэтому не записано ничего; двухчанковый вариант —
+    в test_enrich_chunked.py."""
     AttributeOption.objects.create(
         attribute=schema_without_tsanga["tool_kind"], value="Цанга", slug="tsanga"
     )
@@ -705,7 +707,8 @@ def test_E_option_vanishing_after_preflight_aborts_the_transaction(
     run = ImportRun.objects.get()
     assert run.status == "failed"
     assert "tsanga" in run.stats["error"]
-    # Транзакция откатилась целиком: ни одного частичного PAV, кэш пуст.
+    assert run.stats["committed"] == 0
+    # Чанк откатился целиком: ни одного частичного PAV, кэш пуст.
     assert _pav_count("diameter") == 0 and _pav_count("tool_kind") == 0
     assert _pav_count("material") == 0
     assert all(not p.attrs_cache for p in Product.objects.all())

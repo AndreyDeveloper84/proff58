@@ -10,8 +10,9 @@
    только если приоритет нового источника ≥ приоритета сохранённого
    (``rules.source_priority``) — ручное (manual) и 1С не затираются regex/keyword.
    ``confidence`` в решении о перезаписи НЕ участвует.
-4. Bulk-паттерн #93: префетч PAV → ``iterator`` → ``bulk_create``/``bulk_update``
-   батчами; ``attrs_cache`` обновляем в памяти; итоги — в ``ImportRun.stats``.
+4. Bulk-паттерн #93: PAV читаются по чанку товаров, запись чанка — одной короткой
+   транзакцией (``bulk_create``/``bulk_update``, DRF-2738); ``attrs_cache`` обновляем
+   в памяти и сливаем под замком; итоги — в ``ImportRun.stats``.
 
 Режим ``--dry-run``/``--report-only`` (окно CODE-01): тот же extraction/write-decision
 path, что и боевой apply — решения (create/update/keep/prune/skip) принимает тот же
@@ -45,13 +46,20 @@ Preflight схемы (FOUNDATION-AXES-01, часть D; :mod:`apps.catalog.attri
 режимах, без обходного флага для записи: раньше такое значение молча пропускалось
 (``skip`` без счётчика, exit 0). Тот же контракт — для отсутствующего ``Attribute``.
 На пути записи стоит runtime-guard: если вариант исчез между preflight и записью,
-прогон падает целиком (транзакция откатывается, ``ImportRun`` → ``failed``), а не
-пропускает значение.
+прогон прерывается (``ImportRun`` → ``failed``), а не пропускает значение.
+
+Запись идёт частями (DRF-2738, :mod:`apps.catalog.enrich_chunks`): решения по чанку
+из ``CHUNK_PRODUCTS`` товаров принимаются без транзакции, запись чанка — одна
+короткая транзакция (замки товаров по id → PAV → ``attrs_cache`` → прогресс в
+``ImportRun``). Сбой оставляет записанные чанки, повторный запуск идемпотентен;
+dry-run транзакций не открывает вовсе.
 """
 
 from __future__ import annotations
 
+import copy
 import json
+from contextlib import ExitStack
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
@@ -60,8 +68,10 @@ from django.utils import timezone
 
 from apps.catalog import attribute_preflight as preflight
 from apps.catalog import attribute_quarantine as quarantine
+from apps.catalog import enrich_chunks
 from apps.catalog.attribute_extract import BOOLEAN, NUMBER, SELECT, TEXT, AttributeRules
 from apps.catalog.attrs_cache import flush_attrs_cache_merged
+from apps.catalog.facets import invalidate_facets_cache
 from apps.catalog.ingest import data_dir
 from apps.catalog.models import (
     Attribute,
@@ -355,13 +365,27 @@ class Command(BaseCommand):
 
         # Существующие PAV управляемых атрибутов — объектами (bulk_update + проверка приоритета).
         # value_option нужен dry-run'у для current_value (attr_value_to_json) без N+1.
+        # Заполняется ПО ЧАНКУ (DRF-2738): окно гонки с ручной правкой — секунды, а не
+        # весь прогон; в памяти — один чанк, а не все PAV каталога.
         existing: dict[tuple[int, str], ProductAttributeValue] = {}
-        for pav in ProductAttributeValue.objects.filter(
-            product_id__in=product_ids, attribute__slug__in=managed_slugs
-        ).select_related("attribute", "value_option"):
-            existing[(pav.product_id, pav.attribute.slug)] = pav
 
-        run = None if dry_run else ImportRun.objects.create(source="enrich_attributes")
+        def load_existing(chunk_ids: list[int]) -> None:
+            existing.clear()
+            for pav in ProductAttributeValue.objects.filter(
+                product_id__in=chunk_ids, attribute__slug__in=managed_slugs
+            ).select_related("attribute", "value_option"):
+                existing[(pav.product_id, pav.attribute.slug)] = pav
+
+        # Замок — до ImportRun: отказ «уже идёт другой прогон» не должен оставлять
+        # FAILED-строку в истории прогонов. Ключ общий с enrich_tool_type.
+        write_guard = ExitStack()
+        if not dry_run:
+            write_guard.enter_context(enrich_chunks.exclusive_run(enrich_chunks.WRITE_LOCK_NAME))
+        try:
+            run = None if dry_run else ImportRun.objects.create(source="enrich_attributes")
+        except BaseException:
+            write_guard.close()
+            raise
         stats = {
             "processed": 0,
             "no_attributes": 0,
@@ -378,7 +402,10 @@ class Command(BaseCommand):
                 "active": quarantine_meta["active"],
                 "product_ids": [],
             },
+            # DRF-2738: сколько товаров записано (обновляется в транзакции чанка).
+            "committed": 0,
         }
+        committed_stats = copy.deepcopy(stats)  # вложенные счётчики не делить с stats
 
         pav_create: list[ProductAttributeValue] = []
         pav_update: list[ProductAttributeValue] = []
@@ -459,47 +486,78 @@ class Command(BaseCommand):
                     f"не совпадает с текущим названием ({actual_name!r})."
                 )
 
-        qs = Product.objects.filter(id__in=product_ids).iterator(chunk_size=2000)
+        ordered = enrich_chunks.ordered_ids(Product.objects.filter(id__in=product_ids))
+        chunks = enrich_chunks.iter_chunks(ordered, enrich_chunks.CHUNK_PRODUCTS)
         try:
-            with transaction.atomic():
-                for product in qs:
-                    stats["processed"] += 1
-                    tt_slug = product_tt[product.id]
+            with write_guard:
+                for chunk_ids in chunks:
+                    # Без повторного фильтра по product_ids: chunk_ids ⊂ product_ids, а
+                    # тащить весь список из десятков тысяч id в каждый из ~90 запросов
+                    # чанка — лишние параметры.
+                    products = self._load_chunk(Product.objects.all(), chunk_ids)
+                    load_existing(chunk_ids)
+                    pav_create.clear()
+                    pav_update.clear()
+                    pav_delete_ids.clear()
+                    cache_updates.clear()
+                    for product in products:
+                        stats["processed"] += 1
+                        tt_slug = product_tt[product.id]
 
-                    # --- карантин (P2) --------------------------------------
-                    # Короткое замыкание стоит ИМЕННО ЗДЕСЬ, а не в
-                    # attribute_extract рядом со skip_if. Гейт на уровне движка
-                    # вернул бы пустой values → пустой current → prune-цикл ниже
-                    # счёл бы ВСЕ engine-PAV товара устаревшими и удалил их.
-                    # `continue` пропускает разом prune, no_attributes и запись.
-                    entry = quarantined_in_scope.get(product.id)
-                    if entry is not None and entry.is_whole_product:
-                        stats["quarantined"] += 1
-                        add_quarantine_row(product, tt_slug, entry)
-                        continue
-                    quarantined_slugs = (
-                        frozenset(entry.attributes) if entry is not None else frozenset()
-                    )
-                    if quarantined_slugs:
-                        stats["quarantined_partial"] += 1
-                        add_quarantine_row(product, tt_slug, entry)
+                        # --- карантин (P2) --------------------------------------
+                        # Короткое замыкание стоит ИМЕННО ЗДЕСЬ, а не в
+                        # attribute_extract рядом со skip_if. Гейт на уровне движка
+                        # вернул бы пустой values → пустой current → prune-цикл ниже
+                        # счёл бы ВСЕ engine-PAV товара устаревшими и удалил их.
+                        # `continue` пропускает разом prune, no_attributes и запись.
+                        entry = quarantined_in_scope.get(product.id)
+                        if entry is not None and entry.is_whole_product:
+                            stats["quarantined"] += 1
+                            add_quarantine_row(product, tt_slug, entry)
+                            continue
+                        quarantined_slugs = (
+                            frozenset(entry.attributes) if entry is not None else frozenset()
+                        )
+                        if quarantined_slugs:
+                            stats["quarantined_partial"] += 1
+                            add_quarantine_row(product, tt_slug, entry)
 
-                    name = product.original_name or product.name
-                    values = rules.extract(tt_slug, name)
-                    current = {av.slug for av in values}
+                        name = product.original_name or product.name
+                        values = rules.extract(tt_slug, name)
+                        current = {av.slug for av in values}
 
-                    cache = dict(product.attrs_cache or {})
-                    cache_changed = False
+                        cache = dict(product.attrs_cache or {})
+                        cache_changed = False
 
-                    # Идемпотентность: убрать engine-значения, которых движок больше
-                    # не извлекает (устаревший regex/keyword/inferred). Авторитетные
-                    # источники (manual/import_1c) и llm не трогаем.
-                    for slug in managed_by_tt.get(tt_slug, ()):
-                        if slug in quarantined_slugs:
-                            # Частичный карантин НИЧЕГО не удаляет: значение могло
-                            # быть записано до заведения записи в реестре.
+                        # Идемпотентность: убрать engine-значения, которых движок больше
+                        # не извлекает (устаревший regex/keyword/inferred). Авторитетные
+                        # источники (manual/import_1c) и llm не трогаем.
+                        for slug in managed_by_tt.get(tt_slug, ()):
+                            if slug in quarantined_slugs:
+                                # Частичный карантин НИЧЕГО не удаляет: значение могло
+                                # быть записано до заведения записи в реестре.
+                                pav = existing.get((product.id, slug))
+                                if pav is not None and pav.pk is not None:
+                                    add_report_row(
+                                        product,
+                                        tt_slug,
+                                        "keep",
+                                        slug,
+                                        attr_value_to_json(pav),
+                                        None,
+                                        "",
+                                        pav.source,
+                                        "атрибут в карантине — существующее значение сохраняется",
+                                    )
+                                continue
+                            if slug in current:
+                                continue
                             pav = existing.get((product.id, slug))
-                            if pav is not None and pav.pk is not None:
+                            if pav is None or pav.pk is None:
+                                continue
+                            if pav.source not in PRUNABLE_SOURCES:
+                                # Авторитетный/чужой источник по управляемому атрибуту,
+                                # который движок не извлёк: решение «оставить как есть».
                                 add_report_row(
                                     product,
                                     tt_slug,
@@ -509,229 +567,201 @@ class Command(BaseCommand):
                                     None,
                                     "",
                                     pav.source,
-                                    "атрибут в карантине — существующее значение сохраняется",
+                                    f"источник {pav.source} вне PRUNABLE_SOURCES — "
+                                    "движок не управляет, значение остаётся",
                                 )
-                            continue
-                        if slug in current:
-                            continue
-                        pav = existing.get((product.id, slug))
-                        if pav is None or pav.pk is None:
-                            continue
-                        if pav.source not in PRUNABLE_SOURCES:
-                            # Авторитетный/чужой источник по управляемому атрибуту,
-                            # который движок не извлёк: решение «оставить как есть».
+                                continue
                             add_report_row(
                                 product,
                                 tt_slug,
-                                "keep",
+                                "prune",
                                 slug,
                                 attr_value_to_json(pav),
                                 None,
                                 "",
                                 pav.source,
-                                f"источник {pav.source} вне PRUNABLE_SOURCES — "
-                                "движок не управляет, значение остаётся",
+                                f"движок больше не извлекает значение; источник {pav.source} "
+                                "из PRUNABLE_SOURCES — устаревшее значение удаляется",
                             )
-                            continue
-                        add_report_row(
-                            product,
-                            tt_slug,
-                            "prune",
-                            slug,
-                            attr_value_to_json(pav),
-                            None,
-                            "",
-                            pav.source,
-                            f"движок больше не извлекает значение; источник {pav.source} "
-                            "из PRUNABLE_SOURCES — устаревшее значение удаляется",
-                        )
-                        pav_delete_ids.append(pav.pk)
-                        existing.pop((product.id, slug), None)
-                        if slug in cache:
-                            del cache[slug]
-                            cache_changed = True
-                        stats["pruned"][slug] = stats["pruned"].get(slug, 0) + 1
+                            pav_delete_ids.append(pav.pk)
+                            existing.pop((product.id, slug), None)
+                            if slug in cache:
+                                del cache[slug]
+                                cache_changed = True
+                            stats["pruned"][slug] = stats["pruned"].get(slug, 0) + 1
 
-                    if not values:
-                        stats["no_attributes"] += 1
+                        if not values:
+                            stats["no_attributes"] += 1
 
-                    for av in values:
-                        if av.slug in quarantined_slugs:
-                            # Карантин по атрибуту: не создаём и не обновляем.
-                            pav0 = existing.get((product.id, av.slug))
-                            add_report_row(
-                                product,
-                                tt_slug,
-                                "skip",
-                                av.slug,
-                                attr_value_to_json(pav0) if pav0 is not None else None,
-                                None,
-                                av.matched,
-                                av.source,
-                                "атрибут в карантине — значение не записывается",
-                            )
-                            continue
-                        attribute = attr_by_slug[av.slug]
-                        option = None
-                        if av.kind == SELECT:
-                            option = option_index.get(av.slug, {}).get(av.option_slug)
-                            if option is None:
-                                # Runtime-guard (light T3): после preflight сюда можно
-                                # попасть только при дрейфе схемы между проверкой и
-                                # записью. Раньше — молчаливый skip без счётчика;
-                                # теперь прогон падает целиком: транзакция
-                                # откатывается, ImportRun → failed. Серверный курсор
-                                # iterator() закрываем ДО отката — после rollback его
-                                # уже нет, и закрытие при выходе роняло бы соединение.
-                                qs.close()
-                                raise CommandError(
-                                    f"Товар {product.id} ({tt_slug}): вариант "
-                                    f"{av.option_slug!r} («{av.option_value}») оси "
-                                    f"{av.slug!r} отсутствует в БД — прогон прерван, "
-                                    "ничего не записано. Выполните load_attributes.",
-                                    returncode=preflight.EXIT_PREFLIGHT,
-                                )
-                        new_source = av.source
-                        new_conf = SOURCE_CONFIDENCE.get(new_source, 100)
-                        key = (product.id, av.slug)
-                        pav = existing.get(key)
-
-                        if pav is None:
-                            pav = ProductAttributeValue(
-                                product=product,
-                                attribute=attribute,
-                                source=new_source,
-                                confidence=new_conf,
-                            )
-                            self._apply_value(pav, av, option)
-                            add_report_row(
-                                product,
-                                tt_slug,
-                                "create",
-                                av.slug,
-                                None,
-                                extracted_value_to_json(attribute, av, option),
-                                av.matched,
-                                new_source,
-                                "PAV отсутствует — значение создаётся",
-                            )
-                            pav_create.append(pav)
-                            existing[key] = pav
-                            cache[av.slug] = extracted_value_to_json(attribute, av, option)
-                            cache_changed = True
-                        else:
-                            old_source = pav.source
-                            # Перезапись только если приоритет нового ≥ сохранённого.
-                            if priority.get(new_source, 0) < priority.get(old_source, 0):
-                                stats["skipped_priority"] += 1
+                        for av in values:
+                            if av.slug in quarantined_slugs:
+                                # Карантин по атрибуту: не создаём и не обновляем.
+                                pav0 = existing.get((product.id, av.slug))
                                 add_report_row(
                                     product,
                                     tt_slug,
                                     "skip",
                                     av.slug,
-                                    attr_value_to_json(pav),
-                                    extracted_value_to_json(attribute, av, option),
+                                    attr_value_to_json(pav0) if pav0 is not None else None,
+                                    None,
                                     av.matched,
-                                    new_source,
-                                    f"приоритет {new_source} ({priority.get(new_source, 0)}) "
-                                    f"< {old_source} ({priority.get(old_source, 0)}) — "
-                                    "перезапись запрещена",
+                                    av.source,
+                                    "атрибут в карантине — значение не записывается",
                                 )
                                 continue
+                            attribute = attr_by_slug[av.slug]
+                            option = None
+                            if av.kind == SELECT:
+                                option = option_index.get(av.slug, {}).get(av.option_slug)
+                                if option is None:
+                                    # Runtime-guard (light T3): после preflight сюда можно
+                                    # попасть только при дрейфе схемы между проверкой и
+                                    # записью. Раньше — молчаливый skip без счётчика;
+                                    # теперь прогон прерывается, ImportRun → failed. Чанк,
+                                    # на котором это случилось, не записывается; уже
+                                    # записанные остаются (DRF-2738).
+                                    tail = (
+                                        enrich_chunks.partial_write_hint(stats)
+                                        if not dry_run
+                                        else " Ничего не записано."
+                                    )
+                                    raise CommandError(
+                                        f"Товар {product.id} ({tt_slug}): вариант "
+                                        f"{av.option_slug!r} («{av.option_value}») оси "
+                                        f"{av.slug!r} отсутствует в БД — прогон прерван."
+                                        f"{tail} Выполните load_attributes.",
+                                        returncode=preflight.EXIT_PREFLIGHT,
+                                    )
+                            new_source = av.source
+                            new_conf = SOURCE_CONFIDENCE.get(new_source, 100)
+                            key = (product.id, av.slug)
+                            pav = existing.get(key)
 
-                            value_changed = self._value_changed(pav, av, option)
-                            source_changed = new_source != old_source
-
-                            if not value_changed and not source_changed:
+                            if pav is None:
+                                pav = ProductAttributeValue(
+                                    product=product,
+                                    attribute=attribute,
+                                    source=new_source,
+                                    confidence=new_conf,
+                                )
+                                self._apply_value(pav, av, option)
                                 add_report_row(
                                     product,
                                     tt_slug,
-                                    "keep",
+                                    "create",
                                     av.slug,
-                                    attr_value_to_json(pav),
+                                    None,
                                     extracted_value_to_json(attribute, av, option),
                                     av.matched,
                                     new_source,
-                                    "значение не изменилось — PAV остаётся без перезаписи",
+                                    "PAV отсутствует — значение создаётся",
                                 )
-                                continue
-
-                            current_value = attr_value_to_json(pav) if dry_run else None
-                            pav.source = new_source
-                            pav.confidence = new_conf
-                            self._apply_value(pav, av, option)
-                            if not value_changed and source_changed:
-                                reason = (
-                                    f"значение не изменилось, но источник {new_source} "
-                                    f"({priority.get(new_source, 0)}) выше приоритетом, "
-                                    f"чем {old_source} ({priority.get(old_source, 0)}) — "
-                                    "обновление происхождения записи"
-                                )
+                                pav_create.append(pav)
+                                existing[key] = pav
+                                cache[av.slug] = extracted_value_to_json(attribute, av, option)
+                                cache_changed = True
                             else:
-                                reason = (
-                                    f"приоритет {new_source} ({priority.get(new_source, 0)}) "
-                                    f">= {old_source} ({priority.get(old_source, 0)}) — "
-                                    "перезапись"
+                                old_source = pav.source
+                                # Перезапись только если приоритет нового ≥ сохранённого.
+                                if priority.get(new_source, 0) < priority.get(old_source, 0):
+                                    stats["skipped_priority"] += 1
+                                    add_report_row(
+                                        product,
+                                        tt_slug,
+                                        "skip",
+                                        av.slug,
+                                        attr_value_to_json(pav),
+                                        extracted_value_to_json(attribute, av, option),
+                                        av.matched,
+                                        new_source,
+                                        f"приоритет {new_source} ({priority.get(new_source, 0)}) "
+                                        f"< {old_source} ({priority.get(old_source, 0)}) — "
+                                        "перезапись запрещена",
+                                    )
+                                    continue
+
+                                value_changed = self._value_changed(pav, av, option)
+                                source_changed = new_source != old_source
+
+                                if not value_changed and not source_changed:
+                                    add_report_row(
+                                        product,
+                                        tt_slug,
+                                        "keep",
+                                        av.slug,
+                                        attr_value_to_json(pav),
+                                        extracted_value_to_json(attribute, av, option),
+                                        av.matched,
+                                        new_source,
+                                        "значение не изменилось — PAV остаётся без перезаписи",
+                                    )
+                                    continue
+
+                                current_value = attr_value_to_json(pav) if dry_run else None
+                                pav.source = new_source
+                                pav.confidence = new_conf
+                                self._apply_value(pav, av, option)
+                                if not value_changed and source_changed:
+                                    reason = (
+                                        f"значение не изменилось, но источник {new_source} "
+                                        f"({priority.get(new_source, 0)}) выше приоритетом, "
+                                        f"чем {old_source} ({priority.get(old_source, 0)}) — "
+                                        "обновление происхождения записи"
+                                    )
+                                else:
+                                    reason = (
+                                        f"приоритет {new_source} ({priority.get(new_source, 0)}) "
+                                        f">= {old_source} ({priority.get(old_source, 0)}) — "
+                                        "перезапись"
+                                    )
+                                add_report_row(
+                                    product,
+                                    tt_slug,
+                                    "update",
+                                    av.slug,
+                                    current_value,
+                                    extracted_value_to_json(attribute, av, option),
+                                    av.matched,
+                                    new_source,
+                                    reason,
                                 )
-                            add_report_row(
-                                product,
-                                tt_slug,
-                                "update",
-                                av.slug,
-                                current_value,
-                                extracted_value_to_json(attribute, av, option),
-                                av.matched,
-                                new_source,
-                                reason,
+                                pav_update.append(pav)
+                                cache[av.slug] = extracted_value_to_json(attribute, av, option)
+                                cache_changed = True
+
+                            stats["by_attribute"][av.slug] = (
+                                stats["by_attribute"].get(av.slug, 0) + 1
                             )
-                            pav_update.append(pav)
-                            cache[av.slug] = extracted_value_to_json(attribute, av, option)
-                            cache_changed = True
 
-                        stats["by_attribute"][av.slug] = stats["by_attribute"].get(av.slug, 0) + 1
+                        if cache_changed:
+                            product.attrs_cache = cache
+                            cache_updates.append(product)
 
-                    if cache_changed:
-                        product.attrs_cache = cache
-                        cache_updates.append(product)
-
-                    if not dry_run and len(pav_delete_ids) >= BATCH:
-                        ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
-                        pav_delete_ids.clear()
-                    if not dry_run and len(pav_create) >= BATCH:
-                        ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
-                        pav_create.clear()
-                    if not dry_run and len(pav_update) >= BATCH:
-                        ProductAttributeValue.objects.bulk_update(
-                            pav_update, UPDATE_FIELDS, batch_size=BATCH
+                    if not dry_run:
+                        committed_stats = self._write_chunk(
+                            chunk_ids,
+                            pav_delete_ids=pav_delete_ids,
+                            pav_create=pav_create,
+                            pav_update=pav_update,
+                            cache_updates=cache_updates,
+                            managed_for=managed_for,
+                            run=run,
+                            stats=stats,
                         )
-                        pav_update.clear()
-                    if not dry_run and len(cache_updates) >= BATCH:
-                        flush_attrs_cache_merged(cache_updates, managed_for, batch_size=BATCH)
-                        cache_updates.clear()
-
-                if not dry_run and pav_delete_ids:
-                    ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
-                if not dry_run and pav_create:
-                    ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
-                if not dry_run and pav_update:
-                    ProductAttributeValue.objects.bulk_update(
-                        pav_update, UPDATE_FIELDS, batch_size=BATCH
-                    )
-                if not dry_run and cache_updates:
-                    flush_attrs_cache_merged(cache_updates, managed_for, batch_size=BATCH)
-
-                if run is not None:
-                    run.status = ImportRunStatus.DONE
-        except Exception as exc:  # noqa: BLE001
-            if run is not None:
-                run.status = ImportRunStatus.FAILED
-                stats["error"] = str(exc)
-                run.finished_at = timezone.now()
-                run.stats = stats
-                run.save()
+        except (
+            BaseException
+        ) as exc:  # noqa: BLE001 — и KeyboardInterrupt: статус не должен зависнуть в RUNNING
+            enrich_chunks.finish_failed(run, committed_stats, exc)
             raise
+        finally:
+            if run is not None and stats.get("committed"):
+                # Раньше кэш фасетов сбрасывали хуки после единого коммита; теперь
+                # коммитов много, и часть остаётся даже при сбое — сбрасываем один
+                # раз по завершении, успешном или нет.
+                invalidate_facets_cache()
 
         if run is not None:
+            run.status = ImportRunStatus.DONE
             run.finished_at = timezone.now()
             run.stats = stats
             run.save()
@@ -778,6 +808,45 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(summary))
         return str(run.pk)
+
+    # --- запись частями (DRF-2738) ----------------------------------------
+
+    @staticmethod
+    def _load_chunk(scoped, chunk_ids: list[int]) -> list[Product]:
+        """Шов для тестов: чтение чанка идёт вне транзакции."""
+        return enrich_chunks.load_chunk(scoped, chunk_ids)
+
+    @staticmethod
+    def _write_chunk(
+        chunk_ids: list[int],
+        *,
+        pav_delete_ids: list[int],
+        pav_create: list[ProductAttributeValue],
+        pav_update: list[ProductAttributeValue],
+        cache_updates: list[Product],
+        managed_for,
+        run,
+        stats: dict,
+    ) -> dict:
+        """Записать решения по чанку одной короткой транзакцией.
+
+        Порядок: замки товаров чанка по id (как в остальном проекте — товар раньше
+        PAV, иначе встречный порядок с админкой даёт deadlock) → PAV → attrs_cache →
+        прогресс в ImportRun. Возвращает снимок stats на момент коммита.
+        """
+        with transaction.atomic():
+            enrich_chunks.lock_products(chunk_ids)
+            if pav_delete_ids:
+                ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
+            if pav_create:
+                ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
+            if pav_update:
+                ProductAttributeValue.objects.bulk_update(
+                    pav_update, UPDATE_FIELDS, batch_size=BATCH
+                )
+            if cache_updates:
+                flush_attrs_cache_merged(cache_updates, managed_for, batch_size=BATCH)
+            return enrich_chunks.record_progress(run, stats, chunk_ids)
 
     # --- dry-run отчёт -----------------------------------------------------
 

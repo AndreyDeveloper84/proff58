@@ -18,11 +18,20 @@ Lookup корневой категории использует явный сл�
 Безопасный режим (``--dry-run``/``--report-only``, ENRICH-DRYRUN-ALIASES):
 ничего не пишет в БД, строит machine-readable отчёт matched/moderation/
 skipped/conflict.
+
+Запись идёт частями (DRF-2738, :mod:`apps.catalog.enrich_chunks`): чанк из
+``CHUNK_PRODUCTS`` товаров решается без транзакции и записывается одной короткой
+транзакцией (замки товаров по id → EnrichmentLog → PAV → ``attrs_cache`` →
+прогресс в ``ImportRun``). Сбой оставляет записанные чанки; повторный запуск
+идемпотентен. Порядок обработки одинаков в dry-run и записи и не зависит от
+размера чанка.
 """
 
 from __future__ import annotations
 
+import copy
 import json
+from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -30,7 +39,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.catalog import enrich_chunks
 from apps.catalog.attrs_cache import flush_attrs_cache_merged
+from apps.catalog.facets import invalidate_facets_cache
 from apps.catalog.ingest import data_dir
 from apps.catalog.management.commands.load_tool_types import TOOL_TYPE_SLUG
 from apps.catalog.models import (
@@ -222,10 +233,15 @@ class Command(BaseCommand):
         manifest_options = load_options_index()
         # Существующие PAV — объектами (для bulk_update при повторном прогоне).
         # Иначе update_or_create по одной строке вешает Postgres (≈16k round-trip'ов
-        # + шторм сигналов rebuild_attrs_cache).
-        existing_pav = {
-            pav.product_id: pav for pav in ProductAttributeValue.objects.filter(attribute=attribute)
-        }
+        # + шторм сигналов rebuild_attrs_cache). Читаются по чанку (DRF-2738).
+        existing_pav: dict[int, ProductAttributeValue] = {}
+
+        def load_existing(chunk_ids: list[int]) -> None:
+            existing_pav.clear()
+            for pav in ProductAttributeValue.objects.filter(
+                attribute=attribute, product_id__in=chunk_ids
+            ).select_related("value_option"):
+                existing_pav[pav.product_id] = pav
 
         product_ids = self._parse_product_ids(options.get("product_ids"))
         category_names = options.get("category")
@@ -241,12 +257,21 @@ class Command(BaseCommand):
         if category_filter_ids is not None:
             qs = qs.filter(category_id__in=category_filter_ids)
         if options.get("limit") is not None:
-            qs = qs.order_by("id")[: options["limit"]]
-        qs = qs.iterator(chunk_size=2000)
+            ordered = list(qs.order_by("id").values_list("id", flat=True)[: options["limit"]])
+        else:
+            ordered = enrich_chunks.ordered_ids(qs)
+
+        def chunks():
+            """Товары чанками в фиксированном порядке — общий обход dry-run и записи.
+            Фильтры команды повторяются в запросе чанка: товар, у которого между
+            листингом и чтением исчезла категория, в чанк не попадёт."""
+            for chunk_ids in enrich_chunks.iter_chunks(ordered, enrich_chunks.CHUNK_PRODUCTS):
+                load_existing(chunk_ids)
+                yield chunk_ids, self._load_chunk(qs, chunk_ids)
 
         if dry_run:
             return self._handle_dry_run(
-                qs,
+                chunks(),
                 rules=rules,
                 rule_categories=rule_categories,
                 live_to_legacy=live_to_legacy,
@@ -265,7 +290,7 @@ class Command(BaseCommand):
             )
 
         return self._handle_write(
-            qs,
+            chunks(),
             rules=rules,
             rule_categories=rule_categories,
             live_to_legacy=live_to_legacy,
@@ -283,7 +308,7 @@ class Command(BaseCommand):
 
     def _handle_write(
         self,
-        qs,
+        chunks,
         *,
         rules,
         rule_categories,
@@ -297,13 +322,27 @@ class Command(BaseCommand):
         manifest_options,
         existing_pav,
     ):
-        run = ImportRun.objects.create(source="enrich_tool_type")
+        # Замок — до ImportRun (см. enrich_attributes); ключ общий для обеих команд.
+        write_guard = ExitStack()
+        write_guard.enter_context(enrich_chunks.exclusive_run(enrich_chunks.WRITE_LOCK_NAME))
+        try:
+            run = ImportRun.objects.create(source="enrich_tool_type")
+        except BaseException:
+            write_guard.close()
+            raise
         stats = {
             "processed": 0,
             "tool_type_assigned": 0,
             "moderation": 0,
             "recategorize_flagged": 0,
+            # DRF-2738: записано товаров (в транзакции чанка) и опции, созданные из
+            # манифеста по ходу прогона — они создаются вне транзакции чанка и при
+            # откате остаются; rollback-map должен их знать.
+            "committed": 0,
+            "created_options": [],
         }
+        committed_stats = copy.deepcopy(stats)  # вложенные счётчики не делить с stats
+        created_options: list[str] = stats["created_options"]
 
         logs: list[EnrichmentLog] = []
         pav_create: list[ProductAttributeValue] = []
@@ -312,114 +351,109 @@ class Command(BaseCommand):
         cache_updates: list[Product] = []
 
         try:
-            with transaction.atomic():
-                for product in qs:
-                    cat = product.category
-                    top_name = top_name_by_id.get(cat.id)
-                    # Тот же live_to_legacy слой, что и в _handle_dry_run (ENRICH-
-                    # WRITE-PATH-HARDENING): для 10 из 13 блоков без alias — байт-в-
-                    # байт прежнее поведение (top_name уже совпадает с legacy).
-                    # Для 3 алиасированных корней (Спецодежда, Строительное, Оснастка)
-                    # боевой прогон теперь официально ведёт себя как dry-run-предсказание.
-                    legacy_category = (
-                        top_name if top_name in rule_categories else live_to_legacy.get(top_name)
-                    )
-                    if legacy_category is None:
-                        continue
-
-                    sub_name, _unmapped = self._translate_subgroup(
-                        rules, legacy_category, cat.name, subgroup_live_to_legacy
-                    )
-                    ex = rules.extract(
-                        legacy_category, product.original_name or product.name, sub_name
-                    )
-                    stats["processed"] += 1
-
-                    tool_type_value = ""
-                    if ex.result == ASSIGNED:
-                        option = self._resolve_option(
-                            attribute, ex, opt_by_slug, opt_by_value, manifest_options
+            with write_guard:
+                for chunk_ids, products in chunks:
+                    logs.clear()
+                    pav_create.clear()
+                    pav_update.clear()
+                    pav_delete_ids.clear()
+                    cache_updates.clear()
+                    for product in products:
+                        cat = product.category
+                        top_name = top_name_by_id.get(cat.id)
+                        # Тот же live_to_legacy слой, что и в _handle_dry_run (ENRICH-
+                        # WRITE-PATH-HARDENING): для 10 из 13 блоков без alias — байт-в-
+                        # байт прежнее поведение (top_name уже совпадает с legacy).
+                        # Для 3 алиасированных корней (Спецодежда, Строительное, Оснастка)
+                        # боевой прогон теперь официально ведёт себя как dry-run-предсказание.
+                        legacy_category = (
+                            top_name
+                            if top_name in rule_categories
+                            else live_to_legacy.get(top_name)
                         )
-                        tool_type_value = option.value
-                        stats["tool_type_assigned"] += 1
-                        pav = existing_pav.get(product.id)
-                        if pav is None:
-                            pav_create.append(
-                                ProductAttributeValue(
-                                    product=product, attribute=attribute, value_option=option
-                                )
+                        if legacy_category is None:
+                            continue
+
+                        sub_name, _unmapped = self._translate_subgroup(
+                            rules, legacy_category, cat.name, subgroup_live_to_legacy
+                        )
+                        ex = rules.extract(
+                            legacy_category, product.original_name or product.name, sub_name
+                        )
+                        stats["processed"] += 1
+
+                        tool_type_value = ""
+                        if ex.result == ASSIGNED:
+                            option = self._resolve_option(
+                                attribute,
+                                ex,
+                                opt_by_slug,
+                                opt_by_value,
+                                manifest_options,
+                                created_options=created_options,
                             )
-                        elif pav.value_option_id != option.id:
-                            pav.value_option = option
-                            pav_update.append(pav)
-                        product.attrs_cache = {
-                            **(product.attrs_cache or {}),
-                            "tool_type": option.value,
-                        }
-                        cache_updates.append(product)
-                    elif ex.result == RECATEGORIZE:
-                        stats["recategorize_flagged"] += 1
-                        self._prune_tool_type(product, existing_pav, pav_delete_ids, cache_updates)
-                    else:
-                        stats["moderation"] += 1
-                        self._prune_tool_type(product, existing_pav, pav_delete_ids, cache_updates)
+                            tool_type_value = option.value
+                            stats["tool_type_assigned"] += 1
+                            pav = existing_pav.get(product.id)
+                            if pav is None:
+                                pav_create.append(
+                                    ProductAttributeValue(
+                                        product=product, attribute=attribute, value_option=option
+                                    )
+                                )
+                            elif pav.value_option_id != option.id:
+                                pav.value_option = option
+                                pav_update.append(pav)
+                            product.attrs_cache = {
+                                **(product.attrs_cache or {}),
+                                "tool_type": option.value,
+                            }
+                            cache_updates.append(product)
+                        elif ex.result == RECATEGORIZE:
+                            stats["recategorize_flagged"] += 1
+                            self._prune_tool_type(
+                                product, existing_pav, pav_delete_ids, cache_updates
+                            )
+                        else:
+                            stats["moderation"] += 1
+                            self._prune_tool_type(
+                                product, existing_pav, pav_delete_ids, cache_updates
+                            )
 
-                    logs.append(
-                        EnrichmentLog(
-                            run=run,
-                            product_external_id=product.code_1c or "",
-                            raw_name=(product.original_name or product.name)[:512],
-                            result=ex.result,
-                            tool_type=tool_type_value or ex.tool_type,
-                            matched_keyword=ex.matched_keyword,
-                            category_path=path_str_by_id.get(cat.id, cat.name)[:512],
+                        logs.append(
+                            EnrichmentLog(
+                                run=run,
+                                product_external_id=product.code_1c or "",
+                                raw_name=(product.original_name or product.name)[:512],
+                                result=ex.result,
+                                tool_type=tool_type_value or ex.tool_type,
+                                matched_keyword=ex.matched_keyword,
+                                category_path=path_str_by_id.get(cat.id, cat.name)[:512],
+                            )
                         )
-                    )
 
-                    if len(logs) >= BATCH:
-                        EnrichmentLog.objects.bulk_create(logs, batch_size=BATCH)
-                        logs.clear()
-                    if len(pav_create) >= BATCH:
-                        ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
-                        pav_create.clear()
-                    if len(pav_update) >= BATCH:
-                        ProductAttributeValue.objects.bulk_update(
-                            pav_update, ["value_option"], batch_size=BATCH
-                        )
-                        pav_update.clear()
-                    if len(cache_updates) >= BATCH:
-                        flush_attrs_cache_merged(
-                            cache_updates, lambda _p: {TOOL_TYPE_SLUG}, batch_size=BATCH
-                        )
-                        cache_updates.clear()
-                    if len(pav_delete_ids) >= BATCH:
-                        ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
-                        pav_delete_ids.clear()
-
-                if logs:
-                    EnrichmentLog.objects.bulk_create(logs, batch_size=BATCH)
-                if pav_create:
-                    ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
-                if pav_update:
-                    ProductAttributeValue.objects.bulk_update(
-                        pav_update, ["value_option"], batch_size=BATCH
+                    committed_stats = self._write_chunk(
+                        chunk_ids,
+                        logs=logs,
+                        pav_create=pav_create,
+                        pav_update=pav_update,
+                        pav_delete_ids=pav_delete_ids,
+                        cache_updates=cache_updates,
+                        run=run,
+                        stats=stats,
                     )
-                if cache_updates:
-                    flush_attrs_cache_merged(
-                        cache_updates, lambda _p: {TOOL_TYPE_SLUG}, batch_size=BATCH
-                    )
-                if pav_delete_ids:
-                    ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
-
-                run.status = ImportRunStatus.DONE
-        except Exception as exc:  # noqa: BLE001
-            run.status = ImportRunStatus.FAILED
-            stats["error"] = str(exc)
-            run.finished_at = timezone.now()
-            run.stats = stats
-            run.save()
+        except (
+            BaseException
+        ) as exc:  # noqa: BLE001 — и KeyboardInterrupt: статус не должен зависнуть в RUNNING
+            # Опции, созданные по ходу, живут вне транзакций чанков и при откате
+            # остаются — rollback-map должен их знать даже у прерванного прогона.
+            enrich_chunks.finish_failed(run, committed_stats, exc, live_stats=stats)
             raise
+        finally:
+            if stats.get("committed"):
+                invalidate_facets_cache()
 
+        run.status = ImportRunStatus.DONE
         run.finished_at = timezone.now()
         run.stats = stats
         run.save()
@@ -433,11 +467,51 @@ class Command(BaseCommand):
         )
         return str(run.pk)
 
+    # --- запись частями (DRF-2738) ----------------------------------------
+
+    @staticmethod
+    def _load_chunk(qs, chunk_ids: list[int]) -> list[Product]:
+        """Шов для тестов: чтение чанка идёт вне транзакции."""
+        return enrich_chunks.load_chunk(qs, chunk_ids)
+
+    @staticmethod
+    def _write_chunk(
+        chunk_ids: list[int],
+        *,
+        logs,
+        pav_create,
+        pav_update,
+        pav_delete_ids,
+        cache_updates,
+        run,
+        stats: dict,
+    ) -> dict:
+        """Одна короткая транзакция на чанк: замки товаров по id → журнал → PAV (create,
+        update) → attrs_cache → удаление снятых PAV → прогресс. Возвращает снимок stats
+        на момент коммита."""
+        with transaction.atomic():
+            enrich_chunks.lock_products(chunk_ids)
+            if logs:
+                EnrichmentLog.objects.bulk_create(logs, batch_size=BATCH)
+            if pav_create:
+                ProductAttributeValue.objects.bulk_create(pav_create, batch_size=BATCH)
+            if pav_update:
+                ProductAttributeValue.objects.bulk_update(
+                    pav_update, ["value_option"], batch_size=BATCH
+                )
+            if cache_updates:
+                flush_attrs_cache_merged(
+                    cache_updates, lambda _p: {TOOL_TYPE_SLUG}, batch_size=BATCH
+                )
+            if pav_delete_ids:
+                ProductAttributeValue.objects.filter(id__in=pav_delete_ids).delete()
+            return enrich_chunks.record_progress(run, stats, chunk_ids)
+
     # --- безопасный режим --------------------------------------------------
 
     def _handle_dry_run(
         self,
-        qs,
+        chunks,
         *,
         rules,
         rule_categories,
@@ -453,38 +527,41 @@ class Command(BaseCommand):
     ) -> str:
         report = _DryRunReport()
 
-        for product in qs:
-            cat = product.category
-            top_name = top_name_by_id.get(cat.id)
-            legacy_category = (
-                top_name if top_name in rule_categories else live_to_legacy.get(top_name)
-            )
-            if legacy_category is None:
-                report.record_skipped(top_name)
-                continue
-
-            sub_name, unmapped = self._translate_subgroup(
-                rules, legacy_category, cat.name, subgroup_live_to_legacy
-            )
-            ex = rules.extract(legacy_category, product.original_name or product.name, sub_name)
-            old_slug = self._existing_slug(existing_pav.get(product.id))
-
-            if ex.result == ASSIGNED:
-                predicted = self._resolve_option(
-                    None,
-                    ex,
-                    opt_by_slug,
-                    opt_by_value,
-                    manifest_options,
-                    persist=False,
+        for _chunk_ids, products in chunks:
+            for product in products:
+                cat = product.category
+                top_name = top_name_by_id.get(cat.id)
+                legacy_category = (
+                    top_name if top_name in rule_categories else live_to_legacy.get(top_name)
                 )
-                report.record_matched(top_name, legacy_category, predicted.slug, product, old_slug)
-            elif ex.result == RECATEGORIZE:
-                report.record_conflict(top_name, legacy_category, product, old_slug)
-            else:
-                report.record_moderation(top_name, legacy_category, product, old_slug)
-            if unmapped:
-                report.record_subgroup_unmapped(cat.name)
+                if legacy_category is None:
+                    report.record_skipped(top_name)
+                    continue
+
+                sub_name, unmapped = self._translate_subgroup(
+                    rules, legacy_category, cat.name, subgroup_live_to_legacy
+                )
+                ex = rules.extract(legacy_category, product.original_name or product.name, sub_name)
+                old_slug = self._existing_slug(existing_pav.get(product.id))
+
+                if ex.result == ASSIGNED:
+                    predicted = self._resolve_option(
+                        None,
+                        ex,
+                        opt_by_slug,
+                        opt_by_value,
+                        manifest_options,
+                        persist=False,
+                    )
+                    report.record_matched(
+                        top_name, legacy_category, predicted.slug, product, old_slug
+                    )
+                elif ex.result == RECATEGORIZE:
+                    report.record_conflict(top_name, legacy_category, product, old_slug)
+                else:
+                    report.record_moderation(top_name, legacy_category, product, old_slug)
+                if unmapped:
+                    report.record_subgroup_unmapped(cat.name)
 
         payload = json.dumps(
             report.to_dict(filters=filters, aliases_config=live_to_legacy),
@@ -603,6 +680,7 @@ class Command(BaseCommand):
         manifest_options,
         *,
         persist: bool = True,
+        created_options: list[str] | None = None,
     ) -> AttributeOption | _PredictedOption:
         """Опция tool_type для assigned.
 
@@ -633,6 +711,10 @@ class Command(BaseCommand):
         option = AttributeOption.objects.create(
             attribute=attribute, value=mopt.value, slug=mopt.slug, sort_order=mopt.sort_order
         )
+        # Создаётся вне транзакции чанка и при откате остаётся (опция из манифеста
+        # валидна сама по себе) — но rollback-map должен о ней знать.
+        if created_options is not None:
+            created_options.append(option.slug or option.value)
         opt_by_value[key] = option
         if option.slug:
             opt_by_slug[option.slug] = option

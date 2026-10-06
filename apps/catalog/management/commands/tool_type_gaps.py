@@ -12,7 +12,7 @@ from collections import Counter
 
 from django.core.management.base import BaseCommand
 
-from apps.catalog.models import EnrichmentLog, EnrichmentResult, ImportRun
+from apps.catalog.models import EnrichmentLog, EnrichmentResult, ImportRun, ImportRunStatus
 
 
 class Command(BaseCommand):
@@ -28,8 +28,12 @@ class Command(BaseCommand):
         top = options["top"]
         run_id = options["run"]
         if run_id is None:
+            # Только завершённый прогон: у прерванного (DRF-2738, запись частями)
+            # журнал частичный, и «Top-Unknown» по нему был бы неполным.
             run = (
-                ImportRun.objects.filter(source="enrich_tool_type").order_by("-started_at").first()
+                ImportRun.objects.filter(source="enrich_tool_type", status=ImportRunStatus.DONE)
+                .order_by("-started_at")
+                .first()
             )
             if run is None:
                 self.stderr.write("Не найдено ни одного прогона enrich_tool_type.")

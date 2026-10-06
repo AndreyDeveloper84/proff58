@@ -12,7 +12,9 @@
 3. **Dry-run (read-only)** — точный план: `PLAN_CREATE/UPDATE/SKIP`, per-type counts,
    scope-проверки, rollback-map. Показать владельцу. **Write не выполнять.**
 4. **pg_dump** — свежий бэкап (см. [pgdump-policy](pgdump-policy.md)) ПОСЛЕ отдельного ОК.
-5. **Write** — в одной `transaction.atomic`, со всеми guard-`assert` до записи.
+5. **Write** — со всеми guard-`assert` до записи; scoped-скрипты — одной
+   `transaction.atomic`, команды enrich — чанками по 500 товаров (см. инвариант 3 в
+   [README](README.md)).
 6. **Post-audit** — обязательный набор проверок (см. [audit](audit.md)), включая
    repeat-preview = 0. Остановиться на post-audit.
 
