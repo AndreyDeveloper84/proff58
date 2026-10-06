@@ -1,6 +1,11 @@
-// Тонкий слой аналитики витрины (§21). Реальный провайдер (GA4 / Яндекс.Метрика) ещё не
-// подключён, поэтому track() — намеренный no-op с TODO: события типизированы и вызываются из
-// UI уже сейчас, чтобы при подключении провайдера осталось заменить только тело track().
+// Тонкий слой аналитики витрины (§21). Провайдер — Яндекс.Метрика (DRF-2795), и она
+// работает только после согласия на аналитические cookie (DRF-2796): компонент
+// components/analytics/YandexMetrika сообщает сюда номер счётчика, когда скрипт
+// включён, и снимает его при отзыве. track() без счётчика — no-op: UI вызывает
+// события всегда, а отправляются они только при согласии.
+//
+// В параметрах событий — только технические значения (slug, счётчики). Телефонов,
+// имён, номеров заказов здесь быть не должно: Метрика — сторонний сервис.
 
 export type ToolTypeSelectPayload = {
   category_slug: string;
@@ -11,10 +16,34 @@ export type ToolTypeSelectPayload = {
   active_filters_count: number; // активных сайдбар-фильтров (без самого типа)
 };
 
-export type AnalyticsEvent = { name: "tool_type_select"; payload: ToolTypeSelectPayload };
+export type AnalyticsEvent = {
+  name: "tool_type_select";
+  payload: ToolTypeSelectPayload;
+};
+
+type Ym = (counterId: number, method: string, ...args: unknown[]) => void;
+
+declare global {
+  interface Window {
+    ym?: Ym & { a?: unknown[]; l?: number };
+  }
+}
+
+let counterId: number | null = null;
+
+/** Включить/выключить отправку: вызывает YandexMetrika при согласии и при отзыве. */
+export function setAnalyticsCounter(id: number | null): void {
+  counterId = id;
+}
+
+/** Текущий счётчик (для тестов и отладки). */
+export function analyticsCounter(): number | null {
+  return counterId;
+}
 
 export function track(event: AnalyticsEvent): void {
-  // TODO(analytics): подключить реальный провайдер. Сейчас no-op — не блокирует UI и не падает
-  // при SSR/отсутствии window. Контракт payload зафиксирован типами выше (§21).
-  void event;
+  if (counterId === null || typeof window === "undefined" || typeof window.ym !== "function") {
+    return;
+  }
+  window.ym(counterId, "reachGoal", event.name, event.payload);
 }

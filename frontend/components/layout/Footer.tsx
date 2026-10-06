@@ -9,6 +9,7 @@ import {
   Phone,
 } from "lucide-react";
 import { CopyContact, PhoneContact } from "@/components/contacts/CopyContact";
+import { CookieSettingsButton } from "@/components/layout/CookieSettingsButton";
 import { INFO_PAGES, INFO_PAGE_SLUGS } from "@/lib/info-content";
 import type { InfoPageLink } from "@/lib/info-pages";
 import { resolveStorefront, SITE, type ResolvedStorefront } from "@/lib/site";
@@ -194,11 +195,18 @@ export function Footer({
         )}
       </div>
 
-      {/* Нижняя строка. Политика/соглашение появятся вместе с юр. страницами —
-          битые ссылки не рисуем (#591). */}
+      {/* Нижняя строка: политика конфиденциальности (DRF-2797) и настройки cookie
+          (DRF-2796) — доступны с любой страницы. Пользовательское соглашение появится
+          вместе с текстом от юриста — битые ссылки не рисуем (#591). */}
       <div className="border-t border-line">
         <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-2 px-4 py-3 text-xs text-ink-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 xl:px-8">
-          <span>© 2014–2026 {siteName}. Все права защищены.</span>
+          <span className="flex flex-wrap gap-x-3 gap-y-1">
+            <span>© 2014–2026 {siteName}. Все права защищены.</span>
+            <Link href="/info/privacy" className="hover:text-accent hover:underline">
+              Политика конфиденциальности
+            </Link>
+            <CookieSettingsButton />
+          </span>
           <div className="flex flex-wrap gap-3">
             {SITE.payments.map((p) => (
               <span key={p}>{p}</span>

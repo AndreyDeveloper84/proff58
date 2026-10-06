@@ -87,6 +87,9 @@ services:
       SSR_INTERNAL_TOKEN: ${SSR_INTERNAL_TOKEN:-}
       SEO_INDEXING: ${SEO_INDEXING:-off}
       SITE_URL: ${SITE_URL:-https://proff58.ru}
+      # Номер счётчика Яндекс.Метрики (DRF-2795). Пусто — Метрики на сайте нет.
+      # Скрипт грузится только после согласия посетителя на аналитические cookie.
+      YANDEX_METRIKA_ID: ${YANDEX_METRIKA_ID:-}
     depends_on:
       web:
         condition: service_healthy

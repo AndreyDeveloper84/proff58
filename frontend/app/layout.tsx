@@ -7,6 +7,9 @@ import { CartProvider } from "@/components/cart/CartProvider";
 import { WishlistProvider } from "@/components/wishlist/WishlistProvider";
 import { Header } from "@/components/layout/Header";
 import { ToastRegion } from "@/components/ui/ToastRegion";
+import { CookieConsent } from "@/components/layout/CookieConsent";
+import { YandexMetrika } from "@/components/analytics/YandexMetrika";
+import { CONSENT_COOKIE, parseConsent } from "@/lib/cookie-consent";
 import { QuickViewProvider } from "@/components/quickview/QuickViewProvider";
 import { Footer } from "@/components/layout/Footer";
 import { THEME_INIT_SCRIPT } from "@/components/layout/ThemeToggle";
@@ -86,6 +89,13 @@ export default async function RootLayout({
   // ссылки шапки должны быть верными уже в серверной разметке.
   const cookieStore = await cookies();
   const authState = authStateFromCookies((name) => cookieStore.has(name));
+  // Согласие на cookie читаем здесь же: баннер и скрипт Метрики решаются уже в
+  // серверной разметке — у согласившегося ничего не мигает (DRF-2796/2795).
+  const consent = parseConsent(cookieStore.get(CONSENT_COOKIE)?.value);
+  // Номер счётчика — переменная окружения сервера (не NEXT_PUBLIC_: подставляется в
+  // рантайме, а не при сборке образа). Пусто или не число — Метрики на сайте нет.
+  const metrikaRaw = (process.env.YANDEX_METRIKA_ID ?? "").trim();
+  const metrikaId = /^\d+$/.test(metrikaRaw) ? Number(metrikaRaw) : NaN;
 
   // Тема: светлая по макету (#477) — она же серверный рендер. Реальную тему
   // посетителя (сохранённый выбор, иначе светлая — UX-01) ставит THEME_INIT_SCRIPT в
@@ -135,6 +145,10 @@ export default async function RootLayout({
                   />
                 </div>
               </QuickViewProvider>
+              <CookieConsent initialConsent={consent} />
+              {Number.isFinite(metrikaId) && metrikaId > 0 && (
+                <YandexMetrika counterId={metrikaId} initialConsent={consent} />
+              )}
               {/* Единый регион всплывающих уведомлений: «скопировано» (UX-03), корзина и т. п. */}
               <ToastRegion />
             </WishlistProvider>
