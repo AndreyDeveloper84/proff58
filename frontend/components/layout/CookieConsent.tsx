@@ -4,73 +4,58 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { CONSENT_OPEN_EVENT, readConsent, writeConsent, type Consent } from "@/lib/cookie-consent";
+import { CONSENT_OPEN_EVENT, writeConsent, type Consent } from "@/lib/cookie-consent";
 import { useConsent } from "@/lib/use-consent";
 import { cn } from "@/lib/utils";
 
-// Баннер согласия на cookie (DRF-2796).
+// Баннер согласия на cookie (DRF-2796), макет владельца от 06.10.2026: компактная
+// карточка в левом нижнем углу, заголовок, две строки текста, ссылка на политику и
+// ровно две кнопки — «Только необходимые» (серая) и «Принять все» (зелёная).
 //
-// Не модальное окно: панель внизу, страница читается и прокручивается, фокус не
-// захватывается. «Принять все» и «Только необходимые» — одинаковые кнопки в одном
-// ряду, чтобы отказ не был спрятан. «Настроить» раскрывает категории: необходимые
-// без переключателя (без них сайт не работает), аналитические — переключатель.
+// Не модальное окно: страница читается и прокручивается, фокус не захватывается,
+// затемнения нет. Категория у сайта одна необязательная (аналитика), поэтому
+// отдельного «Настроить» в карточке нет: любой из двух ответов и есть настройка.
+// Изменить выбор можно кнопкой «Настройки cookie» в подвале и на странице политики —
+// она открывает эту же карточку заново.
 //
 // Решение известно уже на сервере (layout читает cookie и передаёт initialConsent):
-// у согласившегося баннер не мигает при загрузке. Текст — рабочий, до юриста
-// (срок хранения выбора 12 месяцев, см. lib/cookie-consent.ts).
+// у ответившего карточка не мигает при загрузке. Срок хранения выбора — 12 месяцев,
+// см. lib/cookie-consent.ts.
 
-export const CONSENT_TEXT =
-  "Мы используем cookie: необходимые — для работы корзины и входа, аналитические — чтобы " +
-  "понимать, как пользуются сайтом (Яндекс.Метрика). Аналитика включается только с вашего " +
-  "согласия. Выбор можно изменить в любой момент в подвале сайта.";
+export const CONSENT_TITLE = "Используем cookie";
+export const CONSENT_TEXT_LINES = [
+  "Для работы корзины и входа на сайт.",
+  "Аналитика помогает улучшать магазин — только с вашего согласия.",
+] as const;
 
 function bottomOffset(pathname: string): string {
   // На мобильном внизу уже стоят панели: навигация (64px) везде, над ней — бар
   // «В корзину»/«Оформить» на товаре и в корзине (72px); на чекауте своя панель
-  // (72px) без навигации. Баннер встаёт над ними, а не поверх кнопок.
-  if (pathname.startsWith("/checkout")) return "bottom-[72px] lg:bottom-0";
-  // На товаре бар появляется после прокрутки за блок покупки; до этого под баннером
-  // 72px пустоты над навигацией — сознательный компромисс ради кнопок бара.
+  // (72px) без навигации. Карточка встаёт над ними, а не поверх кнопок. На товаре
+  // бар появляется после прокрутки за блок покупки — до этого под карточкой
+  // 72px пустоты; сознательный компромисс ради кнопок бара. С lg панелей нет.
+  if (pathname.startsWith("/checkout")) return "bottom-[calc(72px_+_12px)] lg:bottom-6";
   if (pathname.startsWith("/cart") || pathname.startsWith("/product/")) {
-    return "bottom-[136px] lg:bottom-0";
+    return "bottom-[calc(136px_+_12px)] lg:bottom-6";
   }
-  return "bottom-[64px] lg:bottom-0";
+  return "bottom-[calc(64px_+_12px_+_env(safe-area-inset-bottom))] lg:bottom-6";
 }
 
 export function CookieConsent({ initialConsent }: { initialConsent: Consent | null }) {
   const pathname = usePathname() ?? "/";
   const consent = useConsent(initialConsent);
-  // Баннер открыт, пока выбора нет, либо пока его открыли кнопкой «Настройки cookie».
+  // Карточка открыта, пока выбора нет, либо пока её открыли кнопкой «Настройки cookie».
   const [reopened, setReopened] = useState(false);
-  const [customize, setCustomize] = useState(false);
-  const [analytics, setAnalytics] = useState(initialConsent?.analytics ?? false);
-  const descriptionId = useId();
-  const switchId = useId();
-  const analyticsDescId = useId();
+  const titleId = useId();
 
   useEffect(() => {
-    const onOpen = () => {
-      // Переключатель показывает текущий выбор, а не прошлое состояние формы.
-      setAnalytics(readConsent()?.analytics ?? false);
-      setCustomize(true);
-      setReopened(true);
-    };
+    const onOpen = () => setReopened(true);
     window.addEventListener(CONSENT_OPEN_EVENT, onOpen);
     return () => window.removeEventListener(CONSENT_OPEN_EVENT, onOpen);
   }, []);
 
-  // Переключатель при открытии показывает текущий выбор, а не прошлое состояние формы.
-  const openCustomize = useCallback(() => {
-    setAnalytics(consent?.analytics ?? false);
-    setCustomize(true);
-  }, [consent]);
-
-  const decide = useCallback((value: boolean) => {
-    writeConsent({ analytics: value });
-    setAnalytics(value);
-    setCustomize(false);
+  const decide = useCallback((analytics: boolean) => {
+    writeConsent({ analytics });
     setReopened(false);
   }, []);
 
@@ -79,77 +64,46 @@ export function CookieConsent({ initialConsent }: { initialConsent: Consent | nu
   return (
     <section
       role="region"
-      aria-label="Согласие на cookie"
-      aria-describedby={descriptionId}
+      aria-labelledby={titleId}
       data-testid="cookie-consent"
       className={cn(
-        "fixed inset-x-0 z-[45] border-t border-line bg-surface px-4 py-3 shadow-[0_-8px_24px_rgba(20,24,27,0.08)] sm:px-6",
+        // z-[45]: над sticky-барами товара и корзины (z-40), под мобильной навигацией,
+        // панелью чекаута (z-50) и модальными окнами.
+        "fixed left-3 right-3 z-[45] max-w-[530px] rounded-xl bg-surface p-5 text-left",
+        "shadow-[0_12px_40px_rgba(20,24,27,0.16)] ring-1 ring-black/5 sm:left-6 sm:right-auto sm:w-[530px] sm:p-7",
         bottomOffset(pathname),
       )}
     >
-      <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-3 lg:flex-row lg:items-center lg:justify-between xl:px-2">
-        <p id={descriptionId} className="text-sm leading-snug text-ink-2">
-          {CONSENT_TEXT}{" "}
-          <Link href="/info/privacy" className="text-accent hover:underline">
-            Политика конфиденциальности
-          </Link>
-        </p>
+      <h2 id={titleId} className="text-xl font-bold leading-tight text-ink sm:text-[22px]">
+        {CONSENT_TITLE}
+      </h2>
+      <p className="mt-2 text-base leading-6 text-ink-2">
+        {CONSENT_TEXT_LINES[0]}
+        <br />
+        {CONSENT_TEXT_LINES[1]}
+      </p>
+      <Link
+        href="/info/privacy"
+        className="mt-2 inline-block text-base leading-6 text-ink-2 underline underline-offset-4 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+      >
+        Политика конфиденциальности
+      </Link>
 
-        <div className="flex flex-col gap-3 lg:shrink-0">
-          {customize && (
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-center justify-between gap-4">
-                <span>
-                  <span className="font-medium text-ink">Необходимые</span>
-                  <span className="block text-xs text-ink-3">
-                    Сессия, корзина, вход, защита форм, запись этого выбора. Всегда включены.
-                  </span>
-                </span>
-                <span className="text-xs text-ink-3">Всегда</span>
-              </li>
-              <li className="flex items-center justify-between gap-4">
-                <span>
-                  <label htmlFor={switchId} className="font-medium text-ink">
-                    Аналитические
-                  </label>
-                  <span id={analyticsDescId} className="block text-xs text-ink-3">
-                    Яндекс.Метрика: какие страницы смотрят и что нажимают, без ваших данных.
-                  </span>
-                </span>
-                <Switch
-                  id={switchId}
-                  checked={analytics}
-                  onChange={setAnalytics}
-                  describedBy={analyticsDescId}
-                />
-              </li>
-            </ul>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2">
-            {customize ? (
-              <Button type="button" variant="accent" size="sm" onClick={() => decide(analytics)}>
-                Сохранить выбор
-              </Button>
-            ) : (
-              <>
-                <Button type="button" variant="outline" size="sm" onClick={() => decide(true)}>
-                  Принять все
-                </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => decide(false)}>
-                  Только необходимые
-                </Button>
-                <button
-                  type="button"
-                  onClick={openCustomize}
-                  className="min-h-11 px-2 text-sm text-ink-2 hover:text-accent hover:underline sm:min-h-0"
-                >
-                  Настроить
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+      <div className="mt-5 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => decide(false)}
+          className="h-12 rounded-lg bg-raised px-4 text-base font-medium text-ink transition-colors hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        >
+          Только необходимые
+        </button>
+        <button
+          type="button"
+          onClick={() => decide(true)}
+          className="h-12 rounded-lg bg-accent px-4 text-base font-medium text-accent-ink transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        >
+          Принять все
+        </button>
       </div>
     </section>
   );
