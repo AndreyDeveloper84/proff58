@@ -125,4 +125,23 @@ describe("CookieConsent", () => {
     expect(offset()).toBe("148px"); // навигация 64 + бар корзины 72 + 12
     nav.remove();
   });
+
+  it("навигация, появившаяся после карточки, учитывается в отступе", async () => {
+    pathnameMock.mockReturnValue("/catalog");
+    render(<CookieConsent initialConsent={null} />);
+    const card = screen.getByTestId("cookie-consent");
+    expect(card.style.getPropertyValue("--cc-offset")).toBe("12px");
+
+    const nav = document.createElement("nav");
+    nav.setAttribute("aria-label", "Мобильная навигация");
+    Object.defineProperty(nav, "offsetHeight", { value: 64 });
+    document.body.appendChild(nav);
+    // MutationObserver + requestAnimationFrame: ждём следующий кадр.
+    await act(async () => {
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
+    });
+    expect(card.style.getPropertyValue("--cc-offset")).toBe("76px");
+    nav.remove();
+  });
 });
