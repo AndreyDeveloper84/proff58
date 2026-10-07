@@ -56,11 +56,30 @@ export function CookieConsent({ initialConsent }: { initialConsent: Consent | nu
   useEffect(() => {
     const el = cardRef.current;
     if (!el) return;
-    const nav = document.querySelector<HTMLElement>(NAV_SELECTOR);
-    const navPx = nav && getComputedStyle(nav).display !== "none" ? nav.offsetHeight : 0;
-    const barPx = hasActionBar(pathname) ? ACTION_BAR_PX : 0;
-    el.style.setProperty("--cc-offset", `${navPx + barPx + EDGE_PX}px`);
-  });
+    const measure = () => {
+      const nav = document.querySelector<HTMLElement>(NAV_SELECTOR);
+      const navPx = nav && getComputedStyle(nav).display !== "none" ? nav.offsetHeight : 0;
+      const barPx = hasActionBar(pathname) ? ACTION_BAR_PX : 0;
+      el.style.setProperty("--cc-offset", `${navPx + barPx + EDGE_PX}px`);
+    };
+    measure();
+    // Навигация на части страниц попадает в DOM позже карточки (контент страницы
+    // стримится после layout), поэтому одного измерения мало: следим за DOM и
+    // за размером окна, пересчитываем не чаще кадра.
+    let frame = 0;
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    };
+    const observer = new MutationObserver(schedule);
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", schedule);
+      cancelAnimationFrame(frame);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     const onOpen = () => setReopened(true);
