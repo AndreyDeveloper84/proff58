@@ -79,3 +79,27 @@ def publish_sales_facts() -> dict[str, int]:
     result = record_sales_facts(SalesSource.SITE, rows, replace_window=(since, until))
     logger.info("publish_sales_facts: %s", result)
     return result
+
+
+
+@shared_task(name="apps.orders.tasks.cleanup_expired_guest_access_tokens")
+def cleanup_expired_guest_access_tokens() -> int:
+    """Clear expired guest bearer tokens without deleting order records."""
+    from datetime import timedelta
+
+    from django.conf import settings
+    from django.utils import timezone
+
+    from .models import Order
+
+    ttl_days = int(getattr(settings, "GUEST_ORDER_TOKEN_TTL_DAYS", 0) or 0)
+    if ttl_days <= 0:
+        return 0
+
+    cutoff = timezone.now() - timedelta(days=ttl_days)
+    qs = Order.objects.exclude(access_token="").filter(created_at__lt=cutoff)
+    count = qs.count()
+    if count:
+        qs.update(access_token="")
+    logger.info("cleanup_expired_guest_access_tokens: cleared=%d", count)
+    return count
