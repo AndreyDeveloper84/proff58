@@ -1030,4 +1030,11 @@ export default function CheckoutPage() {
       </form>
     </main>
   );
-}
+}        <p className="mt-3 text-xs leading-5 text-ink-3">
+          Данные из формы используются для оформления и исполнения заказа. Подробнее —{" "}
+          <Link href="/info/privacy" className="text-accent hover:underline">
+            в Политике обработки персональных данных
+          </Link>
+          .
+        </p>
+
