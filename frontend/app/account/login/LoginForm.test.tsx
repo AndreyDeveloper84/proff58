@@ -218,21 +218,33 @@ describe("Форма входа: вёрстка по макету", () => {
     expect(screen.getByRole("heading", { name: "Вход в личный кабинет" })).toBeInTheDocument();
   });
 
-  it("без провайдеров — нет блока «или войдите через» и согласия, остаётся «или»", () => {
+  it("без провайдеров — нет блока «или войдите через», остаётся «или»", () => {
     render(<LoginPage />);
     expect(screen.queryByText("или войдите через")).toBeNull();
     expect(screen.queryByText("или по e-mail")).toBeNull();
-    expect(screen.queryByText(/обработку персональных данных/)).toBeNull();
     expect(screen.getByText("или")).toBeInTheDocument();
   });
 
-  it("с провайдерами — разделители и согласие под соцкнопками", () => {
+  it("с провайдерами — privacy notice вместо blanket consent", () => {
     render(<LoginPage providers={["yandex"]} />);
     expect(screen.getByText("или войдите через")).toBeInTheDocument();
     expect(screen.getByText("или по e-mail")).toBeInTheDocument();
+    expect(screen.queryByText(/соглашаетесь на обработку персональных данных/i)).toBeNull();
+    const policyLinks = screen.getAllByRole("link", {
+      name: "Политикой обработки персональных данных",
+    });
+    expect(policyLinks.length).toBeGreaterThan(0);
+    expect(policyLinks[0]).toHaveAttribute("href", "/info/privacy");
+  });
+
+  it("регистрация показывает privacy notice без обязательного checkbox", () => {
+    render(<LoginPage />);
+    switchToRegister();
+
     expect(
-      screen.getByText("Продолжая, вы соглашаетесь на обработку персональных данных."),
-    ).toBeInTheDocument();
+      screen.getByRole("link", { name: "Политикой обработки персональных данных" }),
+    ).toHaveAttribute("href", "/info/privacy");
+    expect(screen.queryByRole("checkbox")).toBeNull();
   });
 
   it("oauth_error показывает текст и убирает код из адреса, сохраняя next", async () => {
