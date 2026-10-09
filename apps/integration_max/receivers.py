@@ -207,8 +207,6 @@ def _on_user_deleted(sender, user_id=None, **kwargs):
     acct = MaxAccount.objects.filter(user_id=user_id).first()
     old_max_user_id = acct.max_user_id if acct is not None else None
 
-    # Auth attempts are short-lived operational metadata and have no reason to
-    # survive deletion of the owning account/provider identity.
     attempts = MaxAuthAttempt.objects.filter(user_id=user_id)
     if old_max_user_id is not None:
         attempts = MaxAuthAttempt.objects.filter(
@@ -216,7 +214,6 @@ def _on_user_deleted(sender, user_id=None, **kwargs):
         )
     attempts.delete()
 
-    # Guest tracking grants can also carry the old MAX identity.
     if old_max_user_id is not None:
         OrderTrackingGrant.objects.filter(max_user_id=old_max_user_id).delete()
 
@@ -225,8 +222,6 @@ def _on_user_deleted(sender, user_id=None, **kwargs):
     if acct is None:
         return
 
-    # Keep a technical tombstone row, but replace the provider identity with a
-    # random negative surrogate (MAX IDs are external positive identifiers).
     for _ in range(5):
         surrogate = -(secrets.randbelow(2**62 - 1) + 1)
         try:
@@ -245,13 +240,11 @@ def _on_user_deleted(sender, user_id=None, **kwargs):
         except IntegrityError:
             continue
     else:
-        # Fail closed: deleting the row is safer than retaining the provider ID.
         MaxAccount.objects.filter(pk=acct.pk).delete()
 
 
 events.product_stock_became_available.connect(
-    _on_product_stock_became_available,
-    dispatch_uid="integration_max_product_stock_available",
+    _on_product_stock_became_available, dispatch_uid="integration_max_product_stock_available"
 )
 events.user_deleted.connect(
     _on_user_deleted, dispatch_uid="integration_max_user_deleted"
