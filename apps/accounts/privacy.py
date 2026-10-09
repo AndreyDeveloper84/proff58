@@ -111,9 +111,7 @@ def anonymize_account(user, *, reason: str) -> bool:
 
     # Higher-layer integrations remove their own identifiers only after the DB
     # transaction commits successfully.
-    transaction.on_commit(
-        lambda uid=locked.pk: user_deleted.send(sender=User, user_id=uid)
-    )
+    transaction.on_commit(lambda uid=locked.pk: user_deleted.send(sender=User, user_id=uid))
     return True
 
 
