@@ -105,3 +105,47 @@ def notify_product_available(
         skipped,
         failed,
     )
+
+
+@shared_task(name="apps.integration_max.tasks.cleanup_max_auth_attempts")
+def cleanup_max_auth_attempts() -> dict[str, int]:
+    """Normalize expired MAX auth attempts and purge old terminal rows.
+
+    The operational TTL controls whether an attempt can still be used. This
+    janitor separately enforces DB retention for the attempt metadata.
+    """
+    from datetime import timedelta
+
+    from django.conf import settings
+    from django.utils import timezone
+
+    from .models import MaxAuthAttempt
+
+    now = timezone.now()
+    normalized = MaxAuthAttempt.objects.filter(
+        status__in=(
+            MaxAuthAttempt.Status.PENDING,
+            MaxAuthAttempt.Status.CONFIRMATION_REQUIRED,
+        ),
+        expires_at__lt=now,
+    ).update(status=MaxAuthAttempt.Status.EXPIRED)
+
+    retention_hours = getattr(settings, "MAX_AUTH_ATTEMPT_RETENTION_HOURS", 24)
+    cutoff = now - timedelta(hours=retention_hours)
+    terminal_statuses = (
+        MaxAuthAttempt.Status.COMPLETED,
+        MaxAuthAttempt.Status.CANCELLED,
+        MaxAuthAttempt.Status.EXPIRED,
+        MaxAuthAttempt.Status.FAILED,
+    )
+    purged, _ = MaxAuthAttempt.objects.filter(
+        status__in=terminal_statuses,
+        expires_at__lt=cutoff,
+    ).delete()
+
+    logger.info(
+        "cleanup_max_auth_attempts: normalized=%d purged=%d",
+        normalized,
+        purged,
+    )
+    return {"normalized": normalized, "purged": purged}

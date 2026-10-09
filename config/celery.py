@@ -71,6 +71,11 @@ app.conf.beat_schedule = {
         "task": "apps.notifications.tasks.cleanup_old_notifications",
         "schedule": crontab(hour=4, minute=15),
     },
+    # DRF-2924: stale MAX auth attempts must not remain pending or persist indefinitely.
+    "cleanup-max-auth-attempts": {
+        "task": "apps.integration_max.tasks.cleanup_max_auth_attempts",
+        "schedule": 60 * 60,  # hourly
+    },
     # «Хиты продаж»: сначала заказы сайта отдают свои продажи в каталог, затем
     # каталог пересобирает рейтинг — уже с учётом и выгрузки 1С за сутки.
     # Порядок держим разносом по времени: задачи независимы, общий результат
