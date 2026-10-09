@@ -103,3 +103,66 @@ def test_guest_token_expires(guest_client, product):
     with override_settings(GUEST_ORDER_TOKEN_TTL_DAYS=90):
         resp = APIClient().get(f"/api/orders/{number}/guest/?t={token}")
     assert resp.status_code == 404
+
+
+
+@pytest.mark.django_db
+def test_guest_token_cleanup_clears_only_expired_tokens(settings):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.orders.models import Order
+    from apps.orders.tasks import cleanup_expired_guest_access_tokens
+
+    settings.GUEST_ORDER_TOKEN_TTL_DAYS = 90
+    old = Order.objects.create(order_number="P-TOKEN-OLD", access_token="old-secret")
+    recent = Order.objects.create(order_number="P-TOKEN-RECENT", access_token="recent-secret")
+    empty = Order.objects.create(order_number="P-TOKEN-EMPTY", access_token="")
+    Order.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=91))
+    Order.objects.filter(pk=recent.pk).update(created_at=timezone.now() - timedelta(days=89))
+    Order.objects.filter(pk=empty.pk).update(created_at=timezone.now() - timedelta(days=120))
+
+    assert cleanup_expired_guest_access_tokens() == 1
+
+    old.refresh_from_db()
+    recent.refresh_from_db()
+    empty.refresh_from_db()
+    assert old.access_token == ""
+    assert recent.access_token == "recent-secret"
+    assert empty.access_token == ""
+
+
+@pytest.mark.django_db
+def test_guest_token_cleanup_ttl_zero_is_noop(settings):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.orders.models import Order
+    from apps.orders.tasks import cleanup_expired_guest_access_tokens
+
+    settings.GUEST_ORDER_TOKEN_TTL_DAYS = 0
+    order = Order.objects.create(order_number="P-TOKEN-NOLIMIT", access_token="keep")
+    Order.objects.filter(pk=order.pk).update(created_at=timezone.now() - timedelta(days=365))
+
+    assert cleanup_expired_guest_access_tokens() == 0
+    order.refresh_from_db()
+    assert order.access_token == "keep"
+
+
+@pytest.mark.django_db
+def test_guest_token_cleanup_is_idempotent(settings):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.orders.models import Order
+    from apps.orders.tasks import cleanup_expired_guest_access_tokens
+
+    settings.GUEST_ORDER_TOKEN_TTL_DAYS = 90
+    order = Order.objects.create(order_number="P-TOKEN-IDEMP", access_token="secret")
+    Order.objects.filter(pk=order.pk).update(created_at=timezone.now() - timedelta(days=91))
+
+    assert cleanup_expired_guest_access_tokens() == 1
+    assert cleanup_expired_guest_access_tokens() == 0
