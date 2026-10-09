@@ -188,6 +188,69 @@ events.order_status_changed.connect(
 events.payment_refunded.connect(
     _on_payment_refunded, dispatch_uid="integration_max_payment_refunded"
 )
+
+
+def _on_user_deleted(sender, user_id=None, **kwargs):
+    """Remove/anonymize MAX-owned identifiers after account anonymization."""
+    if user_id is None:
+        return
+
+    import secrets
+
+    from django.db import IntegrityError
+    from django.db.models import Q
+
+    from apps.catalog.availability_subscriptions import ProductAvailabilitySubscription
+
+    from .models import MaxAccount, MaxAuthAttempt, OrderTrackingGrant
+
+    acct = MaxAccount.objects.filter(user_id=user_id).first()
+    old_max_user_id = acct.max_user_id if acct is not None else None
+
+    # Auth attempts are short-lived operational metadata and have no reason to
+    # survive deletion of the owning account/provider identity.
+    attempts = MaxAuthAttempt.objects.filter(user_id=user_id)
+    if old_max_user_id is not None:
+        attempts = MaxAuthAttempt.objects.filter(
+            Q(user_id=user_id) | Q(max_user_id=old_max_user_id)
+        )
+    attempts.delete()
+
+    # Guest tracking grants can also carry the old MAX identity.
+    if old_max_user_id is not None:
+        OrderTrackingGrant.objects.filter(max_user_id=old_max_user_id).delete()
+
+    ProductAvailabilitySubscription.objects.filter(user_id=user_id).delete()
+
+    if acct is None:
+        return
+
+    # Keep a technical tombstone row, but replace the provider identity with a
+    # random negative surrogate (MAX IDs are external positive identifiers).
+    for _ in range(5):
+        surrogate = -(secrets.randbelow(2**62 - 1) + 1)
+        try:
+            MaxAccount.objects.filter(pk=acct.pk).update(
+                max_user_id=surrogate,
+                chat_id=None,
+                phone="",
+                first_name="",
+                last_name="",
+                username="",
+                phone_verified_at=None,
+                last_login_at=None,
+                is_active=False,
+            )
+            break
+        except IntegrityError:
+            continue
+    else:
+        # Fail closed: deleting the row is safer than retaining the provider ID.
+        MaxAccount.objects.filter(pk=acct.pk).delete()
+
 events.product_stock_became_available.connect(
     _on_product_stock_became_available, dispatch_uid="integration_max_product_stock_available"
+)
+events.user_deleted.connect(
+    _on_user_deleted, dispatch_uid="integration_max_user_deleted"
 )
