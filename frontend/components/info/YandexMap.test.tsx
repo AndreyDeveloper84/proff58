@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { YandexMap } from "./YandexMap";
@@ -9,8 +9,11 @@ import { resolveStorefront, STORE_MAP, yandexMapWidgetUrl } from "@/lib/site";
 // «широта,долгота»; перепутанный порядок уводит метку в Сомали.
 
 describe("YandexMap", () => {
-  it("показывает метку магазина по координатам", () => {
+  it("не грузит Яндекс до явного клика и затем показывает метку магазина", () => {
     render(<YandexMap />);
+    expect(screen.queryByTitle(/Карта:/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Показать карту Яндекса" }));
     const url = new URL((screen.getByTitle(/Карта:/) as HTMLIFrameElement).src);
 
     expect(url.origin + url.pathname).toBe("https://yandex.ru/map-widget/v1/");
@@ -35,14 +38,16 @@ describe("YandexMap", () => {
     expect(yandexMapWidgetUrl({ ...STORE_MAP, widgetUrl: custom })).toBe(custom);
   });
 
-  it("фрейм подписан и грузится лениво — карта ниже первого экрана", () => {
+  it("после клика фрейм подписан и грузится лениво", () => {
     render(<YandexMap address="Пенза, Московская, 1" />);
+    fireEvent.click(screen.getByRole("button", { name: "Показать карту Яндекса" }));
     const frame = screen.getByTitle("Карта: Пенза, Московская, 1");
     expect(frame).toHaveAttribute("loading", "lazy");
   });
 
   it("пустой проп адреса подписывает фрейм адресом магазина", () => {
     render(<YandexMap address="   " />);
+    fireEvent.click(screen.getByRole("button", { name: "Показать карту Яндекса" }));
     expect(screen.getByTitle(`Карта: ${resolveStorefront().address}`)).toBeInTheDocument();
   });
 });
