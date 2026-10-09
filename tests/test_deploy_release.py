@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ENTRYPOINT = ROOT / "docker" / "entrypoint.prod.sh"
 RELEASE = ROOT / "docker" / "release.sh"
 BACKUP = ROOT / "scripts" / "backup.sh"
+BACKUP_CLEANUP = ROOT / "scripts" / "cleanup_backups.sh"
 DEPLOY = ROOT / ".github" / "workflows" / "deploy.yml"
 
 
@@ -61,7 +62,7 @@ def test_backup_script_uses_private_umask():
 
 
 def test_backup_script_uses_exact_minute_retention_cutoff():
-    text = BACKUP.read_text(encoding="utf-8")
+    text = BACKUP_CLEANUP.read_text(encoding="utf-8")
 
     error = "retention должен переводить дни в точные минуты"
     assert "retention_minutes=$((RETENTION_DAYS * 24 * 60))" in text, error
@@ -71,6 +72,21 @@ def test_backup_script_uses_exact_minute_retention_cutoff():
 
     error = "rounded -mtime не гарантирует hard-max 14×24h"
     assert '-mtime +"$RETENTION_DAYS"' not in text, error
+
+
+def test_backup_cleanup_script_enforces_exact_age_and_scope():
+    text = BACKUP_CLEANUP.read_text(encoding="utf-8")
+    assert re.search(r"(?m)^umask\s+077\s*$", text)
+    assert "retention_minutes=$((RETENTION_DAYS * 24 * 60))" in text
+    assert "-maxdepth 1 -type f" in text
+    assert '-mmin +"$retention_minutes"' in text
+    assert "db-*.sql.gz" in text
+    assert "media-*.tgz" in text
+
+
+def test_backup_script_reuses_cleanup_only_script():
+    text = BACKUP.read_text(encoding="utf-8")
+    assert "bash scripts/cleanup_backups.sh" in text
 
 
 def test_deploy_invokes_release_step():

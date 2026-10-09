@@ -29,11 +29,8 @@ docker compose -f "$COMPOSE_FILE" exec -T db \
 docker compose -f "$COMPOSE_FILE" exec -T web \
     tar czf - -C /app/media . > "$media_backup"
 
-retention_minutes=$((RETENTION_DAYS * 24 * 60))
-find "$BACKUP_DIR" \
-    \( -name "db-*.sql.gz" -o -name "media-*.tgz" \) \
-    -mmin +"$retention_minutes" \
-    -delete
+BACKUP_DIR="$BACKUP_DIR" BACKUP_RETENTION_DAYS="$RETENTION_DAYS" \
+    bash scripts/cleanup_backups.sh
 
 echo "Backup completed: $db_backup"
 echo "Backup completed: $media_backup"
