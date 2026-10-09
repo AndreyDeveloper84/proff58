@@ -38,9 +38,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "occurred_at",
-                    models.DateTimeField(
-                        db_index=True, default=django.utils.timezone.now
-                    ),
+                    models.DateTimeField(db_index=True, default=django.utils.timezone.now),
                 ),
                 (
                     "reason",
