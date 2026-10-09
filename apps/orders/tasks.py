@@ -17,6 +17,7 @@ from .services import sold_quantities
 
 logger = logging.getLogger(__name__)
 
+
 @shared_task(name="apps.orders.tasks.release_expired_reservations")
 def release_expired_reservations(limit: int = 500) -> int:
     """Освободить резерв у просроченных неоплаченных заказов.
@@ -43,6 +44,7 @@ def release_expired_reservations(limit: int = 500) -> int:
         logger.info("release_expired_reservations: released %s reservation(s)", released)
     return released
 
+
 @shared_task(name="apps.orders.tasks.expire_b2b_invoices")
 def expire_b2b_invoices(limit: int = 500) -> int:
     """#559: истечь неоплаченные B2B-счета старше 24ч.
@@ -55,6 +57,7 @@ def expire_b2b_invoices(limit: int = 500) -> int:
     from .invoice_lifecycle import expire_due_invoices
 
     return expire_due_invoices(limit=limit)
+
 
 @shared_task(name="apps.orders.tasks.publish_sales_facts")
 def publish_sales_facts() -> dict[str, int]:
@@ -76,6 +79,7 @@ def publish_sales_facts() -> dict[str, int]:
     result = record_sales_facts(SalesSource.SITE, rows, replace_window=(since, until))
     logger.info("publish_sales_facts: %s", result)
     return result
+
 
 
 @shared_task(name="apps.orders.tasks.cleanup_expired_guest_access_tokens")
