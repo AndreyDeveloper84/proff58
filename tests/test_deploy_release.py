@@ -57,7 +57,7 @@ def test_backup_script_is_executable():
 def test_backup_script_uses_private_umask():
     text = BACKUP.read_text(encoding="utf-8")
     assert re.search(
-        r"(?m)^umask\\s+077\\s*$", text
+        r"(?m)^umask\s+077\s*$", text
     ), "backup.sh обязан выставлять umask 077 до создания backup-файлов"
 
 
