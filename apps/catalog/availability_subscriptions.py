@@ -218,6 +218,7 @@ def cancel_active_for_user(user, *, channel: str = SubscriptionChannel.MAX) -> i
 # Fan-out операции (#518) — вызываются из apps.integration_max.tasks
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def claim_active_subscriptions(
     product_id: int, *, channel: str = SubscriptionChannel.MAX
 ) -> list[ProductAvailabilitySubscription]:
