@@ -8,9 +8,6 @@ from rest_framework.test import APIClient
 from apps.catalog.models import Product, ProductStatus
 
 
-
-
-
 @pytest.fixture
 def product(db):
     return Product.objects.create(
@@ -24,15 +21,9 @@ def product(db):
     )
 
 
-
-
-
 @pytest.fixture
 def guest_client():
     return APIClient()
-
-
-
 
 
 @pytest.mark.django_db
@@ -46,9 +37,6 @@ def test_guest_order_has_token(guest_client, product):
     assert resp.status_code == 201
     assert "access_token" in resp.json()
     assert len(resp.json()["access_token"]) == 32
-
-
-
 
 
 @pytest.mark.django_db
@@ -68,9 +56,6 @@ def test_guest_order_accessible_by_token(guest_client, product):
     assert resp.json()["order_number"] == number
 
 
-
-
-
 @pytest.mark.django_db
 def test_guest_order_denied_without_token(guest_client, product):
     guest_client.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
@@ -82,9 +67,6 @@ def test_guest_order_denied_without_token(guest_client, product):
     anon = APIClient()
     assert anon.get(f"/api/orders/{number}/guest/").status_code == 404
     assert anon.get(f"/api/orders/{number}/guest/?t=wrong").status_code == 404
-
-
-
 
 
 @pytest.mark.django_db
@@ -101,9 +83,6 @@ def test_guest_response_has_no_store_headers(guest_client, product):
     assert resp.status_code == 200
     assert resp["Cache-Control"] == "no-store"
     assert resp["Referrer-Policy"] == "no-referrer"
-
-
-
 
 
 @pytest.mark.django_db
@@ -128,10 +107,6 @@ def test_guest_token_expires(guest_client, product):
     with override_settings(GUEST_ORDER_TOKEN_TTL_DAYS=90):
         resp = APIClient().get(f"/api/orders/{number}/guest/?t={token}")
     assert resp.status_code == 404
-
-
-
-
 
 
 @pytest.mark.django_db
@@ -161,9 +136,6 @@ def test_guest_token_cleanup_clears_only_expired_tokens(settings):
     assert empty.access_token == ""
 
 
-
-
-
 @pytest.mark.django_db
 def test_guest_token_cleanup_ttl_zero_is_noop(settings):
     from datetime import timedelta
@@ -180,9 +152,6 @@ def test_guest_token_cleanup_ttl_zero_is_noop(settings):
     assert cleanup_expired_guest_access_tokens() == 0
     order.refresh_from_db()
     assert order.access_token == "keep"
-
-
-
 
 
 @pytest.mark.django_db
