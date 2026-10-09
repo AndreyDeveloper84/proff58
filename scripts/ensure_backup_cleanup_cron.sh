@@ -14,7 +14,7 @@ chmod 600 "$LOG_FILE"
 
 current="$(crontab -l 2>/dev/null || true)"
 filtered="$(printf '%s\n' "$current" | grep -v "$MARKER" || true)"
-line="*/15 * * * * umask 077; cd $DEPLOY_PATH && BACKUP_DIR=$BACKUP_DIR BACKUP_RETENTION_DAYS=$RETENTION_DAYS ./scripts/cleanup_backups.sh >> $LOG_FILE 2>&1 # $MARKER"
+line="*/15 * * * * umask 077; cd $DEPLOY_PATH && BACKUP_DIR=$BACKUP_DIR BACKUP_RETENTION_DAYS=$RETENTION_DAYS bash ./scripts/cleanup_backups.sh >> $LOG_FILE 2>&1 # $MARKER"
 
 {
     printf '%s\n' "$filtered"
