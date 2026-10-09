@@ -5,3 +5,6 @@ class NotificationsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.notifications"
     verbose_name = "Служебное · Уведомления"
+
+    def ready(self):
+        from . import receivers  # noqa: F401
