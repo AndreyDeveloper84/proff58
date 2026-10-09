@@ -113,6 +113,7 @@ def test_repeat_deletion_keeps_tombstone_identity_stable(
     assert second is False
     assert user.pk == user_id
     assert user.is_anonymized
-    assert AccountDeletionAudit.objects.filter(
-        reason=AccountDeletionAudit.Reason.USER_REQUEST
-    ).count() == 1
+    assert (
+        AccountDeletionAudit.objects.filter(reason=AccountDeletionAudit.Reason.USER_REQUEST).count()
+        == 1
+    )
