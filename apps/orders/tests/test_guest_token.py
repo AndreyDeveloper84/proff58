@@ -32,7 +32,9 @@ def test_guest_order_has_token(guest_client, product):
         "/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json"
     )
     resp = guest_client.post(
-        "/api/orders/", {"customer_name": "Гость", "customer_phone": "+79001234567"}, format="json"
+        "/api/orders/",
+        {"customer_name": "Гость", "customer_phone": "+79001234567"},
+        format="json",
     )
     assert resp.status_code == 201
     assert "access_token" in resp.json()
@@ -45,7 +47,9 @@ def test_guest_order_accessible_by_token(guest_client, product):
         "/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json"
     )
     create = guest_client.post(
-        "/api/orders/", {"customer_name": "Гость", "customer_phone": "+79005555555"}, format="json"
+        "/api/orders/",
+        {"customer_name": "Гость", "customer_phone": "+79005555555"},
+        format="json",
     )
     number = create.json()["order_number"]
     token = create.json()["access_token"]
@@ -58,9 +62,15 @@ def test_guest_order_accessible_by_token(guest_client, product):
 
 @pytest.mark.django_db
 def test_guest_order_denied_without_token(guest_client, product):
-    guest_client.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    guest_client.post(
+        "/api/cart/items/",
+        {"product_id": product.id, "quantity": 1},
+        format="json",
+    )
     create = guest_client.post(
-        "/api/orders/", {"customer_name": "Гость", "customer_phone": "+79006666666"}, format="json"
+        "/api/orders/",
+        {"customer_name": "Гость", "customer_phone": "+79006666666"},
+        format="json",
     )
     number = create.json()["order_number"]
 
@@ -72,9 +82,15 @@ def test_guest_order_denied_without_token(guest_client, product):
 @pytest.mark.django_db
 def test_guest_response_has_no_store_headers(guest_client, product):
     """#438 (m-03): ответ с гостевым токеном не кешируется и не утекает referer."""
-    guest_client.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    guest_client.post(
+        "/api/cart/items/",
+        {"product_id": product.id, "quantity": 1},
+        format="json",
+    )
     create = guest_client.post(
-        "/api/orders/", {"customer_name": "Гость", "customer_phone": "+79007777777"}, format="json"
+        "/api/orders/",
+        {"customer_name": "Гость", "customer_phone": "+79007777777"},
+        format="json",
     )
     number = create.json()["order_number"]
     token = create.json()["access_token"]
@@ -95,15 +111,23 @@ def test_guest_token_expires(guest_client, product):
 
     from apps.orders.models import Order
 
-    guest_client.post("/api/cart/items/", {"product_id": product.id, "quantity": 1}, format="json")
+    guest_client.post(
+        "/api/cart/items/",
+        {"product_id": product.id, "quantity": 1},
+        format="json",
+    )
     create = guest_client.post(
-        "/api/orders/", {"customer_name": "Гость", "customer_phone": "+79008888888"}, format="json"
+        "/api/orders/",
+        {"customer_name": "Гость", "customer_phone": "+79008888888"},
+        format="json",
     )
     number = create.json()["order_number"]
     token = create.json()["access_token"]
 
     # Состарить заказ за пределы TTL (90 дней).
-    Order.objects.filter(order_number=number).update(created_at=timezone.now() - timedelta(days=91))
+    Order.objects.filter(order_number=number).update(
+        created_at=timezone.now() - timedelta(days=91)
+    )
     with override_settings(GUEST_ORDER_TOKEN_TTL_DAYS=90):
         resp = APIClient().get(f"/api/orders/{number}/guest/?t={token}")
     assert resp.status_code == 404
@@ -120,11 +144,19 @@ def test_guest_token_cleanup_clears_only_expired_tokens(settings):
 
     settings.GUEST_ORDER_TOKEN_TTL_DAYS = 90
     old = Order.objects.create(order_number="P-TOKEN-OLD", access_token="old-secret")
-    recent = Order.objects.create(order_number="P-TOKEN-RECENT", access_token="recent-secret")
+    recent = Order.objects.create(
+        order_number="P-TOKEN-RECENT", access_token="recent-secret"
+    )
     empty = Order.objects.create(order_number="P-TOKEN-EMPTY", access_token="")
-    Order.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=91))
-    Order.objects.filter(pk=recent.pk).update(created_at=timezone.now() - timedelta(days=89))
-    Order.objects.filter(pk=empty.pk).update(created_at=timezone.now() - timedelta(days=120))
+    Order.objects.filter(pk=old.pk).update(
+        created_at=timezone.now() - timedelta(days=91)
+    )
+    Order.objects.filter(pk=recent.pk).update(
+        created_at=timezone.now() - timedelta(days=89)
+    )
+    Order.objects.filter(pk=empty.pk).update(
+        created_at=timezone.now() - timedelta(days=120)
+    )
 
     assert cleanup_expired_guest_access_tokens() == 1
 
@@ -147,7 +179,9 @@ def test_guest_token_cleanup_ttl_zero_is_noop(settings):
 
     settings.GUEST_ORDER_TOKEN_TTL_DAYS = 0
     order = Order.objects.create(order_number="P-TOKEN-NOLIMIT", access_token="keep")
-    Order.objects.filter(pk=order.pk).update(created_at=timezone.now() - timedelta(days=365))
+    Order.objects.filter(pk=order.pk).update(
+        created_at=timezone.now() - timedelta(days=365)
+    )
 
     assert cleanup_expired_guest_access_tokens() == 0
     order.refresh_from_db()
@@ -165,7 +199,9 @@ def test_guest_token_cleanup_is_idempotent(settings):
 
     settings.GUEST_ORDER_TOKEN_TTL_DAYS = 90
     order = Order.objects.create(order_number="P-TOKEN-IDEMP", access_token="secret")
-    Order.objects.filter(pk=order.pk).update(created_at=timezone.now() - timedelta(days=91))
+    Order.objects.filter(pk=order.pk).update(
+        created_at=timezone.now() - timedelta(days=91)
+    )
 
     assert cleanup_expired_guest_access_tokens() == 1
     assert cleanup_expired_guest_access_tokens() == 0
