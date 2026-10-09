@@ -39,3 +39,20 @@ def test_post_consultation_inquiry(api):
     body = resp.json()
     assert body["kind"] == "consultation"
     assert set(body.keys()) == {"id", "kind", "status"}
+
+
+@pytest.mark.django_db
+def test_post_legacy_restock_notify_is_rejected(api, product):
+    resp = api.post(
+        "/api/leads/inquiries/",
+        {
+            "kind": InquiryKind.RESTOCK_NOTIFY,
+            "product": product.pk,
+            "phone": "8 999 000 00 04",
+        },
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "kind" in resp.data
+    assert resp.data["kind"][0].code == "deprecated_inquiry_kind"
+    assert not ProductInquiry.objects.filter(kind=InquiryKind.RESTOCK_NOTIFY).exists()

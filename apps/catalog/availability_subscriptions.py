@@ -14,6 +14,9 @@ claim под нагрузкой) — `apps.integration_max.tasks.notify_product_
 
 from __future__ import annotations
 
+import calendar
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import IntegrityError, models, transaction
 from django.db.models import Q
@@ -286,3 +289,49 @@ def get_product_snapshot(product_id: int) -> Product | None:
     apps.integration_max.tasks не читает Product напрямую (граница модулей,
     apps.catalog — единственный владелец Product.objects)."""
     return Product.objects.filter(pk=product_id).only("id", "name", "slug", "price").first()
+
+
+def _months_ago(value, months: int):
+    """Subtract calendar months and clamp to the target month's last valid day."""
+    month_index = value.year * 12 + (value.month - 1) - months
+    year, month0 = divmod(month_index, 12)
+    month = month0 + 1
+    day = min(value.day, calendar.monthrange(year, month)[1])
+    return value.replace(year=year, month=month, day=day)
+
+
+def cleanup_availability_subscriptions() -> dict[str, int]:
+    """Enforce bounded retention and recover stale queued subscriptions."""
+    now = timezone.now()
+    active_months = getattr(settings, "AVAILABILITY_ACTIVE_RETENTION_MONTHS", 6)
+    terminal_days = getattr(settings, "AVAILABILITY_TERMINAL_RETENTION_DAYS", 30)
+    queued_stale_minutes = getattr(settings, "AVAILABILITY_QUEUED_STALE_MINUTES", 60)
+
+    queued_cutoff = now - timedelta(minutes=queued_stale_minutes)
+    reverted_queued = ProductAvailabilitySubscription.objects.filter(
+        status=SubscriptionStatus.QUEUED,
+        queued_at__lt=queued_cutoff,
+    ).update(status=SubscriptionStatus.ACTIVE, queued_at=None)
+
+    active_cutoff = _months_ago(now, active_months)
+    deleted_active, _ = ProductAvailabilitySubscription.objects.filter(
+        status=SubscriptionStatus.ACTIVE,
+        subscribed_at__lt=active_cutoff,
+    ).delete()
+
+    terminal_cutoff = now - timedelta(days=terminal_days)
+    deleted_notified, _ = ProductAvailabilitySubscription.objects.filter(
+        status=SubscriptionStatus.NOTIFIED,
+        notified_at__lt=terminal_cutoff,
+    ).delete()
+    deleted_cancelled, _ = ProductAvailabilitySubscription.objects.filter(
+        status=SubscriptionStatus.CANCELLED,
+        cancelled_at__lt=terminal_cutoff,
+    ).delete()
+
+    return {
+        "reverted_queued": reverted_queued,
+        "deleted_active": deleted_active,
+        "deleted_notified": deleted_notified,
+        "deleted_cancelled": deleted_cancelled,
+    }

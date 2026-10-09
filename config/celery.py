@@ -97,4 +97,9 @@ app.conf.beat_schedule = {
         "task": "apps.catalog.tasks.purge_old_sales_facts",
         "schedule": crontab(hour=5, minute=0),
     },
+    # DRF-2926: one-shot availability subscriptions have bounded retention.
+    "cleanup-availability-subscriptions": {
+        "task": "apps.catalog.tasks.cleanup_availability_subscriptions",
+        "schedule": crontab(hour=5, minute=15),
+    },
 }

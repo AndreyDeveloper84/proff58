@@ -60,3 +60,20 @@ def remove_photo_background(image_id: int) -> str:
     result = process_image(image_id, rembg=True)
     logger.info("remove_photo_background %s: %s", image_id, result)
     return result
+
+
+@shared_task(name="apps.catalog.tasks.cleanup_availability_subscriptions")
+def cleanup_availability_subscriptions_task() -> dict[str, int]:
+    """Run privacy/data-lifecycle cleanup for availability subscriptions."""
+    from .availability_subscriptions import cleanup_availability_subscriptions
+
+    result = cleanup_availability_subscriptions()
+    logger.info(
+        "cleanup_availability_subscriptions: reverted_queued=%d deleted_active=%d "
+        "deleted_notified=%d deleted_cancelled=%d",
+        result["reverted_queued"],
+        result["deleted_active"],
+        result["deleted_notified"],
+        result["deleted_cancelled"],
+    )
+    return result
