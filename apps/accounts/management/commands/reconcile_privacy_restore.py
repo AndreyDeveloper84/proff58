@@ -55,9 +55,7 @@ class Command(BaseCommand):
             if user.is_anonymized:
                 already_anonymized += 1
                 continue
-            if anonymize_account(
-                user, reason=AccountDeletionAudit.Reason.RESTORE_RECONCILIATION
-            ):
+            if anonymize_account(user, reason=AccountDeletionAudit.Reason.RESTORE_RECONCILIATION):
                 reapplied += 1
 
         guest_tokens = cleanup_expired_guest_access_tokens.run()
