@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+umask 077
+
 BACKUP_DIR="${BACKUP_DIR:-/home/taximeter/backups/proff58}"
 RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-14}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
@@ -27,9 +29,10 @@ docker compose -f "$COMPOSE_FILE" exec -T db \
 docker compose -f "$COMPOSE_FILE" exec -T web \
     tar czf - -C /app/media . > "$media_backup"
 
+retention_minutes=$((RETENTION_DAYS * 24 * 60))
 find "$BACKUP_DIR" \
     \( -name "db-*.sql.gz" -o -name "media-*.tgz" \) \
-    -mtime +"$RETENTION_DAYS" \
+    -mmin +"$retention_minutes" \
     -delete
 
 echo "Backup completed: $db_backup"
