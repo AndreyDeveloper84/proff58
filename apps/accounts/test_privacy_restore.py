@@ -59,9 +59,7 @@ def test_restore_manifest_reapplies_anonymization_without_external_workers(
         order_number="P-RESTORE-TOKEN",
         access_token="secret-token",
     )
-    Order.objects.filter(pk=old_order.pk).update(
-        created_at=timezone.now() - timedelta(days=91)
-    )
+    Order.objects.filter(pk=old_order.pk).update(created_at=timezone.now() - timedelta(days=91))
 
     call_command("reconcile_privacy_restore", str(manifest))
 
