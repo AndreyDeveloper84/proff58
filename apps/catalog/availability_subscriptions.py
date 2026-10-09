@@ -124,6 +124,7 @@ class MaxConnectionRequired(SubscriptionError):
 # API-facing операции (#517)
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def get_eligible_product(slug: str) -> Product:
     """Товар для подписки: опубликован и видим (#517 Rules). ProductNotEligible,
     если товара с таким slug среди видимых нет — вызывающий сам решает, 404 это
