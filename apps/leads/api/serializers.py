@@ -28,6 +28,10 @@ class ProductInquirySerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         from apps.leads.models import InquiryKind
 
+        if attrs.get("kind") == InquiryKind.RESTOCK_NOTIFY:
+            raise serializers.ValidationError(
+                {"kind": {"code": "deprecated_inquiry_kind", "message": "Используйте подписку на поступление через MAX."}}
+            )
         if attrs.get("kind") != InquiryKind.CONSULTATION and not attrs.get("product"):
             raise serializers.ValidationError({"product": "Для этого типа заявки требуется товар."})
         return attrs
