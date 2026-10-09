@@ -95,6 +95,12 @@ class Payment(TimeStampedModel):
         default=dict,
         blank=True,
     )
+    webhook_payload_at = models.DateTimeField(
+        _("Когда сохранён webhook payload"),
+        null=True,
+        blank=True,
+        help_text=_("Точка отсчёта retention для диагностического callback snapshot."),
+    )
     paid_at = models.DateTimeField(_("Дата оплаты"), null=True, blank=True)
 
     # --- Фискализация (54-ФЗ). Чек пробивает касса по данным из регистрации

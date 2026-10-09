@@ -29,3 +29,26 @@ def expire_unpaid_online_orders(limit: int = 500) -> int:
     except Exception:  # noqa: BLE001 — отмены уже сделаны, их счёт терять нельзя
         logger.exception("heal_missing_requests: проход не выполнен")
     return expired
+
+
+@shared_task(name="apps.payments.tasks.cleanup_old_webhook_payloads")
+def cleanup_old_webhook_payloads() -> int:
+    """Clear retained callback snapshots after the configured privacy window.
+
+    Payment ledger and structured provider/receipt fields remain untouched.
+    """
+    from datetime import timedelta
+
+    from django.conf import settings
+    from django.utils import timezone
+
+    from .models import Payment
+
+    days = getattr(settings, "PAYMENT_WEBHOOK_RAW_RETENTION_DAYS", 30)
+    cutoff = timezone.now() - timedelta(days=days)
+    qs = Payment.objects.exclude(webhook_payload={}).filter(webhook_payload_at__lt=cutoff)
+    count = qs.count()
+    if count:
+        qs.update(webhook_payload={}, webhook_payload_at=None)
+    logger.info("cleanup_old_webhook_payloads: cleared=%d", count)
+    return count

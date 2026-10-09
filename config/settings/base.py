@@ -430,6 +430,9 @@ MAX_AUTH_ATTEMPT_TTL_MINUTES = env.int("MAX_AUTH_ATTEMPT_TTL_MINUTES", default=5
 # Privacy retention for terminal/expired MAX auth attempts.
 MAX_AUTH_ATTEMPT_RETENTION_HOURS = env.int("MAX_AUTH_ATTEMPT_RETENTION_HOURS", default=24)
 
+# Privacy retention for raw/sanitized payment callback snapshots.
+PAYMENT_WEBHOOK_RAW_RETENTION_DAYS = env.int("PAYMENT_WEBHOOK_RAW_RETENTION_DAYS", default=30)
+
 # Вход через VK ID и Яндекс ID (apps.integration_oauth). Провайдер включён, когда
 # заданы его ключи, SITE_URL (https, без пути — от него строится redirect_uri) и
 # FEATURE_OAUTH_LOGIN. Токены провайдеров сайт не хранит.

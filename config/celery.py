@@ -45,6 +45,11 @@ app.conf.beat_schedule = {
         "task": "apps.payments.tasks.expire_unpaid_online_orders",
         "schedule": 5 * 60,
     },
+    # DRF-2925: raw/sanitized callback snapshots are diagnostic only.
+    "cleanup-old-payment-webhook-payloads": {
+        "task": "apps.payments.tasks.cleanup_old_webhook_payloads",
+        "schedule": crontab(hour=4, minute=20),
+    },
     # #432 (M-09): зависшие RUNNING-прогоны sourcing → run=error, call=unknown
     # (резерв удержан до ручной сверки в админке «Вызовы внешних источников»).
     # Janitor существовал, но в beat не стоял — зависших никто не добивал.

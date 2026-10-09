@@ -26,6 +26,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import transaction
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.orders.models import Order
 
@@ -68,6 +69,28 @@ _LIVE_STATUSES = (PaymentStatus.PENDING, PaymentStatus.WAITING_CAPTURE)
 
 #: Максимум попыток подобрать свободный orderId, если касса знает такой заказ.
 _MAX_ORDER_ID_ATTEMPTS = 5
+
+# Keep only fields that are known to be useful for payment/fiscal diagnostics.
+# Unknown provider fields must not be persisted automatically.
+_WEBHOOK_PAYLOAD_ALLOWLIST = frozenset(
+    {
+        "amount",
+        "errorCode",
+        "errorMessage",
+        "orderId",
+        "paymentStatus",
+        "receiptId",
+        "receiptType",
+        "sessionType",
+        "source",
+        "status",
+        "type",
+    }
+)
+
+
+def _sanitize_webhook_payload(payload: dict) -> dict:
+    return {key: payload[key] for key in _WEBHOOK_PAYLOAD_ALLOWLIST if key in payload}
 
 
 def site_url() -> str:
@@ -262,13 +285,15 @@ def _apply_fiscal(payment: Payment, payload: dict) -> None:
     payment.receipt_id = str(payload.get("receiptId", ""))[:64]
     payment.receipt_status = str(payload.get("status", ""))[:16]
     payment.receipt_error = str(payload.get("errorMessage", ""))
-    payment.webhook_payload = payload
+    payment.webhook_payload = _sanitize_webhook_payload(payload)
+    payment.webhook_payload_at = timezone.now()
     payment.save(
         update_fields=[
             "receipt_id",
             "receipt_status",
             "receipt_error",
             "webhook_payload",
+            "webhook_payload_at",
             "updated_at",
         ]
     )
@@ -361,17 +386,19 @@ def _apply_payment_callback(
     if payment is None:
         return
 
-    if not (synthetic and payment.webhook_payload):
-        payment.webhook_payload = payload
+    payload_updated = not (synthetic and payment.webhook_payload)
+    if payload_updated:
+        payment.webhook_payload = _sanitize_webhook_payload(payload)
+        payment.webhook_payload_at = timezone.now()
     target = _target_status(code, payment.status)
 
     if target is None:
         logger.info("АТОЛ Pay: статус %s платежа %s без обработки", code, order_id)
-        payment.save(update_fields=["webhook_payload", "updated_at"])
+        payment.save(update_fields=["webhook_payload", "webhook_payload_at", "updated_at"])
         return
 
     if payment.status == target and target not in (PaymentStatus.PARTIALLY_REFUNDED,):
-        payment.save(update_fields=["webhook_payload", "updated_at"])
+        payment.save(update_fields=["webhook_payload", "webhook_payload_at", "updated_at"])
         return
 
     if not transitions.is_allowed(payment.status, target):
@@ -381,16 +408,23 @@ def _apply_payment_callback(
             target,
             order_id,
         )
-        payment.save(update_fields=["webhook_payload", "updated_at"])
+        payment.save(update_fields=["webhook_payload", "webhook_payload_at", "updated_at"])
         return
 
     if target == PaymentStatus.SUCCEEDED:
         _check_amount(payment, payload)
-        transitions.apply_succeeded(payment, reference=order_id, extra_fields=["webhook_payload"])
+        transitions.apply_succeeded(
+            payment,
+            reference=order_id,
+            extra_fields=["webhook_payload", "webhook_payload_at"],
+        )
     elif target == PaymentStatus.CANCELED:
         reason = str(payload.get("errorMessage") or payload.get("errorCode") or "не оплачен")
         transitions.apply_canceled(
-            payment, reason=reason, reference=order_id, extra_fields=["webhook_payload"]
+            payment,
+            reason=reason,
+            reference=order_id,
+            extra_fields=["webhook_payload", "webhook_payload_at"],
         )
     elif target in (PaymentStatus.REFUNDED, PaymentStatus.PARTIALLY_REFUNDED):
         full = target == PaymentStatus.REFUNDED
@@ -399,10 +433,12 @@ def _apply_payment_callback(
             refund_amount=_callback_amount(payload) or (payment.amount if full else Decimal("0")),
             full=full,
             reference=order_id,
-            extra_fields=["webhook_payload"],
+            extra_fields=["webhook_payload", "webhook_payload_at"],
         )
     elif target == PaymentStatus.WAITING_CAPTURE:
-        transitions.apply_waiting_capture(payment, extra_fields=["webhook_payload"])
+        transitions.apply_waiting_capture(
+            payment, extra_fields=["webhook_payload", "webhook_payload_at"]
+        )
 
 
 def _callback_amount(payload: dict) -> Decimal | None:
