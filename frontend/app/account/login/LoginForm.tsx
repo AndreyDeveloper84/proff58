@@ -203,7 +203,11 @@ export function LoginForm({
           </Divider>
           <OAuthButtons providers={providers} next={next} />
           <p className="mt-3 text-center text-xs text-ink-3">
-            Продолжая, вы соглашаетесь на обработку персональных данных.
+            Продолжая, вы подтверждаете, что ознакомились с{" "}
+            <Link href="/info/privacy" className="text-accent hover:underline">
+              Политикой обработки персональных данных
+            </Link>
+            .
           </p>
           <Divider>или по e-mail</Divider>
         </>
@@ -380,6 +384,16 @@ export function LoginForm({
         {error && (
           <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
             {error}
+          </p>
+        )}
+
+        {mode === "register" && (
+          <p className="text-xs leading-5 text-ink-3">
+            Регистрируясь, вы подтверждаете, что ознакомились с{" "}
+            <Link href="/info/privacy" className="text-accent hover:underline">
+              Политикой обработки персональных данных
+            </Link>
+            . Данные используются для создания и обслуживания аккаунта.
           </p>
         )}
 
