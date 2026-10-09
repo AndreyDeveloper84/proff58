@@ -8,6 +8,8 @@
 оформления заказа (онлайн-оплата против счёта).
 """
 
+import uuid
+
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
@@ -68,6 +70,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(_("Доступ в админку"), default=False)
     is_active = models.BooleanField(_("Активен"), default=True)
     date_joined = models.DateTimeField(_("Дата регистрации"), default=timezone.now)
+    inactivity_warning_at = models.DateTimeField(
+        _("Предупреждение о неактивности"), null=True, blank=True, db_index=True
+    )
 
     objects = UserManager()
 
@@ -111,6 +116,27 @@ class User(AbstractBaseUser, PermissionsMixin):
             return self.is_b2b and self.profile.is_b2b_verified
         except Profile.DoesNotExist:
             return False
+
+
+class AccountDeletionAudit(models.Model):
+    """Minimal non-identifying audit of an account anonymization operation."""
+
+    class Reason(models.TextChoices):
+        USER_REQUEST = "user_request", _("Запрос пользователя")
+        INACTIVITY = "inactivity", _("Длительная неактивность")
+
+    event_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    occurred_at = models.DateTimeField(default=timezone.now, db_index=True)
+    reason = models.CharField(max_length=20, choices=Reason.choices)
+    result = models.CharField(max_length=20, default="success")
+    procedure_version = models.CharField(max_length=20, default="v1")
+
+    class Meta:
+        verbose_name = _("Аудит обезличивания аккаунта")
+        verbose_name_plural = _("Аудит обезличивания аккаунтов")
+
+    def __str__(self) -> str:
+        return f"{self.reason}:{self.event_id}"
 
 
 class Profile(TimeStampedModel):

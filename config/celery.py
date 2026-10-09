@@ -86,6 +86,11 @@ app.conf.beat_schedule = {
         "task": "apps.integration_max.tasks.cleanup_max_auth_attempts",
         "schedule": 60 * 60,  # hourly
     },
+    # DRF-2929: 3y inactivity -> warning -> 30d recheck -> anonymization.
+    "process-inactive-accounts": {
+        "task": "apps.accounts.tasks.process_inactive_accounts",
+        "schedule": crontab(hour=3, minute=45),
+    },
     # «Хиты продаж»: сначала заказы сайта отдают свои продажи в каталог, затем
     # каталог пересобирает рейтинг — уже с учётом и выгрузки 1С за сутки.
     # Порядок держим разносом по времени: задачи независимы, общий результат

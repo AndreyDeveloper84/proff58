@@ -132,6 +132,15 @@ NOTIFICATION_EVENTS: dict[str, dict] = {
         "title": "Товар в наличии",
         "version": 1,
     },
+    "account_inactivity_warning": {
+        "template": (
+            "Аккаунт не использовался длительное время. Если до {deadline} активности не будет, "
+            "профиль будет удалён или обезличен. Войдите в аккаунт, чтобы сохранить его."
+        ),
+        "category": NotificationCategory.ACCOUNT,
+        "title": "Аккаунт будет удалён из-за неактивности",
+        "version": 1,
+    },
 }
 _DEFAULT_NOTIFICATION_EVENT = {
     "template": "",
@@ -440,6 +449,16 @@ CUSTOMER_EVENTS: dict[str, dict] = {
             "Оплатить заказ:\n{pay_url}\n\n"
             "{note}"
             "Если возникли вопросы — ответьте на это письмо или позвоните нам.\n"
+        ),
+        "version": 1,
+    },
+    "account_inactivity_warning": {
+        "subject": "Аккаунт proff58.ru будет удалён из-за неактивности",
+        "template": (
+            "Здравствуйте!\n\n"
+            "Ваш аккаунт proff58.ru длительное время не использовался. "
+            "Если до {deadline} активности не будет, профиль будет удалён или обезличен.\n\n"
+            "Чтобы сохранить аккаунт, просто войдите на сайт до указанной даты.\n"
         ),
         "version": 1,
     },
