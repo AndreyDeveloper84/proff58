@@ -8,6 +8,8 @@
 оформления заказа (онлайн-оплата против счёта).
 """
 
+import uuid
+
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
@@ -123,7 +125,7 @@ class AccountDeletionAudit(models.Model):
         USER_REQUEST = "user_request", _("Запрос пользователя")
         INACTIVITY = "inactivity", _("Длительная неактивность")
 
-    event_id = models.UUIDField(default=__import__("uuid").uuid4, unique=True, editable=False)
+    event_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     occurred_at = models.DateTimeField(default=timezone.now, db_index=True)
     reason = models.CharField(max_length=20, choices=Reason.choices)
     result = models.CharField(max_length=20, default="success")
