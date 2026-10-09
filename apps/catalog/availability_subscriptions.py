@@ -274,6 +274,7 @@ def revert_to_active(subscription_ids) -> int:
         pk__in=ids, status=SubscriptionStatus.QUEUED
     ).update(status=SubscriptionStatus.ACTIVE, queued_at=None)
 
+
 def get_product_snapshot(product_id: int) -> Product | None:
     """Снимок безопасных полей товара для fan-out уведомления (#518/#521) —
     apps.integration_max.tasks не читает Product напрямую (граница модулей,
@@ -291,6 +292,7 @@ def _months_ago(value, months: int):
     month = month0 + 1
     day = min(value.day, calendar.monthrange(year, month)[1])
     return value.replace(year=year, month=month, day=day)
+
 
 def cleanup_availability_subscriptions() -> dict[str, int]:
     """Enforce owner-approved retention and recover stale queued rows."""
