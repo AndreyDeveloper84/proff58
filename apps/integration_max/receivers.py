@@ -200,9 +200,7 @@ def _on_user_deleted(sender, user_id=None, **kwargs):
     from django.db import IntegrityError
     from django.db.models import Q
 
-    from apps.catalog.availability_subscriptions import (
-        ProductAvailabilitySubscription,
-    )
+    from apps.catalog.availability_subscriptions import ProductAvailabilitySubscription
 
     from .models import MaxAccount, MaxAuthAttempt, OrderTrackingGrant
 
