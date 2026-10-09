@@ -336,3 +336,23 @@ describe("CheckoutPage — самовывоз (DRF-951)", () => {
     expect(screen.queryByText(/уточним по телефону/i)).not.toBeInTheDocument();
   });
 });
+
+
+describe("CheckoutPage — privacy notice", () => {
+  beforeEach(() => {
+    cartState.cart = FULL_CART;
+    cartState.loading = false;
+  });
+
+  it("показывает назначение данных и ссылку на Политику без consent checkbox", () => {
+    render(<CheckoutPage />);
+
+    expect(
+      screen.getByText(/Данные из формы используются для оформления и исполнения заказа/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /в Политике обработки персональных данных/i }),
+    ).toHaveAttribute("href", "/info/privacy");
+    expect(screen.queryByRole("checkbox")).toBeNull();
+  });
+});
