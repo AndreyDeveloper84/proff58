@@ -124,6 +124,7 @@ class AccountDeletionAudit(models.Model):
     class Reason(models.TextChoices):
         USER_REQUEST = "user_request", _("Запрос пользователя")
         INACTIVITY = "inactivity", _("Длительная неактивность")
+        RESTORE_RECONCILIATION = "restore_reconcile", _("Повтор после восстановления")
 
     event_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     occurred_at = models.DateTimeField(default=timezone.now, db_index=True)
