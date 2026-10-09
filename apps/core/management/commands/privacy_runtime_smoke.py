@@ -60,9 +60,9 @@ class Command(BaseCommand):
             expires_at__lt=max_cutoff,
         ).count()
 
-        active_tombstones = get_user_model().objects.filter(
-            phone__startswith="deleted-", is_active=True
-        ).count()
+        active_tombstones = (
+            get_user_model().objects.filter(phone__startswith="deleted-", is_active=True).count()
+        )
 
         restore_commands = get_commands()
         restore_export_available = "export_privacy_restore_manifest" in restore_commands
@@ -126,4 +126,3 @@ class Command(BaseCommand):
             raise CommandError("privacy runtime smoke failed: " + "; ".join(failures))
 
         self.stdout.write(self.style.SUCCESS("privacy_runtime_smoke=PASS"))
-
