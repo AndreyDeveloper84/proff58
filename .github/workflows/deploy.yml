@@ -145,14 +145,7 @@ jobs:
             # утверждённые retention janitors, затем read-only команда проверяет,
             # что просроченных privacy-артефактов не осталось. В лог попадают
             # только агрегаты — без ПД, токенов и payload contents.
-            $compose exec -T web python manage.py shell -c "
-from apps.integration_max.tasks import cleanup_max_auth_attempts
-from apps.orders.tasks import cleanup_expired_guest_access_tokens
-from apps.payments.tasks import cleanup_old_webhook_payloads
-print('privacy_cleanup_max=', cleanup_max_auth_attempts.run())
-print('privacy_cleanup_guest_tokens=', cleanup_expired_guest_access_tokens.run())
-print('privacy_cleanup_webhooks=', cleanup_old_webhook_payloads.run())
-"
+            $compose exec -T web python manage.py shell -c "from apps.integration_max.tasks import cleanup_max_auth_attempts; from apps.orders.tasks import cleanup_expired_guest_access_tokens; from apps.payments.tasks import cleanup_old_webhook_payloads; print('privacy_cleanup_max=', cleanup_max_auth_attempts.run()); print('privacy_cleanup_guest_tokens=', cleanup_expired_guest_access_tokens.run()); print('privacy_cleanup_webhooks=', cleanup_old_webhook_payloads.run())"
             $compose exec -T web python manage.py privacy_runtime_smoke
 
             # Backup retention hard-cutoff должен работать не только во время
