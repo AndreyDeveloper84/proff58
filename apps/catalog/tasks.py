@@ -62,7 +62,6 @@ def remove_photo_background(image_id: int) -> str:
     return result
 
 
-
 @shared_task(name="apps.catalog.tasks.cleanup_availability_subscriptions")
 def cleanup_availability_subscriptions_task() -> dict[str, int]:
     """Run privacy/data-lifecycle cleanup for availability subscriptions."""
