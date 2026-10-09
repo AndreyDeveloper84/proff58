@@ -31,9 +31,7 @@ def account_activity_at(user) -> object:
     """
     from apps.orders.models import Order
 
-    latest_order = (
-        Order.objects.filter(user=user).aggregate(value=Max("created_at")).get("value")
-    )
+    latest_order = Order.objects.filter(user=user).aggregate(value=Max("created_at")).get("value")
     candidates = [user.date_joined, user.last_login, latest_order]
     return max(value for value in candidates if value is not None)
 
@@ -147,10 +145,7 @@ def process_inactive_accounts(*, now=None) -> dict[str, int]:
 
         activity_at = account_activity_at(user)
 
-        if (
-            user.inactivity_warning_at is not None
-            and activity_at > user.inactivity_warning_at
-        ):
+        if user.inactivity_warning_at is not None and activity_at > user.inactivity_warning_at:
             User.objects.filter(pk=user.pk).update(inactivity_warning_at=None)
             stats["warnings_reset"] += 1
             user.inactivity_warning_at = None
