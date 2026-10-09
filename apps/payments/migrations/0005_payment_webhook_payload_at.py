@@ -10,7 +10,6 @@ def backfill_webhook_payload_at(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("payments", "0004_refundrequest"),
     ]
