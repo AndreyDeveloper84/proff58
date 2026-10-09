@@ -200,7 +200,9 @@ def _on_user_deleted(sender, user_id=None, **kwargs):
     from django.db import IntegrityError
     from django.db.models import Q
 
-    from apps.catalog.availability_subscriptions import ProductAvailabilitySubscription
+    from apps.catalog.availability_subscriptions import (
+        ProductAvailabilitySubscription,
+    )
 
     from .models import MaxAccount, MaxAuthAttempt, OrderTrackingGrant
 
@@ -250,7 +252,8 @@ def _on_user_deleted(sender, user_id=None, **kwargs):
 
 
 events.product_stock_became_available.connect(
-    _on_product_stock_became_available, dispatch_uid="integration_max_product_stock_available"
+    _on_product_stock_became_available,
+    dispatch_uid="integration_max_product_stock_available",
 )
 events.user_deleted.connect(
     _on_user_deleted, dispatch_uid="integration_max_user_deleted"
