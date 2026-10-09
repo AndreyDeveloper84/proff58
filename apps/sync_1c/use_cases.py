@@ -726,12 +726,11 @@ def _serialize_order_for_export(order: Order) -> dict:
             "type": order.customer_type,
             "name": order.customer_name,
             "phone": order.customer_phone,
-            "email": order.customer_email,
         },
         "delivery": {
+            # Delivery execution remains on the website. Keep only method/cost
+            # for 1C contract compatibility; address/free-text comment stay local.
             "method": order.delivery_method,
-            "address": order.delivery_address,
-            "comment": order.comment,
             "cost": "0.00",
         },
         "totals": {
