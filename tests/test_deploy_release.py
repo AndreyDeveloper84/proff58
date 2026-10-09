@@ -62,7 +62,7 @@ def test_backup_script_uses_private_umask():
 
 
 def test_backup_script_uses_exact_minute_retention_cutoff():
-    text = BACKUP.read_text(encoding="utf-8")
+    text = BACKUP_CLEANUP.read_text(encoding="utf-8")
 
     error = "retention должен переводить дни в точные минуты"
     assert "retention_minutes=$((RETENTION_DAYS * 24 * 60))" in text, error
