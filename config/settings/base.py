@@ -427,6 +427,8 @@ MAX_BOT_API_URL = env("MAX_BOT_API_URL", default="https://platform-api.max.ru")
 MAX_BOT_USERNAME = env("MAX_BOT_USERNAME", default="")
 # TTL одноразовой попытки авторизации через MAX, минут (#492, §11.3).
 MAX_AUTH_ATTEMPT_TTL_MINUTES = env.int("MAX_AUTH_ATTEMPT_TTL_MINUTES", default=5)
+# Privacy retention for terminal/expired MAX auth attempts.
+MAX_AUTH_ATTEMPT_RETENTION_HOURS = env.int("MAX_AUTH_ATTEMPT_RETENTION_HOURS", default=24)
 
 # Вход через VK ID и Яндекс ID (apps.integration_oauth). Провайдер включён, когда
 # заданы его ключи, SITE_URL (https, без пути — от него строится redirect_uri) и
