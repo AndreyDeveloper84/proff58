@@ -250,6 +250,20 @@ $compose run --rm web python manage.py migrate <app> <предыдущая_ми�
 Полное восстановление из дампа (⚠️ данные, добавленные ПОСЛЕ бэкапа, теряются —
 только осознанно; дамп плоский, поэтому БД пересоздаётся):
 
+> Privacy gate (DRF-2964): до destructive restore экспортировать restore-manifest
+> из текущей живой БД, хранить его ВНЕ восстанавливаемой БД с mode 0600. После
+> restore web/celery/celery-onec/celery-beat остаются остановленными, пока
+> reconciliation не вернёт состояние ранее обезличенных аккаунтов и retention-cleanup.
+>
+> ```bash
+> manifest="/home/taximeter/backups/privacy-restore-$(date +%F-%H%M%S).json"
+> $compose exec -T web python manage.py export_privacy_restore_manifest "$manifest"
+> # Если команда запускается внутри контейнера, путь должен быть на bind-mounted
+> # защищённом backup-контуре; иначе экспортировать через одноразовый контейнер
+> # в host-mounted path.
+> chmod 600 "$manifest"
+> ```
+
 ```bash
 ls -t /home/taximeter/backups/proff58/pre-migrate-*.sql.gz | head   # выбрать нужный
 $compose stop web celery celery-onec celery-beat                    # отсоединить писателей
@@ -257,6 +271,11 @@ $compose exec -T db psql -U "$POSTGRES_USER" -d postgres \
     -c "DROP DATABASE \"$POSTGRES_DB\" WITH (FORCE);" \
     -c "CREATE DATABASE \"$POSTGRES_DB\" OWNER \"$POSTGRES_USER\";"
 gunzip -c <pre-migrate-файл> | $compose exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+
+# Обязательный privacy reconciliation ДО старта внешних сервисов.
+$compose run --rm web python manage.py reconcile_privacy_restore "$manifest"
+
+# Только после успешного reconciliation:
 $compose up -d
 ```
 
