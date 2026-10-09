@@ -30,7 +30,8 @@ def _old_user(*, phone: str, staff: bool = False):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_anonymize_account_scrubs_terminal_order_but_preserves_active_fulfillment_data():
+def test_anonymize_account_scrubs_terminal_order_but_preserves_active_fulfillment_data(
+):
     user = User.objects.create_user(
         phone="+79000000001",
         email="person@example.com",
