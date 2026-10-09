@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { MapPin, Route } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -25,6 +28,7 @@ export function YandexMap({
   className?: string;
 }) {
   const label = address?.trim() || resolveStorefront().address;
+  const [loaded, setLoaded] = useState(false);
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>
@@ -36,27 +40,28 @@ export function YandexMap({
           "aspect-[4/3] sm:aspect-[16/10]",
         )}
       >
-        {/* Подложка под фреймом: пока виджет грузится или если его режет блокировщик,
-            видна она, а не пустой чёрный прямоугольник. Загруженная карта
-            непрозрачна и закрывает её. Ссылки здесь нет — она под картой. */}
-        <div
-          aria-hidden
-          className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 p-6 text-center text-sm text-ink-3"
-        >
-          <MapPin className="size-6" />
-          <span>Карта загружается…</span>
-          <span className="text-xs">Если не появится — откройте маршрут кнопкой ниже.</span>
-        </div>
-        <iframe
-          src={yandexMapWidgetUrl()}
-          title={`Карта: ${label}`}
-          className="absolute inset-0 z-10 h-full w-full border-0"
-          loading="lazy"
-          // Виджету не нужны ни камера, ни микрофон; геолокацию он спросит сам,
-          // если человек нажмёт «я здесь» — по умолчанию не разрешаем.
-          allow=""
-          referrerPolicy="strict-origin-when-cross-origin"
-        />
+        {loaded ? (
+          <iframe
+            src={yandexMapWidgetUrl()}
+            title={`Карта: ${label}`}
+            className="absolute inset-0 z-10 h-full w-full border-0"
+            loading="lazy"
+            allow=""
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        ) : (
+          <div className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-sm text-ink-3">
+            <MapPin aria-hidden className="size-6" />
+            <span>Карта Яндекса загрузится только после вашего действия.</span>
+            <button
+              type="button"
+              onClick={() => setLoaded(true)}
+              className={buttonVariants({ variant: "outline", size: "lg" })}
+            >
+              Показать карту Яндекса
+            </button>
+          </div>
+        )}
       </div>
       {/* Под картой, а не поверх: в углах виджета копирайт и условия Яндекса,
           закрывать их нельзя. */}
