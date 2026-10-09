@@ -41,7 +41,6 @@ def test_post_consultation_inquiry(api):
     assert set(body.keys()) == {"id", "kind", "status"}
 
 
-
 @pytest.mark.django_db
 def test_post_legacy_restock_notify_is_rejected(api, product):
     resp = api.post(
