@@ -168,9 +168,10 @@ def test_inactivity_lifecycle_warns_then_anonymizes(django_capture_on_commit_cal
     user.refresh_from_db()
     assert second["anonymized"] == 1
     assert user.is_anonymized
-    assert AccountDeletionAudit.objects.filter(
-        reason=AccountDeletionAudit.Reason.INACTIVITY
-    ).count() == 1
+    assert (
+        AccountDeletionAudit.objects.filter(reason=AccountDeletionAudit.Reason.INACTIVITY).count()
+        == 1
+    )
 
 
 @pytest.mark.django_db
