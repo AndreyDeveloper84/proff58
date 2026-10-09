@@ -81,7 +81,6 @@ def publish_sales_facts() -> dict[str, int]:
     return result
 
 
-
 @shared_task(name="apps.orders.tasks.cleanup_expired_guest_access_tokens")
 def cleanup_expired_guest_access_tokens() -> int:
     """Clear expired guest bearer tokens without deleting order records."""
