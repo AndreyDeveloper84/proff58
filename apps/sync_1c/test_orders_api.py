@@ -140,6 +140,28 @@ def test_orders_new_returns_pending_snapshot(auth_client):
 
 @override_settings(ONEC_API_KEY=API_KEY)
 @pytest.mark.django_db
+def test_orders_new_minimizes_personal_data_for_1c(auth_client):
+    order = make_order()
+    order.delivery_method = "courier"
+    order.delivery_address = "test delivery address"
+    order.comment = "test free-text note"
+    order.save(update_fields=["delivery_method", "delivery_address", "comment"])
+
+    data = auth_client.get("/api/1c/orders/new").json()["items"][0]
+
+    assert data["customer"] == {
+        "type": "b2c",
+        "name": "Иван Иванов",
+        "phone": "+79000000000",
+    }
+    assert "email" not in data["customer"]
+    assert data["delivery"] == {"method": "courier", "cost": "0.00"}
+    assert "address" not in data["delivery"]
+    assert "comment" not in data["delivery"]
+
+
+@override_settings(ONEC_API_KEY=API_KEY)
+@pytest.mark.django_db
 def test_orders_new_does_not_change_sync_status(auth_client):
     """После GET заказ остаётся pending (at-least-once, не exported)."""
     order = make_order()
