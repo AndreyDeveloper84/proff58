@@ -248,6 +248,7 @@ def _on_user_deleted(sender, user_id=None, **kwargs):
         # Fail closed: deleting the row is safer than retaining the provider ID.
         MaxAccount.objects.filter(pk=acct.pk).delete()
 
+
 events.product_stock_became_available.connect(
     _on_product_stock_became_available, dispatch_uid="integration_max_product_stock_available"
 )
