@@ -291,7 +291,6 @@ def get_product_snapshot(product_id: int) -> Product | None:
     return Product.objects.filter(pk=product_id).only("id", "name", "slug", "price").first()
 
 
-
 def _months_ago(value, months: int):
     """Subtract calendar months and clamp to the target month's last valid day."""
     month_index = value.year * 12 + (value.month - 1) - months
