@@ -135,6 +135,8 @@ class AccountDeletionAudit(models.Model):
         verbose_name = _("Аудит обезличивания аккаунта")
         verbose_name_plural = _("Аудит обезличивания аккаунтов")
 
+    def __str__(self) -> str:
+        return f"{self.reason}:{self.event_id}"
 
 
 class Profile(TimeStampedModel):
