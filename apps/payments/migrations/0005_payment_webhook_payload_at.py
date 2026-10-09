@@ -4,9 +4,11 @@ from django.db.models import F
 
 def backfill_webhook_payload_at(apps, schema_editor):
     Payment = apps.get_model("payments", "Payment")
-    Payment.objects.exclude(webhook_payload={}).filter(
-        webhook_payload_at__isnull=True
-    ).update(webhook_payload_at=F("updated_at"))
+    (
+        Payment.objects.exclude(webhook_payload={})
+        .filter(webhook_payload_at__isnull=True)
+        .update(webhook_payload_at=F("updated_at"))
+    )
 
 
 class Migration(migrations.Migration):
