@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { InfoSection } from "./InfoSection";
@@ -165,6 +165,8 @@ describe("InfoSection", () => {
       />,
     );
 
+    expect(screen.queryByTitle(/Карта: Пенза/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Показать карту Яндекса" }));
     expect(screen.getByTitle(/Карта: Пенза/)).toBeInTheDocument();
     // На секцию ведёт адрес из шапки: /info/about#route.
     expect(screen.getByTitle(/Карта: Пенза/).closest("section")).toHaveAttribute("id", "route");
