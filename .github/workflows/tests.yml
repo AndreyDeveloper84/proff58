@@ -17,7 +17,7 @@ jobs:
       - name: Ruff
         run: ruff check .
       - name: Black
-        run: black --check .
+        run: black --diff --check .
 
   frontend:
     # #435 (M-12): обязательный quality gate фронта — lint, unit-тесты, build
