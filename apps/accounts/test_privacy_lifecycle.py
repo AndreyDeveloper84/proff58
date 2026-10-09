@@ -59,7 +59,9 @@ def test_anonymize_account_scrubs_terminal_order_but_preserves_active_fulfillmen
         comment="Operational note",
     )
 
-    assert anonymize_account(user, reason=AccountDeletionAudit.Reason.USER_REQUEST) is True
+    assert (
+        anonymize_account(user, reason=AccountDeletionAudit.Reason.USER_REQUEST) is True
+    )
 
     terminal.refresh_from_db()
     active.refresh_from_db()
@@ -82,7 +84,9 @@ def test_anonymize_account_scrubs_terminal_order_but_preserves_active_fulfillmen
     assert not user.has_usable_password()
     assert AccountDeletionAudit.objects.count() == 1
 
-    assert anonymize_account(user, reason=AccountDeletionAudit.Reason.USER_REQUEST) is False
+    assert (
+        anonymize_account(user, reason=AccountDeletionAudit.Reason.USER_REQUEST) is False
+    )
     assert AccountDeletionAudit.objects.count() == 1
 
 
