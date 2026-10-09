@@ -58,9 +58,7 @@ def test_anonymize_account_scrubs_terminal_order_and_keeps_active_fulfillment():
         comment="Operational note",
     )
 
-    assert (
-        anonymize_account(user, reason=AccountDeletionAudit.Reason.USER_REQUEST) is True
-    )
+    assert anonymize_account(user, reason=AccountDeletionAudit.Reason.USER_REQUEST) is True
 
     terminal.refresh_from_db()
     active.refresh_from_db()
@@ -157,9 +155,7 @@ def test_inactivity_lifecycle_warns_then_anonymizes(django_capture_on_commit_cal
 
     assert first["warnings_created"] == 1
     assert user.inactivity_warning_at is not None
-    assert Notification.objects.filter(
-        user=user, event="account_inactivity_warning"
-    ).exists()
+    assert Notification.objects.filter(user=user, event="account_inactivity_warning").exists()
 
     User.objects.filter(pk=user.pk).update(
         inactivity_warning_at=timezone.now() - timedelta(days=31)
