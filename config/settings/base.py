@@ -457,6 +457,11 @@ OAUTH_HTTP_BUDGET = env.int("OAUTH_HTTP_BUDGET", default=15)
 NOTIFICATION_LOG_RETENTION_DAYS = env.int("NOTIFICATION_LOG_RETENTION_DAYS", default=90)
 NOTIFICATION_RETENTION_DAYS = env.int("NOTIFICATION_RETENTION_DAYS", default=365)
 
+# Retention for one-shot “notify when available” subscriptions.
+AVAILABILITY_ACTIVE_RETENTION_MONTHS = env.int("AVAILABILITY_ACTIVE_RETENTION_MONTHS", default=6)
+AVAILABILITY_TERMINAL_RETENTION_DAYS = env.int("AVAILABILITY_TERMINAL_RETENTION_DAYS", default=30)
+AVAILABILITY_QUEUED_STALE_MINUTES = env.int("AVAILABILITY_QUEUED_STALE_MINUTES", default=60)
+
 # Публичный адрес витрины. Нужен кассе: returnUrl (куда вернуть покупателя) и
 # notificationUrl (куда слать callback) должны быть внешними https-адресами.
 # Пусто — берётся первый нелокальный ALLOWED_HOSTS (см. payments.services).
