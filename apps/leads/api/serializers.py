@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 
 from rest_framework import serializers
+from rest_framework.exceptions import ErrorDetail
 
 from apps.leads.models import ProductInquiry
 from apps.leads.services import create_inquiry
@@ -30,7 +31,14 @@ class ProductInquirySerializer(serializers.ModelSerializer):
 
         if attrs.get("kind") == InquiryKind.RESTOCK_NOTIFY:
             raise serializers.ValidationError(
-                {"kind": {"code": "deprecated_inquiry_kind", "message": "Используйте подписку на поступление через MAX."}}
+                {
+                    "kind": [
+                        ErrorDetail(
+                            "Используйте подписку на поступление через MAX.",
+                            code="deprecated_inquiry_kind",
+                        )
+                    ]
+                }
             )
         if attrs.get("kind") != InquiryKind.CONSULTATION and not attrs.get("product"):
             raise serializers.ValidationError({"product": "Для этого типа заявки требуется товар."})
