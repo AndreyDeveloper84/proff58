@@ -56,22 +56,21 @@ def test_backup_script_is_executable():
 
 def test_backup_script_uses_private_umask():
     text = BACKUP.read_text(encoding="utf-8")
-    assert re.search(
-        r"(?m)^umask\s+077\s*$", text
-    ), "backup.sh обязан выставлять umask 077 до создания backup-файлов"
+    error = "backup.sh обязан выставлять umask 077 до создания backup-файлов"
+    assert re.search(r"(?m)^umask\s+077\s*$", text), error
 
 
 def test_backup_script_uses_exact_minute_retention_cutoff():
     text = BACKUP.read_text(encoding="utf-8")
-    assert (
-        "retention_minutes=$((RETENTION_DAYS * 24 * 60))" in text
-    ), "retention должен переводить дни в точные минуты"
-    assert (
-        '-mmin +"$retention_minutes"' in text
-    ), "cleanup backup обязан использовать exact-minute cutoff через -mmin"
-    assert (
-        '-mtime +"$RETENTION_DAYS"' not in text
-    ), "rounded -mtime не гарантирует hard-max 14×24h"
+
+    error = "retention должен переводить дни в точные минуты"
+    assert "retention_minutes=$((RETENTION_DAYS * 24 * 60))" in text, error
+
+    error = "cleanup backup обязан использовать exact-minute cutoff через -mmin"
+    assert '-mmin +"$retention_minutes"' in text, error
+
+    error = "rounded -mtime не гарантирует hard-max 14×24h"
+    assert '-mtime +"$RETENTION_DAYS"' not in text, error
 
 
 def test_deploy_invokes_release_step():
