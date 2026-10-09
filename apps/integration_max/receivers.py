@@ -107,7 +107,11 @@ def _on_order_paid(sender, order_id, **kwargs):
     if not order:
         return
     _notify(
-        order, user, "order_paid", {"order_number": order.order_number}, f"order-paid-{order_id}"
+        order,
+        user,
+        "order_paid",
+        {"order_number": order.order_number},
+        f"order-paid-{order_id}",
     )
 
 
