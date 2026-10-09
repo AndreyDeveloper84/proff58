@@ -32,6 +32,11 @@ app.conf.beat_schedule = {
         "task": "apps.orders.tasks.release_expired_reservations",
         "schedule": 10 * 60,  # каждые 10 минут
     },
+    # DRF-2956: physical cleanup of expired guest bearer tokens.
+    "cleanup-expired-guest-access-tokens": {
+        "task": "apps.orders.tasks.cleanup_expired_guest_access_tokens",
+        "schedule": crontab(hour=4, minute=35),
+    },
     # #559 (эпик #557): истечение B2B-счетов 24ч → отмена заказа + снятие резерва.
     "expire-b2b-invoices": {
         "task": "apps.orders.tasks.expire_b2b_invoices",
