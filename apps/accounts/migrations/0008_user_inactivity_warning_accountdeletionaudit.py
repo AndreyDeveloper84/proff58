@@ -1,11 +1,10 @@
 import uuid
 
-from django.db import migrations, models
 import django.utils.timezone
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("accounts", "0007_alter_user_phone_user_accounts_user_unique_email"),
     ]
@@ -24,9 +23,22 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="AccountDeletionAudit",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("event_id", models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-                ("occurred_at", models.DateTimeField(db_index=True, default=django.utils.timezone.now)),
+                (
+                    "occurred_at",
+                    models.DateTimeField(
+                        db_index=True, default=django.utils.timezone.now
+                    ),
+                ),
                 (
                     "reason",
                     models.CharField(
