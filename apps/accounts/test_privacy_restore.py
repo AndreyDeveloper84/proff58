@@ -9,12 +9,12 @@ from datetime import timedelta
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.utils import timezone
 
 from apps.accounts.models import AccountDeletionAudit
 from apps.accounts.privacy import anonymize_account
 from apps.orders.models import Order
-from apps.payments.models import Payment
 
 User = get_user_model()
 
@@ -85,5 +85,5 @@ def test_restore_reconciliation_rejects_world_readable_manifest(tmp_path):
     )
     os.chmod(manifest, 0o644)
 
-    with pytest.raises(Exception, match="permissions are too broad"):
+    with pytest.raises(CommandError, match="permissions are too broad"):
         call_command("reconcile_privacy_restore", str(manifest))
