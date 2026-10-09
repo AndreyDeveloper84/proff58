@@ -141,6 +141,36 @@ jobs:
             # Повтор идемпотентен: уже поднятые контейнеры не трогаются.
             retry $compose up -d --build
 
+            # Privacy closeout smoke (DRF-2968): сначала синхронно применяем уже
+            # утверждённые retention janitors, затем read-only команда проверяет,
+            # что просроченных privacy-артефактов не осталось. В лог попадают
+            # только агрегаты — без ПД, токенов и payload contents.
+            $compose exec -T web python manage.py shell -c "
+from apps.integration_max.tasks import cleanup_max_auth_attempts
+from apps.orders.tasks import cleanup_expired_guest_access_tokens
+from apps.payments.tasks import cleanup_old_webhook_payloads
+print('privacy_cleanup_max=', cleanup_max_auth_attempts.run())
+print('privacy_cleanup_guest_tokens=', cleanup_expired_guest_access_tokens.run())
+print('privacy_cleanup_webhooks=', cleanup_old_webhook_payloads.run())
+"
+            $compose exec -T web python manage.py privacy_runtime_smoke
+
+            # Backup retention hard-cutoff должен работать не только во время
+            # ежедневного backup. Ставим idempotent cleanup-only cron каждые 15 мин
+            # и сразу прогоняем его, затем проверяем exact-age остаток.
+            if [ "${{ github.ref_name }}" = "dev" ]; then
+              privacy_backup_dir="/home/taximeter/backups/staging"
+            else
+              privacy_backup_dir="/home/taximeter/backups/prod"
+            fi
+            bash scripts/ensure_backup_cleanup_cron.sh "$(pwd)" "$privacy_backup_dir" 14
+            BACKUP_DIR="$privacy_backup_dir" BACKUP_RETENTION_DAYS=14 bash scripts/cleanup_backups.sh
+            expired_backups=$(find "$privacy_backup_dir" -maxdepth 1 -type f \
+              \( -name 'db-*.sql.gz' -o -name 'media-*.tgz' \) -mmin +20160 | wc -l)
+            echo "expired_backups=$expired_backups"
+            test "$expired_backups" -eq 0
+            crontab -l | grep -F "proff58-privacy-cleanup"
+
             # Привязки фасетов (ДРФ-1524, п.4) — ФАТАЛЬНАЯ проверка на живом дереве.
             # Каждый блок data/attribute_rules.json обязан целиться в существующую
             # категорию. Без --strict-bindings команда молча пропускает выдуманное
