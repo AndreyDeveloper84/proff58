@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.management import get_commands
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
@@ -59,7 +60,7 @@ class Command(BaseCommand):
             expires_at__lt=max_cutoff,
         ).count()
 
-        active_tombstones = UserModel().objects.filter(
+        active_tombstones = get_user_model().objects.filter(
             phone__startswith="deleted-", is_active=True
         ).count()
 
@@ -117,8 +118,3 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("privacy_runtime_smoke=PASS"))
 
-
-def UserModel():
-    from django.contrib.auth import get_user_model
-
-    return get_user_model()
