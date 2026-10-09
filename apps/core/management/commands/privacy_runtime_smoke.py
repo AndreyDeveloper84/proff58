@@ -84,6 +84,9 @@ class Command(BaseCommand):
             )
 
         checks = {
+            "guest_token_ttl_days": guest_ttl,
+            "payment_webhook_retention_days": webhook_days,
+            "max_auth_retention_hours": max_hours,
             "expired_guest_tokens": expired_guest_tokens,
             "expired_webhook_payloads": expired_webhook_payloads,
             "stale_max_pending": stale_max_pending,
@@ -98,6 +101,12 @@ class Command(BaseCommand):
         for key, value in checks.items():
             self.stdout.write(f"{key}={value}")
 
+        if guest_ttl != 90:
+            failures.append("guest access token TTL is not 90 days")
+        if webhook_days != 30:
+            failures.append("payment webhook retention is not 30 days")
+        if max_hours != 24:
+            failures.append("MAX auth retention is not 24 hours")
         if expired_guest_tokens:
             failures.append("expired guest access tokens remain")
         if expired_webhook_payloads:
