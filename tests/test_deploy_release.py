@@ -54,6 +54,26 @@ def test_backup_script_is_executable():
     assert mode & stat.S_IXUSR, "scripts/backup.sh должен быть исполняемым (cron зовёт ./)"
 
 
+def test_backup_script_uses_private_umask():
+    text = BACKUP.read_text(encoding="utf-8")
+    assert re.search(
+        r"(?m)^umask\\s+077\\s*$", text
+    ), "backup.sh обязан выставлять umask 077 до создания backup-файлов"
+
+
+def test_backup_script_uses_exact_minute_retention_cutoff():
+    text = BACKUP.read_text(encoding="utf-8")
+    assert (
+        "retention_minutes=$((RETENTION_DAYS * 24 * 60))" in text
+    ), "retention должен переводить дни в точные минуты"
+    assert (
+        '-mmin +"$retention_minutes"' in text
+    ), "cleanup backup обязан использовать exact-minute cutoff через -mmin"
+    assert (
+        '-mtime +"$RETENTION_DAYS"' not in text
+    ), "rounded -mtime не гарантирует hard-max 14×24h"
+
+
 def test_deploy_invokes_release_step():
     text = DEPLOY.read_text(encoding="utf-8")
     assert re.search(
