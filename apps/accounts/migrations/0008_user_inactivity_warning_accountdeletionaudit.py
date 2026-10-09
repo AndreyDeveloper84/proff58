@@ -32,7 +32,10 @@ class Migration(migrations.Migration):
                         verbose_name="ID",
                     ),
                 ),
-                ("event_id", models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
+                (
+                    "event_id",
+                    models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+                ),
                 (
                     "occurred_at",
                     models.DateTimeField(
