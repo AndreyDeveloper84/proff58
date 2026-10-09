@@ -133,6 +133,7 @@ def get_eligible_product(slug: str) -> Product:
         raise ProductNotEligible()
     return product
 
+
 def get_status(user, product: Product) -> ProductAvailabilitySubscription | None:
     """Активная/queued подписка пользователя на товар, если есть."""
     return (
@@ -145,6 +146,7 @@ def get_status(user, product: Product) -> ProductAvailabilitySubscription | None
         .order_by("-subscribed_at")
         .first()
     )
+
 
 def subscribe(user, product: Product) -> ProductAvailabilitySubscription:
     """Оформить подписку (#517 AC: идемпотентно — повтор возвращает existing active).
@@ -187,6 +189,7 @@ def subscribe(user, product: Product) -> ProductAvailabilitySubscription:
             status=SubscriptionStatus.ACTIVE,
         )
 
+
 def unsubscribe(user, product: Product) -> bool:
     """Отменить активную/queued подписку (#517 AC: DELETE повторяем и безопасен).
 
@@ -200,6 +203,7 @@ def unsubscribe(user, product: Product) -> bool:
         status__in=(SubscriptionStatus.ACTIVE, SubscriptionStatus.QUEUED),
     ).update(status=SubscriptionStatus.CANCELLED, cancelled_at=timezone.now())
     return updated > 0
+
 
 def cancel_active_for_user(user, *, channel: str = SubscriptionChannel.MAX) -> int:
     """Отменить все активные подписки пользователя на канал (#517 AC: unlink MAX
@@ -239,6 +243,7 @@ def claim_active_subscriptions(
             )
     return subs
 
+
 def mark_notified(subscription_id: int) -> None:
     """one-shot: подписка считается отработанной независимо от того, дошла ли
     реальная доставка (skip по preferences/unlink MAX — тоже терминальный исход
@@ -246,6 +251,7 @@ def mark_notified(subscription_id: int) -> None:
     ProductAvailabilitySubscription.objects.filter(pk=subscription_id).update(
         status=SubscriptionStatus.NOTIFIED, notified_at=timezone.now()
     )
+
 
 def mark_notified_bulk(subscription_ids) -> int:
     """Как mark_notified, но одним UPDATE на пачку (#521) — fan-out не должен
@@ -257,6 +263,7 @@ def mark_notified_bulk(subscription_ids) -> int:
     return ProductAvailabilitySubscription.objects.filter(pk__in=ids).update(
         status=SubscriptionStatus.NOTIFIED, notified_at=timezone.now()
     )
+
 
 def revert_to_active(subscription_ids) -> int:
     """Вернуть queued-подписки обратно в active (#521 AC).
