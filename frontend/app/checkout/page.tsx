@@ -1003,6 +1003,14 @@ export default function CheckoutPage() {
           )}
         </div>
 
+        <p className="text-xs leading-5 text-ink-3">
+          Данные из формы используются для оформления и исполнения заказа. Подробнее —{" "}
+          <Link href="/info/privacy" className="text-accent hover:underline">
+            в Политике обработки персональных данных
+          </Link>
+          .
+        </p>
+
         <div className="fixed inset-x-0 bottom-0 z-50 flex h-[72px] items-center justify-between gap-3 border-t border-line bg-surface px-4 shadow-[0_-8px_24px_rgba(20,24,27,0.08)] lg:static lg:block lg:h-auto lg:border-0 lg:bg-transparent lg:px-0 lg:shadow-none">
           <div className="lg:hidden">
             <p className="text-xs text-ink-3">Предварительный итог</p>
@@ -1030,11 +1038,4 @@ export default function CheckoutPage() {
       </form>
     </main>
   );
-}        <p className="mt-3 text-xs leading-5 text-ink-3">
-          Данные из формы используются для оформления и исполнения заказа. Подробнее —{" "}
-          <Link href="/info/privacy" className="text-accent hover:underline">
-            в Политике обработки персональных данных
-          </Link>
-          .
-        </p>
-
+}
