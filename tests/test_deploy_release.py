@@ -80,8 +80,8 @@ def test_backup_cleanup_script_enforces_exact_age_and_scope():
     assert "retention_minutes=$((RETENTION_DAYS * 24 * 60))" in text
     assert "-maxdepth 1 -type f" in text
     assert '-mmin +"$retention_minutes"' in text
-    assert 'db-*.sql.gz' in text
-    assert 'media-*.tgz' in text
+    assert "db-*.sql.gz" in text
+    assert "media-*.tgz" in text
 
 
 def test_backup_script_reuses_cleanup_only_script():
