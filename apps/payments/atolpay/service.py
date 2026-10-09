@@ -413,11 +413,18 @@ def _apply_payment_callback(
 
     if target == PaymentStatus.SUCCEEDED:
         _check_amount(payment, payload)
-        transitions.apply_succeeded(payment, reference=order_id, extra_fields=["webhook_payload", "webhook_payload_at"])
+        transitions.apply_succeeded(
+            payment,
+            reference=order_id,
+            extra_fields=["webhook_payload", "webhook_payload_at"],
+        )
     elif target == PaymentStatus.CANCELED:
         reason = str(payload.get("errorMessage") or payload.get("errorCode") or "не оплачен")
         transitions.apply_canceled(
-            payment, reason=reason, reference=order_id, extra_fields=["webhook_payload", "webhook_payload_at"]
+            payment,
+            reason=reason,
+            reference=order_id,
+            extra_fields=["webhook_payload", "webhook_payload_at"],
         )
     elif target in (PaymentStatus.REFUNDED, PaymentStatus.PARTIALLY_REFUNDED):
         full = target == PaymentStatus.REFUNDED
@@ -429,7 +436,9 @@ def _apply_payment_callback(
             extra_fields=["webhook_payload", "webhook_payload_at"],
         )
     elif target == PaymentStatus.WAITING_CAPTURE:
-        transitions.apply_waiting_capture(payment, extra_fields=["webhook_payload", "webhook_payload_at"])
+        transitions.apply_waiting_capture(
+            payment, extra_fields=["webhook_payload", "webhook_payload_at"]
+        )
 
 
 def _callback_amount(payload: dict) -> Decimal | None:
