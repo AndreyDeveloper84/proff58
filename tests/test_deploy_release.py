@@ -146,7 +146,10 @@ def test_deploy_rolls_django_slots_one_at_a_time():
     workflow = DEPLOY.read_text(encoding="utf-8")
     assert "bash scripts/rolling_deploy_backends.sh" in workflow
 
-    lines = [line.strip() for line in ROLLING_DEPLOY.read_text(encoding="utf-8").splitlines()]
+    lines = [
+        line.strip()
+        for line in ROLLING_DEPLOY.read_text(encoding="utf-8").splitlines()
+    ]
     slot_b = "retry $compose up -d --no-deps web-b"
     slot_a = "retry $compose up -d --no-deps web"
 
