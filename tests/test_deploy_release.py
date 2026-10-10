@@ -138,3 +138,22 @@ def test_deploy_binding_check_reports_unresolved_names():
     assert (
         "cat /tmp/la-bindings.err" in text
     ), "при падении stderr обязан печататься в лог шага — иначе непонятно, что не разрешилось"
+
+
+def test_deploy_rolls_django_slots_one_at_a_time():
+    """DRF-2972: live deploy must never replace both Django slots together."""
+    text = DEPLOY.read_text(encoding="utf-8")
+
+    slot_b = "retry $compose up -d --no-deps web-b"
+    slot_a = "retry $compose up -d --no-deps web"
+
+    assert slot_b in text, "deploy должен сначала обновлять slot B"
+    assert slot_a in text, "deploy должен отдельно обновлять slot A"
+    assert text.index(slot_b) < text.index(slot_a), "slot B обязан обновляться раньше slot A"
+    assert "wait_healthy web-b" in text
+    assert "wait_healthy web" in text
+    assert "rolling_availability=PASS" in text
+    assert (
+        "retry $compose up -d --build" not in text
+    ), "общий up -d --build снова может одновременно пересоздать оба backend slot"
+    assert "$compose restart nginx" not in text, "stack nginx должен reload'иться без restart"
