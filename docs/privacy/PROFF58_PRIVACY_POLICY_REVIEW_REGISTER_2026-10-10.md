@@ -11,10 +11,10 @@
 | 3. Состав данных | AI_REVIEWED | TECHNICAL_PASS | OWNER_APPROVED | B2B legal-entity requisites separated from representative/IP personal data |
 | 4. Цели | AI_REVIEWED | TECHNICAL_PASS | OWNER_APPROVED | current processes only; analytics/marketing conditional |
 | 5. Правовые основания и способы | AI_REVIEWED | TECHNICAL_PASS | OWNER_APPROVED | no blanket consent; separate consent rule; actions/automation added |
-| 6. Cookie/browser storage | AI_REVIEWED | TECHNICAL_PASS | PENDING | Metrika currently inactive; Yandex map click-to-load |
-| 7. Внешние сервисы/1C | AI_REVIEWED | TECHNICAL_PASS | PENDING | RUVDS/ATOL role-neutral where contract evidence missing; MAX factual; 1C internal |
-| 8. Retention/deletion | AI_REVIEWED | TECHNICAL_PASS | PENDING | mapped to implemented retention matrix |
-| 9. Backup/restore | AI_REVIEWED | TECHNICAL_PASS | PENDING | public text contains current facts only; planned 1C DR media remains internal gate |
+| 6. Cookie/browser storage | AI_REVIEWED | TECHNICAL_PASS | OWNER_APPROVED | Metrika currently inactive; Yandex map click-to-load |
+| 7. Внешние сервисы/1C | AI_REVIEWED | TECHNICAL_PASS | OWNER_APPROVED | RUVDS/ATOL role-neutral where contract evidence missing; MAX factual; 1C internal |
+| 8. Retention/deletion | AI_REVIEWED | TECHNICAL_PASS | OWNER_APPROVED | mapped to implemented retention matrix |
+| 9. Backup/restore | AI_REVIEWED | TECHNICAL_PASS | OWNER_APPROVED | public text contains current facts only; planned 1C DR media remains internal gate |
 | 10. Меры защиты | AI_REVIEWED | TECHNICAL_PASS | PENDING | factual measures only; unsupported certification/encryption excluded |
 | 11. Права субъекта | AI_REVIEWED | TECHNICAL_PASS | PENDING | access/correction/block/delete/withdraw/complaint preserved |
 | 12. Localization/cross-border | AI_REVIEWED | TECHNICAL_PASS | PENDING | current contour in Russia; current cross-border transfer = none |
@@ -60,3 +60,6 @@ Technical review must now check every public statement against actual code/runti
 ## Owner approvals
 
 - 2026-10-10: Owner approved sections 1–5 as reviewed, without additional amendments.
+
+
+- 2026-10-10: Owner approved sections 6–9 as reviewed, without additional amendments.
