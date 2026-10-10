@@ -222,6 +222,8 @@ jobs:
             # Docker DNS. --no-deps не позволяет Compose тронуть уже живой web(A).
             retry $compose up -d --no-deps backend-router
             wait_healthy backend-router
+            $compose exec -T backend-router nginx -t
+            $compose exec -T backend-router nginx -s reload
 
             # Next/BFF обязан перестать ходить прямо в один web до обновления slot A.
             retry $compose up -d --no-deps frontend
