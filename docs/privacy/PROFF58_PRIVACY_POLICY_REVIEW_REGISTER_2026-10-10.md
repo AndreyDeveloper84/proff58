@@ -6,11 +6,11 @@
 
 | Section | Legal review | Technical review | Owner approval | Notes |
 |---|---|---|---|---|
-| 1. Общие положения | AI_REVIEWED | TECHNICAL_PASS | PENDING | purpose limitation/minimization aligned |
-| 2. Оператор | AI_REVIEWED | TECHNICAL_PASS | PENDING | operator/requisites/privacy email from evidence |
-| 3. Состав данных | AI_REVIEWED | TECHNICAL_PASS | PENDING | B2B legal-entity requisites separated from representative/IP personal data |
-| 4. Цели | AI_REVIEWED | TECHNICAL_PASS | PENDING | current processes only; analytics/marketing conditional |
-| 5. Правовые основания и способы | AI_REVIEWED | TECHNICAL_PASS | PENDING | no blanket consent; separate consent rule; actions/automation added |
+| 1. Общие положения | AI_REVIEWED | TECHNICAL_PASS | OWNER_APPROVED | purpose limitation/minimization aligned |
+| 2. Оператор | AI_REVIEWED | TECHNICAL_PASS | OWNER_APPROVED | operator/requisites/privacy email from evidence |
+| 3. Состав данных | AI_REVIEWED | TECHNICAL_PASS | OWNER_APPROVED | B2B legal-entity requisites separated from representative/IP personal data |
+| 4. Цели | AI_REVIEWED | TECHNICAL_PASS | OWNER_APPROVED | current processes only; analytics/marketing conditional |
+| 5. Правовые основания и способы | AI_REVIEWED | TECHNICAL_PASS | OWNER_APPROVED | no blanket consent; separate consent rule; actions/automation added |
 | 6. Cookie/browser storage | AI_REVIEWED | TECHNICAL_PASS | PENDING | Metrika currently inactive; Yandex map click-to-load |
 | 7. Внешние сервисы/1C | AI_REVIEWED | TECHNICAL_PASS | PENDING | RUVDS/ATOL role-neutral where contract evidence missing; MAX factual; 1C internal |
 | 8. Retention/deletion | AI_REVIEWED | TECHNICAL_PASS | PENDING | mapped to implemented retention matrix |
@@ -55,3 +55,8 @@ Technical review must now check every public statement against actual code/runti
 - Sections 11–14: no technical behavior is claimed beyond the implemented privacy contact, current Russian localization/runtime inventory, permanent policy route and update process.
 
 **Technical verdict:** no known code/runtime contradiction blocks Owner review of the candidate.
+
+
+## Owner approvals
+
+- 2026-10-10: Owner approved sections 1–5 as reviewed, without additional amendments.
