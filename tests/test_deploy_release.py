@@ -21,6 +21,7 @@ RELEASE = ROOT / "docker" / "release.sh"
 BACKUP = ROOT / "scripts" / "backup.sh"
 BACKUP_CLEANUP = ROOT / "scripts" / "cleanup_backups.sh"
 DEPLOY = ROOT / ".github" / "workflows" / "deploy.yml"
+ROLLING_DEPLOY = ROOT / "scripts" / "rolling_deploy_backends.sh"
 
 
 def test_web_entrypoint_does_not_apply_migrations():
@@ -142,8 +143,10 @@ def test_deploy_binding_check_reports_unresolved_names():
 
 def test_deploy_rolls_django_slots_one_at_a_time():
     """DRF-2972: live deploy must never replace both Django slots together."""
-    text = DEPLOY.read_text(encoding="utf-8")
+    workflow = DEPLOY.read_text(encoding="utf-8")
+    assert "bash scripts/rolling_deploy_backends.sh" in workflow
 
+    text = ROLLING_DEPLOY.read_text(encoding="utf-8")
     slot_b = "retry $compose up -d --no-deps web-b"
     slot_a = "retry $compose up -d --no-deps web"
 
