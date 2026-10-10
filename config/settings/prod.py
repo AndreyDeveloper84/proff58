@@ -54,7 +54,7 @@ CACHES = {
 FACETS_CACHE_TTL = env.int("FACETS_CACHE_TTL", default=300)
 
 # Fail-fast: без реального домена CSRF_TRUSTED_ORIGINS пуст → вход в админку сломан (#282).
-_internal = {"*", "localhost", "127.0.0.1", "web"}
+_internal = {"*", "localhost", "127.0.0.1", "web", "web-b", "backend-router"}
 if "*" in ALLOWED_HOSTS:
     raise ImproperlyConfigured(
         "DJANGO_ALLOWED_HOSTS содержит '*' — в проде запрещено. Укажите явные домены."
