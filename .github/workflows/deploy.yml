@@ -43,6 +43,12 @@ jobs:
           fi
 
           git fetch --no-tags --depth=2 origin "$before" || true
+          if ! git cat-file -e "$before^{commit}" 2>/dev/null; then
+            echo "runtime_changed=true" >> "$GITHUB_OUTPUT"
+            echo "Base SHA is unavailable locally — live deploy required."
+            exit 0
+          fi
+
           mapfile -t files < <(git diff --name-only "$before" "$after")
 
           runtime_changed=false
