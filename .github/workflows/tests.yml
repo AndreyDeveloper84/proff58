@@ -27,6 +27,8 @@ jobs:
           EOF
       - name: Production compose config
         run: docker compose -f docker-compose.prod.yml config --quiet
+      - name: Rolling deploy shell syntax
+        run: bash -n scripts/rolling_deploy_backends.sh
       - name: Backend router nginx config
         run: |
           docker run --rm \
