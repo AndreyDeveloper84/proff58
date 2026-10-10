@@ -188,9 +188,115 @@ jobs:
             # миграции должен ОСТАНОВИТЬ деплой (бэкап уже снят, откат по docs/DEPLOY.md).
             bash docker/release.sh
 
-            # Подъём/обновление сервисов новым образом (web стартует на мигрированной БД).
-            # Повтор идемпотентен: уже поднятые контейнеры не трогаются.
-            retry $compose up -d --build
+            # DRF-2972: backend обновляется rolling, а не одним compose up.
+            # Slot B поднимаем первым: при первом переходе старый web(A) продолжает
+            # обслуживать текущий nginx; на следующих deploy router держит A, пока B меняется.
+            wait_healthy() {
+              local service="$1" cid status
+              for _ in $(seq 1 90); do
+                cid="$($compose ps -q "$service" 2>/dev/null || true)"
+                if [ -n "$cid" ]; then
+                  status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$cid" 2>/dev/null || true)"
+                  if [ "$status" = "healthy" ]; then
+                    echo "$service=healthy"
+                    return 0
+                  fi
+                  if [ "$status" = "unhealthy" ] || [ "$status" = "exited" ] || [ "$status" = "dead" ]; then
+                    echo "::error::$service entered terminal health state: $status"
+                    $compose logs --tail=100 "$service" || true
+                    return 1
+                  fi
+                fi
+                sleep 2
+              done
+              echo "::error::Timeout waiting for $service health"
+              $compose ps "$service" || true
+              $compose logs --tail=100 "$service" || true
+              return 1
+            }
+
+            retry $compose up -d --no-deps web-b
+            wait_healthy web-b
+
+            # Стабильный router видит оба Django slot и динамически обновляет их
+            # Docker DNS. --no-deps не позволяет Compose тронуть уже живой web(A).
+            retry $compose up -d --no-deps backend-router
+            wait_healthy backend-router
+
+            # Next/BFF обязан перестать ходить прямо в один web до обновления slot A.
+            retry $compose up -d --no-deps frontend
+            wait_healthy frontend
+
+            # default.conf — bind mount: применяем новую маршрутизацию reload'ом,
+            # без restart nginx и без разрыва входящих соединений.
+            $compose exec -T nginx nginx -t
+            $compose exec -T nginx nginx -s reload
+
+            # Проверяем новую цепочку nginx -> backend-router до остановки slot A.
+            $compose exec -T web-b python - <<'PY'
+import sys
+import urllib.error
+import urllib.request
+
+targets = (
+    ("http://nginx/healthz/", 200),
+    ("http://nginx/api/1c/orders/new", 403),
+)
+for url, expected in targets:
+    try:
+        with urllib.request.urlopen(url, timeout=5) as response:
+            code = response.status
+    except urllib.error.HTTPError as exc:
+        code = exc.code
+    if code != expected:
+        raise SystemExit(f"pre-roll availability failed: {url} -> {code}, expected {expected}")
+print("pre_roll_availability=PASS")
+PY
+
+            # Непрерывный probe через внешний для compose nginx путь, пока slot A
+            # пересоздаётся. /api/1c/orders/new без ключа обязан стабильно давать 403:
+            # это безопасный auth-gate smoke, который не выгружает и не меняет заказы.
+            availability_log=/tmp/drf2972-availability.log
+            $compose exec -T web-b python - <<'PY' >"$availability_log" 2>&1 &
+import time
+import urllib.error
+import urllib.request
+
+targets = (
+    ("http://nginx/healthz/", 200),
+    ("http://nginx/api/1c/orders/new", 403),
+)
+for tick in range(90):
+    for url, expected in targets:
+        try:
+            with urllib.request.urlopen(url, timeout=5) as response:
+                code = response.status
+        except urllib.error.HTTPError as exc:
+            code = exc.code
+        except Exception as exc:
+            raise SystemExit(f"availability tick={tick} {url}: {exc}")
+        if code != expected:
+            raise SystemExit(
+                f"availability tick={tick} {url} -> {code}, expected {expected}"
+            )
+    time.sleep(1)
+print("rolling_availability=PASS")
+PY
+            availability_pid=$!
+
+            # Slot A обновляется только после того, как B+router готовы.
+            retry $compose up -d --no-deps web
+            wait_healthy web
+
+            if ! wait "$availability_pid"; then
+              cat "$availability_log" || true
+              echo "::error::DRF-2972 rolling availability probe observed an outage"
+              exit 1
+            fi
+            cat "$availability_log"
+
+            # Worker'ы не стоят на HTTP-пути: их можно обновить после обоих web slot.
+            retry $compose up -d --no-deps celery celery-onec celery-images celery-beat
 
             # Privacy closeout smoke (DRF-2968): сначала синхронно применяем уже
             # утверждённые retention janitors, затем read-only команда проверяет,
@@ -259,11 +365,11 @@ jobs:
               echo "::warning::Привязки фасетов: $dead привязок легли на мёртвые узлы (dead_category) — фасета на витрине не будет (ДРФ-1524)"
             fi
 
-            # nginx подключает default.conf через bind-mount: смена содержимого файла НЕ
-            # пересоздаёт контейнер автоматически (compose смотрит на спеку, не на содержимое
-            # mount) → принудительно проверяем и перечитываем конфиг, иначе изменения маршрутов
-            # (напр. headless: / → Next) не применяются и staging выглядит «без изменений».
-            $compose exec -T nginx nginx -t && $compose restart nginx
+            # Конфиг nginx уже был применён reload'ом до rolling web(A).
+            # Повторно валидируем его после post-deploy проверок, но контейнер не restart'им:
+            # graceful reload сохраняет текущие соединения и не создаёт отдельное окно 502.
+            $compose exec -T nginx nginx -t
+            $compose exec -T nginx nginx -s reload
 
             # Smoke развёрнутого nginx (#424/B-04): строгий default-src 'none' — только для
             # /api|/healthz, витрина/_next/* — рабочая storefront-политика. Гоняем из контейнера
