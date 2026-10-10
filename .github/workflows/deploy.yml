@@ -17,8 +17,59 @@ jobs:
   tests:
     uses: ./.github/workflows/tests.yml
 
+  changes:
+    name: classify deploy changes
+    runs-on: ubuntu-latest
+    outputs:
+      runtime_changed: ${{ steps.classify.outputs.runtime_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Определить, нужен ли live deploy
+        id: classify
+        shell: bash
+        run: |
+          set -euo pipefail
+          before="${{ github.event.before }}"
+          after="${{ github.sha }}"
+
+          # Для первого push/неполной истории безопасно считаем изменение runtime.
+          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
+            echo "runtime_changed=true" >> "$GITHUB_OUTPUT"
+            echo "No reliable base SHA — live deploy required."
+            exit 0
+          fi
+
+          git fetch --no-tags --depth=2 origin "$before" || true
+          if ! git cat-file -e "$before^{commit}" 2>/dev/null; then
+            echo "runtime_changed=true" >> "$GITHUB_OUTPUT"
+            echo "Base SHA is unavailable locally — live deploy required."
+            exit 0
+          fi
+
+          mapfile -t files < <(git diff --name-only "$before" "$after")
+
+          runtime_changed=false
+          for file in "${files[@]}"; do
+            case "$file" in
+              docs/*|*.md|*.mdx|README*|.github/*|tests/*|*/tests/*|*/test_*.py|*/tests.py|*.test.ts|*.test.tsx|*.spec.ts|*.spec.tsx)
+                echo "non-runtime: $file"
+                ;;
+              *)
+                echo "runtime: $file"
+                runtime_changed=true
+                ;;
+            esac
+          done
+
+          echo "runtime_changed=$runtime_changed" >> "$GITHUB_OUTPUT"
+          echo "runtime_changed=$runtime_changed"
+
   deploy:
-    needs: tests
+    needs: [tests, changes]
+    if: needs.changes.outputs.runtime_changed == 'true'
     runs-on: ubuntu-latest
     # Среда выбирается по ветке. Секреты берутся из соответствующего
     # GitHub Environment (production/staging) — они не пересекаются.
