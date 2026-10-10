@@ -21,6 +21,7 @@ RELEASE = ROOT / "docker" / "release.sh"
 BACKUP = ROOT / "scripts" / "backup.sh"
 BACKUP_CLEANUP = ROOT / "scripts" / "cleanup_backups.sh"
 DEPLOY = ROOT / ".github" / "workflows" / "deploy.yml"
+ROLLING_DEPLOY = ROOT / "scripts" / "rolling_deploy_backends.sh"
 
 
 def test_web_entrypoint_does_not_apply_migrations():
@@ -138,3 +139,33 @@ def test_deploy_binding_check_reports_unresolved_names():
     assert (
         "cat /tmp/la-bindings.err" in text
     ), "при падении stderr обязан печататься в лог шага — иначе непонятно, что не разрешилось"
+
+
+def test_deploy_rolls_django_slots_one_at_a_time():
+    """DRF-2972: live deploy must never replace both Django slots together."""
+    workflow = DEPLOY.read_text(encoding="utf-8")
+    assert "bash scripts/rolling_deploy_backends.sh" in workflow
+
+    lines = [
+        line.strip()
+        for line in ROLLING_DEPLOY.read_text(encoding="utf-8").splitlines()
+    ]
+    slot_b = "retry $compose up -d --no-deps web-b"
+    slot_a = "retry $compose up -d --no-deps web"
+
+    assert slot_b in lines, "deploy должен сначала обновлять slot B"
+    assert slot_a in lines, "deploy должен отдельно обновлять slot A"
+    assert lines.index(slot_b) < lines.index(
+        slot_a
+    ), "slot B обязан обновляться раньше slot A"
+
+    text = "\n".join(lines)
+    assert "wait_healthy web-b" in text
+    assert "wait_healthy web" in text
+    assert "rolling_availability=PASS" in text
+    assert (
+        "retry $compose up -d --build" not in text
+    ), "общий up -d --build снова может одновременно пересоздать оба backend slot"
+    assert (
+        "$compose restart nginx" not in text
+    ), "stack nginx должен reload'иться без restart"

@@ -33,9 +33,13 @@ if (
 # провайдера чеков. Без этого покупатель упрётся в ошибку уже после оформления.
 PAYMENTS_ENABLED = env.bool("PAYMENTS_ENABLED", default=False)
 
-# Межсервисные запросы внутри Docker (Next SSR → Django по http://web:8000) приходят с Host "web".
-# Добавляем внутренний хост точечно в prod (не глобально в base) — управляемо через env.
-ALLOWED_HOSTS += env.list("INTERNAL_ALLOWED_HOSTS", default=["web"])
+# Межсервисные запросы внутри Docker идут через stable backend-router; сам router
+# балансирует два Django slot (web/web-b). Разрешаем только эти внутренние имена
+# точечно в prod (не глобально в base) — список можно переопределить через env.
+ALLOWED_HOSTS += env.list(
+    "INTERNAL_ALLOWED_HOSTS",
+    default=["web", "web-b", "backend-router"],
+)
 
 # Кэш — общий Redis для всех воркеров gunicorn. LocMem был бы у каждого процесса
 # свой, и прогретое дерево каталога не переиспользовалось бы между воркерами.
@@ -54,7 +58,7 @@ CACHES = {
 FACETS_CACHE_TTL = env.int("FACETS_CACHE_TTL", default=300)
 
 # Fail-fast: без реального домена CSRF_TRUSTED_ORIGINS пуст → вход в админку сломан (#282).
-_internal = {"*", "localhost", "127.0.0.1", "web"}
+_internal = {"*", "localhost", "127.0.0.1", "web", "web-b", "backend-router"}
 if "*" in ALLOWED_HOSTS:
     raise ImproperlyConfigured(
         "DJANGO_ALLOWED_HOSTS содержит '*' — в проде запрещено. Укажите явные домены."
