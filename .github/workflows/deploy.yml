@@ -234,54 +234,54 @@ jobs:
 
             # Проверяем новую цепочку nginx -> backend-router до остановки slot A.
             $compose exec -T web-b python - <<'PY'
-import sys
-import urllib.error
-import urllib.request
-
-targets = (
-    ("http://nginx/healthz/", 200),
-    ("http://nginx/api/1c/orders/new", 403),
-)
-for url, expected in targets:
-    try:
-        with urllib.request.urlopen(url, timeout=5) as response:
-            code = response.status
-    except urllib.error.HTTPError as exc:
-        code = exc.code
-    if code != expected:
-        raise SystemExit(f"pre-roll availability failed: {url} -> {code}, expected {expected}")
-print("pre_roll_availability=PASS")
-PY
+            import sys
+            import urllib.error
+            import urllib.request
+            
+            targets = (
+                ("http://nginx/healthz/", 200),
+                ("http://nginx/api/1c/orders/new", 403),
+            )
+            for url, expected in targets:
+                try:
+                    with urllib.request.urlopen(url, timeout=5) as response:
+                        code = response.status
+                except urllib.error.HTTPError as exc:
+                    code = exc.code
+                if code != expected:
+                    raise SystemExit(f"pre-roll availability failed: {url} -> {code}, expected {expected}")
+            print("pre_roll_availability=PASS")
+            PY
 
             # Непрерывный probe через внешний для compose nginx путь, пока slot A
             # пересоздаётся. /api/1c/orders/new без ключа обязан стабильно давать 403:
             # это безопасный auth-gate smoke, который не выгружает и не меняет заказы.
             availability_log=/tmp/drf2972-availability.log
             $compose exec -T web-b python - <<'PY' >"$availability_log" 2>&1 &
-import time
-import urllib.error
-import urllib.request
-
-targets = (
-    ("http://nginx/healthz/", 200),
-    ("http://nginx/api/1c/orders/new", 403),
-)
-for tick in range(90):
-    for url, expected in targets:
-        try:
-            with urllib.request.urlopen(url, timeout=5) as response:
-                code = response.status
-        except urllib.error.HTTPError as exc:
-            code = exc.code
-        except Exception as exc:
-            raise SystemExit(f"availability tick={tick} {url}: {exc}")
-        if code != expected:
-            raise SystemExit(
-                f"availability tick={tick} {url} -> {code}, expected {expected}"
+            import time
+            import urllib.error
+            import urllib.request
+            
+            targets = (
+                ("http://nginx/healthz/", 200),
+                ("http://nginx/api/1c/orders/new", 403),
             )
-    time.sleep(1)
-print("rolling_availability=PASS")
-PY
+            for tick in range(90):
+                for url, expected in targets:
+                    try:
+                        with urllib.request.urlopen(url, timeout=5) as response:
+                            code = response.status
+                    except urllib.error.HTTPError as exc:
+                        code = exc.code
+                    except Exception as exc:
+                        raise SystemExit(f"availability tick={tick} {url}: {exc}")
+                    if code != expected:
+                        raise SystemExit(
+                            f"availability tick={tick} {url} -> {code}, expected {expected}"
+                        )
+                time.sleep(1)
+            print("rolling_availability=PASS")
+            PY
             availability_pid=$!
 
             # Slot A обновляется только после того, как B+router готовы.
