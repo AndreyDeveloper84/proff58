@@ -146,17 +146,13 @@ def test_deploy_rolls_django_slots_one_at_a_time():
     workflow = DEPLOY.read_text(encoding="utf-8")
     assert "bash scripts/rolling_deploy_backends.sh" in workflow
 
-    lines = [
-        line.strip() for line in ROLLING_DEPLOY.read_text(encoding="utf-8").splitlines()
-    ]
+    lines = [line.strip() for line in ROLLING_DEPLOY.read_text(encoding="utf-8").splitlines()]
     slot_b = "retry $compose up -d --no-deps web-b"
     slot_a = "retry $compose up -d --no-deps web"
 
     assert slot_b in lines, "deploy должен сначала обновлять slot B"
     assert slot_a in lines, "deploy должен отдельно обновлять slot A"
-    assert (
-        lines.index(slot_b) < lines.index(slot_a)
-    ), "slot B обязан обновляться раньше slot A"
+    assert lines.index(slot_b) < lines.index(slot_a), "slot B обязан обновляться раньше slot A"
 
     text = "\n".join(lines)
     assert "wait_healthy web-b" in text
@@ -165,6 +161,4 @@ def test_deploy_rolls_django_slots_one_at_a_time():
     assert (
         "retry $compose up -d --build" not in text
     ), "общий up -d --build снова может одновременно пересоздать оба backend slot"
-    assert (
-        "$compose restart nginx" not in text
-    ), "stack nginx должен reload'иться без restart"
+    assert "$compose restart nginx" not in text, "stack nginx должен reload'иться без restart"
