@@ -155,8 +155,8 @@ def test_deploy_rolls_django_slots_one_at_a_time():
 
     assert slot_b in lines, "deploy должен сначала обновлять slot B"
     assert slot_a in lines, "deploy должен отдельно обновлять slot A"
-    assert lines.index(slot_b) < lines.index(
-        slot_a
+    assert (
+        lines.index(slot_b) < lines.index(slot_a)
     ), "slot B обязан обновляться раньше slot A"
 
     text = "\n".join(lines)
