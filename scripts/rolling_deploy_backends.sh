@@ -9,6 +9,7 @@ set -euo pipefail
 
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 compose="docker compose -f $COMPOSE_FILE"
+PROBE_HOST="${PROBE_HOST:-proff58.ru}"
 
 retry() {
   local n=1 max=3 delay=15
@@ -73,17 +74,21 @@ $compose exec -T nginx nginx -s reload
 
 # Safe pre-roll smoke. The 1C endpoint without a key must return 403; it does not
 # export or mutate any order and proves nginx -> router -> Django is available.
-$compose exec -T web-b python - <<'PY'
+$compose exec -T -e PROBE_HOST="$PROBE_HOST" web-b python - <<'PY'
+import os
 import urllib.error
 import urllib.request
 
+probe_host = os.environ["PROBE_HOST"]
+headers = {"Host": probe_host, "X-Forwarded-Proto": "https"}
 targets = (
     ("http://nginx/healthz/", 200),
     ("http://nginx/api/1c/orders/new", 403),
 )
 for url, expected in targets:
     try:
-        with urllib.request.urlopen(url, timeout=5) as response:
+        request = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(request, timeout=5) as response:
             code = response.status
     except urllib.error.HTTPError as exc:
         code = exc.code
@@ -95,11 +100,14 @@ PY
 # Continuously probe the externally relevant compose-nginx route while slot A is
 # recreated. Do not use a real API key and do not replay any mutating request.
 availability_log=/tmp/drf2972-availability.log
-$compose exec -T web-b python - <<'PY' >"$availability_log" 2>&1 &
+$compose exec -T -e PROBE_HOST="$PROBE_HOST" web-b python - <<'PY' >"$availability_log" 2>&1 &
+import os
 import time
 import urllib.error
 import urllib.request
 
+probe_host = os.environ["PROBE_HOST"]
+headers = {"Host": probe_host, "X-Forwarded-Proto": "https"}
 targets = (
     ("http://nginx/healthz/", 200),
     ("http://nginx/api/1c/orders/new", 403),
@@ -107,7 +115,8 @@ targets = (
 for tick in range(90):
     for url, expected in targets:
         try:
-            with urllib.request.urlopen(url, timeout=5) as response:
+            request = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(request, timeout=5) as response:
                 code = response.status
         except urllib.error.HTTPError as exc:
             code = exc.code
