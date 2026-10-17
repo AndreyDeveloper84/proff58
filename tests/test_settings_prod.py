@@ -55,6 +55,17 @@ def test_prod_accepts_real_secret_key(monkeypatch):
     assert prod.SECRET_KEY == "x7-real-strong-secret-please-rotate"
 
 
+def test_prod_default_internal_hosts_include_rolling_router(monkeypatch):
+    """DRF-2972: Next/router and both Django slots must be valid internal Hosts."""
+    monkeypatch.setenv("DJANGO_SECRET_KEY", "x7-real-strong-secret-please-rotate")
+    monkeypatch.setenv("DJANGO_ALLOWED_HOSTS", "proff58.ru")
+    monkeypatch.delenv("INTERNAL_ALLOWED_HOSTS", raising=False)
+
+    prod = _load_prod()
+
+    assert {"web", "web-b", "backend-router"}.issubset(set(prod.ALLOWED_HOSTS))
+
+
 def test_prod_fails_without_allowed_hosts(monkeypatch):
     """Без публичного домена prod падает при старте (#282)."""
     monkeypatch.setenv("DJANGO_SECRET_KEY", "x7-real-strong-secret-please-rotate")

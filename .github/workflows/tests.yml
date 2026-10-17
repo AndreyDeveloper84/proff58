@@ -6,6 +6,40 @@ on:
   workflow_call:
 
 jobs:
+  deploy-config:
+    # DRF-2972: production topology must be parseable before any live deploy.
+    # Also validates both nginx configs on the exact major/minor image used in compose.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Minimal compose environment
+        run: |
+          cat > .env <<'EOF'
+          POSTGRES_DB=proff58
+          POSTGRES_USER=proff
+          POSTGRES_PASSWORD=ci-only
+          DJANGO_SECRET_KEY=ci-only
+          DATABASE_URL=postgres://proff:ci-only@db:5432/proff58
+          CELERY_BROKER_URL=redis://redis:6379/0
+          CELERY_RESULT_BACKEND=redis://redis:6379/1
+          WEB_HTTP_PORT=18082
+          SITE_URL=https://proff58.example
+          EOF
+      - name: Production compose config
+        run: docker compose -f docker-compose.prod.yml config --quiet
+      - name: Rolling deploy shell syntax
+        run: bash -n scripts/rolling_deploy_backends.sh
+      - name: Backend router nginx config
+        run: |
+          docker run --rm \
+            -v "$PWD/docker/nginx/backend-router.conf:/etc/nginx/conf.d/default.conf:ro" \
+            nginx:1.27-alpine nginx -t
+      - name: Stack nginx config
+        run: |
+          docker run --rm \
+            -v "$PWD/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro" \
+            nginx:1.27-alpine nginx -t
+
   lint:
     runs-on: ubuntu-latest
     steps:

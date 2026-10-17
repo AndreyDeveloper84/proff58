@@ -188,9 +188,10 @@ jobs:
             # миграции должен ОСТАНОВИТЬ деплой (бэкап уже снят, откат по docs/DEPLOY.md).
             bash docker/release.sh
 
-            # Подъём/обновление сервисов новым образом (web стартует на мигрированной БД).
-            # Повтор идемпотентен: уже поднятые контейнеры не трогаются.
-            retry $compose up -d --build
+            # DRF-2972: два Django slot обновляются последовательно через stable router.
+            # Скрипт сам ждёт health, делает graceful reload nginx и проверяет отсутствие
+            # 5xx на /healthz/ и auth-safe /api/1c/orders/new во время замены slot A.
+            bash scripts/rolling_deploy_backends.sh
 
             # Privacy closeout smoke (DRF-2968): сначала синхронно применяем уже
             # утверждённые retention janitors, затем read-only команда проверяет,
@@ -259,11 +260,11 @@ jobs:
               echo "::warning::Привязки фасетов: $dead привязок легли на мёртвые узлы (dead_category) — фасета на витрине не будет (ДРФ-1524)"
             fi
 
-            # nginx подключает default.conf через bind-mount: смена содержимого файла НЕ
-            # пересоздаёт контейнер автоматически (compose смотрит на спеку, не на содержимое
-            # mount) → принудительно проверяем и перечитываем конфиг, иначе изменения маршрутов
-            # (напр. headless: / → Next) не применяются и staging выглядит «без изменений».
-            $compose exec -T nginx nginx -t && $compose restart nginx
+            # Конфиг nginx уже был применён reload'ом до rolling web(A).
+            # Повторно валидируем его после post-deploy проверок, но контейнер не restart'им:
+            # graceful reload сохраняет текущие соединения и не создаёт отдельное окно 502.
+            $compose exec -T nginx nginx -t
+            $compose exec -T nginx nginx -s reload
 
             # Smoke развёрнутого nginx (#424/B-04): строгий default-src 'none' — только для
             # /api|/healthz, витрина/_next/* — рабочая storefront-политика. Гоняем из контейнера

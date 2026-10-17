@@ -154,7 +154,42 @@ PDF-счёт B2B (WeasyPrint) требует системных пакетов �
 
 Миграции применяются **отдельным release-шагом** (`docker/release.sh`), а не на старте
 `web` (#441/m-07). Раньше `web` мигрировал при каждом рестарте контейнера — риск гонок и
-долгого/необратимого DDL. Порядок в `deploy.yml`: сборка образов → `release.sh` → подъём.
+долгого/необратимого DDL.
+
+После DRF-2972 HTTP-backend состоит из двух Django slot: `web` (slot A) и `web-b`
+(slot B), перед которыми работает стабильный `backend-router`. Порядок live-deploy
+в `deploy.yml`:
+
+1. сборка backend/worker-образов;
+2. `release.sh`: backup + миграции один раз;
+3. обновить `web-b` и дождаться `healthy`;
+4. поднять/перечитать `backend-router`;
+5. перевести Next/BFF на router и graceful-reload stack nginx;
+6. запустить availability probe (`/healthz/` = 200, `/api/1c/orders/new` без ключа = 403);
+7. обновить `web` (slot A), пока slot B продолжает обслуживать трафик;
+8. дождаться `healthy`, затем обновить worker'ы и выполнить post-deploy smoke.
+
+**На живом сайте не использовать общий `docker compose up -d --build` для обновления
+runtime-кода:** он может одновременно пересоздать оба Django slot и вернуть окно 502.
+Общий `up -d` допустим для холодного старта или заранее принятого maintenance-окна.
+
+### Совместимость миграций при rolling deploy
+
+Пока новый slot запускается, второй slot может ещё несколько минут выполнять старый код
+на уже обновлённой схеме БД. Поэтому автоматический rolling deploy допускает только
+**backward-compatible** миграции: добавление nullable/default-полей, новых таблиц/индексов
+и другие изменения, которые не ломают предыдущую версию приложения.
+
+Переименование/удаление поля или таблицы, изменение контракта данных, несовместимое со
+старым кодом, делается через expand/contract:
+
+1. expand — добавить новую структуру, сохранив старую;
+2. выкатить код, который умеет работать с переходной схемой;
+3. перенести/проверить данные;
+4. отдельным последующим релизом выполнить contract — удалить старую структуру.
+
+Если expand/contract невозможен, нужен заранее объявленный maintenance-window; это уже
+не zero-downtime deploy.
 
 `docker/release.sh`:
 
@@ -167,12 +202,33 @@ PDF-счёт B2B (WeasyPrint) требует системных пакетов �
 (release не отработал), контейнер падает с понятной ошибкой, а не работает на рассинхроне.
 Провал миграции в деплое **останавливает** выкат; бэкап уже снят для отката (см. ниже).
 
-Ручной прогон (миграции без полного передеплоя):
+Ручной прогон только миграций (без замены живых application-контейнеров):
 
 ```bash
 cd /home/taximeter/proff58-prod
 bash docker/release.sh
-docker compose -f docker-compose.prod.yml up -d
+```
+
+Ручное rolling-обновление backend после уже выполненного release-step:
+
+```bash
+compose="docker compose -f docker-compose.prod.yml"
+
+$compose up -d --no-deps web-b
+# дождаться: docker inspect <web-b-container> -> Health.Status=healthy
+
+$compose up -d --no-deps backend-router
+$compose exec -T backend-router nginx -t
+$compose exec -T backend-router nginx -s reload
+
+$compose up -d --no-deps frontend
+# дождаться health frontend
+
+$compose exec -T nginx nginx -t
+$compose exec -T nginx nginx -s reload
+
+$compose up -d --no-deps web
+# дождаться health web; web-b всё это время остаётся доступным
 ```
 
 ## Логи
@@ -189,7 +245,7 @@ docker compose -f docker-compose.prod.yml up -d
 
 ```bash
 tail -f /home/taximeter/proff58-prod/logs/django.log
-docker compose -f docker-compose.prod.yml logs web --tail=100
+docker compose -f docker-compose.prod.yml logs web web-b backend-router --tail=100
 ```
 
 ## Мониторинг
@@ -222,19 +278,37 @@ docker compose -f docker-compose.prod.yml ps
 
 ## Откат
 
+Для live-backend rollback **не** использовать общий `up -d --build`: откат также
+выполняется по slot, чтобы хотя бы один Django instance оставался доступным.
+
 ```bash
 cd /home/taximeter/proff58-prod
 git log --oneline -5
 git checkout <previous-good-commit>
-docker compose -f docker-compose.prod.yml up -d --build
-docker compose -f docker-compose.prod.yml ps
+compose="docker compose -f docker-compose.prod.yml"
+
+# Собрать предыдущий backend image под тем же стабильным тегом.
+$compose build web
+
+# Сначала slot B; если старый код несовместим со схемой, migrate --check остановит
+# только этот slot, а текущий web(A) останется жив.
+$compose up -d --no-deps web-b
+# дождаться Health.Status=healthy
+
+# Затем slot A — только после успешного B.
+$compose up -d --no-deps web
+# дождаться Health.Status=healthy
+
+$compose ps
 ```
 
-`git checkout` откатывает **код**; на старом коде `web` выполнит `migrate --check` и
-упадёт, если новые миграции уже применены к БД. Тогда нужен откат схемы.
+`git checkout` откатывает **код**; старый backend выполнит `migrate --check` и
+не станет healthy, если новые миграции уже несовместимы. В таком случае второй,
+ещё не тронутый slot остаётся доступным, а дальнейший rollback останавливается до
+решения по схеме БД.
 
-Витрину `up -d --build` не пересобирает (образ приходит из Actions, см. выше): для отката
-фронта перезапустить в Actions выкладку нужного коммита или собрать образ руками.
+Витрину backend-команда не пересобирает (frontend-образ приходит из Actions, см. выше):
+для отката фронта перезапустить в Actions выкладку нужного коммита или собрать образ руками.
 
 ### Откат схемы БД
 
@@ -266,7 +340,7 @@ $compose run --rm web python manage.py migrate <app> <предыдущая_ми�
 
 ```bash
 ls -t /home/taximeter/backups/proff58/pre-migrate-*.sql.gz | head   # выбрать нужный
-$compose stop web celery celery-onec celery-beat                    # отсоединить писателей
+$compose stop web web-b frontend celery celery-onec celery-beat     # отсоединить писателей/HTTP
 $compose exec -T db psql -U "$POSTGRES_USER" -d postgres \
     -c "DROP DATABASE \"$POSTGRES_DB\" WITH (FORCE);" \
     -c "CREATE DATABASE \"$POSTGRES_DB\" OWNER \"$POSTGRES_USER\";"
