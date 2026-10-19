@@ -158,6 +158,9 @@ def test_deploy_rolls_django_slots_one_at_a_time():
     assert "wait_healthy web-b" in text
     assert "wait_healthy web" in text
     assert "rolling_availability=PASS" in text
+    assert 'PROBE_HOST="${PROBE_HOST:-proff58.ru}"' in text
+    assert '"Host": probe_host' in text
+    assert '"X-Forwarded-Proto": "https"' in text
     assert (
         "retry $compose up -d --build" not in text
     ), "общий up -d --build снова может одновременно пересоздать оба backend slot"
