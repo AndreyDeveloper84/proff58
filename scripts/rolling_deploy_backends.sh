@@ -10,6 +10,20 @@ set -euo pipefail
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 compose="docker compose -f $COMPOSE_FILE"
 PROBE_HOST="${PROBE_HOST:-proff58.ru}"
+ROUTER_RUNTIME_DIR="${ROUTER_RUNTIME_DIR:-./var/backend-router}"
+ROUTER_ACTIVE_CONF="$ROUTER_RUNTIME_DIR/active.conf"
+
+set_router_membership() {
+  local source="$1"
+  mkdir -p "$ROUTER_RUNTIME_DIR"
+  cp "$source" "$ROUTER_ACTIVE_CONF.tmp"
+  mv "$ROUTER_ACTIVE_CONF.tmp" "$ROUTER_ACTIVE_CONF"
+}
+
+reload_router() {
+  $compose exec -T backend-router nginx -t
+  $compose exec -T backend-router nginx -s reload
+}
 
 retry() {
   local n=1 max=3 delay=15
@@ -57,12 +71,14 @@ wait_healthy() {
 retry $compose up -d --no-deps web-b
 wait_healthy web-b
 
+# Seed normal dual membership before starting/recreating the stable router.
+set_router_membership docker/nginx/backend-upstreams-dual.conf
+
 # Stable router now has two healthy/available backend names and dynamically resolves
 # Docker DNS changes. --no-deps prevents Compose from touching slot A.
 retry $compose up -d --no-deps backend-router
 wait_healthy backend-router
-$compose exec -T backend-router nginx -t
-$compose exec -T backend-router nginx -s reload
+reload_router
 
 # Next SSR/BFF must stop depending directly on slot A before A is replaced.
 retry $compose up -d --no-deps frontend
@@ -95,6 +111,27 @@ for url, expected in targets:
     if code != expected:
         raise SystemExit(f"pre-roll availability failed: {url} -> {code}, expected {expected}")
 print("pre_roll_availability=PASS")
+PY
+
+# Drain slot A before its container is touched. This makes every new request go
+# only to the already healthy slot B, so Docker recreation of web(A) is invisible.
+set_router_membership docker/nginx/backend-upstreams-web-b.conf
+reload_router
+
+# Confirm the drained route is healthy before starting the continuous probe.
+$compose exec -T -e PROBE_HOST="$PROBE_HOST" web-b python - <<'PY'
+import os
+import urllib.request
+
+probe_host = os.environ["PROBE_HOST"]
+request = urllib.request.Request(
+    "http://nginx/healthz/",
+    headers={"Host": probe_host, "X-Forwarded-Proto": "https"},
+)
+with urllib.request.urlopen(request, timeout=5) as response:
+    if response.status != 200:
+        raise SystemExit(f"drained route health failed: {response.status}")
+print("slot_a_drain=PASS")
 PY
 
 # Continuously probe the externally relevant compose-nginx route while slot A is
@@ -134,6 +171,10 @@ availability_pid=$!
 # Slot A updates only after B + router + frontend + nginx route are ready.
 retry $compose up -d --no-deps web
 wait_healthy web
+
+# Slot A is healthy again: return both backends to service and reload atomically.
+set_router_membership docker/nginx/backend-upstreams-dual.conf
+reload_router
 
 if ! wait "$availability_pid"; then
   cat "$availability_log" || true
