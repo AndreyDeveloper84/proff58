@@ -158,6 +158,15 @@ def test_deploy_rolls_django_slots_one_at_a_time():
     assert "wait_healthy web-b" in text
     assert "wait_healthy web" in text
     assert "rolling_availability=PASS" in text
+    assert "slot_a_drain=PASS" in text
+    drain = "set_router_membership docker/nginx/backend-upstreams-web-b.conf"
+    restore = "set_router_membership docker/nginx/backend-upstreams-dual.conf"
+    assert drain in text
+    assert restore in text
+    assert lines.index(drain) < lines.index(slot_a), "slot A надо вывести из router до recreate"
+    assert text.rindex(restore) > text.index(
+        "wait_healthy web"
+    ), "dual upstream можно вернуть только после healthy slot A"
     assert 'PROBE_HOST="${PROBE_HOST:-proff58.ru}"' in text
     assert '"Host": probe_host' in text
     assert '"X-Forwarded-Proto": "https"' in text
