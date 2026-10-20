@@ -163,9 +163,7 @@ def test_deploy_rolls_django_slots_one_at_a_time():
     restore = "set_router_membership docker/nginx/backend-upstreams-dual.conf"
     assert drain in text
     assert restore in text
-    assert (
-        lines.index(drain) < lines.index(slot_a)
-    ), "slot A надо вывести из router до recreate"
+    assert lines.index(drain) < lines.index(slot_a), "slot A надо вывести из router до recreate"
     assert text.rindex(restore) > text.index(
         "wait_healthy web"
     ), "dual upstream можно вернуть только после healthy slot A"
