@@ -10,7 +10,7 @@ set -euo pipefail
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 compose="docker compose -f $COMPOSE_FILE"
 PROBE_HOST="${PROBE_HOST:-proff58.ru}"
-ROUTER_RUNTIME_DIR="${ROUTER_RUNTIME_DIR:-./var/backend-router}"
+ROUTER_RUNTIME_DIR="${ROUTER_RUNTIME_DIR:-./docker/nginx/runtime}"
 ROUTER_ACTIVE_CONF="$ROUTER_RUNTIME_DIR/active.conf"
 
 set_router_membership() {
