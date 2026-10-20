@@ -22,7 +22,33 @@ set_router_membership() {
 
 reload_router() {
   $compose exec -T backend-router nginx -t
+
+  # nginx -s reload returns before old workers fully exit. If one of those workers
+  # still has the previous dual-upstream config, a request can still reach slot A
+  # after we "drained" it. Capture current worker PIDs, reload, then wait until every
+  # old worker has actually gone away before proceeding.
+  local old_workers
+  old_workers="$($compose exec -T backend-router sh -c '
+    master="$(cat /var/run/nginx.pid 2>/dev/null || cat /run/nginx.pid)"
+    cat "/proc/$master/task/$master/children" 2>/dev/null || true
+  ' | tr -d '\r')"
+
   $compose exec -T backend-router nginx -s reload
+
+  if [ -n "$old_workers" ]; then
+    $compose exec -T -e OLD_WORKERS="$old_workers" backend-router sh -c '
+      for _ in $(seq 1 100); do
+        alive=""
+        for pid in $OLD_WORKERS; do
+          [ -d "/proc/$pid" ] && alive="$alive $pid"
+        done
+        [ -z "$alive" ] && exit 0
+        sleep 0.1
+      done
+      echo "ERROR: old nginx workers still alive after reload:$alive" >&2
+      exit 1
+    '
+  fi
 }
 
 retry() {
