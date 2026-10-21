@@ -159,6 +159,8 @@ def test_deploy_rolls_django_slots_one_at_a_time():
     assert "wait_healthy web" in text
     assert "rolling_availability=PASS" in text
     assert "slot_a_drain=PASS" in text
+    assert 'OLD_WORKERS="$old_workers"' in text
+    assert "old nginx workers still alive after reload" in text
     drain = "set_router_membership docker/nginx/backend-upstreams-web-b.conf"
     restore = "set_router_membership docker/nginx/backend-upstreams-dual.conf"
     assert drain in text
