@@ -35,6 +35,9 @@ from parser.client import PoliteClient
 SITEMAP_URLS = {
     "resanta": "https://resanta.ru/sitemap-shop.xml",
     "vihr": "https://vihr.su/sitemap-shop.xml",
+    # huter.su — та же платформа Webasyst, тот же путь карты товаров.
+    # robots.txt разрешает карточки (закрыты корзина, фильтры, /search).
+    "huter": "https://huter.su/sitemap-shop.xml",
     "interskol": "https://www.interskol.ru/sitemap.xml",
 }
 
@@ -118,6 +121,13 @@ def _collect_sitemap(client: PoliteClient, source: str, mask: str, limit: int) -
     """URL из sitemap источника; у Интерскола — дедуп по product-slug."""
     xml_text = client.get_text(SITEMAP_URLS[source])
     urls = parse_sitemap(xml_text, mask)
+    if source == "huter":
+        # У huter карточки лежат плоско (`/benzopila-huter-bs-45/`), а разделы —
+        # под `/category/`. Обе группы содержат одну и ту же подстроку (домен),
+        # поэтому маской они не разделяются. Без явного исключения сборщик
+        # потащил бы категорийные страницы как товары: они не разберутся,
+        # засорят errors.json и съедят лимит карточек впустую.
+        urls = [u for u in urls if "/category/" not in u]
     if source == "interskol":
         urls = _dedup_by_key(urls, interskol_url_key)
     else:
