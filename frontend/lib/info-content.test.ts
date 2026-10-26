@@ -34,12 +34,13 @@ describe("Страницы из кода", () => {
     }
   });
 
-  it("политика помечена как проект, пока текст не утверждён юристом", () => {
-    // DRF-2797: сочинённого правового текста быть не должно — только пометка,
-    // структура разделов и техническая таблица cookie.
+  it("политика помечена как временная рабочая редакция, а не FINAL", () => {
+    // DRF-2860: owner разрешил временную публичную публикацию candidate v1.
     const page = INFO_PAGES.privacy;
-    expect(page.sections[0].meta.badge).toBe("ПРОЕКТ ДОКУМЕНТА");
+    expect(page.sections[0].meta.badge).toBe("ВРЕМЕННАЯ РЕДАКЦИЯ");
     expect(page.sections[0].blocks[0]).toMatchObject({ kind: "note" });
+    expect(JSON.stringify(page)).not.toContain("ПРОЕКТ ДОКУМЕНТА");
+    expect(JSON.stringify(page)).not.toContain("Раздел заполняется юристом");
     const cookieSection = page.sections.find((s) => s.heading.startsWith("6."));
     expect(cookieSection?.blocks.some((b) => b.kind === "table")).toBe(true);
   });
