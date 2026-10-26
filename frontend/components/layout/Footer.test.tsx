@@ -37,12 +37,18 @@ describe("Footer (#591)", () => {
     }
   });
 
-  it("в нижней строке есть политика конфиденциальности и настройки cookie", () => {
+  it("в подвале две ссылки на privacy и есть настройки cookie", () => {
     render(<Footer />);
-    // Две ссылки: из колонки «Информация» (реестр страниц) и из нижней строки.
-    const links = screen.getAllByRole("link", { name: "Политика конфиденциальности" });
+    const links = screen
+      .getAllByRole("link")
+      .filter((link) => link.getAttribute("href") === "/info/privacy");
     expect(links).toHaveLength(2);
-    for (const link of links) expect(link).toHaveAttribute("href", "/info/privacy");
+    expect(
+      screen.getByRole("link", { name: "Политика обработки персональных данных" }),
+    ).toHaveAttribute("href", "/info/privacy");
+    expect(
+      screen.getByRole("link", { name: "Политика конфиденциальности" }),
+    ).toHaveAttribute("href", "/info/privacy");
     expect(screen.getByRole("button", { name: "Настройки cookie" })).toBeInTheDocument();
   });
 

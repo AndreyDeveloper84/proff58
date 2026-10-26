@@ -16,12 +16,16 @@ const custom = resolveStorefront({
 });
 
 describe("Контакты в инфо-страницах", () => {
-  it("в текстах страниц нет зашитых контактов — только метки", () => {
-    const raw = JSON.stringify(INFO_PAGES);
+  it("в витринных инфо-страницах нет зашитых контактов — только метки", () => {
+    // Privacy — исключение: оператор и специальный e-mail по ПД являются частью
+    // самой юридической Политики и намеренно зафиксированы в документе.
+    const { privacy: _privacy, ...storefrontPages } = INFO_PAGES;
+    const raw = JSON.stringify(storefrontPages);
     for (const fragment of ["20-20-87", "202087", "8412", "Онежск", "penzainstrument"]) {
       expect(raw, fragment).not.toContain(fragment);
     }
     expect(raw).toContain("{{phone}}");
+    expect(JSON.stringify(INFO_PAGES.privacy)).toContain("penzainstrument@yandex.ru");
   });
 
   it("после подстановки ни одной метки не остаётся, в том числе с запасными значениями", () => {
