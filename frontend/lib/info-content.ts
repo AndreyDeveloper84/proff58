@@ -595,7 +595,9 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
       },
     ],
   },
-  // DRF-2860. Temporary public working revision authorized by owner on 26.10.2026.\n  // FINAL remains gated; source text: PR #891 FINAL CANDIDATE v1, INTERNAL CLOSEOUT excluded.\n  "privacy": {
+  // DRF-2860. Temporary public working revision authorized by owner on 26.10.2026.
+  // FINAL remains gated; source text: PR #891 FINAL CANDIDATE v1, INTERNAL CLOSEOUT excluded.
+  "privacy": {
     "slug": "privacy",
     "title": "Политика обработки персональных данных",
     "metaTitle": "Политика обработки персональных данных — магазин «Профессионал»",
