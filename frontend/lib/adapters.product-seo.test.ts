@@ -37,6 +37,11 @@ describe("fetchProductFromApi: seoIndexable", () => {
     expect((await fetchProductFromApi(BASE, "p"))?.seoIndexable).toBe(false);
   });
 
+  it("артикул из API попадает на страницу товара", async () => {
+    mockProduct({ ...PRODUCT, article: "HID21100DS" });
+    expect((await fetchProductFromApi(BASE, "p"))?.article).toBe("HID21100DS");
+  });
+
   it("tool_type из API → toolType карточки; null и пустой slug → нет вида", async () => {
     mockProduct({ ...PRODUCT, tool_type: { slug: "perforatory", name: "Перфораторы" } });
     expect((await fetchProductFromApi(BASE, "p"))?.toolType).toEqual({

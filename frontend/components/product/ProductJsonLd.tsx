@@ -16,6 +16,7 @@ export function ProductJsonLd({
     name: product.name,
   };
   if (product.brand) productLd.brand = { "@type": "Brand", name: product.brand };
+  if (product.article) productLd.sku = product.article;
   // Картинки приходят относительными (`/media/…`) — поисковику нужен абсолютный URL.
   if (product.images.length) productLd.image = product.images.map((i) => absoluteUrl(i.url));
   if (product.description) productLd.description = product.description;

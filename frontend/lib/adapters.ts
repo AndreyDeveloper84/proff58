@@ -54,6 +54,8 @@ export type ApiProduct = {
   card_name?: string | null;
   slug: string;
   brand?: string | null;
+  // Артикул (SKU из 1С); у товара без артикула приходит "" — не null.
+  article?: string | null;
   category?: { name?: string; slug?: string } | null;
   price?: string | null;
   old_price?: string | null;
@@ -186,6 +188,8 @@ export function apiProductToProduct(ap: ApiProduct): Product {
     name: ap.name,
     cardName: ap.card_name || ap.name,
     brand: ap.brand ?? "",
+    // "" → undefined: иначе страница товара рисовала бы «Артикул:» с пустотой.
+    article: ap.article || undefined,
     image: ap.main_image ?? undefined,
     // Порядок характеристик — с backend (по типу товара, DATA-01): не пересортировываем.
     // Пустые значения отбрасываем, но «0 Дж» и «Нет» — не пустые: formatSpecValue

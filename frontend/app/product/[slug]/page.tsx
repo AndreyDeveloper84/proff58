@@ -119,7 +119,13 @@ export default async function ProductPage({ params }: Props) {
         </div>
 
         <div className="flex flex-col gap-4">
-          {product.brand && <span className="text-sm text-ink-3">{product.brand}</span>}
+          {(product.brand || product.article) && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-3">
+              {product.brand && <span>{product.brand}</span>}
+              {/* Артикул — то, что покупатель сверяет с упаковкой и прайсом поставщика. */}
+              {product.article && <span>Артикул: {product.article}</span>}
+            </div>
+          )}
           <h1 className="font-display text-2xl font-semibold leading-tight text-ink lg:text-[30px]">
             {product.name}
           </h1>

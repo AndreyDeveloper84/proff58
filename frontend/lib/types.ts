@@ -23,6 +23,9 @@ export type Product = {
   // показывает витринное имя.
   cardName?: string;
   brand: string;
+  // Артикул из 1С (SKU). Показывается на странице товара, в быстром просмотре и
+  // в карточке-списке; в плитке места нет. Нет у ~10 % товаров.
+  article?: string;
   image?: string;
   rating?: number;
   reviews?: number;
