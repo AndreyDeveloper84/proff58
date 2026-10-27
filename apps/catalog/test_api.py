@@ -137,6 +137,24 @@ def test_product_detail_card(client, tree):
     assert data["main_image"] is not None
 
 
+@pytest.mark.django_db
+def test_product_article_in_list_and_detail(client, tree):
+    """Артикул (SKU из 1С) виден покупателю: и в списке, и на странице товара.
+
+    У товара без артикула поле есть и равно "" — витрина по нему решает,
+    рисовать ли строку «Артикул».
+    """
+    _, _, leaf = tree
+    make_product(leaf, "Бензопила HUTER BS-62", "huter-bs-62", article="70/6/6")
+    make_product(leaf, "Саморез без артикула", "samorez")
+
+    by_slug = {r["slug"]: r for r in client.get("/api/catalog/products/").json()["results"]}
+    assert by_slug["huter-bs-62"]["article"] == "70/6/6"
+    assert by_slug["samorez"]["article"] == ""
+
+    assert client.get("/api/catalog/products/huter-bs-62/").json()["article"] == "70/6/6"
+
+
 def _set_tool_type(product, value, slug):
     attr, _ = Attribute.objects.get_or_create(
         slug="tool_type",

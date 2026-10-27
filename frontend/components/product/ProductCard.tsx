@@ -252,7 +252,12 @@ export function ProductCard({
               {heart}
             </div>
           </div>
-          <p className="text-xs text-ink-3">{product.brand}</p>
+          {/* В списке есть ширина на артикул рядом с брендом; в плитке — нет. */}
+          <p className="text-xs text-ink-3">
+            {[product.brand, product.article && `Арт. ${product.article}`]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
           <a
             href={href}
             onClick={openPreview}

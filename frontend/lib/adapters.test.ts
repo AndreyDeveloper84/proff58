@@ -284,4 +284,21 @@ describe("fetchBestsellersFromApi", () => {
     expect(products[0].name).toBe("Круг алмазный отрезной 115х1,0");
     expect(products[1].cardName).toBe("Дрель ударная Makita");
   });
+
+  // Артикул из 1С показывается на странице товара и в быстром просмотре. У
+  // товара без артикула API отдаёт "" (не null) — карточка не должна получить
+  // пустую строку, иначе витрина нарисует «Артикул:» с пустотой.
+  it("артикул: из API в карточку, пустой и отсутствующий → нет поля", async () => {
+    mockBestsellers([
+      { ...PRODUCT, article: "70/6/6" },
+      { ...PRODUCT, id: 2, slug: "bez-artikula", article: "" },
+      { ...PRODUCT, id: 3, slug: "staryj-api" },
+    ]);
+
+    const { products } = await fetchBestsellersFromApi(BASE, 8);
+
+    expect(products[0].article).toBe("70/6/6");
+    expect(products[1].article).toBeUndefined();
+    expect(products[2].article).toBeUndefined();
+  });
 });

@@ -92,6 +92,9 @@ class ProductListSerializer(serializers.ModelSerializer):
             "name",
             "card_name",
             "slug",
+            # Артикул (SKU из 1С) — покупатель сверяет его с упаковкой и прайсом
+            # поставщика; у ~10 % товаров пуст и приходит как "".
+            "article",
             "brand",
             "category",
             "price",

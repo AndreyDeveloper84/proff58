@@ -217,7 +217,12 @@ export function QuickViewDialog({ product, onClose }: { product: Product; onClos
             <Gallery images={images} name={title} />
 
             <div className="flex min-w-0 flex-col">
-              {shown.brand && <p className="text-sm text-ink-3">{shown.brand}</p>}
+              {(shown.brand || shown.article) && (
+                <p className="flex flex-wrap gap-x-3 text-sm text-ink-3">
+                  {shown.brand && <span>{shown.brand}</span>}
+                  {shown.article && <span>Артикул: {shown.article}</span>}
+                </p>
+              )}
               <h2
                 id="quick-view-title"
                 className="mt-0.5 break-words font-display text-xl font-semibold leading-snug text-ink sm:text-2xl"

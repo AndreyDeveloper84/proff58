@@ -90,6 +90,24 @@ describe("быстрый просмотр (UX-05)", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  // Артикул — то, что покупатель сверяет с упаковкой; без него строки нет вовсе.
+  it("артикул показывается рядом с брендом, без артикула строки нет", () => {
+    renderList([
+      product({ article: "HTC-DH24PG" }),
+      product({ id: 2, slug: "bez", name: "Дрель", cardName: "Дрель" }),
+    ]);
+
+    fireEvent.click(titleLink());
+    const withArticle = screen.getByRole("dialog", { name: "Перфоратор DH24PG" });
+    expect(within(withArticle).getByText("Артикул: HTC-DH24PG")).toBeInTheDocument();
+    expect(within(withArticle).getByText("Hitachi")).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    fireEvent.click(titleLink("Дрель"));
+    const without = screen.getByRole("dialog", { name: "Дрель" });
+    expect(within(without).queryByText(/Артикул/)).toBeNull();
+  });
+
   it("клик по названию открывает окно: сразу цена и наличие, затем галерея и характеристики", async () => {
     renderList();
     fireEvent.click(titleLink());
