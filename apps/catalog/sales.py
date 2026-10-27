@@ -25,7 +25,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Count, IntegerField, Max, Q, Sum, Value
+from django.db.models import Count, F, IntegerField, Max, Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
@@ -182,6 +182,12 @@ def bestsellers_queryset():
     витрина молча подменяет его новинками. Как только продажи пойдут, подборка
     сама уедет вниз, а снять её можно галочкой.
 
+    Среди ручных хитов первым идёт последний отмеченный (``hit_manual_at``).
+    Раньше порядок был по алфавиту названия, а главная показывает первые N:
+    менеджер ставил галочку «Перфоратору», а блок по-прежнему заканчивался на
+    «Набор…» — отметка «не работала». Хит без метки (поставлен не через админку)
+    идёт после отмеченных, по алфавиту.
+
     Без среза — размер выдачи задаёт пагинация вызывающего.
     """
     # Товар без строки рейтинга получает заведомо худший ранг — так ручные хиты
@@ -193,7 +199,7 @@ def bestsellers_queryset():
         .annotate(
             hit_rank=Coalesce("sales_stat__rank", Value(no_rank, output_field=IntegerField()))
         )
-        .order_by("hit_rank", "name")
+        .order_by("hit_rank", F("hit_manual_at").desc(nulls_last=True), "name")
     )
 
 

@@ -10,6 +10,7 @@ from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
+from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
@@ -1046,8 +1047,17 @@ class ProductAdmin(admin.ModelAdmin):
             )[:5]
         )
         hidden_total = queryset.exclude(is_active=True, status=ProductStatus.PUBLISHED).count()
-        updated = queryset.update(is_hit_manual=True)
-        self.message_user(request, f"Отмечено хитами: {updated}", level=messages.SUCCESS)
+        # Метку времени получают ВСЕ выбранные, включая уже отмеченные: повторное
+        # действие — это «вот эти товары хиты сейчас», и оно поднимает их в начало
+        # блока главной. Иначе поднять давний хит можно было бы только снятием и
+        # повторной отметкой.
+        updated = queryset.update(is_hit_manual=True, hit_manual_at=timezone.now())
+        self.message_user(
+            request,
+            f"Отмечено хитами: {updated}. На главной они встанут в начало блока "
+            "«Хиты продаж» (после товаров с реальными продажами).",
+            level=messages.SUCCESS,
+        )
         if hidden_total:
             names = ", ".join(f"«{n[:40]}»" for n in hidden)
             tail = " и др." if hidden_total > len(hidden) else ""
@@ -1061,7 +1071,7 @@ class ProductAdmin(admin.ModelAdmin):
 
     @admin.action(description=_("Снять отметку «Хит продаж»"))
     def action_unmark_hit(self, request, queryset):
-        updated = queryset.update(is_hit_manual=False)
+        updated = queryset.update(is_hit_manual=False, hit_manual_at=None)
         self.message_user(request, f"Снята отметка хита: {updated}", level=messages.INFO)
 
     def lookup_allowed(self, lookup, value, request=None):
@@ -1079,6 +1089,7 @@ class ProductAdmin(admin.ModelAdmin):
         "readiness",
         "moderation_reason_detail",
         "related_links",
+        "hit_manual_at",
         "code_1c",
         "original_name",
         "source_group",
@@ -1125,6 +1136,7 @@ class ProductAdmin(admin.ModelAdmin):
                     "status",
                     "is_active",
                     "is_hit_manual",
+                    "hit_manual_at",
                     "related_links",
                 ),
             },
@@ -1385,6 +1397,11 @@ class ProductAdmin(admin.ModelAdmin):
         # Менеджер вручную задал категорию → фиксируем, чтобы авторазбор её не трогал.
         if "category" in form.changed_data and obj.category_id is not None:
             obj.category_is_manual = True
+        # Галочка «Хит» из карточки: метка времени ставится здесь, до сохранения,
+        # и только когда галочку действительно трогали — правка названия или
+        # категории порядок хитов на главной менять не должна.
+        if "is_hit_manual" in form.changed_data:
+            obj.hit_manual_at = timezone.now() if obj.is_hit_manual else None
         super().save_model(request, obj, form, change)
 
         # То же, что в групповом действии: отметка хитом на скрытом товаре не даёт

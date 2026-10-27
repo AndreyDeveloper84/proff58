@@ -150,8 +150,12 @@ export async function getCategoryProducts(category: string, limit = 3): Promise<
  * `new` — продаж пока нет, показываем новинки под честным заголовком.
  * Без API → пусто (блок скрыт).
  */
+// 16, а не 8: ручных хитов уже 15, и при 8 половина не попадала в блок никогда.
+// Не 24 (= SALES_HIT_TOP_N бэка): главная force-dynamic, и на живом API каждые
+// 8 карточек стоят ~0,4 с TTFB; в viewport карусели видно 3–5 карточек, свежие
+// отметки идут первыми, остальное — по «Смотреть все».
 export async function getBestsellers(
-  limit = 8,
+  limit = 16,
 ): Promise<{ products: Product[]; kind: "bestsellers" | "new" }> {
   if (API_BASE && !FORCE_FIXTURES) {
     return await fetchBestsellersFromApi(API_BASE, limit);
