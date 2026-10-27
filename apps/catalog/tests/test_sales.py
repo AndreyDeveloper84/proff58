@@ -344,3 +344,131 @@ class TestОтметкаХитаВАдминке:
         site._registry[Product].save_model(request, hidden, form, change=True)
 
         assert any("скрыт с витрины" in str(m) for m in request._messages)
+
+
+class TestПорядокРучныхХитов:
+    """Среди ручных хитов первым идёт последний отмеченный.
+
+    Главная показывает первые N блока. Пока порядок был алфавитным, товар,
+    отмеченный сегодня, мог не попасть в блок никогда — галочка «не работала».
+    """
+
+    def test_последний_отмеченный_первым_без_метки_в_конце(self, client):
+        now = timezone.now()
+        older = make_product("A", is_hit_manual=True, hit_manual_at=now - timedelta(days=2))
+        newer = make_product("B", is_hit_manual=True, hit_manual_at=now)
+        unmarked = make_product("0", is_hit_manual=True)  # поставлен не через админку
+
+        response = client.get(reverse("catalog_api:bestsellers"))
+
+        slugs = [r["slug"] for r in response.json()["results"]]
+        assert slugs == [newer.slug, older.slug, unmarked.slug]
+
+    def test_продажи_впереди_даже_свежей_отметки(self, client, settings):
+        settings.SALES_HIT_MIN_QUANTITY = 1
+        sold = make_product("A")
+        fresh = make_product("B", is_hit_manual=True, hit_manual_at=timezone.now())
+        sell(sold, "5")
+        rebuild_sales_stats()
+
+        response = client.get(reverse("catalog_api:bestsellers"))
+
+        assert [r["slug"] for r in response.json()["results"]] == [sold.slug, fresh.slug]
+
+    def test_limit_режет_выдачу_а_не_состав(self, client):
+        now = timezone.now()
+        for i in range(20):
+            make_product(f"P{i:02d}", is_hit_manual=True, hit_manual_at=now - timedelta(hours=i))
+
+        response = client.get(reverse("catalog_api:bestsellers"), {"limit": 16})
+
+        body = response.json()
+        assert body["count"] == 20
+        # Свежие первыми: P00 (метка «сейчас») … P15; P16–P19 — за срезом.
+        assert [r["slug"] for r in body["results"]] == [f"tovar-P{i:02d}" for i in range(16)]
+
+
+class TestМеткаВремениХита:
+    """Метку ставит только админка — действием списка или галочкой в карточке."""
+
+    @pytest.fixture
+    def staff_client(self, client, django_user_model):
+        user = django_user_model.objects.create_superuser(
+            phone="+79001112277", email="hits@proff58.ru", password="pass12345"
+        )
+        client.force_login(user)
+        return client
+
+    def _action(self, staff_client, name, products):
+        return staff_client.post(
+            reverse("admin:catalog_product_changelist"),
+            {"action": name, "_selected_action": [str(p.pk) for p in products]},
+            follow=True,
+        )
+
+    def test_действие_ставит_метку_всем_выбранным_и_поднимает_старые(self, staff_client):
+        """Повторная отметка — «вот эти хиты сейчас»: давний хит поднимается в начало."""
+        old_mark = timezone.now() - timedelta(days=30)
+        veteran = make_product("A", is_hit_manual=True, hit_manual_at=old_mark)
+        rookie = make_product("B")
+        before = timezone.now()
+
+        response = self._action(staff_client, "action_mark_hit", [veteran, rookie])
+
+        veteran.refresh_from_db()
+        rookie.refresh_from_db()
+        assert rookie.is_hit_manual and rookie.hit_manual_at >= before
+        assert veteran.hit_manual_at >= before
+        assert any("Отмечено хитами: 2" in str(m) for m in response.context["messages"])
+
+    def test_снятие_обнуляет_метку(self, staff_client):
+        product = make_product("A", is_hit_manual=True, hit_manual_at=timezone.now())
+
+        self._action(staff_client, "action_unmark_hit", [product])
+
+        product.refresh_from_db()
+        assert product.is_hit_manual is False
+        assert product.hit_manual_at is None
+
+    @pytest.fixture
+    def admin_request(self, rf, django_user_model):
+        request = rf.post("/admin/catalog/product/")
+        request.user = django_user_model.objects.create_superuser(
+            phone="+79001112288", email="card2@proff58.ru", password="pass12345"
+        )
+        request.session = {}
+        request._messages = FallbackStorage(request)
+        return request
+
+    def test_галочка_в_карточке_ставит_метку_и_сохраняет_её(self, admin_request):
+        product = make_product("A")
+        product.is_hit_manual = True
+        form = SimpleNamespace(changed_data=["is_hit_manual"])
+        before = timezone.now()
+
+        site._registry[Product].save_model(admin_request, product, form, change=True)
+
+        product.refresh_from_db()
+        assert product.is_hit_manual is True
+        assert product.hit_manual_at is not None and product.hit_manual_at >= before
+
+    def test_правка_других_полей_метку_не_трогает(self, admin_request):
+        mark = timezone.now() - timedelta(days=3)
+        product = make_product("A", is_hit_manual=True, hit_manual_at=mark)
+        product.name = "Другое название"
+        form = SimpleNamespace(changed_data=["name"])
+
+        site._registry[Product].save_model(admin_request, product, form, change=True)
+
+        product.refresh_from_db()
+        assert product.hit_manual_at == mark
+
+    def test_снятая_в_карточке_галочка_обнуляет_метку(self, admin_request):
+        product = make_product("A", is_hit_manual=True, hit_manual_at=timezone.now())
+        product.is_hit_manual = False
+        form = SimpleNamespace(changed_data=["is_hit_manual"])
+
+        site._registry[Product].save_model(admin_request, product, form, change=True)
+
+        product.refresh_from_db()
+        assert product.hit_manual_at is None
