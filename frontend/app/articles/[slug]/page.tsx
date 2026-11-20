@@ -158,7 +158,15 @@ export default async function ArticlePage({ params }: Props) {
             </p>
 
             <div className="mt-3">
-              <Figure />
+              {Figure ? <Figure /> : (
+                <Image
+                  src={article.image}
+                  alt={article.title}
+                  width={1254}
+                  height={706}
+                  className="h-auto w-full rounded-md object-cover"
+                />
+              )}
             </div>
 
             <p className="mt-3 text-[14px] leading-[1.6] text-ink">{article.excerpt}</p>
