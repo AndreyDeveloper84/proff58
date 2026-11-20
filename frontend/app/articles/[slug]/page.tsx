@@ -35,12 +35,28 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
   if (!article) return { title: "Статья не найдена" };
-  return { title: article.title, description: article.excerpt };
+  return { title: article.meta_title || article.title, description: article.meta_description || article.excerpt, alternates: { canonical: `/articles/${encodeURIComponent(article.slug)}` } };
+}
+
+function inlineLinks(value: string): React.ReactNode[] {
+  // Render only explicit relative paths or HTTPS URLs; React escapes all text.
+  const pattern = /\[([^\]\n]+)\]\((https:\/\/[^\s)]+|\/(?!\/)[^\s)]*)\)/g;
+  const nodes: React.ReactNode[] = [];
+  let last = 0;
+  for (const match of value.matchAll(pattern)) {
+    const start = match.index ?? 0;
+    if (start > last) nodes.push(value.slice(last, start));
+    const href = match[2];
+    nodes.push(<Link key={start} href={href} className="text-accent underline underline-offset-2">{match[1]}</Link>);
+    last = start + match[0].length;
+  }
+  if (last < value.length) nodes.push(value.slice(last));
+  return nodes;
 }
 
 function Block({ block }: { block: ArticleBlock }) {
   if (block.kind === "text") {
-    return <p className="mt-3 text-[13px] leading-[1.65] text-ink-2">{block.text}</p>;
+    return <p className="mt-3 text-[13px] leading-[1.65] text-ink-2">{inlineLinks(block.text)}</p>;
   }
 
   if (block.kind === "list") {
@@ -49,7 +65,7 @@ function Block({ block }: { block: ArticleBlock }) {
         {block.items.map((item) => (
           <li key={item} className="flex gap-2 text-[13px] leading-[1.6] text-ink-2">
             <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
-            <span className="min-w-0">{item}</span>
+            <span className="min-w-0">{inlineLinks(item)}</span>
           </li>
         ))}
       </ul>
@@ -91,7 +107,7 @@ function Block({ block }: { block: ArticleBlock }) {
   return (
     <p className="mt-3 flex gap-2 rounded-sm border border-line bg-raised px-3 py-2.5 text-[12px] leading-[1.55] text-ink-2">
       <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
-      <span>{block.text}</span>
+      <span>{inlineLinks(block.text)}</span>
     </p>
   );
 }
@@ -104,7 +120,7 @@ export default async function ArticlePage({ params }: Props) {
   const more = (await getArticleCards())
     .filter((item) => item.slug !== article.slug)
     .slice(0, 3);
-  const Figure = FIGURES[article.figure];
+  const Figure = article.figure ? FIGURES[article.figure] : undefined;
   const products = article.catalog ? await getCategoryProducts(article.catalog.slug, 3) : [];
 
   return (
