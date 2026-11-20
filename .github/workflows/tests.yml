@@ -52,7 +52,9 @@ jobs:
       - name: Ruff
         run: ruff check .
       - name: Black
-        run: black --check .
+        run: |
+          black --diff apps/content/management/commands/import_publication_pack_01.py
+          black --check .
 
   frontend:
     # #435 (M-12): обязательный quality gate фронта — lint, unit-тесты, build
