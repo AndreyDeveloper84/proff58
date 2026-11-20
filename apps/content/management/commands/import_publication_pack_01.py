@@ -24,7 +24,9 @@ class Command(BaseCommand):
         parser.add_argument("archive", type=Path)
         parser.add_argument("--category-slug", required=True)
         parser.add_argument(
-            "--apply", action="store_true", help="Write draft; default is validation only."
+            "--apply",
+            action="store_true",
+            help="Write draft; default is validation only.",
         )
         parser.add_argument(
             "--update-existing-draft",
@@ -41,8 +43,13 @@ class Command(BaseCommand):
                 if metadata_path not in names:
                     raise CommandError("Missing article_metadata.json")
                 metadata = json.loads(package.read(metadata_path))
-                if metadata.get("slug") != EXPECTED_SLUG or metadata.get("status") != "draft":
-                    raise CommandError("Unexpected slug or non-draft publication status")
+                if (
+                    metadata.get("slug") != EXPECTED_SLUG
+                    or metadata.get("status") != "draft"
+                ):
+                    raise CommandError(
+                        "Unexpected slug or non-draft publication status"
+                    )
                 body_path = ROOT + metadata.get("body_file", "")
                 cover_path = ROOT + metadata.get("cover", "")
                 if body_path not in names or cover_path not in names:
@@ -54,7 +61,9 @@ class Command(BaseCommand):
 
         if not body.strip() or not cover_bytes:
             raise CommandError("Empty body or cover")
-        categories = Category.objects.filter(slug=options["category_slug"], is_active=True)
+        categories = Category.objects.filter(
+            slug=options["category_slug"], is_active=True
+        )
         if categories.count() != 1:
             raise CommandError("Category slug must resolve to one active category")
         category = categories.get()
@@ -97,5 +106,9 @@ class Command(BaseCommand):
                 setattr(article, key, value)
             article.full_clean(exclude=["cover"])
             article.save()
-            article.cover.save("perforator-guide-cover.png", ContentFile(cover_bytes), save=True)
-        self.stdout.write(self.style.SUCCESS(f"Draft saved: {article.slug} (id={article.pk})"))
+            article.cover.save(
+                "perforator-guide-cover.png", ContentFile(cover_bytes), save=True
+            )
+        self.stdout.write(
+            self.style.SUCCESS(f"Draft saved: {article.slug} (id={article.pk})")
+        )
