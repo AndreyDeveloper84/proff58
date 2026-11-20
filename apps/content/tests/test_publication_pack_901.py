@@ -2,6 +2,7 @@
 
 from apps.content.article_markup import parse_body, parse_summary
 
+
 def test_article_tables_lists_and_notes():
     sections = parse_body("""Intro.
 
