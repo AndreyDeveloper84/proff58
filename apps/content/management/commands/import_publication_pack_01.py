@@ -23,7 +23,9 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("archive", type=Path)
         parser.add_argument("--category-slug", required=True)
-        parser.add_argument("--apply", action="store_true", help="Write draft; default is validation only.")
+        parser.add_argument(
+            "--apply", action="store_true", help="Write draft; default is validation only."
+        )
         parser.add_argument(
             "--update-existing-draft",
             action="store_true",
@@ -60,7 +62,9 @@ class Command(BaseCommand):
         if existing and (
             existing.status != PublishStatus.DRAFT or not options["update_existing_draft"]
         ):
-            raise CommandError("Existing article protected; update requires explicit draft opt-in")
+            raise CommandError(
+                "Existing article protected; update requires explicit draft opt-in"
+            )
         if not options["apply"]:
             self.stdout.write(
                 f"Validated {EXPECTED_SLUG}; category={category.slug}; "
