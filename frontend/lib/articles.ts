@@ -41,7 +41,7 @@ export type Article = {
   thumb?: string;
   imagePosition?: string;
   /** Схема, которая открывает статью вместо фото: объясняет то, за чем пришли. */
-  figure: ArticleFigure;
+  figure: ArticleFigure | "";\n  meta_title?: string;\n  meta_description?: string;
   /** Раздел каталога, к которому ведёт статья (slug из дерева категорий). */
   catalog?: { slug: string; label: string };
   /** «Коротко» — выжимка в 3 пункта над текстом. */
